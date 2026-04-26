@@ -24,12 +24,17 @@ const TYPE_SUBJECTS: Record<string, string> = {
   ip_ratification_chain_approved: 'Cadeia de aprovacao concluida',
   ip_ratification_awaiting_members: 'Aguardando sua ratificacao',
   weekly_card_digest_member: 'Seu resumo semanal de atividades',
+  weekly_member_digest: 'Seu resumo semanal — Núcleo IA',
 }
 
 // Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
 const DIGEST_TYPES = new Set([
   'weekly_card_digest_member',
 ])
+
+// ADR-0022 W2: weekly_member_digest body is JSON (from get_weekly_member_digest RPC).
+// Rendered via dedicated buildWeeklyMemberDigestHtml — separate from buildHtml dispatch.
+const WEEKLY_MEMBER_DIGEST_TYPE = 'weekly_member_digest'
 
 // Escape HTML-significant characters. Applied to title/body on all notification types
 // to prevent XSS via user-influenced content (doc names, submitter names, card titles).
@@ -58,7 +63,103 @@ const GOVERNANCE_TYPES = new Set([
   'ip_ratification_awaiting_members',
 ])
 
+// ADR-0022 W2: rich rendering for weekly_member_digest. Body is JSON text from
+// get_weekly_member_digest RPC with 7 sections. Renders responsive HTML with
+// collapsible-style headers (no <details> — Gmail strips it; uses bordered
+// section blocks for clarity).
+function buildWeeklyMemberDigestHtml(notification: any): string {
+  let payload: any = {}
+  try {
+    payload = JSON.parse(notification.body || '{}')
+  } catch {
+    payload = {}
+  }
+  const sections = payload.sections || {}
+  const cards = sections.cards || {}
+  const events = sections.events_upcoming || []
+  const pubs = sections.publications_new || []
+  const broadcasts = sections.broadcasts || []
+  const governance = sections.governance_pending || []
+  const engagements = sections.engagements_new || []
+  const achievements = sections.achievements || {}
+  const certs = achievements.certificates_issued || []
+  const xp = Number(achievements.xp_delta || 0)
+
+  const sectionBlock = (title: string, count: number, color: string, contentHtml: string) => `
+    <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; margin: 0 0 16px 0; overflow: hidden;">
+      <div style="background: ${color}; padding: 10px 14px;">
+        <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">${escapeHtml(title)} <span style="opacity: 0.85;">(${count})</span></h3>
+      </div>
+      <div style="padding: 12px 16px;">${contentHtml}</div>
+    </div>`
+
+  const renderCardList = (items: any[], showOverdue: boolean) => items.length === 0 ? '' :
+    `<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">
+      ${items.map(c => `<li><strong>${escapeHtml(c.title)}</strong>${c.due_date ? ` — ${escapeHtml(String(c.due_date))}` : ''}${showOverdue && c.days_overdue ? ` <span style="color: #d32f2f;">(${c.days_overdue}d atrasado)</span>` : ''}${c.initiative_title ? ` <span style="color: #868e96;">· ${escapeHtml(c.initiative_title)}</span>` : ''}</li>`).join('')}
+    </ul>`
+
+  const renderEventList = (items: any[]) => items.length === 0 ? '' :
+    `<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">
+      ${items.map(e => `<li><strong>${escapeHtml(e.title)}</strong> — ${escapeHtml(String(e.date))}${e.type ? ` <span style="color: #868e96;">(${escapeHtml(e.type)})</span>` : ''}${e.initiative_title ? ` · ${escapeHtml(e.initiative_title)}` : ''}</li>`).join('')}
+    </ul>`
+
+  const renderTitleList = (items: any[]) => items.length === 0 ? '' :
+    `<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">
+      ${items.map(x => `<li>${escapeHtml(x.title || x.type || 'Sem título')}</li>`).join('')}
+    </ul>`
+
+  const overdue = cards.overdue_7plus || []
+  const thisWeek = cards.this_week_pending || []
+  const nextWeek = cards.next_week_due || []
+  const cardsCount = overdue.length + thisWeek.length + nextWeek.length
+
+  let cardsContent = ''
+  if (overdue.length > 0) cardsContent += `<p style="margin: 0 0 6px 0; color: #d32f2f; font-size: 13px; font-weight: 600;">Atrasados há mais de 7 dias:</p>${renderCardList(overdue, true)}`
+  if (thisWeek.length > 0) cardsContent += `<p style="margin: 12px 0 6px 0; color: #f57c00; font-size: 13px; font-weight: 600;">Esta semana (vencem nos próximos 7 dias atrás):</p>${renderCardList(thisWeek, true)}`
+  if (nextWeek.length > 0) cardsContent += `<p style="margin: 12px 0 6px 0; color: #1976d2; font-size: 13px; font-weight: 600;">Próxima semana:</p>${renderCardList(nextWeek, false)}`
+
+  const certsContent = certs.length > 0
+    ? `<p style="margin: 0 0 6px 0; color: #495057; font-size: 13px; line-height: 1.6;">Certificados emitidos:</p>${renderTitleList(certs)}`
+    : ''
+  const xpContent = xp > 0
+    ? `<p style="margin: ${certs.length > 0 ? '12px' : '0'} 0 0 0; color: #495057; font-size: 13px; line-height: 1.6;"><strong>+${xp} XP</strong> ganhos esta semana 🎉</p>`
+    : ''
+  const achievementsCount = certs.length + (xp > 0 ? 1 : 0)
+
+  const totalItems = cardsCount + events.length + pubs.length + broadcasts.length + governance.length + engagements.length + achievementsCount
+
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Núcleo IA &amp; GP — Resumo Semanal</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">${totalItems} itens nesta semana</p>
+      </div>
+      <div style="padding: 20px 16px;">
+        ${cardsCount > 0 ? sectionBlock('📋 Seus cards', cardsCount, '#003B5C', cardsContent) : ''}
+        ${events.length > 0 ? sectionBlock('📅 Próximos eventos (7 dias)', events.length, '#1976d2', renderEventList(events)) : ''}
+        ${engagements.length > 0 ? sectionBlock('🤝 Novos vínculos', engagements.length, '#388e3c', renderTitleList(engagements)) : ''}
+        ${broadcasts.length > 0 ? sectionBlock('📢 Comunicados da tribo', broadcasts.length, '#f57c00', renderTitleList(broadcasts)) : ''}
+        ${pubs.length > 0 ? sectionBlock('📚 Publicações novas', pubs.length, '#7b1fa2', renderTitleList(pubs)) : ''}
+        ${governance.length > 0 ? sectionBlock('⚖️ Governança pendente', governance.length, '#c62828', renderTitleList(governance)) : ''}
+        ${achievementsCount > 0 ? sectionBlock('🏆 Conquistas', achievementsCount, '#ffa000', certsContent + xpContent) : ''}
+
+        <div style="text-align: center; margin: 24px 0 0 0;">
+          <a href="https://nucleoia.vitormr.dev/profile" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir minha plataforma</a>
+        </div>
+        <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
+          Este resumo consolida ${totalItems} notificação(ões) que você receberia em emails separados ao longo da semana. Quer mudar a cadência? <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
+        </p>
+      </div>
+      <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96; background: white; border-top: 1px solid #e9ecef;">
+        <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
+      </div>
+    </div>`
+}
+
 function buildHtml(notification: any): string {
+  if (notification.type === WEEKLY_MEMBER_DIGEST_TYPE) {
+    return buildWeeklyMemberDigestHtml(notification)
+  }
   const isGovernance = GOVERNANCE_TYPES.has(notification.type)
   const isDigest = DIGEST_TYPES.has(notification.type)
   const ctaLabel = isDigest ? 'Abrir meu workspace' : isGovernance ? 'Revisar e assinar' : 'Ver na plataforma'
@@ -146,6 +247,15 @@ Deno.serve(async (req) => {
         .single()
 
       if (prefs?.muted_types?.includes(notif.type)) continue
+
+      // ADR-0022 W2: respect notify_delivery_mode_pref='suppress_all' (member opt-out)
+      const { data: memberPrefs } = await sb
+        .from('members')
+        .select('notify_delivery_mode_pref')
+        .eq('id', notif.recipient_id)
+        .single()
+
+      if (memberPrefs?.notify_delivery_mode_pref === 'suppress_all') continue
 
       // Send email — IP ratification types carry specific title (doc + version + action + submitter)
       // so we use notif.title directly. Other types fall back to TYPE_SUBJECTS generic.

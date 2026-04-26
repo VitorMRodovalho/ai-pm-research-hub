@@ -102,3 +102,65 @@ test('ADR-0022 W1: digest_delivered_at + digest_batch_id columns declared', () =
   assert.ok(/ADD\s+COLUMN[\s\S]{0,80}digest_batch_id\s+uuid/i.test(allSQL),
     'digest_batch_id column must be declared.');
 });
+
+// ─── W2 contracts (p61) ───
+
+test('ADR-0022 W2: members.notify_delivery_mode_pref column declared with 4-mode CHECK', () => {
+  assert.ok(/ADD\s+COLUMN[\s\S]{0,200}notify_delivery_mode_pref\s+text/i.test(allSQL),
+    'members.notify_delivery_mode_pref column must be declared.');
+  // CHECK enum must list all 4 modes
+  for (const mode of ['immediate_all', 'weekly_digest', 'suppress_all', 'custom_per_type']) {
+    assert.ok(new RegExp(`notify_delivery_mode_pref[\\s\\S]{0,500}'${mode}'`, 'i').test(allSQL),
+      `4-mode CHECK constraint must include '${mode}'.`);
+  }
+});
+
+test('ADR-0022 W2: get_weekly_member_digest RPC declared with 7 sections', () => {
+  // Find LAST definition (CREATE OR REPLACE semantics)
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_weekly_member_digest\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  assert.ok(matches.length > 0, 'get_weekly_member_digest must be declared.');
+  const body = matches[matches.length - 1][1];
+
+  // 7 section keys must appear in body
+  const requiredSections = [
+    'cards', 'engagements_new', 'events_upcoming', 'publications_new',
+    'broadcasts', 'governance_pending', 'achievements'
+  ];
+  for (const section of requiredSections) {
+    assert.ok(body.includes(`'${section}'`),
+      `RPC body must include section key '${section}'.`);
+  }
+  // Must return consumed_notification_ids for orchestrator
+  assert.ok(body.includes('consumed_notification_ids'),
+    'RPC must include consumed_notification_ids field for orchestrator.');
+});
+
+test('ADR-0022 W2: generate_weekly_member_digest_cron orchestrator declared', () => {
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.generate_weekly_member_digest_cron[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  assert.ok(matches.length > 0, 'generate_weekly_member_digest_cron must be declared.');
+  const body = matches[matches.length - 1][1];
+
+  // Must call get_weekly_member_digest
+  assert.ok(body.includes('get_weekly_member_digest'),
+    'Orchestrator must call get_weekly_member_digest RPC.');
+  // Must respect notify_delivery_mode_pref (skip suppress_all/immediate_all)
+  assert.ok(/notify_delivery_mode_pref[\s\S]{0,200}weekly_digest/i.test(body),
+    'Orchestrator must filter by notify_delivery_mode_pref.');
+  // Must mark consumed notifications
+  assert.ok(/digest_delivered_at\s*=\s*now\(\)/i.test(body),
+    'Orchestrator must mark consumed notifications digest_delivered_at.');
+});
+
+test('ADR-0022 W2: set_my_notification_prefs RPC declared (member self-edit)', () => {
+  assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.set_my_notification_prefs/i.test(allSQL),
+    'set_my_notification_prefs RPC must be declared for /settings/notifications page.');
+  // Must be SECURITY DEFINER (gates by auth.uid)
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.set_my_notification_prefs[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  assert.ok(matches.length > 0);
+  const wrapper = matches[matches.length - 1][0];
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    'set_my_notification_prefs must be SECURITY DEFINER.');
+});
