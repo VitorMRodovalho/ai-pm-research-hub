@@ -1116,28 +1116,185 @@ Verified post-REVOKE (this commit):
 preserved. exec_portfolio_health stays public-by-design (homepage
 hydration). Postgres + service_role retained.
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5+3a.6+3a.7 + batch 1 amendment)
+### Batch 3a.8 closure — legacy/utility readers (p59, `20260426143952`)
 
-- **87 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
+Migration: `track_q_d_legacy_utility_readers_batch3a8.sql`. Per-fn body
++ callsite review against the legacy/utility orphan-no-gate bucket
+surfaced 32 fns (vs handoff p58 estimate of 9). Discovery wider than
+expected because earlier batches focused on themed surfaces
+(initiative/board, comms, sustainability, etc.) leaving the residual
+catch-all larger.
+
+**Dead readers (9 fns, 0 callers in src/ or supabase/functions/) —
+full lock-down**:
+- `get_communication_template(text, jsonb)` — comm template renderer.
+- `get_event_audience(uuid)` — event audience rules + invited members.
+- `get_manual_diff()` — manual versioning diff helper.
+- `get_platform_setting(text)` — platform setting reader.
+- `get_publication_detail(uuid)` — single publication reader (incl.
+  view counter UPDATE side effect — caller page never built).
+- `get_section_change_history(uuid)` — manual section CR history.
+- `list_admin_links()` — admin nav links.
+- `tribe_impact_ranking()` — tribe-level impact aggregate.
+- `why_denied(uuid, text, text, uuid)` — V4 authority debug helper.
+
+**Service-role-only callers (MCP EF only — calls via service_role)
+— full lock-down (2 fns)**:
+- `log_mcp_usage(uuid, uuid, text, boolean, text, integer, text)` — MCP
+  usage logger called by every MCP tool.
+- `search_partner_cards(text, text, text, integer)` — MCP cross-partner
+  card search wrapper.
+
+**Member-tier readers — REVOKE-from-anon (keep authenticated, 19 fns)**:
+- `get_card_timeline(uuid)` — caller CardDetail.tsx + MCP tool.
+- `get_event_tags(uuid)` / `get_event_tags_batch(uuid[])` — caller
+  attendance.astro (member-tier with bail).
+- `get_events_with_attendance(integer, integer)` — caller attendance.astro.
+- `get_global_research_pipeline()` — caller ResearchPipelineWidget
+  (admin-tier client guard) + MCP.
+- `get_item_assignments(uuid)` / `get_item_curation_history(uuid)` —
+  caller CardDetail.tsx (board UI member-tier).
+- `get_member_cycle_xp(uuid)` — caller profile.astro + MCP.
+- `get_mirror_target_boards(uuid)` — caller CardDetail.tsx.
+- `get_near_events(uuid, integer)` — caller workspace.astro + MCP.
+- `get_previous_locked_version(uuid)` — caller ReviewChainIsland
+  (governance member-tier).
+- `get_publication_pipeline_summary()` — caller admin/publications.astro
+  (admin-tier).
+- `get_publication_submission_detail(uuid)` — caller submissions/[id].astro
+  + admin/publications.astro.
+- `get_publication_submissions(submission_status, integer)` — caller
+  publications.astro `loadMySubmissions()` (bails on `!member`) +
+  workspace.astro + submissions.astro + admin/publications.astro.
+- `get_recent_events(integer, integer)` — caller AttendanceForm.tsx.
+- `get_tags(text)` — caller TagManagementIsland (admin) + attendance.astro.
+- `list_cycles()` — caller `lib/cycles.ts loadCycles()` with
+  `getFallbackCycles()` safety; loaded only by member/admin pages
+  (profile, tribe, admin/analytics, admin/settings, admin/selection).
+- `list_radar_global(integer, integer)` — caller tribe/[id].astro
+  (member-tier with `canExploreTribes` gate).
+- `search_hub_resources(text, text, integer)` — caller library.astro +
+  MCP. Fn body has `auth.uid()` member check (returns empty for non-member).
+
+**Verified public-by-design — no migration needed (2 fns, docs-only)**:
+- `get_manual_sections(text)` — returns public regulamento sections.
+  Caller: `governance.astro` (PUBLIC route — no `requireAuth`),
+  `GovernancePage.tsx` (explicit dev comment "anon-safe RPC"),
+  `ManualDocumentViewer.tsx`. Body returns manual_sections rows where
+  `is_current=true`. NO PII. Intentional public exposure of governance
+  documentation.
+- `get_gp_whatsapp()` — returns the project manager's WhatsApp phone
+  for help-page direct contact. Caller: `help.astro` (PUBLIC route).
+  Body uses `members WHERE operational_role='manager'` to derive contact
+  (filter, not gate — V3_legacy classification was regex false-positive).
+  Phone is intentionally exposed to visitors via WhatsApp button per
+  ADR-0024 pattern (similar to `get_public_impact_data` exposing
+  leadership contact info).
+
+Verified post-REVOKE (this commit):
+- 11 dead/EF-only fns: ACL = `postgres + service_role`.
+- 19 REVOKE-from-anon fns: ACL = `postgres + authenticated + service_role`.
+- 2 verified-public fns: ACL preserved (5-grantee public).
+
+**Risk: low**. All 19 member-tier callers verified to bail on `!member`
+client-side OR sit behind admin-tier gate. Dead fns confirmed via
+tight grep (`.rpc('<name>')` regex, not loose substring match).
+
+### Batch 3b closure — internal helpers REVOKE (p59, `20260426145632`)
+
+Migration: `track_q_d_internal_helpers_batch3b.sql`. Defense-in-depth
+sweep on SECDEF functions called only by other SECDEF functions
+(or by EF via service_role). The `authenticated`/PUBLIC grant on
+these is unused attack surface; removing it is safe because:
+* SECDEF caller chain runs as definer (postgres role) — chain still
+  works since postgres retains EXECUTE.
+* EF callers (MCP, sync-artia) connect as service_role — service_role
+  retains EXECUTE.
+
+20 fns triaged via:
+1. tight `.rpc('<name>')` regex grep across `src/` + `supabase/functions/`
+   → confirmed 0 frontend callers.
+2. `pg_proc.prosrc` regex `\m<name>\s*\(` to count SECDEF callers in
+   the live database → confirmed each is internally called.
+
+**Hardened (REVOKE FROM PUBLIC, anon, authenticated, 20 fns)**:
+
+| Bucket | Function | SECDEF callers | EF callers |
+|---|---|---|---|
+| Governance | `_enqueue_gate_notifications(uuid, text, text)` | lock_document_version, trg_approval_signoff_notify_fn | — |
+| Analytics | `analytics_member_scope(text, integer, text)` | exec_certification_delta, exec_chapter_roi, exec_funnel_summary, exec_impact_hours_v2 | — |
+| Analytics | `exec_analytics_v2_quality(text, integer, text)` | 0 (orchestrator-shaped, preserved pending PM review) | — |
+| Analytics | `exec_certification_delta(text, integer, text)` | 0 (preserved pending PM review) | — |
+| Analytics | `exec_chapter_roi(text, integer, text)` | exec_analytics_v2_quality | — |
+| Analytics | `exec_funnel_summary(text, integer, text)` | exec_analytics_v2_quality | — |
+| Analytics | `exec_impact_hours_v2(text, integer, text)` | exec_analytics_v2_quality | — |
+| Adoption | `get_auth_provider_stats()` | get_adoption_dashboard | — |
+| Adoption | `get_impact_hours_excluding_excused()` | get_admin_dashboard | sync-artia |
+| Adoption | `get_mcp_adoption_stats()` | get_adoption_dashboard | nucleo-mcp |
+| V4 authority | `can(uuid, text, text, uuid)` | activate_initiative, can_by_member, create_initiative_event, get_active_engagements, get_initiative_member_contacts, get_person, manage_initiative_engagement, rls_can | — |
+| V4 authority | `can_by_member(uuid, text, text, uuid)` | 100 SECDEF V4 admin fns | nucleo-mcp (canV4 wrapper) |
+| V4 authority | `assert_initiative_capability(uuid, text)` | list_initiative_boards, list_initiative_deliverables, list_initiative_meeting_artifacts, search_initiative_board_items | — |
+| V4 authority | `auth_org()` | create_initiative, join_initiative, list_initiatives | — |
+| Onboarding | `check_pre_onboarding_auto_steps(uuid)` | admin_update_application, finalize_decisions, get_candidate_onboarding_progress | — |
+| Offboarding | `detect_orphan_assignees_from_offboards(uuid)` | notify_offboard_cascade | — |
+| Members | `get_member_tribe(uuid)` | exec_tribe_dashboard, get_admin_dashboard, get_adoption_dashboard, get_attendance_grid, get_campaign_analytics, get_my_member_record, get_tribe_attendance_grid, sign_volunteer_agreement | — |
+| Broadcast | `broadcast_count_today(integer)` | broadcast_count_today_v4 | — |
+| Broadcast | `broadcast_count_today_v4(uuid)` | 0 (preserved pending PM review of broadcast pipeline) | — |
+| Refresh | `refresh_cycle_tribe_dim()` | trigger_refresh_cycle_tribe_dim | — |
+
+**3 fns flagged for PM review (preserved, REVOKE applied as
+defense-in-depth)**:
+- `broadcast_count_today_v4(uuid)` — V4 broadcast helper, 0 callers
+  detected. May be cron-orchestrated or planned-but-unwired.
+- `exec_analytics_v2_quality(text, integer, text)` — orchestrator that
+  calls 3 sub-helpers. 0 callers detected; possibly cron or admin
+  RPC integration.
+- `exec_certification_delta(text, integer, text)` — analytics
+  sub-query. 0 callers detected.
+
+For all 3, REVOKE removes attack surface today; PM may either confirm
+orchestrator/cron caller (no rollback needed since service_role
+retained) or schedule for DROP if confirmed dead.
+
+Verified post-REVOKE (this commit):
+- All 20 fns: ACL = `postgres + service_role`.
+
+**Risk: low**. SECDEF chains run as definer (postgres) → calls succeed.
+EF callers connect as service_role → calls succeed. No frontend
+`.rpc()` callers exist for any of the 20.
+
+**Closes Phase Q-D internal-helper bucket**. Estimated 27 from p55
+discovery → 20 captured here; residual ~7 are V3-gated helpers
+(`current_member_tier_rank`, `can_manage_knowledge`,
+`can_manage_comms_metrics`, `_can_sign_gate`, `_can_manage_event`,
+etc.) which require Phase B'' V3→V4 migration before treatment.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5+3a.6+3a.7+3a.8+3b + batch 1 amendment)
+
+- **137 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
   + 18 batch 3a.3b + 9 batch 3a.4 + 11 batch 3a.5 + 9 batch 3a.6 +
-  12 batch 3a.7 + amendment-only 1 (`comms_check_token_expiry`)).
-- **15 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
+  12 batch 3a.7 + 30 batch 3a.8 + 20 batch 3b + amendment-only 1
+  (`comms_check_token_expiry`)).
+- **17 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
   excluded — `list_meeting_artifacts` + 1 batch 3a.7 excluded —
-  `exec_portfolio_health`).
+  `exec_portfolio_health` + 2 batch 3a.8 — `get_manual_sections`,
+  `get_gp_whatsapp`).
 - **9 functions already V4-compliant** (1 batch 3a.3 + 8 batch 3a.6
   excluded).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- 11 functions documented as out-of-scope (3 V3 batch 3a.5 helpers
-  + 3 V3 batch 3a.6 admin fns + 4 V3 batch 3a.7 writers + 1 trigger).
-- ≈9 remaining orphan-no-gate readers in legacy/utility bucket (3a.8)
-  + ≈24 internal helpers (3b) + 3 PM-deferred = ~36 still in pipeline.
-- **Net: 114 fns triaged total** vs original p55 estimate of 109.
-  The +5 surplus reflects V4 fns hidden by p55 detection regex
+- 11 functions documented as out-of-scope V3 (Phase B'') (3 batch 3a.5
+  helpers + 3 batch 3a.6 admin fns + 4 batch 3a.7 writers + 1 trigger).
+- **Net: 166 fns triaged total** vs original p55 estimate of 109.
+  The +57 surplus reflects (a) V4 fns hidden by p55 detection regex
   (which matched `can_by_member` but missed `can(person_id, ...)`
-  without `public.` prefix); per-fn body review in batches 3a.3 +
-  3a.6 surfaced 9 such fns. **Effectively: scope p55 = 100%
-  triaged; sweep continues into legacy/utility (3a.8) + internal
-  helpers (3b) buckets which were not in the original 109.**
+  without `public.` prefix) — per-fn body review in batches 3a.3 +
+  3a.6 surfaced 9 such fns; (b) the legacy/utility bucket (3a.8) and
+  internal helpers bucket (3b) were not in the original 109 and added
+  50 hardened + 2 verified-public.
+- **Phase Q-D external-callable + internal-helper sweep effectively
+  closed.** Residual: 3 PM-deferred (3a.1 selection readers) +
+  11 V3-gated fns documented for Phase B'' ratify. No remaining
+  orphan-no-gate fns with anon EXEC.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; REVOKE-from-anon (keep authenticated)
@@ -1147,7 +1304,11 @@ hydration). Postgres + service_role retained.
   readers); dead-matrix uniformly applies full lock-down regardless
   of pre-existing partial revocations; **per-fn callsite verification
   catches batch 1 regressions** (p58 surfaced
-  `comms_check_token_expiry` admin caller missed in p55).
+  `comms_check_token_expiry` admin caller missed in p55);
+  **defense-in-depth REVOKE on internal helpers is safe** when SECDEF
+  caller chain runs as definer (postgres) and EF callers connect as
+  service_role (batch 3b proved on V4 authority core `can` /
+  `can_by_member`).
 
 ### Open Phase Q-D batches (TBD)
 
@@ -1221,23 +1382,22 @@ Reader fns to triage for PII/sensitivity:
   17 fns triaged (12 live REVOKE-from-anon + 1 verified public-by-design
   `exec_portfolio_health` + 4 V3 → Phase B''). See "Batch 3a.7 closure"
   section below.
-- Legacy/utility readers: `get_changelog`, `get_gp_whatsapp`,
-  `get_help_journeys`, `list_admin_links`, `list_radar_global`,
-  `tribe_impact_ranking`, `count_tribe_slots`, `broadcast_history`,
-  `get_recent_events`, `get_event_audience`, `get_event_tags*`,
-  `get_events_with_attendance`, `get_global_research_pipeline`,
-  `get_card_timeline`, `get_publication_*` (4 fns), `get_section_change_history`,
-  `get_webinar_lifecycle`, `get_wiki_page`, `get_revenue_entries`,
-  `get_cost_entries`, `get_communication_template`, `get_item_*` (2 fns),
-  `get_manual_*` (2 fns), `get_member_cycle_xp`, `get_mirror_target_boards`,
-  `get_near_events`, `get_platform_setting`, `get_previous_locked_version`,
-  `search_*` (3 fns), `list_cycles`, `get_tags`, `list_initiative_meeting_artifacts`,
-  `list_initiative_deliverables`, `list_webinars_v2`.
-- Misc utility: `verify_certificate`, `why_denied`, `log_mcp_usage`.
+- ✅ **Legacy/utility readers — closure complete (p59 batch 3a.8)**:
+  32 fns triaged (9 dead REVOKE-only + 2 EF-only REVOKE-only + 19 live
+  REVOKE-from-anon + 2 verified public-by-design — `get_manual_sections`,
+  `get_gp_whatsapp`). See "Batch 3a.8 closure" section below.
+- ✅ **Internal helpers — closure complete (p59 batch 3b)**:
+  20 fns REVOKE'd FROM PUBLIC, anon, authenticated as defense-in-depth.
+  All 20 verified to have 0 frontend `.rpc()` calls and only SECDEF / EF
+  service_role callers. Includes V4 authority core (`can` /
+  `can_by_member`). See "Batch 3b closure" section below.
 
-Action plan: per-fn triage checking (1) caller surface (frontend/EF/MCP),
-(2) data sensitivity (PII / member identity / cycle data), (3) public
-intent. Each batch ~10-20 fns w/ verification.
+**Phase Q-D external-callable + internal-helper sweep is effectively
+closed.** Residual work:
+  * 3 PM-deferred selection readers (batch 3a.1): `get_attendance_panel`,
+    `get_meeting_notes_compliance`, `count_tribe_slots`.
+  * 11 V3-gated fns documented for Phase B'' (new V4 actions: `manage_comms`,
+    `manage_finance`, etc. — each requires PM ratify per ADR).
 
 ### Phase Q-D vs Phase B' — when to use which
 
