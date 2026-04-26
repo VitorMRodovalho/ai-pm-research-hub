@@ -25,6 +25,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   ip_ratification_awaiting_members: 'Aguardando sua ratificacao',
   weekly_card_digest_member: 'Seu resumo semanal de atividades',
   weekly_member_digest: 'Seu resumo semanal — Núcleo IA',
+  weekly_tribe_digest_leader: 'Resumo da sua tribo — Núcleo IA',
 }
 
 // Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
@@ -32,9 +33,10 @@ const DIGEST_TYPES = new Set([
   'weekly_card_digest_member',
 ])
 
-// ADR-0022 W2: weekly_member_digest body is JSON (from get_weekly_member_digest RPC).
-// Rendered via dedicated buildWeeklyMemberDigestHtml — separate from buildHtml dispatch.
+// ADR-0022 W2/W3: digest types with JSON body (from RPC). Rendered via
+// dedicated builders — separate from buildHtml dispatch.
 const WEEKLY_MEMBER_DIGEST_TYPE = 'weekly_member_digest'
+const WEEKLY_TRIBE_DIGEST_LEADER_TYPE = 'weekly_tribe_digest_leader'
 
 // Escape HTML-significant characters. Applied to title/body on all notification types
 // to prevent XSS via user-influenced content (doc names, submitter names, card titles).
@@ -156,9 +158,84 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
     </div>`
 }
 
+// ADR-0022 W3: leader digest aggregate-only renderer. Body is JSON from
+// get_weekly_tribe_digest RPC. Privacy-preserving — no individual member
+// names or card titles, only counts/percentages.
+function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
+  let payload: any = {}
+  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
+  const tribeName = payload.tribe_name || 'sua tribo'
+  const agg = payload.aggregates || {}
+  const overdue = Number(agg.cards_overdue_total || 0)
+  const dueNext = Number(agg.cards_due_next_7d || 0)
+  const noAssignee = Number(agg.cards_without_assignee || 0)
+  const noDate = Number(agg.cards_without_due_date || 0)
+  const completed = Number(agg.cards_completed_window || 0)
+  const membersOverdue = Number(agg.members_with_overdue_cards || 0)
+  const activeMembers = Number(agg.active_members || 0)
+  const healthPct = Number(agg.tribe_health_pct || 100)
+
+  const healthColor = healthPct >= 80 ? '#388e3c' : healthPct >= 50 ? '#f57c00' : '#d32f2f'
+  const statRow = (label: string, value: number, color: string) => `
+    <tr>
+      <td style="padding: 10px 12px; color: #495057; font-size: 13px; border-bottom: 1px solid #f1f3f5;">${escapeHtml(label)}</td>
+      <td style="padding: 10px 12px; text-align: right; color: ${color}; font-size: 16px; font-weight: 600; border-bottom: 1px solid #f1f3f5;">${value}</td>
+    </tr>`
+
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da Tribo ${escapeHtml(tribeName)}</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${activeMembers} membros ativos</p>
+      </div>
+      <div style="padding: 20px 16px;">
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 11px; color: #868e96; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Tribe Health</div>
+          <div style="font-size: 36px; font-weight: 700; color: ${healthColor};">${healthPct}%</div>
+          <div style="font-size: 11px; color: #868e96; margin-top: 4px;">% de cards ativos com baseline definido</div>
+        </div>
+
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+          <div style="background: #003B5C; padding: 10px 14px;">
+            <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">📊 Indicadores agregados</h3>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${statRow('Cards atrasados', overdue, overdue > 0 ? '#d32f2f' : '#868e96')}
+            ${statRow('Membros com cards atrasados', membersOverdue, membersOverdue > 0 ? '#d32f2f' : '#868e96')}
+            ${statRow('Cards vencendo nos próximos 7 dias', dueNext, dueNext > 0 ? '#f57c00' : '#868e96')}
+            ${statRow('Cards sem assignee', noAssignee, noAssignee > 0 ? '#f57c00' : '#868e96')}
+            ${statRow('Cards sem data de entrega', noDate, noDate > 0 ? '#f57c00' : '#868e96')}
+            ${statRow('Cards concluídos esta semana', completed, completed > 0 ? '#388e3c' : '#868e96')}
+          </table>
+        </div>
+
+        <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 14px; margin: 0 0 16px 0; border-radius: 4px;">
+          <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
+            <strong>Privacy-preserving:</strong> este resumo mostra apenas contadores agregados.
+            Para ver o detalhe (quais cards, quais membros), abra o portfolio do board.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 24px 0 0 0;">
+          <a href="https://nucleoia.vitormr.dev/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
+        </div>
+        <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
+          Você recebe este resumo porque é líder da tribo ${escapeHtml(tribeName)}.
+          <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
+        </p>
+      </div>
+      <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96; background: white; border-top: 1px solid #e9ecef;">
+        <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
+      </div>
+    </div>`
+}
+
 function buildHtml(notification: any): string {
   if (notification.type === WEEKLY_MEMBER_DIGEST_TYPE) {
     return buildWeeklyMemberDigestHtml(notification)
+  }
+  if (notification.type === WEEKLY_TRIBE_DIGEST_LEADER_TYPE) {
+    return buildWeeklyTribeDigestLeaderHtml(notification)
   }
   const isGovernance = GOVERNANCE_TYPES.has(notification.type)
   const isDigest = DIGEST_TYPES.has(notification.type)

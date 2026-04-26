@@ -164,3 +164,59 @@ test('ADR-0022 W2: set_my_notification_prefs RPC declared (member self-edit)', (
   assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
     'set_my_notification_prefs must be SECURITY DEFINER.');
 });
+
+// ─── W3 contracts (p62) ───
+
+test('ADR-0022 W3: get_weekly_tribe_digest RPC declared with aggregate-only sections', () => {
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_weekly_tribe_digest\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  assert.ok(matches.length > 0, 'get_weekly_tribe_digest must be declared.');
+  const body = matches[matches.length - 1][1];
+
+  // Aggregate keys (privacy-preserving — no individual cards)
+  const requiredAggs = [
+    'active_members', 'members_with_overdue_cards', 'cards_overdue_total',
+    'cards_due_next_7d', 'cards_without_assignee', 'cards_without_due_date',
+    'cards_completed_window', 'tribe_health_pct'
+  ];
+  for (const agg of requiredAggs) {
+    assert.ok(body.includes(`'${agg}'`),
+      `Aggregate key '${agg}' must appear in get_weekly_tribe_digest body.`);
+  }
+});
+
+test('ADR-0022 W3: generate_weekly_leader_digest_cron orchestrator declared', () => {
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.generate_weekly_leader_digest_cron[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  assert.ok(matches.length > 0, 'generate_weekly_leader_digest_cron must be declared.');
+  const body = matches[matches.length - 1][1];
+
+  assert.ok(body.includes('get_weekly_tribe_digest'),
+    'Leader orchestrator must call get_weekly_tribe_digest RPC.');
+  assert.ok(body.includes('weekly_tribe_digest_leader'),
+    'Leader orchestrator must insert weekly_tribe_digest_leader notification type.');
+  assert.ok(body.includes('suppress_all'),
+    'Leader orchestrator must respect suppress_all preference.');
+});
+
+test('ADR-0022 W3: tribe_broadcast urgent rate-limit trigger declared', () => {
+  assert.ok(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\._tribe_broadcast_urgent_rate_limit/i.test(allSQL),
+    'Rate-limit trigger function must be declared.');
+  assert.ok(/CREATE\s+TRIGGER\s+trg_tribe_broadcast_urgent_rate_limit/i.test(allSQL),
+    'Trigger trg_tribe_broadcast_urgent_rate_limit must be declared.');
+  // Must enforce 1/week limit
+  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\._tribe_broadcast_urgent_rate_limit[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  const matches = [...allSQL.matchAll(regex)];
+  const body = matches[matches.length - 1][1];
+  assert.ok(/v_actor_count\s*>=\s*1/i.test(body),
+    'Rate-limit must enforce >= 1 (1 batch per week per actor).');
+  assert.ok(/rate_limit_exceeded/i.test(body),
+    'Rate-limit must raise rate_limit_exceeded exception.');
+});
+
+test('ADR-0022 W3: set_my_muted_notification_types + get_my_notification_metrics RPCs declared', () => {
+  assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.set_my_muted_notification_types/i.test(allSQL),
+    'set_my_muted_notification_types RPC must be declared.');
+  assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_my_notification_metrics/i.test(allSQL),
+    'get_my_notification_metrics RPC must be declared.');
+});

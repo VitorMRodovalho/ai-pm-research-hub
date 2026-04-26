@@ -66,6 +66,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
       <button id="save" style="background: #003B5C; color: white; padding: 12px 24px; border: 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Salvar preferências</button>
       <span id="status" style="margin-left: 12px; color: #388e3c; font-size: 13px;"></span>
+
+      <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 24px 0 16px 0;">
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Silenciar tipos específicos (W3)</h2>
+        <p style="color: #6c757d; font-size: 12px; margin: 0 0 12px 0;">
+          Marque tipos de notificação que você NÃO quer receber por email.
+          Útil mesmo no modo "Resumo semanal" — esses tipos serão excluídos do digest.
+        </p>
+        <div id="muted-types-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        <button id="save-muted" style="margin-top: 12px; background: #003B5C; color: white; padding: 8px 16px; border: 0; border-radius: 6px; font-size: 13px; cursor: pointer;">Salvar tipos silenciados</button>
+        <span id="muted-status" style="margin-left: 12px; color: #388e3c; font-size: 12px;"></span>
+      </div>
+
+      <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Suas métricas (últimos 30 dias)</h2>
+        <div id="metrics" style="color: #6c757d; font-size: 13px;">Carregando…</div>
+      </div>
     </div>
   </main>
 
@@ -86,7 +102,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         return;
       }
       const { data: member, error: memberErr } = await sb.from('members')
-        .select('notify_weekly_digest, notify_delivery_mode_pref')
+        .select('id, notify_weekly_digest, notify_delivery_mode_pref')
         .eq('auth_id', session.user.id).single();
       if (memberErr || !member) {
         loading.textContent = 'Membro não encontrado.';
@@ -117,6 +133,66 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           status.style.color = '#388e3c';
         }
       });
+
+      // ── W3: muted types list ──
+      const NOTIFICATION_TYPES = [
+        { key: 'tribe_broadcast', label: 'Comunicados da tribo' },
+        { key: 'attendance_reminder', label: 'Lembretes de presença' },
+        { key: 'card_assigned', label: 'Cards atribuídos' },
+        { key: 'card_status_changed', label: 'Mudanças de status de cards' },
+        { key: 'webinar_status_confirmed', label: 'Webinars confirmados' },
+        { key: 'publication', label: 'Novas publicações' },
+        { key: 'governance_vote_reminder', label: 'Lembretes de votação' },
+        { key: 'engagement_welcome', label: 'Boas-vindas a engajamentos' },
+        { key: 'system', label: 'Mensagens do sistema' },
+      ];
+      const { data: prefs } = await sb.from('notification_preferences')
+        .select('muted_types').eq('member_id', (member as any).id).maybeSingle();
+      const currentMuted = ((prefs as any)?.muted_types || []) as string[];
+      const list = document.getElementById('muted-types-list')!;
+      list.innerHTML = NOTIFICATION_TYPES.map(t => `
+        <label style="display: flex; align-items: center; cursor: pointer;">
+          <input type="checkbox" data-type="${t.key}" ${currentMuted.includes(t.key) ? 'checked' : ''}
+                 style="margin-right: 8px;" />
+          <span style="color: #495057; font-size: 13px;">${t.label}</span>
+        </label>`).join('');
+
+      const savemutedBtn = document.getElementById('save-muted')!;
+      const mutedStatus = document.getElementById('muted-status')!;
+      savemutedBtn.addEventListener('click', async () => {
+        const muted: string[] = [];
+        list.querySelectorAll('input[type="checkbox"]:checked').forEach(el => {
+          muted.push((el as HTMLInputElement).dataset.type!);
+        });
+        mutedStatus.textContent = 'Salvando…';
+        const { error } = await sb.rpc('set_my_muted_notification_types', { p_muted_types: muted });
+        if (error) {
+          mutedStatus.textContent = `Erro: ${error.message}`;
+          mutedStatus.style.color = '#d32f2f';
+        } else {
+          mutedStatus.textContent = `${muted.length} tipo(s) silenciados ✓`;
+          mutedStatus.style.color = '#388e3c';
+        }
+      });
+
+      // ── W3: metrics ──
+      const metricsEl = document.getElementById('metrics')!;
+      const { data: metrics, error: metricsErr } = await sb.rpc('get_my_notification_metrics', { p_window_days: 30 });
+      if (metricsErr || !metrics) {
+        metricsEl.textContent = 'Não foi possível carregar métricas.';
+      } else {
+        const m = metrics as any;
+        metricsEl.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_received}</strong><div style="font-size: 11px; color: #868e96;">recebidas</div></div>
+            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_emailed}</strong><div style="font-size: 11px; color: #868e96;">por email</div></div>
+            <div><strong style="color: #388e3c; font-size: 18px;">${m.total_read}</strong><div style="font-size: 11px; color: #868e96;">lidas</div></div>
+            <div><strong style="color: #f57c00; font-size: 18px;">${m.total_unread}</strong><div style="font-size: 11px; color: #868e96;">não lidas</div></div>
+          </div>
+          <p style="margin: 12px 0 0 0; font-size: 11px; color: #adb5bd;">
+            Open rate / click rate via Resend webhook serão adicionados em W4.
+          </p>`;
+      }
     }
     load();
   </script>
