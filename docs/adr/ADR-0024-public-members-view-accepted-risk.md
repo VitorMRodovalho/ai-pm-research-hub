@@ -133,3 +133,39 @@ COMMENT ON VIEW public.public_members IS
 - Spec memo: `docs/specs/SPEC_ISSUE_82_ONDA_2_3_OPTIONS.md`
 - Onda 1/1.5/1.6 commits (p40): `f5fb688`, `025450a`, `7d9cda3`
 - Advisor finding: `security_definer_view_public_public_members`
+
+---
+
+## Elevator Pitch / Sponsor Q&A Response (p59 — para call de segunda)
+
+Se Ivan ou outro sponsor perguntar sobre o **1 ERROR remanescente** no
+advisor de segurança Supabase, a resposta-padrão é:
+
+> "Esse ERROR é a única exposição intencional que mantemos. É uma view
+> chamada `public_members` que mostra leadership institucional do Núcleo
+> (nome, foto, papel, capítulo) na homepage, similar a um diretório
+> público de chapter PMI. Está documentada em ADR-0024 como risco aceito
+> por: (a) é necessária para a Hero/Tribes/Team sections do site público;
+> (b) só expõe 22 colunas community-public — nenhuma PII sensível
+> (email/telefone/PMI ID excluídos via filtragem deliberada);
+> (c) refactor para "slim view + RPC" tem custo de manutenção sem ganho
+> real de privacidade. Status do ADR é Accepted, com critérios de revisão
+> documentados (audit externo, incidente real, opt-out feature, ou
+> migração para private-by-default tenant)."
+
+**Pontos-chave para a call** (1 sentence cada):
+1. **Único ERROR no advisor** — todo o resto é intentional public docs (25 ROPA mapping)
+2. **Não é vulnerabilidade** — é decisão arquitetural documentada
+3. **Padrão PMI internacional** — chapter directories são públicos por design
+4. **Tem critérios de re-trigger** se contexto mudar (audit externo etc.)
+5. **Trail completo** em GitHub: ADR-0024 + COMMENT ON VIEW inline + Issue #82
+
+**Se Ivan quiser action item adicional**, opções (em ordem de menor → maior custo):
+1. **Re-confirmação formal** do "accepted risk" status (5 min — escrever
+   "ratified by Ivan Lourenço 2026-04-XX" no ADR)
+2. **Quarterly re-review trigger** (20 min — adicionar ao ROPA review trimestral)
+3. **Slim view refactor** (~6-8h — implementar OPÇÃO 3 da Onda 2/3 spec:
+   `members_public_safe_v2` com 8 cols não-sensíveis + RPC `get_member_signature(id)`
+   gated com `view_pii` + log_pii_access para uso curatorial)
+
+Recomendação: opção 1 ou 2 — opção 3 é overkill se não houver driver real.
