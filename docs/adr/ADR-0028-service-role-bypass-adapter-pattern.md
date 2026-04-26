@@ -1,13 +1,49 @@
 # ADR-0028: Service-Role-Bypass Adapter Pattern for Cron/EF Callers
 
-- **Status**: Proposed
-- **Date**: 2026-04-26 (drafted p63 extended)
-- **Author**: Claude (autonomous draft, awaiting PM ratify)
-- **Scope**: Establishes the canonical V4 conversion pattern for the **30
-  `admin_*` SECDEF functions** that currently use a V3 OR-chain gate
-  with explicit `auth.role() = 'service_role'` bypass for cron/EF
-  callers. Closes the "29 service-role-bypass adapter pattern" backlog
-  item from `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md`.
+- **Status**: Accepted (ratified 2026-04-26 via Opção A council-validated)
+- **Date**: 2026-04-26 (drafted p63 extended; ratified p64 via council
+  multi-agent review — security-engineer + data-architect +
+  senior-software-engineer + platform-guardian)
+- **Author**: Claude (autonomous draft) + PM (Vitor) ratify
+- **Relationship to ADR-0011**: This ADR formalizes the second class of
+  exception to the strict V4 `can_by_member`-at-top contract (after
+  ADR-0011 Amendment A fast-path stakeholder fan-out). Conceptually
+  equivalent to "ADR-0011 Amendment C" but kept as standalone ADR-0028
+  for discoverability of the dual-tier surface. ADR-0011 carries a
+  back-reference stub.
+- **Scope**: Establishes the canonical V4 conversion pattern for the
+  **30 `admin_*` SECDEF functions** (Batch 1) plus **7 extended-
+  designation SECDEF functions** (Batch 2) that currently use a V3
+  OR-chain gate with explicit `auth.role() = 'service_role'` bypass
+  for cron/EF callers. Closes the "29 service-role-bypass adapter
+  pattern" backlog item from
+  `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md`.
+
+## Framing (post-council reframe)
+
+The adapter pattern is **not** a hole in the V4 `can_by_member`
+authority contract. It is an explicit recognition of the
+**machine-caller class boundary**: cron jobs and Edge Functions
+authenticate at the infrastructure layer (Supabase service_role JWT,
+not user-tier auth.uid). For these callers, `auth.uid()` is NULL by
+design, and the V4 gate has no member-id input to evaluate. The
+adapter short-circuits to the pre-authenticated service-role trust
+boundary — an established Supabase primitive used by the platform's
+own system functions and RLS policy exemptions.
+
+The V4 contract remains: **the user-tier gate IS `can_by_member`**.
+The adapter ELSE branch enforces it with no exception. The IF branch
+recognizes a different caller class entirely, with its own
+infrastructure-level auth chain.
+
+What would muddy the V4 model is using the adapter for human callers
+who lack `manage_platform`. That risk is contained by:
+1. The 4-layer enforcement defense (allowlist + size guard +
+   stale-check + COMMENT sentinel + invariant G) detailed in §"Q3
+   resolution" below.
+2. The explicit ADR rule: service_role bypass is only valid for
+   cron/EF callers verified at infrastructure level — never as a
+   convenience escape hatch for human-caller permission failures.
 
 ## Context
 
@@ -40,19 +76,54 @@ IF v_caller IS NULL OR NOT (
 END IF;
 ```
 
-### Domain breakdown of 30 fns
+### Domain breakdown — confirmed by 2026-04-26 DB audit
 
-| Domain | Count | Examples |
+**Total surface: 37 fns (30 Batch 1 clean + 7 Batch 2 extended).**
+Original ADR draft estimated 30 (27 + 3); p64 prematch query of
+`pg_proc` surfaced 6 additional `exec_*` fns also using the
+service_role pattern that were missed in the original audit. All 6
+share the extended-designation gate shape (chapter_liaison + sponsor
+± curator).
+
+#### Batch 1 — 30 clean `admin_*` fns (gate = manager/dmr/co_gp only)
+
+| Domain | Count | Functions |
 |---|---|---|
-| Ingestion lock + run lifecycle | 7 | admin_acquire/release_ingestion_apply_lock, admin_register/complete_ingestion_run, admin_check_ingestion_source_timeout |
-| Ingestion provenance + alerts | 6 | admin_sign_ingestion_file_provenance, admin_verify_ingestion_provenance_batch, admin_raise_provenance_anomaly_alert, admin_update/run_ingestion_alert_remediation, admin_set_ingestion_alert_remediation_rule |
-| Rollback management | 5 | admin_plan/approve/execute/simulate_ingestion_rollback, admin_append_rollback_audit_event |
+| Ingestion lock + run lifecycle | 5 | admin_acquire_ingestion_apply_lock, admin_release_ingestion_apply_lock, admin_register_ingestion_run, admin_complete_ingestion_run, admin_check_ingestion_source_timeout |
+| Ingestion provenance + alerts | 6 | admin_sign_ingestion_file_provenance, admin_verify_ingestion_provenance_batch, admin_raise_provenance_anomaly_alert, admin_update_ingestion_alert_status, admin_run_ingestion_alert_remediation, admin_set_ingestion_alert_remediation_rule |
+| Rollback management | 5 | admin_plan_ingestion_rollback, admin_approve_ingestion_rollback, admin_execute_ingestion_rollback, admin_simulate_ingestion_rollback, admin_append_rollback_audit_event |
 | Release readiness | 5 | admin_record_release_readiness_decision, admin_release_readiness_gate, admin_set_release_readiness_policy, admin_check_readiness_slo_breach, admin_run_dry_rehearsal_chain |
-| Data quality + snapshots | 4 | admin_capture_data_quality_snapshot, admin_data_quality_audit, admin_capture_governance_bundle_snapshot, admin_run_post_ingestion_chain |
-| Misc | 3 | admin_get_ingestion_source_policy, admin_set_ingestion_source_sla, admin_run_post_ingestion_healthcheck, admin_resolve_remediation_action, admin_run_ingestion_alert_remediation, admin_suggest_notion_board_mappings |
+| Data quality + snapshots | 3 | admin_capture_data_quality_snapshot, admin_capture_governance_bundle_snapshot, admin_run_post_ingestion_chain |
+| Misc | 6 | admin_get_ingestion_source_policy, admin_set_ingestion_source_sla, admin_run_post_ingestion_healthcheck, admin_resolve_remediation_action, admin_suggest_notion_board_mappings, (note: admin_data_quality_audit moved to Batch 2 — extended) |
 
-All under `manage_platform` semantic domain (platform infrastructure +
-governance ops).
+#### Batch 2 — 7 extended-designation fns (gate widens beyond manage_platform set)
+
+| Function | Extension | Domain |
+|---|---|---|
+| admin_data_quality_audit | + chapter_liaison + sponsor | Internal audit access |
+| exec_governance_export_bundle | + chapter_liaison + sponsor + curator | Governance export |
+| exec_partner_governance_summary | + chapter_liaison + sponsor + curator | Partner governance |
+| exec_partner_governance_scorecards | + chapter_liaison + sponsor + curator | Partner governance |
+| exec_partner_governance_trends | + chapter_liaison + sponsor + curator | Partner governance |
+| exec_readiness_slo_by_source | + chapter_liaison + sponsor | SLO drill-down |
+| exec_readiness_slo_dashboard | + chapter_liaison + sponsor | SLO dashboard |
+| exec_remediation_effectiveness | + chapter_liaison only | Remediation analytics |
+
+**Three extension shapes** require ADR-0029 design:
+- **Shape A** (chapter_liaison + sponsor): admin_data_quality_audit,
+  exec_readiness_slo_by_source, exec_readiness_slo_dashboard
+- **Shape B** (+ curator): exec_governance_export_bundle, exec_partner_governance_*  (×3)
+- **Shape C** (chapter_liaison only): exec_remediation_effectiveness
+
+Likely consolidation: a new action `audit_access` granted to
+`{chapter_liaison, sponsor, curator}` covers shapes A + B; shape C
+narrows to `chapter_liaison` only via designation re-check after
+adapter gate. ADR-0029 to formalize.
+
+All 30 Batch 1 fns are under `manage_platform` semantic domain
+(platform infrastructure + governance ops). Batch 2 is the
+audit/governance-export delegation surface that requires its own
+action taxonomy.
 
 ### Tensions
 
@@ -139,19 +210,23 @@ If `lose` non-null → conversion CONTRACTS privileges → DEFER to
 per-domain ADR (e.g., `audit_access` action for chapter_liaison +
 sponsor data quality readers).
 
-### Conversion batches
+### Conversion batches (post p64 audit)
 
-Batch 1 — clean conversions (zero privilege change, broad V3):
-- 27 fns where V3 = `superadmin OR mgr/dmr OR co_gp` exactly
-- Convert to V4 manage_platform with adapter pattern
-- Single migration
+**Batch 1 — 30 clean fns** (zero privilege change, broad V3 = manager
++ deputy_manager + co_gp exactly equals V4 manage_platform set):
+- Convert to V4 `manage_platform` with adapter pattern
+- Single migration (`pacote_m_*`)
+- COMMENT sentinel `'ADR-0028 service-role-bypass adapter (Pacote M)'`
+- Allowlist entry per fn in `V4_SERVICE_ROLE_ADAPTER_ALLOWLIST`
 
-Batch 2 — extended-designations conversions (per-fn ADR):
-- 3 fns with extra designations:
-  - `admin_data_quality_audit` (+ chapter_liaison + sponsor) — needs
-    `audit_access` action OR keep V3 (low risk)
-  - Others TBD by per-fn audit
-- Per-fn ADR ratify before convert
+**Batch 2 — 7 extended-designation fns** (V3 ⊋ V4 manage_platform):
+- Requires ADR-0029 to formalize new action `audit_access` (or
+  scope-refined alternative) granted to `{chapter_liaison, sponsor,
+  curator}` per the three extension shapes.
+- 1 migration after ADR-0029 ratify.
+- **Hard deadline: ADR-0029 ratified and Batch 2 migration applied
+  before next non-Pacote-M autonomous track resumes** (no open-ended
+  defer — closes the V3 visibility gap).
 
 ### Migration template (Batch 1)
 
@@ -191,15 +266,17 @@ COMMENT ON FUNCTION public.admin_X(<args>) IS
 
 ### Positivas
 
-- **Closes 27 of 30 fns Phase B'' modernization** in single migration
+- **Closes 30 of 37 fns Phase B'' modernization** in single migration
   (Batch 1) — biggest single-batch progress
 - **Pattern reusable** for any future fn with cron/EF + user-facing
   dual access (e.g., future analytics jobs, future bulk operations)
 - **Preserves all cron/EF compatibility** — service_role unchanged
   behavior, no risk to scheduled ingestion runs
-- **Documents the dual-tier gate** explicitly per-fn in COMMENT, so
-  future readers understand "this is callable both ways"
-- **Phase B'' tally bump**: 56/246 (22.8%) → ~83/246 (33.7%) post Batch 1
+- **Documents the dual-tier gate** explicitly per-fn in COMMENT
+  (sentinel `'ADR-0028'`), so future readers understand "this is
+  callable both ways" and the contract test can enforce registration
+- **Phase B'' tally bump**: 61/246 (24.8%) → 91/246 (37.0%) post
+  Batch 1; further to 98/246 (39.8%) post Batch 2 (ADR-0029)
 
 ### Negativas / Custos
 
@@ -230,65 +307,208 @@ COMMENT ON FUNCTION public.admin_X(<args>) IS
   from "user-initiated".
 - **Pattern creep**: future fns that don't actually need bypass might
   copy-paste the pattern, granting unauthenticated access via
-  service_role accident. Mitigation: only add adapter where actually
-  needed; default new fns to strict V4 pattern (Pacotes E-I).
+  service_role accident. Mitigation: 4-layer defense in §"Q3 resolution"
+  below — allowlist + size guard + COMMENT sentinel + invariant G —
+  with the contract test rejecting any fn using the bypass without
+  explicit allowlist registration.
+
+### Future contraction path (manage_platform reuse caveat)
+
+Reusing `manage_platform` for all 30 Batch 1 fns is the right call
+today (zero-overhead privilege diff vs current V3 set; no schema
+fragmentation). However, if a future PM decision introduces a narrower
+"ingestion operator" persona who must access ingestion-lifecycle fns
+WITHOUT having full `manage_platform` authority (e.g., delegated DevOps
+role with no member-management or governance authority), the path is:
+
+1. Create new action `manage_ingestion` in `engagement_kind_permissions`.
+2. Seed the new action for the existing manage_platform set (compatibility).
+3. Migrate all 30 fns in single migration to call
+   `can_by_member(v_caller_id, 'manage_ingestion')` instead.
+4. Add the new persona kind/role row to seed for `manage_ingestion` only
+   (NOT `manage_platform`).
+
+This requires a single consolidated migration, not piecemeal — the
+30-fn surface is mechanically rewritable. Document the contraction
+trigger explicitly so future PMs do not waste cycles re-litigating
+"should we have named it manage_ingestion from the start" — answer:
+no, premature taxonomy adds maintenance with no benefit until the
+narrower persona materializes.
 
 ## Implementation phases (post-ratify)
 
-### Phase 1 — per-fn privilege expansion audit (~2h)
+### Phase 1 — per-fn privilege expansion audit + actor_id NULL strategy (~2h)
 
-Run the SQL check against all 30 fns. Group:
-- **Clean (Batch 1)**: V3 broad set = V4 manage_platform set
-- **Extended designations (Batch 2)**: V3 ⊋ V4 → per-fn decision
+Run the V3-set vs V4-set SQL check against all 37 fns. For each fn:
+1. Confirm classification (Batch 1 clean vs Batch 2 extended).
+2. Read body and identify every `INSERT`/`UPDATE` statement that
+   references caller identity (`v_caller.id`, `v_caller_id`,
+   `actor_id`, etc.).
+3. Decide per-statement: `COALESCE(v_caller_id, NULL::uuid)` (when
+   target column is nullable) OR skip-attribution-when-service-role
+   pattern (when target column is NOT NULL or has FK to
+   `members(id)`).
+4. Document strategy per fn in audit output.
 
-Output: docs/audit/ADR-0028-prematch-audit.md
+Output: `docs/audit/ADR-0028-prematch-audit.md` with per-fn table:
+classification, V3 set, V4 set, gain/lose, actor_id strategy.
 
-### Phase 2 — Batch 1 migration (~3-4h)
+**PM checkpoint after Phase 1 before Phase 2 migration applies.**
 
-Single migration converting 27 (or so) clean fns. Apply via
+### Phase 2 — Batch 1 migration (~3-4h, 30 clean fns)
+
+Single migration `pacote_m_adr0028_service_role_adapter_batch1.sql`
+converting 30 clean fns to adapter pattern. Apply via
 `apply_migration` MCP, repair migration history, smoke test contract
-tests, commit.
+tests, commit. Includes:
+- Per-fn body preservation per Phase 1 strategy.
+- COMMENT sentinel `'ADR-0028 service-role-bypass adapter (Pacote M, p64)'`.
+- REVOKE EXECUTE FROM PUBLIC, anon (preserve current security
+  baseline).
 
-### Phase 3 — Batch 2 per-fn ADRs + conversions (~per fn)
+### Phase 3 — Batch 2 per-fn ADR (ADR-0029) + Pacote O conversion (~per fn, hard deadline)
 
-For each extended-designations fn: write ADR (e.g., ADR-0029
-`audit_access` action), implement, test.
+ADR-0029 formalizes new action `audit_access` granted to
+`{chapter_liaison, sponsor, curator}` for the 7 Batch 2 fns. Single
+migration `pacote_o_adr0029_audit_access_batch2.sql` after PM ratify.
+**Hard deadline: ratify + apply before any non-Pacote-M autonomous
+track resumes** (no open-ended defer).
 
-### Phase 4 — contract test enhancement
+### Phase 4 — contract test enhancement (4-layer defense, same Pacote M session)
 
-Update `rpc-v4-auth.test.mjs` (or add new contract) to recognize
-adapter pattern as valid V4 alongside strict `can_by_member` top-level
-gate.
+Update `tests/contracts/rpc-v4-auth.test.mjs` per Q3 resolution
+4-layer defense (allowlist + size guard + stale-check + COMMENT
+sentinel). Add invariant G to `check_schema_invariants()`. Both must
+ship in same commit as Pacote M migration to maintain test
+ratchet.
 
 ## Cross-references
 
-- ADR-0011 (V4 authority) — base contract that this extends
-- ADR-0012 (schema consolidation) — related but distinct scope
+- ADR-0011 (V4 authority) — base contract that this extends.
+  ADR-0011 carries a back-reference stub pointing to ADR-0028 in its
+  Amendments-equivalent section.
+- ADR-0012 (schema consolidation) — invariant G new in
+  `check_schema_invariants()` follows ADR-0012 invariant-as-test
+  pattern.
 - ADR-0025 (manage_finance) + ADR-0026 (manage_comms) + ADR-0027
-  (governance readers Opção B) — prior Phase B'' patterns
-- `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` — surface inventory
-- Pacote D-I commits (p59-p63) — easy-convert pattern that this complements
-- p64 carry — depends on this ADR being Accepted before Pacote M
+  (governance readers Opção B) — prior Phase B'' patterns.
+- ADR-0029 (audit_access — to be drafted) — formalizes Batch 2
+  extended-designation surface (7 fns).
+- `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` — surface inventory.
+- `docs/audit/ADR-0028-prematch-audit.md` — Phase 1 per-fn audit
+  output (produced same Pacote M session).
+- Pacote D-I commits (p59-p63) — easy-convert pattern that this complements.
+- p64 carry — Pacote M execution gated by this ADR Accepted status.
 
-## Open questions for PM
+## Resolved questions (PM ratify 2026-04-26 via Opção A council-validated)
 
-1. **Action name**: `manage_platform` reuse OK, or new action like
-   `manage_ingestion`? Current proposal: reuse `manage_platform` since
-   all 30 fns are platform admin ops.
-2. **Extended-designations**: how to treat `chapter_liaison` + `sponsor`
-   in `admin_data_quality_audit`? New `audit_access` action OR keep V3?
-   Current proposal: defer to per-fn ADR (Batch 2).
-3. **Pattern accept criteria**: should `rpc-v4-auth.test.mjs` recognize
-   adapter as valid V4? Current proposal: yes, with explicit allowlist
-   (only 30 ADR-0028 fns, not blanket).
-4. **Implementation timing**: do Batch 1 in next session OR batch with
-   another track? Current proposal: standalone session (Pacote M, ~4h
-   focused work).
+Decisions resolved unanimously by 4-agent council review
+(security-engineer + data-architect + senior-software-engineer +
+platform-guardian) and ratified by PM:
+
+### Q1 resolution — Action name: REUSE `manage_platform`
+
+The `engagement_kind_permissions` seed already grants `manage_platform`
+to `volunteer × {manager, deputy_manager, co_gp}` — this is the exact
+V3 broad set the 30 Batch 1 fns gate against today. Privilege diff =
+zero. A new `manage_ingestion` action would require a new seed row, a
+new gate call site, and an amendment to ADR-0011 actions table — paid
+in perpetuity for zero behavioral difference. See "Future contraction
+path" in Consequences for the migration recipe if a narrower ingestion
+operator persona ever materializes.
+
+### Q2 resolution — Extended designations: per-fn ADR (Batch 2) with HARD DEADLINE
+
+`chapter_liaison` and `sponsor` have zero rows in
+`engagement_kind_permissions` for any write/admin action today. Folding
+them into `manage_platform` would be a silent privilege expansion (all
+27→30 Batch 1 fns would inherit those designations together) — vetoed.
+Keeping V3 indefinitely makes the fns invisible to `rpc-v4-auth`
+contract test, repeating the 92-orphan pattern from Track Q (p50) —
+vetoed.
+
+Resolution: ADR-0029 to formalize new action `audit_access` (or
+scope-refined alternative) for the 7 Batch 2 fns. **Hard deadline:
+ADR-0029 must be ratified and Batch 2 migration applied before any
+non-Pacote-M autonomous track resumes** — no open-ended defer.
+
+### Q3 resolution — 4-layer pattern enforcement defense
+
+The contract test must enforce the bypass class boundary. PM ratified
+the council's full 4-layer defense (each layer catches a different
+failure mode at low marginal cost):
+
+1. **Named allowlist constant** in `tests/contracts/rpc-v4-auth.test.mjs`:
+   ```javascript
+   const V4_SERVICE_ROLE_ADAPTER_ALLOWLIST = new Set([
+     'public.admin_acquire_ingestion_apply_lock',
+     'public.admin_release_ingestion_apply_lock',
+     // ... all 30 Batch 1 fns by full name
+   ]);
+   ```
+   Test extends `usesV4Can()` to return true when body contains both
+   `auth.role() = 'service_role'` and `can_by_member` AND the function
+   name is in the allowlist. Non-allowlisted fns using the bypass fail
+   the test.
+
+2. **Size guard** (hard upper bound):
+   ```javascript
+   assert.ok(
+     V4_SERVICE_ROLE_ADAPTER_ALLOWLIST.size <= 30,
+     'ADR-0028 adapter allowlist exceeds the documented Batch 1 bound (30 fns). New entries require ADR-0028 amendment + PM ratify.'
+   );
+   ```
+   (Batch 2 will bump this to 37 after ADR-0029.)
+
+3. **Stale-entry cross-check**: assert every name in the allowlist
+   actually appears in a migration file's `CREATE OR REPLACE FUNCTION`
+   block. Stale entries (allowlist references a deleted fn) fail fast.
+
+4. **COMMENT sentinel** in every adapter-pattern fn body:
+   ```sql
+   COMMENT ON FUNCTION public.admin_X(<args>) IS
+     'ADR-0028 service-role-bypass adapter (Pacote M, p64): manage_platform
+      gate via can_by_member with service_role bypass for cron/EF callers.';
+   ```
+   Auditable via `grep` over `pg_proc.obj_description`. The contract
+   test cross-checks: every fn with `auth.role() = 'service_role'` in
+   body must have `'ADR-0028'` in COMMENT, OR be flagged.
+
+5. **Invariant G in `check_schema_invariants()`** (new structural
+   invariant — bumps total to 12):
+   ```sql
+   -- G_service_role_adapter_count_within_bound
+   -- Counts SECDEF fns with service_role bypass that are NOT in the
+   -- documented ADR-0028 allowlist. Catches drift in production live,
+   -- not just at test time.
+   SELECT count(*) FROM pg_proc p
+     JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.prosecdef = true
+     AND pg_get_functiondef(p.oid) ILIKE '%auth.role() = ''service_role''%'
+     AND p.proname NOT IN ( /* allowlist names */ );
+   ```
+   Fires (violation_count > 0) if any future fn outside the allowlist
+   adopts the pattern. This is the only mechanical guard that survives
+   sessions where the developer never reads ADR-0028.
+
+### Q4 resolution — Standalone Pacote M session (audit + execution same session, with PM checkpoint)
+
+Standalone session (~6h total: ~2h Phase 1 audit + ~3-4h Phase 2
+migration). Phase 1 produces `docs/audit/ADR-0028-prematch-audit.md`
+with per-fn classification + `actor_id` NULL handling strategy. PM
+checkpoint after Phase 1 before Phase 2 migration applies. Single
+focused session avoids cognitive context-switch + maintains atomic
+rollback granularity for the 30-fn batch.
 
 ## Pending
 
-- [ ] PM ratify ADR (move from Proposed → Accepted)
-- [ ] Batch 1 audit (27 fns clean classification)
-- [ ] Batch 1 migration + tests + commit (Pacote M)
-- [ ] Batch 2 per-fn ADRs (Pacote N+ as needed)
-- [ ] Contract test enhancement
+- [x] PM ratify ADR (Proposed → Accepted, 2026-04-26 via Opção A
+      council-validated)
+- [ ] Phase 1 prematch audit (`docs/audit/ADR-0028-prematch-audit.md`):
+      30 clean + 7 extended classification + actor_id NULL strategy per fn
+- [ ] **PM checkpoint**: review Phase 1 audit before Phase 2 applies
+- [ ] Phase 2 Batch 1 migration + tests + commit (Pacote M)
+- [ ] Phase 4 contract test enhancement (4-layer defense)
+- [ ] ADR-0029 draft + PM ratify (audit_access action for Batch 2)
+- [ ] Batch 2 migration (Pacote O, post ADR-0029)
+- [ ] ADR-0011 cross-reference back-stub added (back-link to ADR-0028)
