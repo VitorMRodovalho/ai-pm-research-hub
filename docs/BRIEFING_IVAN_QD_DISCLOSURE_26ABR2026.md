@@ -359,9 +359,10 @@ informativo, não solicita ação.
 |---|---|---|
 | Q-D 8/8 buckets fechadas | ✅ DONE p59 | PM (autonomous) |
 | Track R 152 REVOKEs cumulativos + Phase R3 COMMENT inline docs | ✅ DONE p59 | PM (autonomous) |
-| **Phase B'' V4 actions** — 8/11 fns convertidas (ADRs 0025/0026/0027 Accepted) | ✅ DONE p59 | PM ratify + autonomous impl |
+| **Phase B'' V4 actions** — 8/11 Q-D-surfaced fns convertidas (ADRs 0025/0026/0027 Accepted) | ✅ DONE p59 | PM ratify + autonomous impl |
 | Q-D batch 3a.2 (3 PM-deferred fns) | ⏳ Aguarda tier-input PM | PM input needed |
-| Phase B'' V4 actions remaining (3 edge cases) | 🔜 Investigar p60+ | PM (autonomous) |
+| Phase B'' V4 actions remaining (3 Q-D edge cases) | 🔜 Investigar p60+ | PM (autonomous) |
+| Phase B'' V3→V4 platform modernization (~225 outras fns ainda V3) | 📋 Documentado, não-urgente (não são security holes) | ongoing track multi-sessão |
 | LGPD ROPA mapping doc (25 surfaces) | ✅ DONE p59 | PM (autonomous) |
 | Q-D detection regex strengthening + contract test | ✅ DONE p59 | PM (autonomous) |
 | Sponsor touchpoint formal (esta conversa) | 📅 **Segunda-feira (call agendada)** | Ivan + Vitor |

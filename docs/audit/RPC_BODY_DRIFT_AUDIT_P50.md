@@ -576,14 +576,46 @@ Functions whose legacy gate doesn't map cleanly to existing V4 actions:
   correction (observers don't use governance UI in practice).
 
 **Phase B'' running tally post-p59**:
-- Total V3-gated fns documented: 11
-- Closed via ADRs 0025+0026+0027: 8 fns
-- Remaining 3: TBD (likely edge cases — investigate p60+)
-- New V4 actions added: 2 (`manage_finance`, `manage_comms`)
-- Existing V4 actions reused: 1 (`manage_platform` for governance readers)
-- Members impacted (gained): 5 sponsors (manage_finance)
-- Members impacted (drift correction): 2 (Mayanna comms, observers
-  governance) — accepted per PM ratify
+- **Q-D-surfaced V3 fns subset**: 11 documented during Q-D triage as
+  out-of-scope V3 (the "obvious" candidates surfaced during batch
+  3a.5/3a.6/3a.7 + earlier B' work).
+  - **8/11 closed** via ADRs 0025+0026+0027 (this session).
+  - **3 remaining** edge cases TBD (likely partner subsystem +
+    `get_application_score_breakdown` per audit doc Open Phase B''
+    section).
+- **Total platform V3 surface (DISCOVERED p59 cleanup)**: **246
+  SECDEF fns** matching `is_superadmin|operational_role` regex
+  (excluding triggers, extensions, internal helpers).
+  - 81 are `admin_*` shape (admin operations)
+  - 3 are `_*` internal helpers
+  - 162 other (member-tier writers, mixed)
+- **Phase B' (p52-p54) closed**: 13 V3→V4 conversions of "clean case"
+  fns (no new action needed)
+- **Cumulative V3→V4 conversion rate**: ~21 of 246 (~9%)
+- **New V4 actions added p59**: 2 (`manage_finance`, `manage_comms`)
+- **Existing V4 actions reused**: 1 (`manage_platform` for governance
+  readers per ADR-0027 Opção B)
+
+**Reframe (important)**: most of the 246 remaining V3 fns are NOT
+security holes — they have V3 gates that work correctly (admin-shape
+narrow). They simply don't follow V4 engagement-derived authority
+pattern. Phase B'' is therefore a **platform V3→V4 modernization
+track**, not a security incident response. Closing it improves
+auditability (explicit kind/role/action mapping) and consistency
+but isn't urgent.
+
+**Sponsor briefing impact**: when reporting to Ivan, distinguish:
+- ✅ Phase Q-D security sweep: 100% closed (8/8 buckets)
+- ✅ Track R schema exposure: 85% closed (152 REVOKEs)
+- 🟡 Phase B'' V3→V4 modernization: 9% closed (21/246) — ongoing track,
+  not security-critical
+
+Members impacted by p59 ADR conversions:
+- **Gained access**: 5 sponsors via manage_finance (intentional Q1)
+- **Drift correction**: Mayanna Duarte lost comms access (V3 designation
+  never used in audit log — confirmed pure drift, no engagement needed)
+- **Drift correction**: V3 observers lost governance reader access (not
+  actually used by observers per usage analysis)
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
