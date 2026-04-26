@@ -1480,34 +1480,107 @@ design vs accidental over-grant). Examples include `members`,
 - After:  1 ERROR + **75 WARN**  (-96 / -56% reduction)
 - pg_graphql_anon_table_exposed: 165 → 70 (-95 / -58%)
 
-### Phase R2 — backlog (next session)
+### Batch 2 closure (p59, `20260426155255`) — Phase R2 per-policy review
 
-70 tables retain anon SELECT grant via RLS policy. Per-table review
-needed to:
-1. Verify the RLS policy is correctly scoped (no PII leak).
-2. For tables intended public-by-design: document intent inline (e.g.,
-   `COMMENT ON TABLE public.cycles IS 'Public reference data — anon
-   SELECT intentional via cycles_public_select policy'`).
-3. For tables with overly permissive policies: tighten the policy
-   (e.g., column-level filter, row-level filter on `is_public=true`).
-4. Cross-reference with anon-tier .from() callers in src/components/
-   sections/ + public Astro pages to confirm necessity.
+Migration: `track_r_pg_graphql_anon_revoke_batch2.sql`. 50 REVOKEs
+applied to tables that retained anon SELECT after batch 1 (because
+their RLS policies could permit anon reads). Per-policy classification:
 
-Examples needing Phase R2 review:
-- `members` (anon RLS likely scopes to public-safe columns; verify)
-- `attendance`, `gamification_points` (member-tier — should not be
-  anon-readable; tighten or REVOKE)
-- `board_items`, `board_lifecycle_events` (member-tier; anon policy
-  surprising — investigate)
-- `blog_posts`, `blog_likes`, `cycles`, `chapters` (likely public-
-  by-design — document)
-- 21 z_archive.* tables with anon policies (likely no longer needed —
-  REVOKE-safe in Phase R2)
+**A. RLS USING `false` (rpc_only_deny_all) — 14 tables**:
+RLS denies all anon reads regardless of grant. REVOKE-safe (defense-
+in-depth, no behavior change).
+- blog_likes, board_members, board_source_tribe_map,
+  board_taxonomy_alerts, campaign_recipients,
+  knowledge_insights_ingestion_log, onboarding_progress,
+  partner_attachments, selection_applications, selection_committee,
+  selection_cycles, selection_diversity_snapshots, selection_evaluations,
+  selection_interviews
 
-### Track R closure path
+**B. RLS USING `auth.uid() = ...` (member-scoped) — 7 tables**:
+anon's `auth.uid()` is NULL → policy fails → 0 rows.
+- analysis_results, comparison_results, evm_analyses, risk_simulations,
+  tia_analyses, user_profiles, campaign_sends
 
-After Phase R2 closes the remaining 70 (or documents why they keep
-grant), the `pg_graphql_anon_table_exposed` advisor count should
-drop to ≤ N (where N = intentional public tables documented per
-ADR-0024 pattern). Estimated final count: ~10-15 tables (homepage
-data sources + public reference data + ADR-0024 view).
+**C. RLS USING `rls_is_member()` or `auth.role() = 'authenticated'` — 2**:
+- publication_series, tribe_deliverables
+
+**D. V4 `org_id = auth_org() OR org_id IS NULL` — 21 tables**:
+anon's `auth_org()` returns NULL after batch 3b REVOKE on `auth_org()`
+→ policy denies (only org_id IS NULL rows would be visible, but no such
+data exists in production for these tables). Cross-referenced with
+`.from()` callers: only member/admin-tier flows; queries always use
+`MEMBER.id` filter or admin context.
+- annual_kpi_targets, attendance, board_items, board_lifecycle_events,
+  board_sla_config, certificates, change_requests, chapters,
+  comms_channel_config, curation_review_log, event_showcases,
+  member_activity_sessions, member_cycle_history, members,
+  meeting_artifacts, partner_entities, pilots, project_boards,
+  project_memberships, publication_submissions, volunteer_applications
+- + visitor_leads (REVOKE SELECT only — `Anyone can submit lead` INSERT
+  policy preserved for ImpactPageIsland contact form)
+
+**E. z_archive.* legacy — 4 tables**: archived, 0 callers.
+- member_chapter_affiliations, portfolio_data_sanity_runs,
+  publication_submission_events, presentations
+
+**F. View — 1**: impact_hours_total (member-tier attendance.astro caller).
+
+**Total**: 50 REVOKEs.
+
+**PRESERVED — 20 intentional public objects** (pg_graphql exposure
+by design):
+
+Homepage / anon-tier .from() callers (8):
+- announcements (AnnouncementBanner on all pages)
+- blog_posts (blog public pages)
+- events (HeroSection, HomepageHero)
+- home_schedule (lib/schedule.ts)
+- hub_resources (ResourcesSection, library)
+- site_config (ChaptersSection, WeeklyScheduleSection, ReportPage)
+- tribe_meeting_slots (homepage)
+- tribes (TribesSection, HeroSection, HomepageHero)
+
+Public reference data with explicit `USING true` policies (8):
+- courses, cycles, help_journeys, ia_pilots,
+  offboard_reason_categories, quadrants, release_items, releases
+
+Public KPI / publication / certification (4):
+- portfolio_kpi_quarterly_targets, portfolio_kpi_targets,
+  public_publications, webinars
+
+Intentional public views per ADR-0024 (2):
+- public_members (advisor ERROR — accepted risk)
+- members_public_safe
+
+Plus gamification leaderboard data (anon-readable per
+`gamification.astro` public leaderboard flow):
+- gamification_points
+- tribe_selections
+
+### Track R final state (p59 close)
+
+**Cumulative advisor reduction**:
+- Pre-Track R: 1 ERROR + 171 WARN
+- After batch 1: 1 ERROR + 75 WARN  (-56%)
+- After batch 2: 1 ERROR + **25 WARN**  (-85% cumulative from 171)
+- `pg_graphql_anon_table_exposed`: 165 → 70 → **20** (-88%)
+
+The 20 remaining `pg_graphql_anon_table_exposed` lints are all
+**intentional public exposures** documented above. They represent
+either homepage data sources, public-by-design reference data,
+public KPI dashboards, or ADR-0024 accepted risk views. No further
+REVOKE work needed — these tables/views are correctly anon-readable
+and the lint is informational rather than actionable.
+
+**Phase R3 (optional, not urgent)**: per-table `COMMENT ON TABLE`
+documentation to inline-justify each preserved anon grant per
+ADR-0024 pattern. This would suppress the lint output for
+`get_advisors` reviews. Effort: ~1h. Not blocking.
+
+### Track R closure path — COMPLETE p59
+
+Track R formally closes at p59 with 152 REVOKEs across 2 batches
+(102 + 50). All non-intentional anon table exposures eliminated.
+Remaining 20 `pg_graphql_anon_table_exposed` lints reflect
+intentional public surface that the platform legitimately exposes
+(homepage data + public reference + ADR-0024 views).
