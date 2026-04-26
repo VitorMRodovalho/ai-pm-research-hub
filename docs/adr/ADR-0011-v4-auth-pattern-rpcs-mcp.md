@@ -248,3 +248,40 @@ Esta amendment é considerada a "varredura final" do drift V3→V4 em RPCs pós-
 - `npm test`: 1361/1/23 → **1360/0/23** (net -1 test count: 6 V3 contract tests substituídos por 5 V4 equivalents; 1 pre-existing `events.tribe_id` fail consertado para usar `i.legacy_tribe_id` post-ADR-0015 phase 3e)
 - `tests/contracts/rpc-v4-auth.test.mjs`: 0 violations
 - Invariants 11/11 = 0 violations
+
+---
+
+## Cross-reference — ADR-0028 service-role-bypass adapter (2026-04-26)
+
+A segunda classe formal de exceção ao padrão canônico
+`can_by_member`-at-top (após Amendment A fast-path stakeholder fan-out)
+é o **service-role-bypass adapter** documentado em
+`ADR-0028-service-role-bypass-adapter-pattern.md`. Conceitualmente
+equivalente a uma "Amendment C" desta ADR-0011, mas mantida como ADR
+standalone para discoverability do surface dual-tier (cron/EF +
+user-tier).
+
+**Padrão**:
+```sql
+IF auth.role() = 'service_role' THEN
+  NULL;  -- machine-caller class boundary, infrastructure-auth chain
+ELSE
+  -- V4 contract preserved on user-tier branch
+  IF NOT public.can_by_member(v_caller_id, '<action>') THEN
+    RAISE EXCEPTION 'permission_denied: <action> required';
+  END IF;
+END IF;
+```
+
+**Surface coberto**: 37 fns (30 Batch 1 clean → `manage_platform`; 7
+Batch 2 extended → ADR-0029 `audit_access` action).
+
+**Enforcement**: ADR-0028 §"Q3 resolution" especifica defesa em 4
+camadas (allowlist nomeada + size guard + stale-entry cross-check +
+COMMENT sentinel + invariant G novo em `check_schema_invariants()`)
+para impedir pattern creep além do surface documentado.
+
+**Critério de aplicabilidade**: o adapter é válido APENAS para fns
+chamáveis tanto por cron/EFs (autenticadas no nível de infraestrutura
+via service_role JWT) QUANTO por usuários admin via UI. NUNCA usar como
+escape hatch de conveniência para falhas de gate user-tier.
