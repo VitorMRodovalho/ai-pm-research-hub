@@ -859,8 +859,10 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - **Phase B'' p66 ADR-0026 extension: 2 fns (admin_get_campaign_stats, admin_preview_campaign — manage_comms reuse)**
 - **Phase B'' p66 ADR-0030 view_internal_analytics: 2 fns + 1 helper (exec_chapter_dashboard, exec_role_transitions, can_read_internal_analytics — new V4 action)**
 - **Phase B'' p66 ADR-0031 admin_list_members: 1 fn (Opção B reuse view_internal_analytics, +Roberto chapter_board×liaison gain)**
-- **Cumulative: 62 of 246 fns (~25.2%)** — up from p63 56/246 (22.8%)
-- **New V4 actions cumulative**: 4 (manage_finance, manage_comms, view_internal_analytics + Opção B reuse via manage_platform for governance readers + Opção B reuse via view_internal_analytics for member directory)
+- **Phase B'' p66 ADR-0032 board admin: 4 fns (3 writers via new manage_board_admin resource-scoped + 1 reader via Opção B reuse view_internal_analytics, Path A drift Sarah/Mayanna)**
+- **Cumulative: 66 of 246 fns (~26.8%)** — up from p63 56/246 (22.8%)
+- **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 2 Opção B reuses for governance readers + member directory + archived board listing)
+- **First p66 use of resource-scoped `can_by_member(_, action, 'initiative', id)`** — precedent established para ADRs futuras com per-resource gates (pattern já existia em V4 core mas pouco usado em Phase B'' até este ponto).
 - Easy-convert backlog (true zero-expansion clean cases for any
   prefix): **0 known after Pacote I** — exhaustive 90-fn surface audit
   exhausted clean candidates with admin-broad gate.
