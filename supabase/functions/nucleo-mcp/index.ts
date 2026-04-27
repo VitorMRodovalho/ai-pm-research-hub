@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.30.0 — 157 tools (101R + 56W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.31.0 — 158 tools (101R + 57W) + 1 prompt + 1 resource + usage logging
+// v2.31.0: +1 self-management tool wrapping ADR-0050 — set_my_gamification_visibility
+//   (member-managed leaderboard visibility, LGPD-compliant opt-out). Plus
+//   get_gamification_leaderboard surface change: +pagination (limit/offset),
+//   +cycle filter, +total_count, +opt-out filter — backwards-compatible
+//   (existing 0-arg callsites still work via DEFAULT params).
 // v2.30.0: +4 #84 Onda 2 closure RPCs wrapping ADR-0049 (Onda 2 11/11, 100%):
 //   get_agenda_smart (read), update_card_during_meeting (write_board), meeting_close
 //   (manage_event, atomic close + drift counter), get_tribe_housekeeping (read,
@@ -514,6 +519,19 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("get_member_cycle_xp", { p_member_id: member.id });
     if (error) { await logUsage(sb, member.id, "get_my_xp_and_ranking", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_xp_and_ranking", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 6b: set_my_gamification_visibility (ADR-0050 #101 — LGPD opt-out)
+  mcp.tool("set_my_gamification_visibility", "Toggle your visibility on the gamification leaderboard. Set opt_out=true to hide your name + points from the public ranking (your data is preserved, only display is suppressed). LGPD-compliant member self-management. Idempotent — no-op if value unchanged. ADR-0050 (#101).", {
+    opt_out: z.boolean().describe("true = hide me from leaderboard | false = show me on leaderboard")
+  }, async (params: { opt_out: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "set_my_gamification_visibility", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("set_my_gamification_visibility", { p_opt_out: params.opt_out });
+    if (error) { await logUsage(sb, member.id, "set_my_gamification_visibility", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "set_my_gamification_visibility", true, undefined, start);
     return ok(data);
   });
 
@@ -3289,7 +3307,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.30.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.31.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3309,6 +3327,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.30.0", tools: 157, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.31.0", tools: 158, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
