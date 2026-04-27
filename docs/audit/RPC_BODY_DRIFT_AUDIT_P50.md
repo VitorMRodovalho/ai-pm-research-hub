@@ -886,6 +886,41 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
   - **29 service-role-bypass `admin_*`** — adapter pattern needed
   - **~75 other** (curation, finance, certificates, etc.) — per-domain
 
+### Strict V3 re-discovery (p67, post-ADR-0037)
+
+Strict regex on prosrc — markers (`is_superadmin\(\)`, `members\.role IN`,
+`designations && ARRAY`, `operational_role = '<role>'`) WITHOUT V4 markers
+(`can_by_member`, `auth_org`, `\mcan\(`, `rls_can`) — surfaced **32 SECDEF
+functions** in pg_proc with strict V3-style gates (not just data filters).
+
+**Closed by ADR-0037 + ext (p67, 3 fns)**:
+- `get_chapter_needs` — 3-path V4 (manage_platform / view_internal_analytics / Path Y)
+- `get_org_chart` — pure view_internal_analytics (drift correction precedent)
+- `submit_chapter_need` — view_internal_analytics + Path Y
+
+**Remaining 29 strict-V3 candidates** classified by complexity:
+
+| Cluster | Fns | Decision needed |
+|---|---|---|
+| **Selection-domain** (curator designation, selection_committee table) | 6 (`get_application_score_breakdown`, `get_onboarding_status`, `get_selection_dashboard`, `get_selection_pipeline_metrics`, `get_selection_rankings`, `update_application_contact`) | New ADR — `manage_selection` action OR Opção B reuse via committee_* engagements |
+| **Tribe-scoped readers** (own-tribe + admin-broad) | 2 (`get_tribe_member_contacts`, `get_tribe_gamification`) | Resource-scoped `view_pii` / `manage_member` via `initiative.legacy_tribe_id` lookup, OR new `view_tribe_*` action |
+| **Helpers** (caller graph audit needed) | 4 (`_can_manage_event`, `_can_sign_gate`, `has_min_tier`, `current_member_tier_rank`) | Per-helper: convert in place (downstream behavior changes) OR keep V3 wrapper |
+| **Governance writers** (sponsor-specific) | 1 (`approve_change_request`) | New `approve_governance_cr` action — sponsor × sponsor + SA only |
+| **Multi-domain board write** | 1 (`upsert_board_item`) | Complex — writes to board with domain-specific gates (communication, publications_submissions). Could split per domain or new `manage_board_write` |
+| **Event-domain writer** (resource-scoped) | 1 (`admin_bulk_mark_attendance`) | `manage_event` resource-scoped via initiative lookup. 2-fn cluster with `_can_manage_event` helper. |
+| **Onboarding step writer** (member-self + committee lead) | 1 (`update_onboarding_step`) | Already domain-table-gated; V3 marker false-positive from notification logic — leave-as-is or migrate committee_lead check to V4 engagement |
+| **Member-self action** | 1 (`sign_volunteer_agreement`) | Leave-as-is per p63 D+F audit (caller=target ownership) |
+| **No-gate or data-filter false-positive** | 2 (`get_cr_approval_status`, `get_gp_whatsapp`) | Q-D track (no-gate hardening) — separate from Phase B'' |
+| **Triggers / crons** (system context) | 8 (`auto_archive_done_cards`, `auto_comms_card_on_publish`, `notify_leader_on_review`, `notify_on_publication_insert`, `notify_on_publication_published`, `notify_webinar_status_change`, `sync_operational_role_cache`, `detect_and_notify_detractors_cron`) | Verify-only docs commit (V3 markers are recipient-filter logic, not auth gates) |
+| **Meta/invariant** | 1 (`check_schema_invariants`) | Self-checking infra — keep V3 (uses `members.role` to detect violations) |
+| **Complex no-gate** | 1 (`get_portfolio_planned_vs_actual`) | Body returns full data + filters by caller scope — careful audit needed |
+| **Wider helper-call sweep** (call V3 helpers) | 2 (`exec_cert_timeline`, `publish_comms_metrics_batch`) | Convert when wrapper helpers convert |
+
+**Effective autonomous-shippable Phase B'' surface (post-p67)**: 0
+remaining without PM design input. All 29 candidates need either new V4
+action ADR, careful per-domain audit, or are out-of-scope (member-self /
+trigger / meta).
+
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
 ### Track charter
