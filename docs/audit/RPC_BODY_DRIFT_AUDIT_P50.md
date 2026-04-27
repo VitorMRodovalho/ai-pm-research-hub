@@ -847,7 +847,7 @@ operations don't need an action — they need ownership check).
 remaining easy-convert candidates after Pacote J + K (A5 + A2 + A4).
 The 60 D/F fns are mostly "leave-as-is, not admin gates".
 
-**Phase B'' running tally post-p66 (Pacote D + E + F + G + H + I + ADR-0026 ext + ADR-0030)**:
+**Phase B'' running tally post-p67 (+ ADR-0037 chapter_needs + org_chart)**:
 - Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
 - Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
 - Phase B'' p59 Pacote D easy-convert: 5 fns
@@ -864,7 +864,8 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - **Phase B'' p66 ADR-0034 Phase 2 partner attachments: 4 fns (Path A writers + Path D readers, drift signals #5 #6 CLOSED, drift loss Sarah curator + 6 tribe_leaders)**
 - **Phase B'' p66 ADR-0035 analytics + no-gate hardening: 4 fns (2 V3→V4 reuse view_internal_analytics + 2 no-gate hardening get_annual_kpis/get_cycle_report)**
 - **Phase B'' p66 ADR-0036 get_member_detail: 1 fn (Opção B reuse view_internal_analytics, ADR-0031 ladder precedent)**
-- **Cumulative: 79 of 246 fns (~32.1%)** — up from p63 56/246 (22.8%)
+- **Phase B'' p67 ADR-0037 get_chapter_needs + get_org_chart: 2 fns (Opção B reuse view_internal_analytics + manage_platform; Path Y formalized for chapter_board sub-role preservation; drift loss João chapter_liaison + 6 tribe_leaders + Sarah curator — precedented)**
+- **Cumulative: 81 of 246 fns (~32.9%)** — up from p66 79/246 (32.1%)
 - **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 3 Opção B reuses: governance readers + member directory + archived board listing + partner subsystem 100%)
 - **First p66 use of resource-scoped `can_by_member(_, action, 'initiative', id)`** — precedent established para ADRs futuras com per-resource gates (pattern já existia em V4 core mas pouco usado em Phase B'' até este ponto).
 - **Partner subsystem 100% V4** — Phase 1 (ADR-0033) + Phase 2 (ADR-0034) = 8/8 fns convertidas.
