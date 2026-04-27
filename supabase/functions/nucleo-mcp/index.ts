@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.29.0 — 153 tools (99R + 54W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.30.0 — 157 tools (101R + 56W) + 1 prompt + 1 resource + usage logging
+// v2.30.0: +4 #84 Onda 2 closure RPCs wrapping ADR-0049 (Onda 2 11/11, 100%):
+//   get_agenda_smart (read), update_card_during_meeting (write_board), meeting_close
+//   (manage_event, atomic close + drift counter), get_tribe_housekeeping (read,
+//   KPI rollup). Plus ADR-0048 hotfix: get_meeting_preparation surface field rename
+//   `initiative.name` → `initiative.title` (was broken since p72 due to schema drift).
 // v2.29.0: +1 #84 Onda 2 RPC wrapping ADR-0048 — get_meeting_preparation (read-only
 //   meeting prep pack with attendees, pending action items, open cards, recent meetings).
 //   #84 Onda 2 progress: 7/10 RPCs shipped (3 ADR-0046 + 3 ADR-0047 + 1 ADR-0048).
@@ -2855,6 +2860,90 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ───────────────────────────────────────────────────────────────
+  // #84 ONDA 2 CLOSURE — ADR-0049 (4 of 4 final RPCs)
+  // ───────────────────────────────────────────────────────────────
+
+  mcp.tool("get_agenda_smart", "Returns smart agenda for an upcoming meeting. Replaces dumb generate_agenda_template. Sections: event metadata, initiative, carry_forward_actions[] (90d unresolved, ordered overdue-first), at_risk_cards[] (forecast slip > 7d OR stale > 14d, with risk_reasons), relevant_kpis[] (RED/YELLOW only, attainment_pct + status_color), showcase_candidates[] (members with recent unshowcased completions), at_risk_deliverables[] (cycle deliverables due ≤14d). Authenticated. ADR-0049 (#84 Onda 2). Use case: 'Mostra agenda inteligente da reunião X'.", {
+    event_id: z.string().describe("UUID of the event")
+  }, async (params: { event_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_agenda_smart", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    const { data, error } = await sb.rpc("get_agenda_smart", { p_event_id: params.event_id });
+    if (error) { await logUsage(sb, member.id, "get_agenda_smart", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_agenda_smart", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("update_card_during_meeting", "Atomic card mutation during a meeting. Three modes: (a) status change via new_status; (b) field updates via fields jsonb; (c) discussion-only (both omitted, just creates a 'discussed' link). Wraps move_board_item + update_board_item (existing auth + lifecycle events preserved). Always upserts a board_item_event_links row (link_type derived: status_changed if status changed, else discussed). Requires write_board. ADR-0049 (#84 Onda 2). Use case: 'Move o card X para review nesta reunião' ou 'Anota que discutimos o card X'.", {
+    card_id: z.string().describe("UUID of the board card to update"),
+    event_id: z.string().describe("UUID of the meeting event"),
+    new_status: z.string().optional().describe("Optional new status (e.g. backlog|in_progress|review|done|archived). Triggers status_changed link."),
+    fields: z.record(z.any()).optional().describe("Optional jsonb of card fields to update (title, description, due_date, assignee_id, tags, etc.). Same shape as update_board_item."),
+    note: z.string().optional().describe("Optional note for the link entry (overrides auto-generated text)")
+  }, async (params: { card_id: string; event_id: string; new_status?: string; fields?: Record<string, unknown>; note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_card_during_meeting", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) return err("card_id must be a UUID");
+    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    if (!(await canV4(sb, member.id, 'write_board'))) {
+      await logUsage(sb, member.id, "update_card_during_meeting", false, "Unauthorized", start);
+      return err("Unauthorized — requires write_board.");
+    }
+    const { data, error } = await sb.rpc("update_card_during_meeting", {
+      p_card_id: params.card_id,
+      p_event_id: params.event_id,
+      p_new_status: params.new_status ?? null,
+      p_fields: params.fields ?? null,
+      p_note: params.note ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "update_card_during_meeting", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_card_during_meeting", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("meeting_close", "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. Returns drift_signal flag + counter set. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo'.", {
+    event_id: z.string().describe("UUID of the meeting event to close"),
+    summary: z.string().optional().describe("Optional summary appended to events.notes")
+  }, async (params: { event_id: string; summary?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "meeting_close", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    if (!(await canV4(sb, member.id, 'manage_event'))) {
+      await logUsage(sb, member.id, "meeting_close", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_event.");
+    }
+    const { data, error } = await sb.rpc("meeting_close", {
+      p_event_id: params.event_id,
+      p_summary: params.summary ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "meeting_close", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "meeting_close", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_tribe_housekeeping", "Returns initiative-scoped KPI rollup. Sections: initiative metadata, current_cycle (best-effort), kpis_contributed[] (annual KPIs the initiative serves via tribe_kpi_contributions, with attainment_pct + status_color), cards_linked_to_kpis[] (board cards whose tags overlap any contributed KPI key — heuristic v1, with matched_kpi_keys[] per card), cycle_deliverables[] (tribe_deliverables for current cycle), rollup (counters: kpis_total/red/yellow + deliverables_total/done). Closes #84 GAP 7. Authenticated. ADR-0049. Use case: 'Mostra contribuições da Tribo Y aos KPIs anuais'.", {
+    initiative_id: z.string().optional().describe("UUID of the initiative (preferred). If omitted, use legacy_tribe_id."),
+    legacy_tribe_id: z.number().optional().describe("Legacy tribe id (1-8). Fallback if initiative_id is unavailable.")
+  }, async (params: { initiative_id?: string; legacy_tribe_id?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_housekeeping", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) return err("initiative_id must be a UUID");
+    if (!params.initiative_id && params.legacy_tribe_id === undefined) return err("Provide initiative_id or legacy_tribe_id");
+    const { data, error } = await sb.rpc("get_tribe_housekeeping", {
+      p_initiative_id: params.initiative_id ?? null,
+      p_legacy_tribe_id: params.legacy_tribe_id ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "get_tribe_housekeeping", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_housekeeping", true, undefined, start);
+    return ok(data);
+  });
+
+  // ───────────────────────────────────────────────────────────────
   // PARTNERSHIP LIFECYCLE TOOLS — #85 Onda B bundle 3
   // ───────────────────────────────────────────────────────────────
 
@@ -3200,7 +3289,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.29.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.30.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3220,6 +3309,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.29.0", tools: 153, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.30.0", tools: 157, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
