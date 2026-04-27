@@ -1012,6 +1012,42 @@ legacy).
 fix mirrors `update_event_duration` from ADR-0038. Detection regex (Q-D
 candidate sweep) confirmed effective: pattern detected → fixed → closed.
 
+### Closed by ADR-0040 (p70, helper cluster cleanup)
+
+**Section A — DROP dead helper (1 fn)**
+- `current_member_tier_rank` — DROPPED. Confirmed dead via comprehensive
+  search (0 SECDEF callers, 0 frontend, 0 EF). Created in p52 Q-A orphan
+  recovery batch but never adopted by any caller. `has_min_tier` (the
+  natural caller) has its own inline tier mapping logic.
+
+**Section B — REVOKE-from-anon for 3 internal helpers (defense-in-depth)**
+- `_can_manage_event` — used by 3 SECDEF; 0 frontend; 0 RLS refs.
+- `_can_sign_gate` — used by 8 SECDEF (cert/governance); 0 frontend; 0 RLS.
+- `can_manage_comms_metrics` — used by 1 SECDEF; 0 frontend; 0 RLS.
+
+REVOKE-from-anon ONLY (not authenticated) per p65 charter sediment.
+
+### Q-E parameter-gate sweep result (p70)
+
+p70 Q-E parameter-gate full pg_proc sweep with detection regex returned
+**0 matches** beyond the 2 already-fixed cases. The pattern was effectively
+eradicated by ADR-0038 + ADR-0039 Section B. Forward commitment: pattern
+detection methodology validated; re-run each session.
+
+### Helper cluster triage (p67 audit § "Helpers" — p70 verdicts)
+
+| Helper | p70 verdict |
+|---|---|
+| `current_member_tier_rank` | DROPPED (dead code, ADR-0040 §A) |
+| `has_min_tier` | LIVE — 1 caller; leave-as-is |
+| `_can_manage_event` | LIVE — 3 callers; REVOKE-from-anon (ADR-0040 §B) |
+| `_can_sign_gate` | LIVE — 8 callers; REVOKE-from-anon (ADR-0040 §B) |
+| `can_manage_comms_metrics` | LIVE — 1 caller; REVOKE-from-anon (ADR-0040 §B) |
+
+5/5 helpers triaged. V3 body conversion of the 4 live helpers remains
+backlog (Path Y candidate for `can_manage_comms_metrics` comms_member
+preservation).
+
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
 ### Track charter
