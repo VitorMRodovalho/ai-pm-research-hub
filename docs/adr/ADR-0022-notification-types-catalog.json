@@ -3,7 +3,7 @@
   "$id": "ADR-0022-notification-types-catalog",
   "title": "ADR-0022 Notification Types Catalog (W1)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.2",
+  "version": "W1.3",
   "updated_at": "2026-04-27",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
@@ -121,6 +121,10 @@
     "sponsor_finance_entry_logged": {
       "delivery_mode": "transactional_immediate",
       "rationale": "ADR-0043 governance safeguard — non-volunteer sponsor logged a cost/revenue entry. manage_platform holders need timely visibility for governance oversight."
+    },
+    "governance_manual_proposed": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "ADR-0044 2-of-N approval — 2nd manage_platform signoff required within 24h to publish a new manual version. Used both for proposal-fanout (asks for 2nd signoff) and final-publish-fanout (informs chapter board + sponsors). Time-critical (24h window)."
     }
   },
   "implementation": {

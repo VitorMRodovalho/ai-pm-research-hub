@@ -976,7 +976,8 @@ input.
 - p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)
 - p72 ADR-0041: 86 → 95/246 (~38.6%) — new V4 action `participate_in_governance_review` + 9 V3→V4 fns
 - p72 ADR-0042: 95 → 96/246 (~39.0%) — new V4 action `view_chapter_dashboards` (read-only catalog) + 8 reader gate additions + `_can_manage_event` helper V3→V4 conversion
-- **p72 ADR-0043: 96 → 98/246 (~39.8%) — `create_cost_entry` + `create_revenue_entry` V3→V4 (manage_finance) + sponsor_finance_entry_logged trigger safeguard (PM ratify §B.1; 2 fns + new notification type + 2 triggers + enhanced audit_log)**
+- p72 ADR-0043: 96 → 98/246 (~39.8%) — `create_cost_entry` + `create_revenue_entry` V3→V4 (manage_finance) + sponsor_finance_entry_logged trigger safeguard (PM ratify §B.1; 2 fns + new notification type + 2 triggers + enhanced audit_log)
+- **p72 ADR-0044: 98 → 99/246 (~40.2%) — `generate_manual_version` V3→V4 (manage_platform) + 2-of-N approval pattern (PM ratify §B.2; new pending_manual_version_approvals table + propose+confirm+cancel RPC trio + new notification type + DROP legacy single-actor fn)**
 
 ### Closed by ADR-0039 (p69, 4 fns total)
 
@@ -1224,7 +1225,69 @@ mode for governance visibility.
 `_delivery_mode_for` body and checks every catalog type appears. If you
 redefine `_delivery_mode_for` in a new migration, the file must SORT AFTER
 all prior `_delivery_mode_for` migrations (alphabetic order). Use
-timestamps > 20260514010000 (current latest) for any future redefinition.
+timestamps > 20260514060000 (current latest, ADR-0044) for any future redefinition.
+
+### Closed by ADR-0044 (p72, 2-of-N manual version approval)
+
+**Section A — New table `pending_manual_version_approvals`**
+- Tracks proposal state (pending → confirmed | expired | cancelled)
+- 24h expiry window; single pending at a time (concurrent-proposal block)
+- RLS: only manage_platform holders SELECT
+
+**Section B — `propose_manual_version(p_version_label, p_notes)` (V4)**
+- Pre-checks: V4 manage_platform; CRs approved exist; no pending; label unused
+- Creates pending row + notifies OTHER manage_platform holders for 2nd signoff
+- Audit log: manual_version_proposed
+
+**Section C — `confirm_manual_version(p_proposal_id)` (V4 + 2-of-N)**
+- Pre-checks: V4 manage_platform; pending status; within 24h; signer ≠ proposer
+- Re-validates approved CRs + label availability (state could change in 24h)
+- Executes generation logic (mark superseded, create new doc, update CRs,
+  audit log with both actors, notify chapter board + sponsors, draft announcement)
+- Updates proposal: status=confirmed, signoff captured
+
+**Section D — `cancel_manual_version_proposal(p_proposal_id, p_reason)` (V4)**
+- Allows manage_platform holder to cancel pending proposal
+- Audit log captures reason
+
+**Section E — DROP `generate_manual_version`** (V3 single-actor fn replaced)
+
+**Section F — New notification type `governance_manual_proposed`**
+- delivery_mode: transactional_immediate (24h window urgency)
+- Reused for both proposal-fanout (asks for 2nd signoff) and final-publish-fanout
+
+### Privilege expansion (p72 ADR-0044)
+
+- V3 (`is_superadmin = true`): Vitor + Fabricio
+- V4 `manage_platform`: same set (volunteer × {manager, deputy_manager, co_gp})
+- Net change in *who can act*: zero
+- Net change in *requirement*: 2-of-N enforcement — single actor cannot
+  unilaterally publish; both Vitor AND Fabricio (or future additional
+  manage_platform holders) must participate
+
+### Pattern sediment (p72 ADR-0044)
+
+**Platform-tier 2-of-N approval pattern**: first instance of a 2-of-N
+approval at platform-tier (vs. ADR-0016 IP ratification at chapter-tier).
+Forward template:
+1. Create `pending_<operation>_approvals` table (proposer, signer, expires_at, status)
+2. Split operation into `propose_*` (creates pending) + `confirm_*` (executes; requires different signer)
+3. Add `cancel_*_proposal` for explicit retraction
+4. Notification type for proposal-fanout + publish-fanout
+5. RLS: only target-action holders see/write the pending table
+
+Reusable for: ADR ratifications (if codified), catalog seed deletions,
+any operation destroying/locking data with downstream cascading effects.
+
+**Notification reuse for proposal + publish**: `governance_manual_proposed`
+serves both events. Recipient sees: (1) proposal asking for signoff, (2)
+publish confirmation. Audit clarity preserved by `source_type` field
+(pending_manual_version_approval vs governance_document) + body content.
+
+**Re-validation at confirm**: 24h window means state could change. Confirm
+RPC re-checks approved CRs + version label availability. Pattern: when a
+multi-step workflow has expiry windows, re-validate ALL pre-conditions at
+each step, not just at proposal time.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
