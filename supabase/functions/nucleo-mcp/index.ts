@@ -1,5 +1,9 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.28.0 — 152 tools (98R + 54W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.29.0 — 153 tools (99R + 54W) + 1 prompt + 1 resource + usage logging
+// v2.29.0: +1 #84 Onda 2 RPC wrapping ADR-0048 — get_meeting_preparation (read-only
+//   meeting prep pack with attendees, pending action items, open cards, recent meetings).
+//   #84 Onda 2 progress: 7/10 RPCs shipped (3 ADR-0046 + 3 ADR-0047 + 1 ADR-0048).
+//   4 remain (get_agenda_smart, update_card_during_meeting, meeting_close, get_tribe_housekeeping).
 // v2.28.0: +3 #84 Onda 2 RPCs wrapping ADR-0047 — get_card_full_history (read-only
 //   360° timeline), convert_action_to_card (atomic action→card flow), register_decision
 //   (specialized decision with multi-card link fanout). #84 Onda 2 progress: 6/10 RPCs
@@ -2811,6 +2815,19 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  mcp.tool("get_meeting_preparation", "Returns prep pack for upcoming meeting: event details, expected attendees (engagement-derived from initiative), pending action items from prior meetings (90d window), open cards on initiative board (with at-risk flag based on forecast > baseline + 7d OR no update in 14d), recent meetings summary. Authenticated only. ADR-0048 (#84 Onda 2). Use case: 'Prepare-me para a reunião X com a tribo Y'.", {
+    event_id: z.string().describe("UUID of the upcoming event")
+  }, async (params: { event_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_meeting_preparation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    const { data, error } = await sb.rpc("get_meeting_preparation", { p_event_id: params.event_id });
+    if (error) { await logUsage(sb, member.id, "get_meeting_preparation", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_meeting_preparation", true, undefined, start);
+    return ok(data);
+  });
+
   mcp.tool("register_decision", "Register a meeting decision (semantic kind='decision' with multi-card link fanout). Decisions are auto-completed (status='completed') and resolved immediately. Optional related_card_ids[] creates board_item_event_links of link_type='decision' to each card. Requires manage_event (ADR-0047, #84 Onda 2). Distinct from create_action_item with kind='decision' in that this RPC's signature is decision-first (title required) and supports card fanout.", {
     event_id: z.string().describe("UUID of the event where decision was made"),
     title: z.string().describe("Short decision title (e.g. 'Aprovar publicação do artigo X em Q3')"),
@@ -3183,7 +3200,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.28.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.29.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3203,6 +3220,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.28.0", tools: 152, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.29.0", tools: 153, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
