@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.26.0 — 146 tools (96R + 50W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.27.0 — 149 tools (97R + 52W) + 1 prompt + 1 resource + usage logging
+// v2.27.0: +3 meeting action item lifecycle tools wrapping ADR-0046 RPCs
+//   (create_action_item, resolve_action_item, list_meeting_action_items).
+//   ADR-0046 ships #84 Onda 2 partial — structured action item INSERT/UPDATE/SELECT
+//   replacing markdown-string action items in create_meeting_notes. Built on
+//   ADR-0045 schema (meeting_action_items new columns + board_item_event_links).
 // v2.26.0: +3 governance tools wrapping ADR-0044 manual_version 2-of-N approval flow
 //   (propose_manual_version, confirm_manual_version, cancel_manual_version_proposal).
 //   ADR-0044 (PM ratify §B.2) enforces signer ≠ proposer + 24h window for high-impact
@@ -2667,6 +2672,94 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ───────────────────────────────────────────────────────────────
+  // MEETING ACTION ITEM LIFECYCLE — ADR-0046 (#84 Onda 2 partial, p72)
+  // Built on ADR-0045 schema (meeting_action_items new columns +
+  // board_item_event_links). Structured action items replace markdown-only.
+  // ───────────────────────────────────────────────────────────────
+
+  mcp.tool("create_action_item", "Create a structured meeting action item. Replaces markdown-only action items from create_meeting_notes. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.", {
+    event_id: z.string().describe("UUID of the event this action item belongs to"),
+    description: z.string().describe("Action item text (e.g. 'Maria atualizar card-xyz até 2026-04-30')"),
+    assignee_id: z.string().optional().describe("UUID of assignee member (optional)"),
+    due_date: z.string().optional().describe("YYYY-MM-DD optional due date"),
+    board_item_id: z.string().optional().describe("UUID of related board card (creates board_item_event_links entry)"),
+    checklist_item_id: z.string().optional().describe("UUID of related checklist item (sub-card-level)"),
+    kind: z.string().optional().describe("'action' (default) | 'decision' | 'followup' | 'general'")
+  }, async (params: { event_id: string; description: string; assignee_id?: string; due_date?: string; board_item_id?: string; checklist_item_id?: string; kind?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_action_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) { await logUsage(sb, member.id, "create_action_item", false, "Invalid event_id", start); return err("event_id must be a UUID"); }
+    if (params.assignee_id && !isUUID(params.assignee_id)) { return err("assignee_id must be a UUID"); }
+    if (params.board_item_id && !isUUID(params.board_item_id)) { return err("board_item_id must be a UUID"); }
+    if (params.checklist_item_id && !isUUID(params.checklist_item_id)) { return err("checklist_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) {
+      await logUsage(sb, member.id, "create_action_item", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_event.");
+    }
+    const { data, error } = await sb.rpc("create_action_item", {
+      p_event_id: params.event_id,
+      p_description: params.description,
+      p_assignee_id: params.assignee_id ?? null,
+      p_due_date: params.due_date ?? null,
+      p_board_item_id: params.board_item_id ?? null,
+      p_checklist_item_id: params.checklist_item_id ?? null,
+      p_kind: params.kind ?? 'action',
+    });
+    if (error) { await logUsage(sb, member.id, "create_action_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "create_action_item", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("resolve_action_item", "Resolve a meeting action item. Optionally carry-forward to a future event (creates a new linked action item there). Resolution_note recommended for audit trail. Requires manage_event (ADR-0046, #84 Onda 2 partial).", {
+    action_item_id: z.string().describe("UUID of meeting_action_items row"),
+    resolution_note: z.string().optional().describe("Free-text resolution explanation"),
+    carry_to_event_id: z.string().optional().describe("UUID of event to carry forward to (creates new linked action item there + sets status='carried_forward')")
+  }, async (params: { action_item_id: string; resolution_note?: string; carry_to_event_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "resolve_action_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.action_item_id)) { await logUsage(sb, member.id, "resolve_action_item", false, "Invalid action_item_id", start); return err("action_item_id must be a UUID"); }
+    if (params.carry_to_event_id && !isUUID(params.carry_to_event_id)) { return err("carry_to_event_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) {
+      await logUsage(sb, member.id, "resolve_action_item", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_event.");
+    }
+    const { data, error } = await sb.rpc("resolve_action_item", {
+      p_action_item_id: params.action_item_id,
+      p_resolution_note: params.resolution_note ?? null,
+      p_carry_to_event_id: params.carry_to_event_id ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "resolve_action_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "resolve_action_item", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("list_meeting_action_items", "List meeting action items with filters. Use cases: 'my open actions', 'unresolved actions for event X', 'all decisions in cycle 3', etc. Returns enriched data with event/board_item titles + assignee/resolver names. Limit 200 rows. ADR-0046 (#84 Onda 2 partial). Authenticated members can see all (privacy via event RLS at frontend join time).", {
+    event_id: z.string().optional().describe("Filter by event UUID"),
+    status: z.string().optional().describe("Filter by status: open | completed | carried_forward"),
+    assignee_id: z.string().optional().describe("Filter by assignee member UUID"),
+    kind: z.string().optional().describe("Filter by kind: action | decision | followup | general"),
+    unresolved_only: z.boolean().optional().describe("If true, only items with resolved_at IS NULL")
+  }, async (params: { event_id?: string; status?: string; assignee_id?: string; kind?: string; unresolved_only?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_meeting_action_items", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.event_id && !isUUID(params.event_id)) { return err("event_id must be a UUID"); }
+    if (params.assignee_id && !isUUID(params.assignee_id)) { return err("assignee_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_meeting_action_items", {
+      p_event_id: params.event_id ?? null,
+      p_status: params.status ?? null,
+      p_assignee_id: params.assignee_id ?? null,
+      p_kind: params.kind ?? null,
+      p_unresolved_only: params.unresolved_only ?? false,
+    });
+    if (error) { await logUsage(sb, member.id, "list_meeting_action_items", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_meeting_action_items", true, undefined, start);
+    return ok(data);
+  });
+
+  // ───────────────────────────────────────────────────────────────
   // PARTNERSHIP LIFECYCLE TOOLS — #85 Onda B bundle 3
   // ───────────────────────────────────────────────────────────────
 
@@ -3012,7 +3105,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.26.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.27.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3032,6 +3125,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.26.0", tools: 146, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.27.0", tools: 149, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
