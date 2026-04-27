@@ -908,17 +908,110 @@ for CBGPL audit-readiness (data stewardship standards).
 1. Pull body via `pg_proc.prosrc` to confirm what's returned.
 2. Pull ACL via `pg_proc.proacl` to confirm exposure.
 3. Grep `src/` + `supabase/functions/` for callsites.
-4. Classify per matrix above.
-5. Run privilege expansion safety check if adding gate.
-6. Apply migration (REVOKE + optional gate). If only verification
+4. **(MANDATORY p64+) Scan `pg_policy.polqual` + `polwithcheck` for
+   direct refs.** RLS policies call functions in the **caller's role
+   context** — REVOKE EXECUTE FROM authenticated breaks RLS evaluation
+   regardless of SECDEF status. Use word-boundary regex to avoid
+   substring false-positives:
+   ```sql
+   SELECT schemaname, tablename, policyname, cmd
+   FROM pg_policies
+   WHERE schemaname = 'public'
+     AND (qual ~* '\m(public\.)?<fn_name>\(' OR with_check ~* '\m(public\.)?<fn_name>\(')
+   ORDER BY tablename, policyname;
+   ```
+   `\m` is the word-boundary anchor — without it, `can(` matches
+   `rls_can(` and `can_by_member(`, producing false alarms (and the
+   inverse: a loose regex on a fn that IS in policies could miss it
+   if surrounded by punctuation). If any result is non-empty, the
+   function is on a hot path inside RLS — REVOKE candidate must keep
+   `authenticated` GRANT, OR the policy must be refactored to call a
+   SECDEF wrapper (e.g., `rls_can()`, `can_by_member()`) that itself
+   retains authenticated grant.
+5. Classify per matrix above.
+6. Run privilege expansion safety check if adding gate.
+7. Apply migration (REVOKE + optional gate). If only verification
    needed, docs-only commit.
-7. Verify post-state via ACL + body recheck.
+8. Verify post-state via ACL + body recheck.
 
 **Batch plan**:
 - Batch 1 (p55, done): 21 fns hardened (PII crypto + cron + EF webhook + dead admin).
 - Batch 2 (p56, done): 13 public-by-design readers verified safe (docs-only).
 - Batch 3a (in progress p57+): admin-shape readers, 30-40 fns total. Sub-batches of 6-10.
 - Batch 3b (TBD): 27 internal helpers REVOKE (defense-in-depth).
+
+### Charter amendment — pg_policy precondition (added p65, 2026-04-26 post-incident)
+
+**Trigger**: Production incident on 2026-04-26 14:56 UTC. Migration
+`20260426145632_track_q_d_internal_helpers_batch3b.sql` REVOKE'd
+EXECUTE on `auth_org()` and `can_by_member()` from authenticated,
+justified by "internal helpers called only by other SECDEF fns or
+service_role EFs — REVOKE from authenticated is defense-in-depth
+without behavioral change."
+
+The audit chain at the time checked four caller surfaces (frontend
+`.rpc('<fn>')` grep, EF source `<fn>` references, `pg_proc.prosrc`
+SECDEF caller chain, migration history) but **missed the
+`pg_policy.polqual` / `polwithcheck` reference scan**.
+
+**Blast radius**: 48 RLS policies (every `*_v4_org_scope`) call
+`auth_org()` directly in their USING clause; 13 RLS policies call
+`can_by_member()` directly. RLS evaluates in the caller's role context,
+so PostgreSQL requires EXECUTE on the function regardless of SECDEF
+status. ALL authenticated PostgREST table reads triggering members RLS
+failed silently for ~8 hours — `.single()` returned null, `.select()`
+returned `[]`, frontend pages depending on direct table reads broke.
+
+**Curator-tier collateral**: Sarah (curator) attempted to read Adendo
+IP doc via `/governance/ip-agreement` flow. `get_pending_ratifications`
+(SECDEF RPC) worked; clicking through to read content called
+`sb.from('document_versions')` directly → RLS chained to
+`can_by_member()` → permission denied → `versionRes.data = null` →
+page rendered "(conteúdo indisponível)". Member then accidentally
+clicked Sign without reading content. Signoff was reverted per
+`incident(p64): revert Sarah's accidental signoff per PM Opção A`
+(commit `5891746`).
+
+**Hotfix migrations** (commit `a995d3f`):
+- `20260426232108_hotfix_p64_restore_auth_org_grant_authenticated.sql`
+- `20260426232200_hotfix_p64_restore_can_by_member_grant_authenticated.sql`
+
+Both functions had their authenticated + anon GRANT restored. The
+COMMENT on each function now documents the lesson:
+
+> "Revoking from authenticated breaks PostgREST table reads — see
+> hotfix migration ... + p64 incident. Track Q-D internal-helper
+> REVOKE charter must check `pg_policy.polqual` references before
+> applying."
+
+**p65 retro-scan**: With the corrected word-boundary regex `\m can\(`,
+the only function from batch 3b still REVOKE'd from authenticated AND
+referenced in any RLS policy is `public.can(uuid, text, text, uuid)` —
+**zero policy references**. All 73 substring matches in p65's initial
+loose-regex scan were false-positives from `rls_can(` and
+`can_by_member(`. No further hotfix needed.
+
+**Sediment** (forward commitment for any Q-D batch — Batch 3b residue,
+future batches, AND Phase B' / B'' migrations that touch SECDEF
+function GRANTs):
+
+1. The `pg_policy` scan (step 4 above) is **mandatory**, not
+   optional. Use word-boundary regex `\m`.
+2. Functions surfaced by the scan keep `authenticated` GRANT
+   regardless of "internal helper" classification — the helper IS
+   user-reachable via RLS evaluation.
+3. Preferred refactor pattern for new authority gates: define a SECDEF
+   wrapper (like `rls_can(text)` or `can_by_member(uuid, text, text,
+   uuid)`) that retains authenticated grant. RLS policies call the
+   wrapper, never the underlying core (`can(...)`). Then the core can
+   stay REVOKE'd without breaking RLS — the wrapper resolves the
+   call inside the SECDEF chain (postgres role).
+4. When in doubt, leave the GRANT and add a body-level gate (`auth.uid()
+   IS NULL` short-circuit, or explicit `can_by_member(...)` check).
+   Defense-in-depth via REVOKE only makes sense when the function is
+   PROVABLY unreachable from authenticated callers — which means the
+   `pg_policy` scan must be empty AND the SECDEF caller chain
+   inventory must be complete AND no future-RLS-policy plan exists.
 
 **Audit trail**: Every Q-D commit references this doc; this doc
 references every Q-D migration. Single source of truth for the

@@ -385,21 +385,43 @@ tests, commit. Includes:
 - REVOKE EXECUTE FROM PUBLIC, anon (preserve current security
   baseline).
 
-### Phase 3 — Batch 2 per-fn ADR (ADR-0029) + Pacote O conversion (~per fn, hard deadline)
+### Phase 3 — Batch 2 per-fn ADR (ADR-0029) + Pacote O conversion — **SUPERSEDED p64**
 
-ADR-0029 formalizes new action `audit_access` granted to
-`{chapter_liaison, sponsor, curator}` for the 7 Batch 2 fns. Single
-migration `pacote_o_adr0029_audit_access_batch2.sql` after PM ratify.
-**Hard deadline: ratify + apply before any non-Pacote-M autonomous
-track resumes** (no open-ended defer).
+**Original plan**: ADR-0029 to formalize new action `audit_access`
+granted to `{chapter_liaison, sponsor, curator}` for the 7 Batch 2
+fns. Single migration `pacote_o_adr0029_audit_access_batch2.sql`
+after PM ratify. Hard deadline: ratify + apply before any
+non-Pacote-M autonomous track resumes.
 
-### Phase 4 — contract test enhancement (4-layer defense, same Pacote M session)
+**Actual outcome (p64)**: Phase 1 prematch audit revealed all 7
+Batch 2 `exec_*` fns reference substrate tables that no longer exist
+(DDL drift — see ADR-0029 retroactive retirement). All 7 were
+DROPPED in `20260427000000` (Pacote M migration) instead of being
+converted with the proposed `audit_access` action. The originally-
+planned `audit_access` action is **moot — surface eliminated**.
+ADR-0029 was repurposed from "audit_access action ratification" to
+"ingestion subsystem retroactive retirement record" reflecting the
+actual remediation. No Pacote O migration needed.
 
-Update `tests/contracts/rpc-v4-auth.test.mjs` per Q3 resolution
-4-layer defense (allowlist + size guard + stale-check + COMMENT
-sentinel). Add invariant G to `check_schema_invariants()`. Both must
-ship in same commit as Pacote M migration to maintain test
-ratchet.
+### Phase 4 — contract test enhancement — **REDIRECTED p64**
+
+**Original plan**: Update `tests/contracts/rpc-v4-auth.test.mjs` per
+Q3 resolution 5-layer defense (allowlist + size guard + stale-check +
+COMMENT sentinel + invariant G). Both must ship in same commit as
+Pacote M migration to maintain test ratchet.
+
+**Actual outcome (p64)**: With the surface reduced from 30 to 4 fns,
+the marginal value of the full 5-layer defense fell sharply (cost of
+each layer is fixed, benefit scales with surface size). The COMMENT
+sentinel (layer 4) shipped — applied to all 4 surviving fns and
+auditable via `pg_proc.obj_description`. The remaining 4 layers were
+**deferred as not cost-justified** for a 4-fn surface that has
+no additions planned. Should the adapter pattern surface ever grow
+again (≥10 fns), the deferred layers should ship in the same migration
+that adds the 10th fn. Test ratchet baseline remains 11 invariants
+(no invariant G); table-drift contract tests (Pacote M scope) ship
+instead in the same session — see `tests/contracts/rpc-migration-coverage.test.mjs`
+TABLE_DRIFT_BASELINE_SIZE.
 
 ## Cross-references
 
@@ -411,8 +433,12 @@ ratchet.
   pattern.
 - ADR-0025 (manage_finance) + ADR-0026 (manage_comms) + ADR-0027
   (governance readers Opção B) — prior Phase B'' patterns.
-- ADR-0029 (audit_access — to be drafted) — formalizes Batch 2
-  extended-designation surface (7 fns).
+- ADR-0029 (ingestion subsystem retroactive retirement —
+  Accepted 2026-04-26) — documents the 17 substrate tables + 33
+  dead-code fns that were discovered missing during Phase 1 audit.
+  Originally planned as `audit_access` action ADR but repurposed to
+  reflect actual remediation. The 7 Batch 2 fns are part of the 33
+  drops, not surviving conversions.
 - `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` — surface inventory.
 - `docs/audit/ADR-0028-prematch-audit.md` — Phase 1 per-fn audit
   output (produced same Pacote M session).
@@ -436,65 +462,91 @@ in perpetuity for zero behavioral difference. See "Future contraction
 path" in Consequences for the migration recipe if a narrower ingestion
 operator persona ever materializes.
 
-### Q2 resolution — Extended designations: per-fn ADR (Batch 2) with HARD DEADLINE
+### Q2 resolution — Extended designations: per-fn ADR (Batch 2) with HARD DEADLINE — **SUPERSEDED p64**
 
-`chapter_liaison` and `sponsor` have zero rows in
-`engagement_kind_permissions` for any write/admin action today. Folding
-them into `manage_platform` would be a silent privilege expansion (all
-27→30 Batch 1 fns would inherit those designations together) — vetoed.
-Keeping V3 indefinitely makes the fns invisible to `rpc-v4-auth`
-contract test, repeating the 92-orphan pattern from Track Q (p50) —
-vetoed.
+**Original framing**: `chapter_liaison` and `sponsor` have zero rows
+in `engagement_kind_permissions` for any write/admin action today.
+Folding them into `manage_platform` would be a silent privilege
+expansion (all 27→30 Batch 1 fns would inherit those designations
+together) — vetoed. Keeping V3 indefinitely makes the fns invisible
+to `rpc-v4-auth` contract test, repeating the 92-orphan pattern from
+Track Q (p50) — vetoed.
 
-Resolution: ADR-0029 to formalize new action `audit_access` (or
-scope-refined alternative) for the 7 Batch 2 fns. **Hard deadline:
+Original resolution: ADR-0029 to formalize new action `audit_access`
+(or scope-refined alternative) for the 7 Batch 2 fns. Hard deadline:
 ADR-0029 must be ratified and Batch 2 migration applied before any
-non-Pacote-M autonomous track resumes** — no open-ended defer.
+non-Pacote-M autonomous track resumes.
 
-### Q3 resolution — 4-layer pattern enforcement defense
+**Actual outcome (p64)**: All 7 Batch 2 fns reference missing
+substrate tables (ingestion_scoreboards, governance_export_log,
+partner_governance_*) that were dropped without migration capture
+during the platform's pre-V4 era. None of the 7 fns is callable
+in any production state. Phase 1 audit reclassified the entire
+Batch 2 surface as **dead code** and PM ratified P3 split: drop
+all 7 in Pacote M migration. The privilege expansion question
+becomes moot — there is nothing to gate. ADR-0029 was repurposed
+from audit_access action ratification to retroactive retirement
+record. Hard deadline collapses to "no work needed".
+
+### Q3 resolution — 4-layer pattern enforcement defense — **PARTIALLY SHIPPED p64**
 
 The contract test must enforce the bypass class boundary. PM ratified
-the council's full 4-layer defense (each layer catches a different
-failure mode at low marginal cost):
+the council's full 5-layer defense (each layer catches a different
+failure mode at low marginal cost). **Post-Pacote M scope reduction
+(30→4 fns) made layers 1-3 + 5 not cost-justified for the small
+surface; only layer 4 (COMMENT sentinel) shipped.** Original 5-layer
+plan preserved below for reference and as a recipe if the surface
+ever grows ≥10 fns:
 
 1. **Named allowlist constant** in `tests/contracts/rpc-v4-auth.test.mjs`:
    ```javascript
    const V4_SERVICE_ROLE_ADAPTER_ALLOWLIST = new Set([
-     'public.admin_acquire_ingestion_apply_lock',
-     'public.admin_release_ingestion_apply_lock',
-     // ... all 30 Batch 1 fns by full name
+     'public.admin_check_ingestion_source_timeout',
+     'public.admin_set_ingestion_source_sla',
+     'public.admin_set_release_readiness_policy',
+     'public.admin_get_ingestion_source_policy',
    ]);
    ```
-   Test extends `usesV4Can()` to return true when body contains both
+   (List reduced from 30→4 per Pacote M actual scope.) Test extends
+   `usesV4Can()` to return true when body contains both
    `auth.role() = 'service_role'` and `can_by_member` AND the function
    name is in the allowlist. Non-allowlisted fns using the bypass fail
-   the test.
+   the test. **Layer NOT shipped p64 — COMMENT sentinel grep
+   covers most-of-value at 4-fn surface.**
 
 2. **Size guard** (hard upper bound):
    ```javascript
    assert.ok(
-     V4_SERVICE_ROLE_ADAPTER_ALLOWLIST.size <= 30,
-     'ADR-0028 adapter allowlist exceeds the documented Batch 1 bound (30 fns). New entries require ADR-0028 amendment + PM ratify.'
+     V4_SERVICE_ROLE_ADAPTER_ALLOWLIST.size <= 4,
+     'ADR-0028 adapter allowlist exceeds the documented Pacote M scope (4 fns). New entries require ADR-0028 amendment + PM ratify.'
    );
    ```
-   (Batch 2 will bump this to 37 after ADR-0029.)
+   (Bound reduced from 30→4 reflecting Pacote M actual scope. The
+   originally-planned Batch 2 bump to 37 is moot — Batch 2 was
+   dropped entirely per ADR-0029.) **Layer NOT shipped p64 — defer
+   until surface grows ≥10 fns.**
 
 3. **Stale-entry cross-check**: assert every name in the allowlist
    actually appears in a migration file's `CREATE OR REPLACE FUNCTION`
    block. Stale entries (allowlist references a deleted fn) fail fast.
+   **Layer NOT shipped p64 — table-drift contract test covers
+   adjacent class (`tests/contracts/rpc-migration-coverage.test.mjs`
+   ships in same Pacote M session for table-level DDL drift).**
 
-4. **COMMENT sentinel** in every adapter-pattern fn body:
+4. **COMMENT sentinel** in every adapter-pattern fn body — **SHIPPED p64**:
    ```sql
    COMMENT ON FUNCTION public.admin_X(<args>) IS
      'ADR-0028 service-role-bypass adapter (Pacote M, p64): manage_platform
       gate via can_by_member with service_role bypass for cron/EF callers.';
    ```
-   Auditable via `grep` over `pg_proc.obj_description`. The contract
-   test cross-checks: every fn with `auth.role() = 'service_role'` in
-   body must have `'ADR-0028'` in COMMENT, OR be flagged.
+   Auditable via `grep` over `pg_proc.obj_description`. Applied to all
+   4 surviving Pacote M fns. The contract test cross-check (every fn
+   with `auth.role() = 'service_role'` body marker must have `'ADR-0028'`
+   in COMMENT) is **not yet shipped** — single grep query suffices for
+   4-fn surface.
 
-5. **Invariant G in `check_schema_invariants()`** (new structural
-   invariant — bumps total to 12):
+5. **Invariant G in `check_schema_invariants()`** — **NOT SHIPPED p64**.
+   Originally planned to bump invariant total from 11→12:
    ```sql
    -- G_service_role_adapter_count_within_bound
    -- Counts SECDEF fns with service_role bypass that are NOT in the
@@ -506,9 +558,9 @@ failure mode at low marginal cost):
      AND pg_get_functiondef(p.oid) ILIKE '%auth.role() = ''service_role''%'
      AND p.proname NOT IN ( /* allowlist names */ );
    ```
-   Fires (violation_count > 0) if any future fn outside the allowlist
-   adopts the pattern. This is the only mechanical guard that survives
-   sessions where the developer never reads ADR-0028.
+   Deferred — invariant total remains at 11 (A1-L). Should the
+   adapter surface grow ≥10 fns, this layer should ship in the same
+   migration that adds the 10th fn.
 
 ### Q4 resolution — Standalone Pacote M session (audit + execution same session, with PM checkpoint)
 
@@ -519,15 +571,45 @@ checkpoint after Phase 1 before Phase 2 migration applies. Single
 focused session avoids cognitive context-switch + maintains atomic
 rollback granularity for the 30-fn batch.
 
-## Pending
+## Closure (p64)
+
+All originally-pending items are now resolved (DONE) or moot
+(SUPERSEDED). ADR-0028 is closed for further amendments unless the
+adapter surface grows ≥10 fns or a new caller class emerges.
 
 - [x] PM ratify ADR (Proposed → Accepted, 2026-04-26 via Opção A
       council-validated)
-- [ ] Phase 1 prematch audit (`docs/audit/ADR-0028-prematch-audit.md`):
-      30 clean + 7 extended classification + actor_id NULL strategy per fn
-- [ ] **PM checkpoint**: review Phase 1 audit before Phase 2 applies
-- [ ] Phase 2 Batch 1 migration + tests + commit (Pacote M)
-- [ ] Phase 4 contract test enhancement (4-layer defense)
-- [ ] ADR-0029 draft + PM ratify (audit_access action for Batch 2)
-- [ ] Batch 2 migration (Pacote O, post ADR-0029)
-- [ ] ADR-0011 cross-reference back-stub added (back-link to ADR-0028)
+- [x] Phase 1 prematch audit (`docs/audit/ADR-0028-prematch-audit.md`):
+      executed p64 — surfaced 32 of 37 originally-targeted fns as
+      dead-code (missing substrate). Reclassified to 4 OK + 33 DROP
+      after dependency re-check.
+- [x] **PM checkpoint**: PM ratified P3 (split: 4 V4 convert + 33
+      drop) after council review (security + accountability advisors)
+      validated zero LGPD blast radius (zero telemetry on substrate).
+- [x] Phase 2 Pacote M migration + tests + commit
+      (`f47ae3f` / migration `20260427000000`) — 4 fns converted to
+      adapter pattern. 33 dead-code fns DROPPED in same migration.
+- [x] Phase 4 contract test enhancement — REDIRECTED to table-drift
+      detection (`tests/contracts/rpc-migration-coverage.test.mjs`,
+      TABLE_DRIFT_BASELINE_SIZE=17). Layers 1, 2, 3, 5 of original
+      5-layer fn-level defense deferred (not cost-justified at 4-fn
+      surface). Layer 4 (COMMENT sentinel) shipped on all 4 fns.
+- [x] ADR-0029 draft + PM ratify — DONE but repurposed:
+      `ADR-0029-ingestion-subsystem-retroactive-retirement.md`
+      documents the 17 substrate tables + 33 dead-code fns. Original
+      `audit_access` action ratification became moot when Batch 2
+      surface was eliminated (all 7 fns dropped).
+- [x] Batch 2 migration (Pacote O, post ADR-0029) — SUPERSEDED.
+      Pacote M (`20260427000000`) folded the 7 Batch 2 drops into a
+      single migration. No separate Pacote O ships.
+- [x] ADR-0011 cross-reference back-stub added — DONE p64
+      (`docs/adr/ADR-0011-...md` § "Cross-reference — ADR-0028
+      service-role-bypass adapter (2026-04-26)").
+
+**Remaining residue** (not blocking ADR closure):
+- (deferred, low priority) Layers 1-3 + 5 of 5-layer defense — ship
+  alongside the 10th adapter fn if surface ever grows.
+- (post-incident sediment) Track Q-D charter amended p65 with
+  `pg_policy` precondition — see
+  `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` § "Charter amendment —
+  pg_policy precondition (added p65, 2026-04-26 post-incident)".
