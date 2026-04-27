@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | **146 MCP tools (96R+50W) v2.26.0** | 24 Edge Functions | **1415** unit (**1383** pass DB-aware) + 40 e2e tests | **44 ADRs** (latest: 0041-0044 p72 — governance review action + chapter dashboards restore + finance V4 + 2-of-N approval) | Phase B'' V3→V4: **99/246 tracked**; **pg_proc strict V3 scan: 0 violations** (all RPCs auth-gate via can_by_member); residual designation references in triggers/calculations/helpers are display-only and out of Phase B'' scope
+- **Version:** v3.2.1 (Structural Quality) | **153 MCP tools (99R+54W) v2.29.0** | 24 Edge Functions | **1415** unit (**1383** pass DB-aware) + 40 e2e tests | **48 ADRs** (latest: 0041-0048 p72 marathon — governance review + chapter dashboards + finance V4 + 2-of-N + #84 schema + #84 Onda 2 7/11) | Phase B'' V3→V4: **99/246 tracked**; **pg_proc strict V3 scan: 0 violations** (all RPCs auth-gate via can_by_member); residual designation references in triggers/calculations/helpers are display-only and out of Phase B'' scope
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
