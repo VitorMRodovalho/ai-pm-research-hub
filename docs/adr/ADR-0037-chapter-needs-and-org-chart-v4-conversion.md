@@ -1,6 +1,6 @@
 # ADR-0037: Chapter needs + Org chart V4 conversion — `view_internal_analytics` reuse + Path Y chapter_board preservation
 
-- Status: **Proposed** (2026-04-27 p67 — aguarda PM rubber-stamp Q1=? / Q2=? / Q3=? / Q4=?)
+- Status: **Accepted** (2026-04-27 — PM Vitor ratified Q1=SIM / Q2=SIM / Q3=SIM / Q4=p67)
 - Data: 2026-04-27 (p67)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Phase B'' V3→V4 conversion (2 fns) — `get_chapter_needs` (Path Y) +

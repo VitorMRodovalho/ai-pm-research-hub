@@ -1,6 +1,6 @@
 # ADR-0040: p70 cleanup batch — DROP dead helper + REVOKE-from-anon for 3 internal helpers
 
-- Status: **Proposed** (2026-04-27 p70 — aguarda PM rubber-stamp Q1=? / Q2=?)
+- Status: **Accepted** (2026-04-27 — PM Vitor ratified Q1=SIM / Q2=SIM)
 - Data: 2026-04-27 (p70)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Pure cleanup batch — zero V4 conversion, zero member-set change.

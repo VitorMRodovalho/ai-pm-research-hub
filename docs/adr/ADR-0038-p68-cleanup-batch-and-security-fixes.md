@@ -1,6 +1,6 @@
 # ADR-0038: p68 cleanup batch — 1 V3→V4 zero-drift convert + 2 security drift corrections
 
-- Status: **Proposed** (2026-04-27 p68 — aguarda PM rubber-stamp Q1=? / Q2=? / Q3=?)
+- Status: **Accepted** (2026-04-27 — PM Vitor ratified Q1=SIM / Q2=SIM / Q3=p68)
 - Data: 2026-04-27 (p68)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Phase B'' V3→V4 conversion (1 fn) + 2 SECDEF drift corrections
