@@ -1,15 +1,21 @@
 # ADR-0026: New V4 Action `manage_comms` — Phase B'' Conversion
 
 - Status: **Accepted** (2026-04-26 p59 — PM rubber-stamp ratify of all Q1-Q4)
-- Data: 2026-04-26 (p59)
+  + **Extended** (2026-04-26 p66 — campaign stats/preview added to scope)
+- Data: 2026-04-26 (p59); extension 2026-04-26 (p66)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
-- Escopo: Phase B'' V3→V4 conversion track (2 of N) — closes 1 V3-gated function
+- Escopo: Phase B'' V3→V4 conversion track — closes 3 V3-gated functions total
+  (1 batch 1 + 2 extension)
 - Ratify decisions:
   - Q1 sponsors com manage_comms: **NÃO**
   - Q2 chapter_board × liaison scope: **NÃO agora**
   - Q3 migrar admin_send_campaign + comms_check_token_expiry: **NÃO**
   - Q4 timing: **p59** (executado 2026-04-26)
-- Implementation: migration `20260426170038_adr_0026_manage_comms_v4_conversion`
+  - Q5 (p66) — extender para `admin_get_campaign_stats` + `admin_preview_campaign`: **SIM**
+- Implementation:
+  - Batch 1: migration `20260426170038_adr_0026_manage_comms_v4_conversion`
+  - Extension: migrations `20260427011141_adr_0026_extension_campaign_fns_v4_manage_comms` +
+    `20260427011239_adr_0026_extension_campaign_fns_revoke_anon`
 - Drift surfaced: Mayanna Duarte perdeu access (V3 designation comms_leader sem
   V4 engagement). Documentado para PM decidir se cria engagement post-fact.
 
@@ -259,3 +265,71 @@ Estimativa: ~1.5h (mais simples que ADR-0025 porque é apenas 1 fn).
 - ADR-0025 (manage_finance — sister proposal, mesmo padrão)
 - `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` Phase B'' section
 - `docs/council/2026-04-26-tracks-qd-r-security-hardening-decision.md`
+
+---
+
+## Extension (p66, 2026-04-26)
+
+PM directive p66: "primeiro 1 depois 2" → item #1 = ADR-0026 scope extension.
+
+### Scope addition
+
+2 fns V3 added to scope (originally documented in p57/p58 audit as Phase B''
+candidates):
+
+1. `admin_get_campaign_stats(p_send_id uuid)` — campaign send statistics reader
+   (delivered/opened/unsubscribed counts).
+2. `admin_preview_campaign(p_template_id uuid, p_preview_member_id uuid)` —
+   render template preview with variable substitution. Calls `log_pii_access`.
+
+### V3 gate (both fns, identical)
+
+```sql
+SELECT id INTO v_caller_id FROM public.members
+WHERE auth_id = auth.uid()
+  AND (
+    is_superadmin
+    OR operational_role IN ('manager','deputy_manager')
+    OR 'comms_team' = ANY(designations)
+  );
+```
+
+### Discovery: `comms_team` designation = 0 active members
+
+Pre-apply audit revealed `'comms_team' = ANY(designations)` was effectively
+dead code — zero active members carry that designation. The legacy gate was
+behaving as `is_superadmin OR manager/deputy_manager` only.
+
+This is consistent with the V3 → V4 designation modernization track: ADR-0006
+moved roles to `engagements`, leaving some V3 designation references as dead
+references in code that was never updated.
+
+### Privilege expansion (zero change)
+
+```
+legacy_count = 2  (Vitor SA, Fabricio manager-equiv)
+v4_count    = 2  (same)
+would_gain   = []
+would_lose   = []
+```
+
+Mayanna (designation comms_leader, no V4 engagement volunteer×comms_leader) —
+same drift case as ADR-0026 batch 1; no incremental impact.
+
+### pg_policy precondition (Q-D charter, p65)
+
+Verified zero RLS policy refs to either fn (word-boundary regex `\m`).
+REVOKE FROM anon is safe — applied as defense-in-depth.
+
+### Migrations
+
+- `20260427011141_adr_0026_extension_campaign_fns_v4_manage_comms.sql` —
+  CREATE OR REPLACE for both fns with `can_by_member(_, 'manage_comms')` gate.
+  search_path tightened to `''` (matches ADR-0026 batch 1 pattern).
+- `20260427011239_adr_0026_extension_campaign_fns_revoke_anon.sql` —
+  REVOKE EXECUTE FROM PUBLIC, anon (defense-in-depth, matches batch 1).
+
+### Phase B'' tally update
+
+Pre-extension: 65/213 (~30.5%) per p64 handoff.
+Post-extension: **67/213 (~31.5%)**.
