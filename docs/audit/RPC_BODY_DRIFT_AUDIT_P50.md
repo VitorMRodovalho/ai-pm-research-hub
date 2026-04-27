@@ -967,13 +967,14 @@ worth the effort (uncovered 23 in p68).
 remaining without PM design input. All 23 NEW + 26 prior candidates need PM
 input.
 
-### Phase B'' running tally post-p69
+### Phase B'' running tally post-p72
 
 - p65: ?+5 (Pacote M)
 - p66: 79/246 baseline → +6 ADRs cluster
 - p67: 79 → 82/246 (~33.3%) via ADR-0037 + ext (3 fns)
 - p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)
-- **p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)**
+- p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)
+- **p72: 86 → 95/246 (~38.6%) via ADR-0041 (new V4 action `participate_in_governance_review` + 9 V3→V4 fns across document_comments + curation/board clusters; Path Y for tribe_leader operational paths + author self-resolve + self+author claim + curator/board_admin special-cases preserved)**
 
 ### Closed by ADR-0039 (p69, 4 fns total)
 
@@ -1047,6 +1048,77 @@ detection methodology validated; re-run each session.
 5/5 helpers triaged. V3 body conversion of the 4 live helpers remains
 backlog (Path Y candidate for `can_manage_comms_metrics` comms_member
 preservation).
+
+### Closed by ADR-0041 (p72, 9 fns + new V4 action)
+
+**Section A — New V4 action seed (4 catalog rows)**
+- `participate_in_governance_review` × organization-scope, granted to:
+  - `volunteer × {manager, deputy_manager, co_gp}`
+  - `chapter_board × liaison`
+
+**Section B — V3→V4 body conversion (9 fns)**
+
+Document_comments cluster (3 fns):
+- `create_document_comment` — strict V4
+- `list_document_comments` — strict V4 (author-own preserved by existing query logic)
+- `resolve_document_comment` — V4 + Path Y (author self-resolve)
+
+Curation/board cluster (6 fns):
+- `assign_curation_reviewer` — strict V4 (committee work)
+- `assign_member_to_item` — V4 + Path Y (tribe_leader op-role + board_admin + self+author claim + curator+curation_reviewer special-case)
+- `submit_curation_review` — strict V4 (committee work)
+- `submit_for_curation` — V4 + Path Y (tribe_leader operational handoff)
+- `unassign_member_from_item` — V4 + Path Y (tribe_leader symmetric)
+- `publish_board_item_from_curation` — strict V4 (defense-in-depth; called internally only)
+
+**Section C — REVOKE FROM anon** (defense-in-depth) for all 9 fns.
+
+### Privilege expansion (p72, ADR-0041)
+
+Per-fn deltas with concrete member impact documented in
+`docs/adr/ADR-0041-participate-in-governance-review-action.md` § Privilege expansion.
+
+Aggregate:
+- **V4 set** (5): Vitor (volunteer/manager), Fabricio (volunteer/co_gp),
+  Ana Cristina Fernandes Lima (chapter_board/liaison), Roberto Macêdo
+  (chapter_board/liaison), Rogério Peixoto (chapter_board/liaison).
+- **Gains** (consistent across 9 fns): Ana Cristina + Rogério (V4 catalog
+  inclusion via chapter_board.liaison engagement). Roberto re-routed via
+  catalog (was previously curator-designation).
+- **Losses** (governance review tightening, PM-accepted in §G ratify):
+  - Sarah Faria (curator + founder designations — no V4 engagement)
+  - Andressa Martins, Antonio Marcos Costa, Ivan Lourenço (founder
+    designations — Ivan has chapter_board.board_member but seed targets
+    only chapter_board.liaison)
+  - 6 tribe_leaders for `create_document_comment` only (Ana Carla, Débora,
+    Fernando, Hayala, Jefferson, Marcos — governance commenting moved to
+    committee scope; tribe→committee handoff fns preserve their access)
+- Future: `committee_curator` engagement kind (PM ratify §G item 2) will
+  restore Sarah-class curator access. `committee_coordinator/coordinator`
+  catalog seed candidate (Sarah + Roberto + Fabricio engagements ready).
+
+### Pattern sediment (p72)
+
+**Action specificity precedent**: `participate_in_governance_review` is the
+first action in the catalog explicitly scoped to *governance review
+participation*. Future actions should follow the same precision principle —
+separate read-only from write-only, separate domain (event/finance/comms)
+from cross-cutting (governance/oversight).
+
+**Path Y composition**: ADR-0041 demonstrates that a single ADR can mix
+`strict V4` fns and `V4 + Path Y` fns within one batch. Decision per fn:
+- If the fn is *purely* committee/oversight → strict V4.
+- If the fn services *general UX* OR *operational handoff* → V4 + Path Y.
+- Document each Path Y addition explicitly with rationale.
+
+**Cross-cluster ADR**: ADR-0041 closes 2 distinct clusters in one ADR
+(document_comments + curation/board) via shared action. Pattern useful
+when clusters share a thematic concern but have divergent V3 gates.
+
+**Curator deferral**: governance access by `curator` designation is
+consistently deferred to future `committee_curator` engagement kind.
+Forward commitment: when committee_curator is created, audit ALL
+designation-based curator gates and migrate to engagement.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
