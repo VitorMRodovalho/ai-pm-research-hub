@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.27.0 — 149 tools (97R + 52W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.28.0 — 152 tools (98R + 54W) + 1 prompt + 1 resource + usage logging
+// v2.28.0: +3 #84 Onda 2 RPCs wrapping ADR-0047 — get_card_full_history (read-only
+//   360° timeline), convert_action_to_card (atomic action→card flow), register_decision
+//   (specialized decision with multi-card link fanout). #84 Onda 2 progress: 6/10 RPCs
+//   shipped (3 in ADR-0046 + 3 in ADR-0047); 4 remain (get_meeting_preparation,
+//   get_agenda_smart, update_card_during_meeting, meeting_close, get_tribe_housekeeping).
 // v2.27.0: +3 meeting action item lifecycle tools wrapping ADR-0046 RPCs
 //   (create_action_item, resolve_action_item, list_meeting_action_items).
 //   ADR-0046 ships #84 Onda 2 partial — structured action item INSERT/UPDATE/SELECT
@@ -2760,6 +2765,79 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ───────────────────────────────────────────────────────────────
+  // CARD HISTORY + DECISIONS + ACTION CONVERSION — ADR-0047 (#84 Onda 2 cont., p72)
+  // ───────────────────────────────────────────────────────────────
+
+  mcp.tool("get_card_full_history", "Returns 360° timeline for a board card: lifecycle events, meeting links, action items, showcases, curation reviews. Closes #84 GAP 4 — answers 'quais reuniões discutiram este card?', 'quais decisions impactaram?', 'quem apresentou em showcase?'. Authenticated only.", {
+    card_id: z.string().describe("UUID of the board_items row")
+  }, async (params: { card_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_card_full_history", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "get_card_full_history", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_card_full_history", { p_card_id: params.card_id });
+    if (error) { await logUsage(sb, member.id, "get_card_full_history", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_card_full_history", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("convert_action_to_card", "Atomic flow: convert an open action item into a new board card. Creates the card in target board, links action_item.board_item_id, and inserts board_item_event_links (link_type='action_emerged') to preserve trail. Defaults: title from action description (first 80 chars), assignee + due_date inherited. Requires write_board (ADR-0047, #84 Onda 2).", {
+    action_item_id: z.string().describe("UUID of meeting_action_items row to convert"),
+    board_id: z.string().describe("UUID of target project_boards row"),
+    title: z.string().optional().describe("Optional override (default: first 80 chars of action description)"),
+    description: z.string().optional().describe("Optional description override"),
+    status: z.string().optional().describe("Initial card status (default: 'todo')"),
+    due_date: z.string().optional().describe("Optional due date YYYY-MM-DD (default: action's due_date)")
+  }, async (params: { action_item_id: string; board_id: string; title?: string; description?: string; status?: string; due_date?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "convert_action_to_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.action_item_id)) return err("action_item_id must be a UUID");
+    if (!isUUID(params.board_id)) return err("board_id must be a UUID");
+    if (!(await canV4(sb, member.id, 'write_board'))) {
+      await logUsage(sb, member.id, "convert_action_to_card", false, "Unauthorized", start);
+      return err("Unauthorized — requires write_board.");
+    }
+    const { data, error } = await sb.rpc("convert_action_to_card", {
+      p_action_item_id: params.action_item_id,
+      p_board_id: params.board_id,
+      p_title: params.title ?? null,
+      p_description: params.description ?? null,
+      p_status: params.status ?? 'todo',
+      p_due_date: params.due_date ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "convert_action_to_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "convert_action_to_card", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("register_decision", "Register a meeting decision (semantic kind='decision' with multi-card link fanout). Decisions are auto-completed (status='completed') and resolved immediately. Optional related_card_ids[] creates board_item_event_links of link_type='decision' to each card. Requires manage_event (ADR-0047, #84 Onda 2). Distinct from create_action_item with kind='decision' in that this RPC's signature is decision-first (title required) and supports card fanout.", {
+    event_id: z.string().describe("UUID of the event where decision was made"),
+    title: z.string().describe("Short decision title (e.g. 'Aprovar publicação do artigo X em Q3')"),
+    description: z.string().optional().describe("Optional detailed context/rationale"),
+    related_card_ids: z.array(z.string()).optional().describe("Array of board_items UUIDs impacted by this decision (creates link_type='decision' entries)")
+  }, async (params: { event_id: string; title: string; description?: string; related_card_ids?: string[] }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "register_decision", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    if (params.related_card_ids?.some(id => !isUUID(id))) return err("All related_card_ids must be UUIDs");
+    if (!(await canV4(sb, member.id, 'manage_event'))) {
+      await logUsage(sb, member.id, "register_decision", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_event.");
+    }
+    const { data, error } = await sb.rpc("register_decision", {
+      p_event_id: params.event_id,
+      p_title: params.title,
+      p_description: params.description ?? null,
+      p_related_card_ids: params.related_card_ids ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "register_decision", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "register_decision", true, undefined, start);
+    return ok(data);
+  });
+
+  // ───────────────────────────────────────────────────────────────
   // PARTNERSHIP LIFECYCLE TOOLS — #85 Onda B bundle 3
   // ───────────────────────────────────────────────────────────────
 
@@ -3105,7 +3183,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.27.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.28.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3125,6 +3203,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.27.0", tools: 149, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.28.0", tools: 152, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
