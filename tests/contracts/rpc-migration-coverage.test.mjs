@@ -110,6 +110,23 @@ async function callTablesAuditRpc() {
   return res.json();
 }
 
+async function callRevokedFnsRlsRefsAuditRpc() {
+  const url = `${SUPABASE_URL}/rest/v1/rpc/_audit_list_revoked_secdef_fns_with_rls_refs`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(`revoked-fns RLS-refs audit RPC failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
 function loadTableDriftAllowlist() {
   const raw = readFileSync(TABLE_DRIFT_ALLOWLIST_PATH, 'utf8');
   return new Set(
@@ -303,3 +320,59 @@ test('Pacote M Phase 4: table-drift allowlist size matches p64 baseline', () => 
       `when substrate is restored OR retroactive DROP TABLE migration is added.`
   );
 });
+
+// ============================================================================
+// p65 Bug B sediment — pg_policy precondition contract for REVOKE migrations
+//
+// Catches the bug class that caused the p64 production incident: REVOKE EXECUTE
+// FROM authenticated on a SECDEF function that is referenced inside an RLS
+// policy expression. RLS evaluates in the caller's role context — the policy
+// requires EXECUTE on the function regardless of SECDEF, so REVOKE silently
+// breaks PostgREST table reads for authenticated users.
+//
+// The original p64 audit chain checked frontend `.rpc()` + EF source +
+// `pg_proc.prosrc` SECDEF caller chain + migration history but missed the
+// `pg_policy` reference scan. 48 RLS policies (every `*_v4_org_scope`) call
+// `auth_org()` directly; 13 RLS policies call `can_by_member()` directly.
+// REVOKE'ing both broke ~8 hours of authenticated PostgREST reads silently.
+//
+// Helper `_audit_list_revoked_secdef_fns_with_rls_refs()` (migration
+// 20260427003953) returns SECDEF fns where:
+//   1. authenticated EXECUTE is revoked (pg_catalog.has_function_privilege)
+//   2. AND the function name appears in pg_policies.qual or .with_check via
+//      word-boundary regex `\m(public\.)?<fn>\(`
+//
+// Word-boundary anchor `\m` is critical — without it, `can(` matches `rls_can(`
+// and `can_by_member(` producing false-positives across the V4 authority
+// helper family (verified during p65 retro-scan).
+// ============================================================================
+
+test(
+  'p65 Bug B: SECDEF fns REVOKE\'d from authenticated must not appear in RLS policies',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const matches = await callRevokedFnsRlsRefsAuditRpc();
+
+    if (Array.isArray(matches) && matches.length > 0) {
+      const summary = matches
+        .map(
+          r =>
+            `  - ${r.qualified_name}(${r.args || ''}) → ${r.table_name}.${r.policy_name} [${r.policy_clause}]`
+        )
+        .join('\n');
+      assert.fail(
+        `p64 incident class detected: ${matches.length} SECDEF function(s) REVOKE'd ` +
+          `from authenticated but referenced in RLS policies. These will silently ` +
+          `break PostgREST table reads for authenticated users.\n\n` +
+          `To fix, either:\n` +
+          `  (a) Restore GRANT EXECUTE ON FUNCTION public.<fn>(<args>) TO authenticated, anon;\n` +
+          `  (b) Refactor the policy to call a SECDEF wrapper (e.g., rls_can, ` +
+          `can_by_member) that itself retains the authenticated grant.\n\n` +
+          `See:\n` +
+          `  - hotfix migrations 20260426232108 (auth_org) + 20260426232200 (can_by_member)\n` +
+          `  - docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md § "Charter amendment — pg_policy precondition (added p65)"\n\n` +
+          `Matches:\n${summary}`
+      );
+    }
+  }
+);
