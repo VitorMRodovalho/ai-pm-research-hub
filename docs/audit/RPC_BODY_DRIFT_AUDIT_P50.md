@@ -863,7 +863,8 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - **Phase B'' p66 ADR-0033 Phase 1 partner subsystem: 4 fns (3 via Opção B reuse manage_partner + 1 via manage_platform reuse, drift loss João chapter_liaison)**
 - **Phase B'' p66 ADR-0034 Phase 2 partner attachments: 4 fns (Path A writers + Path D readers, drift signals #5 #6 CLOSED, drift loss Sarah curator + 6 tribe_leaders)**
 - **Phase B'' p66 ADR-0035 analytics + no-gate hardening: 4 fns (2 V3→V4 reuse view_internal_analytics + 2 no-gate hardening get_annual_kpis/get_cycle_report)**
-- **Cumulative: 78 of 246 fns (~31.7%)** — up from p63 56/246 (22.8%)
+- **Phase B'' p66 ADR-0036 get_member_detail: 1 fn (Opção B reuse view_internal_analytics, ADR-0031 ladder precedent)**
+- **Cumulative: 79 of 246 fns (~32.1%)** — up from p63 56/246 (22.8%)
 - **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 3 Opção B reuses: governance readers + member directory + archived board listing + partner subsystem 100%)
 - **First p66 use of resource-scoped `can_by_member(_, action, 'initiative', id)`** — precedent established para ADRs futuras com per-resource gates (pattern já existia em V4 core mas pouco usado em Phase B'' até este ponto).
 - **Partner subsystem 100% V4** — Phase 1 (ADR-0033) + Phase 2 (ADR-0034) = 8/8 fns convertidas.
