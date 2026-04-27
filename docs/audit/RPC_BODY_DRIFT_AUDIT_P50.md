@@ -861,10 +861,12 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - **Phase B'' p66 ADR-0031 admin_list_members: 1 fn (Opção B reuse view_internal_analytics, +Roberto chapter_board×liaison gain)**
 - **Phase B'' p66 ADR-0032 board admin: 4 fns (3 writers via new manage_board_admin resource-scoped + 1 reader via Opção B reuse view_internal_analytics, Path A drift Sarah/Mayanna)**
 - **Phase B'' p66 ADR-0033 Phase 1 partner subsystem: 4 fns (3 via Opção B reuse manage_partner + 1 via manage_platform reuse, drift loss João chapter_liaison)**
-- **Cumulative: 70 of 246 fns (~28.5%)** — up from p63 56/246 (22.8%)
-- **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 3 Opção B reuses: governance readers + member directory + archived board listing + partner subsystem)
+- **Phase B'' p66 ADR-0034 Phase 2 partner attachments: 4 fns (Path A writers + Path D readers, drift signals #5 #6 CLOSED, drift loss Sarah curator + 6 tribe_leaders)**
+- **Cumulative: 74 of 246 fns (~30.1%)** — up from p63 56/246 (22.8%)
+- **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 3 Opção B reuses: governance readers + member directory + archived board listing + partner subsystem 100%)
 - **First p66 use of resource-scoped `can_by_member(_, action, 'initiative', id)`** — precedent established para ADRs futuras com per-resource gates (pattern já existia em V4 core mas pouco usado em Phase B'' até este ponto).
-- **Partner subsystem Phase 2 backlog**: 4 attachment fns (add/delete_partner_attachment + get_partner_entity/interaction_attachments) com curator inclusion + 4-tier visibility + drift signals #5 #6 closure — futuro ADR-0034.
+- **Partner subsystem 100% V4** — Phase 1 (ADR-0033) + Phase 2 (ADR-0034) = 8/8 fns convertidas.
+- **Drift signals #5 #6 CLOSED** (audit doc Phase B' track) — V3 chapter_match using operational_role-based check removed entirely; V4 manage_partner is single source of truth.
 - Easy-convert backlog (true zero-expansion clean cases for any
   prefix): **0 known after Pacote I** — exhaustive 90-fn surface audit
   exhausted clean candidates with admin-broad gate.
