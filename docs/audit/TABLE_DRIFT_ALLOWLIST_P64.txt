@@ -1,0 +1,47 @@
+# Table-level drift allowlist — Pacote M Phase 4 / ADR-0029
+#
+# Lists tables that exist in supabase/migrations/ as CREATE TABLE blocks but
+# are absent from the live DB and have no DROP TABLE migration capturing the
+# removal. These are the "extinct table" entries acknowledged by the ADR-0029
+# retroactive retirement record (P3 council-validated).
+#
+# An entry here means:
+#   - Migration creates the table (good — paper trail)
+#   - DB does not have the table (drop happened)
+#   - No DROP TABLE migration captured the removal (DDL drift)
+#   - ADR-0029 acknowledges this drift retroactively
+#
+# Going forward: any NEW entry to this allowlist requires a retirement ADR
+# similar to ADR-0029 documenting the rationale + zero-data confirmation +
+# PM acknowledgment.
+#
+# Removing an entry is allowed when:
+#   1. The table is recreated (substrate restored — entry no longer extinct)
+#   2. A DROP TABLE migration is added retroactively + the test logic
+#      considers DROP-followed-by-CREATE pairs idempotent
+#
+# Format: one table_name per line. Lines starting with # are comments.
+
+# === ADR-0029 ingestion/release-readiness/governance-bundle subsystem ===
+# Substrate dropped via Supabase Dashboard SQL editor or execute_sql MCP
+# without DROP TABLE migration capture. Functions referencing these were
+# dropped in Pacote M migration 20260427000000 per ADR-0029 retirement
+# record. Zero telemetry confirms zero operational use. PM-acknowledged
+# retroactive retirement — see ADR-0029 + GC-141.
+ingestion_apply_locks
+ingestion_run_ledger
+ingestion_alerts
+ingestion_alert_remediation_runs
+ingestion_alert_remediation_rules
+ingestion_rollback_plans
+rollback_audit_events
+release_readiness_decisions
+release_readiness_history
+governance_bundle_snapshots
+ingestion_provenance_signatures
+ingestion_provenance_anomaly_alerts
+notion_import_staging
+legacy_tribes
+legacy_tribe_board_links
+ingestion_batches
+partner_governance_metrics

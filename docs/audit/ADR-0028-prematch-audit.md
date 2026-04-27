@@ -243,6 +243,46 @@ right now.
 - **If P3 (recommended)**: write `pacote_m_split_5convert_32drop.sql`; update ADR-0028 with revised 5-fn scope; ADR-0029 documents the 32 drops with table-missing evidence; commit with explicit per-fn rationale.
 - **If P4**: spawn security-engineer + accountability-advisor agents with this audit doc as input; resume Pacote M next session post-investigation.
 
+## Resolution (2026-04-26 p64)
+
+**PM ratify path**: P4 first (council investigation), then P3 (split 5 convert + 32 drop).
+
+**P4 outcome**: Council unanimous (security-engineer + accountability-advisor)
+verdict was **accidental DDL drift, not intentional retirement**. Evidence:
+- Zero ADR documents retirement (28 ADRs scanned)
+- Zero entry in GOVERNANCE_CHANGELOG.md (140 entries scanned)
+- Zero record in admin_audit_log
+- Zero git commit dropping these tables (`git log -S` confirmed)
+- Original migrations 20260308-20260314 are production-quality (not experimental scaffolding)
+- Track Q (p50) audited fn-body drift only — table-level escaped scrutiny
+
+**P3 execution**: applied via migration `20260427000000_pacote_m_adr0028_4convert_33drop_per_adr0029_p64.sql`.
+
+**Scope adjustment during implementation**: Phase 1 classified
+`admin_capture_data_quality_snapshot` as 5th OK fn. Dependency re-check
+during migration drafting found it transitively broken (depends on
+`admin_data_quality_audit` which itself references missing
+legacy_tribes/legacy_tribe_board_links). Reclassified as PARTIAL_BROKEN.
+Final scope: **4 convert + 33 drop** (vs Phase 1's 5 + 32).
+
+**Surviving 4 fns** (V4 adapter applied):
+- `admin_check_ingestion_source_timeout(text, timestamptz)`
+- `admin_set_ingestion_source_sla(text, integer, integer, text, boolean)`
+- `admin_set_release_readiness_policy(text, text, integer, integer)`
+- `admin_get_ingestion_source_policy(text)`
+
+**Verification post-migration**:
+- 4 surviving fns: ALL use `can_by_member(v_caller_id, 'manage_platform')` + `auth.role() = 'service_role'` adapter
+- 33 fns dropped (verified via `pg_proc` count — none of the 37 originally targeted persist except the 4)
+- Invariants: 11/11 = 0 violations preserved
+- Tests: 1409 / 1380 / 0 / 29 (unchanged baseline)
+
+**Artifacts**:
+- ADR-0028 amended (scope: 37 → 4)
+- ADR-0029 created (retroactive retirement record)
+- GC-141 added to GOVERNANCE_CHANGELOG.md
+- `tests/contracts/rpc-migration-coverage.test.mjs` extended for table-level drift detection (separate commit in same Pacote M session)
+
 ---
 
 ## Evidence sources
