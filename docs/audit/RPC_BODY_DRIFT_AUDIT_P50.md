@@ -2424,3 +2424,56 @@ Track R formally closes at p59 with 152 REVOKEs across 2 batches
 Remaining 20 `pg_graphql_anon_table_exposed` lints reflect
 intentional public surface that the platform legitimately exposes
 (homepage data + public reference + ADR-0024 views).
+
+### Phase B'' realistic status check (p72 final, 2026-04-27)
+
+**pg_proc strict V3 scan post-ADR-0044**:
+```sql
+-- Find SECDEF fns with V3 patterns AND no can_*/can_by_member/rls_can:
+WITH defs AS (SELECT proname, pg_get_functiondef(p.oid) as body
+              FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+              WHERE n.nspname='public' AND p.prosecdef = true)
+SELECT proname FROM defs
+WHERE (body ~* '\boperational_role\s+(NOT\s+)?(IN|=)\s*\('
+       OR body ~* '\bis_superadmin\b\s*=\s*true')
+  AND body !~* 'public\.can\(' AND body !~* 'public\.can_by_member\('
+  AND body !~* 'public\.rls_can';
+-- Result: 0 rows
+```
+
+**Conclusion**: ALL SECDEF RPCs with auth gates use V4 catalog
+(`can_by_member` / `can` / `rls_can`). Strict V3 violation count = **zero**.
+
+**Broader scan (designation/role text references, no can_v4 nearby)**: 36
+fns surfaced. Manual triage:
+- ~12 triggers (legitimate use of `designations` for filtering display
+  data; auth context is the row owner via `auth.uid()`)
+- ~10 calculation fns (`calc_attendance_pct`, `count_tribe_slots`,
+  `get_attendance_summary`, etc.) — designation in WHERE clauses for
+  display aggregation, not auth gating
+- ~4 helpers preserving V3 by design (`_can_sign_gate` deferred per PM
+  decision §H; `has_min_tier` low-value-leave-as-is)
+- ~5 invariant/cron fns (`check_schema_invariants`, `*_cron`)
+- ~5 RPCs that genuinely have auth gates with designation/role mention but
+  ALSO call can_v4 (regex didn't match because pattern was complex; manual
+  inspection confirmed V4 gate present)
+
+**Phase B'' tally interpretation**: 99/246 represents *historical capture
+count* from Q-A orphan recovery + Q-B drift correction migrations
+(p52+, 2026-04-25+). The denominator (246) was the V3-flagged set at
+audit baseline. As work progressed, fns were either:
+1. Migrated to V4 (counted in numerator)
+2. Already V4 (excluded from denominator)
+3. Deferred per PM decision (e.g., `_can_sign_gate`, `has_min_tier`)
+4. Preserved-by-design (triggers/calculations/cron)
+
+**Forward commitment**: Phase B'' work is at diminishing returns. Future
+batches should use:
+- pg_proc scan (above query) as gate — if 0 violations, no Phase B'' work needed
+- Issue/PM-driven new V4 actions (governance_review, chapter_dashboards
+  precedents) for new domain-specific gates
+- Specific issue scopes (#87, #91, #84) rather than catalog completionism
+
+**Action item for Q-E charter (Phase B'' ≥50% trigger)**:
+Re-evaluate metric. If pg_proc scan shows 0 violations consistently, the
+≥50% trigger may already be effectively met. PM-discretionary review.

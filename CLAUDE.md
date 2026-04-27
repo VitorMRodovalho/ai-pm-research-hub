@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | 143 MCP tools (96R+47W) | 24 Edge Functions | **1397** unit (**1374** with DB env) + 40 e2e tests (0 fails — p58 Track Q-D batches 3a.3a+3a.3b+3a.4+3a.5+3a.6+3a.7 + batch 1 amendment **5 buckets closed** (initiative/board, knowledge/wiki, comms, curation/governance, sustainability/KPI) Q-D scope 100% triaged (114 fns) + p57 Q-D batch 3a.1 council-validated reshape + p55 Track Q-D SECDEF security hardening sweep started + p54 Phase B' batch 4 migrated 4 V3-gated/no-gate fns to V4 incl drift signals #7 #8 + p53 Phase B' batches 1-3 migrated 9 V3-gated fns to V4 manage_platform + p52 Track Q Phase A+B captured 159 orphans/drifted fn bodies via 13 recovery + 4 drift correction migrations)
+- **Version:** v3.2.1 (Structural Quality) | **146 MCP tools (96R+50W) v2.26.0** | 24 Edge Functions | **1415** unit (**1383** pass DB-aware) + 40 e2e tests | **44 ADRs** (latest: 0041-0044 p72 — governance review action + chapter dashboards restore + finance V4 + 2-of-N approval) | Phase B'' V3→V4: **99/246 tracked**; **pg_proc strict V3 scan: 0 violations** (all RPCs auth-gate via can_by_member); residual designation references in triggers/calculations/helpers are display-only and out of Phase B'' scope
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
@@ -18,7 +18,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 1372 pass / 0 fail / 25 skip locally (p50 Q-C added 1 offline + 2 DB-aware contracts; with SUPABASE_SERVICE_ROLE_KEY: 1374 pass / 23 skip)
+npm test                 # 1383 pass / 0 fail / 32 skip locally (with SUPABASE_SERVICE_ROLE_KEY: 1415 total)
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
