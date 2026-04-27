@@ -50,6 +50,7 @@ export type Permission =
   | 'admin.blog'
   | 'admin.publications'
   | 'admin.curation'
+  | 'admin.governance.view'
   | 'admin.sustainability'
   | 'admin.portfolio'
   | 'admin.partners'
@@ -105,6 +106,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
     'admin.blog', 'admin.publications', 'admin.curation',
+    'admin.governance.view',
     'admin.sustainability', 'admin.portfolio', 'admin.partners',
     'admin.simulation',
     'board.view_all', 'board.view_global', 'board.create_item',
@@ -124,6 +126,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   sponsor: [
     'admin.access', 'admin.analytics', 'admin.analytics.chapter',
     'admin.portfolio', 'admin.sustainability', 'admin.partners',
+    'admin.governance.view',
     'data.view_analytics',
     'event.view_all', 'gamification.view_ranking',
     'content.view_publications',
@@ -133,6 +136,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   chapter_liaison: [
     'admin.access', 'admin.analytics', 'admin.analytics.chapter',
     'admin.portfolio', 'admin.partners',
+    'admin.governance.view',
     'data.view_analytics',
     'event.view_all', 'gamification.view_ranking',
     'content.view_publications', 'content.curate',
@@ -142,6 +146,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   tribe_leader: [
     'admin.access', 'admin.analytics', 'admin.analytics.chapter',
     'admin.portfolio', 'admin.sustainability', 'admin.partners',
+    'admin.governance.view',
     'board.view_own_tribe', 'board.view_global', 'board.create_item',
     'board.edit_tribe_items', 'board.manage_checklist', 'board.create_mirror',
     'event.create', 'event.edit', 'event.attendance_batch', 'event.view_own_tribe',
@@ -197,12 +202,14 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
     'admin.sustainability', 'admin.portfolio', 'admin.simulation',
+    'admin.governance.view',
     'board.view_all', 'board.view_global',
     'data.view_members', 'data.view_analytics',
     'event.view_all',
   ],
   curator: [
     'admin.curation', 'content.curate',
+    'admin.governance.view',
   ],
   comms_leader: [
     'board.view_global',
@@ -217,6 +224,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   alumni: [],
   chapter_board: [
     'admin.access', 'admin.analytics', 'admin.analytics.chapter',
+    'admin.governance.view',
     'data.view_analytics',
   ],
 };

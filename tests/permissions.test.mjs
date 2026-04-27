@@ -75,10 +75,27 @@ describe('hasPermission (real mode)', () => {
     assert.ok(hasPermission(member, 'content.curate'));
   });
 
+  it('curator gets admin.governance.view (governance dashboard access) without admin.access', () => {
+    // Bug A (p65): curator needs to see Governança item in admin sidebar to read
+    // pending IP ratification chains, signoffs status, comments — without relying
+    // on email magic links. admin.governance.view is the surgical gate.
+    const member = { operational_role: 'researcher', designations: ['curator'] };
+    assert.ok(hasPermission(member, 'admin.governance.view'),
+      'curator must have admin.governance.view (Bug A — Sarah governance flow)');
+    assert.ok(!hasPermission(member, 'admin.access'),
+      'curator must NOT have admin.access (would expose admin-only items)');
+  });
+
+  it('manager has admin.governance.view (preserves access after gate switch)', () => {
+    const member = { operational_role: 'manager' };
+    assert.ok(hasPermission(member, 'admin.governance.view'));
+  });
+
   it('deputy_manager designation adds admin.access to tribe_leader', () => {
     const member = { operational_role: 'tribe_leader', designations: ['deputy_manager'] };
     assert.ok(hasPermission(member, 'admin.access'));
     assert.ok(hasPermission(member, 'admin.analytics'));
+    assert.ok(hasPermission(member, 'admin.governance.view'));
   });
 });
 
