@@ -847,7 +847,7 @@ operations don't need an action — they need ownership check).
 remaining easy-convert candidates after Pacote J + K (A5 + A2 + A4).
 The 60 D/F fns are mostly "leave-as-is, not admin gates".
 
-**Phase B'' running tally post-p63 (Pacote D + E + F + G + H + I)**:
+**Phase B'' running tally post-p66 (Pacote D + E + F + G + H + I + ADR-0026 ext + ADR-0030)**:
 - Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
 - Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
 - Phase B'' p59 Pacote D easy-convert: 5 fns
@@ -855,8 +855,11 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - Phase B'' p60 Pacote F easy-convert: 3 fns
 - Phase B'' p60 Pacote G easy-convert: 1 fn
 - Phase B'' p60 Pacote H easy-convert: 8 fns
-- **Phase B'' p63 Pacote I easy-convert: 6 fns (5 names + 1 overload)**
-- **Cumulative: 56 of 246 fns (~22.8%)** — up from p60 50/246 (20.3%)
+- Phase B'' p63 Pacote I easy-convert: 6 fns (5 names + 1 overload)
+- **Phase B'' p66 ADR-0026 extension: 2 fns (admin_get_campaign_stats, admin_preview_campaign — manage_comms reuse)**
+- **Phase B'' p66 ADR-0030 view_internal_analytics: 2 fns + 1 helper (exec_chapter_dashboard, exec_role_transitions, can_read_internal_analytics — new V4 action)**
+- **Cumulative: 61 of 246 fns (~24.8%)** — up from p63 56/246 (22.8%)
+- **New V4 actions cumulative**: 4 (manage_finance, manage_comms, view_internal_analytics + Opção B reuse via manage_platform for governance readers)
 - Easy-convert backlog (true zero-expansion clean cases for any
   prefix): **0 known after Pacote I** — exhaustive 90-fn surface audit
   exhausted clean candidates with admin-broad gate.
