@@ -858,8 +858,9 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - Phase B'' p63 Pacote I easy-convert: 6 fns (5 names + 1 overload)
 - **Phase B'' p66 ADR-0026 extension: 2 fns (admin_get_campaign_stats, admin_preview_campaign — manage_comms reuse)**
 - **Phase B'' p66 ADR-0030 view_internal_analytics: 2 fns + 1 helper (exec_chapter_dashboard, exec_role_transitions, can_read_internal_analytics — new V4 action)**
-- **Cumulative: 61 of 246 fns (~24.8%)** — up from p63 56/246 (22.8%)
-- **New V4 actions cumulative**: 4 (manage_finance, manage_comms, view_internal_analytics + Opção B reuse via manage_platform for governance readers)
+- **Phase B'' p66 ADR-0031 admin_list_members: 1 fn (Opção B reuse view_internal_analytics, +Roberto chapter_board×liaison gain)**
+- **Cumulative: 62 of 246 fns (~25.2%)** — up from p63 56/246 (22.8%)
+- **New V4 actions cumulative**: 4 (manage_finance, manage_comms, view_internal_analytics + Opção B reuse via manage_platform for governance readers + Opção B reuse via view_internal_analytics for member directory)
 - Easy-convert backlog (true zero-expansion clean cases for any
   prefix): **0 known after Pacote I** — exhaustive 90-fn surface audit
   exhausted clean candidates with admin-broad gate.
