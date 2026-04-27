@@ -1,6 +1,6 @@
 # ADR-0039: Volunteer-agreement countersign subsystem 100% V4 — Path Y precedent extension + register_attendance_batch security drift fix
 
-- Status: **Proposed** (2026-04-27 p69 — aguarda PM rubber-stamp Q1=? / Q2=? / Q3=?)
+- Status: **Accepted** (2026-04-27 — PM Vitor ratified Q1=SIM / Q2=SIM / Q3=p69)
 - Data: 2026-04-27 (p69)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo:
