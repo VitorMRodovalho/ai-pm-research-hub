@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.24.2 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.26.0 — 146 tools (96R + 50W) + 1 prompt + 1 resource + usage logging
+// v2.26.0: +3 governance tools wrapping ADR-0044 manual_version 2-of-N approval flow
+//   (propose_manual_version, confirm_manual_version, cancel_manual_version_proposal).
+//   ADR-0044 (PM ratify §B.2) enforces signer ≠ proposer + 24h window for high-impact
+//   manual version publication. Plus #87 W5 manage_event privilege sweep:
+//   create_tribe_event/drop_event_instance/update_event_instance now gate on
+//   manage_event (was 'write' — privilege confusion fix).
 // v2.24.2: extend ADR-0018 W1 confirm gate on manage_initiative_engagement to also
 //   cover action='add' (not just 'remove'). Closes P3 GAP filed by security-engineer
 //   audit (p44). update_role unchanged (non-destructive).
@@ -695,7 +701,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_tribe_event", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_tribe_event", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "create_tribe_event", false, "Unauthorized", start); return err("Unauthorized — requires manage_event."); }
     const { data, error } = await sb.rpc("create_event", { p_type: params.type || "tribo", p_title: params.title, p_date: params.date, p_duration_minutes: params.duration_minutes || 90, p_tribe_id: member.tribe_id });
     if (error) { await logUsage(sb, member.id, "create_tribe_event", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "create_tribe_event", true, undefined, start);
@@ -1223,7 +1229,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "drop_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.event_id)) { await logUsage(sb, member.id, "drop_event_instance", false, "Invalid event_id", start); return err("event_id must be a UUID"); }
-    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized — requires manage_event."); }
     if (params.confirm !== true) {
       const { data: target } = await sb.from("events").select("id, title, type, date, time_start, initiative_id").eq("id", params.event_id).maybeSingle();
       await logUsage(sb, member.id, "drop_event_instance", true, undefined, start, "preview");
@@ -1249,7 +1255,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "update_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "update_event_instance", false, "Unauthorized", start); return err("Unauthorized — requires manage_event."); }
     const { data, error } = await sb.rpc("update_event_instance", { p_event_id: params.event_id, p_new_date: params.new_date || null, p_new_time_start: params.new_time_start || null, p_new_duration_minutes: params.new_duration_minutes || null, p_meeting_link: params.meeting_link || null, p_notes: params.notes || null, p_agenda_text: params.agenda_text || null });
     if (error) { await logUsage(sb, member.id, "update_event_instance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_event_instance", true, undefined, start);
@@ -2582,6 +2588,85 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ───────────────────────────────────────────────────────────────
+  // MANUAL VERSION 2-OF-N APPROVAL — ADR-0044 (PM ratify §B.2 p70)
+  // ───────────────────────────────────────────────────────────────
+
+  // propose_manual_version — phase 1 of 2-of-N flow (creates pending row + notifies signers)
+  mcp.tool("propose_manual_version", "Propose a new Manual de Governança version. Phase 1 of 2-of-N approval (ADR-0044). Creates a pending proposal that must be confirmed by a DIFFERENT manage_platform holder within 24h. Validates approved CRs exist and version_label is unused. Notifies all OTHER manage_platform holders for 2nd signoff. Use confirm_manual_version to publish or cancel_manual_version_proposal to retract.", {
+    version_label: z.string().describe("New manual version label (e.g. 'R3', 'R4-2026')"),
+    notes: z.string().optional().describe("Optional notes describing the changes incorporated")
+  }, async (params: { version_label: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "propose_manual_version", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) {
+      await logUsage(sb, member.id, "propose_manual_version", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_platform.");
+    }
+    const { data, error } = await sb.rpc("propose_manual_version", {
+      p_version_label: params.version_label,
+      p_notes: params.notes ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "propose_manual_version", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "propose_manual_version", true, undefined, start);
+    return ok(data);
+  });
+
+  // confirm_manual_version — phase 2 of 2-of-N flow (different signer required + 24h window)
+  mcp.tool("confirm_manual_version", "Confirm and publish a pending Manual version proposal. Phase 2 of 2-of-N approval (ADR-0044). Requires: (1) signer must be DIFFERENT from proposer (2-of-N enforcement), (2) within 24h window from proposal, (3) approved CRs still exist, (4) version_label still unused. On success: marks current Manual as superseded, creates new doc, marks all approved CRs as implemented, notifies chapter board + sponsors, drafts announcement.", {
+    proposal_id: z.string().describe("UUID of pending_manual_version_approvals row"),
+    confirm: z.boolean().optional().describe("Pass true to actually execute. Default false returns a preview of what would happen.")
+  }, async (params: { proposal_id: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "confirm_manual_version", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.proposal_id)) { await logUsage(sb, member.id, "confirm_manual_version", false, "Invalid proposal_id", start); return err("proposal_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) {
+      await logUsage(sb, member.id, "confirm_manual_version", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_platform.");
+    }
+    if (!params.confirm) {
+      // Preview: read pending row + show what would change without executing
+      const { data: pending, error: pe } = await sb.from("pending_manual_version_approvals").select("*").eq("id", params.proposal_id).single();
+      if (pe) { await logUsage(sb, member.id, "confirm_manual_version", false, pe.message, start, "preview"); return err(pe.message); }
+      const preview = {
+        preview: true,
+        message: "Pass confirm=true to publish the manual version. This will mark current Manual as superseded, create new document, mark approved CRs as implemented, and broadcast notifications. ADR-0044 enforces signer ≠ proposer.",
+        proposal: pending,
+        proposer_self: pending?.proposed_by === member.id ? "⚠️  YOU are the proposer — confirm will FAIL with self_signoff_forbidden (2-of-N requires different signer)" : "✓ Different signer (you) ≠ proposer",
+      };
+      await logUsage(sb, member.id, "confirm_manual_version", true, undefined, start, "preview");
+      return ok(preview);
+    }
+    const { data, error } = await sb.rpc("confirm_manual_version", { p_proposal_id: params.proposal_id });
+    if (error) { await logUsage(sb, member.id, "confirm_manual_version", false, error.message, start, "execute"); return err(error.message); }
+    await logUsage(sb, member.id, "confirm_manual_version", true, undefined, start, "execute");
+    return ok(data);
+  });
+
+  // cancel_manual_version_proposal — retract pending proposal before confirmation
+  mcp.tool("cancel_manual_version_proposal", "Cancel a pending Manual version proposal before it gets confirmed. Use case: typo in version_label, contentious CR detected, etc. Logs the cancellation reason in admin_audit_log. Per ADR-0044, only manage_platform holders can cancel.", {
+    proposal_id: z.string().describe("UUID of pending_manual_version_approvals row"),
+    reason: z.string().optional().describe("Optional reason for cancellation (logged in audit)")
+  }, async (params: { proposal_id: string; reason?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "cancel_manual_version_proposal", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.proposal_id)) { await logUsage(sb, member.id, "cancel_manual_version_proposal", false, "Invalid proposal_id", start); return err("proposal_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) {
+      await logUsage(sb, member.id, "cancel_manual_version_proposal", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_platform.");
+    }
+    const { data, error } = await sb.rpc("cancel_manual_version_proposal", {
+      p_proposal_id: params.proposal_id,
+      p_reason: params.reason ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "cancel_manual_version_proposal", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "cancel_manual_version_proposal", true, undefined, start);
+    return ok(data);
+  });
+
+  // ───────────────────────────────────────────────────────────────
   // PARTNERSHIP LIFECYCLE TOOLS — #85 Onda B bundle 3
   // ───────────────────────────────────────────────────────────────
 
@@ -2927,7 +3012,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.25.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.26.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2947,6 +3032,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.25.1", tools: 143, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.26.0", tools: 146, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
