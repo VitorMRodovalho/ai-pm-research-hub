@@ -402,3 +402,102 @@ RPC passou a filtrar versões sem `approval_chain.status='approved'`, ou seja, *
 ### Smoke end-to-end validado
 
 Adendo PI aos Acordos v1.0 lacrado 20/04 18:12, chain `47362201-23e0-4e2d-96c5-4019b936331e` (status=review). 3 notifications enfileiradas para curadores (Fabrício Costa, Roberto Macêdo, Sarah Faria Alcantara Macedo Rodovalho). Drain cron `send-notification-emails` processou em 18:15:01-02 via Resend (SPF/DKIM verified `pmigo.org.br`). Confirmação manual de entrega ao recipient (Sarah). Pipeline: lock → approval_chain → trigger enqueue → drain cron → Resend → delivery em ≤3min.
+
+## Amendment 3 — 2026-04-27 — `preview_gate_eligibles` hybrid cache (sessão p74)
+
+PM-ratificado em p70 §E.3 (Opção C: hybrid cache + invalidation). Implementado em sessão p74 autônoma após backlog do council ratifications consumido.
+
+### Contexto
+
+`preview_gate_eligibles(doc_type, submitter_id)` (Amendment 2, C6) é chamado pelo `DocumentVersionEditor.tsx:openLockModal` para mostrar quem é elegível para cada gate antes do lock. A implementação original itera para cada gate sobre **todos** os membros ativos e chama `_can_sign_gate(...)` por linha — O(N×G) = ~48 × 8 ≈ 384 function calls por preview.
+
+Com volume atual (~48 active members, 5 cacheable doc_types, ~6 gates/doc_type) o overhead é tolerável (≤2s por chamada). Mas:
+1. **Crescimento esperado**: scaling para multi-chapter/LATAM (200-500 active members) coloca preview em ~2-4s
+2. **UX preview-as-you-type**: futuras UIs podem chamar preview em loops (ex: change submitter dropdown → reprocess preview)
+3. **Cost amplification**: cada `_can_sign_gate` evaluation envolve subqueries em `engagements`/`governance_documents`
+
+### Decisão
+
+Cache materializada **table** (não MATERIALIZED VIEW): `preview_gate_eligibles_cache(member_id, doc_type, eligible_gates text[], last_refreshed)`.
+
+#### Por que table (deviation do PM-ratified plan)
+
+PM ratificou Option C "Materialized view + invalidation". Implementação usa **regular table** ao invés de MATERIALIZED VIEW. Razões:
+
+| Concern | MATERIALIZED VIEW | Cache TABLE |
+|---|---|---|
+| REFRESH lock | bloqueia SELECTs (ou requer CONCURRENTLY + unique idx) | só lock por linha (ON CONFLICT UPDATE) |
+| Trigger granularidade | full refresh em cada change → caro em bulk | per-row update (1 member afetado = 5 UPSERTs) |
+| Bulk operations (admin) | precisa REFRESH inteira | iterar `_refresh_..._for_member()` em loop, sem pause global |
+| TTL fallback semantics | timestamp da última REFRESH (global) | timestamp por linha (granular) |
+
+A semântica entregue (cache + invalidation + TTL fallback) é estritamente superior. O ADR carrega a decisão; implementação cumpre o spirit do plan.
+
+#### Componentes
+
+1. **Cache table** (`preview_gate_eligibles_cache`): PK `(member_id, doc_type)`, RLS enabled sem policies (service-role-only access)
+2. **Helper `_cacheable_preview_doc_types()`**: lista os 5 doc_types com gates non-NULL (cooperation_agreement, cooperation_addendum, volunteer_term_template, volunteer_addendum, policy)
+3. **Refresh function `_refresh_preview_gate_eligibles_for_member(p_member_id)`**: recomputa todas as linhas do cache para esse membro × doc_types cacheable. Skipa `submitter_acceptance` (per-call). Deleta linhas se membro inativo
+4. **Full rebuild RPC `refresh_preview_gate_eligibles_cache_all()`**: V4 gated (`manage_platform`), itera todos os active members
+5. **Trigger `trg_refresh_preview_gate_eligibles_on_member`** (AFTER INS/UPD/DEL on `members`): invalida quando colunas relevantes mudam (`is_active`, `member_status`, `operational_role`, `designations`, `chapter`, `person_id`). Usa `IS DISTINCT FROM` para evitar refresh em no-op UPDATEs
+6. **Trigger `trg_refresh_preview_gate_eligibles_on_engagement`** (AFTER INS/UPD/DEL on `engagements`): resolve `member_id` via `members.person_id` (1:N safe)
+7. **Adapter RPC `preview_gate_eligibles(doc_type, submitter_id)`**: 3 paths por gate:
+   - `submitter_acceptance` → sempre live (per-call dependency)
+   - cache fresco (≤24h) e doc_type cacheable → cache path
+   - cache stale ou empty → `live_fallback` path
+   - Retorna `source: cache|live|live_fallback` por gate response (diagnóstico observável)
+
+#### TTL fallback (24h)
+
+Defesa em profundidade contra triggers faltantes ou caminhos de invalidação descobertos post-deploy. Se cache row > 24h sem refresh, RPC computa live para esse gate e ignora cache. Reduz risco de false-eligibility silencioso.
+
+#### Coverage trigger graph
+
+| Tabela | Coluna(s) que invalidam | Trigger |
+|---|---|---|
+| `members` | `is_active`, `member_status`, `operational_role`, `designations`, `chapter`, `person_id` | `trg_refresh_preview_gate_eligibles_on_member` |
+| `engagements` | qualquer mudança (volunteer role, status, end_date) | `trg_refresh_preview_gate_eligibles_on_engagement` |
+| `governance_documents` (cooperation_agreement com signed_at recente) | mudanças não cobertas pelos triggers acima — **TTL 24h** garante eventual consistency | (nenhum trigger explícito) |
+
+A escolha de NÃO triggerar em `governance_documents` é deliberada: documentos cooperation_agreement são mudanças raras (cyclic, ~1×/ano por chapter) e o TTL de 24h converge sem ruído de trigger. Adicionar trigger seria over-engineering.
+
+#### Migration aplicada
+
+- `20260514210000_adr_0016_amendment_3_preview_gate_eligibles_hybrid_cache` — cache table + 5 functions + 2 triggers + initial population
+
+#### Smoke validation
+
+- Cache populated: 240 rows = 48 active members × 5 doc_types ✅
+- Cache↔live equivalence verificada para `cooperation_agreement` em todos 5 cacheable gates (curator=3, leader_awareness=8, chapter_witness=5, president_go=1, president_others=4) ✅
+- TTL fallback test: stale all rows for `policy` doc_type → RPC retorna `source: live_fallback` para 4 cacheable gates + `source: live` para submitter_acceptance ✅
+- Trigger fire test: UPDATE `members.designations` from `[]` to `['curator']` → cache row atualizou `eligible_gates: ['curator']` + bumped `last_refreshed` ✅
+- Restore test: revert designations to `[]` → cache row reset to `eligible_gates: []` ✅
+- Tests preserved 1415/1383/0/32 ✅
+- Invariants 11/11=0 ✅
+
+### Performance projetado
+
+Antes (live-only):
+* `preview_gate_eligibles('cooperation_agreement', NULL)` ≈ 48 members × 6 gates × 1 call/_can_sign_gate ≈ 288 function calls
+* Cada call: ~1ms (subqueries em members, engagements quando volunteer, governance_documents quando chapter_witness)
+* Total: ~290ms baseline
+
+Depois (cache hit):
+* 5 cacheable gates: 1 indexed query each (`WHERE doc_type = X AND m.is_active AND last_refreshed >= cutoff AND gate_kind = ANY(eligible_gates)`)
+* 1 submitter_acceptance gate: live (~50ms — 48 calls)
+* Total: ~60ms expected
+
+Speedup ~5× para tipical case. Ganho aumenta linearmente com número de active members.
+
+### Backlog residual
+
+- [ ] **Contract test** (extends Amendment 2 C9 backlog): `preview_gate_eligibles count == _can_sign_gate live count` post-cache. Implementação: SELECT comparação pairwise, fail se MISMATCH em qualquer gate. Já validado smoke; teste automatizado pode entrar em ADR-0016 Amendment 4 ou contract-tests batch
+- [ ] **Cron rebuild**: opcional, scheduled job 6h chamando `refresh_preview_gate_eligibles_cache_all()` via service role. Não crítico (TTL 24h já garante eventual consistency); só vale se cache misses começarem a degradar UX. Defer trigger: log entry mostrar `live_fallback` >5%
+- [ ] **`governance_documents` cooperation_agreement signed_at trigger**: se chapter_witness false-positives forem reportados (chapter_witness depende de cooperation_agreement válido em 60d), adicionar trigger explícito. Defer trigger: 1 false-positive report
+
+### References
+
+- ADR-0016 Amendment 2 (gate matrix v2 + preview_gate_eligibles RPC)
+- PM ratification: `docs/council/decisions/2026-04-27-p70-pm-ratifications.md` §E.3 (Opção C)
+- ADR-0007 (V4 authority — `can_by_member('manage_platform')` gate em rebuild RPC)
+- ADR-0011 V4 auth invariant compliance: cache RPC adapter STABLE SECDEF; rebuild RPC SECDEF gated
