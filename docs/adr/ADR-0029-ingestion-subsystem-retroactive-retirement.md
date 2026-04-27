@@ -53,14 +53,24 @@ substrate tables and 37 SECURITY DEFINER functions. The subsystem covered:
 
 ### Functions affected (37, all in pg_proc, all dead code)
 
-**5 OK** (referenced tables exist — preserved via V4 conversion in same Pacote M migration as this ADR):
-1. `admin_capture_data_quality_snapshot` → `data_quality_audit_snapshots` (exists)
-2. `admin_check_ingestion_source_timeout` → `ingestion_source_sla` (exists)
-3. `admin_set_ingestion_source_sla` → `ingestion_source_sla` (exists)
-4. `admin_set_release_readiness_policy` → `release_readiness_policies` (exists)
-5. `admin_get_ingestion_source_policy` → `ingestion_source_controls` (exists)
+**4 OK** (referenced tables exist — preserved via V4 conversion in same Pacote M migration as this ADR):
+1. `admin_check_ingestion_source_timeout` → `ingestion_source_sla` (exists)
+2. `admin_set_ingestion_source_sla` → `ingestion_source_sla` (exists)
+3. `admin_set_release_readiness_policy` → `release_readiness_policies` (exists)
+4. `admin_get_ingestion_source_policy` → `ingestion_source_controls` (exists)
 
-**32 dead code** (substrate missing — DROPPED by this ADR):
+**Implementation note (post-Phase-1 dependency re-check)**: Phase 1 audit
+classified `admin_capture_data_quality_snapshot` as the 5th OK fn (its
+target table `data_quality_audit_snapshots` exists). However, dependency
+inspection during migration drafting found it calls
+`public.admin_data_quality_audit()` — which is itself broken (references
+missing `legacy_tribes` + `legacy_tribe_board_links` tables). When
+admin_data_quality_audit is dropped, admin_capture_data_quality_snapshot
+becomes transitively broken. Reclassified as PARTIAL_BROKEN; final
+Pacote M scope is **4 convert + 33 drop** (not 5 + 32 as originally
+stated).
+
+**33 dead code** (substrate missing — DROPPED by this ADR):
 
 Batch 1 (28 admin_*):
 - admin_acquire/release_ingestion_apply_lock (2)

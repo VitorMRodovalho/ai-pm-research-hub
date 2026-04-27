@@ -210,23 +210,42 @@ If `lose` non-null → conversion CONTRACTS privileges → DEFER to
 per-domain ADR (e.g., `audit_access` action for chapter_liaison +
 sponsor data quality readers).
 
-### Conversion batches (post p64 audit)
+### Conversion batches (post p64 audit + Phase 1 + P3 ratify)
 
-**Batch 1 — 30 clean fns** (zero privilege change, broad V3 = manager
-+ deputy_manager + co_gp exactly equals V4 manage_platform set):
-- Convert to V4 `manage_platform` with adapter pattern
-- Single migration (`pacote_m_*`)
-- COMMENT sentinel `'ADR-0028 service-role-bypass adapter (Pacote M)'`
-- Allowlist entry per fn in `V4_SERVICE_ROLE_ADAPTER_ALLOWLIST`
+**SCOPE AMENDMENT (2026-04-26 p64 post-execution)**: Phase 1 audit
+revealed that 32 of 37 originally-targeted fns were dead code
+referencing missing substrate tables (see `ADR-0029` retroactive
+retirement). PM ratified P3 (split): the 5 OK fns identified as
+having existing substrate became the actual ADR-0028 conversion scope.
+A dependency re-check during implementation reduced this to 4 OK
+(admin_capture_data_quality_snapshot is transitively broken via
+admin_data_quality_audit dependency).
 
-**Batch 2 — 7 extended-designation fns** (V3 ⊋ V4 manage_platform):
-- Requires ADR-0029 to formalize new action `audit_access` (or
-  scope-refined alternative) granted to `{chapter_liaison, sponsor,
-  curator}` per the three extension shapes.
-- 1 migration after ADR-0029 ratify.
-- **Hard deadline: ADR-0029 ratified and Batch 2 migration applied
-  before next non-Pacote-M autonomous track resumes** (no open-ended
-  defer — closes the V3 visibility gap).
+**Final Pacote M execution (migration `20260427000000`)**:
+- **4 OK fns converted** to V4 `manage_platform` with adapter pattern:
+  - `admin_check_ingestion_source_timeout(text, timestamptz)`
+  - `admin_set_ingestion_source_sla(text, integer, integer, text, boolean)`
+  - `admin_set_release_readiness_policy(text, text, integer, integer)`
+  - `admin_get_ingestion_source_policy(text)`
+- **33 dead-code fns DROPPED** per ADR-0029 (28 admin_* including all
+  PARTIAL_BROKEN + admin_capture_data_quality_snapshot transitively
+  broken, plus 7 exec_*).
+- COMMENT sentinel `'ADR-0028 service-role-bypass adapter (Pacote M, p64)'`
+  applied to the 4 surviving fns.
+- REVOKE EXECUTE FROM PUBLIC, anon on the 4.
+- Original Batch 2 (7 extended exec_*) DROPPED entirely (broken too,
+  not just extended-gated). No future ADR-0029 audit_access action
+  needed — surface eliminated.
+
+**Phase 4 contract test enhancement** ships separately in same Pacote M
+session: extends `tests/contracts/rpc-migration-coverage.test.mjs` to
+detect table-level DDL drift (the bug class that allowed the substrate
+to be silently dropped without migration capture).
+
+The original 4-layer enforcement defense (allowlist + size guard + stale
+check + COMMENT sentinel + invariant G) described in §"Q3 resolution"
+remains valid and is implemented for the final 4-fn scope. The size
+guard cap is reduced from 30 to 4 reflecting actual scope.
 
 ### Migration template (Batch 1)
 

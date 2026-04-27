@@ -1562,11 +1562,11 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 **Acknowledgment governance gap:** Drops historicos foram executados fora da disciplina migration. ADR-0029 registra explicitamente para closing the loop honesto. Compromisso forward: nunca usar execute_sql ou Dashboard SQL editor para DDL — apenas apply_migration. Track Q-D internal-helper REVOKE charter ja foi corrigido (post-incident hotfix dos GRANTs auth_org + can_by_member que tinham quebrado prod por padrão similar de análise rasa).
 
 **Impacto tecnico:**
-- 32 SECDEF functions DROPped (todas referenciavam tables ausentes)
-- 5 SECDEF functions convertidas para V4 adapter pattern conforme ADR-0028 (admin_capture_data_quality_snapshot, admin_check_ingestion_source_timeout, admin_set_ingestion_source_sla, admin_set_release_readiness_policy, admin_get_ingestion_source_policy)
-- ADR-0028 scope amended de "37 fns" para "5 fns" + appendix referenciando ADR-0029
+- 33 SECDEF functions DROPped (todas referenciavam tables ausentes — direta ou transitivamente). Inclui 28 admin_* + 7 exec_* + admin_capture_data_quality_snapshot reclassificada PARTIAL_BROKEN durante implementacao (depende de admin_data_quality_audit que tambem foi droppado).
+- 4 SECDEF functions convertidas para V4 adapter pattern conforme ADR-0028 (admin_check_ingestion_source_timeout, admin_set_ingestion_source_sla, admin_set_release_readiness_policy, admin_get_ingestion_source_policy)
+- ADR-0028 scope amended de "37 fns" para "4 fns" + appendix referenciando ADR-0029
 - `tests/contracts/rpc-migration-coverage.test.mjs` extended para detectar table-level DDL drift (catch the bug class p50 missed)
-- Phase B'' true progress: 61/246 → 66/214 (~30.8%) com denominador honesto post-drop
+- Phase B'' true progress: 61/246 → 65/213 (~30.5%) com denominador honesto post-drop
 
 **LGPD assessment:** Funcoes inspecionadas — nenhuma referencia PII direta (email/phone/pmi_id/auth_id). Art. 14 nao aplicavel (zero evidence de data subject data nas tables dropadas). Art. 18 cycle nao afetado. Art. 37 documenta uncertainty window de 6 semanas (mar/14 → abr/2026) onde substrate existiu sem telemetria — probabilidade baixa de processamento real, registrada honestamente.
 
