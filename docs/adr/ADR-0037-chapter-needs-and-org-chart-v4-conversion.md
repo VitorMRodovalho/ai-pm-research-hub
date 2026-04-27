@@ -309,3 +309,70 @@ Recomendação: **p67 mesmo**.
 - pg_policy precondition (Q-D charter): zero RLS refs verificados.
 - Path Y pattern formalized para chapter_board sub-role preservation.
 - Phase B'' tally: 79 → 81 / 246 (~32.9%).
+
+---
+
+## Extension (p67 same-session) — `submit_chapter_need` write fn
+
+Sister write fn da subsystem `chapter_needs`. Convertido com Path Y para
+fechar a subsystem 100% V4 mesma sessão.
+
+### V3 ladder atual
+
+```sql
+IF NOT (v_member.designations && ARRAY['chapter_board', 'sponsor', 'chapter_liaison']::text[]) THEN
+  RETURN jsonb_build_object('error', 'Requires chapter_board, sponsor, or chapter_liaison designation');
+END IF;
+```
+
+Caller: `src/pages/stakeholder.astro` + `nucleo-mcp` MCP tool `submit_chapter_need`.
+
+### Privilege expansion (verified pre-apply)
+
+```
+V3 set       = 12 members (chapter_board / sponsor / chapter_liaison designations)
+V4+Path Y    = 13 members
+would_gain   = [Fabricio Costa, Vitor Maia Rodovalho]
+would_lose   = [João Uzejka Dos Santos]
+```
+
+**Gain rationale**: Vitor (SA + manager) + Fabricio (co_gp). Both have
+`view_internal_analytics` via organization-tier leadership engagement. V3
+restricted to chapter-tier designations only; V4 extension is consistent
+with view_internal_analytics audience design. Org-tier leadership submitting
+chapter needs on behalf of own chapter is operationally legitimate.
+
+**Loss rationale**: João Uzejka — same chapter_liaison designation drift as
+get_chapter_needs (precedent ADR-0030/0034).
+
+### Decisão
+
+```sql
+CREATE OR REPLACE FUNCTION public.submit_chapter_need(...)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+...
+  IF NOT (
+    public.can_by_member(v_caller_id, 'view_internal_analytics')
+    OR EXISTS (
+      SELECT 1 FROM public.auth_engagements ae
+      WHERE ae.person_id = v_caller_person_id
+        AND ae.kind = 'chapter_board'
+        AND ae.status = 'active'
+    )
+  ) THEN
+    RETURN jsonb_build_object('error', '...');
+  END IF;
+...
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.submit_chapter_need(text, text, text) FROM PUBLIC, anon;
+```
+
+### Outcome adicional
+
+- 1 fn write convertida. Phase B'' tally: 81 → 82 / 246 (~33.3%).
+- chapter_needs subsystem 100% V4 (get + submit).
+- Vitor + Fabricio gain (V4-consistent expansion, org-tier leadership).
+- João loses (precedented drift).
+- Migration `20260427145000_adr_0037_ext_submit_chapter_need_v4.sql` + REVOKE.
