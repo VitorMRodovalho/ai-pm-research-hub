@@ -967,12 +967,50 @@ worth the effort (uncovered 23 in p68).
 remaining without PM design input. All 23 NEW + 26 prior candidates need PM
 input.
 
-### Phase B'' running tally post-p68
+### Phase B'' running tally post-p69
 
 - p65: ?+5 (Pacote M)
 - p66: 79/246 baseline → +6 ADRs cluster
 - p67: 79 → 82/246 (~33.3%) via ADR-0037 + ext (3 fns)
-- **p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)**
+- p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)
+- **p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)**
+
+### Closed by ADR-0039 (p69, 4 fns total)
+
+**Section A — Volunteer-agreement countersign subsystem 100% V4 (3 fns)**
+- `counter_sign_certificate` — V4 manage_member + Path Y chapter_board engagement
+- `get_pending_countersign` — V4 manage_member + Path Y chapter_board engagement
+- `get_volunteer_agreement_status` — V4 manage_member + Path Y chapter_board engagement
+
+Privilege expansion countersign cluster: V3 set 10 → V4+Path Y 13.
+Gains 3 (Ana Cristina Fernandes Lima, Roberto Macêdo, Rogério Peixoto —
+all legitimate chapter_board V4 engagements without V3 designation).
+Losses 0.
+
+**Section B — Parameter-gate drift correction (1 fn)**
+- `register_attendance_batch` — switched to `auth.uid()`-derived caller +
+  `manage_event` (mirrors ADR-0038 `update_event_duration` fix). Zero member
+  set change. 2nd closure of parameter-based gate vector pattern surfaced
+  by p68 detection methodology.
+
+### Pattern sediment (p69)
+
+**Path Y precedent extension**: ADR-0037 (chapter_needs subsystem) → ADR-0039
+(volunteer-agreement countersign subsystem). Two subsystems closed via the
+same pattern (manage_X + Path Y chapter_board engagement). Forward
+commitment: any subsystem with V3 gate `(<some org-tier> OR chapter_board
+designation)` is a Path Y candidate.
+
+**Engagement-without-designation drift correction**: 3 members (Ana Cristina,
+Roberto, Rogério) had legitimate `chapter_board` engagements in
+`auth_engagements` but lacked the `chapter_board` designation in
+`members.designations`. V3 missed them; V4 catches them via Path Y. This is
+inverse drift correction (engagement IS source of truth, designation is
+legacy).
+
+**Parameter-gate vector pattern, 2nd closure**: `register_attendance_batch`
+fix mirrors `update_event_duration` from ADR-0038. Detection regex (Q-D
+candidate sweep) confirmed effective: pattern detected → fixed → closed.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
