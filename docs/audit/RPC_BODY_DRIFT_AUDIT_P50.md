@@ -974,7 +974,8 @@ input.
 - p67: 79 → 82/246 (~33.3%) via ADR-0037 + ext (3 fns)
 - p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)
 - p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)
-- **p72: 86 → 95/246 (~38.6%) via ADR-0041 (new V4 action `participate_in_governance_review` + 9 V3→V4 fns across document_comments + curation/board clusters; Path Y for tribe_leader operational paths + author self-resolve + self+author claim + curator/board_admin special-cases preserved)**
+- p72 ADR-0041: 86 → 95/246 (~38.6%) — new V4 action `participate_in_governance_review` + 9 V3→V4 fns
+- **p72 ADR-0042: 95 → 96/246 (~39.0%) — new V4 action `view_chapter_dashboards` (read-only catalog) + 8 reader gate additions + `_can_manage_event` helper V3→V4 conversion**
 
 ### Closed by ADR-0039 (p69, 4 fns total)
 
@@ -1119,6 +1120,59 @@ when clusters share a thematic concern but have divergent V3 gates.
 consistently deferred to future `committee_curator` engagement kind.
 Forward commitment: when committee_curator is created, audit ALL
 designation-based curator gates and migrate to engagement.
+
+### Closed by ADR-0042 (p72, view_chapter_dashboards + helper)
+
+**Section A — New V4 action seed (3 catalog rows)**
+- `view_chapter_dashboards` × organization-scope, granted to:
+  - `chapter_board × {board_member, liaison}` + `sponsor × sponsor`
+
+**Section B — Reader gate additions (8 fns; not Phase B'' V3→V4 conversions, this is a *gate addition* on already-V4 fns)**
+
+7 standard readers (manage_platform OR view_chapter_dashboards):
+- `exec_all_tribes_summary`
+- `get_cross_tribe_comparison`
+- `exec_cross_tribe_comparison`
+- `exec_cycle_report`
+- `get_admin_dashboard`
+- `get_adoption_dashboard`
+- `get_campaign_analytics`
+
+1 reader with cross-tribe path (own-tribe carve-out preserved + cross-tribe gate composed):
+- `exec_tribe_dashboard`
+
+**Section C — Helper V3→V4 (1 fn — counts toward Phase B'' tally)**
+- `_can_manage_event` — V4 `can_by_member('manage_event')` + Path Y
+  (tribe_leader / researcher own-tribe + event creator preserved)
+
+### Privilege expansion (p72 ADR-0042)
+
+- **`view_chapter_dashboards` audience after seed (10 members)**:
+  Ana Cristina Fernandes Lima, Emanoela Kerkhoff, Felipe Moraes Borges,
+  Francisca Jessica de Sousa, Ivan Lourenço, Lorena Souza, Márcio Silva,
+  Matheus Frederico Rosa, Roberto Macêdo, Rogério Peixoto.
+- **Restored** (per Amendment B documented impact): 5 sponsors + 2 chapter_liaisons
+- **New gains**: Emanoela + Lorena (chapter_board/board_member observer-status;
+  legitimate via V4 engagement model). Roberto already gained via ADR-0041.
+- **`_can_manage_event` privilege expansion**: zero (V3 ∩ V4 = same; superadmin
+  bypass dropped only because Vitor + Fabricio both have V4 engagements covering
+  manage_event).
+
+### Pattern sediment (p72 ADR-0042)
+
+**Read/write action separation**: `view_chapter_dashboards` (read-only) vs
+`manage_platform` (writes). Forward commitment: future actions evaluate
+sibling read-only counterpart.
+
+**V4 + OR composition**: additive gate extension via `OR can_by_member(...)`
+preserves existing audience while expanding access for new audience.
+Surgical replacement via `pg_get_functiondef + replace + EXECUTE` enables
+batch update of multiple fns sharing the same gate pattern (idempotent +
+self-checking via `IF v_new = v_def THEN RAISE`).
+
+**Helper conversion preserves Path Y**: `_can_manage_event` shows pattern —
+replace V3 `is_superadmin OR operational_role IN (...)` checks ONLY; preserve
+domain-specific Path Y (tribe scope + creator self-management) verbatim.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
