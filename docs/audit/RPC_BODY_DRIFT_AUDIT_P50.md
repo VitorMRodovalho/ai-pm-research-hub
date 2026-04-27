@@ -975,7 +975,8 @@ input.
 - p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)
 - p69: 83 → 86/246 (~35.0%) via ADR-0039 (3 V3→V4 countersign subsystem closure with Path Y + 1 SECDEF parameter-gate drift correction)
 - p72 ADR-0041: 86 → 95/246 (~38.6%) — new V4 action `participate_in_governance_review` + 9 V3→V4 fns
-- **p72 ADR-0042: 95 → 96/246 (~39.0%) — new V4 action `view_chapter_dashboards` (read-only catalog) + 8 reader gate additions + `_can_manage_event` helper V3→V4 conversion**
+- p72 ADR-0042: 95 → 96/246 (~39.0%) — new V4 action `view_chapter_dashboards` (read-only catalog) + 8 reader gate additions + `_can_manage_event` helper V3→V4 conversion
+- **p72 ADR-0043: 96 → 98/246 (~39.8%) — `create_cost_entry` + `create_revenue_entry` V3→V4 (manage_finance) + sponsor_finance_entry_logged trigger safeguard (PM ratify §B.1; 2 fns + new notification type + 2 triggers + enhanced audit_log)**
 
 ### Closed by ADR-0039 (p69, 4 fns total)
 
@@ -1173,6 +1174,57 @@ self-checking via `IF v_new = v_def THEN RAISE`).
 **Helper conversion preserves Path Y**: `_can_manage_event` shows pattern —
 replace V3 `is_superadmin OR operational_role IN (...)` checks ONLY; preserve
 domain-specific Path Y (tribe scope + creator self-management) verbatim.
+
+### Closed by ADR-0043 (p72, finance V4 + sponsor safeguard)
+
+**Section A — V3→V4 (2 fns)**
+- `create_cost_entry` — V4 `manage_finance`
+- `create_revenue_entry` — V4 `manage_finance`
+
+**Section B — Notification catalog extension**
+- New type `sponsor_finance_entry_logged` (delivery_mode: transactional_immediate)
+- ADR-0022 catalog JSON updated (W1.1 → W1.2); `_delivery_mode_for` SQL helper extended
+
+**Section C — Trigger fn `notify_sponsor_finance_entry()`**
+- AFTER INSERT on cost_entries + revenue_entries
+- Detects non-volunteer sponsor actor via auth_engagements profile check
+- Fires notification to all manage_platform holders + enhanced audit_log entry
+- Path Y check inverted: actor IS sponsor AND NOT volunteer
+
+**Section D — Enhanced audit_log**
+- Payload includes engagement_context (is_sponsor, is_volunteer, chapter_board_roles)
+- governance_concern flag identifies the safeguard trigger
+
+### Privilege expansion (p72 ADR-0043)
+
+- `manage_finance` audience already existed (ADR-0025): volunteer × {manager, deputy, co_gp} + sponsor × sponsor
+- V3→V4 net change: Ivan Lourenço gains finance entry creation (sponsor × sponsor; was V3-blocked)
+- Safeguard trigger fires for Ivan-class non-volunteer sponsors (current: just Ivan)
+- Volunteer chain (Vitor, Fabricio) does NOT trigger — normal flow
+
+### Pattern sediment (p72 ADR-0043)
+
+**Engagement-aware trigger pattern**: triggers can inspect actor's V4 engagement
+profile (via `auth_engagements`) and branch on engagement combinations. First
+example: "non-volunteer sponsor logged finance entry → notify governance."
+Forward template:
+1. Lookup actor `legacy_member_id → person_id`
+2. Check `auth_engagements` for relevant kinds × roles + `is_authoritative`
+3. Branch logic on engagement profile (positive AND negative checks)
+4. Fire notifications + audit_log accordingly
+
+**Notification type for governance safeguards**: first instance of a
+notification type explicitly named for *governance safeguard purposes* (vs
+operational events). Future similar types follow naming pattern
+`<actor_engagement>_<event>_<verb>` with `transactional_immediate` delivery
+mode for governance visibility.
+
+**ADR-0022 catalog parity is enforced**: contract test
+`tests/contracts/adr-0022-delivery-mode.test.mjs` reads LATEST migration's
+`_delivery_mode_for` body and checks every catalog type appears. If you
+redefine `_delivery_mode_for` in a new migration, the file must SORT AFTER
+all prior `_delivery_mode_for` migrations (alphabetic order). Use
+timestamps > 20260514010000 (current latest) for any future redefinition.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
