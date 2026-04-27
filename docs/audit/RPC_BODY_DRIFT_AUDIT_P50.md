@@ -921,6 +921,59 @@ remaining without PM design input. All 29 candidates need either new V4
 action ADR, careful per-domain audit, or are out-of-scope (member-self /
 trigger / meta).
 
+### Strict V3 re-discovery DELTA (p68, post-ADR-0038)
+
+p67 audit listed 32 strict-V3 candidates. p68 re-running the same regex
+surfaced **55 candidates** — **23 NEW candidates missed by p67**. Cause:
+p67 audit relied on a curated cluster list rather than full pg_proc enum.
+Sediment (forward commitment): re-running strict V3 regex each session is
+worth the effort (uncovered 23 in p68).
+
+**Closed by ADR-0038 (p68, 3 fns)**:
+- `update_governance_document_status` — Phase B'' V3→V4 manage_platform
+  (zero drift)
+- `update_event_duration` — security drift fix (parameter-based gate
+  → auth.uid() + manage_event); zero drift
+- `get_dropout_risk_members` — security drift fix (no-gate → manage_event
+  gate); tightens from unbounded to leadership
+
+**Deferred for explicit PM ratify (p68)**:
+- `create_cost_entry` / `create_revenue_entry` — V4 manage_finance would
+  expand audience by **+5 sponsors** (Felipe, Francisca, Ivan, Márcio,
+  Matheus — all `sponsor × sponsor`). V4 catalog explicitly grants sponsor
+  manage_finance, but V3 RPC was narrower. Sensitive finance write —
+  needs explicit PM rubber-stamp.
+
+**Remaining 23 NEW candidates (post-p68 batch) for triage**:
+
+| Cluster | Fns | Decision needed |
+|---|---|---|
+| **Curation/board writers** (curator + co_gp + tribe_leader) | 7 (`assign_curation_reviewer`, `assign_member_to_item`, `submit_curation_review`, `submit_for_curation`, `unassign_member_from_item`, `publish_board_item_from_curation`, `register_attendance_batch`) | Mostly need new V4 action `manage_curation` OR Opção B reuse via curator engagement (pending ADR) |
+| **Document comments** (curator + leadership) | 3 (`create_document_comment`, `list_document_comments`, `resolve_document_comment`) | Path Y for curator designation OR new action `participate_in_governance_review` |
+| **Finance writes** (manager/deputy/SA) — DEFERRED p68 | 2 (`create_cost_entry`, `create_revenue_entry`) | Needs PM rubber-stamp on +5 sponsor expansion |
+| **Volunteer-agreement countersign** (manager + chapter_board) | 3 (`counter_sign_certificate`, `get_pending_countersign`, `get_volunteer_agreement_status`) | Path Y precedent (ADR-0037 chapter_board sub-role) — manage_member + Path Y (chapter_board × any role) |
+| **Tribe admin readers** (manager/deputy/tribe_leader/co_gp) | 2 (`admin_list_tribe_lineage`, `admin_list_tribes`) | Mixed audience — new ADR needed |
+| **Helpers** (no top-level gate, V3 markers in data filter) | 2 (`get_board_members`, `is_event_mandatory_for_member`) | Verify-only docs commit (data filter, not auth gate) |
+| **Member-self / no-gate** | 2 (`check_my_tcv_readiness`, `calc_attendance_pct`) | Leave-as-is (caller=target identity) or verify-only |
+| **Tag taxonomy writer** (3-tier admin/leader/system) | 1 (`create_tag`) | Multi-tier — needs ADR for semantic tier (tribe_leader access via Opção B) |
+| **Manual version generator** (superadmin-only) | 1 (`generate_manual_version`) | High-impact governance write — superadmin → manage_platform expansion needs PM ratify |
+| **Comms metrics wrapper** | 1 (`can_manage_comms_metrics`) | Used by `publish_comms_metrics_batch` only. Convert via Path Y (manage_comms + comms_member designation preservation) — needs PM design |
+| **Whatsapp link resolver** (tribe-scoped) | 1 (`resolve_whatsapp_link`) | Tribe-scoped via initiative lookup or new action |
+| **Change request review** (multi-role) | 1 (`review_change_request`) | Complex multi-role logic — needs ADR |
+| **Trigger** | 1 (`notify_offboard_cascade`) | Verify-only — system context |
+| **Change-note creator** (submitter + GP) | 1 (`create_change_note`) | Path Y for opened_by ownership + manage_platform |
+
+**Effective autonomous-shippable Phase B'' surface (post-p68)**: 0
+remaining without PM design input. All 23 NEW + 26 prior candidates need PM
+input.
+
+### Phase B'' running tally post-p68
+
+- p65: ?+5 (Pacote M)
+- p66: 79/246 baseline → +6 ADRs cluster
+- p67: 79 → 82/246 (~33.3%) via ADR-0037 + ext (3 fns)
+- **p68: 82 → 83/246 (~33.7%) via ADR-0038 (1 V3→V4 zero-drift convert + 2 SECDEF security drift corrections)**
+
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
 ### Track charter
