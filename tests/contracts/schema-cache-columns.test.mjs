@@ -37,6 +37,10 @@ const PROTECTED_TABLES = ['members', 'engagements', 'initiatives'];
 // Each entry: 'table.column' → short reason. Keeps reviewers honest about the
 // derivability trade-off instead of letting it slip silently.
 const STORAGE_ONLY_ALLOWLIST = new Map([
+  // Pure user preference — opt-in/out flag for gamification leaderboard visibility
+  // (ADR-0050 #101, p73). LGPD-aligned member self-management. Set only via
+  // set_my_gamification_visibility() RPC; not derivable from any other state.
+  ['members.gamification_opt_out', 'LGPD opt-out flag for leaderboard visibility (ADR-0050); no derivation source'],
   // Pure user preference — opt-in/out flag for weekly card digest (issue #98, p39).
   // Set only via /settings/notifications toggle; not derivable from any other state.
   ['members.notify_weekly_digest', 'User opt-out flag for weekly card digest; no derivation source'],
