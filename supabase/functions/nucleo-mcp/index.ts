@@ -3115,6 +3115,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_drive_discovery_health — Drive Phase 4 cron health (Pattern 43 4th reuse)
+  mcp.tool("get_drive_discovery_health", "Returns Drive auto-discovery cron health: total/last_24h/unmatched/unpromoted counters + cron last_run + days_since + minutes_folders_active. Health: green (<=36h + success) / yellow (idle/no-folders) / red (>36h or failed). Authority: view_internal_analytics. ADR-0065 (Phase 4).", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_drive_discovery_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_drive_discovery_health");
+    if (error) { await logUsage(sb, member.id, "get_drive_discovery_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_drive_discovery_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_drive_discovery_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_drive_discoveries — paginated audit feed (Phase 4)
+  mcp.tool("list_drive_discoveries", "Lista discoveries automáticas de arquivos Drive em pastas linkadas com link_purpose='minutes'. Filtros: initiative_id (opcional), status_filter (all|unmatched|unpromoted|promoted). Cada row tem matched_event_id (se filename date heuristic acertou) + match_confidence (high|medium|low|none) + promoted_to_minutes_url (auto-fill em event vazio). Paginação 1-200. Authority: view_internal_analytics. ADR-0065 (Phase 4).", {
+    initiative_id: z.string().optional().describe("Optional initiative UUID — restringe ao escopo desta iniciativa"),
+    status_filter: z.enum(["all", "unmatched", "unpromoted", "promoted"]).optional().describe("Filter status. Default: 'all'. unmatched=sem evento; unpromoted=evento matched mas event.minutes_url já tinha valor; promoted=auto-promovido em evento vazio"),
+    limit: z.number().optional().describe("1-200, default 50"),
+    offset: z.number().optional().describe("Pagination offset, default 0")
+  }, async (params: { initiative_id?: string; status_filter?: "all"|"unmatched"|"unpromoted"|"promoted"; limit?: number; offset?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_drive_discoveries", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) {
+      await logUsage(sb, member.id, "list_drive_discoveries", false, "Invalid UUID", start);
+      return err("initiative_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("list_drive_discoveries", {
+      p_initiative_id: params.initiative_id ?? null,
+      p_status_filter: params.status_filter ?? "all",
+      p_limit: params.limit ?? 50,
+      p_offset: params.offset ?? 0
+    });
+    if (error) { await logUsage(sb, member.id, "list_drive_discoveries", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_drive_discoveries", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_drive_discoveries", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== Mayanna Item 07 — Drive integration Phase 1 + 1b =====
   // Setup PM action: docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md
 
@@ -5158,7 +5196,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.52.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.53.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5178,6 +5216,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.52.0", tools: 234, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.53.0", tools: 236, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
