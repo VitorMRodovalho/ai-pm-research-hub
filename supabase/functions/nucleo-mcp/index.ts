@@ -1851,6 +1851,106 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== INITIATIVE INVITATIONS (issue #88 — ADR-0061 foundation + W2 RPCs) =====
+  // 4 tools wrapping create_initiative_invitations + respond_to_initiative_invitation
+  // + direct table reads via RLS (invitee/inviter own).
+
+  // TOOL: invite_to_initiative (batch — owner/admin)
+  mcp.tool("invite_to_initiative", "Invite one or more members to an initiative. Owner/coordinator (when kind_scope allows) OR admin (manage_member). Message MUST be at least 50 characters describing role + commitment. Returns per-invitee {created, skip_reason}. Skips invitees already engaged or with pending invitation.", {
+    initiative_id: z.string().describe("Initiative UUID"),
+    member_ids: z.array(z.string()).describe("Array of member UUIDs to invite"),
+    kind_scope: z.string().describe("Engagement kind being offered (e.g. 'study_group_participant', 'workgroup_member', 'observer')"),
+    message: z.string().describe("Context message: why invited, role expectations, commitment level. Min 50 chars (ux R5)")
+  }, async (params: { initiative_id: string; member_ids: string[]; kind_scope: string; message: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "invite_to_initiative", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "invite_to_initiative", false, "Invalid initiative_id", start); return err("initiative_id must be a UUID"); }
+    if (!Array.isArray(params.member_ids) || params.member_ids.length === 0) {
+      await logUsage(sb, member.id, "invite_to_initiative", false, "Empty member_ids", start);
+      return err("member_ids must be a non-empty array of UUIDs");
+    }
+    if (params.message.length < 50) {
+      await logUsage(sb, member.id, "invite_to_initiative", false, "Message too short", start);
+      return err(`Message must be at least 50 characters (current: ${params.message.length})`);
+    }
+    const { data, error } = await sb.rpc("create_initiative_invitations", {
+      p_initiative_id: params.initiative_id,
+      p_invitee_member_ids: params.member_ids,
+      p_kind_scope: params.kind_scope,
+      p_message: params.message
+    });
+    if (error) { await logUsage(sb, member.id, "invite_to_initiative", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "invite_to_initiative", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: respond_to_initiative_invitation (invitee accept/decline)
+  mcp.tool("respond_to_initiative_invitation", "Respond to a pending initiative invitation as the invitee. response='accept' creates engagement automatically; response='decline' marks invitation declined with optional reason. Auto-expires invitations past their 72h expiry window.", {
+    invitation_id: z.string().describe("Invitation UUID"),
+    response: z.enum(["accept", "decline"]).describe("'accept' or 'decline'"),
+    note: z.string().optional().describe("Optional note (reason for declining, or acknowledgment on accept)")
+  }, async (params: { invitation_id: string; response: "accept" | "decline"; note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "respond_to_initiative_invitation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.invitation_id)) { await logUsage(sb, member.id, "respond_to_initiative_invitation", false, "Invalid invitation_id", start); return err("invitation_id must be a UUID"); }
+    const { data, error } = await sb.rpc("respond_to_initiative_invitation", {
+      p_invitation_id: params.invitation_id,
+      p_response: params.response,
+      p_note: params.note ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "respond_to_initiative_invitation", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "respond_to_initiative_invitation", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_my_initiative_invitations (read via RLS — invitee sees own)
+  mcp.tool("list_my_initiative_invitations", "List initiative invitations where you are the invitee. Filter by status (pending/accepted/declined/expired/revoked). Defaults to all. Auto-expires stale pending invitations on read.", {
+    status_filter: z.string().optional().describe("Filter by status: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked' | 'all'. Default: 'pending'.")
+  }, async (params: { status_filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_my_initiative_invitations", false, "Not authenticated", start); return err("Not authenticated"); }
+    const filter = params.status_filter || "pending";
+    let query = sb.from("initiative_invitations")
+      .select("id, initiative_id, kind_scope, message, status, expires_at, responded_at, responded_note, created_at, inviter_member_id")
+      .eq("invitee_member_id", member.id)
+      .order("created_at", { ascending: false });
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
+    const { data, error } = await query;
+    if (error) { await logUsage(sb, member.id, "list_my_initiative_invitations", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_my_initiative_invitations", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_invitations_sent_by_me (inviter view via RLS)
+  mcp.tool("list_invitations_sent_by_me", "List initiative invitations sent by you. Useful for owners/coordinators tracking who they've invited. Filter by status optionally.", {
+    initiative_id: z.string().optional().describe("Filter by specific initiative UUID. If omitted, returns across all initiatives."),
+    status_filter: z.string().optional().describe("Filter by status. Default: 'all'")
+  }, async (params: { initiative_id?: string; status_filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_invitations_sent_by_me", false, "Not authenticated", start); return err("Not authenticated"); }
+    let query = sb.from("initiative_invitations")
+      .select("id, initiative_id, invitee_member_id, kind_scope, message, status, expires_at, responded_at, responded_note, created_at")
+      .eq("inviter_member_id", member.id)
+      .order("created_at", { ascending: false });
+    if (params.initiative_id) {
+      if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "list_invitations_sent_by_me", false, "Invalid initiative_id", start); return err("initiative_id must be a UUID"); }
+      query = query.eq("initiative_id", params.initiative_id);
+    }
+    if (params.status_filter && params.status_filter !== "all") {
+      query = query.eq("status", params.status_filter);
+    }
+    const { data, error } = await query;
+    if (error) { await logUsage(sb, member.id, "list_invitations_sent_by_me", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_invitations_sent_by_me", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== GAMIFICATION + CYCLES + ONBOARDING LEADERBOARD (issue #86 — coverage gap closure) =====
   // 7 read tools wrapping existing SECDEF RPCs. No new SQL.
 
@@ -3389,7 +3489,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.32.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.33.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3409,6 +3509,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.32.0", tools: 165, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.33.0", tools: 169, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
