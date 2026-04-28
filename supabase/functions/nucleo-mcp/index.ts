@@ -427,6 +427,397 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
       }],
     })
   );
+
+  // ===== ADR-0061 W6: Self-discovery enrichment — workflow recipes per persona =====
+  // 3 prompts (user-invokable workflow examples) + 2 FAQ resources (read-only).
+  // Polishes UX of #87 evaluator workflow + #88 invitation lifecycle shipped p74-p76.
+
+  mcp.registerPrompt(
+    "examples-evaluator",
+    {
+      title: "Workflow do avaliador (Cycle B2)",
+      description: "Receita passo-a-passo do workflow de avaliação de candidatos: fila → detalhe → submit com confirm gate. Use quando você é avaliador e nunca operou o flow antes."
+    },
+    async () => ({
+      messages: [{
+        role: "user" as const,
+        content: { type: "text" as const, text: `# Workflow do avaliador — Cycle B2 (Pareto)
+
+Você é um dos 4 avaliadores (Vitor / Fabricio / Sarah / Roberto). O flow está em **modo blind enforcement** durante a fase 'evaluating' — você vê apenas suas próprias avaliações, não as dos outros.
+
+## Passo 1 — Ver sua fila
+
+\`\`\`
+get_my_pending_evaluations()
+\`\`\`
+
+Retorna apps designadas a você, com progress %. Se vazio: nada pendente, ou fase ainda não em 'evaluating'.
+
+## Passo 2 — Abrir o detalhe da candidatura
+
+\`\`\`
+get_application_detail(application_id)
+\`\`\`
+
+Payload é blind-aware na fase 'evaluating': nome do candidato pode estar mascarado dependendo da política do cycle. Você vê: ensaios + portfolio + LinkedIn (se ADR-0059 W1 ativo).
+
+## Passo 3 — Preview da avaliação (NÃO grava ainda)
+
+\`\`\`
+submit_evaluation(application_id, scores={ ... })
+\`\`\`
+
+Sem confirm=true, retorna preview com **applicant_summary** (resumo do que você vai gravar) + warning. Reveja os scores cuidadosamente — após confirm é irreversível pós-fechamento da fase.
+
+## Passo 4 — Gravar avaliação final
+
+\`\`\`
+submit_evaluation(application_id, scores={ ... }, confirm=true)
+\`\`\`
+
+Grava na tabela. Trigger marca conflito de avaliação se sua avaliação divergir muito da média (anomalia detectada via selection_evaluation_anomalies).
+
+## O que você NÃO pode fazer
+
+- Ver scores dos outros avaliadores enquanto fase = 'evaluating' (RLS bloqueia)
+- Editar avaliação após fase fechar
+- Avaliar candidato com qual você tem conflito declarado (RPC bloqueia)
+
+## Se algo deu errado
+
+- "Cycle phase != evaluating" → ainda não abriu, ou já fechou. Confirme com PM.
+- "No pending applications" → ou tudo já avaliado, ou você não está designado a este cycle.
+- "Conflicted with applicant" → declare conflito no início, e PM remove você dessa app.
+
+Use \`prompt:nucleo-guide\` para ver TODA a personalização do seu papel.`
+        }
+      }]
+    })
+  );
+
+  mcp.registerPrompt(
+    "examples-initiative-owner",
+    {
+      title: "Workflow do owner de iniciativa (convocação + aprovação)",
+      description: "Receita do owner: convidar membros, triagem de pedidos self-service, aprovar/recusar, auditar engagements ativos. Cobre invitations + W5 lifecycle."
+    },
+    async () => ({
+      messages: [{
+        role: "user" as const,
+        content: { type: "text" as const, text: `# Workflow do owner — convocação + aprovação + audit
+
+Você é owner/coordinator de uma iniciativa (study_group, workgroup, committee, congress, research_tribe). Tem 2 caminhos para trazer alguém para a iniciativa.
+
+## Caminho 1 — Convite curado (você inicia)
+
+### 1.1 — Convide um ou mais membros (batch)
+
+\`\`\`
+invite_to_initiative(
+  initiative_id="<UUID>",
+  member_ids=["uuid1","uuid2","..."],
+  kind_scope="study_group_participant",  // ou workgroup_member etc
+  message="Mensagem de >=50 chars descrevendo o papel + commitment esperado"
+)
+\`\`\`
+
+Retorna por-invitee: {created, skip_reason}. Pula quem já tem engagement ativo OU invitation pending.
+
+### 1.2 — Acompanhe quem aceitou
+
+\`\`\`
+list_invitations_sent_by_me(initiative_id="<UUID>", status_filter="pending")
+\`\`\`
+
+72h de TTL — após isso cron expira automaticamente.
+
+## Caminho 2 — Self-service (Notion-style, candidato pede)
+
+### 2.1 — Veja pedidos chegando
+
+\`\`\`
+list_invitations_for_my_initiatives(status_filter="pending")
+\`\`\`
+
+is_self_request=true distingue request_to_join de invites enviados por você. **Logs PII access** (#85 LGPD Onda C). Use para triagem.
+
+### 2.2 — Aprove ou recuse
+
+\`\`\`
+review_initiative_request(invitation_id="<UUID>", decision="approve")
+// ou: decision="decline", note="razão"
+\`\`\`
+
+Approve cria engagement + dispara welcome notification automaticamente (ADR-0060). Decline grava reviewer note.
+
+## Audit — quem está atualmente ativo
+
+\`\`\`
+list_initiative_engagements(initiative_id="<UUID>", status_filter="active")
+\`\`\`
+
+**Novo W5**: enriquecido com granted_by, source (invite/self_service_request_approved/manage_admin), motivation (admin-only). Use para responder "como X entrou aqui?" em audit PMI.
+
+Histórico completo (incluindo saídas):
+
+\`\`\`
+list_initiative_engagements(initiative_id="<UUID>", status_filter="all")
+\`\`\`
+
+## Remover alguém — admin-led
+
+\`\`\`
+manage_initiative_engagement(initiative_id, person_id, kind, action="remove")
+\`\`\`
+
+Sem confirm=true, retorna preview (ADR-0018). Confirme com confirm=true.
+
+## Se candidato sair sozinho
+
+Eles usam \`withdraw_from_initiative\` (W5). Você verá no list_initiative_engagements com status='revoked' + revoke_reason começando com 'self_withdraw:'.
+
+## Constraints
+
+- Mensagem de invite: >=50 chars (DB enforcement)
+- Você só pode convidar para kinds que sua autoridade permite (created_by_role)
+- TTL de invite: 72h (cron auto-expira)`
+        }
+      }]
+    })
+  );
+
+  mcp.registerPrompt(
+    "examples-candidate",
+    {
+      title: "Workflow do candidato (descobrir, pedir, responder, sair)",
+      description: "Receita do membro/candidato: descobrir iniciativas abertas, pedir entrada, responder convites, sair com self-service withdraw."
+    },
+    async () => ({
+      messages: [{
+        role: "user" as const,
+        content: { type: "text" as const, text: `# Workflow do candidato — entrar e sair de iniciativas
+
+Você é membro do Núcleo e quer entrar em uma iniciativa nova OU responder a convites recebidos OU sair de uma iniciativa.
+
+## Caminho 1 — Descobrir e pedir entrada (self-service)
+
+### 1.1 — Veja iniciativas que aceitam novos membros
+
+\`\`\`
+list_open_initiatives()
+\`\`\`
+
+Retorna iniciativas com join_policy='request_to_join' ou 'open'. Cada item tem flags: has_active_engagement (você já está dentro?) e has_pending_invitation (já tem invite pendente?).
+
+### 1.2 — Peça entrada
+
+\`\`\`
+request_to_join_initiative(
+  initiative_id="<UUID>",
+  message="Texto >=50 chars descrevendo sua motivação + skills"
+)
+\`\`\`
+
+Cria invitation pending. Owner receberá no list_invitations_for_my_initiatives e aprovará via review_initiative_request. **PII logged** quando admin lê.
+
+## Caminho 2 — Você foi convidado
+
+### 2.1 — Veja convites pendentes
+
+\`\`\`
+list_my_initiative_invitations(status_filter="pending")
+\`\`\`
+
+Auto-expira pending past 72h. Mostra: kind_scope, message, expires_at, inviter.
+
+### 2.2 — Aceite ou recuse
+
+\`\`\`
+respond_to_initiative_invitation(invitation_id="<UUID>", response="accept")
+// ou: response="decline", note="razão opcional"
+\`\`\`
+
+Accept cria engagement + welcome notification (ADR-0060). Decline marca declined com sua nota.
+
+## Caminho 3 — Sair de uma iniciativa (W5 self-service)
+
+### 3.1 — Confirme em qual iniciativa você está
+
+\`\`\`
+get_active_engagements()
+\`\`\`
+
+Retorna seus engagements ativos. Pegue o initiative_id.
+
+### 3.2 — Preview da saída
+
+\`\`\`
+withdraw_from_initiative(
+  initiative_id="<UUID>",
+  reason="Texto >=10 chars (audit trail)"
+)
+\`\`\`
+
+Sem confirm=true, retorna preview com sua engagement + initiative + warning de irreversibilidade.
+
+### 3.3 — Confirme
+
+\`\`\`
+withdraw_from_initiative(initiative_id="<UUID>", reason="...", confirm=true)
+\`\`\`
+
+Sua engagement.status='revoked' com revoke_reason='self_withdraw: <sua razão>'. Owner verá no audit.
+
+## Casos onde withdraw é BLOQUEADO
+
+Você é único holder de um kind requerido pela iniciativa:
+- study_group_owner único → bloqueia (transferir antes)
+- último committee_member / workgroup_member / volunteer / etc
+
+Solução: peça a um admin/coordinator para adicionar replacement (manage_initiative_engagement add) primeiro, depois retry.
+
+## Etiqueta
+
+- Mensagem de request: >=50 chars com motivação real (não "quero entrar")
+- Razão de withdraw: >=10 chars com contexto (audit trail é parte da governança PMI)
+- Não acumule pending requests — owner verá tudo via list_invitations_for_my_initiatives
+
+Use \`prompt:nucleo-guide\` para ver seu perfil completo.`
+        }
+      }]
+    })
+  );
+
+  mcp.registerResource(
+    "faq-evaluator",
+    "nucleo://faq/evaluator",
+    {
+      title: "FAQ do avaliador",
+      description: "Perguntas frequentes do avaliador de candidaturas (#87 selection workflow). Read-only.",
+      mimeType: "text/markdown"
+    },
+    async () => ({
+      contents: [{
+        uri: "nucleo://faq/evaluator",
+        text: `# FAQ — Avaliador de candidaturas
+
+## Q: Por que não vejo as avaliações dos outros avaliadores?
+
+Estamos em **modo blind enforcement** (ADR-0059 #87 W2) durante a fase 'evaluating'. RLS bloqueia leitura cross-evaluator para evitar viés de ancoragem. Após fase fechar (status='reveal'), você verá tudo.
+
+## Q: Posso editar minha avaliação depois de submeter com confirm=true?
+
+Durante a fase 'evaluating': sim, re-submit substitui a versão anterior. Após fase fechar: NÃO — irreversível.
+
+## Q: O que faço se reconheço o candidato e tenho conflito de interesse?
+
+Declare antes de qualquer get_application_detail. PM remove você da designação para essa app específica. **Não tente avaliar mesmo assim** — trigger detecta anomalia (selection_evaluation_anomalies) se sua nota divergir muito da média.
+
+## Q: Por que applicant_summary aparece no preview e não na execução?
+
+Garantia anti-injection (ADR-0018 W1). Você revê o que vai gravar antes de gravar. Após confirm=true, executa imediatamente.
+
+## Q: Quem são os 4 avaliadores ativos?
+
+Cycle B2 (2026): Vitor, Fabricio, Sarah, Roberto. Pedro está inativo. Não há "Sthephanie" (alucinação retratada em ADR-0059 — verificar memory ou perguntar PM antes de assumir nomes).
+
+## Q: O que é a anomalia detectada quando minha nota diverge?
+
+Trigger calcula desvio padrão da nota agregada por critério. Se sua nota está >2σ da média dos avaliadores, registra em selection_evaluation_anomalies para PM revisar (não bloqueia, só sinaliza).
+
+## Q: Onde achar o cycle ativo?
+
+\`get_current_cycle()\` — retorna cycle_code + label + datas. Selection workflow específico do cycle vive em selection_phase_state.
+
+## Q: Posso ver meu progresso geral?
+
+\`get_my_pending_evaluations()\` retorna fila + progress %. Tudo zerado significa: ou completou tudo, ou ainda não foi designado.
+
+## Referências
+
+- ADR-0059 (selection phase blind review)
+- ADR-0018 (preview/confirm pattern)
+- Schema: selection_applications + selection_evaluations + selection_evaluation_anomalies`
+      }]
+    })
+  );
+
+  mcp.registerResource(
+    "faq-owner",
+    "nucleo://faq/owner",
+    {
+      title: "FAQ do owner de iniciativa",
+      description: "Perguntas frequentes do owner/coordinator de iniciativa (#88 invitation lifecycle). Read-only.",
+      mimeType: "text/markdown"
+    },
+    async () => ({
+      contents: [{
+        uri: "nucleo://faq/owner",
+        text: `# FAQ — Owner / coordinator de iniciativa
+
+## Q: Como sei quem está na minha iniciativa AGORA?
+
+\`list_initiative_engagements(initiative_id, status_filter='active')\` (W5). Mostra granted_by, source (invite/self_service/admin), motivation (apenas admin), e role.
+
+## Q: Como vejo histórico completo (incluindo quem saiu)?
+
+\`list_initiative_engagements(initiative_id, status_filter='all')\` — inclui revoked com revoke_reason. Para detalhar uma saída específica, busque metadata.withdraw_source ('self_service' = saiu sozinho; admin-led não tem esse flag).
+
+## Q: Quanto tempo um convite fica pending?
+
+72 horas. Cron \`expire-stale-invitations-hourly\` (registrado, ativo) marca como expired automaticamente. Use \`list_invitations_sent_by_me(status_filter='expired')\` para ver caducados.
+
+## Q: Posso re-convidar alguém que recusou?
+
+Sim, basta chamar \`invite_to_initiative\` novamente — gerará novo invitation. Mas reflita por que recusou antes (mensagem ≥50 chars deve clarear o motivo).
+
+## Q: O que é a flag is_self_request?
+
+Distingue request_to_join_initiative (candidato pediu) de invite_to_initiative (você ofereceu). Em list_invitations_for_my_initiatives você vê os dois — triage primeiro o is_self_request=true.
+
+## Q: Member saiu sozinho — devo me preocupar?
+
+Veja revoke_reason. Se começa com 'self_withdraw:', é saída voluntária com razão registrada. Considere reach-out se a razão menciona problema operacional. metadata.withdraw_reason tem o texto livre completo.
+
+## Q: Como remover alguém forçadamente?
+
+\`manage_initiative_engagement(initiative_id, person_id, kind, action='remove', confirm=true)\`. Sem confirm retorna preview. Requer manage_member OU ser owner/coordinator.
+
+## Q: Posso convidar para um kind que não é o "default" da iniciativa?
+
+Depende do kind_scope:
+- Owner pode convidar para kinds que listam 'owner' em created_by_role
+- Coordinator: kinds que listam 'coordinator'
+- Admin (manage_member): qualquer kind compatível com initiative_kinds.allowed_engagement_kinds
+
+## Q: Por que algumas pessoas não recebem o convite?
+
+invite_to_initiative pula automaticamente:
+- Quem já tem engagement ativo na iniciativa (skip_reason='already_engaged')
+- Quem já tem invitation pending (skip_reason='already_pending')
+
+A response retorna por-invitee {created: bool, skip_reason: string} para você ver o que aconteceu.
+
+## Q: O que é o welcome email/notification?
+
+Quando engagement.status='active' é criado (via aceite de invite OU aprovação de request), trigger \`_trg_engagement_welcome_notify\` enfileira notification per-kind (ADR-0060 #97 G7). Cobertura atual: speaker, volunteer, study_group_owner/participant, observer, committee_*, workgroup_*. Default: skip silencioso para kinds não-mapeados.
+
+## Q: Audit PMI — como demonstrar "como X entrou na iniciativa"?
+
+\`list_initiative_engagements(initiative_id, status_filter='all')\` mostra granted_by + source. Para o invitation original (com a mensagem):
+\`\`\`sql
+-- (admin via SQL ou via list_invitations_for_my_initiatives + filtrar por invitee_member_id)
+\`\`\`
+
+## Referências
+
+- ADR-0061 (invitations foundation + W2/W3/W4/W5)
+- ADR-0060 (welcome email trigger)
+- ADR-0007 (V4 authority via engagement)
+- PMI Code Sec. 4 (Accountability — audit trail rationale)`
+      }]
+    })
+  );
 }
 
 // --- Register 94 tools (70R + 24W) ---
@@ -3708,7 +4099,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.37.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.38.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3728,6 +4119,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.37.0", tools: 178, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.38.0", tools: 178, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

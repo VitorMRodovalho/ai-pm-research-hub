@@ -168,4 +168,65 @@ Como PM é também avaliador, comunicar aos outros 3: Fabricio, Sarah, Roberto.)
     Trigger anomaly computation on transitions. Always preserve a
     superadmin override for governance backstop.
 
+## W6 (sessão p76): self-discovery enrichment — prompts + FAQ resources
+
+| Field | Value |
+|---|---|
+| Status | Accepted (UX polish over W2/W3 + cross-cuts ADR-0061 W5) |
+| Date | 2026-04-28 (sessão p76) |
+| MCP version | v2.37.0 → v2.38.0 (178 tools unchanged; +3 prompts +2 resources) |
+
+### Gap closed
+
+W2 + W3 entregaram blind enforcement + evaluator workflow tools, mas o flow
+inteiro era invisível para um avaliador first-time abrindo o MCP. Sem
+self-discovery, o caminho "fila → detalhe → preview → confirm" exige
+documento externo. Para uma sessão de 1h por avaliador (Cycle B2 Pareto),
+self-discovery via MCP prompts/resources é mais barato que treinamento ad-hoc.
+
+### Components shipped W6
+
+3 prompts (user-invokable) + 2 FAQ resources (read-only):
+
+| Tipo | Nome | URI / handle | Cobre |
+|---|---|---|---|
+| prompt | `examples-evaluator` | `prompts/get` | Workflow get_my_pending → get_application_detail → submit_evaluation com confirm gate |
+| prompt | `examples-initiative-owner` | `prompts/get` | Workflow invite + review_request + list_engagements (W5) + remove |
+| prompt | `examples-candidate` | `prompts/get` | Workflow list_open + request_to_join + respond_invite + withdraw (W5) |
+| resource | `faq-evaluator` | `nucleo://faq/evaluator` | FAQ blind enforcement, conflict-of-interest, anomaly trigger |
+| resource | `faq-owner` | `nucleo://faq/owner` | FAQ TTL 72h, audit trail, kind_scope rules, withdraw signaling |
+
+Os prompts são receitas com chamadas exemplares (parâmetros + resposta esperada
++ erros típicos); resources são FAQ Q&A. Personagens cobertos: avaliador,
+owner/coordinator, candidato/membro.
+
+### Cross-references
+
+- Prompts/resources contêm referências a ferramentas shipped p74-p76:
+  - W6 + ADR-0059 W2 (blind review) + ADR-0059 W3 (evaluator tools)
+  - ADR-0061 W2/W3/W4/W5 (invitation lifecycle completo)
+  - ADR-0060 W7 (welcome email trigger)
+  - ADR-0018 W1 (preview/confirm gate)
+
+### Verification W6
+
+- [x] Pre-deploy duplicate check: 0 dupes (prompts + resources não conflitam)
+- [x] MCP smoke HTTP 200 + serverInfo.version=2.38.0
+- [x] Tool count preservado em 178 (W6 não adiciona tools)
+- [x] Prompts visíveis via prompts/list quando autenticado
+- [x] Resources URIs registráveis (nucleo://faq/evaluator + nucleo://faq/owner)
+- [ ] Live smoke: PM (ou um avaliador) chama \`prompt:examples-evaluator\` para validar legibilidade
+
+### Pattern sedimented (cumulative — extends from W5)
+
+38. **Self-discovery polish via prompts + resources após shipping de RPCs**:
+    quando subsystem entrega RPCs/tools mas users de primeira viagem precisam
+    de "como começar?", a resposta canônica é prompts (workflow recipes
+    user-invokable) + resources (FAQ Q&A read-only). Custo é baixo (markdown
+    estático), benefício alto (zero treinamento ad-hoc). Pattern aplicável a
+    qualquer subsystem onde o caller é human-in-the-loop (não orchestrator
+    automático). Lances W6 fechou simultaneamente personas evaluator (#87) +
+    owner + candidato (#88). Reaproveitar quando ADR-0022 W2/W3 (digest
+    weekly), #84 Onda 3 (kpi-board), e qualquer feature multi-stakeholder.
+
 Assisted-By: Claude (Anthropic) + council 4-agent Tier 3
