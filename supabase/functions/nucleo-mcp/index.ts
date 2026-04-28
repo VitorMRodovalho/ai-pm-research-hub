@@ -2519,6 +2519,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_lgpd_cron_health — admin observability for LGPD monthly crons (ADR-0061 W8 / Pattern 43 reuse)
+  mcp.tool("get_lgpd_cron_health", "Returns LGPD compliance cron health snapshot: 3 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly) with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y count of members 5y+ inactive not yet anonymized. Health signal: green (all crons <=35d), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + cron silent >35d). Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_lgpd_cron_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_lgpd_cron_health");
+    if (error) { await logUsage(sb, member.id, "get_lgpd_cron_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_lgpd_cron_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_lgpd_cron_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: list_initiative_engagements — owner/admin-detail listing (ADR-0061 W5)
   mcp.tool("list_initiative_engagements", "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.", {
     initiative_id: z.string().describe("Initiative UUID"),
@@ -4158,7 +4170,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.41.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.42.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4178,6 +4190,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.41.0", tools: 181, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.42.0", tools: 182, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
