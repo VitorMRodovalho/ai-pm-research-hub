@@ -90,7 +90,21 @@ if [[ "$todo_new" -gt 0 ]]; then
   echo -e "${YELLOW}  → consider running the 'session-log' skill to add to project_issue_gap_opportunity_log.md${NC}"
 fi
 
-# 7. Optional: gitleaks (if installed, second-pass scan)
+# 7. Silent-error pattern in edge functions (Issue #81 #6)
+# Refuses staged changes that introduce `const { data } = await sb.from(...)`
+# (or .rpc) without destructuring `error`. That pattern caused list_boards to
+# silently return "No board found" for 6 days in #80 — the real PostgREST 400
+# was discarded.
+silent_error_hits=$(git diff --cached -U0 --diff-filter=ACMR -- 'supabase/functions/**/*.ts' 'supabase/functions/**/*.mts' 2>/dev/null | grep -E '^\+' | grep -E 'const\s*\{\s*data\s*\}\s*=\s*await\s*(sb|supabase)\.(from|rpc)\(' || true)
+if [[ -n "$silent_error_hits" ]]; then
+  echo -e "${RED}BLOCK: silent-error pattern in supabase/functions/ (Issue #81 #6):${NC}"
+  echo "$silent_error_hits" | head -5 | sed 's/^/  /'
+  echo -e "${YELLOW}  → destructure error: const { data, error } = await sb.from(...) and handle it.${NC}"
+  echo -e "${YELLOW}  → see docs/audit/PRE_DROP_COLUMN_CHECKLIST.md for context (root cause of #80).${NC}"
+  block=1
+fi
+
+# 8. Optional: gitleaks (if installed, second-pass scan)
 if command -v gitleaks >/dev/null 2>&1; then
   if ! gitleaks protect --staged --no-banner --redact >/dev/null 2>&1; then
     echo -e "${RED}BLOCK: gitleaks detected secret(s) in staged changes.${NC}"
