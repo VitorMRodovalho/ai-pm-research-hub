@@ -3239,6 +3239,122 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: register_card_drive_file — Phase 3 — register existing Drive file as card attachment
+  mcp.tool("register_card_drive_file", "Registra arquivo Drive existente como anexo de card (board_item_files). Útil quando arquivo já foi feito upload externamente (Drive nativo) ou via upload_text_to_drive_folder. Authority: rls_is_member (qualquer authenticated). Idempotência: NÃO — duplicates are inserted (manage via UI ou unregister).", {
+    board_item_id: z.string().describe("Card UUID"),
+    drive_file_id: z.string().describe("Drive file ID (extrair da URL do arquivo)"),
+    drive_file_url: z.string().describe("URL completa do arquivo Drive (webViewLink)"),
+    filename: z.string().describe("Nome do arquivo (ex: 'ata-2026-04-28.md')"),
+    mime_type: z.string().optional().describe("MIME type (ex: 'text/markdown', 'application/pdf')"),
+    size_bytes: z.number().optional().describe("Tamanho em bytes (opcional)"),
+    uploaded_via: z.enum(["platform", "drive_native_synced"]).optional().describe("'platform' = upload via plataforma (default); 'drive_native_synced' = arquivo criado direto no Drive e descoberto via sync")
+  }, async (params: { board_item_id: string; drive_file_id: string; drive_file_url: string; filename: string; mime_type?: string; size_bytes?: number; uploaded_via?: "platform"|"drive_native_synced" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "register_card_drive_file", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "register_card_drive_file", false, "Invalid UUID", start); return err("board_item_id must be a UUID"); }
+    const { data, error } = await sb.rpc("register_card_drive_file", {
+      p_board_item_id: params.board_item_id,
+      p_drive_file_id: params.drive_file_id,
+      p_drive_file_url: params.drive_file_url,
+      p_filename: params.filename,
+      p_mime_type: params.mime_type ?? null,
+      p_size_bytes: params.size_bytes ?? null,
+      p_uploaded_via: params.uploaded_via ?? "platform"
+    });
+    if (error) { await logUsage(sb, member.id, "register_card_drive_file", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "register_card_drive_file", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "register_card_drive_file", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: upload_text_to_drive_folder — Phase 3 — generate ata.md and upload via SA
+  mcp.tool("upload_text_to_drive_folder", "Sobe texto (ex: ata gerada por Claude) para uma pasta Drive via Service Account. Use case: 'Gerar e arquivar ata em /minutes/' direto na conversa. Hard cap 7MB. Auto-registra como card attachment se board_item_id for fornecido. Authority: rls_is_member. SA precisa ter Editor na folder.", {
+    folder_id: z.string().describe("Drive folder ID destino"),
+    filename: z.string().describe("Nome do arquivo (ex: 'ata-2026-04-28.md')"),
+    content: z.string().describe("Conteúdo texto (markdown, plain text, JSON serialized, etc)"),
+    mime_type: z.string().optional().describe("MIME type. Default: 'text/markdown' se filename termina .md, senão 'text/plain'"),
+    register_to_card_id: z.string().optional().describe("Optional: card UUID — auto-registra como attachment após upload")
+  }, async (params: { folder_id: string; filename: string; content: string; mime_type?: string; register_to_card_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "upload_text_to_drive_folder", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.register_to_card_id && !isUUID(params.register_to_card_id)) {
+      await logUsage(sb, member.id, "upload_text_to_drive_folder", false, "Invalid UUID", start);
+      return err("register_to_card_id must be a UUID");
+    }
+    const inferredMime = params.mime_type ?? (params.filename.toLowerCase().endsWith(".md") ? "text/markdown" : "text/plain");
+    const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-upload-to-folder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({
+        folder_id: params.folder_id,
+        filename: params.filename,
+        mime_type: inferredMime,
+        content_text: params.content
+      })
+    });
+    const efJson = await efRes.json();
+    if (!efRes.ok || !efJson.success) {
+      await logUsage(sb, member.id, "upload_text_to_drive_folder", false, efJson.error || `EF status ${efRes.status}`, start);
+      return err(`Drive upload failed: ${efJson.error || efJson.detail || efRes.status}`);
+    }
+    let registerResult: any = null;
+    if (params.register_to_card_id) {
+      const { data: regData, error: regErr } = await sb.rpc("register_card_drive_file", {
+        p_board_item_id: params.register_to_card_id,
+        p_drive_file_id: efJson.drive_file_id,
+        p_drive_file_url: efJson.drive_file_url,
+        p_filename: efJson.filename,
+        p_mime_type: efJson.mime_type,
+        p_size_bytes: efJson.size_bytes,
+        p_uploaded_via: "platform"
+      });
+      registerResult = regErr ? { error: regErr.message } : regData;
+    }
+    await logUsage(sb, member.id, "upload_text_to_drive_folder", true, undefined, start);
+    return ok({ ...efJson, register_to_card: registerResult });
+  });
+
+  // TOOL: create_drive_subfolder — Phase 3 — create subfolder + optionally auto-link
+  mcp.tool("create_drive_subfolder", "Cria subpasta dentro de uma pasta Drive existente via Service Account. Optional auto-link: se auto_link_to_initiative_id fornecido, registra automaticamente em initiative_drive_links com link_purpose. Use case: 'Cria pasta /Atas dentro do workspace da Tribo X e vincula como purpose=minutes'. Authority: rls_is_member para create + write_initiative para auto-link.", {
+    parent_folder_id: z.string().describe("Drive folder ID pai (precisa ter SA como Editor)"),
+    name: z.string().describe("Nome da nova subpasta (max 200 chars)"),
+    auto_link_to_initiative_id: z.string().optional().describe("Optional: initiative UUID — auto-registra a nova subpasta em initiative_drive_links"),
+    link_purpose: z.enum(["workspace", "minutes", "archive", "shared_resources"]).optional().describe("link_purpose se auto-linking. Default: 'workspace'")
+  }, async (params: { parent_folder_id: string; name: string; auto_link_to_initiative_id?: string; link_purpose?: "workspace"|"minutes"|"archive"|"shared_resources" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_drive_subfolder", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.auto_link_to_initiative_id && !isUUID(params.auto_link_to_initiative_id)) {
+      await logUsage(sb, member.id, "create_drive_subfolder", false, "Invalid UUID", start);
+      return err("auto_link_to_initiative_id must be a UUID");
+    }
+    const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-create-subfolder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({ parent_folder_id: params.parent_folder_id, name: params.name })
+    });
+    const efJson = await efRes.json();
+    if (!efRes.ok || !efJson.success) {
+      await logUsage(sb, member.id, "create_drive_subfolder", false, efJson.error || `EF status ${efRes.status}`, start);
+      return err(`Drive create subfolder failed: ${efJson.error || efJson.detail || efRes.status}`);
+    }
+    let linkResult: any = null;
+    if (params.auto_link_to_initiative_id) {
+      const { data: linkData, error: linkErr } = await sb.rpc("link_initiative_to_drive", {
+        p_initiative_id: params.auto_link_to_initiative_id,
+        p_drive_folder_id: efJson.drive_folder_id,
+        p_drive_folder_url: efJson.drive_folder_url,
+        p_drive_folder_name: efJson.name,
+        p_link_purpose: params.link_purpose ?? "workspace"
+      });
+      linkResult = linkErr ? { error: linkErr.message } : linkData;
+    }
+    await logUsage(sb, member.id, "create_drive_subfolder", true, undefined, start);
+    return ok({ ...efJson, auto_link: linkResult });
+  });
+
   // TOOL: create_card_comment — Mayanna Item 01 (BUG ALTA)
   mcp.tool("create_card_comment", "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.", {
     board_item_id: z.string().describe("Card UUID"),
@@ -5042,7 +5158,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.51.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.52.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5062,6 +5178,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.51.1", tools: 231, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.52.0", tools: 234, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
