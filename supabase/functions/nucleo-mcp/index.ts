@@ -3099,6 +3099,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: list_initiative_events — Item 9 handoff 25/Abr (líder consulta eventos passados)
+  mcp.tool("list_initiative_events", "Lista eventos passados/futuros de uma tribo ou iniciativa. Resolve 8+ workflows do líder bloqueados antes (encontrar event_id histórico, filtrar fantasmas sem attendance, atas pendentes, gravações, action items abertos). Filtros: tribe_id (1-8) ou initiative_id (UUID), types[] ('tribo','geral','lideranca','workshop','kickoff'), date_from/date_to (default últimos 90d), has_minutes/has_recording/has_attendance (true/false flags). Permission: admin (all), TL (own tribe + general), researcher (own tribe), sponsor/liaison (general). Retorna {total_count, events:[{id, date, time_start, type, title, attendance_count, has_minutes, action_items_open, ...}]} paginado (limit max 200).", {
+    tribe_id: z.number().optional().describe("Tribe id 1-8 (filter)"),
+    initiative_id: z.string().optional().describe("Initiative UUID (filter alternativo a tribe_id)"),
+    types: z.array(z.string()).optional().describe("Event types filter ['tribo','geral','lideranca','workshop','kickoff','comms','entrevista']"),
+    date_from: z.string().optional().describe("ISO date 'YYYY-MM-DD' (default: 90 dias atrás)"),
+    date_to: z.string().optional().describe("ISO date 'YYYY-MM-DD' (default: hoje)"),
+    has_minutes: z.boolean().optional().describe("Filter: true=somente com ata, false=sem ata"),
+    has_recording: z.boolean().optional().describe("Filter: true=com youtube_url ou recording_url, false=sem"),
+    has_attendance: z.boolean().optional().describe("Filter: true=≥1 attendance registrado, false=fantasma (sem registro)"),
+    limit: z.number().optional().describe("Max items (default 50, cap 200)"),
+    offset: z.number().optional().describe("Pagination offset (default 0)")
+  }, async (params: { tribe_id?: number; initiative_id?: string; types?: string[]; date_from?: string; date_to?: string; has_minutes?: boolean; has_recording?: boolean; has_attendance?: boolean; limit?: number; offset?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_initiative_events", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) {
+      await logUsage(sb, member.id, "list_initiative_events", false, "Invalid initiative_id", start);
+      return err("initiative_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("list_initiative_events", {
+      p_tribe_id: params.tribe_id ?? null,
+      p_initiative_id: params.initiative_id ?? null,
+      p_types: params.types ?? null,
+      p_date_from: params.date_from ?? null,
+      p_date_to: params.date_to ?? null,
+      p_has_minutes: params.has_minutes ?? null,
+      p_has_recording: params.has_recording ?? null,
+      p_has_attendance: params.has_attendance ?? null,
+      p_limit: params.limit ?? 50,
+      p_offset: params.offset ?? 0
+    });
+    if (error) { await logUsage(sb, member.id, "list_initiative_events", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_initiative_events", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_initiative_events", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: check_code_schema_drift — Issue #81 #4 admin diagnostic
   mcp.tool("check_code_schema_drift", "Returns code-vs-schema drift findings: pg_proc / pg_view / pg_policy references to known-dropped columns. Strips line + block comments before regex match (no false positives from `-- ADR doc references`). Auto-verifies dropped state via information_schema. Empty result = no drift detected. Authority: view_internal_analytics. Use after DROP COLUMN deploys to verify cleanup, or as periodic audit.", {}, async () => {
     const start = Date.now();
@@ -4761,7 +4799,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.46.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.47.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4781,6 +4819,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.46.0", tools: 217, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.47.0", tools: 218, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
