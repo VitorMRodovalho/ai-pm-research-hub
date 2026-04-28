@@ -809,6 +809,10 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
 -- (admin via SQL ou via list_invitations_for_my_initiatives + filtrar por invitee_member_id)
 \`\`\`
 
+## Q: Audit org-wide — "todos os study_group_owners da org" / "todos os workgroup_members"?
+
+\`list_initiative_engagements_by_kind(engagement_kind='study_group_owner')\` (W6) retorna engagements cross-initiative. Filtros: engagement_kind (kind do papel) e/ou initiative_kind ('workgroup', 'committee', 'study_group', 'research_tribe', 'congress'). Pelo menos um obrigatório. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). PII logged. Use para audit ("nenhum capítulo está sem ambassador?", "quem é workgroup_coordinator de algo?").
+
 ## Referências
 
 - ADR-0061 (invitations foundation + W2/W3/W4/W5)
@@ -2527,6 +2531,37 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: list_initiative_engagements_by_kind — cross-initiative audit (ADR-0061 W6)
+  mcp.tool("list_initiative_engagements_by_kind", "Org-wide audit RPC. Lists engagements across ALL initiatives filtered by engagement_kind (e.g. 'study_group_owner') and/or initiative_kind (e.g. 'workgroup'). Use cases: 'who are all study_group_owners across the org?', 'list every member of every workgroup', 'show all volunteers'. At least one filter required (avoids unbounded scan). Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais / sponsors with audit clearance). LGPD: PII access logged per distinct target member. status_filter: active|all|revoked|onboarding. Default limit 100 (max 500); response.truncated=true if total reached limit.", {
+    engagement_kind: z.string().optional().describe("Filter by engagement.kind slug (e.g. 'study_group_owner', 'volunteer', 'committee_member', 'committee_coordinator', 'workgroup_member', 'workgroup_coordinator', 'ambassador', 'speaker', 'sponsor', 'chapter_board'). See engagement_kinds catalog. At least one of engagement_kind/initiative_kind must be provided."),
+    initiative_kind: z.string().optional().describe("Filter by initiative.kind (e.g. 'workgroup', 'study_group', 'research_tribe', 'congress', 'committee'). At least one of engagement_kind/initiative_kind must be provided."),
+    status_filter: z.string().optional().describe("Filter: 'active' | 'all' | 'revoked' | 'onboarding'. Default: 'active'."),
+    limit: z.number().optional().describe("Max rows (clamped to [1, 500]). Default: 100. response.truncated=true if total >= limit.")
+  }, async (params: { engagement_kind?: string; initiative_kind?: string; status_filter?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_initiative_engagements_by_kind", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.engagement_kind && !params.initiative_kind) {
+      await logUsage(sb, member.id, "list_initiative_engagements_by_kind", false, "No filter provided", start);
+      return err("At least one of engagement_kind or initiative_kind is required");
+    }
+    const filter = params.status_filter || "active";
+    if (!["active","all","revoked","onboarding"].includes(filter)) {
+      await logUsage(sb, member.id, "list_initiative_engagements_by_kind", false, "Invalid status_filter", start);
+      return err("status_filter must be one of: active | all | revoked | onboarding");
+    }
+    const { data, error } = await sb.rpc("list_initiative_engagements_by_kind", {
+      p_engagement_kind: params.engagement_kind ?? null,
+      p_initiative_kind: params.initiative_kind ?? null,
+      p_status_filter: filter,
+      p_limit: params.limit ?? 100
+    });
+    if (error) { await logUsage(sb, member.id, "list_initiative_engagements_by_kind", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_initiative_engagements_by_kind", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_initiative_engagements_by_kind", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: withdraw_from_initiative — self-service exit (ADR-0061 W5 + ADR-0018 confirm gate)
   mcp.tool("withdraw_from_initiative", "Self-service exit from an initiative. Caller's active engagement is revoked with reason logged. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the only active holder of a required engagement kind for this initiative (e.g. sole study_group_owner) — transfer the role first via an admin/coordinator. Returns a preview payload unless confirm=true (ADR-0018 W1). Irreversible after confirm.", {
     initiative_id: z.string().describe("Initiative UUID to leave"),
@@ -4111,7 +4146,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.39.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.40.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4131,6 +4166,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.39.0", tools: 179, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.40.0", tools: 180, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
