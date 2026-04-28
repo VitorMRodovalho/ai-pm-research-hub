@@ -1851,6 +1851,49 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== INITIATIVE OWNER REVIEW (#88 W4 — owner approval flow + pii_access_log) =====
+
+  // TOOL: list_invitations_for_my_initiatives — owner view of pending requests
+  mcp.tool("list_invitations_for_my_initiatives", "List invitations (especially pending self-service requests) for initiatives where you are owner/coordinator. Admin sees all. Includes is_self_request flag distinguishing requests from owner-initiated invites. Logs PII access (#85 LGPD Onda C). Use to triage join requests before review_initiative_request.", {
+    initiative_id: z.string().optional().describe("Filter by specific initiative UUID. Omit for all your initiatives."),
+    status_filter: z.string().optional().describe("Filter by status: 'pending' (default) | 'accepted' | 'declined' | 'expired' | 'revoked' | 'all'.")
+  }, async (params: { initiative_id?: string; status_filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_invitations_for_my_initiatives", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) {
+      await logUsage(sb, member.id, "list_invitations_for_my_initiatives", false, "Invalid UUID", start);
+      return err("initiative_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("list_invitations_for_my_initiatives", {
+      p_initiative_id: params.initiative_id ?? null,
+      p_status_filter: params.status_filter ?? "pending"
+    });
+    if (error) { await logUsage(sb, member.id, "list_invitations_for_my_initiatives", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_invitations_for_my_initiatives", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: review_initiative_request — owner approves/declines self-service request
+  mcp.tool("review_initiative_request", "Review a self-service join request as owner/coordinator (or admin). decision='approve' creates engagement with metadata.source=self_service_request_approved and review_authority audit. decision='decline' marks invitation declined with reviewer note. Owner-initiated invites use respond_to_initiative_invitation by invitee directly — this RPC is for self-service requests only.", {
+    invitation_id: z.string().describe("Invitation UUID (must be self-service: invitee==inviter)"),
+    decision: z.enum(["approve", "decline"]).describe("'approve' or 'decline'"),
+    note: z.string().optional().describe("Optional reviewer note (visible in audit trail)")
+  }, async (params: { invitation_id: string; decision: "approve" | "decline"; note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "review_initiative_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.invitation_id)) { await logUsage(sb, member.id, "review_initiative_request", false, "Invalid UUID", start); return err("invitation_id must be a UUID"); }
+    const { data, error } = await sb.rpc("review_initiative_request", {
+      p_invitation_id: params.invitation_id,
+      p_decision: params.decision,
+      p_note: params.note ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "review_initiative_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "review_initiative_request", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== INITIATIVE DISCOVERY + REQUEST-TO-JOIN (#88 W3 — Notion-style) =====
 
   // TOOL: list_open_initiatives — discovery
@@ -3595,7 +3638,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.35.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.36.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3615,6 +3658,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.35.0", tools: 174, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.36.0", tools: 176, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
