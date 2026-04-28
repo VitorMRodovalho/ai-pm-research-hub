@@ -2526,6 +2526,265 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== #86 Wave 2 — CERTIFICATES + CYCLES + KNOWLEDGE/WIKI + GAMIFICATION EXPANSION =====
+
+  // TOOL: get_all_certificates — admin search/list certificates
+  mcp.tool("get_all_certificates", "Admin search of certificates (all members). Optional filters: status (active|revoked|all), search (name/email match), include_volunteer_agreements (default false — VEPs are noisy). Authority: enforced server-side via certificate ACL.", {
+    status_filter: z.string().optional().describe("Status filter (e.g. 'active'|'revoked'|'all'). Default null (all)."),
+    search: z.string().optional().describe("Substring search on member name/email"),
+    include_volunteer_agreements: z.boolean().optional().describe("Include volunteer agreements in results. Default: false")
+  }, async (params: { status_filter?: string; search?: string; include_volunteer_agreements?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_all_certificates", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_all_certificates", {
+      p_status_filter: params.status_filter ?? null,
+      p_search: params.search ?? null,
+      p_include_volunteer_agreements: params.include_volunteer_agreements ?? false
+    });
+    if (error) { await logUsage(sb, member.id, "get_all_certificates", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_all_certificates", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: issue_certificate — admin issue a new certificate (confirm gate)
+  mcp.tool("issue_certificate", "Admin issues a new certificate to a member. data jsonb shape includes: member_id, type, title, period_start, period_end, language, cycle. Two-step confirm gate (ADR-0018 W1) — irreversible after issuance.", {
+    data: z.record(z.string(), z.unknown()).describe("Certificate payload (jsonb): {member_id, type, title, period_start, period_end, language, cycle, ...}"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to issue. Without confirm: preview only.")
+  }, async (params: { data: Record<string, unknown>; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "issue_certificate", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "issue_certificate", true, undefined, start, "preview");
+      return ok({
+        action: "issue_certificate",
+        preview: true,
+        target: params.data,
+        warning: "State-changing action — issues a permanent certificate record. Verify member_id and content carefully then pass confirm=true.",
+        next_call: { ...params, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("issue_certificate", { p_data: params.data });
+    if (error) { await logUsage(sb, member.id, "issue_certificate", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "issue_certificate", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: update_certificate — admin update certificate fields (confirm gate)
+  mcp.tool("update_certificate", "Admin updates editable fields of an existing certificate. Pass updates as jsonb (only changed fields). Confirm gate — changes are audit-logged.", {
+    cert_id: z.string().describe("Certificate UUID"),
+    updates: z.record(z.string(), z.unknown()).describe("Partial update jsonb (only fields to change)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to apply. Without confirm: preview only.")
+  }, async (params: { cert_id: string; updates: Record<string, unknown>; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_certificate", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cert_id)) { await logUsage(sb, member.id, "update_certificate", false, "Invalid UUID", start); return err("cert_id must be a UUID"); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "update_certificate", true, undefined, start, "preview");
+      return ok({ action: "update_certificate", preview: true, cert_id: params.cert_id, updates: params.updates, warning: "Changes audit-logged. Pass confirm=true to apply.", next_call: { ...params, confirm: true } });
+    }
+    const { data, error } = await sb.rpc("update_certificate", { p_cert_id: params.cert_id, p_updates: params.updates });
+    if (error) { await logUsage(sb, member.id, "update_certificate", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_certificate", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: counter_sign_certificate — second authority signs (confirm gate)
+  mcp.tool("counter_sign_certificate", "GP/manager counter-signs a tier 2 certificate (e.g. final volunteer recognition). Two-step confirm — establishes the second-signature provenance per ADR-0039 countersign subsystem. Irreversible.", {
+    certificate_id: z.string().describe("Certificate UUID requiring counter-signature"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to counter-sign. Without confirm: preview only.")
+  }, async (params: { certificate_id: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "counter_sign_certificate", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.certificate_id)) { await logUsage(sb, member.id, "counter_sign_certificate", false, "Invalid UUID", start); return err("certificate_id must be a UUID"); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "counter_sign_certificate", true, undefined, start, "preview");
+      return ok({ action: "counter_sign_certificate", preview: true, certificate_id: params.certificate_id, warning: "Counter-signature is permanent and audit-logged. Pass confirm=true.", next_call: { ...params, confirm: true } });
+    }
+    const { data, error } = await sb.rpc("counter_sign_certificate", { p_certificate_id: params.certificate_id });
+    if (error) { await logUsage(sb, member.id, "counter_sign_certificate", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "counter_sign_certificate", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "counter_sign_certificate", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: exec_cert_timeline — exec dashboard cohort metric
+  mcp.tool("exec_cert_timeline", "Returns cohort timeline of certificate issuance across N months: rolling pct of cohort that earned tier 1/2 + avg days-to-tier. Used in exec dashboards to track progression health.", {
+    months: z.number().optional().describe("Lookback months. Default: 12.")
+  }, async (params: { months?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "exec_cert_timeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("exec_cert_timeline", { p_months: params.months ?? 12 });
+    if (error) { await logUsage(sb, member.id, "exec_cert_timeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "exec_cert_timeline", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: exec_cycle_report — admin/exec cycle summary
+  mcp.tool("exec_cycle_report", "Returns rich cycle report (admin/exec): aggregate KPIs across the cycle (active members, attendance %, certificates issued, knowledge produced). Defaults to 'cycle3-2026'.", {
+    cycle_code: z.string().optional().describe("Cycle code (e.g. 'cycle3-2026', 'cycle3-2026-b2'). Default: 'cycle3-2026'.")
+  }, async (params: { cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "exec_cycle_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("exec_cycle_report", { p_cycle_code: params.cycle_code ?? "cycle3-2026" });
+    if (error) { await logUsage(sb, member.id, "exec_cycle_report", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "exec_cycle_report", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: recalculate_cycle_rankings — recompute leaderboard for a cycle (confirm gate)
+  mcp.tool("recalculate_cycle_rankings", "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.", {
+    cycle_id: z.string().describe("Cycle UUID"),
+    reason: z.string().optional().describe("Reason for recalculation (audit trail). Default: 'manual'."),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview.")
+  }, async (params: { cycle_id: string; reason?: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "recalculate_cycle_rankings", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cycle_id)) { await logUsage(sb, member.id, "recalculate_cycle_rankings", false, "Invalid UUID", start); return err("cycle_id must be a UUID"); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "recalculate_cycle_rankings", true, undefined, start, "preview");
+      return ok({ action: "recalculate_cycle_rankings", preview: true, cycle_id: params.cycle_id, reason: params.reason ?? "manual", warning: "Will overwrite cycle leaderboard rankings. Audit-logged. Pass confirm=true.", next_call: { ...params, confirm: true } });
+    }
+    const { data, error } = await sb.rpc("recalculate_cycle_rankings", { p_cycle_id: params.cycle_id, p_reason: params.reason ?? "manual" });
+    if (error) { await logUsage(sb, member.id, "recalculate_cycle_rankings", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "recalculate_cycle_rankings", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_cpmai_leaderboard — CPMAI course-specific leaderboard
+  mcp.tool("get_cpmai_leaderboard", "Returns CPMAI course leaderboard. Optional course_id filter — when omitted, returns aggregate across all CPMAI courses. Use to gauge course completion progress.", {
+    course_id: z.string().optional().describe("Optional course UUID. Omit for aggregate.")
+  }, async (params: { course_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cpmai_leaderboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.course_id && !isUUID(params.course_id)) { await logUsage(sb, member.id, "get_cpmai_leaderboard", false, "Invalid UUID", start); return err("course_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_cpmai_leaderboard", { p_course_id: params.course_id ?? null });
+    if (error) { await logUsage(sb, member.id, "get_cpmai_leaderboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_cpmai_leaderboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_member_cycle_xp — XP breakdown for a specific member's current cycle
+  mcp.tool("get_member_cycle_xp", "Returns a member's per-cycle XP breakdown by source (attendance, learning, certs, badges, artifacts, courses, showcase, bonus). Use for individual coaching: 'where is my XP coming from this cycle?'", {
+    member_id: z.string().describe("Member UUID")
+  }, async (params: { member_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_member_cycle_xp", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "get_member_cycle_xp", false, "Invalid UUID", start); return err("member_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_member_cycle_xp", { p_member_id: params.member_id });
+    if (error) { await logUsage(sb, member.id, "get_member_cycle_xp", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_member_cycle_xp", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: knowledge_search_text — full-text knowledge search
+  mcp.tool("knowledge_search_text", "Full-text search of knowledge_assets (synced wiki + external research). Returns chunks with title + source + snippet + tags + relevance rank. Optional source filter (e.g. 'wiki'). Default match_count=8.", {
+    query: z.string().describe("Search text"),
+    source: z.string().optional().describe("Optional source filter (e.g. 'wiki', 'arxiv', 'blog')."),
+    match_count: z.number().optional().describe("Max matches. Default: 8.")
+  }, async (params: { query: string; source?: string; match_count?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "knowledge_search_text", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.query || params.query.trim().length === 0) { await logUsage(sb, member.id, "knowledge_search_text", false, "Empty query", start); return err("query required"); }
+    const { data, error } = await sb.rpc("knowledge_search_text", { p_query: params.query, p_source: params.source ?? null, p_match_count: params.match_count ?? 8 });
+    if (error) { await logUsage(sb, member.id, "knowledge_search_text", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "knowledge_search_text", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: search_wiki_pages — wiki FTS with tag/domain filters
+  mcp.tool("search_wiki_pages", "Full-text search of wiki_pages with optional domain (e.g. 'frameworks') and tag filters. Returns id, path, title, summary, tags, license, ip_track, headline (highlighted snippet) and rank. Use to discover narrative knowledge before answering 'what does the wiki say about X?'.", {
+    query: z.string().describe("Search text"),
+    limit: z.number().optional().describe("Max results. Default: 10."),
+    domain: z.string().optional().describe("Optional domain filter (e.g. 'frameworks', 'governance')."),
+    tag: z.string().optional().describe("Optional single-tag filter")
+  }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "search_wiki_pages", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.query || params.query.trim().length === 0) { await logUsage(sb, member.id, "search_wiki_pages", false, "Empty query", start); return err("query required"); }
+    const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit ?? 10, p_domain: params.domain ?? null, p_tag: params.tag ?? null });
+    if (error) { await logUsage(sb, member.id, "search_wiki_pages", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "search_wiki_pages", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: knowledge_assets_latest — recent knowledge_assets
+  mcp.tool("knowledge_assets_latest", "Returns most recent knowledge assets (wiki + external sources). Optional source filter. Use to discover 'what was added recently to the knowledge base?'.", {
+    source: z.string().optional().describe("Optional source filter (e.g. 'wiki', 'arxiv')."),
+    limit: z.number().optional().describe("Max items. Default: 100.")
+  }, async (params: { source?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "knowledge_assets_latest", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("knowledge_assets_latest", { p_source: params.source ?? null, p_limit: params.limit ?? 100 });
+    if (error) { await logUsage(sb, member.id, "knowledge_assets_latest", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "knowledge_assets_latest", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: knowledge_insights_overview — taxonomy overview of insights
+  mcp.tool("knowledge_insights_overview", "Returns aggregate overview of knowledge insights: per-taxonomy_area + insight_type counts, avg impact/urgency, max_detected_at. Default status='open', last 30 days. Used to spot which areas are accumulating signal.", {
+    status: z.string().optional().describe("Status filter (e.g. 'open', 'in_progress', 'closed'). Default: 'open'."),
+    days: z.number().optional().describe("Lookback days. Default: 30.")
+  }, async (params: { status?: string; days?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "knowledge_insights_overview", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("knowledge_insights_overview", { p_status: params.status ?? "open", p_days: params.days ?? 30 });
+    if (error) { await logUsage(sb, member.id, "knowledge_insights_overview", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "knowledge_insights_overview", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: knowledge_insights_backlog_candidates — prioritized backlog
+  mcp.tool("knowledge_insights_backlog_candidates", "Returns prioritized knowledge insight backlog (ranked by impact*urgency*confidence). Default open, top 25. Use for 'what should we tackle next?' or curator triage.", {
+    status: z.string().optional().describe("Status filter. Default: 'open'."),
+    limit: z.number().optional().describe("Max items. Default: 25.")
+  }, async (params: { status?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "knowledge_insights_backlog_candidates", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("knowledge_insights_backlog_candidates", { p_status: params.status ?? "open", p_limit: params.limit ?? 25 });
+    if (error) { await logUsage(sb, member.id, "knowledge_insights_backlog_candidates", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "knowledge_insights_backlog_candidates", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: wiki_health_report — wiki structural integrity
+  mcp.tool("wiki_health_report", "Returns wiki structural health (broken links, missing summaries, license gaps, etc.) per check_type. Used by curators to prioritize wiki quality work.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "wiki_health_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("wiki_health_report");
+    if (error) { await logUsage(sb, member.id, "wiki_health_report", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "wiki_health_report", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: search_knowledge — alternate search (legacy/internal)
+  mcp.tool("search_knowledge", "Legacy text search across knowledge chunks (returns chunk + asset + tribe + theme context). Prefer knowledge_search_text or search_wiki_pages for new code. Kept for compat.", {
+    search_term: z.string().describe("Search text")
+  }, async (params: { search_term: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "search_knowledge", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.search_term || params.search_term.trim().length === 0) { await logUsage(sb, member.id, "search_knowledge", false, "Empty query", start); return err("search_term required"); }
+    const { data, error } = await sb.rpc("search_knowledge", { search_term: params.search_term });
+    if (error) { await logUsage(sb, member.id, "search_knowledge", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "search_knowledge", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== CERTIFICATES PUBLIC (issue #86 — external verification) =====
 
   // TOOL: verify_certificate (public — no auth required by design)
@@ -4452,7 +4711,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.43.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.44.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4472,6 +4731,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.43.0", tools: 197, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.44.0", tools: 213, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
