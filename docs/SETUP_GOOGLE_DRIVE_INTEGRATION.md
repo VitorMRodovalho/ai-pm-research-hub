@@ -2,7 +2,8 @@
 
 **Issue:** #110 (Mayanna report Item 07)
 **Phase 1 status:** ✅ Schema + RPCs + EF skeleton shipped (autonomous, p77 marathon)
-**Phase 2 status:** 🟡 Aguardando PM completar este setup para ativar
+**Phase 2 status:** ✅ Vault seeded, 12 initiatives linked, list EF live (p78)
+**Phase 3 status:** 🟡 Upload + create-subfolder EFs deployed; **upload BLOCKED on PM Step 9 (DwD)**
 
 ---
 
@@ -155,13 +156,71 @@ Quota exceeded (default 10k requests/100s/project). Pode pedir aumento no Google
 
 ---
 
-## Próximas EFs (Phase 2 follow-up)
+## Passo 9 — Domain-Wide Delegation (REQUIRED para upload + write)
 
-Após smoke test do `drive-list-folder-files`:
+**Discovery (p78 smoke test):** Service Accounts não têm storage quota própria.
+Tentar `files.create` com upload em pasta de My Drive retorna 403:
+> "Service Accounts do not have storage quota. Leverage shared drives,
+> or use OAuth delegation instead."
 
-1. **`drive-upload-to-folder`**: proxy upload — file flows client → EF → Drive multipart API → register_card_drive_file RPC
-2. **`drive-create-subfolder`**: cria subpastas automaticamente (board novo → pasta nova)
-3. **MCP tools**: get_board_drive_files (chama EF list), upload_card_attachment (chama EF upload)
+A solução adotada: **Domain-Wide Delegation** — SA impersonates `nucleoia@pmigo.org.br`
+para que o arquivo seja **owned** por essa conta (e use a quota dela).
+
+### Setup steps:
+
+1. Login como **Workspace Admin** em `nucleoia@pmigo.org.br` em https://admin.google.com/
+2. Menu: **Security → Access and data control → API controls**
+3. Click **Manage Domain Wide Delegation**
+4. Click **Add new**
+5. Preencher:
+   - **Client ID:** `117466213352176222096`
+     *(esse é o `client_id` numérico do SA. Source: Vault `google_drive_service_account_json` campo `client_id`)*
+   - **OAuth scopes (comma-delimited):** `https://www.googleapis.com/auth/drive`
+6. Click **Authorize**
+
+### Validação:
+
+Após autorizar, smoke test:
+```bash
+curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/drive-upload-to-folder" \
+  -H "Content-Type: application/json" -H "Authorization: Bearer test" \
+  -d '{"folder_id":"<any_linked_folder>","filename":"smoke.md","mime_type":"text/markdown","content_text":"smoke"}'
+```
+Esperado: HTTP 200 + `{"success":true, drive_file_id, drive_file_url}`.
+
+Se retornar `{"error":"unauthorized_client"}` — DwD ainda não foi propagado (espera ~30s) ou client_id/scope incorretos.
+
+### Rollback:
+Reverter DwD = Workspace Admin → API controls → Domain-Wide Delegation → encontrar entry
+do client_id `117466213352176222096` → Delete. Após delete, todas as ops write via SA
+falharão com 401.
+
+### Alternativa não-adotada: Shared Drive
+Mover as 12 pastas para um Shared Drive (Team Drive) e adicionar SA como Manager
+elimina a necessidade de DwD. Não adotamos pois exige migração das pastas existentes
+(mantemos My Drive structure que PM já configurou). Pode virar Phase 5 se DwD virar
+operacionalmente difícil.
+
+---
+
+## EFs Phase 3 (deployed p78)
+
+1. ✅ **`drive-upload-to-folder`**: text/base64 upload → Drive multipart API. 7MB cap.
+   - Inputs: `folder_id, filename, mime_type, content_text|content_base64`
+   - Output: `{drive_file_id, drive_file_url, size_bytes, mime_type, filename}`
+2. ✅ **`drive-create-subfolder`**: cria subpasta dentro de pasta linkada
+   - Inputs: `parent_folder_id, name`
+   - Output: `{drive_folder_id, drive_folder_url, name, parent_folder_id}`
+
+## MCP tools (deployed p78, v2.52.0)
+
+1. `register_card_drive_file` — wraps RPC para registrar arquivo Drive existente como card attachment
+2. `upload_text_to_drive_folder` — Claude-friendly: gera ata.md, sobe + auto-registra em card opcional
+3. `create_drive_subfolder` — cria subpasta + opcionalmente auto-link a iniciativa
+
+## Phase 4 (issue #111, future)
+
+- Cron auto-discovery de atas: scan folders com purpose='minutes', detecta novos arquivos, cria/sync events com minutes_url
 
 ---
 
@@ -170,6 +229,9 @@ Após smoke test do `drive-list-folder-files`:
 - Mayanna usability report (Abril 2026) — Item 07
 - p77 Decision: Opção A (institutional service account) com SPOF controlado
 - Phase 1 ship: p77 ULTRA-marathon
-- Phase 2 trigger: PM completar Passos 1-6 deste doc
+- Phase 2 ship: p77/p78 (Vault seeded + 12 initiatives linked + list EF live)
+- Phase 3 ship: p78 (upload + create-subfolder EFs + 3 MCP tools — blocked on Step 9 DwD)
+- Phase 4 (future): cron auto-discovery atas (#111)
+- ADR-0064 documenta DwD discovery + decisão
 
 Assisted-By: Claude (Anthropic)
