@@ -1851,6 +1851,41 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== INITIATIVE DISCOVERY + REQUEST-TO-JOIN (#88 W3 — Notion-style) =====
+
+  // TOOL: list_open_initiatives — discovery
+  mcp.tool("list_open_initiatives", "Returns initiatives accepting new members via self-service (join_policy='request_to_join' or 'open'). Includes per-initiative has_active_engagement + has_pending_invitation flags so you can filter what you can actually join.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_open_initiatives", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_open_initiatives");
+    if (error) { await logUsage(sb, member.id, "list_open_initiatives", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_open_initiatives", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: request_to_join_initiative — Notion-style self-service
+  mcp.tool("request_to_join_initiative", "Request to join an initiative via self-service (Notion-style). Initiative must have join_policy='request_to_join' or 'open'. Message MUST be at least 50 characters describing your motivation. Owner of initiative will review and accept/decline. Default engagement kind inferred by initiative kind (study_group_participant, workgroup_member, committee_member, volunteer, observer).", {
+    initiative_id: z.string().describe("Initiative UUID"),
+    message: z.string().describe("Motivation: why you want to join, what you bring, time commitment available. Min 50 chars.")
+  }, async (params: { initiative_id: string; message: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "request_to_join_initiative", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "request_to_join_initiative", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    if (params.message.length < 50) {
+      await logUsage(sb, member.id, "request_to_join_initiative", false, "Message too short", start);
+      return err(`Motivation message must be at least 50 characters (current: ${params.message.length}). Describe why, what you bring, commitment available.`);
+    }
+    const { data, error } = await sb.rpc("request_to_join_initiative", {
+      p_initiative_id: params.initiative_id,
+      p_message: params.message
+    });
+    if (error) { await logUsage(sb, member.id, "request_to_join_initiative", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "request_to_join_initiative", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== EVALUATOR WORKFLOW (issue #87 W3 — ux Pareto: queue + detail + submit) =====
   // 3 tools wrapping evaluator-facing RPCs with confirm gate (ADR-0018 W1 pattern)
 
@@ -3560,7 +3595,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.34.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.35.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3580,6 +3615,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.34.0", tools: 172, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.35.0", tools: 174, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
