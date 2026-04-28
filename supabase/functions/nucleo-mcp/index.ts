@@ -3099,6 +3099,75 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== Mayanna Item 07 — Drive integration Phase 1 =====
+  // Setup PM action: docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md
+
+  // TOOL: link_board_to_drive — admin/board_admin vincula pasta Drive
+  mcp.tool("link_board_to_drive", "Vincula uma pasta Google Drive a um board. PM/admin operation. Idempotent (reuse on duplicate). Para integração com pasta institucional do Núcleo (nucleoia@pmigo.org.br Workspace) — ver docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md para PM-side setup. Authority: manage_member OR board_admin.", {
+    board_id: z.string().describe("Board UUID"),
+    drive_folder_id: z.string().describe("Drive folder ID (extrair da URL: /folders/<ID>?...)"),
+    drive_folder_url: z.string().describe("URL completa da pasta Drive"),
+    drive_folder_name: z.string().optional().describe("Display name (ex: 'Hub Comunicação - Templates')")
+  }, async (params: { board_id: string; drive_folder_id: string; drive_folder_url: string; drive_folder_name?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "link_board_to_drive", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_id)) { await logUsage(sb, member.id, "link_board_to_drive", false, "Invalid UUID", start); return err("board_id must be a UUID"); }
+    const { data, error } = await sb.rpc("link_board_to_drive", {
+      p_board_id: params.board_id,
+      p_drive_folder_id: params.drive_folder_id,
+      p_drive_folder_url: params.drive_folder_url,
+      p_drive_folder_name: params.drive_folder_name ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "link_board_to_drive", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "link_board_to_drive", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "link_board_to_drive", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_board_drive_links — lista pastas Drive ativas do board
+  mcp.tool("get_board_drive_links", "Lista pastas Drive vinculadas (ativas) a um board. Retorna {board_id, drive_links:[{id, drive_folder_id, drive_folder_url, drive_folder_name, linked_by_name, linked_at}], fetched_at}. Qualquer member autenticado pode listar.", {
+    board_id: z.string().describe("Board UUID")
+  }, async (params: { board_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_board_drive_links", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_id)) { await logUsage(sb, member.id, "get_board_drive_links", false, "Invalid UUID", start); return err("board_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_board_drive_links", { p_board_id: params.board_id });
+    if (error) { await logUsage(sb, member.id, "get_board_drive_links", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_board_drive_links", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: unlink_board_from_drive — soft unlink (preserva histórico)
+  mcp.tool("unlink_board_from_drive", "Soft-unlink pasta Drive de board (preserva histórico via unlinked_at). Authority: manage_member OR board_admin.", {
+    link_id: z.string().describe("Link UUID")
+  }, async (params: { link_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "unlink_board_from_drive", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.link_id)) { await logUsage(sb, member.id, "unlink_board_from_drive", false, "Invalid UUID", start); return err("link_id must be a UUID"); }
+    const { data, error } = await sb.rpc("unlink_board_from_drive", { p_link_id: params.link_id });
+    if (error) { await logUsage(sb, member.id, "unlink_board_from_drive", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "unlink_board_from_drive", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "unlink_board_from_drive", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_card_drive_files — arquivos Drive registered a um card
+  mcp.tool("list_card_drive_files", "Lista arquivos Drive vinculados a um card via plataforma. Retorna metadata (filename, size, mime_type, uploaded_by, drive_file_url). Skips soft-deleted.", {
+    board_item_id: z.string().describe("Card UUID")
+  }, async (params: { board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_card_drive_files", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "list_card_drive_files", false, "Invalid UUID", start); return err("board_item_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_card_drive_files", { p_board_item_id: params.board_item_id });
+    if (error) { await logUsage(sb, member.id, "list_card_drive_files", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_card_drive_files", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: create_card_comment — Mayanna Item 01 (BUG ALTA)
   mcp.tool("create_card_comment", "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.", {
     board_item_id: z.string().describe("Card UUID"),
@@ -4897,7 +4966,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.49.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.50.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4917,6 +4986,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.49.0", tools: 224, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.50.0", tools: 228, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
