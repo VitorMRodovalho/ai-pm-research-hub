@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (batches 1+2; remaining batches deferred) |
+| Status | Accepted (batches 1+2+3; remaining batches deferred) |
 | Date | 2026-04-27 (session p74) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `20260514230000` (batch 1) + `20260514240000` (batch 2) |
+| Migrations | `20260514230000` (batch 1) + `20260514240000` (batch 2) + `20260514250000` (batch 3) |
 | Cross-ref | ADR-0011 (V4 auth), ADR-0053..0057 (auth_rls_initplan series) |
-| Closes | 22 of 133 mpp WARN (batch 1: 18; batch 2: 4 — see audit doc for remaining) |
+| Closes | 34 of 133 mpp WARN (batch 1: 18; batch 2: 4; batch 3: 12 — see audit doc for remaining) |
 
 ## Context
 
@@ -23,6 +23,31 @@ Audit produced in this session (`docs/audit/MPP_AUDIT_P74.md`) categorized
 all 133 WARNs. Batch 1 ships the cleanest win first.
 
 ## Decision
+
+### Batch 3 — Split ALL-cmd admin policies into per-cmd policies (Class C, 12 WARN)
+
+Migration `20260514250000`. For two tables, an admin/write PERMISSIVE policy
+declared `cmd=ALL` (covering INSERT/UPDATE/DELETE/SELECT) overlapping on
+SELECT with a separate read policy. Splitting the ALL policy into 3 per-cmd
+policies (INSERT, UPDATE, DELETE) leaves SELECT covered ONLY by the read
+policy — eliminating SELECT overlap and the resulting 6 WARNs per table:
+
+* `public.cycles`: drop `cycles_admin_write` (ALL/superadmin); create
+  `cycles_admin_insert`, `cycles_admin_update`, `cycles_admin_delete` with
+  same superadmin predicate. SELECT remains covered by `cycles_read_all`
+  (USING true).
+* `public.tribe_deliverables`: drop `tribe_deliverables_write_v4` (ALL);
+  create `tribe_deliverables_{insert,update,delete}_v4` with same
+  `rls_is_superadmin OR rls_can_for_initiative('write_board')` predicate.
+  SELECT remains covered by `tribe_deliverables_read`.
+
+The split is **mechanical** — no predicate composition, no semantic change.
+Re-evaluated as low-risk vs the audit's initial "medium" classification:
+no OR-merging happens, just decomposition by cmd. RESTRICTIVE org_scope
+policies still apply uniformly to all 3 new policies (preserving multi-org
+filter).
+
+Effect: `mpp` WARN 111 → 99 (-12 WARN, 6/table × 2 tables).
 
 ### Batch 2 — Drop subset duplicate policies (Class B, 4 WARN)
 
