@@ -913,6 +913,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL 6a: get_my_gamification_stats (ADR-0062 #101 P2 final — streak + cycle pts)
+  mcp.tool("get_my_gamification_stats", "Returns your streak + cycle progress: current_streak_count (consecutive cycles with >=1 point — alive if you scored in current cycle OR previous cycle), points_this_cycle (sum of points earned in the current cycle), active_cycles_count (total distinct cycles you scored in), longest_streak_count (your record). Use to populate /profile streak badge or to ask 'how am I doing this cycle?'.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_gamification_stats", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_gamification_stats");
+    if (error) { await logUsage(sb, member.id, "get_my_gamification_stats", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_my_gamification_stats", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_my_gamification_stats", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 6b: set_my_gamification_visibility (ADR-0050 #101 — LGPD opt-out)
   mcp.tool("set_my_gamification_visibility", "Toggle your visibility on the gamification leaderboard. Set opt_out=true to hide your name + points from the public ranking (your data is preserved, only display is suppressed). LGPD-compliant member self-management. Idempotent — no-op if value unchanged. ADR-0050 (#101).", {
     opt_out: z.boolean().describe("true = hide me from leaderboard | false = show me on leaderboard")
@@ -4099,7 +4111,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.38.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.39.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4119,6 +4131,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.38.0", tools: 178, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.39.0", tools: 179, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
