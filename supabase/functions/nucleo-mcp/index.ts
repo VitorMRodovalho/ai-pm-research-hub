@@ -1851,6 +1851,77 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== EVALUATOR WORKFLOW (issue #87 W3 — ux Pareto: queue + detail + submit) =====
+  // 3 tools wrapping evaluator-facing RPCs with confirm gate (ADR-0018 W1 pattern)
+
+  // TOOL: get_my_pending_evaluations (ux Pareto #1 — fila pessoal)
+  mcp.tool("get_my_pending_evaluations", "Returns YOUR queue of pending evaluations as committee member: applications in current cycle you haven't submitted yet. Includes progress (X of Y submitted) and per-application has_my_evaluation_in_progress flag for incomplete drafts. Use to plan your evaluation work session.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_pending_evaluations", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_pending_evaluations");
+    if (error) { await logUsage(sb, member.id, "get_my_pending_evaluations", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_pending_evaluations", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_application_detail (ux Pareto #2 — payload rico para review)
+  // Wraps get_application_score_breakdown which already has phase-aware blind enforcement (ADR-0059)
+  mcp.tool("get_application_detail", "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.", {
+    application_id: z.string().describe("Application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_detail", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_detail", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_detail", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_detail", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: submit_evaluation (ux Pareto #3 — confirm gate ADR-0018 W1 + application_summary preview)
+  mcp.tool("submit_evaluation", "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context before final submit. With confirm=true: writes to selection_evaluations (irreversible after phase closes). Score submitted without reading application context degrades ranking quality.", {
+    application_id: z.string().describe("Application UUID"),
+    evaluation_type: z.string().describe("'objective' | 'interview' | 'leader_extra'"),
+    scores: z.record(z.string(), z.any()).describe("Scores object keyed by criterion_id. Schema depends on evaluation_type — call get_evaluation_form first to discover."),
+    notes: z.string().optional().describe("Free-text notes about your evaluation reasoning"),
+    confirm: z.boolean().optional().describe("true = execute submit. false (or omitted) = return preview with application_summary for verification.")
+  }, async (params: { application_id: string; evaluation_type: string; scores: Record<string, any>; notes?: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_evaluation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "submit_evaluation", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    if (!params.confirm) {
+      // Preview mode — return application_summary + intended scores
+      const { data: appData, error: appErr } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
+      if (appErr) { await logUsage(sb, member.id, "submit_evaluation", false, appErr.message, start); return err(appErr.message); }
+      await logUsage(sb, member.id, "submit_evaluation", true, "preview", start);
+      return ok({
+        preview: true,
+        application_summary: {
+          applicant_name: (appData as any)?.applicant_name,
+          role_applied: (appData as any)?.role_applied,
+          promotion_path: (appData as any)?.promotion_path,
+          blind_review_active: (appData as any)?.blind_review_active,
+        },
+        intended_scores: params.scores,
+        intended_evaluation_type: params.evaluation_type,
+        intended_notes: params.notes ?? null,
+        next_step: "Re-call submit_evaluation with confirm=true to execute. Verify applicant_name + scores schema first."
+      });
+    }
+    const { data, error } = await sb.rpc("submit_evaluation", {
+      p_application_id: params.application_id,
+      p_evaluation_type: params.evaluation_type,
+      p_scores: params.scores,
+      p_notes: params.notes ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "submit_evaluation", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "submit_evaluation", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== INITIATIVE INVITATIONS (issue #88 — ADR-0061 foundation + W2 RPCs) =====
   // 4 tools wrapping create_initiative_invitations + respond_to_initiative_invitation
   // + direct table reads via RLS (invitee/inviter own).
@@ -3489,7 +3560,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.33.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.34.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3509,6 +3580,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.33.0", tools: 169, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.34.0", tools: 172, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
