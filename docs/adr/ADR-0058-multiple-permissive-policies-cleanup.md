@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (batches 1+2+3+4+5; remaining deferred) |
+| Status | Accepted (batches 1+2+3+4+5+6; remaining deferred — Class D/E saturation) |
 | Date | 2026-04-27 (session p74) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `230000`–`270000` (5 sequential batches) |
+| Migrations | `230000`–`280000` (6 sequential batches) |
 | Cross-ref | ADR-0011 (V4 auth), ADR-0053..0057 (auth_rls_initplan series) |
-| Closes | **56 of 133** mpp WARN (b1:18 + b2:4 + b3:12 + b4:12 + b5:10 — see audit doc) |
+| Closes | **58 of 133** mpp WARN (b1:18 + b2:4 + b3:12 + b4:12 + b5:10 + b6:2 — see audit doc) |
 
 ## Context
 
@@ -23,6 +23,31 @@ Audit produced in this session (`docs/audit/MPP_AUDIT_P74.md`) categorized
 all 133 WARNs. Batch 1 ships the cleanest win first.
 
 ## Decision
+
+### Batch 6 — Split board_items + project_boards write_v4 ALL → per-cmd (2 WARN)
+
+Migration `20260514280000`. Same pattern as batch 3: `*_write_v4` policies
+declared `cmd=ALL` overlapping on SELECT with `*_read_members`. Split into
+3 per-cmd policies (INSERT/UPDATE/DELETE) leaves SELECT covered only by
+`*_read_members`. -1 WARN per table = -2 total.
+
+This finishes the "ALL-cmd write policy + read SELECT policy" pattern
+across the major tables (cycles + tribe_deliverables done in batch 3,
+publication_series done in batch 4, board_items + project_boards now).
+
+Effect: `mpp` WARN 77 → 75 (-2 WARN).
+
+### Saturation note
+
+After batch 6, the remaining 75 mpp WARN are distributed as:
+* 2 tables × 2 WARN (`members`, `tribes` — Class D intentional 5-way SELECT split / multi-path UPDATE)
+* 73 tables × 1 WARN — long tail of per-table judgments
+
+Closing further requires either (a) per-table review with PM signal on
+mergeability or (b) a structural split-ALL pattern applied uniformly that
+would inflate `pg_policy` from ~73 ALL policies to ~219 per-cmd policies.
+Trade-off not justified. ADR-0058 effectively reaches its closure ceiling
+at batch 6.
 
 ### Batch 5 — Drop misleading PERMISSIVE deny policies (no-ops, 10 WARN)
 

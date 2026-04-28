@@ -3,13 +3,20 @@
 **Sessão**: p74
 **Data**: 2026-04-27
 **Trigger**: post-ADR-0057 (auth_rls_initplan 100% closed). MPP é o próximo P2 perf class (133 WARN inicial).
-**Resultado batches 1-5 shipped**:
+**Resultado batches 1-6 shipped**:
 - Batch 1 (publication_series_v4_org_scope flip): 133 → 115 (-18)
 - Batch 2 (drop subset duplicates courses + tribe_selections): 115 → 111 (-4)
 - Batch 3 (split ALL-cmd → per-cmd cycles + tribe_deliverables): 111 → 99 (-12)
 - Batch 4 (drop subsumed superadmin_all + publication_series split): 99 → 87 (-12)
-- Batch 5 (drop misleading PERMISSIVE deny no-ops on 4 tables): 87 → **77** (-10)
-- Cumulative: **-56 WARN (~42.1%)**
+- Batch 5 (drop misleading PERMISSIVE deny no-ops on 4 tables): 87 → 77 (-10)
+- Batch 6 (split board_items + project_boards write_v4 ALL → per-cmd): 77 → **75** (-2)
+- Cumulative: **-58 WARN (~43.6%)**
+
+**Saturation reached**: remaining 75 WARN distributed across 73 tables × 1 WARN +
+2 tables × 2 WARN (`members`, `tribes` — Class D intentional). Closing further
+requires per-table judgment or uniform split-ALL pattern that would inflate
+pg_policy from ~73 ALL policies to ~219 per-cmd policies. Trade-off not
+justified.
 
 ---
 
