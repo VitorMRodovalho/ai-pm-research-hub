@@ -3099,6 +3099,76 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: create_card_comment — Mayanna Item 01 (BUG ALTA)
+  mcp.tool("create_card_comment", "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.", {
+    board_item_id: z.string().describe("Card UUID"),
+    body: z.string().describe("Comment body (markdown allowed)"),
+    parent_comment_id: z.string().optional().describe("Optional parent comment UUID (thread reply)"),
+    mentioned_member_ids: z.array(z.string()).optional().describe("Optional array de member UUIDs mencionados (@menção) — recebem notificação imediata")
+  }, async (params: { board_item_id: string; body: string; parent_comment_id?: string; mentioned_member_ids?: string[] }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_card_comment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "create_card_comment", false, "Invalid UUID", start); return err("board_item_id must be a UUID"); }
+    if (!params.body || params.body.trim().length === 0) { await logUsage(sb, member.id, "create_card_comment", false, "Empty body", start); return err("body required"); }
+    const { data, error } = await sb.rpc("create_card_comment", {
+      p_board_item_id: params.board_item_id,
+      p_body: params.body,
+      p_parent_comment_id: params.parent_comment_id ?? null,
+      p_mentioned_member_ids: params.mentioned_member_ids ?? []
+    });
+    if (error) { await logUsage(sb, member.id, "create_card_comment", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "create_card_comment", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "create_card_comment", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_card_comments
+  mcp.tool("list_card_comments", "Lista comentários de um card (skips soft-deleted). Returns thread-flat com author info (name + photo_url). Order ascending by created_at.", {
+    board_item_id: z.string().describe("Card UUID")
+  }, async (params: { board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_card_comments", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "list_card_comments", false, "Invalid UUID", start); return err("board_item_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_card_comments", { p_board_item_id: params.board_item_id });
+    if (error) { await logUsage(sb, member.id, "list_card_comments", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_card_comments", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_card_comments", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: update_card_comment — author edits own
+  mcp.tool("update_card_comment", "Edita corpo de comentário próprio. Apenas o autor pode editar (não admin). Marca edited_at. Body required.", {
+    comment_id: z.string().describe("Comment UUID"),
+    new_body: z.string().describe("New body text")
+  }, async (params: { comment_id: string; new_body: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_card_comment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.comment_id)) { await logUsage(sb, member.id, "update_card_comment", false, "Invalid UUID", start); return err("comment_id must be a UUID"); }
+    const { data, error } = await sb.rpc("update_card_comment", { p_comment_id: params.comment_id, p_new_body: params.new_body });
+    if (error) { await logUsage(sb, member.id, "update_card_comment", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "update_card_comment", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "update_card_comment", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: delete_card_comment — soft delete
+  mcp.tool("delete_card_comment", "Soft-delete (deleted_at marcado). Authority: autor do comentário OR write_board OR manage_member (admin override). Conteúdo preservado para audit.", {
+    comment_id: z.string().describe("Comment UUID")
+  }, async (params: { comment_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "delete_card_comment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.comment_id)) { await logUsage(sb, member.id, "delete_card_comment", false, "Invalid UUID", start); return err("comment_id must be a UUID"); }
+    const { data, error } = await sb.rpc("delete_card_comment", { p_comment_id: params.comment_id });
+    if (error) { await logUsage(sb, member.id, "delete_card_comment", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "delete_card_comment", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "delete_card_comment", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_tribe_members_with_credly — Item 5 handoff 25/Abr (TL acompanha trilha CPMAI)
   mcp.tool("get_tribe_members_with_credly", "Lista membros ativos de uma tribo enriquecidos com status Credly: id, name, photo_url, role, designations, chapter, person_id (V4), credly_url, credly_verified_at, badges_summary {trail_count, trail_completed, cert_pmi_senior, cpmai_certified, total_badges}. Use para acompanhamento de trilha de cursos pelo TL. Authority: admin (qualquer tribo) OR tribe_leader/researcher (própria tribo).", {
     tribe_id: z.number().describe("Tribe id 1-8")
@@ -4827,7 +4897,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.48.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.49.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4847,6 +4917,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.48.0", tools: 220, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.49.0", tools: 224, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
