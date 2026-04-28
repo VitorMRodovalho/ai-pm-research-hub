@@ -3099,6 +3099,34 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_tribe_members_with_credly — Item 5 handoff 25/Abr (TL acompanha trilha CPMAI)
+  mcp.tool("get_tribe_members_with_credly", "Lista membros ativos de uma tribo enriquecidos com status Credly: id, name, photo_url, role, designations, chapter, person_id (V4), credly_url, credly_verified_at, badges_summary {trail_count, trail_completed, cert_pmi_senior, cpmai_certified, total_badges}. Use para acompanhamento de trilha de cursos pelo TL. Authority: admin (qualquer tribo) OR tribe_leader/researcher (própria tribo).", {
+    tribe_id: z.number().describe("Tribe id 1-8")
+  }, async (params: { tribe_id: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_members_with_credly", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_tribe_members_with_credly", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "get_tribe_members_with_credly", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_tribe_members_with_credly", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_tribe_members_with_credly", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_tribe_credly_status — Item 5 dashboard agregado
+  mcp.tool("get_tribe_credly_status", "Dashboard agregado de status Credly da tribo: members_total, members_with_credly_linked, credly_link_rate, trail_completed_count + rate, cpmai_certified_count, pmi_senior_count. Use para snapshot rápido sem precisar listar membros. Authority: admin OR tribe_leader/researcher (própria tribo).", {
+    tribe_id: z.number().describe("Tribe id 1-8")
+  }, async (params: { tribe_id: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_credly_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_tribe_credly_status", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "get_tribe_credly_status", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_tribe_credly_status", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_tribe_credly_status", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: list_initiative_events — Item 9 handoff 25/Abr (líder consulta eventos passados)
   mcp.tool("list_initiative_events", "Lista eventos passados/futuros de uma tribo ou iniciativa. Resolve 8+ workflows do líder bloqueados antes (encontrar event_id histórico, filtrar fantasmas sem attendance, atas pendentes, gravações, action items abertos). Filtros: tribe_id (1-8) ou initiative_id (UUID), types[] ('tribo','geral','lideranca','workshop','kickoff'), date_from/date_to (default últimos 90d), has_minutes/has_recording/has_attendance (true/false flags). Permission: admin (all), TL (own tribe + general), researcher (own tribe), sponsor/liaison (general). Retorna {total_count, events:[{id, date, time_start, type, title, attendance_count, has_minutes, action_items_open, ...}]} paginado (limit max 200).", {
     tribe_id: z.number().optional().describe("Tribe id 1-8 (filter)"),
@@ -4799,7 +4827,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.47.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.48.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4819,6 +4847,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.47.0", tools: 218, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.48.0", tools: 220, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
