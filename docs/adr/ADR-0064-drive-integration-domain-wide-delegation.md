@@ -1,9 +1,40 @@
-# ADR-0064: Drive Integration write path — Domain-Wide Delegation
+# ADR-0064: Drive Integration write path — OAuth Refresh Token (amended)
 
-**Status:** Accepted (2026-04-28)
+**Status:** Accepted (2026-04-28) — **Amended same day** to Path F
 **Decision date:** p78 session (smoke-test discovery + autonomous resolution)
 **Supersedes:** —
 **Related:** Issue #110 (Mayanna Item 07), `docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md`
+
+## Amendment 1 (2026-04-28, same session)
+
+Path A (Domain-Wide Delegation) blocked: PM is not Workspace Admin of `pmigo.org.br`.
+Path B (Shared Drive) blocked: `nucleoia@pmigo.org.br` user account does not have
+"Drives compartilhados" menu — Workspace plan / admin policy doesn't enable Shared
+Drive creation for this user.
+
+**Adopted Path F: OAuth Refresh Token (user-delegated).**
+
+PM created OAuth Client ID (Web application) in Cloud Console, did consent flow once
+via OAuth Playground as `nucleoia@pmigo.org.br`, captured refresh_token. Stored in
+Vault as `google_drive_oauth_credentials` (JSON: client_id + client_secret +
+refresh_token).
+
+EFs `drive-upload-to-folder` and `drive-create-subfolder` refactored to use
+`grant_type=refresh_token` flow against `oauth2.googleapis.com/token`. SA JWT path
+abandoned for write operations.
+
+Read EF `drive-list-folder-files` continues with SA + `drive.readonly` (no quota
+issue, no admin needed).
+
+Smoke validated 2026-04-28:
+- Upload to LATAM LIM 2026 (folder `1xzBl3UUZDU8S388LkV88SAyNZGDabK5r`) → file
+  `160AJmcC-hYRX0B7zbB35nLL5NX8jtqGW` created (HTTP 200).
+- Create subfolder `_smoke_phase3_oauth_DELETE_ME` → folder
+  `1Yex5SWCkdFzX9Oc0UGjoQ-FAckK5Oost` created (HTTP 200).
+
+Original ADR body (Path A DwD) preserved below for historical context.
+
+---
 
 ---
 

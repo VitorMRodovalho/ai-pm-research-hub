@@ -1,8 +1,11 @@
 /**
  * Drive Integration EF — create a subfolder inside a parent Drive folder.
  *
- * Auth: Service Account JWT (RS256) → OAuth2 token → Drive API.
- * Scope: drive (full) — SA must have Editor on parent folder.
+ * Auth: OAuth user-delegated refresh token flow (ADR-0064 amended).
+ * Folders consume 0 bytes of quota, but using OAuth here keeps consistency
+ * com upload EF + ownership cai no usuário (não na SA).
+ *
+ * Vault key: google_drive_oauth_credentials
  *
  * Body:
  *   { parent_folder_id: string, name: string }
@@ -13,61 +16,44 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAULT_KEY = "google_drive_service_account_json";
+const VAULT_KEY = "google_drive_oauth_credentials";
 
-async function getServiceAccountKey(): Promise<{ available: boolean; key?: any; error?: string }> {
+interface OAuthCreds {
+  client_id: string;
+  client_secret: string;
+  refresh_token: string;
+}
+
+async function getOAuthCreds(): Promise<{ available: boolean; creds?: OAuthCreds; error?: string }> {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) return { available: false, error: `Vault read error: ${error.message}` };
   if (!data || typeof data !== "string" || data.length === 0) {
     return { available: false, error: `Vault key '${VAULT_KEY}' not seeded` };
   }
-  try { return { available: true, key: JSON.parse(data) }; }
-  catch { return { available: false, error: "Vault key is not valid JSON" }; }
+  try {
+    const parsed = JSON.parse(data);
+    if (!parsed.client_id || !parsed.client_secret || !parsed.refresh_token) {
+      return { available: false, error: "OAuth creds JSON missing client_id/client_secret/refresh_token" };
+    }
+    return { available: true, creds: parsed };
+  } catch {
+    return { available: false, error: "Vault key is not valid JSON" };
+  }
 }
 
-async function signJwt(saKey: any): Promise<string> {
-  const header = { alg: "RS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  // Domain-Wide Delegation: SA impersonates a real user so created folders
-  // are owned by that user (avoids edge cases when other users access them).
-  // PM must enable DwD in Workspace Admin → Security → API Controls.
-  const impersonate = Deno.env.get("GOOGLE_DRIVE_IMPERSONATE_USER") ?? "nucleoia@pmigo.org.br";
-  const payload: Record<string, unknown> = {
-    iss: saKey.client_email,
-    scope: "https://www.googleapis.com/auth/drive",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now,
-    sub: impersonate,
-  };
-  const enc = (o: any) => btoa(JSON.stringify(o)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  const unsigned = `${enc(header)}.${enc(payload)}`;
-
-  const pemHeaderPattern = new RegExp("-{5}(BEGIN|END) PRIVATE KEY-{5}|\\s", "g");
-  const pem = saKey.private_key.replace(pemHeaderPattern, "");
-  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8", der.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false, ["sign"]
-  );
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, new TextEncoder().encode(unsigned));
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  return `${unsigned}.${sigB64}`;
-}
-
-async function getAccessToken(saKey: any): Promise<string> {
-  const jwt = await signJwt(saKey);
+async function getAccessToken(creds: OAuthCreds): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
+      client_id: creds.client_id,
+      client_secret: creds.client_secret,
+      refresh_token: creds.refresh_token,
+      grant_type: "refresh_token",
     }),
   });
-  if (!res.ok) throw new Error(`Token exchange failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`Token refresh failed: ${res.status} ${await res.text()}`);
   return (await res.json()).access_token;
 }
 
@@ -110,20 +96,20 @@ Deno.serve(async (req) => {
   if (!name) return new Response(JSON.stringify({ error: "name required" }), { status: 400 });
   if (name.length > 200) return new Response(JSON.stringify({ error: "name max length 200 chars" }), { status: 400 });
 
-  const saResult = await getServiceAccountKey();
-  if (!saResult.available) {
+  const credsResult = await getOAuthCreds();
+  if (!credsResult.available) {
     return new Response(
       JSON.stringify({
         error: "drive_integration_not_configured",
-        detail: saResult.error,
-        next_steps: "PM: see docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md",
+        detail: credsResult.error,
+        next_steps: "PM: seed Vault key 'google_drive_oauth_credentials' (ADR-0064 amended).",
       }),
       { status: 503 },
     );
   }
 
   try {
-    const accessToken = await getAccessToken(saResult.key);
+    const accessToken = await getAccessToken(credsResult.creds!);
     const folder = await createSubfolder(parentId, name, accessToken);
     return new Response(
       JSON.stringify({
