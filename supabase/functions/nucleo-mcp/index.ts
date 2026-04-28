@@ -2452,36 +2452,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // TOOL: submit_interview_scores — final interview rubric scores (confirm gate)
   mcp.tool("submit_interview_scores", "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview. With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.", {
     interview_id: z.string().describe("Interview UUID"),
-    scores: z.record(z.string(), z.number()).describe("Object mapping criterion key -> numeric score (per cycle.interview_criteria rubric)"),
+    scores_json: z.string().describe("JSON string com object mapping criterion key -> numeric score (ex: '{\"depth\":4.5,\"clarity\":3.8}'). Per cycle.interview_criteria rubric"),
     theme: z.string().optional().describe("Optional theme/topic discussed"),
     notes: z.string().optional().describe("Optional general notes about the interview"),
-    criterion_notes: z.record(z.string(), z.string()).optional().describe("Optional per-criterion notes (key -> note)"),
+    criterion_notes_json: z.string().optional().describe("Optional JSON string com per-criterion notes (ex: '{\"depth\":\"deep technical knowledge\"}'"),
     confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview only.")
-  }, async (params: { interview_id: string; scores: Record<string, number>; theme?: string; notes?: string; criterion_notes?: Record<string, string>; confirm?: boolean }) => {
+  }, async (params: { interview_id: string; scores_json: string; theme?: string; notes?: string; criterion_notes_json?: string; confirm?: boolean }) => {
+    let scores: Record<string, number>;
+    let criterion_notes: Record<string, string> = {};
+    try { scores = JSON.parse(params.scores_json); }
+    catch { return err("scores_json must be valid JSON object {criterion: number}"); }
+    if (params.criterion_notes_json) {
+      try { criterion_notes = JSON.parse(params.criterion_notes_json); }
+      catch { return err("criterion_notes_json must be valid JSON object"); }
+    }
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_interview_scores", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.interview_id)) { await logUsage(sb, member.id, "submit_interview_scores", false, "Invalid UUID", start); return err("interview_id must be a UUID"); }
-    if (!params.scores || typeof params.scores !== "object" || Object.keys(params.scores).length === 0) {
+    if (!scores || Object.keys(scores).length === 0) {
       await logUsage(sb, member.id, "submit_interview_scores", false, "Empty scores", start);
-      return err("scores must be a non-empty object: {criterion_key: number}");
+      return err("scores_json must contain non-empty object {criterion_key: number}");
     }
     if (params.confirm !== true) {
       await logUsage(sb, member.id, "submit_interview_scores", true, undefined, start, "preview");
       return ok({
         action: "submit_interview_scores",
         preview: true,
-        target: { interview_id: params.interview_id, scores: params.scores, theme: params.theme, notes: params.notes },
+        target: { interview_id: params.interview_id, scores, theme: params.theme, notes: params.notes },
         warning: "State-changing action — writes selection_evaluation. Irreversible after phase closes. Verify scores carefully then pass confirm=true.",
         next_call: { ...params, confirm: true }
       });
     }
     const { data, error } = await sb.rpc("submit_interview_scores", {
       p_interview_id: params.interview_id,
-      p_scores: params.scores,
+      p_scores: scores,
       p_theme: params.theme ?? null,
       p_notes: params.notes ?? null,
-      p_criterion_notes: params.criterion_notes ?? {}
+      p_criterion_notes: criterion_notes
     });
     if (error) { await logUsage(sb, member.id, "submit_interview_scores", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "submit_interview_scores", true, undefined, start);
@@ -2548,44 +2556,50 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: issue_certificate — admin issue a new certificate (confirm gate)
-  mcp.tool("issue_certificate", "Admin issues a new certificate to a member. data jsonb shape includes: member_id, type, title, period_start, period_end, language, cycle. Two-step confirm gate (ADR-0018 W1) — irreversible after issuance.", {
-    data: z.record(z.string(), z.unknown()).describe("Certificate payload (jsonb): {member_id, type, title, period_start, period_end, language, cycle, ...}"),
+  mcp.tool("issue_certificate", "Admin issues a new certificate to a member. data_json: JSON string com payload (member_id, type, title, period_start, period_end, language, cycle). Two-step confirm gate (ADR-0018 W1) — irreversible.", {
+    data_json: z.string().describe("JSON string com certificate payload (ex: '{\"member_id\":\"<uuid>\",\"type\":\"trail\",\"title\":\"...\",\"language\":\"pt-BR\"}'"),
     confirm: z.boolean().optional().describe("Pass confirm=true to issue. Without confirm: preview only.")
-  }, async (params: { data: Record<string, unknown>; confirm?: boolean }) => {
+  }, async (params: { data_json: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "issue_certificate", false, "Not authenticated", start); return err("Not authenticated"); }
+    let data_obj: Record<string, unknown>;
+    try { data_obj = JSON.parse(params.data_json); }
+    catch { return err("data_json must be valid JSON object"); }
     if (params.confirm !== true) {
       await logUsage(sb, member.id, "issue_certificate", true, undefined, start, "preview");
       return ok({
         action: "issue_certificate",
         preview: true,
-        target: params.data,
+        target: data_obj,
         warning: "State-changing action — issues a permanent certificate record. Verify member_id and content carefully then pass confirm=true.",
         next_call: { ...params, confirm: true }
       });
     }
-    const { data, error } = await sb.rpc("issue_certificate", { p_data: params.data });
+    const { data, error } = await sb.rpc("issue_certificate", { p_data: data_obj });
     if (error) { await logUsage(sb, member.id, "issue_certificate", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "issue_certificate", true, undefined, start);
     return ok(data);
   });
 
   // TOOL: update_certificate — admin update certificate fields (confirm gate)
-  mcp.tool("update_certificate", "Admin updates editable fields of an existing certificate. Pass updates as jsonb (only changed fields). Confirm gate — changes are audit-logged.", {
+  mcp.tool("update_certificate", "Admin updates editable fields of an existing certificate. updates_json: JSON string com partial update. Confirm gate — changes are audit-logged.", {
     cert_id: z.string().describe("Certificate UUID"),
-    updates: z.record(z.string(), z.unknown()).describe("Partial update jsonb (only fields to change)"),
+    updates_json: z.string().describe("JSON string com partial update (ex: '{\"title\":\"new\"}')"),
     confirm: z.boolean().optional().describe("Pass confirm=true to apply. Without confirm: preview only.")
-  }, async (params: { cert_id: string; updates: Record<string, unknown>; confirm?: boolean }) => {
+  }, async (params: { cert_id: string; updates_json: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_certificate", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.cert_id)) { await logUsage(sb, member.id, "update_certificate", false, "Invalid UUID", start); return err("cert_id must be a UUID"); }
+    let updates_obj: Record<string, unknown>;
+    try { updates_obj = JSON.parse(params.updates_json); }
+    catch { return err("updates_json must be valid JSON object"); }
     if (params.confirm !== true) {
       await logUsage(sb, member.id, "update_certificate", true, undefined, start, "preview");
-      return ok({ action: "update_certificate", preview: true, cert_id: params.cert_id, updates: params.updates, warning: "Changes audit-logged. Pass confirm=true to apply.", next_call: { ...params, confirm: true } });
+      return ok({ action: "update_certificate", preview: true, cert_id: params.cert_id, updates: updates_obj, warning: "Changes audit-logged. Pass confirm=true to apply.", next_call: { ...params, confirm: true } });
     }
-    const { data, error } = await sb.rpc("update_certificate", { p_cert_id: params.cert_id, p_updates: params.updates });
+    const { data, error } = await sb.rpc("update_certificate", { p_cert_id: params.cert_id, p_updates: updates_obj });
     if (error) { await logUsage(sb, member.id, "update_certificate", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_certificate", true, undefined, start);
     return ok(data);
@@ -2907,19 +2921,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: submit_evaluation (ux Pareto #3 — confirm gate ADR-0018 W1 + application_summary preview)
-  mcp.tool("submit_evaluation", "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context before final submit. With confirm=true: writes to selection_evaluations (irreversible after phase closes). Score submitted without reading application context degrades ranking quality.", {
+  mcp.tool("submit_evaluation", "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context. With confirm=true: writes to selection_evaluations (irreversible after phase closes).", {
     application_id: z.string().describe("Application UUID"),
     evaluation_type: z.string().describe("'objective' | 'interview' | 'leader_extra'"),
-    scores: z.record(z.string(), z.any()).describe("Scores object keyed by criterion_id. Schema depends on evaluation_type — call get_evaluation_form first to discover."),
+    scores_json: z.string().describe("JSON string com scores object keyed by criterion_id. Schema depends on evaluation_type — call get_evaluation_form first to discover."),
     notes: z.string().optional().describe("Free-text notes about your evaluation reasoning"),
     confirm: z.boolean().optional().describe("true = execute submit. false (or omitted) = return preview with application_summary for verification.")
-  }, async (params: { application_id: string; evaluation_type: string; scores: Record<string, any>; notes?: string; confirm?: boolean }) => {
+  }, async (params: { application_id: string; evaluation_type: string; scores_json: string; notes?: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_evaluation", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "submit_evaluation", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    let scores_obj: Record<string, any>;
+    try { scores_obj = JSON.parse(params.scores_json); }
+    catch { return err("scores_json must be valid JSON object"); }
     if (!params.confirm) {
-      // Preview mode — return application_summary + intended scores
       const { data: appData, error: appErr } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
       if (appErr) { await logUsage(sb, member.id, "submit_evaluation", false, appErr.message, start); return err(appErr.message); }
       await logUsage(sb, member.id, "submit_evaluation", true, "preview", start);
@@ -2931,7 +2947,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
           promotion_path: (appData as any)?.promotion_path,
           blind_review_active: (appData as any)?.blind_review_active,
         },
-        intended_scores: params.scores,
+        intended_scores: scores_obj,
         intended_evaluation_type: params.evaluation_type,
         intended_notes: params.notes ?? null,
         next_step: "Re-call submit_evaluation with confirm=true to execute. Verify applicant_name + scores schema first."
@@ -2940,7 +2956,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("submit_evaluation", {
       p_application_id: params.application_id,
       p_evaluation_type: params.evaluation_type,
-      p_scores: params.scores,
+      p_scores: scores_obj,
       p_notes: params.notes ?? null
     });
     if (error) { await logUsage(sb, member.id, "submit_evaluation", false, error.message, start); return err(error.message); }
@@ -4608,13 +4624,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  mcp.tool("update_card_during_meeting", "Atomic card mutation during a meeting. Three modes: (a) status change via new_status; (b) field updates via fields jsonb; (c) discussion-only (both omitted, just creates a 'discussed' link). Wraps move_board_item + update_board_item (existing auth + lifecycle events preserved). Always upserts a board_item_event_links row (link_type derived: status_changed if status changed, else discussed). Requires write_board. ADR-0049 (#84 Onda 2). Use case: 'Move o card X para review nesta reunião' ou 'Anota que discutimos o card X'.", {
+  mcp.tool("update_card_during_meeting", "Atomic card mutation during a meeting. Three modes: (a) status change via new_status; (b) field updates via fields_json string; (c) discussion-only (both omitted, just creates a 'discussed' link). Wraps move_board_item + update_board_item (existing auth + lifecycle events preserved). Requires write_board. ADR-0049 (#84 Onda 2).", {
     card_id: z.string().describe("UUID of the board card to update"),
     event_id: z.string().describe("UUID of the meeting event"),
     new_status: z.string().optional().describe("Optional new status (e.g. backlog|in_progress|review|done|archived). Triggers status_changed link."),
-    fields: z.record(z.any()).optional().describe("Optional jsonb of card fields to update (title, description, due_date, assignee_id, tags, etc.). Same shape as update_board_item."),
+    fields_json: z.string().optional().describe("Optional JSON string com card fields to update (title, description, due_date, assignee_id, tags, etc.). Same shape as update_board_item p_fields."),
     note: z.string().optional().describe("Optional note for the link entry (overrides auto-generated text)")
-  }, async (params: { card_id: string; event_id: string; new_status?: string; fields?: Record<string, unknown>; note?: string }) => {
+  }, async (params: { card_id: string; event_id: string; new_status?: string; fields_json?: string; note?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_card_during_meeting", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -4624,11 +4640,16 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       await logUsage(sb, member.id, "update_card_during_meeting", false, "Unauthorized", start);
       return err("Unauthorized — requires write_board.");
     }
+    let fields_obj: Record<string, unknown> | null = null;
+    if (params.fields_json) {
+      try { fields_obj = JSON.parse(params.fields_json); }
+      catch { return err("fields_json must be valid JSON object"); }
+    }
     const { data, error } = await sb.rpc("update_card_during_meeting", {
       p_card_id: params.card_id,
       p_event_id: params.event_id,
       p_new_status: params.new_status ?? null,
-      p_fields: params.fields ?? null,
+      p_fields: fields_obj,
       p_note: params.note ?? null,
     });
     if (error) { await logUsage(sb, member.id, "update_card_during_meeting", false, error.message, start); return err(error.message); }
@@ -5021,7 +5042,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.51.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.51.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5041,6 +5062,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.51.0", tools: 231, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.51.1", tools: 231, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
