@@ -3,7 +3,10 @@
 **Sessão**: p74
 **Data**: 2026-04-27
 **Trigger**: post-ADR-0057 (auth_rls_initplan 100% closed). MPP é o próximo P2 perf class (133 WARN inicial).
-**Resultado batch 1 já shipped**: ADR-0058 batch 1 (publication_series_v4_org_scope flip) → 133 → **115 WARN** (-18).
+**Resultado batches 1+2 shipped**:
+- Batch 1 (publication_series_v4_org_scope flip): 133 → 115 (-18)
+- Batch 2 (drop subset duplicates courses + tribe_selections): 115 → **111** (-4)
+- Cumulative: -22 WARN (~16.5%)
 
 ---
 
@@ -103,7 +106,7 @@ Restante (~50 WARN distribuídas em ~80 tabelas com 1 WARN cada). Cada caso requ
 | Batch | Target | Class | Estimated closure | Risk |
 |---|---|---|---|---|
 | ADR-0058 batch 1 ✅ | publication_series_v4_org_scope flip | A | 18 WARN (133→115) | Low |
-| ADR-0058 batch 2 | courses + tribe_selections drop legacy | B | 4 WARN | Low |
+| ADR-0058 batch 2 ✅ | courses + tribe_selections drop subset duplicates | B | 4 WARN (115→111) | Low |
 | ADR-0058 batch 3 | cycles + tribe_deliverables split admin_write | C | 12 WARN | Medium (verify SELECT path) |
 | ADR-0058 batch 4 | board_items + project_boards merge superadmin+write_v4 | C | 16-20 WARN | Medium (predicate complexity) |
 | (none) | members + notification_prefs + member_cycle_history | D | 0 (document only) | — |

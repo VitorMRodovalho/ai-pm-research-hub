@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (batch 1; remaining batches deferred) |
+| Status | Accepted (batches 1+2; remaining batches deferred) |
 | Date | 2026-04-27 (session p74) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migration | `20260514230000_adr_0058_mpp_batch_1_publication_series_v4_org_scope_restrictive.sql` |
+| Migrations | `20260514230000` (batch 1) + `20260514240000` (batch 2) |
 | Cross-ref | ADR-0011 (V4 auth), ADR-0053..0057 (auth_rls_initplan series) |
-| Closes | 18 of 133 mpp WARN (batch 1 single-policy flip — see audit doc for remaining batches) |
+| Closes | 22 of 133 mpp WARN (batch 1: 18; batch 2: 4 — see audit doc for remaining) |
 
 ## Context
 
@@ -24,8 +24,24 @@ all 133 WARNs. Batch 1 ships the cleanest win first.
 
 ## Decision
 
-**Batch 1**: Flip `publication_series_v4_org_scope` from PERMISSIVE to
-RESTRICTIVE. Reasoning:
+### Batch 2 — Drop subset duplicate policies (Class B, 4 WARN)
+
+Migration `20260514240000`. Two tables had a "PUBLIC + EXPLICIT subset"
+policy pair where both policies have `USING true` and the EXPLICIT role
+list (`{authenticated, anon}`) is strictly subset of PUBLIC:
+
+* `public.courses`: drop `anon_read_courses` (subset). Keep `"Public courses"` (PUBLIC).
+* `public.tribe_selections`: drop `anon_read_tribe_selections` (subset). Keep `"Public tribe counts"` (PUBLIC).
+
+PUBLIC role-list applies to all roles (anon, authenticated, authenticator,
+service_role, supabase_admin). The EXPLICIT-list policy was strictly
+subset, so dropping is functionally a no-op for any caller path. Verified:
+both pairs had `USING true` (identical predicate), so no semantic change.
+
+Effect: `mpp` WARN 115 → 111 (-4 WARN, 4/4 from courses + tribe_selections
+SELECT × {anon, authenticated} pairs).
+
+### Batch 1 — Flip `publication_series_v4_org_scope` PERMISSIVE → RESTRICTIVE
 
 1. **Anomaly**: 40 of 41 `*_v4_org_scope` policies in public schema are
    already RESTRICTIVE (matching the canonical "scoping filter" pattern).
