@@ -2244,6 +2244,288 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== #86 Wave 1 — ONBOARDING + SELECTION COVERAGE EXPANSION =====
+
+  // TOOL: get_onboarding_status — application-scoped onboarding view (candidate or committee)
+  mcp.tool("get_onboarding_status", "Returns onboarding status for a specific selection application: per-step state with completion + evidence + SLA. Used by candidate (their own application) or committee (any in their cycle). Defines what step is the next blocker.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_onboarding_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_onboarding_status", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_onboarding_status", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_onboarding_status", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_onboarding_status", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_application_onboarding_pct — quick % completion summary
+  mcp.tool("get_application_onboarding_pct", "Returns onboarding completion percentage (0-100) for a specific application. Lightweight summary — use get_onboarding_status for the per-step breakdown.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_onboarding_pct", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_onboarding_pct", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_application_onboarding_pct", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_onboarding_pct", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_onboarding_pct", true, undefined, start);
+    return ok({ application_id: params.application_id, onboarding_pct: data });
+  });
+
+  // TOOL: get_selection_cycles — list all selection cycles
+  mcp.tool("get_selection_cycles", "Lists all selection cycles (ordered most-recent first) with cycle_code, title, status, dates. Use to discover cycle_id/cycle_code for downstream selection tools.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_cycles", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_selection_cycles");
+    if (error) { await logUsage(sb, member.id, "get_selection_cycles", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_selection_cycles", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_selection_dashboard — cycle stats for admin/curator
+  mcp.tool("get_selection_dashboard", "Admin/GP/curator: returns selection cycle dashboard — cycle metadata + per-application status + aggregate stats. Defaults to most recent cycle. Pass cycle_code to view a specific past cycle.", {
+    cycle_code: z.string().optional().describe("Optional cycle_code (e.g. 'cycle3-2026-b2'). Defaults to most recent cycle.")
+  }, async (params: { cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_selection_dashboard", { p_cycle_code: params.cycle_code ?? null });
+    if (error) { await logUsage(sb, member.id, "get_selection_dashboard", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_selection_dashboard", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_selection_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_selection_pipeline_metrics — funnel stats
+  mcp.tool("get_selection_pipeline_metrics", "Returns selection pipeline funnel metrics for a cycle (default: latest): total applications, by status, by chapter, conversion rates. Optional chapter filter. Admin/curator scope.", {
+    cycle_id: z.string().optional().describe("Optional cycle UUID. Defaults to latest."),
+    chapter: z.string().optional().describe("Optional chapter slug filter (e.g. 'pmi-go', 'pmi-rs').")
+  }, async (params: { cycle_id?: string; chapter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_pipeline_metrics", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.cycle_id && !isUUID(params.cycle_id)) { await logUsage(sb, member.id, "get_selection_pipeline_metrics", false, "Invalid UUID", start); return err("cycle_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_selection_pipeline_metrics", {
+      p_cycle_id: params.cycle_id ?? null,
+      p_chapter: params.chapter ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "get_selection_pipeline_metrics", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_selection_pipeline_metrics", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_selection_committee — committee membership for a cycle
+  mcp.tool("get_selection_committee", "Returns the selection committee for a cycle: members + role (lead/evaluator) + can_interview flag. Used to confirm who can evaluate or interview before delegating work.", {
+    cycle_id: z.string().describe("Cycle UUID")
+  }, async (params: { cycle_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_committee", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cycle_id)) { await logUsage(sb, member.id, "get_selection_committee", false, "Invalid UUID", start); return err("cycle_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_selection_committee", { p_cycle_id: params.cycle_id });
+    if (error) { await logUsage(sb, member.id, "get_selection_committee", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_selection_committee", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: manage_selection_committee — add/remove evaluator (admin, confirm gate)
+  mcp.tool("manage_selection_committee", "Add or remove a member from a selection committee. Authority: requires 'promote' permission (admin/PM). Action 'add' inserts/upserts (default role='evaluator', can_interview=true); 'remove' deletes. Without confirm=true returns a preview (ADR-0018 W1).", {
+    cycle_id: z.string().describe("Cycle UUID"),
+    action: z.enum(["add","remove"]).describe("'add' or 'remove'"),
+    member_id: z.string().describe("Member UUID to add/remove"),
+    role: z.string().optional().describe("Role on committee. 'evaluator' (default), 'lead', etc."),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview only.")
+  }, async (params: { cycle_id: string; action: "add"|"remove"; member_id: string; role?: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "manage_selection_committee", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cycle_id) || !isUUID(params.member_id)) { await logUsage(sb, member.id, "manage_selection_committee", false, "Invalid UUID", start); return err("cycle_id and member_id must be UUIDs"); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "manage_selection_committee", true, undefined, start, "preview");
+      return ok({
+        action: "manage_selection_committee",
+        preview: true,
+        target: { cycle_id: params.cycle_id, member_id: params.member_id, action: params.action, role: params.role ?? "evaluator" },
+        warning: "State-changing action — affects who can evaluate/interview applications. Pass confirm=true to execute.",
+        next_call: { ...params, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("manage_selection_committee", {
+      p_cycle_id: params.cycle_id,
+      p_action: params.action,
+      p_member_id: params.member_id,
+      p_role: params.role ?? "evaluator"
+    });
+    if (error) { await logUsage(sb, member.id, "manage_selection_committee", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "manage_selection_committee", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "manage_selection_committee", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_evaluation_form — criteria + draft for an evaluation type
+  mcp.tool("get_evaluation_form", "Returns the evaluation form template for an application: cycle's criteria + your existing draft (if any). evaluation_type: 'objective' | 'interview' | 'leader_extra'. Use BEFORE submit_evaluation/submit_interview_scores to discover the rubric.", {
+    application_id: z.string().describe("Application UUID"),
+    evaluation_type: z.enum(["objective","interview","leader_extra"]).describe("Form type")
+  }, async (params: { application_id: string; evaluation_type: "objective"|"interview"|"leader_extra" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_evaluation_form", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_evaluation_form", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_evaluation_form", { p_application_id: params.application_id, p_evaluation_type: params.evaluation_type });
+    if (error) { await logUsage(sb, member.id, "get_evaluation_form", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_evaluation_form", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_evaluation_results — aggregated evaluation results post-phase-close
+  mcp.tool("get_evaluation_results", "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.", {
+    application_id: z.string().describe("Application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_evaluation_results", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_evaluation_results", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_evaluation_results", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_evaluation_results", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_evaluation_results", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_application_interviews — list interviews for an application
+  mcp.tool("get_application_interviews", "Returns scheduled and completed interviews for an application: interviewers, scheduled_at, duration, status (pending/completed/cancelled/noshow), notes. Used by committee to coordinate.", {
+    application_id: z.string().describe("Application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_interviews", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_interviews", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_application_interviews", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_interviews", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_interviews", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: schedule_interview — book interview (committee lead)
+  mcp.tool("schedule_interview", "Books an interview for an application. Authority: must be committee lead (selection_committee.role='lead') or superadmin. Pass interviewer_ids array (members from the committee). Optional calendar_event_id (GCal/Outlook integration).", {
+    application_id: z.string().describe("Application UUID"),
+    interviewer_ids: z.array(z.string()).describe("Array of member UUIDs who will conduct the interview"),
+    scheduled_at: z.string().describe("ISO 8601 timestamp of when the interview will happen"),
+    duration_minutes: z.number().optional().describe("Duration in minutes. Default: 30"),
+    calendar_event_id: z.string().optional().describe("Optional external calendar event ID for cross-system reference")
+  }, async (params: { application_id: string; interviewer_ids: string[]; scheduled_at: string; duration_minutes?: number; calendar_event_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "schedule_interview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "schedule_interview", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    if (!Array.isArray(params.interviewer_ids) || params.interviewer_ids.length === 0) { await logUsage(sb, member.id, "schedule_interview", false, "Empty interviewer_ids", start); return err("interviewer_ids must be a non-empty UUID array"); }
+    const { data, error } = await sb.rpc("schedule_interview", {
+      p_application_id: params.application_id,
+      p_interviewer_ids: params.interviewer_ids,
+      p_scheduled_at: params.scheduled_at,
+      p_duration_minutes: params.duration_minutes ?? 30,
+      p_calendar_event_id: params.calendar_event_id ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "schedule_interview", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "schedule_interview", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: mark_interview_status — completion / cancel / noshow
+  mcp.tool("mark_interview_status", "Updates interview status. Authority: interviewer or committee lead. Valid: 'completed' | 'cancelled' | 'rescheduled' | 'noshow'. Optional notes.", {
+    interview_id: z.string().describe("Interview UUID"),
+    status: z.enum(["completed","cancelled","rescheduled","noshow"]).describe("New status"),
+    notes: z.string().optional().describe("Optional notes (rescheduling reason, no-show context, etc.)")
+  }, async (params: { interview_id: string; status: "completed"|"cancelled"|"rescheduled"|"noshow"; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "mark_interview_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.interview_id)) { await logUsage(sb, member.id, "mark_interview_status", false, "Invalid UUID", start); return err("interview_id must be a UUID"); }
+    const { data, error } = await sb.rpc("mark_interview_status", { p_interview_id: params.interview_id, p_status: params.status, p_notes: params.notes ?? null });
+    if (error) { await logUsage(sb, member.id, "mark_interview_status", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "mark_interview_status", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: submit_interview_scores — final interview rubric scores (confirm gate)
+  mcp.tool("submit_interview_scores", "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview. With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.", {
+    interview_id: z.string().describe("Interview UUID"),
+    scores: z.record(z.string(), z.number()).describe("Object mapping criterion key -> numeric score (per cycle.interview_criteria rubric)"),
+    theme: z.string().optional().describe("Optional theme/topic discussed"),
+    notes: z.string().optional().describe("Optional general notes about the interview"),
+    criterion_notes: z.record(z.string(), z.string()).optional().describe("Optional per-criterion notes (key -> note)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview only.")
+  }, async (params: { interview_id: string; scores: Record<string, number>; theme?: string; notes?: string; criterion_notes?: Record<string, string>; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_interview_scores", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.interview_id)) { await logUsage(sb, member.id, "submit_interview_scores", false, "Invalid UUID", start); return err("interview_id must be a UUID"); }
+    if (!params.scores || typeof params.scores !== "object" || Object.keys(params.scores).length === 0) {
+      await logUsage(sb, member.id, "submit_interview_scores", false, "Empty scores", start);
+      return err("scores must be a non-empty object: {criterion_key: number}");
+    }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "submit_interview_scores", true, undefined, start, "preview");
+      return ok({
+        action: "submit_interview_scores",
+        preview: true,
+        target: { interview_id: params.interview_id, scores: params.scores, theme: params.theme, notes: params.notes },
+        warning: "State-changing action — writes selection_evaluation. Irreversible after phase closes. Verify scores carefully then pass confirm=true.",
+        next_call: { ...params, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("submit_interview_scores", {
+      p_interview_id: params.interview_id,
+      p_scores: params.scores,
+      p_theme: params.theme ?? null,
+      p_notes: params.notes ?? null,
+      p_criterion_notes: params.criterion_notes ?? {}
+    });
+    if (error) { await logUsage(sb, member.id, "submit_interview_scores", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "submit_interview_scores", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: update_application_contact — candidate updates phone / linkedin
+  mcp.tool("update_application_contact", "Candidate updates their contact info on an application: phone and/or linkedin_url. Both optional but at least one required. Other application fields are immutable post-submission.", {
+    application_id: z.string().describe("Application UUID (must be your own)"),
+    phone: z.string().optional().describe("Phone number"),
+    linkedin_url: z.string().optional().describe("LinkedIn profile URL")
+  }, async (params: { application_id: string; phone?: string; linkedin_url?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_application_contact", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "update_application_contact", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    if (!params.phone && !params.linkedin_url) {
+      await logUsage(sb, member.id, "update_application_contact", false, "No fields", start);
+      return err("At least one of phone or linkedin_url required");
+    }
+    const { data, error } = await sb.rpc("update_application_contact", {
+      p_application_id: params.application_id,
+      p_phone: params.phone ?? null,
+      p_linkedin_url: params.linkedin_url ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "update_application_contact", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_application_contact", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: compute_application_scores — recompute aggregated scores after evaluations close
+  mcp.tool("compute_application_scores", "Recomputes aggregated PERT scores for an application from latest evaluations. Idempotent. Used after a re-submit or when verifying ranking. Authority: committee member or admin.", {
+    application_id: z.string().describe("Application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "compute_application_scores", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "compute_application_scores", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("compute_application_scores", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "compute_application_scores", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "compute_application_scores", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== CERTIFICATES PUBLIC (issue #86 — external verification) =====
 
   // TOOL: verify_certificate (public — no auth required by design)
@@ -4170,7 +4452,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.42.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.43.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4190,6 +4472,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.42.0", tools: 182, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.43.0", tools: 197, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
