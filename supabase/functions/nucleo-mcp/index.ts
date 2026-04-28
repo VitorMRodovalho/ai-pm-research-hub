@@ -1851,6 +1851,88 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== GAMIFICATION + CYCLES + ONBOARDING LEADERBOARD (issue #86 — coverage gap closure) =====
+  // 7 read tools wrapping existing SECDEF RPCs. No new SQL.
+
+  // TOOL: get_pre_onboarding_leaderboard (public/auth — pre-members ranking)
+  mcp.tool("get_pre_onboarding_leaderboard", "Returns the leaderboard of pre-members (candidates in onboarding) ranked by step completion + XP earned during selection. Useful for cycle organizers tracking candidate engagement before formal selection.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    const { data, error } = await sb.rpc("get_pre_onboarding_leaderboard");
+    if (error) { await logUsage(sb, member?.id || null, "get_pre_onboarding_leaderboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id || null, "get_pre_onboarding_leaderboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_tribe_gamification (any authenticated — internal tribe ranking)
+  mcp.tool("get_tribe_gamification", "Returns the gamification ranking inside a specific tribe (1-8): members sorted by total XP for the current cycle, with breakdown by category (attendance, badges, showcases). Internal view for tribe leaders and members tracking team momentum.", {
+    tribe_id: z.number().describe("Tribe ID (1-8)")
+  }, async (params: { tribe_id: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_gamification", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_tribe_gamification", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "get_tribe_gamification", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_gamification", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_initiative_gamification (any authenticated — non-tribe initiatives ranking)
+  mcp.tool("get_initiative_gamification", "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.", {
+    initiative_id: z.string().describe("Initiative UUID")
+  }, async (params: { initiative_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_initiative_gamification", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "get_initiative_gamification", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_initiative_gamification", { p_initiative_id: params.initiative_id });
+    if (error) { await logUsage(sb, member.id, "get_initiative_gamification", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_initiative_gamification", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_public_trail_ranking (public/auth — learning trail leaderboard)
+  mcp.tool("get_public_trail_ranking", "Returns the public ranking of learning trails (CPMAI + future): members ordered by completion percentage and recent activity. Public-readable for transparency on community learning progress.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    const { data, error } = await sb.rpc("get_public_trail_ranking");
+    if (error) { await logUsage(sb, member?.id || null, "get_public_trail_ranking", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id || null, "get_public_trail_ranking", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_current_cycle (public — cycle metadata utility)
+  mcp.tool("get_current_cycle", "Returns metadata of the current operational cycle: cycle_code, label, start/end dates, sort_order. Foundational utility — many other tools (XP, dashboards) implicitly depend on the current cycle. Use this to know what 'current' means before calling cycle-scoped tools.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    const { data, error } = await sb.rpc("get_current_cycle");
+    if (error) { await logUsage(sb, member?.id || null, "get_current_cycle", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id || null, "get_current_cycle", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_cycles (any authenticated — direct table query, no SECDEF needed; cycles is widely readable)
+  mcp.tool("list_cycles", "Returns all cycles (current + past + future) with metadata: cycle_code, label, start/end, is_current, color. Use to navigate historical data or schedule cycle-scoped operations.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_cycles", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.from("cycles").select("cycle_code, cycle_label, cycle_abbr, cycle_start, cycle_end, cycle_color, sort_order, is_current").order("sort_order");
+    if (error) { await logUsage(sb, member.id, "list_cycles", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_cycles", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_cycle_evolution (any authenticated — cross-cycle KPI evolution)
+  mcp.tool("get_cycle_evolution", "Returns evolution metrics across cycles: member growth, XP totals, retention deltas, attendance averages. Useful for cycle-over-cycle comparison and historical platform health.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cycle_evolution", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_cycle_evolution");
+    if (error) { await logUsage(sb, member.id, "get_cycle_evolution", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_cycle_evolution", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== BOARD/CARD/CHECKLIST CRUD (issue #83 P0 — Fabrício feedback, T6 leader) =====
   // Fecha gap MCP coverage <40% → ~95% em Card/Checklist operations.
   // 4 new RPCs (get_card_detail, add/update/delete_checklist_item) + 4 wraps existentes.
@@ -3307,7 +3389,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.31.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.32.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3327,6 +3409,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.31.0", tools: 158, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.32.0", tools: 165, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
