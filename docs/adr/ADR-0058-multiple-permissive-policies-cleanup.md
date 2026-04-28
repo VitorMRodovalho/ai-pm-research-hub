@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (batches 1+2+3; remaining batches deferred) |
+| Status | Accepted (batches 1+2+3+4; remaining batches deferred) |
 | Date | 2026-04-27 (session p74) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `20260514230000` (batch 1) + `20260514240000` (batch 2) + `20260514250000` (batch 3) |
+| Migrations | `20260514230000` (b1) + `20260514240000` (b2) + `20260514250000` (b3) + `20260514260000` (b4) |
 | Cross-ref | ADR-0011 (V4 auth), ADR-0053..0057 (auth_rls_initplan series) |
-| Closes | 34 of 133 mpp WARN (batch 1: 18; batch 2: 4; batch 3: 12 — see audit doc for remaining) |
+| Closes | 46 of 133 mpp WARN (b1:18 + b2:4 + b3:12 + b4:12 — see audit doc for remaining) |
 
 ## Context
 
@@ -23,6 +23,25 @@ Audit produced in this session (`docs/audit/MPP_AUDIT_P74.md`) categorized
 all 133 WARNs. Batch 1 ships the cleanest win first.
 
 ## Decision
+
+### Batch 4 — Eliminate redundant superadmin_all policies (mixed C, 12 WARN)
+
+Migration `20260514260000`. Three tables had a `*_superadmin_all` PERMISSIVE
+policy whose grant is either subsumed by another policy or splittable:
+
+* **DROP subsumed**: `board_items_superadmin_all` and
+  `project_boards_superadmin_all` (both ALL × authenticated × `EXISTS
+  rls_is_superadmin`) are strictly subset of their `*_write_v4` peer
+  policies which use `(rls_is_superadmin() OR rls_can_for_initiative('write_board', ...))`.
+  Dropping eliminates 3 mpp WARN per table = -6 total. SELECT remains
+  covered by `*_read_members`.
+* **Split**: `publication_series_superadmin_all` (ALL × PUBLIC) is the only
+  path for INSERT/UPDATE/DELETE on publication_series. Same batch-3 split
+  pattern: drop ALL policy, create per-cmd `_admin_insert/_update/_delete`.
+  SELECT now covered only by `_read_members`. Effect: SELECT × 6 PUBLIC
+  roles → no overlap → -6 WARN.
+
+Effect: `mpp` WARN 99 → 87 (-12 WARN total).
 
 ### Batch 3 — Split ALL-cmd admin policies into per-cmd policies (Class C, 12 WARN)
 

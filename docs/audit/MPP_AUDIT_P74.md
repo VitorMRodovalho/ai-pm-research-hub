@@ -3,11 +3,12 @@
 **Sessão**: p74
 **Data**: 2026-04-27
 **Trigger**: post-ADR-0057 (auth_rls_initplan 100% closed). MPP é o próximo P2 perf class (133 WARN inicial).
-**Resultado batches 1+2+3 shipped**:
+**Resultado batches 1+2+3+4 shipped**:
 - Batch 1 (publication_series_v4_org_scope flip): 133 → 115 (-18)
 - Batch 2 (drop subset duplicates courses + tribe_selections): 115 → 111 (-4)
-- Batch 3 (split ALL-cmd → per-cmd cycles + tribe_deliverables): 111 → **99** (-12)
-- Cumulative: -34 WARN (~25.6%)
+- Batch 3 (split ALL-cmd → per-cmd cycles + tribe_deliverables): 111 → 99 (-12)
+- Batch 4 (drop subsumed superadmin_all + publication_series split): 99 → **87** (-12)
+- Cumulative: -46 WARN (~34.6%)
 
 ---
 
@@ -109,7 +110,7 @@ Restante (~50 WARN distribuídas em ~80 tabelas com 1 WARN cada). Cada caso requ
 | ADR-0058 batch 1 ✅ | publication_series_v4_org_scope flip | A | 18 WARN (133→115) | Low |
 | ADR-0058 batch 2 ✅ | courses + tribe_selections drop subset duplicates | B | 4 WARN (115→111) | Low |
 | ADR-0058 batch 3 ✅ | cycles + tribe_deliverables split ALL-cmd admin_write | C | 12 WARN (111→99) | Low (re-evaluated; mechanical split) |
-| ADR-0058 batch 4 | board_items + project_boards merge superadmin+write_v4 | C | 16-20 WARN | Medium (predicate complexity) |
+| ADR-0058 batch 4 ✅ | board_items + project_boards drop subsumed superadmin_all + publication_series split | mixed | 12 WARN (99→87) | Low (subset analysis: 2 DROPs + 1 split) |
 | (none) | members + notification_prefs + member_cycle_history | D | 0 (document only) | — |
 | ADR-0058 batch 5+ | Class E micro-batches | E | ~50 WARN total | Variable |
 
