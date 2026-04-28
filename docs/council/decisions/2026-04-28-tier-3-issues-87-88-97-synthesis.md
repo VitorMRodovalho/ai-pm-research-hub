@@ -116,14 +116,38 @@ Você tem sinal CONCRETO de 2º congresso institucional em 6 meses (LIM 2027, De
 - **NÃO** → startup-advisor wins: G7 only + micro-experimentos (doc manual + debrief 30min + ProjectManagement.com article até setembro)
 - **TALVEZ** → product-leader wins: G7 isolado + G1+G4 batch quando #88 W4 começar
 
-### Legal não-negociáveis (todos cenários)
+### Legal não-negociáveis — RETRATADO PM 2026-04-28
 
-1. Solicitar contrato PMI Lima e revisar assignment clause antes de M1
-2. Termo de Speaker específico SEPARADO do welcome email (licença não-cessão + reserva direitos)
-3. Cláusula LGPD Art. 33 (transferência internacional EUA) no termo
-4. Disclosure interno PMI-CE + PMI-GO sobre complimentary/discounted
-5. Welcome email NUNCA bundled com cessão autoral (vício LGPD Art. 8 + LDA Art. 50)
-6. `engagement_kind='co_speaker'` com campo `contribution_type: 'creative'|'performative'`
+PM identificou que itens 1, 3, 4, 6 abaixo foram baseados em premissa
+INCORRETA do agent legal-counsel: assumiu cenário "commercial speaker
+contract com assignment clauses" típico de keynote pago em conferência
+industrial. **Realidade**: Núcleo aceito para apresentar proposta
+peer-reviewed em LATAM LIM 2026 — sem contrato comercial, sem assignment
+de direitos, sem benefício patrimonial requerendo disclosure (comp/discount
+a speakers é prática institucional padrão de conferências PMI).
+
+**Itens válidos (mantidos):**
+- Item 2: Termo de Speaker específico SEPARADO do welcome email — válido
+  como guideline para outros engagement_kinds com `requires_agreement=true`,
+  não específico ao LATAM LIM
+- Item 5: Welcome email NUNCA bundled com cessão autoral — válido como
+  constraint geral em ADR-0060 G7 (incorporado)
+
+**Itens retratados (não aplicam):**
+- Item 1: ~~contrato PMI Lima com assignment clause~~ — não há contrato
+  comercial; aceite peer-reviewed apenas
+- Item 3: ~~LGPD Art. 33 transferência internacional~~ — só relevante se
+  PMI Global processar dados pessoais via gravação oficial pós-evento;
+  validar quando aplicável
+- Item 4: ~~disclosure formal complimentary/discounted~~ — comp/discount
+  a speakers em conferência PMI é institutional norm, não conflito de
+  interesse requerendo formal disclosure
+- Item 6: ~~co_speaker engagement_kind com contribution_type~~ — válido
+  como melhoria semântica futura; não bloqueante para LIM 2026
+
+**Lição aprendida**: ao invocar legal-counsel agent, validar premissa de
+cenário comercial vs acadêmico antes de aceitar parecer. Council Tier 3
+é consultivo — PM filtra premissas antes de PM-action items.
 
 ### Whitepaper framing (startup-advisor)
 

@@ -120,8 +120,11 @@ equivalente).
 
 ## Comunicação aos avaliadores ativos (post-deploy)
 
-Email curto a Roberto/Ivan/Fabricio/Sarah/Pedro/Sthephanie (6 committee
-members):
+Email curto aos 4 avaliadores ativos confirmados via `selection_committee`
+(query 2026-04-28): **Vitor Maia Rodovalho** (PM, 226 evaluations submitted),
+**Fabricio Costa** (deputy_manager, 142), **Sarah Faria Alcantara Macedo
+Rodovalho** (curator, 2), **Roberto Macêdo** (curator/chapter_liaison,
+0 — committee member sem submitted ainda):
 
 > Implementamos blind review enforcement em fase de avaliação ativa.
 > A partir de hoje, ao consultar uma application durante phase 'evaluating',
@@ -130,7 +133,8 @@ members):
 > Esta mudança alinha o processo às boas práticas de peer-review e padrões
 > PMI Code of Ethics. Nenhuma avaliação já submetida foi invalidada.
 
-(Owner: PM enviar via canal preferido — email ou WhatsApp Núcleo IA Hub.)
+(Owner: PM enviar via canal preferido — email ou WhatsApp Núcleo IA Hub.
+Como PM é também avaliador, comunicar aos outros 3: Fabricio, Sarah, Roberto.)
 
 ## Verification
 
