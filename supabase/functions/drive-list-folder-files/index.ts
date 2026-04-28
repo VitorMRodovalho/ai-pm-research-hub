@@ -35,13 +35,16 @@ interface DriveFile {
 
 async function getServiceAccountKey(): Promise<{ available: boolean; key?: any; error?: string }> {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data, error } = await sb.from("vault.decrypted_secrets")
-    .select("decrypted_secret").eq("name", VAULT_KEY).maybeSingle();
-  if (error || !data?.decrypted_secret) {
+  // Use SECDEF RPC helper — vault.decrypted_secrets não é acessível direto via JS client
+  const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
+  if (error) {
+    return { available: false, error: `Vault read error: ${error.message}` };
+  }
+  if (!data || typeof data !== "string" || data.length === 0) {
     return { available: false, error: `Vault key '${VAULT_KEY}' not seeded — see SETUP_GOOGLE_DRIVE_INTEGRATION.md` };
   }
   try {
-    return { available: true, key: JSON.parse(data.decrypted_secret) };
+    return { available: true, key: JSON.parse(data) };
   } catch {
     return { available: false, error: "Vault key is not valid JSON" };
   }
