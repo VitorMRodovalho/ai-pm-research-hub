@@ -2488,9 +2488,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: update_application_contact — candidate updates phone / linkedin
-  mcp.tool("update_application_contact", "Candidate updates their contact info on an application: phone and/or linkedin_url. Both optional but at least one required. Other application fields are immutable post-submission.", {
-    application_id: z.string().describe("Application UUID (must be your own)"),
+  // TOOL: update_application_contact — admin updates candidate contact info
+  mcp.tool("update_application_contact", "Admin (manage_member) updates a candidate's contact info on a selection application: phone and/or linkedin_url. Both optional but at least one required. Used when a candidate emails the committee with corrected contact data — admin patches it server-side. Self-service candidate edit is NOT supported by this RPC.", {
+    application_id: z.string().describe("Application UUID"),
     phone: z.string().optional().describe("Phone number"),
     linkedin_url: z.string().optional().describe("LinkedIn profile URL")
   }, async (params: { application_id: string; phone?: string; linkedin_url?: string }) => {
