@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | **176 MCP tools (114R+62W) v2.36.0** | 24 Edge Functions | **1418** unit (**1383** pass DB-aware) + 40 e2e tests | **61 ADRs + 1 amendment** (latest: 0049-0061 + ADR-0016 Amendment 3 — ADR-0059 selection phase blind review #87 W2 + ADR-0060 #97 G7 engagement welcome email trigger + ADR-0061 #88 invitations foundation — #84 Onda 2 closure + #101 leaderboard v2/v3 + perf cleanup 12 dup-indexes + auth_rls_initplan batches 1-5 76/76 policies **100%** + preview_gate_eligibles hybrid cache + mpp batches 1-6 (publication_series flip + subset drops + ALL→per-cmd splits cycles/tribe_deliverables/publication_series/board_items/project_boards + drop subsumed superadmin_all + drop misleading PERMISSIVE deny no-ops) **58 WARN closed (133→75 ~44%, saturation reached)**) | Phase B'' V3→V4: **99/246 tracked**; **pg_proc strict V3 scan: 0 violations** (all RPCs auth-gate via can_by_member); residual designation references in triggers/calculations/helpers are display-only and out of Phase B'' scope
+- **Version:** v3.2.1 (Structural Quality) | **179 MCP tools (115R+64W) + 4 prompts + 3 resources v2.39.0** | 24 Edge Functions | **1418** unit (**1383** pass DB-aware) + 40 e2e tests | **62 ADRs + 3 amendments** (latest: 0049-0062 + ADR-0016 Amendment 3 + ADR-0059 W6 amendment + ADR-0061 W5 amendment — ADR-0062 #101 P2 final streak + cycle points + ADR-0061 W5 lifecycle closure (withdraw + list_engagements) + ADR-0059 W6 self-discovery — #84 Onda 2 closure + #101 backend complete + perf cleanup 12 dup-indexes + auth_rls_initplan batches 1-5 76/76 policies **100%** + preview_gate_eligibles hybrid cache + mpp batches 1-6 **58 WARN closed (133→76 ~44%, saturation reached)**) | Phase B'' V3→V4: **99/246 tracked**; **pg_proc strict V3 scan: 0 violations** (all RPCs auth-gate via can_by_member); residual designation references in triggers/calculations/helpers are display-only and out of Phase B'' scope
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
@@ -18,7 +18,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 1383 pass / 0 fail / 32 skip locally (with SUPABASE_SERVICE_ROLE_KEY: 1415 total)
+npm test                 # 1383 pass / 0 fail / 35 skip locally (with SUPABASE_SERVICE_ROLE_KEY: 1418 total)
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
