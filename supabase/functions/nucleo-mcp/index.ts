@@ -2100,6 +2100,76 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: list_initiative_engagements — owner/admin-detail listing (ADR-0061 W5)
+  mcp.tool("list_initiative_engagements", "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.", {
+    initiative_id: z.string().describe("Initiative UUID"),
+    status_filter: z.string().optional().describe("Filter: 'active' | 'all' | 'revoked' | 'onboarding'. Default: 'active'.")
+  }, async (params: { initiative_id: string; status_filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_initiative_engagements", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "list_initiative_engagements", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    const filter = params.status_filter || "active";
+    if (!["active","all","revoked","onboarding"].includes(filter)) {
+      await logUsage(sb, member.id, "list_initiative_engagements", false, "Invalid status_filter", start);
+      return err("status_filter must be one of: active | all | revoked | onboarding");
+    }
+    const { data, error } = await sb.rpc("list_initiative_engagements", {
+      p_initiative_id: params.initiative_id,
+      p_status_filter: filter
+    });
+    if (error) { await logUsage(sb, member.id, "list_initiative_engagements", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_initiative_engagements", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_initiative_engagements", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: withdraw_from_initiative — self-service exit (ADR-0061 W5 + ADR-0018 confirm gate)
+  mcp.tool("withdraw_from_initiative", "Self-service exit from an initiative. Caller's active engagement is revoked with reason logged. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the only active holder of a required engagement kind for this initiative (e.g. sole study_group_owner) — transfer the role first via an admin/coordinator. Returns a preview payload unless confirm=true (ADR-0018 W1). Irreversible after confirm.", {
+    initiative_id: z.string().describe("Initiative UUID to leave"),
+    reason: z.string().describe("Reason for leaving (minimum 10 characters — recorded in engagement.revoke_reason + metadata for audit)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with the engagement that would be revoked + sole-owner check (ADR-0018 W1 cross-MCP injection mitigation).")
+  }, async (params: { initiative_id: string; reason: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "withdraw_from_initiative", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "withdraw_from_initiative", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    if (!params.reason || params.reason.trim().length < 10) {
+      await logUsage(sb, member.id, "withdraw_from_initiative", false, "Reason too short", start);
+      return err("reason must be at least 10 characters");
+    }
+    if (params.confirm !== true) {
+      const memberRow = await sb.from("members").select("person_id").eq("id", member.id).maybeSingle();
+      const personId = memberRow.data?.person_id || null;
+      const [initRes, engRes] = await Promise.all([
+        sb.from("initiatives").select("id, title, kind, status").eq("id", params.initiative_id).maybeSingle(),
+        personId
+          ? sb.from("engagements").select("id, kind, role, status, start_date").eq("person_id", personId).eq("initiative_id", params.initiative_id).in("status", ["active","onboarding"]).order("start_date", { ascending: false }).limit(1).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      await logUsage(sb, member.id, "withdraw_from_initiative", true, undefined, start, "preview");
+      return ok({
+        action: "withdraw_from_initiative",
+        preview: true,
+        target: {
+          initiative: initRes.data || { id: params.initiative_id, note: "not found or inaccessible" },
+          your_engagement: engRes.data || { note: "no active engagement found — withdraw will return error" },
+        },
+        reason: params.reason,
+        warning: "State-changing action — your engagement.status will be set to 'revoked'. Sole-holder check enforced server-side. Pass confirm=true in a follow-up call to execute.",
+        next_call: { initiative_id: params.initiative_id, reason: params.reason, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("withdraw_from_initiative", {
+      p_initiative_id: params.initiative_id,
+      p_reason: params.reason
+    });
+    if (error) { await logUsage(sb, member.id, "withdraw_from_initiative", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "withdraw_from_initiative", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "withdraw_from_initiative", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== GAMIFICATION + CYCLES + ONBOARDING LEADERBOARD (issue #86 — coverage gap closure) =====
   // 7 read tools wrapping existing SECDEF RPCs. No new SQL.
 
@@ -3638,7 +3708,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.36.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.37.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -3658,6 +3728,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.36.0", tools: 176, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.37.0", tools: 178, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
