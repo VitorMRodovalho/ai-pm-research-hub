@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (batches 1+2+3+4; remaining batches deferred) |
+| Status | Accepted (batches 1+2+3+4+5; remaining deferred) |
 | Date | 2026-04-27 (session p74) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `20260514230000` (b1) + `20260514240000` (b2) + `20260514250000` (b3) + `20260514260000` (b4) |
+| Migrations | `230000`–`270000` (5 sequential batches) |
 | Cross-ref | ADR-0011 (V4 auth), ADR-0053..0057 (auth_rls_initplan series) |
-| Closes | 46 of 133 mpp WARN (b1:18 + b2:4 + b3:12 + b4:12 — see audit doc for remaining) |
+| Closes | **56 of 133** mpp WARN (b1:18 + b2:4 + b3:12 + b4:12 + b5:10 — see audit doc) |
 
 ## Context
 
@@ -23,6 +23,35 @@ Audit produced in this session (`docs/audit/MPP_AUDIT_P74.md`) categorized
 all 133 WARNs. Batch 1 ships the cleanest win first.
 
 ## Decision
+
+### Batch 5 — Drop misleading PERMISSIVE deny policies (no-ops, 10 WARN)
+
+Migration `20260514270000`. Across 4 tables (`member_cycle_history`,
+`notification_preferences`, `notifications`, `partner_cards`) a deny-named
+policy was declared `AS PERMISSIVE FOR ALL ... USING false`. This is
+**functionally a no-op**:
+
+* PERMISSIVE policies grant via OR — `USING false` adds no grants.
+* Real denial requires `AS RESTRICTIVE` (which adds an AND filter).
+* The actual denial-by-default already came from RLS being enabled with
+  no PERMISSIVE policy passing for the disallowed roles/cmds.
+
+The PERMISSIVE deny policies were therefore decorative, but they DID
+register against the `multiple_permissive_policies` lint (counted as
+overlap with the legitimate ownership/admin policy). Dropping them
+eliminates 10 mpp WARN with zero behavior change.
+
+To replace the lost documentation intent, each table now carries a
+`COMMENT ON TABLE ...` describing the actual security model (RLS
+default-deny + explicit PERMISSIVE grants + SECDEF RPC mutation paths).
+
+This is **not** a one-shot pattern fix — 22 other tables across the
+schema still carry similar PERMISSIVE-deny policies that don't currently
+generate mpp WARN (because they're the only PERMISSIVE for that
+table/role/cmd). They could be cleaned in a future cosmetic sweep, but
+that's out of scope for an mpp-driven ADR.
+
+Effect: `mpp` WARN 87 → 77 (-10 WARN).
 
 ### Batch 4 — Eliminate redundant superadmin_all policies (mixed C, 12 WARN)
 
