@@ -3,7 +3,7 @@
 **Issue:** #110 (Mayanna report Item 07)
 **Phase 1 status:** ✅ Schema + RPCs + EF skeleton shipped (autonomous, p77 marathon)
 **Phase 2 status:** ✅ Vault seeded, 12 initiatives linked, list EF live (p78)
-**Phase 3 status:** 🟡 Upload + create-subfolder EFs deployed; **upload BLOCKED on PM Step 9 (DwD)**
+**Phase 3 status:** ✅ Upload + create-subfolder EFs LIVE via OAuth refresh flow (Path F adopted, ADR-0064 amended)
 
 ---
 
@@ -156,50 +156,73 @@ Quota exceeded (default 10k requests/100s/project). Pode pedir aumento no Google
 
 ---
 
-## Passo 9 — Domain-Wide Delegation (REQUIRED para upload + write)
+## Passo 9 — OAuth Refresh Token Setup (Path F — write capability)
 
 **Discovery (p78 smoke test):** Service Accounts não têm storage quota própria.
 Tentar `files.create` com upload em pasta de My Drive retorna 403:
 > "Service Accounts do not have storage quota. Leverage shared drives,
 > or use OAuth delegation instead."
 
-A solução adotada: **Domain-Wide Delegation** — SA impersonates `nucleoia@pmigo.org.br`
-para que o arquivo seja **owned** por essa conta (e use a quota dela).
+**Path A (DwD) blocked**: PM não é Workspace Admin de `pmigo.org.br`.
+**Path B (Shared Drive) blocked**: usuário `nucleoia@pmigo.org.br` não tem permissão
+de criar Shared Drives no Workspace plan atual.
+**Path F (OAuth Refresh Token) adopted ✅**: usuário consente uma vez via OAuth Playground,
+refresh token fica no Vault.
 
-### Setup steps:
+### Setup steps (one-time, ~15min PM):
 
-1. Login como **Workspace Admin** em `nucleoia@pmigo.org.br` em https://admin.google.com/
-2. Menu: **Security → Access and data control → API controls**
-3. Click **Manage Domain Wide Delegation**
-4. Click **Add new**
-5. Preencher:
-   - **Client ID:** `117466213352176222096`
-     *(esse é o `client_id` numérico do SA. Source: Vault `google_drive_service_account_json` campo `client_id`)*
-   - **OAuth scopes (comma-delimited):** `https://www.googleapis.com/auth/drive`
-6. Click **Authorize**
+1. **Cloud Console → Credentials → + Create credentials → OAuth Client ID**
+   - Application type: **Web application**
+   - Name: "Núcleo IA Drive Integration"
+   - Authorized redirect URIs: `https://developers.google.com/oauthplayground`
+   - Create → copia `client_id` + `client_secret`
+
+2. **OAuth Playground:** https://developers.google.com/oauthplayground/
+   - Settings (engrenagem ⚙️) → ✓ "Use your own OAuth credentials" → cola
+     client_id + client_secret
+   - Step 1: Select scope `https://www.googleapis.com/auth/drive` →
+     **Authorize APIs** → login como `nucleoia@pmigo.org.br` → Allow
+   - Step 2: **Exchange authorization code for tokens** → copia `refresh_token`
+
+3. **Seed Vault** (via Supabase MCP ou SQL):
+   ```sql
+   SELECT vault.create_secret(
+     jsonb_build_object(
+       'client_id', '<client_id>',
+       'client_secret', '<client_secret>',
+       'refresh_token', '<refresh_token>'
+     )::text,
+     'google_drive_oauth_credentials',
+     'OAuth user-delegated credentials for Drive write path'
+   );
+   ```
 
 ### Validação:
 
-Após autorizar, smoke test:
 ```bash
 curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/drive-upload-to-folder" \
   -H "Content-Type: application/json" -H "Authorization: Bearer test" \
-  -d '{"folder_id":"<any_linked_folder>","filename":"smoke.md","mime_type":"text/markdown","content_text":"smoke"}'
+  -d '{"folder_id":"1xzBl3UUZDU8S388LkV88SAyNZGDabK5r","filename":"smoke.md","mime_type":"text/markdown","content_text":"smoke"}'
 ```
-Esperado: HTTP 200 + `{"success":true, drive_file_id, drive_file_url}`.
-
-Se retornar `{"error":"unauthorized_client"}` — DwD ainda não foi propagado (espera ~30s) ou client_id/scope incorretos.
+Esperado: HTTP 200 + `drive_file_id` + `drive_file_url`.
 
 ### Rollback:
-Reverter DwD = Workspace Admin → API controls → Domain-Wide Delegation → encontrar entry
-do client_id `117466213352176222096` → Delete. Após delete, todas as ops write via SA
-falharão com 401.
+Revogar OAuth client em Cloud Console → Credentials. Refresh token fica inválido
+imediatamente. Re-create OAuth client + redo consent flow se quiser restaurar.
 
-### Alternativa não-adotada: Shared Drive
-Mover as 12 pastas para um Shared Drive (Team Drive) e adicionar SA como Manager
-elimina a necessidade de DwD. Não adotamos pois exige migração das pastas existentes
-(mantemos My Drive structure que PM já configurou). Pode virar Phase 5 se DwD virar
-operacionalmente difícil.
+Alternativamente: deletar Vault key `google_drive_oauth_credentials` para parar todas
+write operations sem revogar OAuth client (e.g. testing rotation).
+
+### Refresh token expiry:
+Refresh tokens não expiram sob uso normal. Podem invalidar se:
+- User revoga o app em https://myaccount.google.com/permissions
+- Senha do user é alterada
+- 6 meses sem uso (consumer Gmail; Workspace é mais permissivo)
+- Cloud Console rotation de OAuth client secret
+
+Detect via 401 em token refresh → re-seed Vault com novo refresh_token via OAuth
+Playground re-consent. Implementação atual não tem auto-detect; futuro: contract
+test que faz token refresh smoke periódico.
 
 ---
 
