@@ -2462,7 +2462,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: list_my_initiative_invitations (read via RLS — invitee sees own)
-  mcp.tool("list_my_initiative_invitations", "List initiative invitations where you are the invitee. Filter by status (pending/accepted/declined/expired/revoked). Defaults to all. Auto-expires stale pending invitations on read.", {
+  mcp.tool("list_my_initiative_invitations", "List initiative invitations where you are the invitee. Filter by status (pending/accepted/declined/expired/revoked). Defaults to 'pending'. Stale-pending past expires_at are transitioned to 'expired' by hourly cron (`expire-stale-invitations-hourly`); admins can audit via `get_invitation_health`.", {
     status_filter: z.string().optional().describe("Filter by status: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked' | 'all'. Default: 'pending'.")
   }, async (params: { status_filter?: string }) => {
     const start = Date.now();
@@ -2504,6 +2504,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await query;
     if (error) { await logUsage(sb, member.id, "list_invitations_sent_by_me", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "list_invitations_sent_by_me", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_invitation_health — admin observability (ADR-0061 W7)
+  mcp.tool("get_invitation_health", "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked/canceled), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_invitation_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_invitation_health");
+    if (error) { await logUsage(sb, member.id, "get_invitation_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_invitation_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_invitation_health", true, undefined, start);
     return ok(data);
   });
 
@@ -4146,7 +4158,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.40.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.41.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4166,6 +4178,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.40.0", tools: 180, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.41.0", tools: 181, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
