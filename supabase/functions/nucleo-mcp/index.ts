@@ -3099,8 +3099,63 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // ===== Mayanna Item 07 — Drive integration Phase 1 =====
+  // ===== Mayanna Item 07 — Drive integration Phase 1 + 1b =====
   // Setup PM action: docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md
+
+  // TOOL: link_initiative_to_drive — vincula pasta Drive a tribo/iniciativa (Phase 1b)
+  mcp.tool("link_initiative_to_drive", "Vincula uma pasta Google Drive a uma iniciativa (tribo, comitê, workgroup, congresso). Diferentes link_purpose: 'workspace' (raiz da iniciativa, default), 'minutes' (atas), 'archive' (histórico), 'shared_resources' (templates). Authority: manage_member OR can(write, initiative). Idempotent.", {
+    initiative_id: z.string().describe("Initiative UUID (tribo/comitê/workgroup/congresso)"),
+    drive_folder_id: z.string().describe("Drive folder ID (extrair da URL: /folders/<ID>)"),
+    drive_folder_url: z.string().describe("URL completa da pasta Drive"),
+    drive_folder_name: z.string().optional().describe("Display name (ex: 'Tribo 4 - Cultura & Change')"),
+    link_purpose: z.enum(["workspace","minutes","archive","shared_resources"]).optional().describe("Tipo de pasta. Default: workspace")
+  }, async (params: { initiative_id: string; drive_folder_id: string; drive_folder_url: string; drive_folder_name?: string; link_purpose?: "workspace"|"minutes"|"archive"|"shared_resources" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "link_initiative_to_drive", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "link_initiative_to_drive", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    const { data, error } = await sb.rpc("link_initiative_to_drive", {
+      p_initiative_id: params.initiative_id,
+      p_drive_folder_id: params.drive_folder_id,
+      p_drive_folder_url: params.drive_folder_url,
+      p_drive_folder_name: params.drive_folder_name ?? null,
+      p_link_purpose: params.link_purpose ?? "workspace"
+    });
+    if (error) { await logUsage(sb, member.id, "link_initiative_to_drive", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "link_initiative_to_drive", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "link_initiative_to_drive", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_initiative_drive_links — lista pastas Drive da iniciativa
+  mcp.tool("get_initiative_drive_links", "Lista pastas Drive vinculadas (ativas) a uma iniciativa. Retorna agrupado por link_purpose (workspace primeiro). Útil para 'Drive da tribo' button na UI ou listing de atas/archive separadamente.", {
+    initiative_id: z.string().describe("Initiative UUID")
+  }, async (params: { initiative_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_initiative_drive_links", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "get_initiative_drive_links", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_initiative_drive_links", { p_initiative_id: params.initiative_id });
+    if (error) { await logUsage(sb, member.id, "get_initiative_drive_links", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_initiative_drive_links", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_initiative_drive_links", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: unlink_initiative_from_drive — soft unlink
+  mcp.tool("unlink_initiative_from_drive", "Soft-unlink pasta Drive de iniciativa (preserva histórico via unlinked_at). Authority: manage_member OR can(write, initiative).", {
+    link_id: z.string().describe("Link UUID")
+  }, async (params: { link_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "unlink_initiative_from_drive", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.link_id)) { await logUsage(sb, member.id, "unlink_initiative_from_drive", false, "Invalid UUID", start); return err("link_id must be a UUID"); }
+    const { data, error } = await sb.rpc("unlink_initiative_from_drive", { p_link_id: params.link_id });
+    if (error) { await logUsage(sb, member.id, "unlink_initiative_from_drive", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "unlink_initiative_from_drive", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "unlink_initiative_from_drive", true, undefined, start);
+    return ok(data);
+  });
 
   // TOOL: link_board_to_drive — admin/board_admin vincula pasta Drive
   mcp.tool("link_board_to_drive", "Vincula uma pasta Google Drive a um board. PM/admin operation. Idempotent (reuse on duplicate). Para integração com pasta institucional do Núcleo (nucleoia@pmigo.org.br Workspace) — ver docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md para PM-side setup. Authority: manage_member OR board_admin.", {
@@ -4966,7 +5021,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.50.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.51.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -4986,6 +5041,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.50.0", tools: 228, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.51.0", tools: 231, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
