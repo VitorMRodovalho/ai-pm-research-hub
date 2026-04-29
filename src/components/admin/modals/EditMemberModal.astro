@@ -1,7 +1,17 @@
 ---
 import { t, type Lang } from '../../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters, type Chapter } from '../../../lib/chapters';
+
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
+
+// SSR fetch chapters via get_active_chapters() RPC; fallback handled inside helper.
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const chapters: Chapter[] = await loadChapters(sbAnon);
 ---
 
 <!-- Modal: Edit Member (3-Axis Model) -->
@@ -85,11 +95,7 @@ const { lang } = Astro.props;
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('admin.modal.labelChapter', lang)}</label>
           <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
-            <option value="PMI-GO">PMI-GO</option>
-            <option value="PMI-CE">PMI-CE</option>
-            <option value="PMI-DF">PMI-DF</option>
-            <option value="PMI-MG">PMI-MG</option>
-            <option value="PMI-RS">PMI-RS</option>
+            {chapters.map(c => <option value={c.display_code}>{c.display_code}</option>)}
           </select>
         </div>
         <div class="flex flex-col gap-1.5">

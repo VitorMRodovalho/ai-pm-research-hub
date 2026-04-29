@@ -185,8 +185,10 @@ test('lead form has chapter and role selection', () => {
   const content = readFile('src/components/islands/ImpactPageIsland.tsx');
   assert.ok(content.includes('chapter_interest'), 'Must have chapter_interest field');
   assert.ok(content.includes('role_interest'), 'Must have role_interest field');
-  assert.ok(content.includes('PMI-GO'), 'Must include PMI-GO chapter');
-  assert.ok(content.includes('PMI-CE'), 'Must include PMI-CE chapter');
+  // p83 — chapter list now loaded dynamically from chapter_registry via loadChapters() helper.
+  // Previously asserted hardcoded 'PMI-GO'/'PMI-CE' strings; superseded by data-driven approach.
+  assert.ok(content.includes('loadChapters'), 'Must load chapters dynamically from registry');
+  assert.ok(content.includes('chapters.map'), 'Must render chapter options from loaded list');
 });
 
 // ═══════════════════════════════════════════════════

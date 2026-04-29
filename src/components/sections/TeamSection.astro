@@ -3,12 +3,29 @@
  * TeamSection.astro — Sprint 2 + S-RM1 update
  * Team gallery with 6 sub-sections loaded from Supabase.
  * Uses operational_role + designations (3-axis model) for grouping.
+ *
+ * p83: chapter logos + ordering loaded server-side from chapter_registry
+ * (via get_active_chapters RPC) and injected as JSON for the inline script.
  */
 
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters, type Chapter } from '../../lib/chapters';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const chapters: Chapter[] = await loadChapters(sbAnon);
+const chapterLogos: Record<string, string | null> = {};
+const chapterOrder: string[] = [];
+for (const c of chapters) {
+  chapterLogos[c.display_code] = c.logo_url;
+  chapterOrder.push(c.display_code);
+}
 
 const ROLE_COLORS: Record<string, string> = {
   manager:         '#FF610F',
@@ -81,6 +98,10 @@ const ROLE_COLORS: Record<string, string> = {
   deputyPmLabel: t('team.deputyPmLabel', lang),
 })}></script>
 
+<!-- p83: chapter registry data (logos + order) loaded SSR from get_active_chapters() -->
+<script id="chapter-logos-data" type="application/json" set:html={JSON.stringify(chapterLogos)}></script>
+<script id="chapter-order-data" type="application/json" set:html={JSON.stringify(chapterOrder)}></script>
+
 <script>
   const ROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
@@ -93,12 +114,26 @@ const ROLE_COLORS: Record<string, string> = {
     amber: '#FCD34D', crimson: '#FCA5A5', violet: '#C4B5FD',
   };
 
-  const CHAPTER_LOGOS: Record<string, string> = {
+  // p83 — chapter registry data injected by SSR (see #chapter-logos-data / #chapter-order-data above).
+  // Falls back to the 5 founding chapters if SSR injection failed for any reason.
+  const FALLBACK_CHAPTER_LOGOS: Record<string, string> = {
     'PMI-GO': '/assets/logos/pmigo.png', 'PMI-CE': '/assets/logos/pmice.jpg',
     'PMI-DF': '/assets/logos/pmidf.png', 'PMI-MG': '/assets/logos/pmimg.png',
     'PMI-RS': '/assets/logos/pmirs.png',
   };
-  const CHAPTER_ORDER = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+  const FALLBACK_CHAPTER_ORDER = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+
+  function readJsonScript<T>(id: string, fallback: T): T {
+    try {
+      const el = document.getElementById(id);
+      if (!el) return fallback;
+      const parsed = JSON.parse(el.textContent || 'null');
+      return (parsed != null) ? parsed as T : fallback;
+    } catch { return fallback; }
+  }
+
+  const CHAPTER_LOGOS: Record<string, string> = readJsonScript('chapter-logos-data', FALLBACK_CHAPTER_LOGOS);
+  const CHAPTER_ORDER: string[] = readJsonScript('chapter-order-data', FALLBACK_CHAPTER_ORDER);
 
   // Read i18n
   const teamI18nEl = document.getElementById('team-i18n');

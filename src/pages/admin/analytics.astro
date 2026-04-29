@@ -2,10 +2,16 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import ChartCard from '../../components/analytics/ChartCard.astro';
-import { CHAPTER_FULL } from '../../lib/admin/constants';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters } from '../../lib/chapters';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const chapterOptions = Object.entries(CHAPTER_FULL).map(([code, label]) => ({ code, label }));
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const chapters = await loadChapters(sbAnon);
+const chapterOptions = chapters.map(c => ({ code: c.display_code, label: c.legal_name }));
 const ANALYTICS_I18N = {
   consentGranted: t('admin.analytics.consentGranted', lang),
   consentDenied: t('admin.analytics.consentDenied', lang),

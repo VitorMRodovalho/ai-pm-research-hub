@@ -32,12 +32,15 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
   const { memberId, isNew } = (typeof window !== 'undefined' && (window as any).__MEMBER_EDIT) || { memberId: '', isNew: false };
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
   import { canAccessAdminRoute } from '../../../lib/admin/constants';
+  import { loadChapters, type Chapter } from '../../../lib/chapters';
   let _member = null;
   let _aclReady = false;
+  let _chapters: Chapter[] = [];
 
   async function onAuthorized() {
     if (_aclReady) return;
     _aclReady = true;
+    _chapters = await loadChapters();
     if (!isNew) await loadMember();
     else renderForm(null);
   }
@@ -93,7 +96,7 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
   function renderForm(m) {
     const el = document.getElementById('member-form');
     if (!el) return;
-    const CHAPTERS = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+    const CHAPTERS = _chapters.map(c => c.display_code);
     const ROLES_ALL = Object.keys(ROLE_COLORS);
     const selectedRoles = [
       ...(m?.operational_role && m.operational_role !== 'none' && m.operational_role !== 'guest' ? [m.operational_role] : []),

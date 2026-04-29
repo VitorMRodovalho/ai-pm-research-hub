@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../../i18n/usePageI18n';
 import { ArrowLeft, Edit2, Save, X, Loader2, Award, Calendar, BookOpen, Shield, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
+import { loadChapters, type Chapter } from '../../../lib/chapters';
 
 /* ────── Constants ────── */
 const OPROLE_LABELS: Record<string, string> = {
@@ -24,7 +25,6 @@ const DESIG_COLORS: Record<string, string> = {
 };
 const ALL_ROLES = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator', 'none', 'guest'];
 const ALL_DESIGS = ['sponsor', 'chapter_liaison', 'ambassador', 'founder', 'curator', 'comms_team', 'comms_leader', 'comms_member', 'co_gp'];
-const CHAPTERS = ['PMI-GO', 'PMI-CE', 'PMI-DF', 'PMI-MG', 'PMI-RS'];
 
 /* ────── Types ────── */
 interface MemberDetail {
@@ -75,6 +75,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   const [editChapter, setEditChapter] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -93,6 +94,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
       else setTimeout(boot, 300);
     };
     boot();
+    loadChapters().then(setChapters);
   }, []);
 
   const openEdit = () => {
@@ -274,7 +276,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
               <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Capitulo</label>
               <select value={editChapter} onChange={e => setEditChapter(e.target.value)}
                 className="px-2 py-1.5 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                {CHAPTERS.map(c => <option key={c} value={c}>{c}</option>)}
+                {chapters.map(c => <option key={c.display_code} value={c.display_code}>{c.display_code}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">

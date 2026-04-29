@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { loadChapters, type Chapter } from '../../lib/chapters';
 
 interface ImpactData {
   chapters: number;
@@ -203,12 +204,13 @@ const LABELS: Record<string, Record<string, string>> = {
 
 const TRIBE_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
 
-const CHAPTERS = ['PMI-GO', 'PMI-CE', 'PMI-DF', 'PMI-MG', 'PMI-RS'];
-
 function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', chapter_interest: '', role_interest: '', message: '', lgpd_consent: false });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [consentError, setConsentError] = useState(false);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+
+  useEffect(() => { loadChapters().then(setChapters); }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,7 +274,7 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
             <select value={form.chapter_interest} onChange={e => setForm(f => ({ ...f, chapter_interest: e.target.value }))}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]">
               <option value="">{l.leadChapterPlaceholder}</option>
-              {CHAPTERS.map(ch => <option key={ch} value={ch}>{ch}</option>)}
+              {chapters.map(ch => <option key={ch.display_code} value={ch.display_code}>{ch.display_code}</option>)}
               <option value="other">{l.leadRoleOther}</option>
             </select>
           </div>
