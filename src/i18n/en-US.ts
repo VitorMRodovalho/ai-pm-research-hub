@@ -3,7 +3,7 @@
 const enUS: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
-  'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, 5 PMI chapters, 7 thematic tribes. Open-source trilingual platform.',
+  'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, PMI Brazil chapters, 7 thematic tribes. Open-source trilingual platform.',
 
   // ── Nav ──
   'nav.brand': 'AI & PM Research Hub — Cycle 03',
@@ -972,7 +972,8 @@ const enUS: Record<string, string> = {
 
   // ── Footer ──
   'footer.line1': 'AI & PM Study and Research Hub · Núcleo de Estudos e Pesquisa em IA e GP',
-  'footer.chapters': 'PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS',
+  // p83: rendered dynamically by BaseLayout from chapter_registry; key kept for legacy/admin-config defaults.
+  'footer.chapters': 'PMI Brazil partner chapters',
   'footer.trademarks': 'PMI®, PMBOK®, PMP®, and PMI-CPMAI™ are registered trademarks of PMI, Inc.',
   'footer.gp': 'PM: Vitor Maia Rodovalho',
 
@@ -2520,7 +2521,7 @@ const enUS: Record<string, string> = {
   // S1 — Data Controller
   'privacy.s1.title': 'Data Controller Identification',
   'privacy.s1.org': 'AI & Project Management Study and Research Hub',
-  'privacy.s1.chapters': 'Collaborative initiative of PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS chapters',
+  'privacy.s1.chapters': 'Collaborative initiative of PMI Brazil chapters: {list}',
   'privacy.s1.cnpj': 'CNPJ: 06.065.645/0001-99 (PMI Goiás)',
   'privacy.s1.contact': 'Contact',
   'privacy.s1.dpo': 'Data Protection Officer (DPO)',

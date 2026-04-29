@@ -1,11 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters } from '../lib/chapters';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const S3_ROWS = [1,2,3,4,5,6,7,8,9,10,11] as const;
 const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12] as const;
+
+// p83 — chapter list rendered dynamically (privacy.s1.chapters i18n key now uses {list} placeholder)
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const privacyChapters = await loadChapters(sbAnon);
+const privacyChapterList = privacyChapters.map(c => c.display_code).join(', ');
+const s1ChaptersText = t('privacy.s1.chapters', lang).replace('{list}', privacyChapterList);
 ---
 
 <BaseLayout title={t('privacy.pageTitle', lang)} activePage="privacy" lang={lang}>
@@ -22,7 +33,7 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12] as const;
       <h2 class="text-lg font-bold text-[var(--text-primary)]">1. {t('privacy.s1.title', lang)}</h2>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
         <li>{t('privacy.s1.org', lang)}</li>
-        <li>{t('privacy.s1.chapters', lang)}</li>
+        <li>{s1ChaptersText}</li>
         <li>{t('privacy.s1.cnpj', lang)}</li>
         <li>{t('privacy.s1.contact', lang)}: dpo@pmigo.org.br</li>
         <li>{t('privacy.s1.dpo', lang)}: Ivan Lourenço Costa</li>

@@ -3,7 +3,7 @@
 const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
-  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, 5 capítulos PMI, 7 tribos temáticas. Plataforma open-source trilingue.',
+  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, 7 tribos temáticas. Plataforma open-source trilingue.',
 
   // ── Nav ──
   'nav.brand': 'Núcleo IA & GP — Ciclo 03',
@@ -976,7 +976,8 @@ const ptBR: Record<string, string> = {
 
   // ── Footer ──
   'footer.line1': 'Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub',
-  'footer.chapters': 'PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS',
+  // p83: rendered dynamically by BaseLayout from chapter_registry; key kept for legacy/admin-config defaults.
+  'footer.chapters': 'Capítulos parceiros PMI Brasil',
   'footer.trademarks': 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
   'footer.gp': 'GP: Vitor Maia Rodovalho',
 
@@ -2525,7 +2526,7 @@ const ptBR: Record<string, string> = {
   // S1 — Controlador
   'privacy.s1.title': 'Identificação do Controlador',
   'privacy.s1.org': 'Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos',
-  'privacy.s1.chapters': 'Iniciativa colaborativa dos capítulos PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS',
+  'privacy.s1.chapters': 'Iniciativa colaborativa dos capítulos PMI Brasil: {list}',
   'privacy.s1.cnpj': 'CNPJ: 06.065.645/0001-99 (PMI Goiás)',
   'privacy.s1.contact': 'Contato',
   'privacy.s1.dpo': 'Encarregado (DPO)',
