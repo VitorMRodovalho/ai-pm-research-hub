@@ -23,6 +23,7 @@ export interface Env {
   PMI_VEP_OAUTH_CLIENT_SECRET: string;
   GP_NOTIFICATION_EMAIL: string;
   ONBOARDING_BASE_URL: string;
+  INGEST_SHARED_SECRET: string;
 
   // KV namespaces
   PMI_OAUTH_KV: KVNamespace;
@@ -160,4 +161,92 @@ export interface SchedulerDecision {
   run: boolean;
   reason: string;
   hours_since_last_success: number | null;
+}
+
+// =====================================================================
+// Ingest endpoint — JSON output do extract_pmi_volunteer.js (browser script)
+// =====================================================================
+
+export interface ScriptApplication {
+  _opportunityId: number | string;
+  _bucket: 'submitted' | 'qualified' | 'rejected';
+  applicationId: number | string;
+  applicantId: number | string;
+  applicantName: string;
+  applicantEmail: string;
+  status?: string;
+  statusId?: number;
+  applicantCity?: string;
+  applicantState?: string;
+  applicantCountry?: string;
+  submittedDateUtc?: string;
+  expiryDateUtc?: string;
+  resumeUrl?: string;
+  profileUrl?: string;
+  label?: string;
+  // From detail call:
+  coverLetterInfo?: { coverLetter?: string; linkedinUrl?: string };
+  nonPMIExperience?: string;
+  // Lifecycle timestamps (rejected bucket):
+  declinedByRecruiterDateUtc?: string;
+  declinedByVolunteerDateUtc?: string;
+  applicationWithdrawnDateUtc?: string;
+  roleRemovedDateUtc?: string;
+  offerExpiredDateUtc?: string;
+  applicationExpiredDateUtc?: string;
+  // Other detail fields
+  formsSentDateUTC?: string;
+  formsSignedDateUTC?: string;
+  acceptanceDateUTC?: string;
+  declinedDateUTC?: string;
+  declinedBy?: string;
+  withdrawnDateUTC?: string;
+  removedDateUTC?: string;
+  onboardingDateUTC?: string;
+  activeDateUTC?: string;
+  serviceStartDateUTC?: string;
+  serviceEndDateUTC?: string;
+  specialInterest?: string;
+  // Allow other fields from script
+  [key: string]: any;
+}
+
+export interface ScriptQuestionResponse {
+  applicationId: number | string;
+  applicantId?: number | string;
+  applicantEmail?: string;
+  opportunityId?: number | string;
+  responseId?: number | string;
+  questionId: number | string;
+  question?: string;
+  response?: string;
+}
+
+export interface ScriptOpportunity {
+  opportunityId: number | string;
+  name?: string;
+  chapterName?: string;
+  status?: string;
+  classification?: string;
+  numberOfApplications?: number;
+}
+
+export interface ScriptIngestPayload {
+  meta?: { extractedAt?: string; recruiter?: any; opportunityIds?: any };
+  opportunities?: ScriptOpportunity[];
+  applications: ScriptApplication[];
+  questionResponses?: ScriptQuestionResponse[];
+}
+
+export interface IngestSummary {
+  cycle_id: string;
+  cycle_code: string;
+  applications_received: number;
+  applications_processed: number;
+  applications_new: number;
+  applications_updated: number;
+  applications_skipped: number;
+  welcome_dispatched: number;
+  errors: Array<{ scope: string; ref?: string; error: string }>;
+  pmi_token_expiring_soon?: boolean;
 }

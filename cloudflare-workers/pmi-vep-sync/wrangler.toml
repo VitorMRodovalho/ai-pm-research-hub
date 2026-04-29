@@ -36,8 +36,8 @@ ONBOARDING_TOKEN_TTL_DAYS = "7"
 # =====================================================================
 [[kv_namespaces]]
 binding = "PMI_OAUTH_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID_AFTER_CREATE"
-# preview_id = "REPLACE_WITH_PREVIEW_ID_IF_USING_WRANGLER_DEV"
+id = "4dc52594d9e84a93a161c4548794c6be"
+preview_id = "fe70e8c5a2284b25bf96437e7b3d6aa1"
 
 # Cloudflare Queues (S0 — pode ser desabilitado se ainda não configurado)
 # [[queues.producers]]
