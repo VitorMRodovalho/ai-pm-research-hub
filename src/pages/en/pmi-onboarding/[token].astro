@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PMIOnboardingPortal from '../../../components/pmi-onboarding/PMIOnboardingPortal';
+import { getLangFromURL, type Lang } from '../../../i18n/utils';
+import { buildPageI18n } from '../../../i18n/pageI18n';
+import { createClient } from '@supabase/supabase-js';
+
+export const prerender = false;
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18n = buildPageI18n(['pmi.onboarding'], lang);
+
+const { token } = Astro.params;
+
+let initialPayload: any = null;
+let errorMessage: string | null = null;
+
+if (!token || token.length < 16) {
+  errorMessage = 'invalid_token_format';
+} else {
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const sb = createClient(supabaseUrl, supabaseAnonKey);
+
+  try {
+    const { data, error } = await sb.rpc('consume_onboarding_token', { p_token: token });
+    if (error) {
+      errorMessage = error.message?.includes('Invalid or expired')
+        ? 'invalid_or_expired'
+        : `rpc_error: ${error.message}`;
+    } else {
+      initialPayload = data;
+    }
+  } catch (e: any) {
+    errorMessage = `network_error: ${e?.message ?? 'unknown'}`;
+  }
+}
+
+const pageTitle = 'PMI Candidate Onboarding — Núcleo IA & GP';
+const pageDesc = 'Complete your PMI volunteer application onboarding';
+---
+
+<BaseLayout title={pageTitle} description={pageDesc} lang={lang}>
+  <main class="max-w-4xl mx-auto px-4 py-8 md:py-12">
+    {errorMessage ? (
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-red-800">
+        <h1 class="text-2xl font-bold mb-3">Link expired or invalid</h1>
+        <p class="mb-4">The onboarding link is no longer valid. Please contact our team if you believe this is an error.</p>
+        <p class="text-sm font-mono text-red-700">code: {errorMessage}</p>
+        <p class="mt-4"><a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a></p>
+      </div>
+    ) : (
+      <PMIOnboardingPortal
+        client:load
+        token={token}
+        initialPayload={initialPayload}
+        i18n={i18n}
+        lang={lang}
+        supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
+        supabaseAnonKey={import.meta.env.PUBLIC_SUPABASE_ANON_KEY}
+      />
+    )}
+  </main>
+</BaseLayout>
