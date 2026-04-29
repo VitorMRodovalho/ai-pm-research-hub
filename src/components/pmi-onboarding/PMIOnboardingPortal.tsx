@@ -83,6 +83,7 @@ export default function PMIOnboardingPortal({
   const [busyConsent, setBusyConsent] = useState(false);
   const [busyStep, setBusyStep] = useState<string | null>(null);
   const [busyVideo, setBusyVideo] = useState<string | null>(null);
+  const [uploadState, setUploadState] = useState<Record<string, { progress: number; status: 'uploading' | 'finalizing' | 'error'; error?: string }>>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
@@ -211,7 +212,6 @@ export default function PMIOnboardingPortal({
         p_storage_provider: 'opted_out',
       });
       if (error) throw new Error(error.message);
-      // Optimistic: add to local state
       const newScreening: VideoScreening = {
         pillar, question_index: questionIndex,
         status: 'opted_out', uploaded_at: null
@@ -224,6 +224,107 @@ export default function PMIOnboardingPortal({
       setErrorMsg(e?.message ?? String(e));
     } finally {
       setBusyVideo(null);
+    }
+  };
+
+  const handleVideoUpload = async (pillar: string, questionIndex: number, file: File) => {
+    setErrorMsg(null);
+    setUploadState(s => ({ ...s, [pillar]: { progress: 0, status: 'uploading' } }));
+
+    try {
+      // Client-side validation
+      if (!file.type.startsWith('video/')) {
+        throw new Error(T('pmi.onboarding.videoErrorMime'));
+      }
+      const MAX_SIZE = 500 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        throw new Error(T('pmi.onboarding.videoErrorSize'));
+      }
+
+      // 1. Init: get Drive resumable upload URL
+      const initRes = await sb.functions.invoke('pmi-video-init-upload', {
+        body: {
+          token,
+          pillar,
+          question_index: questionIndex,
+          filename: file.name,
+          size_bytes: file.size,
+          mime_type: file.type,
+        },
+      });
+      if (initRes.error) throw new Error(`init: ${initRes.error.message ?? initRes.error}`);
+      const init = initRes.data as { upload_url: string; final_filename: string; folder_id: string };
+      if (!init?.upload_url) throw new Error('init: no upload_url returned');
+
+      // 2. Upload chunks directly to Drive resumable URL
+      const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
+      let offset = 0;
+      let driveFile: any = null;
+      while (offset < file.size) {
+        const end = Math.min(offset + CHUNK_SIZE, file.size);
+        const chunk = file.slice(offset, end);
+        const res = await fetch(init.upload_url, {
+          method: 'PUT',
+          headers: {
+            'Content-Range': `bytes ${offset}-${end - 1}/${file.size}`,
+          },
+          body: chunk,
+        });
+
+        if (res.status === 200 || res.status === 201) {
+          driveFile = await res.json();
+          setUploadState(s => ({ ...s, [pillar]: { progress: 100, status: 'finalizing' } }));
+          break;
+        } else if (res.status === 308) {
+          const range = res.headers.get('Range');
+          if (range) {
+            const m = range.match(/bytes=\d+-(\d+)/);
+            offset = m ? parseInt(m[1]!, 10) + 1 : end;
+          } else {
+            offset = end;
+          }
+          const pct = Math.floor((offset / file.size) * 100);
+          setUploadState(s => ({ ...s, [pillar]: { progress: pct, status: 'uploading' } }));
+        } else {
+          const errBody = await res.text().catch(() => '');
+          throw new Error(`Drive upload ${res.status}: ${errBody.slice(0, 200)}`);
+        }
+      }
+
+      if (!driveFile?.id) throw new Error('Drive did not return a file id');
+
+      // 3. Finalize: register_video_screening
+      const finalizeRes = await sb.functions.invoke('pmi-video-finalize-upload', {
+        body: {
+          token,
+          pillar,
+          question_index: questionIndex,
+          question_text: pillarQuestionFallback(pillar),
+          drive_file_id: driveFile.id,
+          drive_file_name: init.final_filename,
+          drive_folder_id: init.folder_id,
+        },
+      });
+      if (finalizeRes.error) throw new Error(`finalize: ${finalizeRes.error.message ?? finalizeRes.error}`);
+
+      // Optimistic UI update
+      const newScreening: VideoScreening = {
+        pillar, question_index: questionIndex,
+        status: 'uploaded', uploaded_at: new Date().toISOString()
+      };
+      setPayload({
+        ...payload,
+        video_screenings: [...videoScreenings.filter(v => v.pillar !== pillar), newScreening]
+      });
+      setUploadState(s => {
+        const next = { ...s };
+        delete next[pillar];
+        return next;
+      });
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      setErrorMsg(msg);
+      setUploadState(s => ({ ...s, [pillar]: { progress: 0, status: 'error', error: msg } }));
     }
   };
 
@@ -405,7 +506,7 @@ export default function PMIOnboardingPortal({
                       {pillarQuestionFallback(p.key)}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-[200px]">
                     {optedOut && (
                       <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
                         ✓ {T('pmi.onboarding.videoOptedOut')}
@@ -416,14 +517,42 @@ export default function PMIOnboardingPortal({
                         ✓ {T('pmi.onboarding.videoUploaded')}
                       </span>
                     )}
-                    {!optedOut && !uploaded && (
-                      <button
-                        disabled={busyVideo === p.key}
-                        onClick={() => handleVideoOptOut(p.key, p.questionIndex)}
-                        className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50"
-                      >
-                        {busyVideo === p.key ? '...' : T('pmi.onboarding.videoOptOut')}
-                      </button>
+                    {!optedOut && !uploaded && uploadState[p.key]?.status === 'uploading' && (
+                      <div className="w-full">
+                        <div className="text-xs text-blue-700 mb-1">
+                          {T('pmi.onboarding.videoUploading')} {uploadState[p.key]!.progress}%
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${uploadState[p.key]!.progress}%` }} />
+                        </div>
+                      </div>
+                    )}
+                    {!optedOut && !uploaded && uploadState[p.key]?.status === 'finalizing' && (
+                      <span className="text-xs text-blue-700">{T('pmi.onboarding.videoFinalizing')}</span>
+                    )}
+                    {!optedOut && !uploaded && !uploadState[p.key] && (
+                      <>
+                        <label className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium cursor-pointer inline-block">
+                          {T('pmi.onboarding.videoUploadButton')}
+                          <input
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleVideoUpload(p.key, p.questionIndex, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        <button
+                          disabled={busyVideo === p.key}
+                          onClick={() => handleVideoOptOut(p.key, p.questionIndex)}
+                          className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50"
+                        >
+                          {busyVideo === p.key ? '...' : T('pmi.onboarding.videoOptOut')}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -432,7 +561,7 @@ export default function PMIOnboardingPortal({
           })}
         </ul>
         <p className="text-xs text-gray-500 mt-4 italic">
-          {T('pmi.onboarding.videoUploadComingSoon')}
+          {T('pmi.onboarding.videoUploadHint')}
         </p>
       </section>
 

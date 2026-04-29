@@ -4226,6 +4226,12 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.videoOptedOut': 'Entrevista en vivo (Google Meet)',
   'pmi.onboarding.videoUploaded': 'Video enviado',
   'pmi.onboarding.videoUploadComingSoon': 'Upload de video vía Google Drive: integración en progreso (Fase 4). Por ahora, por favor opte por entrevista en vivo vía Google Meet.',
+  'pmi.onboarding.videoUploadButton': 'Enviar video',
+  'pmi.onboarding.videoUploading': 'Enviando',
+  'pmi.onboarding.videoFinalizing': 'Finalizando...',
+  'pmi.onboarding.videoUploadHint': 'Formatos aceptados: MP4, MOV, WebM. Tamaño máximo: 500MB. Los videos se guardan en Google Drive privado del equipo Núcleo. Verificación antivirus automática.',
+  'pmi.onboarding.videoErrorMime': 'El archivo debe ser un video (MP4, MOV, WebM).',
+  'pmi.onboarding.videoErrorSize': 'Archivo mayor a 500MB. Comprima o divida en partes.',
   'pmi.onboarding.contactFooter': '¿Dudas?',
   'pmi.onboarding.errorTitle': 'Error',
 };
