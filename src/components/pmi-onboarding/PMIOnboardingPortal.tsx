@@ -35,6 +35,7 @@ interface ConsumePayload {
     email: string;
     phone: string | null;
     linkedin_url: string | null;
+    credly_url: string | null;
     role_applied: string;
     cycle_id: string;
     has_consent: boolean;
@@ -93,6 +94,12 @@ export default function PMIOnboardingPortal({
   const [optInterviewBusy, setOptInterviewBusy] = useState(false);
   const [revertInterviewConfirm, setRevertInterviewConfirm] = useState(false);
   const [revertInterviewBusy, setRevertInterviewBusy] = useState(false);
+  const [profileLinkedin, setProfileLinkedin] = useState(initialPayload?.application?.linkedin_url ?? '');
+  const [profileCredly, setProfileCredly] = useState(initialPayload?.application?.credly_url ?? '');
+  const [profilePhone, setProfilePhone] = useState(initialPayload?.application?.phone ?? '');
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileSavedAt, setProfileSavedAt] = useState<number | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
   const T = (k: string) => i18n[k] ?? k;
@@ -181,6 +188,35 @@ export default function PMIOnboardingPortal({
       setErrorMsg(e?.message ?? String(e));
     } finally {
       setBusyConsent(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    setProfileBusy(true);
+    setProfileError(null);
+    setProfileSavedAt(null);
+    try {
+      const { error } = await sb.rpc('update_application_profile_via_token', {
+        p_token: token,
+        p_linkedin_url: profileLinkedin.trim() || null,
+        p_credly_url: profileCredly.trim() || null,
+        p_phone: profilePhone.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      setPayload({
+        ...payload,
+        application: {
+          ...app,
+          linkedin_url: profileLinkedin.trim() || app.linkedin_url,
+          credly_url: profileCredly.trim() || app.credly_url,
+          phone: profilePhone.trim() || app.phone,
+        },
+      });
+      setProfileSavedAt(Date.now());
+    } catch (e: any) {
+      setProfileError(e?.message ?? String(e));
+    } finally {
+      setProfileBusy(false);
     }
   };
 
@@ -474,6 +510,89 @@ export default function PMIOnboardingPortal({
             </>
           )}
         </div>
+      </section>
+
+      <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          👤 {T('pmi.onboarding.profileTitle')}
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          {T('pmi.onboarding.profileBody')}
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="profile-linkedin" className="block text-sm font-medium text-gray-700 mb-1">
+              💼 {T('pmi.onboarding.profileLinkedinLabel')}
+            </label>
+            <input
+              id="profile-linkedin"
+              type="url"
+              inputMode="url"
+              value={profileLinkedin}
+              onChange={(e) => setProfileLinkedin(e.target.value)}
+              placeholder="https://www.linkedin.com/in/seu-perfil"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              autoComplete="url"
+            />
+          </div>
+          <div>
+            <label htmlFor="profile-credly" className="block text-sm font-medium text-gray-700 mb-1">
+              🏅 {T('pmi.onboarding.profileCredlyLabel')}
+            </label>
+            <input
+              id="profile-credly"
+              type="url"
+              inputMode="url"
+              value={profileCredly}
+              onChange={(e) => setProfileCredly(e.target.value)}
+              placeholder="https://www.credly.com/users/seu-username"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              autoComplete="url"
+            />
+            <p className="text-xs text-gray-500 mt-1">{T('pmi.onboarding.profileCredlyHint')}</p>
+          </div>
+          <div>
+            <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-700 mb-1">
+              📱 {T('pmi.onboarding.profilePhoneLabel')}
+            </label>
+            <input
+              id="profile-phone"
+              type="tel"
+              inputMode="tel"
+              value={profilePhone}
+              onChange={(e) => setProfilePhone(e.target.value)}
+              placeholder="+55 62 91234-5678"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              autoComplete="tel"
+            />
+            <p className="text-xs text-gray-500 mt-1">{T('pmi.onboarding.profilePhoneHint')}</p>
+          </div>
+
+          {profileError && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-2 text-xs text-red-800 break-words" role="alert">
+              ⚠️ {profileError}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
+            <button
+              type="button"
+              disabled={profileBusy}
+              onClick={handleProfileSave}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md font-medium text-sm w-full sm:w-auto"
+            >
+              {profileBusy ? '...' : T('pmi.onboarding.profileSaveButton')}
+            </button>
+            {profileSavedAt && Date.now() - profileSavedAt < 6000 && (
+              <span className="text-sm text-green-700 font-medium" aria-live="polite">
+                ✓ {T('pmi.onboarding.profileSavedFeedback')}
+              </span>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 italic mt-4">
+          {T('pmi.onboarding.profileFooterHint')}
+        </p>
       </section>
 
       {totalCount > 0 && (
