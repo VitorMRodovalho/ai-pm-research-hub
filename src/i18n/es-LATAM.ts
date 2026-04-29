@@ -4221,6 +4221,11 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.goToFullOnboarding': 'Continuar onboarding como miembro',
   'pmi.onboarding.videoScreeningTitle': 'Screening por video',
   'pmi.onboarding.videoScreeningSoon': 'Próximamente: podrá grabar respuestas en video (5 pilares) para acelerar la evaluación. Estamos finalizando la integración con Google Drive.',
+  'pmi.onboarding.videoScreeningIntro': 'Estos son los 5 pilares que evaluamos. Puede optar por entrevista presencial en cualquiera de ellos. Upload de video vía Drive próximamente.',
+  'pmi.onboarding.videoOptOut': 'Optar por entrevista presencial',
+  'pmi.onboarding.videoOptedOut': 'Entrevista presencial',
+  'pmi.onboarding.videoUploaded': 'Video enviado',
+  'pmi.onboarding.videoUploadComingSoon': 'Upload de video vía Google Drive: integración en progreso (Fase 4). Por ahora, por favor opte por entrevista presencial.',
   'pmi.onboarding.contactFooter': '¿Dudas?',
   'pmi.onboarding.errorTitle': 'Error',
 };

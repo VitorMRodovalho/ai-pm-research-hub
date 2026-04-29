@@ -4221,6 +4221,11 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.goToFullOnboarding': 'Continue onboarding as member',
   'pmi.onboarding.videoScreeningTitle': 'Video screening',
   'pmi.onboarding.videoScreeningSoon': 'Coming soon: you will be able to record video responses (5 pillars) to accelerate evaluation. We are finalizing the Google Drive integration.',
+  'pmi.onboarding.videoScreeningIntro': 'These are the 5 pillars we evaluate. You can opt for an in-person interview in any of them. Video upload via Drive coming soon.',
+  'pmi.onboarding.videoOptOut': 'Opt for in-person interview',
+  'pmi.onboarding.videoOptedOut': 'In-person interview',
+  'pmi.onboarding.videoUploaded': 'Video uploaded',
+  'pmi.onboarding.videoUploadComingSoon': 'Video upload via Google Drive: integration in progress (Phase 4). For now, please opt for in-person interview.',
   'pmi.onboarding.contactFooter': 'Questions?',
   'pmi.onboarding.errorTitle': 'Error',
 };

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import type { Lang } from '../../i18n/utils';
+import { getPMISupabaseClient } from './supabaseClient';
 
 interface OnboardingProgressEntry {
   step_key: string;
@@ -17,6 +17,13 @@ interface OnboardingStepDef {
   description?: string;
   is_required?: boolean;
   type?: string;
+}
+
+interface VideoScreening {
+  pillar: string;
+  question_index: number;
+  status: 'pending_upload' | 'uploaded' | 'transcribing' | 'transcribed' | 'failed' | 'opted_out';
+  uploaded_at: string | null;
 }
 
 interface ConsumePayload {
@@ -42,6 +49,7 @@ interface ConsumePayload {
     onboarding_steps: OnboardingStepDef[];
   };
   onboarding_progress: OnboardingProgressEntry[];
+  video_screenings?: VideoScreening[];
   token_metadata: {
     access_count: number;
     expires_at: string;
@@ -60,15 +68,24 @@ interface Props {
   supabaseAnonKey: string;
 }
 
+const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> = [
+  { key: 'background', questionIndex: 1 },
+  { key: 'communication', questionIndex: 2 },
+  { key: 'proactivity', questionIndex: 3 },
+  { key: 'teamwork', questionIndex: 4 },
+  { key: 'culture_alignment', questionIndex: 5 },
+];
+
 export default function PMIOnboardingPortal({
   token, initialPayload, i18n, lang, supabaseUrl, supabaseAnonKey
 }: Props) {
   const [payload, setPayload] = useState<ConsumePayload | null>(initialPayload);
   const [busyConsent, setBusyConsent] = useState(false);
   const [busyStep, setBusyStep] = useState<string | null>(null);
+  const [busyVideo, setBusyVideo] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const sb = useMemo(() => createClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
+  const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
   const T = (k: string) => i18n[k] ?? k;
 
   if (!payload) {
@@ -80,6 +97,7 @@ export default function PMIOnboardingPortal({
   }
 
   const { application: app, cycle, onboarding_progress: progress, token_metadata } = payload;
+  const videoScreenings = payload.video_screenings ?? [];
 
   const expiresAtDate = new Date(token_metadata.expires_at);
   const daysLeft = Math.max(0, Math.floor((expiresAtDate.getTime() - Date.now()) / 86400000));
@@ -93,6 +111,49 @@ export default function PMIOnboardingPortal({
     };
     return map[app.role_applied] ?? app.role_applied;
   })();
+
+  const pillarLabel = (key: string): string => {
+    const pt: Record<string, string> = {
+      background: 'Background', communication: 'Comunicação', proactivity: 'Proatividade',
+      teamwork: 'Trabalho em equipe', culture_alignment: 'Alinhamento cultural'
+    };
+    const en: Record<string, string> = {
+      background: 'Background', communication: 'Communication', proactivity: 'Proactivity',
+      teamwork: 'Teamwork', culture_alignment: 'Culture alignment'
+    };
+    const es: Record<string, string> = {
+      background: 'Background', communication: 'Comunicación', proactivity: 'Proactividad',
+      teamwork: 'Trabajo en equipo', culture_alignment: 'Alineación cultural'
+    };
+    const map = lang === 'en-US' ? en : lang === 'es-LATAM' ? es : pt;
+    return map[key] ?? key;
+  };
+
+  const pillarQuestionFallback = (key: string): string => {
+    const pt: Record<string, string> = {
+      background: 'Conte sua trajetória profissional e formação relacionadas a Gerenciamento de Projetos e Inteligência Artificial.',
+      communication: 'Descreva uma situação onde sua comunicação fez diferença num projeto.',
+      proactivity: 'Conte um exemplo de iniciativa sua que gerou impacto em um time ou organização.',
+      teamwork: 'Descreva uma colaboração em time que você considera bem-sucedida e por quê.',
+      culture_alignment: 'Por que o Núcleo IA & GP? O que te atrai dessa proposta?'
+    };
+    const en: Record<string, string> = {
+      background: 'Tell us about your professional and academic background in Project Management and AI.',
+      communication: 'Describe a situation where your communication made a difference in a project.',
+      proactivity: 'Share an example of your initiative that generated impact in a team or organization.',
+      teamwork: 'Describe a teamwork experience you consider successful and why.',
+      culture_alignment: 'Why Núcleo IA & GP? What attracts you to this initiative?'
+    };
+    const es: Record<string, string> = {
+      background: 'Cuéntanos sobre tu trayectoria profesional y formación en Gestión de Proyectos e IA.',
+      communication: 'Describa una situación donde su comunicación marcó la diferencia en un proyecto.',
+      proactivity: 'Comparta un ejemplo de su iniciativa que generó impacto en un equipo u organización.',
+      teamwork: 'Describa una colaboración en equipo que considere exitosa y por qué.',
+      culture_alignment: '¿Por qué Núcleo IA & GP? ¿Qué le atrae de esta propuesta?'
+    };
+    const map = lang === 'en-US' ? en : lang === 'es-LATAM' ? es : pt;
+    return map[key] ?? '';
+  };
 
   const handleConsentToggle = async (grant: boolean) => {
     setBusyConsent(true);
@@ -123,7 +184,6 @@ export default function PMIOnboardingPortal({
         p_evidence_url: null,
       });
       if (error) throw new Error(error.message);
-      // Optimistic update
       setPayload({
         ...payload,
         onboarding_progress: progress.map(p =>
@@ -139,6 +199,34 @@ export default function PMIOnboardingPortal({
     }
   };
 
+  const handleVideoOptOut = async (pillar: string, questionIndex: number) => {
+    setBusyVideo(pillar);
+    setErrorMsg(null);
+    try {
+      const { error } = await sb.rpc('register_video_screening', {
+        p_token: token,
+        p_pillar: pillar,
+        p_question_index: questionIndex,
+        p_question_text: pillarQuestionFallback(pillar),
+        p_storage_provider: 'opted_out',
+      });
+      if (error) throw new Error(error.message);
+      // Optimistic: add to local state
+      const newScreening: VideoScreening = {
+        pillar, question_index: questionIndex,
+        status: 'opted_out', uploaded_at: null
+      };
+      setPayload({
+        ...payload,
+        video_screenings: [...videoScreenings.filter(v => v.pillar !== pillar), newScreening]
+      });
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? String(e));
+    } finally {
+      setBusyVideo(null);
+    }
+  };
+
   const completedCount = progress.filter(p => p.status === 'completed' || p.status === 'skipped').length;
   const totalCount = progress.length;
   const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -148,7 +236,6 @@ export default function PMIOnboardingPortal({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
           {T('pmi.onboarding.greeting').replace('{name}', app.applicant_name.split(/\s+/)[0] ?? '')}
@@ -171,12 +258,10 @@ export default function PMIOnboardingPortal({
         </div>
       </div>
 
-      {/* Token expiry notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
         ⏰ {T('pmi.onboarding.expires').replace('{days}', String(daysLeft))}
       </div>
 
-      {/* Consent toggle (LGPD AI analysis) */}
       <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
           {T('pmi.onboarding.consentTitle')}
@@ -215,7 +300,6 @@ export default function PMIOnboardingPortal({
         </div>
       </section>
 
-      {/* Progress overview */}
       {totalCount > 0 && (
         <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-3">
@@ -268,7 +352,6 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
-      {/* Pre-onboarding (avaliação) info */}
       {isInPreOnboarding && (
         <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
@@ -280,7 +363,6 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
-      {/* Approved (next step → onboarding journey as member) */}
       {isApproved && (
         <section className="bg-green-50 border border-green-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-green-900 mb-2">
@@ -298,17 +380,62 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
-      {/* Video screening placeholder (requires drive integration — coming soon) */}
-      <section className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-gray-700 mb-2">
+      {/* Video screening — 5 pillars × question + opt-out (real upload deferred to Phase 4) */}
+      <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
           🎥 {T('pmi.onboarding.videoScreeningTitle')}
         </h2>
-        <p className="text-gray-600 text-sm">
-          {T('pmi.onboarding.videoScreeningSoon')}
+        <p className="text-sm text-gray-600 mb-4">
+          {T('pmi.onboarding.videoScreeningIntro')}
+        </p>
+        <ul className="space-y-3">
+          {PILLARS.map(p => {
+            const existing = videoScreenings.find(v => v.pillar === p.key);
+            const status = existing?.status ?? 'pending';
+            const optedOut = status === 'opted_out';
+            const uploaded = ['uploaded','transcribing','transcribed'].includes(status);
+            return (
+              <li key={p.key} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900">
+                      {p.questionIndex}. {pillarLabel(p.key)}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {pillarQuestionFallback(p.key)}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    {optedOut && (
+                      <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
+                        ✓ {T('pmi.onboarding.videoOptedOut')}
+                      </span>
+                    )}
+                    {uploaded && (
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                        ✓ {T('pmi.onboarding.videoUploaded')}
+                      </span>
+                    )}
+                    {!optedOut && !uploaded && (
+                      <button
+                        disabled={busyVideo === p.key}
+                        onClick={() => handleVideoOptOut(p.key, p.questionIndex)}
+                        className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50"
+                      >
+                        {busyVideo === p.key ? '...' : T('pmi.onboarding.videoOptOut')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="text-xs text-gray-500 mt-4 italic">
+          {T('pmi.onboarding.videoUploadComingSoon')}
         </p>
       </section>
 
-      {/* Footer / contact */}
       <footer className="text-center text-sm text-gray-600 pt-6 border-t border-gray-200">
         {T('pmi.onboarding.contactFooter')}{' '}
         <a href="mailto:nucleoia@pmigo.org.br" className="underline">nucleoia@pmigo.org.br</a>
