@@ -63,12 +63,14 @@ for (const rpcName of PHASE2_RPCS) {
     assert.ok(pattern.test(allSQL), `RPC ${rpcName} must GRANT EXECUTE to authenticated`);
   });
 
-  test(`RPC ${rpcName} checks committee membership or superadmin`, () => {
+  test(`RPC ${rpcName} checks committee membership or platform admin (V4)`, () => {
     const body = findFunctionBody(rpcName);
     const checksCommittee = /selection_committee/i.test(body);
-    const checksSuperadmin = /is_superadmin/i.test(body);
-    assert.ok(checksCommittee || checksSuperadmin,
-      `RPC ${rpcName} must check selection_committee or is_superadmin`);
+    const checksPlatformAdmin = /can_by_member\([^,]+,\s*'manage_platform'/i.test(body);
+    const checksSuperadminLegacy = /is_superadmin/i.test(body);
+    assert.ok(checksCommittee || checksPlatformAdmin || checksSuperadminLegacy,
+      `RPC ${rpcName} must check selection_committee or V4 can_by_member(manage_platform) ` +
+      `(or legacy is_superadmin if not yet converted)`);
   });
 }
 
