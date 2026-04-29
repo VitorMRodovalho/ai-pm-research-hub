@@ -85,6 +85,8 @@ export default function PMIOnboardingPortal({
   const [busyVideo, setBusyVideo] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<Record<string, { progress: number; status: 'uploading' | 'finalizing' | 'error'; error?: string }>>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [collapsedPillar, setCollapsedPillar] = useState<Record<string, boolean>>({});
+  const [replaceConfirmPillar, setReplaceConfirmPillar] = useState<string | null>(null);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
   const T = (k: string) => i18n[k] ?? k;
@@ -220,6 +222,7 @@ export default function PMIOnboardingPortal({
         ...payload,
         video_screenings: [...videoScreenings.filter(v => v.pillar !== pillar), newScreening]
       });
+      setCollapsedPillar(s => ({ ...s, [pillar]: true }));
     } catch (e: any) {
       setErrorMsg(e?.message ?? String(e));
     } finally {
@@ -227,8 +230,21 @@ export default function PMIOnboardingPortal({
     }
   };
 
+  const handleReplaceVideo = (pillar: string) => {
+    setReplaceConfirmPillar(null);
+    setUploadState(s => {
+      const next = { ...s };
+      delete next[pillar];
+      return next;
+    });
+    setPayload({
+      ...payload,
+      video_screenings: videoScreenings.filter(v => v.pillar !== pillar),
+    });
+    setCollapsedPillar(s => ({ ...s, [pillar]: false }));
+  };
+
   const handleVideoUpload = async (pillar: string, questionIndex: number, file: File) => {
-    setErrorMsg(null);
     setUploadState(s => ({ ...s, [pillar]: { progress: 0, status: 'uploading' } }));
 
     try {
@@ -321,11 +337,15 @@ export default function PMIOnboardingPortal({
         delete next[pillar];
         return next;
       });
+      setCollapsedPillar(s => ({ ...s, [pillar]: true }));
     } catch (e: any) {
       const msg = e?.message ?? String(e);
-      setErrorMsg(msg);
       setUploadState(s => ({ ...s, [pillar]: { progress: 0, status: 'error', error: msg } }));
     }
+  };
+
+  const togglePillarCollapse = (pillar: string) => {
+    setCollapsedPillar(s => ({ ...s, [pillar]: !s[pillar] }));
   };
 
   const completedCount = progress.filter(p => p.status === 'completed' || p.status === 'skipped').length;
@@ -481,59 +501,118 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
-      {/* Video screening — 5 pillars × question + opt-out (real upload deferred to Phase 4) */}
+      {/* Video screening — 5 pillars × question + opt-out + Drive Resumable upload */}
       <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
           🎥 {T('pmi.onboarding.videoScreeningTitle')}
         </h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 mb-3">
           {T('pmi.onboarding.videoScreeningIntro')}
         </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 mb-4">
+          💡 {T('pmi.onboarding.videoPersistenceHint')}
+        </div>
         <ul className="space-y-3">
           {PILLARS.map(p => {
             const existing = videoScreenings.find(v => v.pillar === p.key);
             const status = existing?.status ?? 'pending';
             const optedOut = status === 'opted_out';
             const uploaded = ['uploaded','transcribing','transcribed'].includes(status);
+            const isDone = optedOut || uploaded;
+            const collapsed = isDone && (collapsedPillar[p.key] ?? true);
+            const upState = uploadState[p.key];
+            const inlineError = upState?.status === 'error' ? upState.error : null;
+
             return (
-              <li key={p.key} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
+              <li key={p.key} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => isDone && togglePillarCollapse(p.key)}
+                  disabled={!isDone}
+                  className={`w-full text-left p-4 flex items-center justify-between gap-3 ${isDone ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-default'}`}
+                  aria-expanded={!collapsed}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900">
                       {p.questionIndex}. {pillarLabel(p.key)}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {pillarQuestionFallback(p.key)}
-                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-[200px]">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {optedOut && (
-                      <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-purple-100 text-purple-800 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap">
                         ✓ {T('pmi.onboarding.videoOptedOut')}
                       </span>
                     )}
                     {uploaded && (
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-green-100 text-green-800 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap">
                         ✓ {T('pmi.onboarding.videoUploaded')}
                       </span>
                     )}
-                    {!optedOut && !uploaded && uploadState[p.key]?.status === 'uploading' && (
-                      <div className="w-full">
+                    {isDone && (
+                      <span className="text-gray-400 text-sm" aria-hidden="true">
+                        {collapsed ? '▸' : '▾'}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {!collapsed && (
+                  <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+                    <div className="text-sm text-gray-700 mb-3">
+                      {pillarQuestionFallback(p.key)}
+                    </div>
+
+                    {upState?.status === 'uploading' && (
+                      <div className="w-full mb-2" role="progressbar" aria-valuenow={upState.progress} aria-valuemin={0} aria-valuemax={100} aria-label={T('pmi.onboarding.videoUploading')}>
                         <div className="text-xs text-blue-700 mb-1">
-                          {T('pmi.onboarding.videoUploading')} {uploadState[p.key]!.progress}%
+                          {T('pmi.onboarding.videoUploading')} {upState.progress}%
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${uploadState[p.key]!.progress}%` }} />
+                          <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${upState.progress}%` }} />
                         </div>
                       </div>
                     )}
-                    {!optedOut && !uploaded && uploadState[p.key]?.status === 'finalizing' && (
-                      <span className="text-xs text-blue-700">{T('pmi.onboarding.videoFinalizing')}</span>
+
+                    {upState?.status === 'finalizing' && (
+                      <div className="text-xs text-blue-700 mb-2" aria-live="polite">{T('pmi.onboarding.videoFinalizing')}</div>
                     )}
-                    {!optedOut && !uploaded && !uploadState[p.key] && (
-                      <>
-                        <label className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium cursor-pointer inline-block">
-                          {T('pmi.onboarding.videoUploadButton')}
+
+                    {inlineError && (
+                      <div className="bg-red-50 border border-red-200 rounded-md p-2 text-xs text-red-800 mb-2 break-words" role="alert">
+                        ⚠️ {inlineError}
+                      </div>
+                    )}
+
+                    {isDone && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setReplaceConfirmPillar(p.key)}
+                          className="text-xs text-gray-700 underline hover:text-blue-700 text-left sm:text-center"
+                        >
+                          {T('pmi.onboarding.videoReplaceButton')}
+                        </button>
+                      </div>
+                    )}
+
+                    {!isDone && !upState && (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-2 rounded text-sm font-medium cursor-pointer inline-flex items-center justify-center gap-1 w-full sm:w-auto">
+                          📹 {T('pmi.onboarding.videoRecordButton')}
+                          <input
+                            type="file"
+                            accept="video/*"
+                            capture="user"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleVideoUpload(p.key, p.questionIndex, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        <label className="bg-white border border-blue-600 hover:bg-blue-50 text-blue-700 px-3 py-2 rounded text-sm font-medium cursor-pointer inline-flex items-center justify-center gap-1 w-full sm:w-auto">
+                          📁 {T('pmi.onboarding.videoChooseFileButton')}
                           <input
                             type="file"
                             accept="video/*"
@@ -546,16 +625,29 @@ export default function PMIOnboardingPortal({
                           />
                         </label>
                         <button
+                          type="button"
                           disabled={busyVideo === p.key}
                           onClick={() => handleVideoOptOut(p.key, p.questionIndex)}
-                          className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50"
+                          className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50 sm:ml-2 text-left sm:text-center"
                         >
                           {busyVideo === p.key ? '...' : T('pmi.onboarding.videoOptOut')}
                         </button>
-                      </>
+                      </div>
+                    )}
+
+                    {upState?.status === 'error' && (
+                      <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setUploadState(s => { const n = { ...s }; delete n[p.key]; return n; })}
+                          className="text-xs text-blue-700 underline hover:text-blue-900 text-left"
+                        >
+                          {T('pmi.onboarding.videoTryAgain')}
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
               </li>
             );
           })}
@@ -563,6 +655,35 @@ export default function PMIOnboardingPortal({
         <p className="text-xs text-gray-500 mt-4 italic">
           {T('pmi.onboarding.videoUploadHint')}
         </p>
+
+        {replaceConfirmPillar && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {T('pmi.onboarding.videoReplaceConfirmTitle')}
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                {T('pmi.onboarding.videoReplaceConfirmBody')}
+              </p>
+              <div className="flex flex-col sm:flex-row-reverse gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleReplaceVideo(replaceConfirmPillar)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {T('pmi.onboarding.videoReplaceConfirmYes')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReplaceConfirmPillar(null)}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {T('pmi.onboarding.videoReplaceConfirmNo')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <footer className="text-center text-sm text-gray-600 pt-6 border-t border-gray-200">
