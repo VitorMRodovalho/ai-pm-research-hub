@@ -95,12 +95,6 @@ export const CATEGORY_META: Record<string, { icon: string; color: string; bg: st
   bonus:      { icon: '⭐', color: '#D97706', bg: '#FFFBEB' },
 };
 
-export const CHAPTER_FULL: Record<string, string> = {
-  'PMI-GO': 'PMI Chapter Goiás', 'PMI-CE': 'PMI Chapter Ceará',
-  'PMI-DF': 'PMI Chapter Distrito Federal', 'PMI-MG': 'PMI Chapter Minas Gerais',
-  'PMI-RS': 'PMI Chapter Rio Grande do Sul',
-};
-
 // ─── Helper functions ───
 
 export function initials(name: string): string {

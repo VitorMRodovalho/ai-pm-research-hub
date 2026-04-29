@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Edit2, Users, UserX, ShieldOff, Loader2, X } from 'lucide-react';
 import { trackEvent } from '../../../lib/analytics';
 import { usePageI18n } from '../../../i18n/usePageI18n';
+import { loadChapters, type Chapter } from '../../../lib/chapters';
 
 /* ────── Types ────── */
 interface MemberRow {
@@ -91,6 +92,7 @@ export default function MemberListIsland() {
   const [editChapter, setEditChapter] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
 
   // Offboarding state
   const [offboardMember, setOffboardMember] = useState<MemberRow | null>(null);
@@ -123,6 +125,7 @@ export default function MemberListIsland() {
     };
     boot();
     window.addEventListener('nav:member', () => fetchMembers());
+    loadChapters().then(setChapters);
   }, []);
 
   // Re-fetch when filters change (debounce search)
@@ -516,7 +519,7 @@ export default function MemberListIsland() {
                   <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">{t('comp.memberList.chapter', 'Capítulo')}</label>
                   <select value={editChapter} onChange={e => setEditChapter(e.target.value)}
                     className="px-2 py-1.5 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                    {['PMI-GO', 'PMI-CE', 'PMI-DF', 'PMI-MG', 'PMI-RS'].map(c => <option key={c} value={c}>{c}</option>)}
+                    {chapters.map(c => <option key={c.display_code} value={c.display_code}>{c.display_code}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
