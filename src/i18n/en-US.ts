@@ -4226,6 +4226,12 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.videoOptedOut': 'Live interview (Google Meet)',
   'pmi.onboarding.videoUploaded': 'Video uploaded',
   'pmi.onboarding.videoUploadComingSoon': 'Video upload via Google Drive: integration in progress (Phase 4). For now, please opt for a live interview via Google Meet.',
+  'pmi.onboarding.videoUploadButton': 'Upload video',
+  'pmi.onboarding.videoUploading': 'Uploading',
+  'pmi.onboarding.videoFinalizing': 'Finalizing...',
+  'pmi.onboarding.videoUploadHint': 'Accepted formats: MP4, MOV, WebM. Max size: 500MB. Videos are saved to a private Google Drive of the Núcleo team. Automatic virus scan.',
+  'pmi.onboarding.videoErrorMime': 'File must be a video (MP4, MOV, WebM).',
+  'pmi.onboarding.videoErrorSize': 'File larger than 500MB. Compress or split into parts.',
   'pmi.onboarding.contactFooter': 'Questions?',
   'pmi.onboarding.errorTitle': 'Error',
 };
