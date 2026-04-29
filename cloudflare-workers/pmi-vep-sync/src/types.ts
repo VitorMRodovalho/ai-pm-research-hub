@@ -24,9 +24,24 @@ export interface Env {
   GP_NOTIFICATION_EMAIL: string;
   ONBOARDING_BASE_URL: string;
 
+  // KV namespaces
+  PMI_OAUTH_KV: KVNamespace;
+
   // Queue producers (opcionais em S0)
   QUEUE_AI_OBJECTIVE_DRAFTER?: Queue<{ application_id: string }>;
   QUEUE_WELCOME_DISPATCHER?: Queue<{ application_id: string; token: string }>;
+}
+
+// =====================================================================
+// PMI OAuth — refresh_token cached em KV (Plano B per p81 review)
+// =====================================================================
+
+export interface PmiOAuthTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;        // ms epoch
+  refreshed_at: number;      // ms epoch — when we last called /token
+  initialized_by?: string;   // e.g., 'manual_seed_2026_04_29' for audit
 }
 
 // =====================================================================
