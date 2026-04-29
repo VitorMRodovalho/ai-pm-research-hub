@@ -489,7 +489,9 @@ const esLATAM: Record<string, string> = {
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
   'chapters.founder': 'Capítulo Fundador',
-  'chapters.goal': 'Meta 2026: integrar 8 capítulos',
+  'chapters.activeLabel': 'socios activos',
+  'chapters.onboardingLabel': 'en integración',
+  'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',
   'chapters.cta': '¿Quieres traer tu capítulo? Habla con el GP →',
 
   // ── Quadrants ──

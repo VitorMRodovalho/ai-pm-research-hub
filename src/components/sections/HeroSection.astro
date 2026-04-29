@@ -1,6 +1,7 @@
 ---
-import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters } from '../../lib/chapters';
 import type { HomeScheduleConfig } from '../../lib/schedule';
 
 interface Props {
@@ -10,6 +11,12 @@ interface Props {
 }
 
 const { deadline = null, schedule = null, lang = 'pt-BR' } = Astro.props;
+
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const heroChapters = await loadChapters(sbAnon);
 const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadline).getTime());
 
 const WEEKDAY_LABELS: Record<Lang, string[]> = {
@@ -81,9 +88,9 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
     </div>
 
     <div class="flex flex-wrap justify-center gap-2 mt-6">
-      {CHAPTER_CODES.map((c) => (
+      {heroChapters.map((c) => (
         <span class="bg-white/8 border border-white/12 text-white/80 px-3 py-1 rounded-lg text-[.78rem] font-semibold">
-          {c}
+          {c.display_code}
         </span>
       ))}
     </div>
