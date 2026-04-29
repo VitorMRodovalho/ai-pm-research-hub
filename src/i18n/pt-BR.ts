@@ -4202,6 +4202,33 @@ const ptBR: Record<string, string> = {
   'ipagr.error.alreadySigned': 'Você já ratificou este documento nesta versão.',
   'ipagr.error.notEligible': 'Você não é elegível para nenhum gate desta cadeia.',
   'ipagr.legalNotice': 'Sua ratificação é registrada com hash SHA-256, timestamp e snapshot do conteúdo, conforme Lei 14.063/2020 (Art. 4§I).',
+
+  // ── PMI Candidate Onboarding portal (pré-onboarding/avaliação) ──
+  'pmi.onboarding.loading': 'Carregando seus dados...',
+  'pmi.onboarding.greeting': 'Olá, {name}!',
+  'pmi.onboarding.intro': 'Sua candidatura como {role} foi recebida e está em avaliação no ciclo {cycle}. Use esta página para acompanhar o processo, dar consentimento de análise e completar etapas pendentes.',
+  'pmi.onboarding.cycleCode': 'Ciclo',
+  'pmi.onboarding.role': 'Papel pleiteado',
+  'pmi.onboarding.status': 'Status atual',
+  'pmi.onboarding.expires': 'Este link de acesso expira em {days} dias. Salve em seus favoritos.',
+  'pmi.onboarding.consentTitle': 'Consentimento de análise por IA',
+  'pmi.onboarding.consentBody': 'Permita que nossa IA (Claude da Anthropic) gere uma sugestão de avaliação inicial do seu perfil para acelerar o processo. Suas notas finais sempre serão decididas por avaliadores humanos. Você pode revogar este consentimento a qualquer momento, e suas informações serão imediatamente arquivadas.',
+  'pmi.onboarding.consentGranted': 'Consentimento concedido',
+  'pmi.onboarding.revokeConsent': 'Revogar consentimento',
+  'pmi.onboarding.consentNotGranted': 'Consentimento não concedido',
+  'pmi.onboarding.grantConsent': 'Conceder consentimento',
+  'pmi.onboarding.progressTitle': 'Etapas do processo',
+  'pmi.onboarding.completedOn': 'Concluída em',
+  'pmi.onboarding.markDone': 'Marcar como concluída',
+  'pmi.onboarding.evaluationPhase': 'Fase de avaliação',
+  'pmi.onboarding.evaluationBody': 'Sua candidatura será revisada pelo Comitê de Seleção. Critérios e prazos do ciclo são públicos. Acompanhe esta página para atualizações; você receberá email quando houver decisão.',
+  'pmi.onboarding.approvedTitle': 'Você foi aprovado(a)!',
+  'pmi.onboarding.approvedBody': 'Parabéns! Você foi aprovado(a) no ciclo. O próximo passo é a assinatura do termo de voluntariado, após o qual você acessa a jornada completa de onboarding como membro ativo.',
+  'pmi.onboarding.goToFullOnboarding': 'Continuar onboarding como membro',
+  'pmi.onboarding.videoScreeningTitle': 'Screening por vídeo',
+  'pmi.onboarding.videoScreeningSoon': 'Em breve: você poderá gravar respostas em vídeo (5 pilares) para acelerar a avaliação. Estamos finalizando a integração com Google Drive.',
+  'pmi.onboarding.contactFooter': 'Dúvidas?',
+  'pmi.onboarding.errorTitle': 'Erro',
 };
 
 export default ptBR;

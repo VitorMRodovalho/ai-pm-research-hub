@@ -4196,6 +4196,33 @@ const enUS: Record<string, string> = {
   'ipagr.error.alreadySigned': 'You have already ratified this document at this version.',
   'ipagr.error.notEligible': 'You are not eligible for any gate in this chain.',
   'ipagr.legalNotice': 'Your ratification is recorded with SHA-256 hash, timestamp and content snapshot, pursuant to Law 14.063/2020 (Art. 4§I).',
+
+  // ── PMI Candidate Onboarding portal (pre-onboarding/evaluation) ──
+  'pmi.onboarding.loading': 'Loading your data...',
+  'pmi.onboarding.greeting': 'Hi, {name}!',
+  'pmi.onboarding.intro': 'Your application as {role} has been received and is being evaluated in cycle {cycle}. Use this page to track the process, grant analysis consent and complete pending steps.',
+  'pmi.onboarding.cycleCode': 'Cycle',
+  'pmi.onboarding.role': 'Applied role',
+  'pmi.onboarding.status': 'Current status',
+  'pmi.onboarding.expires': 'This access link expires in {days} days. Save in your favorites.',
+  'pmi.onboarding.consentTitle': 'AI analysis consent',
+  'pmi.onboarding.consentBody': 'Allow our AI (Anthropic Claude) to generate an initial evaluation suggestion for your profile to accelerate the process. Your final scores will always be decided by human evaluators. You can revoke this consent at any time, and your information will be immediately archived.',
+  'pmi.onboarding.consentGranted': 'Consent granted',
+  'pmi.onboarding.revokeConsent': 'Revoke consent',
+  'pmi.onboarding.consentNotGranted': 'Consent not granted',
+  'pmi.onboarding.grantConsent': 'Grant consent',
+  'pmi.onboarding.progressTitle': 'Process steps',
+  'pmi.onboarding.completedOn': 'Completed on',
+  'pmi.onboarding.markDone': 'Mark as done',
+  'pmi.onboarding.evaluationPhase': 'Evaluation phase',
+  'pmi.onboarding.evaluationBody': 'Your application will be reviewed by the Selection Committee. Cycle criteria and timelines are public. Watch this page for updates; you will receive an email when there is a decision.',
+  'pmi.onboarding.approvedTitle': 'You have been approved!',
+  'pmi.onboarding.approvedBody': 'Congratulations! You have been approved in the cycle. The next step is signing the volunteer agreement, after which you can access the full onboarding journey as an active member.',
+  'pmi.onboarding.goToFullOnboarding': 'Continue onboarding as member',
+  'pmi.onboarding.videoScreeningTitle': 'Video screening',
+  'pmi.onboarding.videoScreeningSoon': 'Coming soon: you will be able to record video responses (5 pillars) to accelerate evaluation. We are finalizing the Google Drive integration.',
+  'pmi.onboarding.contactFooter': 'Questions?',
+  'pmi.onboarding.errorTitle': 'Error',
 };
 
 export default enUS;
