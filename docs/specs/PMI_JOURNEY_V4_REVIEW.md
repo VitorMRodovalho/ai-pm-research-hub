@@ -87,6 +87,61 @@ Timestamp ajustado de auto-gerado `20260429025919` para slot `20260516200000` em
 
 ---
 
+## EXECUTION LOG ROUND 2 (2026-04-28, post worker creation)
+
+PM aprovou continuação autônoma + KV refresh_token plano B + max execução possível desta sessão.
+
+### Migration adicional 20260516210000_phase_b_pmi_journey_v4_consent_rpcs.sql
+
+Spec gap fechado: token tem scope `'consent_giving'` mas spec não tinha RPCs para consumi-lo. Sem isso, candidato no portal não conseguiria dar/revogar consent.
+
+Adicionadas 2 RPCs token-auth:
+- `give_consent_via_token(p_token, p_consent_type='ai_analysis')` — sets `consent_ai_analysis_at`, clears `consent_ai_analysis_revoked_at`
+- `revoke_consent_via_token(p_token, p_consent_type='ai_analysis')` — sets `consent_ai_analysis_revoked_at`; trigger `trg_supersede_ai_suggestions_on_consent_revoke` automatic supersede non-consumed suggestions
+
+Ambas anon-grantable (token É a credencial, mesma pattern de `consume_onboarding_token` + `register_video_screening` + `update_pmi_onboarding_step`).
+
+### Worker adaptações (Plano B refresh_token KV)
+
+- `src/types.ts`: adicionado `PMI_OAUTH_KV: KVNamespace` ao `Env` + nova interface `PmiOAuthTokens`
+- `src/pmi-vep-client.ts`: refatorado completamente — removido `client_credentials`, agora lê tokens do KV `pmi_oauth:tokens`. Refresh automático quando `expires_at < now() + 30s`. Handle 401 retry com 1 refresh. Preserva refresh_token rotation se PMI rotaciona.
+- `wrangler.toml`: adicionado `[[kv_namespaces]]` binding (id placeholder — PM preenche após `wrangler kv namespace create`).
+- `README.md`: nova seção "PMI OAuth KV Setup" com 4 passos detalhados para PM seedar refresh_token via login interativo.
+
+Worker typecheck: ✅ clean (`tsc --noEmit` zero errors).
+
+### Seeds aplicados via execute_sql
+
+`campaign_templates` rows criadas (idempotent ON CONFLICT slug):
+- `pmi_welcome_with_token` (category=`onboarding`) — multilíngue pt-BR/en-US/es-LATAM, placeholders `{{first_name}}`, `{{role_label}}`, `{{chapter}}`, `{{onboarding_url}}`, `{{expires_in_days}}`
+- `cron_failure_alert` (category=`operational`) — placeholders `{{worker}}`, `{{failure_count}}`
+
+PM pode customizar body_html depois — ON CONFLICT preserva schema, content é override-able.
+
+### Sanity-check final
+
+- `supabase migration list`: local + remote ambos at 20260516210000 ✅
+- `essay_mapping`: opps 64966 leader (4 mapped) ✅, 64967 researcher (4 mapped) ✅, 66470 manager MISSING (esperado per spec README — PM popula quando vier substituto)
+- Templates seeded e visíveis em campaign_templates ✅
+
+### Handoff PM (próximas etapas — só 2 grupos)
+
+**Grupo A — One-time browser/terminal setup (Cloudflare CLI)**:
+1. `wrangler login` (se ainda não)
+2. `cd cloudflare-workers/pmi-vep-sync && npm install` (já feito local — repetir se em outra máquina)
+3. `wrangler kv namespace create pmi_oauth_kv` → copiar `id` retornado para wrangler.toml
+4. Login interativo PMI VEP → capturar `access_token` + `refresh_token` + `expires_in` do response
+5. `wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens '<json>'` (formato no README)
+6. `wrangler secret put` para 8 secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PMI_VEP_BASE_URL, PMI_VEP_OAUTH_TOKEN_URL, PMI_VEP_OAUTH_CLIENT_ID, PMI_VEP_OAUTH_CLIENT_SECRET, GP_NOTIFICATION_EMAIL, ONBOARDING_BASE_URL
+7. `wrangler deploy --env staging` → smoke (cron trigger via dashboard + tail) → `wrangler deploy --env production`
+
+**Grupo B — Frontend portal `/pmi-onboarding/[token]` (próxima sessão Claude Code)**:
+- Defer para sessão dedicada — UI não-trivial (consent UI + onboarding step checklist + video upload widget)
+- Worker funciona sem portal — candidatos receberão emails mas link irá pra 404 até portal existir
+- Recomendação: portal MVP em sessão dedicada (~2h), antes do staging deploy entrar em prod com candidatos reais
+
+---
+
 ---
 
 ## TL;DR

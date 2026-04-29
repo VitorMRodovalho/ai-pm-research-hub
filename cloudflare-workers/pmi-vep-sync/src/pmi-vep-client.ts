@@ -1,22 +1,27 @@
 /**
  * PMI VEP API client wrapper.
  *
- * AUTH: PMI VEP usa OIDC. Para um worker server-side, precisamos
- * obter access token via OAuth client_credentials (ou outro grant suportado).
+ * AUTH (Plano B per p81 review): refresh_token-based via Cloudflare Workers KV.
  *
- * TODO_CLAUDE_CODE [CRÍTICO — pre-deploy]: confirmar com Vitor:
- *   - Existe app OAuth registrado no PMI para server-to-server?
- *   - Qual grant type? (client_credentials, password, ou outro?)
- *   - URL exata de token endpoint
- *   - Scopes necessários
+ * Flow:
+ *   1. PM faz login interativo no PMI VEP UMA VEZ via browser, captura
+ *      refresh_token + access_token do response do OAuth flow do PMI
+ *   2. Seed o KV: `wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens '<json>'`
+ *      onde <json> = {"access_token":"...","refresh_token":"...","expires_at":1234567890000,"refreshed_at":1234567890000}
+ *   3. Worker: a cada execução, lê do KV. Se access_token válido → reusa.
+ *      Senão → POST /token com grant_type=refresh_token, atualiza KV.
+ *   4. Se PMI rotaciona refresh_token (resposta inclui novo), KV pega o novo.
+ *      Se não rotaciona, mantém o atual (alguns providers só rotacionam após N usos).
  *
- * Plano B se PMI não tiver OAuth server-side:
- *   - Capturar refresh_token via login interativo do Vitor uma vez
- *   - Armazenar em Cloudflare Workers KV
- *   - Worker usa refresh_token para obter access_token a cada execução
+ * IMPORTANT: Cron diário 1x/day = race-free. Para multi-trigger no futuro,
+ * adicionar KV mutex (e.g., compare-and-set via metadata.versionId).
+ *
+ * Se KV vazio (primeira deploy sem seed), worker FALHA com mensagem clara
+ * apontando para o README. Não tenta client_credentials por segurança
+ * (auditável: você sempre sabe quem inicializou os tokens).
  */
 
-import type { Env, VepApplicationListItem, VepApplicationDetail } from './types';
+import type { Env, VepApplicationListItem, VepApplicationDetail, PmiOAuthTokens } from './types';
 
 const BUCKETS = {
   submitted: 'submitted',
@@ -26,15 +31,36 @@ const BUCKETS = {
 
 export type Bucket = typeof BUCKETS[keyof typeof BUCKETS];
 
-let _tokenCache: { token: string; expiresAt: number } | null = null;
+const KV_KEY = 'pmi_oauth:tokens';
 
-async function getAccessToken(env: Env): Promise<string> {
-  if (_tokenCache && _tokenCache.expiresAt > Date.now() + 30_000) {
-    return _tokenCache.token;
+/**
+ * In-memory cache para reduzir KV reads dentro do mesmo isolate.
+ * Cloudflare Workers reusam isolates em cold-warm. Cache válido até expires_at.
+ */
+let _isolateCache: PmiOAuthTokens | null = null;
+
+async function readTokensFromKV(env: Env): Promise<PmiOAuthTokens | null> {
+  if (_isolateCache && _isolateCache.expires_at > Date.now() + 30_000) {
+    return _isolateCache;
   }
+  const stored = await env.PMI_OAUTH_KV.get(KV_KEY, 'json') as PmiOAuthTokens | null;
+  if (stored) _isolateCache = stored;
+  return stored;
+}
 
+async function writeTokensToKV(env: Env, tokens: PmiOAuthTokens): Promise<void> {
+  await env.PMI_OAUTH_KV.put(KV_KEY, JSON.stringify(tokens));
+  _isolateCache = tokens;
+}
+
+/**
+ * Refresh access_token via OAuth refresh_token grant.
+ * Updates KV with new tokens (handles rotation).
+ */
+async function refreshAccessToken(env: Env, current: PmiOAuthTokens): Promise<PmiOAuthTokens> {
   const body = new URLSearchParams({
-    grant_type: 'client_credentials',
+    grant_type: 'refresh_token',
+    refresh_token: current.refresh_token,
     client_id: env.PMI_VEP_OAUTH_CLIENT_ID,
     client_secret: env.PMI_VEP_OAUTH_CLIENT_SECRET
   });
@@ -47,15 +73,46 @@ async function getAccessToken(env: Env): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`PMI OAuth token failed: ${resp.status} ${text}`);
+    throw new Error(`PMI OAuth refresh failed: ${resp.status} ${text}`);
   }
 
-  const json = await resp.json() as { access_token: string; expires_in: number };
-  _tokenCache = {
-    token: json.access_token,
-    expiresAt: Date.now() + (json.expires_in * 1000)
+  const json = await resp.json() as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    token_type?: string;
   };
-  return json.access_token;
+
+  const updated: PmiOAuthTokens = {
+    access_token: json.access_token,
+    refresh_token: json.refresh_token ?? current.refresh_token,
+    expires_at: Date.now() + (json.expires_in * 1000),
+    refreshed_at: Date.now(),
+    initialized_by: current.initialized_by
+  };
+
+  await writeTokensToKV(env, updated);
+  return updated;
+}
+
+async function getAccessToken(env: Env): Promise<string> {
+  const tokens = await readTokensFromKV(env);
+
+  if (!tokens) {
+    throw new Error(
+      'PMI OAuth not initialized — KV key "pmi_oauth:tokens" empty. ' +
+      'PM precisa seed-ar via wrangler kv key put. Ver README seção "PMI OAuth KV Setup".'
+    );
+  }
+
+  // Token still valid (with 30s buffer)
+  if (tokens.expires_at > Date.now() + 30_000) {
+    return tokens.access_token;
+  }
+
+  // Refresh
+  const refreshed = await refreshAccessToken(env, tokens);
+  return refreshed.access_token;
 }
 
 async function vepFetch(path: string, env: Env, init?: RequestInit): Promise<Response> {
@@ -70,6 +127,24 @@ async function vepFetch(path: string, env: Env, init?: RequestInit): Promise<Res
       ...(init?.headers ?? {})
     }
   });
+
+  // If 401, try one refresh + retry (token expired between read and use)
+  if (resp.status === 401) {
+    const tokens = await readTokensFromKV(env);
+    if (tokens) {
+      const refreshed = await refreshAccessToken(env, tokens);
+      return fetch(url, {
+        ...init,
+        headers: {
+          'Authorization': `Bearer ${refreshed.access_token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(init?.headers ?? {})
+        }
+      });
+    }
+  }
+
   return resp;
 }
 

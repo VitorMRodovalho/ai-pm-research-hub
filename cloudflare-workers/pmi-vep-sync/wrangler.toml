@@ -26,6 +26,19 @@ ONBOARDING_TOKEN_TTL_DAYS = "7"
 #   GP_NOTIFICATION_EMAIL     vitor's email para alertas de 3 falhas consecutivas
 #   ONBOARDING_BASE_URL       https://nucleoia.vitormr.dev/pmi-onboarding
 
+# =====================================================================
+# Cloudflare KV namespace — PMI OAuth refresh_token cache (Plano B per p81)
+# Setup PM:
+#   1. wrangler kv namespace create pmi_oauth_kv
+#   2. Copy the returned `id` into the `id` field below (keep `binding` exactly as is).
+#   3. Seed initial tokens via `wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens '<json>'`
+#      Ver README seção "PMI OAuth KV Setup".
+# =====================================================================
+[[kv_namespaces]]
+binding = "PMI_OAUTH_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID_AFTER_CREATE"
+# preview_id = "REPLACE_WITH_PREVIEW_ID_IF_USING_WRANGLER_DEV"
+
 # Cloudflare Queues (S0 — pode ser desabilitado se ainda não configurado)
 # [[queues.producers]]
 # binding = "QUEUE_AI_OBJECTIVE_DRAFTER"

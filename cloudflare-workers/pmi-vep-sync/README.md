@@ -45,9 +45,65 @@ cloudflare-workers/pmi-vep-sync/
     └── welcome.ts         # welcome message dispatcher (B3 + R2)
 ```
 
+## PMI OAuth KV Setup (Plano B — refresh_token via login interativo)
+
+PMI VEP não expõe `client_credentials` server-side para o Núcleo. Worker usa
+**refresh_token** persistido em Cloudflare Workers KV. PM precisa fazer este
+setup UMA VEZ antes do primeiro deploy:
+
+### Passo 1 — Criar KV namespace
+```bash
+cd cloudflare-workers/pmi-vep-sync
+wrangler kv namespace create pmi_oauth_kv
+# Output: { "binding": "PMI_OAUTH_KV", "id": "abc123..." }
+```
+Copiar o `id` retornado para `wrangler.toml` (substitui `REPLACE_WITH_KV_NAMESPACE_ID_AFTER_CREATE`).
+
+### Passo 2 — Capturar refresh_token via login interativo PMI VEP
+
+PM abre browser, faz login no PMI VEP normalmente. Inspeciona Network tab durante
+o login → encontra response do OAuth callback contendo:
+- `access_token` (curto TTL, ~1h tipicamente)
+- `refresh_token` (longo TTL, ~30 dias tipicamente)
+- `expires_in` (segundos até access_token expirar)
+
+Alternativa: usar PMI dev portal se houver, ou contatar PMI IT para issuance manual.
+
+### Passo 3 — Seed o KV com tokens iniciais
+
+Calcular `expires_at` (ms epoch) = `Date.now() + (expires_in * 1000)`:
+
+```bash
+# JSON payload (ajustar tokens reais + timestamps)
+TOKENS_JSON='{
+  "access_token": "<COLE_ACCESS_TOKEN_AQUI>",
+  "refresh_token": "<COLE_REFRESH_TOKEN_AQUI>",
+  "expires_at": 1769558400000,
+  "refreshed_at": 1769554800000,
+  "initialized_by": "manual_seed_2026_04_29_vitor"
+}'
+
+wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens "$TOKENS_JSON"
+```
+
+### Passo 4 — Confirmar
+```bash
+wrangler kv key get --binding=PMI_OAUTH_KV pmi_oauth:tokens
+```
+
+Após esse setup, o worker auto-renova access_token usando refresh_token a cada
+execução (cron diário). Se PMI rotacionar refresh_token na resposta, KV é
+atualizado automaticamente. Se refresh_token PMI expirar (~30d sem uso),
+PM precisa repetir Passos 2-3.
+
+**OBS para auditoria**: o campo `initialized_by` permite rastrear quem fez o
+seed e quando. Update a cada re-seed.
+
+---
+
 ## Pré-deploy checklist (PM browser tasks)
 
-- [ ] **Confirmar PMI VEP OAuth** server-side: grant_type, token URL, scopes (TODO em `pmi-vep-client.ts`)
+- [ ] **Setup PMI OAuth KV** (passos 1-4 acima)
 - [ ] **Seedar `campaign_templates`** com 2 rows:
   - `slug = 'pmi_welcome_with_token'` — template do welcome ao candidato (placeholders: `{{first_name}}`, `{{role_label}}`, `{{chapter}}`, `{{onboarding_url}}`, `{{expires_in_days}}`)
   - `slug = 'cron_failure_alert'` — template do alerta GP (placeholders: `{{worker}}`, `{{failure_count}}`)
