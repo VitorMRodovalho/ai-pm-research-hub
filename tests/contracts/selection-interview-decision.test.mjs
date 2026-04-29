@@ -66,11 +66,12 @@ for (const rpcName of PHASE3_RPCS) {
 
 // ─── schedule_interview ───
 
-test('schedule_interview requires committee lead or superadmin', () => {
+test('schedule_interview requires committee lead or platform admin (V4)', () => {
   const body = findFunctionBody('schedule_interview');
   assert.ok(/selection_committee/i.test(body), 'Must check selection_committee');
   assert.ok(/role\s*=\s*'lead'/i.test(body), 'Must require lead role');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
+  assert.ok(/can_by_member\([^,]+,\s*'manage_platform'/i.test(body),
+    'Must use V4 can_by_member(manage_platform) authority gate (subsumes V3 is_superadmin)');
 });
 
 test('schedule_interview validates application is interview_pending or interview_scheduled', () => {
