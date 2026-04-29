@@ -3288,6 +3288,12 @@ const esLATAM: Record<string, string> = {
   'initiative.upcomingEvents': 'Próximos Eventos',
   'initiative.pastMeetings': 'Reuniones Anteriores',
   'initiative.noUpcoming': 'Ningún evento próximo.',
+  'initiative.driveSection': 'Drive de la iniciativa',
+  'initiative.drivePurpose.workspace': 'Workspace',
+  'initiative.drivePurpose.minutes': 'Actas',
+  'initiative.drivePurpose.shared_resources': 'Recursos',
+  'initiative.drivePurpose.archive': 'Archivo',
+  'initiative.driveOpen': 'Abrir en Drive',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Gamificación de la Tribu',
