@@ -129,11 +129,12 @@ test('update_onboarding_step notifies tribe leader on completion', () => {
   assert.ok(/tribe_leader/i.test(body), 'Must find tribe leader for notification');
 });
 
-test('update_onboarding_step checks authorization', () => {
+test('update_onboarding_step checks authorization (V4)', () => {
   const body = findFunctionBody('update_onboarding_step');
   assert.ok(/v_caller\.id\s*!=\s*v_member_id/i.test(body),
     'Must verify caller is the member or has lead role');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
+  assert.ok(/can_by_member\([^,]+,\s*'manage_platform'/i.test(body),
+    'Must use V4 can_by_member(manage_platform) authority gate (subsumes V3 is_superadmin)');
 });
 
 // ─── get_onboarding_dashboard ───
