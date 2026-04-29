@@ -174,11 +174,12 @@ test('mark_interview_status allows interviewer, lead, or platform admin (V4)', (
 
 // ─── finalize_decisions ───
 
-test('finalize_decisions requires committee lead or superadmin', () => {
+test('finalize_decisions requires committee lead or platform admin (V4)', () => {
   const body = findFunctionBody('finalize_decisions');
   assert.ok(/selection_committee[\s\S]*?role\s*=\s*'lead'/i.test(body),
     'Must require committee lead');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
+  assert.ok(/can_by_member\([^,]+,\s*'manage_platform'/i.test(body),
+    'Must use V4 can_by_member(manage_platform) authority gate (subsumes V3 is_superadmin + manager/deputy_manager)');
 });
 
 test('finalize_decisions processes bulk decisions from jsonb array', () => {
