@@ -45,59 +45,70 @@ cloudflare-workers/pmi-vep-sync/
     └── welcome.ts         # welcome message dispatcher (B3 + R2)
 ```
 
-## PMI OAuth KV Setup (Plano B — refresh_token via login interativo)
+## PMI OAuth KV Setup — access-only mode (Plano B-revised)
 
-PMI VEP não expõe `client_credentials` server-side para o Núcleo. Worker usa
-**refresh_token** persistido em Cloudflare Workers KV. PM precisa fazer este
-setup UMA VEZ antes do primeiro deploy:
+**Descoberta crítica via análise HAR (2026-04-28)**: PMI vep_ui app NÃO emite
+`refresh_token`. App é public SPA com PKCE, scope=`openid profile` (sem
+`offline_access`). Token tem TTL de **24h** mas não pode ser auto-renovado.
+
+**Workflow operacional**: PM re-seeda KV diariamente (15-30 segundos por dia).
+Worker alerta proativamente quando access_token expira em < 6h.
+
+**Long-term fix (assíncrono — não bloqueia)**: PM solicita ao PMI IT que adicione
+`offline_access` ao scope do `vep_ui_a58c68be946f4cf8841ff4bbf7b3c43b` OU
+registre app dedicado `nucleo_pmi_sync` com offline_access. Quando isso for feito,
+o worker suporta refresh_token automaticamente (código já preparado, só passar
+`refresh_token` no seed JSON).
 
 ### Passo 1 — Criar KV namespace
 ```bash
 cd cloudflare-workers/pmi-vep-sync
-wrangler kv namespace create pmi_oauth_kv
-# Output: { "binding": "PMI_OAUTH_KV", "id": "abc123..." }
+npx wrangler kv namespace create pmi_oauth_kv
+# Output: { "binding": "PMI_OAUTH_KV", "id": "abc123def456..." }
 ```
-Copiar o `id` retornado para `wrangler.toml` (substitui `REPLACE_WITH_KV_NAMESPACE_ID_AFTER_CREATE`).
+Editar `wrangler.toml`: substituir `REPLACE_WITH_KV_NAMESPACE_ID_AFTER_CREATE` pelo `id` retornado.
 
-### Passo 2 — Capturar refresh_token via login interativo PMI VEP
+### Passo 2 — Capturar access_token via login PMI VEP
 
-PM abre browser, faz login no PMI VEP normalmente. Inspeciona Network tab durante
-o login → encontra response do OAuth callback contendo:
-- `access_token` (curto TTL, ~1h tipicamente)
-- `refresh_token` (longo TTL, ~30 dias tipicamente)
-- `expires_in` (segundos até access_token expirar)
+Opção A (HAR — recomendada): exportar HAR do login (DevTools → Network → "..." → Save all as HAR), passar o caminho para Claude Code. Claude extrai automaticamente.
 
-Alternativa: usar PMI dev portal se houver, ou contatar PMI IT para issuance manual.
+Opção B (manual): DevTools → Network → procurar POST `https://idp.pmi.org/connect/token` → response JSON → copiar `access_token`. Calcular `expires_at = Date.now() + (expires_in * 1000)`.
 
-### Passo 3 — Seed o KV com tokens iniciais
-
-Calcular `expires_at` (ms epoch) = `Date.now() + (expires_in * 1000)`:
+### Passo 3 — Seed o KV
 
 ```bash
-# JSON payload (ajustar tokens reais + timestamps)
-TOKENS_JSON='{
-  "access_token": "<COLE_ACCESS_TOKEN_AQUI>",
-  "refresh_token": "<COLE_REFRESH_TOKEN_AQUI>",
-  "expires_at": 1769558400000,
-  "refreshed_at": 1769554800000,
-  "initialized_by": "manual_seed_2026_04_29_vitor"
-}'
+# Se Claude já extraiu (arquivo /tmp/pmi_oauth_seed.json):
+npx wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens "$(cat /tmp/pmi_oauth_seed.json)"
 
-wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens "$TOKENS_JSON"
+# OU manual:
+TOKENS_JSON='{
+  "access_token": "<COLE_JWT_ACCESS_TOKEN_AQUI>",
+  "expires_at": 1777521033000,
+  "refreshed_at": 1777434633000,
+  "initialized_by": "manual_seed_YYYY_MM_DD_vitor"
+}'
+npx wrangler kv key put --binding=PMI_OAUTH_KV pmi_oauth:tokens "$TOKENS_JSON"
 ```
 
 ### Passo 4 — Confirmar
 ```bash
-wrangler kv key get --binding=PMI_OAUTH_KV pmi_oauth:tokens
+npx wrangler kv key get --binding=PMI_OAUTH_KV pmi_oauth:tokens
 ```
 
-Após esse setup, o worker auto-renova access_token usando refresh_token a cada
-execução (cron diário). Se PMI rotacionar refresh_token na resposta, KV é
-atualizado automaticamente. Se refresh_token PMI expirar (~30d sem uso),
-PM precisa repetir Passos 2-3.
+### Re-seed diário (operacional)
 
-**OBS para auditoria**: o campo `initialized_by` permite rastrear quem fez o
-seed e quando. Update a cada re-seed.
+Quando worker detectar token expirando em < 6h, alerta via:
+- `cron_run_log.metrics.pmi_token_expiring_soon = true`
+- console.warn em logs (`wrangler tail`)
+
+Após 3 falhas consecutivas (token totalmente expirado), o worker dispara
+`campaign_send_one_off` slug=`cron_failure_alert` para PM.
+
+PM re-seeda repetindo Passos 2-3 (HAR export + extract OU manual copy do
+DevTools).
+
+**Auditoria**: campo `initialized_by` no JSON permite rastrear quem/quando fez
+o seed. Atualizar a cada re-seed (ex: `manual_seed_2026_04_30_vitor`).
 
 ---
 

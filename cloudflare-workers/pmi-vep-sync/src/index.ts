@@ -39,7 +39,8 @@ import {
 } from './scheduler';
 import {
   listAllApplicationsForOpp,
-  getApplicationDetail
+  getApplicationDetail,
+  getTokenExpiryStatus
 } from './pmi-vep-client';
 import { mapPmiToNucleo } from './mapper';
 import { issueOnboardingToken } from './onboarding-token';
@@ -100,6 +101,14 @@ export default {
           });
           console.error(`[${WORKER_NAME}] opp ${opp.opportunity_id} failed:`, e);
         }
+      }
+
+      // Proactive token-expiry warning (PMI access_token has 24h TTL, no refresh)
+      const tokenStatus = getTokenExpiryStatus();
+      if (tokenStatus.expiring_soon) {
+        (metrics as any).pmi_token_expiring_soon = true;
+        (metrics as any).pmi_token_remaining_hours = tokenStatus.remaining_hours;
+        console.warn(`[${WORKER_NAME}] PMI access_token expires in ${tokenStatus.remaining_hours?.toFixed(1)}h — PM should re-seed soon`);
       }
 
       const finalStatus = metrics.errors.length > 0 ? 'failed' : 'success';

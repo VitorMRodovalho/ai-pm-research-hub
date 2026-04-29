@@ -33,15 +33,23 @@ export interface Env {
 }
 
 // =====================================================================
-// PMI OAuth — refresh_token cached em KV (Plano B per p81 review)
+// PMI OAuth — access_token cached em KV (Plano B-revised per HAR analysis)
+//
+// IMPORTANT: PMI vep_ui app NÃO emite refresh_token (escopo `openid profile`
+// only — sem `offline_access`). Worker opera em access-only mode: lê
+// access_token do KV, alerta proativamente quando expires_at < now + 6h,
+// falha clean quando token expira. PM precisa re-seedar a cada ~24h.
+//
+// Long-term fix: PM contata PMI IT para adicionar offline_access scope ao
+// vep_ui app, OU registra app dedicado nucleo_pmi_sync com offline_access.
 // =====================================================================
 
 export interface PmiOAuthTokens {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;    // OPCIONAL — só presente se PMI conceder offline_access (futuro)
   expires_at: number;        // ms epoch
-  refreshed_at: number;      // ms epoch — when we last called /token
-  initialized_by?: string;   // e.g., 'manual_seed_2026_04_29' for audit
+  refreshed_at: number;      // ms epoch — when seed/refresh aconteceu
+  initialized_by?: string;   // e.g., 'manual_seed_2026_04_29_vitor' para audit trail
 }
 
 // =====================================================================
