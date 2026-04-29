@@ -147,11 +147,15 @@ test('update_onboarding_step checks authorization (V4)', () => {
 // rich spec (by_step/by_chapter/overdue_list/days_overdue/fully_complete).
 // Verified via direct pg_proc inspection p63 ext during Pacote N audit.
 
-test('get_onboarding_dashboard requires admin', () => {
+test('get_onboarding_dashboard requires admin (V4)', () => {
   const body = findFunctionBody('get_onboarding_dashboard');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
-  assert.ok(/manager/i.test(body), 'Must check manager role');
-  // sponsor designation removed in production simplification — was in original spec
+  // V3 legacy was 'is_superadmin'/'manager'; updated p80 batch 20 to V4
+  // can_by_member('manage_platform'). Accept either pattern during ongoing migration.
+  assert.ok(
+    (/is_superadmin/i.test(body) && /manager/i.test(body))
+      || /can_by_member\s*\([^)]*manage_platform/i.test(body),
+    'Must check admin role (V3 is_superadmin+manager OR V4 can_by_member manage_platform)'
+  );
 });
 
 test('get_onboarding_dashboard returns summary + members shape', () => {
