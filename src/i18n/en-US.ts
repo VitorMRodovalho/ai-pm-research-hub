@@ -3287,6 +3287,12 @@ const enUS: Record<string, string> = {
   'initiative.upcomingEvents': 'Upcoming Events',
   'initiative.pastMeetings': 'Past Meetings',
   'initiative.noUpcoming': 'No upcoming events.',
+  'initiative.driveSection': 'Initiative Drive',
+  'initiative.drivePurpose.workspace': 'Workspace',
+  'initiative.drivePurpose.minutes': 'Minutes',
+  'initiative.drivePurpose.shared_resources': 'Resources',
+  'initiative.drivePurpose.archive': 'Archive',
+  'initiative.driveOpen': 'Open in Drive',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Tribe Gamification',

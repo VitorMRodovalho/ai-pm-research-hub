@@ -43,6 +43,14 @@ const INIT_I18N = {
   upcomingEvents: t('initiative.upcomingEvents', lang),
   pastMeetings: t('initiative.pastMeetings', lang),
   noUpcoming: t('initiative.noUpcoming', lang),
+  driveSection: t('initiative.driveSection', lang),
+  driveOpen: t('initiative.driveOpen', lang),
+  drivePurpose: {
+    workspace: t('initiative.drivePurpose.workspace', lang),
+    minutes: t('initiative.drivePurpose.minutes', lang),
+    shared_resources: t('initiative.drivePurpose.shared_resources', lang),
+    archive: t('initiative.drivePurpose.archive', lang),
+  },
   kindBadges: {
     committee: t('initiative.kindBadge.committee', lang),
     workgroup: t('initiative.kindBadge.workgroup', lang),
@@ -314,6 +322,40 @@ const INIT_I18N = {
         📖 Ver pagina publica do curso preparatorio → /cpmai
       </a>`);
     }
+
+    // Drive folders (Mayanna feedback round 2 — surface initiative-level Drive)
+    try {
+      const { data: driveData } = await sb.rpc('get_initiative_drive_links', { p_initiative_id: INITIATIVE_ID });
+      const links = Array.isArray(driveData?.drive_links) ? driveData.drive_links : [];
+      if (links.length > 0) {
+        const purposeLabel: Record<string, string> = {
+          workspace: I18N.drivePurpose?.workspace || 'Workspace',
+          minutes: I18N.drivePurpose?.minutes || 'Atas',
+          shared_resources: I18N.drivePurpose?.shared_resources || 'Recursos',
+          archive: I18N.drivePurpose?.archive || 'Arquivo',
+        };
+        const driveHtml = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden mb-4">
+          <div class="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
+            <span class="text-lg">📁</span>
+            <h3 class="text-sm font-bold text-navy">${escapeHtml(I18N.driveSection || 'Drive da iniciativa')}</h3>
+            <span class="text-[10px] text-[var(--text-muted)] ml-auto">${links.length}</span>
+          </div>
+          <div class="px-5 py-2">${links.map((l: any) => {
+            const purpose = l.link_purpose || '';
+            const badge = purposeLabel[purpose] || purpose;
+            return `<a href="${escapeHtml(l.drive_folder_url)}" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-0 no-underline hover:bg-[var(--surface-hover)] -mx-5 px-5 transition-colors"
+              title="${escapeHtml(I18N.driveOpen || 'Abrir no Drive')}">
+              <span class="text-lg shrink-0">📂</span>
+              <span class="flex-1 text-sm font-medium text-[var(--text-primary)] truncate">${escapeHtml(l.drive_folder_name || l.drive_folder_id)}</span>
+              ${badge ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 shrink-0">${escapeHtml(badge)}</span>` : ''}
+              <span class="text-[10px] text-[var(--text-muted)] shrink-0">↗</span>
+            </a>`;
+          }).join('')}</div>
+        </div>`;
+        el.insertAdjacentHTML('beforeend', driveHtml);
+      }
+    } catch { /* drive section not critical */ }
 
     // Events timeline
     try {

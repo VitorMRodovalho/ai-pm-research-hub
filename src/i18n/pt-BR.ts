@@ -3293,6 +3293,12 @@ const ptBR: Record<string, string> = {
   'initiative.upcomingEvents': 'Próximos Eventos',
   'initiative.pastMeetings': 'Reuniões Anteriores',
   'initiative.noUpcoming': 'Nenhum evento próximo.',
+  'initiative.driveSection': 'Drive da iniciativa',
+  'initiative.drivePurpose.workspace': 'Workspace',
+  'initiative.drivePurpose.minutes': 'Atas',
+  'initiative.drivePurpose.shared_resources': 'Recursos',
+  'initiative.drivePurpose.archive': 'Arquivo',
+  'initiative.driveOpen': 'Abrir no Drive',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Gamificação da Tribo',
