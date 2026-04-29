@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 export const prerender = false;
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const i18n = buildPageI18n(['pmi.onboarding'], lang);
+const i18n = JSON.parse(buildPageI18n(['pmi.onboarding'], lang));
 
 const { token } = Astro.params;
 
