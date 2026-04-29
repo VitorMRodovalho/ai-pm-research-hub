@@ -96,6 +96,8 @@ export interface UpsertResult {
   id: string;
   was_new: boolean;
   consent_active: boolean;
+  skipped_prior_cycle?: boolean;
+  prior_cycle_id?: string;
 }
 
 /**
@@ -106,8 +108,15 @@ export interface UpsertResult {
  *
  * Compound key preserves the dual-track triaged_to_leader pattern where
  * the same PMI applicationId can appear linked to two opportunities
- * (e.g., 64966 leader + 64967 researcher). Each (vep_app_id, vep_opp_id)
- * pair is unique; the worker upserts per-(opportunity, application).
+ * (e.g., 64966 leader + 64967 researcher).
+ *
+ * CYCLE-AWARE BEHAVIOR (post incident 2026-04-29):
+ * If existing.cycle_id != payload.cycle_id (i.e., row belongs to a PRIOR
+ * closed cycle), the upsert is SKIPPED entirely to preserve historical
+ * cycle outcome. PMI's bucket may have moved the app to "rejected" after
+ * closing, but we don't want to overwrite our own status/role_applied/
+ * cycle_id that captured the actual cycle decision (approved/converted/
+ * triaged_to_leader). Same-cycle updates proceed normally.
  */
 export async function upsertSelectionApplication(
   db: SupabaseClient,
@@ -115,16 +124,27 @@ export async function upsertSelectionApplication(
 ): Promise<UpsertResult> {
   const { data: existing } = await db
     .from('selection_applications')
-    .select('id, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
+    .select('id, cycle_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
     .eq('vep_application_id', payload.vep_application_id)
     .eq('vep_opportunity_id', payload.vep_opportunity_id)
     .maybeSingle();
 
   if (existing) {
+    if (existing.cycle_id !== payload.cycle_id) {
+      // Prior cycle: skip update to preserve history
+      return {
+        id: existing.id,
+        was_new: false,
+        consent_active: !!existing.consent_ai_analysis_at && !existing.consent_ai_analysis_revoked_at,
+        skipped_prior_cycle: true,
+        prior_cycle_id: existing.cycle_id
+      };
+    }
+
     const { error } = await db
       .from('selection_applications')
       .update({
-        cycle_id: payload.cycle_id,
+        // cycle_id intentionally NOT updated (preserves history per cycle-aware behavior above)
         pmi_id: payload.pmi_id,
         applicant_name: payload.applicant_name,
         email: payload.email,

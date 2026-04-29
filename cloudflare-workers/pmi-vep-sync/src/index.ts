@@ -202,6 +202,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     applications_new: 0,
     applications_updated: 0,
     applications_skipped: 0,
+    applications_skipped_prior_cycle: 0,
     welcome_dispatched: 0,
     errors: []
   };
@@ -247,6 +248,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
 
       const result = await upsertSelectionApplication(db, mapped);
       summary.applications_processed++;
+
+      if (result.skipped_prior_cycle) {
+        summary.applications_skipped_prior_cycle++;
+        continue;
+      }
 
       if (result.was_new) {
         summary.applications_new++;

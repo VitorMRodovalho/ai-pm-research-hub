@@ -32,7 +32,19 @@ Deno.serve(async (req) => {
     if (!tk) return json({ error: 'No token' }, 401)
 
     const sb = createClient(url, srk)
-    const isServiceRole = tk === srk
+    // Service-role detection: literal compare first (fast path), fallback to JWT
+    // role claim decode (resilient to env↔vault key rotation drift).
+    let isServiceRole = tk === srk
+    if (!isServiceRole) {
+      try {
+        const parts = tk.split('.')
+        if (parts.length === 3) {
+          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+          const payload = JSON.parse(payloadJson)
+          if (payload.role === 'service_role') isServiceRole = true
+        }
+      } catch { /* not a parseable JWT, fall through */ }
+    }
 
     if (!isServiceRole) {
       const { data: { user }, error: userError } = await sb.auth.getUser(tk)
@@ -136,7 +148,7 @@ Deno.serve(async (req) => {
       const finalTo = sandbox ? [sandboxTo] : [toEmail]
 
       // Render template
-      const subject = (tmpl.subject[langKey] || tmpl.subject['pt'] || '').replace('{member.name}', memberName)
+      let subject = (tmpl.subject[langKey] || tmpl.subject['pt'] || '').replace('{member.name}', memberName)
       let html = tmpl.body_html[langKey] || tmpl.body_html['pt'] || ''
       let text = tmpl.body_text[langKey] || tmpl.body_text['pt'] || ''
 
@@ -152,6 +164,17 @@ Deno.serve(async (req) => {
       for (const [k, v] of vars) {
         html = html.split(k).join(v)
         text = text.split(k).join(v)
+      }
+
+      // Transactional one-off support: render {{key}} placeholders from
+      // audience_filter.variables (used by campaign_send_one_off RPC).
+      const oneOffVars = (send.audience_filter?.variables ?? {}) as Record<string, unknown>
+      for (const [k, v] of Object.entries(oneOffVars)) {
+        const needle = `{{${k}}}`
+        const replacement = String(v ?? '')
+        subject = subject.split(needle).join(replacement)
+        html = html.split(needle).join(replacement)
+        text = text.split(needle).join(replacement)
       }
 
       // Send via Resend
