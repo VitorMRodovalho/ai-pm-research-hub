@@ -164,10 +164,11 @@ test('mark_interview_status notifies GP on no-show', () => {
     'Must send selection_interview_noshow notification');
 });
 
-test('mark_interview_status allows interviewer, lead, or superadmin', () => {
+test('mark_interview_status allows interviewer, lead, or platform admin (V4)', () => {
   const body = findFunctionBody('mark_interview_status');
   assert.ok(/interviewer_ids/i.test(body), 'Must check interviewer_ids');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
+  assert.ok(/can_by_member\([^,]+,\s*'manage_platform'/i.test(body),
+    'Must use V4 can_by_member(manage_platform) authority gate (subsumes V3 is_superadmin)');
   assert.ok(/role\s*=\s*'lead'/i.test(body), 'Must check lead role');
 });
 
