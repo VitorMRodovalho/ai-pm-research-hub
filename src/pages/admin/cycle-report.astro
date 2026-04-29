@@ -285,7 +285,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     };
     const rl = roleLabels[lang] || roleLabels['pt-BR'];
 
-    const chapterPalette: Record<string, string> = { 'PMI-GO': '#0F6E56', 'PMI-CE': '#534AB7', 'PMI-DF': '#D85A30', 'PMI-MG': '#185FA5', 'PMI-RS': '#639922' };
+    // Founding chapters keep established branding colors; new chapters get
+    // deterministic HSL via code hash so charts stay readable as registry expands.
+    const FOUNDING_CHAPTER_PALETTE: Record<string, string> = { 'PMI-GO': '#0F6E56', 'PMI-CE': '#534AB7', 'PMI-DF': '#D85A30', 'PMI-MG': '#185FA5', 'PMI-RS': '#639922' };
+    function chapterColor(code: string): string {
+      if (FOUNDING_CHAPTER_PALETTE[code]) return FOUNDING_CHAPTER_PALETTE[code];
+      let hash = 0;
+      for (let i = 0; i < code.length; i++) hash = (hash * 31 + code.charCodeAt(i)) >>> 0;
+      return `hsl(${hash % 360} 55% 42%)`;
+    }
     const rolePalette: Record<string, string> = { researcher: '#378ADD', tribe_leader: '#1D9E75', comms_leader: '#0E7490', sponsor: '#BA7517', chapter_liaison: '#7F77DD', manager: '#D85A30', deputy_manager: '#D4537E', observer: '#888780', communicator: '#639922', none: '#B4B2A9' };
 
     // Dark mode support
@@ -307,7 +315,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           labels: ms.by_chapter.map((c: any) => c.chapter),
           datasets: [{
             data: ms.by_chapter.map((c: any) => c.count),
-            backgroundColor: ms.by_chapter.map((c: any) => chapterPalette[c.chapter] || CHART_COLORS[0]),
+            backgroundColor: ms.by_chapter.map((c: any) => chapterColor(c.chapter)),
             borderWidth: 0,
             borderRadius: 4,
           }],
