@@ -44,6 +44,15 @@ export function mapScriptToNucleo(
     app.applicationWithdrawnDateUtc ??
     null;
 
+  // PMI returns coverLetterInfo as a STRING (the cover letter text) — not an object.
+  // (Verified via HAR + script JSON inspection 2026-04-29.) The earlier assumption
+  // of `{coverLetter, linkedinUrl}` from spec was wrong; spec was based on docs that
+  // don't match runtime shape.
+  const coverLetterText: string | null =
+    typeof app.coverLetterInfo === 'string'
+      ? app.coverLetterInfo
+      : ((app.coverLetterInfo as any)?.coverLetter ?? null);
+
   return {
     cycle_id: cycleId,
     vep_application_id: String(app.applicationId),
@@ -51,8 +60,8 @@ export function mapScriptToNucleo(
     pmi_id: app.applicantId ? String(app.applicantId) : null,
     applicant_name: app.applicantName ?? '',
     email: app.applicantEmail ?? '',
-    phone: null,  // PMI script doesn't capture phone in current shape
-    linkedin_url: app.coverLetterInfo?.linkedinUrl ?? null,
+    phone: null,  // PMI doesn't surface phone via /api/applications/{id}
+    linkedin_url: extractLinkedinFromText(coverLetterText) ?? null,
     resume_url: app.resumeUrl ?? null,
     chapter: parseChapterFromAffiliation(
       responses.chapter_affiliation ?? '',
@@ -60,11 +69,9 @@ export function mapScriptToNucleo(
       app.applicantCountry ?? ''
     ),
     membership_status: null,
-    certifications: '',  // not in script output (only in detail.certifications which we'd add to script if needed)
+    certifications: '',
     role_applied: opp.role_default,
-    motivation_letter: responses.motivation_letter
-      ?? app.coverLetterInfo?.coverLetter
-      ?? null,
+    motivation_letter: responses.motivation_letter ?? coverLetterText,
     proposed_theme: responses.proposed_theme ?? null,
     areas_of_interest: responses.areas_of_interest ?? null,
     availability_declared: responses.availability_declared ?? null,
@@ -75,13 +82,23 @@ export function mapScriptToNucleo(
     reason_for_applying:
       responses.motivation_letter ??
       responses.reason_for_applying ??
-      app.coverLetterInfo?.coverLetter ??
-      null,
+      coverLetterText,
     application_date: applicationDate ? applicationDate.slice(0, 10) : null,
     status,
     imported_at: new Date().toISOString(),
     organization_id: orgId
   };
+}
+
+/**
+ * Extract LinkedIn URL from free text (cover letter, etc).
+ * Common forms: linkedin.com/in/<slug>, /pub/<slug>, /profile/<slug>, lnkd.in/...
+ */
+function extractLinkedinFromText(text: string | null): string | null {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/[a-z]+\/[A-Za-z0-9_\-%]+/i)
+        ?? text.match(/https?:\/\/lnkd\.in\/[A-Za-z0-9_\-%]+/i);
+  return m ? m[0] : null;
 }
 
 /**
@@ -134,20 +151,27 @@ function extractResponsesFromScript(
 
 /**
  * Determine chapter slug. Priority:
- * 1. Parse from chapter_affiliation response (PMI-XX format expected)
- * 2. Fallback to applicantState mapping
- * 3. Fallback to country (BR detection)
+ * 1. PMI-XX / PMI_XX / PMI/XX / PMI XX patterns
+ * 2. Full state name (Goiás, Minas Gerais, ...)
+ * 3. Standalone UF abbreviation (GO, MG, ...) with word boundary, but ONLY if
+ *    affiliation doesn't start with "Não" / "ainda não" / "atualmente não"
+ *    (ie, candidate explicitly says they aren't affiliated)
+ * 4. Fallback to applicantState mapping
+ *
+ * Returns null when ambiguous ("MG e DF") or explicitly-not-affiliated.
  */
 function parseChapterFromAffiliation(
   affiliation: string,
   state: string,
   _country: string
 ): string | null {
-  // Parse "PMI-GO" / "PMI GO" / "Goiás Chapter" patterns from response
-  const pmiMatch = affiliation.match(/PMI[-\s]([A-Z]{2,3})\b/i);
+  const aff = (affiliation || '').trim();
+  const affLower = aff.toLowerCase();
+
+  // Strategy 1: explicit PMI-XX / PMI_XX / PMI/XX / PMI XX
+  const pmiMatch = aff.match(/PMI[-\s_/]([A-Z]{2,3})\b/i);
   if (pmiMatch) return `PMI-${pmiMatch[1]!.toUpperCase()}`;
 
-  // Brazilian state full-name to PMI-XX mapping
   const STATE_FULL_TO_CHAPTER: Record<string, string> = {
     'goiás': 'PMI-GO', 'goias': 'PMI-GO',
     'distrito federal': 'PMI-DF',
@@ -162,27 +186,41 @@ function parseChapterFromAffiliation(
     'bahia': 'PMI-BA',
     'espírito santo': 'PMI-ES', 'espirito santo': 'PMI-ES'
   };
-  const STATE_ABBREV: Record<string, string> = {
+  const UF_TO_CHAPTER: Record<string, string> = {
     GO: 'PMI-GO', DF: 'PMI-DF', MG: 'PMI-MG', RS: 'PMI-RS',
     CE: 'PMI-CE', PE: 'PMI-PE', SP: 'PMI-SP', RJ: 'PMI-RJ',
     PR: 'PMI-PR', SC: 'PMI-SC', BA: 'PMI-BA', ES: 'PMI-ES'
   };
+  // Detect "não" / "ainda não" / "atualmente não" prefix — candidate is NOT affiliated
+  const NEGATIVE_PREFIX = /^(n[aã]o|atualmente n[aã]o|ainda n[aã]o|j[aá] fui)\b/i;
+  const isNegative = NEGATIVE_PREFIX.test(affLower);
 
+  if (!isNegative) {
+    // Strategy 2: full state name in affiliation
+    for (const [name, chap] of Object.entries(STATE_FULL_TO_CHAPTER)) {
+      if (affLower.includes(name)) return chap;
+    }
+
+    // Strategy 3: standalone UF abbreviation with word boundary in affiliation.
+    // Only apply if EXACTLY ONE UF found (avoid "MG e DF" ambiguity).
+    const ufMatches = new Set<string>();
+    const ufRegex = /\b(GO|DF|MG|RS|CE|PE|SP|RJ|PR|SC|BA|ES)\b/g;
+    let m;
+    while ((m = ufRegex.exec(aff)) !== null) {
+      ufMatches.add(m[1]!.toUpperCase());
+    }
+    if (ufMatches.size === 1) {
+      const onlyUf = [...ufMatches][0]!;
+      return UF_TO_CHAPTER[onlyUf] ?? null;
+    }
+  }
+
+  // Strategy 4: applicantState (rarely populated by PMI per HAR analysis)
   if (state) {
     const sl = state.trim().toLowerCase();
     if (STATE_FULL_TO_CHAPTER[sl]) return STATE_FULL_TO_CHAPTER[sl];
     const upper = state.trim().toUpperCase();
-    if (STATE_ABBREV[upper]) return STATE_ABBREV[upper];
-    // Search affiliation for any state name
-    for (const [name, chap] of Object.entries(STATE_FULL_TO_CHAPTER)) {
-      if (sl.includes(name)) return chap;
-    }
-  }
-
-  // Search affiliation text for state names too
-  const aff = affiliation.toLowerCase();
-  for (const [name, chap] of Object.entries(STATE_FULL_TO_CHAPTER)) {
-    if (aff.includes(name)) return chap;
+    if (UF_TO_CHAPTER[upper]) return UF_TO_CHAPTER[upper];
   }
 
   return null;

@@ -246,6 +246,7 @@ export interface IngestSummary {
   applications_new: number;
   applications_updated: number;
   applications_skipped: number;
+  applications_skipped_prior_cycle: number;  // existing in different (closed) cycle
   welcome_dispatched: number;
   errors: Array<{ scope: string; ref?: string; error: string }>;
   pmi_token_expiring_soon?: boolean;
