@@ -1,0 +1,25 @@
+{
+  "name": "pmi-vep-sync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker: synchronizes PMI VEP applications into Núcleo IA selection_applications. Self-healing cron with 72h cadence.",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0",
+    "wrangler": "^3.80.0",
+    "eslint": "^9.0.0"
+  }
+}

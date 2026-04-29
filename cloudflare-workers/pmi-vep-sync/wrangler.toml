@@ -1,0 +1,40 @@
+name = "pmi-vep-sync"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cron diário às 04:00 UTC (01:00 BRT). Worker decide internamente se executa
+# baseado em self-healing logic (cron_run_log + cadência de 72h).
+[triggers]
+crons = ["0 4 * * *"]
+
+# Vars públicas (não-sensíveis)
+[vars]
+CRON_CADENCE_HOURS = "72"
+CRON_TOLERANCE_HOURS = "12"
+CONSECUTIVE_FAILURE_ALERT_THRESHOLD = "3"
+ORG_ID = "2b4f58ab-7c45-4170-8718-b77ee69ff906"
+ONBOARDING_TOKEN_TTL_DAYS = "7"
+
+# Secrets (configurar via `wrangler secret put`):
+#   SUPABASE_URL              ex: https://ldrfrvwhxsmgaabwmaik.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY service role JWT
+#   PMI_VEP_BASE_URL          ex: https://volunteer.pmi.org
+#   PMI_VEP_OAUTH_TOKEN_URL   ex: https://auth.pmi.org/oauth2/token
+#   PMI_VEP_OAUTH_CLIENT_ID
+#   PMI_VEP_OAUTH_CLIENT_SECRET
+#   GP_NOTIFICATION_EMAIL     vitor's email para alertas de 3 falhas consecutivas
+#   ONBOARDING_BASE_URL       https://nucleoia.vitormr.dev/pmi-onboarding
+
+# Cloudflare Queues (S0 — pode ser desabilitado se ainda não configurado)
+# [[queues.producers]]
+# binding = "QUEUE_AI_OBJECTIVE_DRAFTER"
+# queue = "ai-objective-drafter"
+
+# [[queues.producers]]
+# binding = "QUEUE_WELCOME_DISPATCHER"
+# queue = "welcome-message-dispatcher"
+
+# Observability
+[observability]
+enabled = true
