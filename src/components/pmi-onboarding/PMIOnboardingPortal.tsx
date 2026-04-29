@@ -76,6 +76,8 @@ const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> =
   { key: 'culture_alignment', questionIndex: 5 },
 ];
 
+const BOOKING_URL = 'https://calendar.app.google/gh9WjefjcmisVLoh7';
+
 export default function PMIOnboardingPortal({
   token, initialPayload, i18n, lang, supabaseUrl, supabaseAnonKey
 }: Props) {
@@ -87,6 +89,10 @@ export default function PMIOnboardingPortal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [collapsedPillar, setCollapsedPillar] = useState<Record<string, boolean>>({});
   const [replaceConfirmPillar, setReplaceConfirmPillar] = useState<string | null>(null);
+  const [optInterviewConfirm, setOptInterviewConfirm] = useState(false);
+  const [optInterviewBusy, setOptInterviewBusy] = useState(false);
+  const [revertInterviewConfirm, setRevertInterviewConfirm] = useState(false);
+  const [revertInterviewBusy, setRevertInterviewBusy] = useState(false);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
   const T = (k: string) => i18n[k] ?? k;
@@ -101,6 +107,8 @@ export default function PMIOnboardingPortal({
 
   const { application: app, cycle, onboarding_progress: progress, token_metadata } = payload;
   const videoScreenings = payload.video_screenings ?? [];
+  const isInterviewMode = videoScreenings.length >= 5 && videoScreenings.every(v => v.status === 'opted_out');
+  const videosUploadedCount = videoScreenings.filter(v => ['uploaded','transcribing','transcribed'].includes(v.status)).length;
 
   const expiresAtDate = new Date(token_metadata.expires_at);
   const daysLeft = Math.max(0, Math.floor((expiresAtDate.getTime() - Date.now()) / 86400000));
@@ -227,6 +235,53 @@ export default function PMIOnboardingPortal({
       setErrorMsg(e?.message ?? String(e));
     } finally {
       setBusyVideo(null);
+    }
+  };
+
+  const handleOptInterviewAll = async () => {
+    setOptInterviewBusy(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await sb.rpc('opt_out_all_pillars', { p_token: token });
+      if (error) throw new Error(error.message);
+      const optedScreenings: VideoScreening[] = PILLARS.map(p => ({
+        pillar: p.key,
+        question_index: p.questionIndex,
+        status: 'opted_out',
+        uploaded_at: null,
+      }));
+      setPayload({
+        ...payload,
+        video_screenings: optedScreenings,
+        application: { ...app, status: 'interview_pending' },
+      });
+      setUploadState({});
+      setCollapsedPillar({});
+      setOptInterviewConfirm(false);
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? String(e));
+    } finally {
+      setOptInterviewBusy(false);
+    }
+  };
+
+  const handleRevertInterview = async () => {
+    setRevertInterviewBusy(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await sb.rpc('revert_interview_optout', { p_token: token });
+      if (error) throw new Error(error.message);
+      setPayload({
+        ...payload,
+        video_screenings: [],
+        application: { ...app, status: app.status === 'interview_pending' ? 'screening' : app.status },
+      });
+      setRevertInterviewConfirm(false);
+      setCollapsedPillar({});
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? String(e));
+    } finally {
+      setRevertInterviewBusy(false);
     }
   };
 
@@ -509,9 +564,68 @@ export default function PMIOnboardingPortal({
         <p className="text-sm text-gray-600 mb-3">
           {T('pmi.onboarding.videoScreeningIntro')}
         </p>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 mb-4">
-          💡 {T('pmi.onboarding.videoPersistenceHint')}
-        </div>
+        {!isInterviewMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 mb-4">
+            💡 {T('pmi.onboarding.videoPersistenceHint')}
+          </div>
+        )}
+
+        {!isInterviewMode && (
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl flex-shrink-0">📞</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 mb-1">
+                  {T('pmi.onboarding.interviewCtaTitle')}
+                </div>
+                <p className="text-sm text-gray-700 mb-3">{T('pmi.onboarding.interviewCtaBody')}</p>
+                <button
+                  type="button"
+                  onClick={() => setOptInterviewConfirm(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm w-full sm:w-auto"
+                >
+                  {T('pmi.onboarding.interviewCtaButton')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isInterviewMode && (
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="text-3xl flex-shrink-0">📞</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-lg font-semibold text-purple-900">
+                  ✓ {T('pmi.onboarding.interviewSelectedTitle')}
+                </div>
+                <p className="text-sm text-purple-800 mt-1">
+                  {T('pmi.onboarding.interviewSelectedBody')}
+                </p>
+              </div>
+            </div>
+            <a
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              📅 {T('pmi.onboarding.interviewScheduleButton')}
+            </a>
+            <p className="text-xs text-purple-700 mt-3">
+              {T('pmi.onboarding.interviewScheduleHint')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setRevertInterviewConfirm(true)}
+              className="text-xs text-gray-600 underline hover:text-blue-700 mt-4 block"
+            >
+              ← {T('pmi.onboarding.interviewRevertLink')}
+            </button>
+          </div>
+        )}
+
+        {!isInterviewMode && (<>
         <ul className="space-y-3">
           {PILLARS.map(p => {
             const existing = videoScreenings.find(v => v.pillar === p.key);
@@ -624,14 +738,6 @@ export default function PMIOnboardingPortal({
                             }}
                           />
                         </label>
-                        <button
-                          type="button"
-                          disabled={busyVideo === p.key}
-                          onClick={() => handleVideoOptOut(p.key, p.questionIndex)}
-                          className="text-xs text-gray-600 underline hover:text-purple-700 disabled:opacity-50 sm:ml-2 text-left sm:text-center"
-                        >
-                          {busyVideo === p.key ? '...' : T('pmi.onboarding.videoOptOut')}
-                        </button>
                       </div>
                     )}
 
@@ -655,6 +761,7 @@ export default function PMIOnboardingPortal({
         <p className="text-xs text-gray-500 mt-4 italic">
           {T('pmi.onboarding.videoUploadHint')}
         </p>
+        </>)}
 
         {replaceConfirmPillar && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
@@ -679,6 +786,70 @@ export default function PMIOnboardingPortal({
                   className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
                 >
                   {T('pmi.onboarding.videoReplaceConfirmNo')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {optInterviewConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                📞 {T('pmi.onboarding.interviewConfirmTitle')}
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                {videosUploadedCount > 0
+                  ? T('pmi.onboarding.interviewConfirmBodyWithVideos').replace('{count}', String(videosUploadedCount))
+                  : T('pmi.onboarding.interviewConfirmBody')}
+              </p>
+              <div className="flex flex-col sm:flex-row-reverse gap-2">
+                <button
+                  type="button"
+                  disabled={optInterviewBusy}
+                  onClick={handleOptInterviewAll}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {optInterviewBusy ? '...' : T('pmi.onboarding.interviewConfirmYes')}
+                </button>
+                <button
+                  type="button"
+                  disabled={optInterviewBusy}
+                  onClick={() => setOptInterviewConfirm(false)}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {T('pmi.onboarding.interviewConfirmNo')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {revertInterviewConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {T('pmi.onboarding.interviewRevertConfirmTitle')}
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                {T('pmi.onboarding.interviewRevertConfirmBody')}
+              </p>
+              <div className="flex flex-col sm:flex-row-reverse gap-2">
+                <button
+                  type="button"
+                  disabled={revertInterviewBusy}
+                  onClick={handleRevertInterview}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {revertInterviewBusy ? '...' : T('pmi.onboarding.interviewRevertConfirmYes')}
+                </button>
+                <button
+                  type="button"
+                  disabled={revertInterviewBusy}
+                  onClick={() => setRevertInterviewConfirm(false)}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded font-medium text-sm w-full sm:w-auto"
+                >
+                  {T('pmi.onboarding.interviewRevertConfirmNo')}
                 </button>
               </div>
             </div>
