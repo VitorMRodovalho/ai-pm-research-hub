@@ -1,9 +1,23 @@
 ---
-import { CHAPTERS } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters } from '../../lib/chapters';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const chapters = await loadChapters(sbAnon);
+
+// CBGPL 2026-04-29: Ivan Lourenço (PMI-GO) anunciou união de 15 capítulos PMI Brasil.
+// Registry hoje tem 5 ativos (founding); 10 adicionais entrarão quando lista oficial chegar.
+// Quando registry estiver completo (15 rows), substituir literal por chapters.length.
+const ANNOUNCED_TOTAL = 15;
+const activeCount = chapters.length;
+const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="capitulos">
@@ -11,34 +25,29 @@ const { lang = 'pt-BR' } = Astro.props;
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-purple mb-2">
       {t('chapters.label', lang)}
     </div>
-    <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
-      {CHAPTERS.length} {t('chapters.title', lang)}
+    <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-2">
+      {ANNOUNCED_TOTAL} {t('chapters.title', lang)}
     </h2>
+    {onboardingCount > 0 && (
+      <p class="text-sm text-[var(--text-muted)] mb-8">
+        {activeCount} {t('chapters.activeLabel', lang)} · {onboardingCount} {t('chapters.onboardingLabel', lang)}
+      </p>
+    )}
 
     <div class="flex flex-wrap justify-center gap-4 mb-8">
-      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-        <div class="text-left">
-          <div class="text-sm font-bold text-[var(--text-primary)]">PMI Goiás</div>
-          <div class="text-[.65rem] text-[var(--text-muted)] uppercase tracking-wider">{t('chapters.founder', lang)}</div>
+      {chapters.map((c) => (
+        <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full bg-green-500"></span>
+          {c.is_contracting ? (
+            <div class="text-left">
+              <div class="text-sm font-bold text-[var(--text-primary)]">PMI {c.state}</div>
+              <div class="text-[.65rem] text-[var(--text-muted)] uppercase tracking-wider">{t('chapters.founder', lang)}</div>
+            </div>
+          ) : (
+            <span class="text-sm font-bold text-[var(--text-primary)]">PMI {c.state}</span>
+          )}
         </div>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-        <span class="text-sm font-bold text-[var(--text-primary)]">PMI Ceará</span>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-        <span class="text-sm font-bold text-[var(--text-primary)]">PMI Distrito Federal</span>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-        <span class="text-sm font-bold text-[var(--text-primary)]">PMI Minas Gerais</span>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-        <span class="text-sm font-bold text-[var(--text-primary)]">PMI Rio Grande do Sul</span>
-      </div>
+      ))}
     </div>
 
     <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 inline-block">

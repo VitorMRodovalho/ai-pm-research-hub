@@ -1,9 +1,16 @@
 ---
-import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { loadChapters } from '../../lib/chapters';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+const heroChapters = await loadChapters(sbAnon);
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -65,9 +72,9 @@ const { lang = 'pt-BR' } = Astro.props;
     </div>
 
     <div class="flex flex-wrap justify-center gap-2 mt-5">
-      {CHAPTER_CODES.map((c) => (
+      {heroChapters.map((c) => (
         <span class="bg-white/8 border border-white/12 text-white/80 px-3 py-1 rounded-lg text-[.72rem] font-semibold">
-          {c}
+          {c.display_code}
         </span>
       ))}
     </div>

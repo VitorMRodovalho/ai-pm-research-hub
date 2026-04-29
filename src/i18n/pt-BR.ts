@@ -489,7 +489,9 @@ const ptBR: Record<string, string> = {
   'chapters.label': 'Integração Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
   'chapters.founder': 'Capítulo Fundador',
-  'chapters.goal': 'Meta 2026: integrar 8 capítulos',
+  'chapters.activeLabel': 'parceiros ativos',
+  'chapters.onboardingLabel': 'em integração',
+  'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
   'chapters.cta': 'Quer trazer seu capítulo? Fale com o GP →',
 
   // ── Quadrants ──

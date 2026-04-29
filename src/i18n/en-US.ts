@@ -489,7 +489,9 @@ const enUS: Record<string, string> = {
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
   'chapters.founder': 'Founding Chapter',
-  'chapters.goal': '2026 Goal: integrate 8 chapters',
+  'chapters.activeLabel': 'active partners',
+  'chapters.onboardingLabel': 'onboarding',
+  'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
   'chapters.cta': 'Want to bring your chapter? Talk to the PM →',
 
   // ── Quadrants ──
