@@ -173,7 +173,14 @@ export default function CardComments({ boardItemId, currentMemberId, currentMemb
             <div className="flex items-center gap-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               {!isReply && currentMemberId && (
                 <button
-                  onClick={() => { setReplyToId(replyToId === c.id ? null : c.id); setReplyBody(''); }}
+                  onClick={() => {
+                    const isOpening = replyToId !== c.id;
+                    setReplyToId(isOpening ? c.id : null);
+                    const handle = c.author_name && c.author_id !== currentMemberId
+                      ? `@${c.author_name.split(' ')[0]} `
+                      : '';
+                    setReplyBody(isOpening ? handle : '');
+                  }}
                   className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-0"
                 >Responder</button>
               )}
