@@ -5,6 +5,7 @@
  */
 import { useState, useEffect } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { loadChapters } from '../../lib/chapters';
 
 function getSb() { return (window as any).navGetSb?.(); }
 
@@ -32,7 +33,7 @@ interface ReportConfig {
 const DEFAULT_CONFIG: ReportConfig = {
   title: 'Relatório Executivo — Ciclo 3 (2026/1)',
   subtitle: 'Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos',
-  chapters: 'PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS',
+  chapters: '', // populated dynamically from loadChapters() at boot; admin override via site_config wins
   gp_notes: '',
   sections: {
     overview: true, kpis: true, tribes: true, pilots: true,
@@ -141,16 +142,21 @@ export default function ReportPage() {
       }
 
       try {
-        // Load report data
-        const { data: reportData, error: rpcErr } = await sb.rpc('get_cycle_report', { p_cycle: 3 });
-        if (rpcErr) throw rpcErr;
-        setData(reportData);
+        const [reportRes, cfgRes, chapters] = await Promise.all([
+          sb.rpc('get_cycle_report', { p_cycle: 3 }),
+          sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle(),
+          loadChapters(sb),
+        ]);
+        if (reportRes.error) throw reportRes.error;
+        setData(reportRes.data);
 
-        // Load config from site_config
-        const { data: cfgData } = await sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle();
-        if (cfgData?.value) {
-          setConfig(prev => ({ ...prev, ...cfgData.value }));
-        }
+        const dynamicDefault = chapters.map(c => c.display_code).join(' · ');
+        const cfgValue = cfgRes.data?.value || {};
+        setConfig(prev => ({
+          ...prev,
+          ...cfgValue,
+          chapters: cfgValue.chapters || dynamicDefault,
+        }));
       } catch (err: any) {
         console.warn('Report error:', err);
         setError('Erro ao carregar relatório.');

@@ -65,6 +65,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { loadChapters } from '../../lib/chapters';
 
   async function bootReportConfig() {
     const sb = (window as any).navGetSb?.();
@@ -80,14 +81,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const loading = document.getElementById('report-config-loading')!;
     const content = document.getElementById('report-config-content')!;
 
-    // Load existing config
-    const { data: cfg } = await sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle();
+    const [{ data: cfg }, chapters] = await Promise.all([
+      sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle(),
+      loadChapters(sb),
+    ]);
     const config = cfg?.value || {};
+    const defaultChapters = chapters.map(c => c.display_code).join(' · ');
 
-    // Populate fields
     (document.getElementById('cfg-title') as HTMLInputElement).value = config.title || 'Relatório Executivo — Ciclo 3 (2026/1)';
     (document.getElementById('cfg-subtitle') as HTMLInputElement).value = config.subtitle || 'Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos';
-    (document.getElementById('cfg-chapters') as HTMLInputElement).value = config.chapters || 'PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS';
+    (document.getElementById('cfg-chapters') as HTMLInputElement).value = config.chapters || defaultChapters;
     (document.getElementById('cfg-notes') as HTMLTextAreaElement).value = config.gp_notes || '';
 
     // Sections
