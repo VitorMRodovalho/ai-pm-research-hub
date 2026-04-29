@@ -73,6 +73,37 @@ Deno.serve(async (req) => {
     const tmpl = send.campaign_templates
     if (!tmpl) return json({ error: 'Template not found' }, 404)
 
+    // p82 CBGPL daily throttle: enforce 100/day limit (Resend free tier).
+    // If today's delivered count >= limit, mark all recipients pending_throttled
+    // and skip Resend dispatch. The cron `dispatch-pending-emails` will pick up
+    // throttled sends in subsequent days as slot opens.
+    const DAILY_LIMIT = parseInt(Deno.env.get('SEND_CAMPAIGN_DAILY_LIMIT') ?? '100', 10)
+    const todayStart = new Date()
+    todayStart.setUTCHours(3, 0, 0, 0) // 00:00 BRT (UTC-3)
+    if (Date.now() < todayStart.getTime()) todayStart.setUTCDate(todayStart.getUTCDate() - 1)
+    const { count: todayCount } = await sb.from('campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('delivered', true)
+      .gte('created_at', todayStart.toISOString())
+    console.log('[campaign] daily throttle check: today_delivered=', todayCount, 'limit=', DAILY_LIMIT)
+    if ((todayCount ?? 0) >= DAILY_LIMIT) {
+      await sb.from('campaign_recipients').update({
+        status: 'pending_throttled',
+        error_message: `daily_limit_${DAILY_LIMIT}_reached_retry_tomorrow`,
+      }).eq('send_id', sendId)
+      await sb.from('campaign_sends').update({
+        status: 'throttled',
+        error_log: `Daily Resend limit ${DAILY_LIMIT} reached (today=${todayCount}). Cron will retry tomorrow.`,
+      }).eq('id', sendId)
+      return json({
+        throttled: true,
+        today_count: todayCount,
+        daily_limit: DAILY_LIMIT,
+        send_id: sendId,
+        message: 'Daily limit reached; retried by cron tomorrow.',
+      })
+    }
+
     // Mark as sending
     await sb.from('campaign_sends').update({ status: 'sending' }).eq('id', sendId)
 
