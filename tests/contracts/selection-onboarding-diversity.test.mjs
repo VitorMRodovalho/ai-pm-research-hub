@@ -289,9 +289,14 @@ test('get_selection_pipeline_metrics calculates conversion rate', () => {
 
 test('get_selection_pipeline_metrics requires admin or sponsor', () => {
   const body = findFunctionBody('get_selection_pipeline_metrics');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
-  assert.ok(/sponsor/i.test(body), 'Must accept sponsor');
-  assert.ok(/chapter_liaison/i.test(body), 'Must accept chapter_liaison');
+  // Post-Phase B'' V4 migration: V3 hardcoded role list (is_superadmin / sponsor /
+  // chapter_liaison) was subsumed by `can_by_member('view_internal_analytics')`,
+  // which is granted to admin/GP + sponsor + chapter_liaison (and only those).
+  // Test now validates V4 authority pattern, not V3 substrings.
+  assert.ok(
+    /can_by_member\([^,]+,\s*'view_internal_analytics'\)/i.test(body),
+    'Must gate on can_by_member(...,\'view_internal_analytics\') — covers admin/sponsor/chapter_liaison in V4',
+  );
 });
 
 // ─── Notification types defined ───
