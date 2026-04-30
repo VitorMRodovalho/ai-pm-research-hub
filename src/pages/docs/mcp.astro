@@ -1,0 +1,218 @@
+---
+/**
+ * /docs/mcp — Catálogo público das 236 ferramentas MCP do Núcleo IA & GP
+ *
+ * Conteúdo gerado a partir de `scripts/generate-mcp-manifest.mjs` que parseia
+ * `supabase/functions/nucleo-mcp/index.ts`. Catalog é Path B (público + curado):
+ * descrições de ferramentas marcadas `is_sensitive` ficam genéricas.
+ *
+ * Para regerar após mudanças no nucleo-mcp:
+ *   node scripts/generate-mcp-manifest.mjs
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import manifest from '../../lib/mcp-manifest.json';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+interface ToolEntry {
+  name: string;
+  description: string;
+  domain: string;
+  permission: 'read' | 'write' | 'admin';
+  is_sensitive: boolean;
+}
+
+const tools = manifest.tools as ToolEntry[];
+const byDomain = manifest.by_domain as Record<string, number>;
+const domainOrder = manifest.domain_order as string[];
+
+const DOMAIN_LABELS: Record<string, { pt: string; en: string; es: string }> = {
+  personal:    { pt: 'Pessoal',          en: 'Personal',         es: 'Personal' },
+  tribe:       { pt: 'Tribo / Iniciativa', en: 'Tribe / Initiative', es: 'Tribu / Iniciativa' },
+  board:       { pt: 'Board / Cards',    en: 'Board / Cards',    es: 'Board / Tarjetas' },
+  events:      { pt: 'Eventos',          en: 'Events',           es: 'Eventos' },
+  governance:  { pt: 'Governança',       en: 'Governance',       es: 'Gobernanza' },
+  comms:       { pt: 'Comunicação',      en: 'Communications',   es: 'Comunicación' },
+  partners:    { pt: 'Parcerias',        en: 'Partnerships',     es: 'Asociaciones' },
+  gamification:{ pt: 'Gamificação',      en: 'Gamification',     es: 'Gamificación' },
+  selection:   { pt: 'Seleção',          en: 'Selection',        es: 'Selección' },
+  knowledge:   { pt: 'Conhecimento',     en: 'Knowledge',        es: 'Conocimiento' },
+  admin:       { pt: 'Admin',            en: 'Admin',            es: 'Admin' },
+  health:      { pt: 'Saúde / Observabilidade', en: 'Health / Observability', es: 'Salud / Observabilidad' },
+};
+
+const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+
+const PERMISSION_LABELS: Record<string, { label: string; color: string }> = {
+  read:  { label: 'R',  color: 'bg-emerald-100 text-emerald-700' },
+  write: { label: 'W',  color: 'bg-amber-100 text-amber-700' },
+  admin: { label: 'A',  color: 'bg-red-100 text-red-700' },
+};
+
+const groupedByDomain: Record<string, ToolEntry[]> = {};
+for (const t of tools) {
+  if (!groupedByDomain[t.domain]) groupedByDomain[t.domain] = [];
+  groupedByDomain[t.domain].push(t);
+}
+
+const generatedDate = new Date(manifest.generated_at).toLocaleDateString(
+  lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR',
+  { year: 'numeric', month: 'short', day: '2-digit' }
+);
+---
+
+<BaseLayout title={t('mcp.docs.pageTitle', lang)} activePage="" lang={lang}>
+  <div class="max-w-[1100px] mx-auto px-4 py-10 space-y-8">
+
+    <!-- Header -->
+    <header class="text-center">
+      <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+        {t('mcp.docs.label', lang)}
+      </div>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy mb-3">
+        {t('mcp.docs.title', lang)}
+      </h1>
+      <p class="text-sm text-[var(--text-muted)] max-w-[700px] mx-auto leading-relaxed">
+        {t('mcp.docs.subtitle', lang)}
+      </p>
+    </header>
+
+    <!-- Stats grid -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 text-center">
+        <div class="text-3xl font-extrabold text-navy">{manifest.total}</div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mt-1">{t('mcp.docs.stat.total', lang)}</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 text-center">
+        <div class="text-3xl font-extrabold text-emerald-600">{manifest.by_permission.read || 0}</div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mt-1">{t('mcp.docs.stat.read', lang)}</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 text-center">
+        <div class="text-3xl font-extrabold text-amber-600">{manifest.by_permission.write || 0}</div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mt-1">{t('mcp.docs.stat.write', lang)}</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 text-center">
+        <div class="text-3xl font-extrabold text-red-600">{manifest.by_permission.admin || 0}</div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mt-1">{t('mcp.docs.stat.admin', lang)}</div>
+      </div>
+    </section>
+
+    <!-- Filter bar -->
+    <section class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-3">
+      <div>
+        <input id="mcp-search" type="search" placeholder={t('mcp.docs.searchPlaceholder', lang)}
+          class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-base)] focus:outline-none focus:border-teal" />
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button data-domain-filter="all" class="domain-pill px-3 py-1 rounded-full text-[.78rem] font-semibold border border-teal bg-teal text-white">
+          {t('mcp.docs.filter.all', lang)}
+        </button>
+        {domainOrder.filter(d => byDomain[d] > 0).map(d => (
+          <button data-domain-filter={d} class="domain-pill px-3 py-1 rounded-full text-[.78rem] font-semibold border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            {DOMAIN_LABELS[d]?.[langKey] || d} <span class="text-[.7rem] text-[var(--text-muted)]">({byDomain[d]})</span>
+          </button>
+        ))}
+      </div>
+      <div class="text-[.72rem] text-[var(--text-muted)]">
+        <strong>R</strong> = {t('mcp.docs.legend.read', lang)} ·
+        <strong>W</strong> = {t('mcp.docs.legend.write', lang)} ·
+        <strong>A</strong> = {t('mcp.docs.legend.admin', lang)}
+      </div>
+    </section>
+
+    <!-- Tools grouped by domain -->
+    <section class="space-y-6">
+      {domainOrder.filter(d => groupedByDomain[d]?.length).map(d => (
+        <div data-domain-section={d} class="domain-section">
+          <h2 class="text-lg font-bold text-navy mb-3 border-b border-[var(--border-subtle)] pb-2">
+            {DOMAIN_LABELS[d]?.[langKey] || d}
+            <span class="text-[.78rem] text-[var(--text-muted)] font-normal ml-2">
+              ({groupedByDomain[d].length} {t('mcp.docs.toolsLabel', lang)})
+            </span>
+          </h2>
+          <div class="space-y-2">
+            {groupedByDomain[d].map(tool => {
+              const perm = PERMISSION_LABELS[tool.permission];
+              return (
+                <div class="tool-row bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-3 flex items-start gap-3"
+                     data-tool-name={tool.name}
+                     data-tool-domain={tool.domain}>
+                  <span class={`flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-[.7rem] font-bold ${perm.color}`}
+                        title={t(`mcp.docs.legend.${tool.permission}`, lang)}>
+                    {perm.label}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <code class="font-bold text-[.88rem] text-[var(--text-primary)]">{tool.name}</code>
+                      {tool.is_sensitive && (
+                        <span class="text-[.6rem] px-1.5 py-0.5 rounded bg-amber/10 text-amber-700 font-semibold">
+                          {t('mcp.docs.sensitive', lang)}
+                        </span>
+                      )}
+                    </div>
+                    <p class="text-[.82rem] text-[var(--text-secondary)] mt-1 leading-snug">{tool.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+
+    <!-- Footer note -->
+    <footer class="text-center text-[.78rem] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-6">
+      {t('mcp.docs.footer.generated', lang)}: {generatedDate} ·
+      {t('mcp.docs.footer.source', lang)}:
+      <a href="https://nucleoia.vitormr.dev/mcp" class="text-teal no-underline hover:underline">nucleoia.vitormr.dev/mcp</a>
+    </footer>
+
+  </div>
+</BaseLayout>
+
+<script>
+  // Filter logic — client-side, no React island needed
+  const searchInput = document.getElementById('mcp-search') as HTMLInputElement;
+  const pills = Array.from(document.querySelectorAll<HTMLButtonElement>('.domain-pill'));
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-domain-section]'));
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('.tool-row'));
+
+  let currentDomain: string = 'all';
+  let currentSearch: string = '';
+
+  function applyFilters() {
+    const q = currentSearch.toLowerCase().trim();
+    rows.forEach(row => {
+      const name = row.dataset.toolName || '';
+      const dom = row.dataset.toolDomain || '';
+      const matchesDomain = currentDomain === 'all' || dom === currentDomain;
+      const matchesSearch = !q || name.toLowerCase().includes(q) || (row.textContent || '').toLowerCase().includes(q);
+      row.style.display = matchesDomain && matchesSearch ? '' : 'none';
+    });
+    sections.forEach(sec => {
+      const visibleRows = sec.querySelectorAll<HTMLElement>('.tool-row:not([style*="display: none"])').length;
+      sec.style.display = visibleRows > 0 ? '' : 'none';
+    });
+  }
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => {
+        p.classList.remove('border-teal', 'bg-teal', 'text-white');
+        p.classList.add('border-[var(--border-default)]', 'bg-[var(--surface-base)]', 'text-[var(--text-primary)]');
+      });
+      pill.classList.remove('border-[var(--border-default)]', 'bg-[var(--surface-base)]', 'text-[var(--text-primary)]');
+      pill.classList.add('border-teal', 'bg-teal', 'text-white');
+      currentDomain = pill.dataset.domainFilter || 'all';
+      applyFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      currentSearch = searchInput.value;
+      applyFilters();
+    });
+  }
+</script>

@@ -487,6 +487,25 @@ const esLATAM: Record<string, string> = {
   'agenda.item6.title': 'Preguntas y Cierre',
   'agenda.item6.desc': 'Enlaces, cursos PMI, foto oficial.',
 
+  // ── MCP Catalog Docs (/docs/mcp) ──
+  'mcp.docs.pageTitle': 'Catálogo MCP — Núcleo IA & GP',
+  'mcp.docs.label': 'Núcleo MCP Server',
+  'mcp.docs.title': 'Catálogo de Herramientas MCP',
+  'mcp.docs.subtitle': 'El servidor MCP del Núcleo expone herramientas operativas vía Model Context Protocol — accesibles desde Claude.ai, Claude Code, Cursor y otros clientes MCP. Use el filtro abajo para explorar por dominio.',
+  'mcp.docs.stat.total': 'Herramientas',
+  'mcp.docs.stat.read': 'Lectura',
+  'mcp.docs.stat.write': 'Escritura',
+  'mcp.docs.stat.admin': 'Admin',
+  'mcp.docs.searchPlaceholder': 'Buscar por nombre o descripción…',
+  'mcp.docs.filter.all': 'Todos',
+  'mcp.docs.legend.read': 'lectura',
+  'mcp.docs.legend.write': 'escritura',
+  'mcp.docs.legend.admin': 'admin (gestión)',
+  'mcp.docs.toolsLabel': 'herramientas',
+  'mcp.docs.sensitive': 'Detalle restringido',
+  'mcp.docs.footer.generated': 'Manifiesto generado en',
+  'mcp.docs.footer.source': 'Endpoint MCP',
+
   // ── Chapters ──
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
