@@ -430,7 +430,7 @@ const ptBR: Record<string, string> = {
   'hero.joinMeet': 'Entrar no Meet',
   'hero.stat.members': 'pesquisadores',
   'hero.stat.tribes': 'tribos',
-  'hero.stat.chapters': 'capítulos PMI',
+  'hero.stat.initiatives': 'iniciativas',
   'hero.stat.hours': 'horas de impacto',
   'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'União anunciada · CBGPL Abr 2026',
@@ -456,7 +456,7 @@ const ptBR: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': 'O que é o Núcleo IA & GP?',
-  'nucleo.desc': 'Grupo colaborativo de pesquisa entre capítulos PMI do Brasil, focado na interseção entre Inteligência Artificial e Gestão de Projetos. Pesquisadores voluntários produzem artigos, protótipos e webinars sobre como a IA está transformando a profissão.',
+  'nucleo.desc': 'Grupo colaborativo de pesquisa entre capítulos PMI do Brasil, focado na interseção entre Inteligência Artificial e Gestão de Projetos. Pesquisadores voluntários — selecionados via processo assistido por IA (copilot) — produzem artigos, protótipos e webinars sobre como a IA está transformando a profissão.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Agenda',
@@ -511,7 +511,7 @@ const ptBR: Record<string, string> = {
   'quadrants.unavailable': 'Quadrantes temporariamente indisponíveis.',
 
   // ── Tribes ──
-  'tribes.label': 'Dream Team — 8 Líderes',
+  'tribes.label': 'Dream Team — {n} Líderes',
   'tribes.title': 'Escolha sua Tribo',
   'tribes.open': 'SELEÇÃO ABERTA',
   'tribes.closed': 'SELEÇÃO ENCERRADA',
@@ -574,7 +574,7 @@ const ptBR: Record<string, string> = {
   'rules.curation.title': '📝 Curadoria',
   'rules.curation.text': '7 etapas. Peer review + Comitê de Curadoria.',
   'rules.recognition.title': '🏆 Reconhecimento',
-  'rules.recognition.text': 'Declarações PMI. Atestados. Horas. Comprovação.',
+  'rules.recognition.text': 'Gamificação automática (XP, Champions, ranking semanal). Declarações PMI verificáveis. Atestados de horas. Tudo na própria plataforma.',
   'rules.journey': 'Jornada de Valor 2026',
   'rules.m1.label': 'Marco 1',
   'rules.m1.title': 'Produção de Conhecimento',
@@ -3832,9 +3832,8 @@ const ptBR: Record<string, string> = {
   'homepage.stats.title': 'A plataforma em números',
   'homepage.stats.members': 'Pesquisadores ativos',
   'homepage.stats.tribes': 'Tribos',
-  'homepage.stats.chapters': 'Capítulos',
+  'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
-  'homepage.stats.resources': 'Recursos na biblioteca',
   'homepage.stats.retention': 'Taxa de retenção',
 
   // ── Attendance History (F5) ──

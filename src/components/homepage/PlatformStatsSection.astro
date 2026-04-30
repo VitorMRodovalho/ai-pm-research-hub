@@ -20,8 +20,8 @@ const { lang = 'pt-BR' } = Astro.props;
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.tribes', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="pstat-chapters" class="text-3xl font-extrabold text-navy">&mdash;</span>
-        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.chapters', lang)}</span>
+        <span id="pstat-initiatives" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.initiatives', lang)}</span>
       </div>
       <div class="stat-card">
         <span id="pstat-events" class="text-3xl font-extrabold text-navy">&mdash;</span>
@@ -66,8 +66,8 @@ const { lang = 'pt-BR' } = Astro.props;
     if (el) el.textContent = String(data.active_members || 0);
     el = document.getElementById('pstat-tribes');
     if (el) el.textContent = String(data.total_tribes || 0);
-    el = document.getElementById('pstat-chapters');
-    if (el) el.textContent = String(data.total_chapters || 0);
+    el = document.getElementById('pstat-initiatives');
+    if (el) el.textContent = String(data.total_initiatives || 0);
     el = document.getElementById('pstat-events');
     if (el) el.textContent = String(data.total_events || 0);
     el = document.getElementById('pstat-retention');
