@@ -430,7 +430,7 @@ const esLATAM: Record<string, string> = {
   'hero.joinMeet': 'Entrar al Meet',
   'hero.stat.members': 'investigadores',
   'hero.stat.tribes': 'tribus',
-  'hero.stat.chapters': 'capítulos PMI',
+  'hero.stat.initiatives': 'iniciativas',
   'hero.stat.hours': 'horas de impacto',
   'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'Unión anunciada · CBGPL Abr 2026',
@@ -456,7 +456,7 @@ const esLATAM: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': '¿Qué es el Núcleo IA & GP?',
-  'nucleo.desc': 'Grupo colaborativo de investigación entre capítulos PMI de Brasil, enfocado en la intersección entre Inteligencia Artificial y Gestión de Proyectos. Investigadores voluntarios producen artículos, prototipos y webinars sobre cómo la IA está transformando la profesión.',
+  'nucleo.desc': 'Grupo colaborativo de investigación entre capítulos PMI de Brasil, enfocado en la intersección entre Inteligencia Artificial y Gestión de Proyectos. Investigadores voluntarios — seleccionados vía proceso asistido por IA (copilot) — producen artículos, prototipos y webinars sobre cómo la IA está transformando la profesión.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Agenda',
@@ -511,7 +511,7 @@ const esLATAM: Record<string, string> = {
   'quadrants.unavailable': 'Cuadrantes temporalmente no disponibles.',
 
   // ── Tribes ──
-  'tribes.label': 'Dream Team — 8 Líderes',
+  'tribes.label': 'Dream Team — {n} Líderes',
   'tribes.title': 'Elige tu Línea de Investigación',
   'tribes.open': 'SELECCIÓN ABIERTA',
   'tribes.closed': 'SELECCIÓN CERRADA',
@@ -574,7 +574,7 @@ const esLATAM: Record<string, string> = {
   'rules.curation.title': '📝 Curaduría',
   'rules.curation.text': '7 etapas. Revisión por pares + Comité de Curaduría.',
   'rules.recognition.title': '🏆 Reconocimiento',
-  'rules.recognition.text': 'Declaraciones PMI. Certificados. Horas. Comprobación.',
+  'rules.recognition.text': 'Gamificación automática (XP, Champions, ranking semanal). Declaraciones PMI verificables. Certificados de horas. Todo en la propia plataforma.',
   'rules.journey': 'Jornada de Valor 2026',
   'rules.m1.label': 'Hito 1',
   'rules.m1.title': 'Producción de Conocimiento',
@@ -3827,9 +3827,8 @@ const esLATAM: Record<string, string> = {
   'homepage.stats.title': 'La plataforma en números',
   'homepage.stats.members': 'Investigadores activos',
   'homepage.stats.tribes': 'Líneas de investigación',
-  'homepage.stats.chapters': 'Capítulos',
+  'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
-  'homepage.stats.resources': 'Recursos en la biblioteca',
   'homepage.stats.retention': 'Tasa de retención',
 
   // ── Attendance History (F5) ──

@@ -38,6 +38,10 @@ const { lang = 'pt-BR' } = Astro.props;
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives">--</div>
+        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.initiatives', lang)}</div>
+      </div>
+      <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
@@ -182,6 +186,7 @@ const { lang = 'pt-BR' } = Astro.props;
       if (stats) {
         animateCounter('stat-members', stats.members);
         animateCounter('stat-tribes', stats.tribes);
+        animateCounter('stat-initiatives', stats.initiatives || 0);
         animateCounter('stat-hours', stats.impact_hours, 'h');
       }
     } catch (e) { console.warn('homepage stats:', e); }

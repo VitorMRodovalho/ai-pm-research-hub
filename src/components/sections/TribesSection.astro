@@ -8,9 +8,25 @@
 import { MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
 
 interface Props { lang?: Lang; deadline?: string | null; }
 const { lang = 'pt-BR', deadline: deadlineProp } = Astro.props;
+
+// SSR: fetch active_leaders count for the dynamic "Dream Team — N Líderes" label.
+// Falls back to 8 (legacy hardcoded) on RPC failure to avoid blank label.
+const sbAnonForStats = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+let leadersCount = 8;
+try {
+  const { data } = await sbAnonForStats.rpc('get_homepage_stats');
+  if (data && typeof data.active_leaders === 'number' && data.active_leaders > 0) {
+    leadersCount = data.active_leaders;
+  }
+} catch {}
+const tribesLabel = t('tribes.label', lang).replace('{n}', String(leadersCount));
 
 const QUAD_COLORS: Record<string, string> = {
   q1: '#00799E',
@@ -94,7 +110,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="tribes">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
-      {t('tribes.label', lang)}
+      {tribesLabel}
     </div>
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
       {t('tribes.title', lang)}
@@ -103,9 +119,11 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       <span id="tribes-selection-state" class:list={['inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold', selectionStateClasses]}>
         {selectionStateLabel}
       </span>
-      <span id="tribes-deadline-badge" class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
-        {deadlineFormatted || t('tribes.deadlinePending', lang)}
-      </span>
+      {selectionState !== 'closed' && (
+        <span id="tribes-deadline-badge" class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
+          {deadlineFormatted || t('tribes.deadlinePending', lang)}
+        </span>
+      )}
       <span id="tribes-selection-notice" class="block mt-2 text-[.75rem] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
         {selectionNotice}
       </span>

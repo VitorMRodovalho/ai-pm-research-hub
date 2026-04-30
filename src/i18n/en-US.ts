@@ -430,7 +430,7 @@ const enUS: Record<string, string> = {
   'hero.joinMeet': 'Join Meet',
   'hero.stat.members': 'researchers',
   'hero.stat.tribes': 'tribes',
-  'hero.stat.chapters': 'PMI chapters',
+  'hero.stat.initiatives': 'initiatives',
   'hero.stat.hours': 'impact hours',
   'hero.chaptersAnnounce': '15 PMI Brazil Chapters',
   'hero.chaptersAnnounceSub': 'Union announced · CBGPL Apr 2026',
@@ -456,7 +456,7 @@ const enUS: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': 'What is the AI & PM Research Hub?',
-  'nucleo.desc': 'A collaborative research group across PMI chapters in Brazil, focused on the intersection of Artificial Intelligence and Project Management. Volunteer researchers produce papers, prototypes, and webinars on how AI is transforming the profession.',
+  'nucleo.desc': 'A collaborative research group across PMI chapters in Brazil, focused on the intersection of Artificial Intelligence and Project Management. Volunteer researchers — selected via an AI-assisted (copilot) process — produce papers, prototypes, and webinars on how AI is transforming the profession.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Schedule',
@@ -511,7 +511,7 @@ const enUS: Record<string, string> = {
   'quadrants.unavailable': 'Quadrants temporarily unavailable.',
 
   // ── Tribes ──
-  'tribes.label': 'Dream Team — 8 Leaders',
+  'tribes.label': 'Dream Team — {n} Leaders',
   'tribes.title': 'Choose Your Research Stream',
   'tribes.open': 'SELECTION OPEN',
   'tribes.closed': 'SELECTION CLOSED',
@@ -574,7 +574,7 @@ const enUS: Record<string, string> = {
   'rules.curation.title': '📝 Peer Review',
   'rules.curation.text': '7 stages. Peer review + Curation Committee.',
   'rules.recognition.title': '🏆 Recognition',
-  'rules.recognition.text': 'PMI declarations. Certificates. Hours. Documentation.',
+  'rules.recognition.text': 'Automated gamification (XP, Champions, weekly ranking). Verifiable PMI statements. Hours certificates. All on-platform.',
   'rules.journey': '2026 Value Journey',
   'rules.m1.label': 'Milestone 1',
   'rules.m1.title': 'Knowledge Production',
@@ -3826,9 +3826,8 @@ const enUS: Record<string, string> = {
   'homepage.stats.title': 'The platform in numbers',
   'homepage.stats.members': 'Active researchers',
   'homepage.stats.tribes': 'Tribes',
-  'homepage.stats.chapters': 'Chapters',
+  'homepage.stats.initiatives': 'Initiatives',
   'homepage.stats.events': 'Events held',
-  'homepage.stats.resources': 'Library resources',
   'homepage.stats.retention': 'Retention rate',
 
   // ── Attendance History (F5) ──
