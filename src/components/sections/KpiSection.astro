@@ -21,18 +21,24 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
     </p>
     <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
       {safeKpis.map((k) => (
-        <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center" data-kpi-key={k.labelKey}>
+        <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center" data-kpi-key={k.labelKey} data-surpassed={k.surpassedFromGoal ? '1' : undefined}>
           <div class="text-[clamp(1.5rem,4vw,2.2rem)] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
             {k.value}
           </div>
           <div class="text-[.78rem] text-white/60 mt-1.5">{t(k.labelKey, lang)}</div>
-          <div class="kpi-health-bar hidden mt-2">
-            <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div class="kpi-health-fill h-full rounded-full transition-all duration-700" style="width:0%"></div>
+          {k.surpassedFromGoal ? (
+            <div class="text-[10px] mt-2 text-emerald-400 font-semibold">
+              {t('data.kpi.surpassedTemplate', lang).replace('{goal}', k.surpassedFromGoal)}
             </div>
-            <div class="kpi-health-label text-[9px] mt-1 font-semibold"></div>
-            <div class="kpi-quarter-label hidden text-[9px] mt-0.5 text-white/60 font-medium"></div>
-          </div>
+          ) : (
+            <div class="kpi-health-bar hidden mt-2">
+              <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div class="kpi-health-fill h-full rounded-full transition-all duration-700" style="width:0%"></div>
+              </div>
+              <div class="kpi-health-label text-[9px] mt-1 font-semibold"></div>
+              <div class="kpi-quarter-label hidden text-[9px] mt-0.5 text-white/60 font-medium"></div>
+            </div>
+          )}
         </div>
       ))}
       {!safeKpis.length && (
@@ -90,6 +96,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
         if (!labelKey) return;
         const card = document.querySelector<HTMLElement>(`#kpi-grid [data-kpi-key="${labelKey}"]`);
         if (!card) return;
+        if (card.dataset.surpassed === '1') return;
 
         const barContainer = card.querySelector<HTMLElement>('.kpi-health-bar');
         const fill = card.querySelector<HTMLElement>('.kpi-health-fill');

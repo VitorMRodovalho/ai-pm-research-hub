@@ -2002,6 +2002,7 @@ const esLATAM: Record<string, string> = {
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
   'data.kpi.partners': 'Entidades Asociadas',
+  'data.kpi.surpassedTemplate': 'Meta era {goal} · Superada',
   'data.kpi.certTrail': 'Ruta Mini Cert. IA',
   'data.kpi.cpmai': 'Certificados CPMAI',
   'data.kpi.activeMembers': 'Miembros activos',
