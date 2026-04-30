@@ -432,6 +432,8 @@ const enUS: Record<string, string> = {
   'hero.stat.tribes': 'tribes',
   'hero.stat.chapters': 'PMI chapters',
   'hero.stat.hours': 'impact hours',
+  'hero.chaptersAnnounce': '15 PMI Brazil Chapters',
+  'hero.chaptersAnnounceSub': 'Union announced · CBGPL Apr 2026',
   'hero.cta.learn': 'Learn More ↓',
   'hero.cta.login': 'Sign In / Register',
   'hero.member.greeting': 'Hello,',

@@ -432,6 +432,8 @@ const esLATAM: Record<string, string> = {
   'hero.stat.tribes': 'tribus',
   'hero.stat.chapters': 'capítulos PMI',
   'hero.stat.hours': 'horas de impacto',
+  'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
+  'hero.chaptersAnnounceSub': 'Unión anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conocer el Núcleo ↓',
   'hero.cta.login': 'Ingresar / Crear cuenta',
   'hero.member.greeting': 'Hola,',
