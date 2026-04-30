@@ -432,6 +432,8 @@ const ptBR: Record<string, string> = {
   'hero.stat.tribes': 'tribos',
   'hero.stat.chapters': 'capítulos PMI',
   'hero.stat.hours': 'horas de impacto',
+  'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
+  'hero.chaptersAnnounceSub': 'União anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conhecer o Núcleo ↓',
   'hero.cta.login': 'Entrar / Criar conta',
   'hero.member.greeting': 'Olá,',

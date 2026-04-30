@@ -1,16 +1,8 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
-import { createClient } from '@supabase/supabase-js';
-import { loadChapters } from '../../lib/chapters';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
-
-const sbAnon = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL,
-  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
-);
-const heroChapters = await loadChapters(sbAnon);
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -46,10 +38,6 @@ const heroChapters = await loadChapters(sbAnon);
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-chapters">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.chapters', lang)}</div>
-      </div>
-      <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
@@ -71,12 +59,13 @@ const heroChapters = await loadChapters(sbAnon);
       {t('hero.cycleActive', lang)}
     </div>
 
-    <div class="flex flex-wrap justify-center gap-2 mt-5">
-      {heroChapters.map((c) => (
-        <span class="bg-white/8 border border-white/12 text-white/80 px-3 py-1 rounded-lg text-[.72rem] font-semibold">
-          {c.display_code}
-        </span>
-      ))}
+    <div class="flex flex-col items-center gap-1 mt-5">
+      <span class="bg-orange/15 border border-orange/40 text-white px-5 py-1.5 rounded-full text-[.85rem] font-bold tracking-wide">
+        {t('hero.chaptersAnnounce', lang)}
+      </span>
+      <span class="text-[.68rem] text-white/45 mt-0.5 tracking-wide">
+        {t('hero.chaptersAnnounceSub', lang)}
+      </span>
     </div>
   </div>
 
@@ -193,7 +182,6 @@ const heroChapters = await loadChapters(sbAnon);
       if (stats) {
         animateCounter('stat-members', stats.members);
         animateCounter('stat-tribes', stats.tribes);
-        animateCounter('stat-chapters', stats.chapters);
         animateCounter('stat-hours', stats.impact_hours, 'h');
       }
     } catch (e) { console.warn('homepage stats:', e); }
