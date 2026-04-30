@@ -2628,6 +2628,7 @@ const enUS: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (processor): error monitoring with PII stripping',
   'privacy.s4.resend': 'Resend (processor): transactional and campaign email delivery, delivery/open/click tracking',
   'privacy.s4.credly': 'Credly/Pearson VUE (source): PMI badge and certification verification via public API',
+  'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocessor): automated analysis of volunteer applications — only after explicit consent (consent_ai_analysis_at). No decision is made exclusively by the AI — the human committee evaluates and decides. LGPD Art. 7,V + 9,I (third-party disclosure) + Art. 20 (human review of automated decisions) compliance.',
   'privacy.s4.noCommercial': 'We do not share personal data with third parties for commercial purposes',
 
   // S5 — International transfer
