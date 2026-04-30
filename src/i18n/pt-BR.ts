@@ -494,7 +494,7 @@ const ptBR: Record<string, string> = {
   'chapters.activeLabel': 'parceiros ativos',
   'chapters.onboardingLabel': 'em integração',
   'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
-  'chapters.cta': 'Quer trazer seu capítulo? Fale com o GP →',
+  'chapters.cta': 'Para capítulos PMI: fale com o GP para iniciar integração →',
 
   // ── Quadrants ──
   'quadrants.label': 'Estrutura de Conhecimento',
@@ -974,8 +974,8 @@ const ptBR: Record<string, string> = {
   'resources.volunteerResearcher.title': 'Vaga: Pesquisador Nível 4',
   'resources.volunteerResearcher.text': 'Pesquisador e multiplicador de conhecimento em IA.',
   'resources.volunteerResearcher.linkText': 'Candidatar-se →',
-  'resources.volunteerLeader.title': 'Vaga: Líder de Tribo',
-  'resources.volunteerLeader.text': 'Facilitador de novas temáticas e pesquisador chefe.',
+  'resources.volunteerLeader.title': 'Vaga: Líder de Iniciativa (Tribo ou Projeto)',
+  'resources.volunteerLeader.text': 'Lidere uma tribo de pesquisa ou iniciativa transversal (piloto IA, webinar, comms). Líderes recebem declaração PMI e acesso a ferramentas de gestão.',
   'resources.volunteerLeader.linkText': 'Candidatar-se →',
 
   // ── Footer ──
