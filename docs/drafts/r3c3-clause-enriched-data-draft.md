@@ -2,7 +2,7 @@
 
 **Status:** Draft — para revisão jurídica + ratificação CR-050.
 **Origem:** legal-counsel review N2 do Wave 5b spec (2026-04-30).
-**Audiências:** PM (Vitor) → Roberto Macioni (advogado) → comitê CR-050 → presidentes capítulos PMI Brasil ratificação.
+**Audiências:** PM (Vitor) → Roberto Macedo (advogado) → comitê CR-050 → presidentes capítulos PMI Brasil ratificação.
 
 ---
 
@@ -54,7 +54,7 @@ A exclusão exercida pelo Candidato resultará em apagamento em cascata das vers
 
 ## Notas para revisão
 
-1. **Roberto Macioni**: confirmar wording §3 sobre autoria — é "Dados Enriquecidos" obra intelectual ou apenas comunicação livre não-protegida por direito autoral? Ambos têm consequências, mas precisam clareza.
+1. **Roberto Macedo**: confirmar wording §3 sobre autoria — é "Dados Enriquecidos" obra intelectual ou apenas comunicação livre não-protegida por direito autoral? Ambos têm consequências, mas precisam clareza.
 2. **Comitê CR-050**: a §6 (cascade delete) precisa ser tecnicamente verificável antes da ratificação — auditoria de FKs em `notifications`, `ai_analysis_runs`, `selection_topic_views` recomendada por legal-counsel.
 3. **Presidentes PMI Brasil capítulos**: a distinção §2 entre PMI VEP (Inc.) e dados enriquecidos (BR) deve ser comunicada explicitamente em qualquer materiail externo (blog framework, abstract PMI Global Summit Detroit) para evitar ambiguidade institucional.
 4. **PMI Inc. relação**: §5 veda cessão para PMI Inc. sem consent — mas PMI VEP já tem termos próprios. A cláusula respeita essa separação ou cria conflito? Roberto avalia.
