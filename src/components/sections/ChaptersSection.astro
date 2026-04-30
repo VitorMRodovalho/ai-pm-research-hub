@@ -54,7 +54,7 @@ const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
       <p class="text-sm text-[var(--text-secondary)] mb-2">
         <strong>{t('chapters.goal', lang)}</strong>
       </p>
-      <a id="chapters-whatsapp-cta" href="#" target="_blank" rel="noopener"
+      <a id="chapters-cta-link" href="mailto:nucleoia@pmigo.org.br"
         class="text-sm font-bold text-teal no-underline hover:underline">
         {t('chapters.cta', lang)}
       </a>
@@ -64,20 +64,23 @@ const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
 
 <script>
   (() => {
-    async function loadWhatsappLink() {
+    // Upgrade email mailto → WhatsApp if site_config provides whatsapp_gp.
+    // Initial href is mailto:nucleoia@pmigo.org.br so the link always works.
+    async function upgradeCtaToWhatsapp() {
       const sb = (window as any).navGetSb?.();
-      if (!sb) { setTimeout(loadWhatsappLink, 300); return; }
+      if (!sb) { setTimeout(upgradeCtaToWhatsapp, 300); return; }
       try {
         const { data } = await sb.from('site_config').select('value').eq('key', 'whatsapp_gp').single();
-        if (data?.value) {
-          const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-          if (config.phone) {
-            const link = document.getElementById('chapters-whatsapp-cta') as HTMLAnchorElement;
-            if (link) link.href = `https://wa.me/${config.phone}`;
-          }
-        }
+        if (!data?.value) return;
+        const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        if (!config.phone) return;
+        const link = document.getElementById('chapters-cta-link') as HTMLAnchorElement;
+        if (!link) return;
+        link.href = `https://wa.me/${config.phone}`;
+        link.target = '_blank';
+        link.rel = 'noopener';
       } catch {}
     }
-    loadWhatsappLink();
+    upgradeCtaToWhatsapp();
   })();
 </script>
