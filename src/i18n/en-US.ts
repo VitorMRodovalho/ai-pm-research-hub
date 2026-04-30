@@ -2002,6 +2002,7 @@ const enUS: Record<string, string> = {
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'PMI Chapters',
   'data.kpi.partners': 'Partner Entities',
+  'data.kpi.surpassedTemplate': 'Goal was {goal} · Surpassed',
   'data.kpi.certTrail': 'AI Mini Cert. Trail',
   'data.kpi.cpmai': 'CPMAI Certified',
   'data.kpi.activeMembers': 'Active Members',
