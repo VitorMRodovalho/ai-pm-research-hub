@@ -49,7 +49,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     title: 'CERTIFICADO',
     titleTerm: 'TERMO DE VOLUNTARIADO',
     period: 'Período: {start} a {end}',
-    footer: 'Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS',
+    footer: 'Iniciativa colaborativa entre capítulos PMI Brasil',
     contributions: 'Principais contribuições:',
     disclaimer: 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
   },
@@ -67,7 +67,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     title: 'CERTIFICATE',
     titleTerm: 'VOLUNTEER AGREEMENT',
     period: 'Period: {start} to {end}',
-    footer: 'A collaborative initiative among PMI-GO, PMI-CE, PMI-DF, PMI-MG and PMI-RS',
+    footer: 'A collaborative initiative among PMI Brazil chapters',
     contributions: 'Key contributions:',
     disclaimer: 'PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of PMI, Inc.',
   },
@@ -85,7 +85,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     title: 'CERTIFICADO',
     titleTerm: 'ACUERDO DE VOLUNTARIADO',
     period: 'Período: {start} a {end}',
-    footer: 'Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG y PMI-RS',
+    footer: 'Iniciativa colaborativa entre capítulos PMI Brasil',
     contributions: 'Contribuciones principales:',
     disclaimer: 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.',
   },
@@ -392,7 +392,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
 
     <div style="text-align:center;margin-top:28px;font-size:9px;color:#999">
       <div>Código: ${certData.verification_code || '—'} · Template: R3-C3</div>
-      <div style="margin-top:2px">Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS</div>
+      <div style="margin-top:2px">Iniciativa colaborativa entre capítulos PMI Brasil</div>
     </div>
   </div>
   ${annexBlock}`;
