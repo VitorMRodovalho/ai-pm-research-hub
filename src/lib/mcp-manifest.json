@@ -1,0 +1,1693 @@
+{
+  "generated_at": "2026-04-30T18:41:08.847Z",
+  "source": "supabase/functions/nucleo-mcp/index.ts",
+  "total": 236,
+  "by_domain": {
+    "personal": 17,
+    "tribe": 61,
+    "board": 58,
+    "events": 14,
+    "governance": 21,
+    "comms": 5,
+    "partners": 11,
+    "gamification": 8,
+    "selection": 16,
+    "knowledge": 11,
+    "admin": 1,
+    "health": 13
+  },
+  "by_permission": {
+    "read": 148,
+    "write": 79,
+    "admin": 9
+  },
+  "sensitive_count": 10,
+  "domain_order": [
+    "personal",
+    "tribe",
+    "board",
+    "events",
+    "governance",
+    "comms",
+    "partners",
+    "gamification",
+    "selection",
+    "knowledge",
+    "admin",
+    "health"
+  ],
+  "tools": [
+    {
+      "name": "get_my_assigned_cards",
+      "description": "Returns all board cards assigned to you (in_progress, review, backlog). Shows title, status, tribe, role, due date.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_attendance_history",
+      "description": "Returns your personal attendance history — which meetings you attended or missed.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_attendance_hours",
+      "description": "Returns your attendance hours breakdown for the current cycle.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_board_status",
+      "description": "Returns board cards grouped by status.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_certificates",
+      "description": "Returns your certifications, badges, and trails.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_credly_status",
+      "description": "Returns your Credly badge status: badges, verification date, CPMAI certification.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_gamification_stats",
+      "description": "Returns your streak + cycle progress: current_streak_count (consecutive cycles with >=1 point — alive if you scored in current cycle OR previous cycle), points_this_cycle (sum of points earned in the current cycle), active_cycles_count (total distinct cycles you scored in), longest_streak_count (your record). Use to populate /profile streak badge or to ask 'how am I doing this cycle?'.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_notifications",
+      "description": "Returns your unread notifications.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_onboarding",
+      "description": "Returns your onboarding progress — step list with status (pending/in_progress/completed) and next action.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_pending_evaluations",
+      "description": "Returns YOUR queue of pending evaluations as committee member: applications in current cycle you haven't submitted yet. Includes progress (X of Y submitted) and per-application has_my_evaluation_in_progress flag for incomplete drafts. Use to plan your evaluation work session.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_pii_access_log",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": true
+    },
+    {
+      "name": "get_my_profile",
+      "description": "Returns your member profile: name, role, tribe, XP, badges, certifications.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_selection_result",
+      "description": "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_tribe_attendance",
+      "description": "Returns attendance grid for your tribe members.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_tribe_members",
+      "description": "Returns the list of active members in your tribe with their roles.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_xp_and_ranking",
+      "description": "Returns your XP breakdown by category and your position in the leaderboard.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "set_my_gamification_visibility",
+      "description": "Toggle your visibility on the gamification leaderboard. Set opt_out=true to hide your name + points from the public ranking (your data is preserved, only display is suppressed). LGPD-compliant member self-management. Idempotent — no-op if value unchanged. ADR-0050 (#101).",
+      "domain": "personal",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_active_engagements",
+      "description": "Returns active engagements for a person: kind, role, initiative, dates, authority status. Own engagements always visible. Others require manage_member.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_adoption_metrics",
+      "description": "Returns MCP adoption metrics. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_agenda_smart",
+      "description": "Returns smart agenda for an upcoming meeting. Replaces dumb generate_agenda_template. Sections: event metadata, initiative, carry_forward_actions[] (90d unresolved, ordered overdue-first), at_risk_cards[] (forecast slip > 7d OR stale > 14d, with risk_reasons), relevant_kpis[] (RED/YELLOW only, attainment_pct + status_color), showcase_candidates[] (members with recent unshowcased completions), at_risk_deliverables[] (cycle deliverables due ≤14d). Authenticated. ADR-0049 (#84 Onda 2). Use case: 'Mostra agenda inteligente da reunião X'.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_annual_kpis",
+      "description": "Returns annual KPIs — targets vs actuals across all areas. Admin/Sponsor only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_chapter_kpis",
+      "description": "Returns KPIs for a chapter. Liaisons and admins can query any chapter.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_chapter_needs",
+      "description": "Returns chapter needs/requests submitted by chapter board members. Shows needs for your chapter (or all for admin).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_current_cycle",
+      "description": "Returns metadata of the current operational cycle: cycle_code, label, start/end dates, sort_order. Foundational utility — many other tools (XP, dashboards) implicitly depend on the current cycle. Use this to know what 'current' means before calling cycle-scoped tools.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_current_release",
+      "description": "Returns the current platform release: version, title, date, type.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_cycle_evolution",
+      "description": "Returns evolution metrics across cycles: member growth, XP totals, retention deltas, attendance averages. Useful for cycle-over-cycle comparison and historical platform health.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_cycle_report",
+      "description": "Returns a full cycle report — members, tribes, attendance, deliverables, KPIs. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_decision_log",
+      "description": "Returns the list of Architectural Decision Records (ADRs). Optionally filter by keyword. ADRs document key architectural choices for the platform.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_document_detail",
+      "description": "Composite read: governance_document + current_version summary + active approval_chain (with signed_gates and pending_gates_for_me) + draft_versions list + comments_total/unresolved. Single round-trip for review UX. Use to pull everything about a document.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_ghost_visitors",
+      "description": "Returns ghost visitors: authenticated users with no linked member record. Includes fuzzy member name match. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_hub_announcements",
+      "description": "Returns active announcements from the Hub.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_initiative_drive_links",
+      "description": "Lista pastas Drive vinculadas (ativas) a uma iniciativa. Retorna agrupado por link_purpose (workspace primeiro). Útil para 'Drive da tribo' button na UI ou listing de atas/archive separadamente.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_operational_alerts",
+      "description": "Returns operational alerts — inactivity, overdue cards, taxonomy drift. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_person",
+      "description": "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_pii_access_log_admin",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": true
+    },
+    {
+      "name": "get_pilots_summary",
+      "description": "Returns AI pilot projects summary: status, metrics, hypothesis, progress.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_public_impact_data",
+      "description": "Returns public impact data: chapters, members, publications, partners, timeline, recognitions.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_research_pipeline",
+      "description": "Returns all research cards in progress or review across all tribes, with authors and status. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_role_transitions",
+      "description": "Returns cycle-over-cycle analytics on member role transitions (offboards, promotions, demotions). Admin/Sponsor only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_credly_status",
+      "description": "Dashboard agregado de status Credly da tribo: members_total, members_with_credly_linked, credly_link_rate, trail_completed_count + rate, cpmai_certified_count, pmi_senior_count. Use para snapshot rápido sem precisar listar membros. Authority: admin OR tribe_leader/researcher (própria tribo).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_deliverables",
+      "description": "Returns deliverables for a tribe: status, deadlines, cycle tracking.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_housekeeping",
+      "description": "Returns initiative-scoped KPI rollup. Sections: initiative metadata, current_cycle (best-effort), kpis_contributed[] (annual KPIs the initiative serves via tribe_kpi_contributions, with attainment_pct + status_color), cards_linked_to_kpis[] (board cards whose tags overlap any contributed KPI key — heuristic v1, with matched_kpi_keys[] per card), cycle_deliverables[] (tribe_deliverables for current cycle), rollup (counters: kpis_total/red/yellow + deliverables_total/done). Closes #84 GAP 7. Authenticated. ADR-0049. Use case: 'Mostra contribuições da Tribo Y aos KPIs anuais'.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_members_with_credly",
+      "description": "Lista membros ativos de uma tribo enriquecidos com status Credly: id, name, photo_url, role, designations, chapter, person_id (V4), credly_url, credly_verified_at, badges_summary {trail_count, trail_completed, cert_pmi_senior, cpmai_certified, total_badges}. Use para acompanhamento de trilha de cursos pelo TL. Authority: admin (qualquer tribo) OR tribe_leader/researcher (própria tribo).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_stats_ranked",
+      "description": "Returns tribe stats: member count, attendance rate, impact hours, cards by status, and per-member attendance ranking.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribes_comparison",
+      "description": "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_volunteer_funnel",
+      "description": "Returns selection funnel (selection_applications): by_cycle/by_status/certifications/geography.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_change_requests",
+      "description": "List change requests with optional status/type filters. Status: 'draft' | 'under_review' | 'approved' | 'rejected' | 'withdrawn'.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_cycles",
+      "description": "Returns all cycles (current + past + future) with metadata: cycle_code, label, start/end, is_current, color. Use to navigate historical data or schedule cycle-scoped operations.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_document_comments",
+      "description": "List comments on a document version. Returns threaded structure with clause_anchor + body + author + resolution state. By default excludes resolved comments.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_drive_discoveries",
+      "description": "Lista discoveries automáticas de arquivos Drive em pastas linkadas com link_purpose='minutes'. Filtros: initiative_id (opcional), status_filter (all|unmatched|unpromoted|promoted). Cada row tem matched_event_id (se filename date heuristic acertou) + match_confidence (high|medium|low|none) + promoted_to_minutes_url (auto-fill em event vazio). Paginação 1-200. Authority: view_internal_analytics. ADR-0065 (Phase 4).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_initiative_engagements",
+      "description": "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_initiative_engagements_by_kind",
+      "description": "Org-wide audit RPC. Lists engagements across ALL initiatives filtered by engagement_kind (e.g. 'study_group_owner') and/or initiative_kind (e.g. 'workgroup'). Use cases: 'who are all study_group_owners across the org?', 'list every member of every workgroup', 'show all volunteers'. At least one filter required (avoids unbounded scan). Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais / sponsors with audit clearance). LGPD: PII access logged per distinct target member. status_filter: active|all|revoked|onboarding. Default limit 100 (max 500); response.truncated=true if total reached limit.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_initiatives",
+      "description": "Lists all initiatives in the platform, optionally filtered by kind and status. Returns id, title, kind, status, description, member_count.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_open_initiatives",
+      "description": "Returns initiatives accepting new members via self-service (join_policy='request_to_join' or 'open'). Includes per-initiative has_active_engagement + has_pending_invitation flags so you can filter what you can actually join.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "request_to_join_initiative",
+      "description": "Request to join an initiative via self-service (Notion-style). Initiative must have join_policy='request_to_join' or 'open'. Message MUST be at least 50 characters describing your motivation. Owner of initiative will review and accept/decline. Default engagement kind inferred by initiative kind (study_group_participant, workgroup_member, committee_member, volunteer, observer).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_members",
+      "description": "Search members by name, filter by tribe, tier, or status. Admin/GP only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "send_notification_to_tribe",
+      "description": "Send a notification to all active members of your tribe.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "upload_text_to_drive_folder",
+      "description": "Sobe texto (ex: ata gerada por Claude) para uma pasta Drive via Service Account. Use case: 'Gerar e arquivar ata em /minutes/' direto na conversa. Hard cap 7MB. Auto-registra como card attachment se board_item_id for fornecido. Authority: rls_is_member. SA precisa ter Editor na folder.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "add_document_comment",
+      "description": "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'public' (all viewers) | 'signers_only' (approval_chain roles) | 'private' (author only). Optional parent_id for threaded replies.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "approve_change_request",
+      "description": "Record your signoff on a change request. action: 'approve' | 'reject' | 'abstain'. Signature hash + timestamp captured for audit. Permissions: CR approver role assigned to the CR.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "bulk_mark_excused",
+      "description": "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Tribe leaders can mark own tribe. Admins can mark anyone.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_action_item",
+      "description": "Create a structured meeting action item. Replaces markdown-only action items from create_meeting_notes. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_drive_subfolder",
+      "description": "Cria subpasta dentro de uma pasta Drive existente via Service Account. Optional auto-link: se auto_link_to_initiative_id fornecido, registra automaticamente em initiative_drive_links com link_purpose. Use case: 'Cria pasta /Atas dentro do workspace da Tribo X e vincula como purpose=minutes'. Authority: rls_is_member para create + write_initiative para auto-link.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "exec_cert_timeline",
+      "description": "Returns cohort timeline of certificate issuance across N months: rolling pct of cohort that earned tier 1/2 + avg days-to-tier. Used in exec dashboards to track progression health.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "exec_cycle_report",
+      "description": "Returns rich cycle report (admin/exec): aggregate KPIs across the cycle (active members, attendance %, certificates issued, knowledge produced). Defaults to 'cycle3-2026'.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "invite_to_initiative",
+      "description": "Invite one or more members to an initiative. Owner/coordinator (when kind_scope allows) OR admin (manage_member). Message MUST be at least 50 characters describing role + commitment. Returns per-invitee {created, skip_reason}. Skips invitees already engaged or with pending invitation.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "link_initiative_to_drive",
+      "description": "Vincula uma pasta Google Drive a uma iniciativa (tribo, comitê, workgroup, congresso). Diferentes link_purpose: 'workspace' (raiz da iniciativa, default), 'minutes' (atas), 'archive' (histórico), 'shared_resources' (templates). Authority: manage_member OR can(write, initiative). Idempotent.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "manage_initiative_engagement",
+      "description": "Adds, removes, or updates the role of a member in an initiative. Requires manage_member permission for the initiative. When action='add' or action='remove', returns a preview payload unless confirm=true is passed (ADR-0018 W1 + 2026-04-24 p44 extension). 'update_role' does not require confirm — it only mutates the role field on an existing engagement.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "mark_member_excused",
+      "description": "Mark a member as excused (falta justificada) for an event. Tribe leaders can mark their own tribe members. Admins can mark anyone.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "register_decision",
+      "description": "Register a meeting decision (semantic kind='decision' with multi-card link fanout). Decisions are auto-completed (status='completed') and resolved immediately. Optional related_card_ids[] creates board_item_event_links of link_type='decision' to each card. Requires manage_event (ADR-0047, #84 Onda 2). Distinct from create_action_item with kind='decision' in that this RPC's signature is decision-first (title required) and supports card fanout.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "resolve_action_item",
+      "description": "Resolve a meeting action item. Optionally carry-forward to a future event (creates a new linked action item there). Resolution_note recommended for audit trail. Requires manage_event (ADR-0046, #84 Onda 2 partial).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "resolve_document_comment",
+      "description": "Mark a document comment as resolved, with optional resolution note. Permission: original commenter OR document curator OR approval chain signer.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "review_change_request",
+      "description": "Post a review on a CR — intermediate step before final approval. action: 'request_changes' | 'ready_for_approval' | 'comment'.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "review_initiative_request",
+      "description": "Review a self-service join request as owner/coordinator (or admin). decision='approve' creates engagement with metadata.source=self_service_request_approved and review_authority audit. decision='decline' marks invitation declined with reviewer note. Owner-initiated invites use respond_to_initiative_invitation by invitee directly — this RPC is for self-service requests only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "submit_change_request",
+      "description": "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'manual_edit' | 'gc_override' | 'policy_update'. impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "submit_chapter_need",
+      "description": "Submit a need or request for your chapter. Board members, sponsors, and liaisons only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "unlink_initiative_from_drive",
+      "description": "Soft-unlink pasta Drive de iniciativa (preserva histórico via unlinked_at). Authority: manage_member OR can(write, initiative).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "withdraw_from_initiative",
+      "description": "Self-service exit from an initiative. Caller's active engagement is revoked with reason logged. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the only active holder of a required engagement kind for this initiative (e.g. sole study_group_owner) — transfer the role first via an admin/coordinator. Returns a preview payload unless confirm=true (ADR-0018 W1). Irreversible after confirm.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_onboarding_pct",
+      "description": "Returns onboarding completion percentage (0-100) for a specific application. Lightweight summary — use get_onboarding_status for the per-step breakdown.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_board_activities",
+      "description": "Returns recent board lifecycle events: status changes, reviews, curation actions.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_board_detail",
+      "description": "Returns rich board detail: board fields (columns, scope, initiative, SLA config) + members with roles + available tags. Single call — use for board investigation/LLM context before operating on cards.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_board_drive_links",
+      "description": "Lista pastas Drive vinculadas (ativas) a um board. Retorna {board_id, drive_links:[{id, drive_folder_id, drive_folder_url, drive_folder_name, linked_by_name, linked_at}], fetched_at}. Qualquer member autenticado pode listar.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_candidate_onboarding_progress",
+      "description": "Tribe leader or admin: follow up a specific new member's onboarding progress.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_card_detail",
+      "description": "Returns rich card detail: card fields + checklist items + multi-assignees + last 10 timeline events. Single call instead of multiple — use for card investigation/LLM context.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_card_full_history",
+      "description": "Returns 360° timeline for a board card: lifecycle events, meeting links, action items, showcases, curation reviews. Closes #84 GAP 4 — answers 'quais reuniões discutiram este card?', 'quais decisions impactaram?', 'quem apresentou em showcase?'. Authenticated only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_card_timeline",
+      "description": "Returns the full audit timeline for a card: status transitions, reviews, SLA events, with actor and reason. Ordered oldest → newest. Use to explain history to members or audit decisions.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_cpmai_leaderboard",
+      "description": "Returns CPMAI course leaderboard. Optional course_id filter — when omitted, returns aggregate across all CPMAI courses. Use to gauge course completion progress.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_curation_dashboard",
+      "description": "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Admin only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_onboarding_dashboard",
+      "description": "Returns admin dashboard: how many members are at each onboarding step, who is overdue. Admin only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_onboarding_status",
+      "description": "Returns onboarding status for a specific selection application: per-step state with completion + evidence + SLA. Used by candidate (their own application) or committee (any in their cycle). Defines what step is the next blocker.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_portfolio_health",
+      "description": "Returns quarterly portfolio health: KPIs with targets vs actuals, traffic-light status. Admin/Sponsor only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_portfolio_overview",
+      "description": "Returns the executive portfolio overview — all boards, cards, statuses, and overdue items. Admin/GP only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_pre_onboarding_leaderboard",
+      "description": "Returns the leaderboard of pre-members (candidates in onboarding) ranked by step completion + XP earned during selection. Useful for cycle organizers tracking candidate engagement before formal selection.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_dashboard",
+      "description": "Admin/GP/curator: returns selection cycle dashboard — cycle metadata + per-application status + aggregate stats. Defaults to most recent cycle. Pass cycle_code to view a specific past cycle.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_dashboard",
+      "description": "Returns a full tribe dashboard: members, cards, attendance, XP, meetings. Leaders and admins.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_board_cards",
+      "description": "List all cards on a specific board, optionally filtered by status. Cross-board read (any board the caller can see via RLS). For the caller's own tribe board use get_my_board_status instead.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_boards",
+      "description": "Returns all active boards with their IDs, names, scope, and tribe. Use this to find board_id for create_board_card.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_card_checklist",
+      "description": "Returns the checklist (activities) for a card, ordered by position. Lightweight read — for full card context use get_card_detail.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_card_comments",
+      "description": "Lista comentários de um card (skips soft-deleted). Returns thread-flat com author info (name + photo_url). Order ascending by created_at.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_card_drive_files",
+      "description": "Lista arquivos Drive vinculados a um card via plataforma. Retorna metadata (filename, size, mime_type, uploaded_by, drive_file_url). Skips soft-deleted.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_orphan_card_assignments",
+      "description": "Lists unresolved board cards still assigned to offboarded/inactive/observer members. Admin triage for reassignment. Filters by chapter or tribe_id.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_board_cards",
+      "description": "Searches board cards by keyword (full-text). Specify tribe_id or uses your tribe.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "add_checklist_item",
+      "description": "Add a checklist activity to a card. Optionally assign it to a member with target date. Auto-assigns position (end of list) if omitted.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "advance_card_curation",
+      "description": "Move a card through its curation review pipeline: assign/approve/reject/request_changes. RPC enforces curator authority and current stage rules.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "archive_card",
+      "description": "Archives a card (soft delete, status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check. Returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "assign_checklist_item",
+      "description": "Assign a checklist activity to a member with an optional target date. Wraps RPC that already validates leader/GP/card-owner authority.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "complete_checklist_item",
+      "description": "Toggle a checklist activity as completed (or reopen). RPC allows the activity owner (assigned_to) and also leader/GP/card owner.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "complete_onboarding_step",
+      "description": "Marks an onboarding step as completed. Optionally attach metadata (evidence URL, notes).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "convert_action_to_card",
+      "description": "Atomic flow: convert an open action item into a new board card. Creates the card in target board, links action_item.board_item_id, and inserts board_item_event_links (link_type='action_emerged') to preserve trail. Defaults: title from action description (first 80 chars), assignee + due_date inherited. Requires write_board (ADR-0047, #84 Onda 2).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_board_card",
+      "description": "Create a new card on a board. If board_id is omitted, uses your tribe's default board.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_card_comment",
+      "description": "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_mirror_card",
+      "description": "Create a mirror of a card on a different board. The mirror is a linked copy for cross-board visibility (e.g., portfolio mirror of a tribe card). RPC enforces write access to the target board.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "delete_card",
+      "description": "Deletes a card and its checklist/assignments permanently. Reason is required for audit. Prefer archive_card for non-destructive soft-delete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "delete_card_comment",
+      "description": "Soft-delete (deleted_at marcado). Authority: autor do comentário OR write_board OR manage_member (admin override). Conteúdo preservado para audit.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "delete_checklist_item",
+      "description": "Deletes a checklist item permanently. Optional reason is recorded in the card timeline.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "detect_onboarding_overdue",
+      "description": "Detects members whose onboarding steps passed SLA. Admin only. Returns list for follow-up action.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "dismiss_onboarding",
+      "description": "Dismisses remaining onboarding prompts for experienced members who don't need guided flow.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "duplicate_card",
+      "description": "Duplicate a card (copy title/description/tags/labels/due_date into a new card). Optionally place the copy on a different board. Checklist and assignments are NOT copied by default (RPC behavior).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "link_board_to_drive",
+      "description": "Vincula uma pasta Google Drive a um board. PM/admin operation. Idempotent (reuse on duplicate). Para integração com pasta institucional do Núcleo (nucleoia@pmigo.org.br Workspace) — ver docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md para PM-side setup. Authority: manage_member OR board_admin.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "move_card",
+      "description": "Move a card to a different status column, optionally setting position within the column and a reason for audit trail. Richer than update_card_status (which only changes status). Use this when you need to record why a card moved.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "move_card_to_board",
+      "description": "Move a card from its current board to a different board. Preserves card content and checklist; reassigns board_id. Requires write_board on both source and target boards (enforced by RPC).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "register_card_drive_file",
+      "description": "Registra arquivo Drive existente como anexo de card (board_item_files). Útil quando arquivo já foi feito upload externamente (Drive nativo) ou via upload_text_to_drive_folder. Authority: rls_is_member (qualquer authenticated). Idempotência: NÃO — duplicates are inserted (manage via UI ou unregister).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "restore_card",
+      "description": "Restore an archived card back to an active column. Default target status is 'backlog'. RPC performs the admin/leader authority check.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "unlink_board_from_drive",
+      "description": "Soft-unlink pasta Drive de board (preserva histórico via unlinked_at). Authority: manage_member OR board_admin.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_card_comment",
+      "description": "Edita corpo de comentário próprio. Apenas o autor pode editar (não admin). Marca edited_at. Body required.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_card_during_meeting",
+      "description": "Atomic card mutation during a meeting. Three modes: (a) status change via new_status; (b) field updates via fields_json string; (c) discussion-only (both omitted, just creates a 'discussed' link). Wraps move_board_item + update_board_item (existing auth + lifecycle events preserved). Requires write_board. ADR-0049 (#84 Onda 2).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_card_fields",
+      "description": "Update one or more card fields partially: title, description, assignee_id, due_date, tags (array), labels (jsonb), reviewer_id, baseline_date, forecast_date, is_portfolio_item. RPC checks field-level permissions (e.g., only Leader/GP can change assignee).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_card_forecast",
+      "description": "Update the forecast_date of a card with a mandatory justification. Used to renegotiate a portfolio-tracked deadline. RPC typically requires Leader/GP authority and records the justification in the timeline.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_card_status",
+      "description": "Move a card to a different status column.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_checklist_item",
+      "description": "Update a checklist item: text, position, target_date. Use assign_checklist_item to change assignee or complete_checklist_item to toggle done.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_admin_dashboard",
+      "description": "Returns the admin dashboard: member counts, tribe stats, recent activity, system health.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_member_offboarding_record",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "get_offboarding_dashboard",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "list_offboarding_records",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "offboard_member",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "record_offboarding_interview",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "get_attendance_ranking",
+      "description": "Returns the attendance ranking — members sorted by attendance rate and total meetings.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_event_detail",
+      "description": "Returns full event detail: agenda, minutes, action items, attendance.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_meeting_notes",
+      "description": "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_meeting_preparation",
+      "description": "Returns prep pack for upcoming meeting: event details, expected attendees (engagement-derived from initiative), pending action items from prior meetings (90d window), open cards on initiative board (with at-risk flag based on forecast > baseline + 7d OR no update in 14d), recent meetings summary. Authenticated only. ADR-0048 (#84 Onda 2). Use case: 'Prepare-me para a reunião X com a tribo Y'.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_near_events",
+      "description": "Returns events happening soon (within a time window). More immediate than get_upcoming_events.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_upcoming_events",
+      "description": "Returns events scheduled in the next 7 days.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_initiative_events",
+      "description": "Lista eventos passados/futuros de uma tribo ou iniciativa. Resolve 8+ workflows do líder bloqueados antes (encontrar event_id histórico, filtrar fantasmas sem attendance, atas pendentes, gravações, action items abertos). Filtros: tribe_id (1-8) ou initiative_id (UUID), types[] ('tribo','geral','lideranca','workshop','kickoff'), date_from/date_to (default últimos 90d), has_minutes/has_recording/has_attendance (true/false flags). Permission: admin (all), TL (own tribe + general), researcher (own tribe), sponsor/liaison (general). Retorna {total_count, events:[{id, date, time_start, type, title, attendance_count, has_minutes, action_items_open, ...}]} paginado (limit max 200).",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_meeting_action_items",
+      "description": "List meeting action items with filters. Use cases: 'my open actions', 'unresolved actions for event X', 'all decisions in cycle 3', etc. Returns enriched data with event/board_item titles + assignee/resolver names. Limit 200 rows. ADR-0046 (#84 Onda 2 partial). Authenticated members can see all (privacy via event RLS at frontend join time).",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "meeting_close",
+      "description": "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. Returns drift_signal flag + counter set. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo'.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_meeting_notes",
+      "description": "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.",
+      "domain": "events",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_tribe_event",
+      "description": "Create a new tribe meeting or event. Leaders and managers only.",
+      "domain": "events",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "drop_event_instance",
+      "description": "Cancels a specific event instance (e.g. a tribe meeting that did not happen). Requires tribe leader of that tribe, or admin/manager. By default rejects if attendance exists; pass force_delete_attendance=true to remove attendance records atomically first. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
+      "domain": "events",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "register_attendance",
+      "description": "Register attendance for a member at an event.",
+      "domain": "events",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_event_instance",
+      "description": "Edit a specific event instance (date, time, duration, link, notes). Requires tribe leader or admin/manager.",
+      "domain": "events",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_all_certificates",
+      "description": "Admin search of certificates (all members). Optional filters: status (active|revoked|all), search (name/email match), include_volunteer_agreements (default false — VEPs are noisy). Authority: enforced server-side via certificate ACL.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_governance_change_log",
+      "description": "Unified chronological feed across 6 governance sources (change_requests, document_versions, approval_chains, approval_signoffs, pii_access_log, admin_audit_log). Privileged callers (view_pii) see all events; non-privileged see only their own actor/target scope. Use for LGPD Art. 37 audit and compliance reviews. Set include_payload=false for lightweight timeline (saves ~60% bandwidth).",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_governance_docs",
+      "description": "Returns governance documents: manual, agreements, volunteer terms.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_manual_section",
+      "description": "Returns a specific section of the Governance Manual by number or keyword search.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_pending_ratifications",
+      "description": "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_version_diff",
+      "description": "Compare two document versions. Returns pre_computed_diff (chars_delta, lines_added/removed — auto-populated via trigger), version metadata, and optionally full content. Set include_content=false for lightweight response (~5% of full size) when you only need stats. Validates both versions belong to same document.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_document_versions",
+      "description": "Returns version history of a governance document (newest first). Each row has version_number, label, authored_by, locked_at, is_current, content_html_length, comments_total + comments_unresolved. Use for review UX and version diff setup.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_my_signatures",
+      "description": "Returns YOUR signature history (approval chain gates + document ratifications). Includes document title, version, chain status, signed timestamp, certificate id. LGPD Art. 18 compliance surface.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "verify_certificate",
+      "description": "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "cancel_manual_version_proposal",
+      "description": "Cancel a pending Manual version proposal before it gets confirmed. Use case: typo in version_label, contentious CR detected, etc. Logs the cancellation reason in admin_audit_log. Per ADR-0044, only manage_platform holders can cancel.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "confirm_manual_version",
+      "description": "Confirm and publish a pending Manual version proposal. Phase 2 of 2-of-N approval (ADR-0044). Requires: (1) signer must be DIFFERENT from proposer (2-of-N enforcement), (2) within 24h window from proposal, (3) approved CRs still exist, (4) version_label still unused. On success: marks current Manual as superseded, creates new doc, marks all approved CRs as implemented, notifies chapter board + sponsors, drafts announcement.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "counter_sign_certificate",
+      "description": "GP/manager counter-signs a tier 2 certificate (e.g. final volunteer recognition). Two-step confirm — establishes the second-signature provenance per ADR-0039 countersign subsystem. Irreversible.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "delete_document_version_draft",
+      "description": "DELETE an unlocked draft version permanently. Fails if the version is locked (locked versions are immutable). Records the deletion in admin_audit_log. Requires manage_member authority.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "edit_document_version_draft",
+      "description": "Update content of an EXISTING unlocked draft version. Fails if version is locked (immutability). Preserves version_number; optionally updates label/markdown/notes. Requires manage_member authority.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "issue_certificate",
+      "description": "Admin issues a new certificate to a member. data_json: JSON string com payload (member_id, type, title, period_start, period_end, language, cycle). Two-step confirm gate (ADR-0018 W1) — irreversible.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "lock_document_version",
+      "description": "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "propose_manual_version",
+      "description": "Propose a new Manual de Governança version. Phase 1 of 2-of-N approval (ADR-0044). Creates a pending proposal that must be confirmed by a DIFFERENT manage_platform holder within 24h. Validates approved CRs exist and version_label is unused. Notifies all OTHER manage_platform holders for 2nd signoff. Use confirm_manual_version to publish or cancel_manual_version_proposal to retract.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "propose_new_version",
+      "description": "Create a new DRAFT version of a governance document. version_number auto-incremented. Requires manage_member authority. Returns version_id + version_number + version_label. Does NOT start approval chain — use lock_document_version after content is final.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "sign_ratification_gate",
+      "description": "Sign a gate on an IP ratification or cooperation agreement approval chain (ADR-0016). signoff_type can be 'approval' or 'rejection'. Optional sections_verified jsonb and comment. UE consent flag required for external_signer gates.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_certificate",
+      "description": "Admin updates editable fields of an existing certificate. updates_json: JSON string com partial update. Confirm gate — changes are audit-logged.",
+      "domain": "governance",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_chain_audit_report",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "governance",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "get_campaign_analytics",
+      "description": "Returns email campaign analytics: opens, clicks, bounces. Admin/Comms only.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_comms_dashboard",
+      "description": "Returns communications dashboard: publications by status/format, backlog, overdue items. Requires comms_leader, admin, or manager role.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_comms_metrics_by_channel",
+      "description": "Returns latest communication metrics by channel (LinkedIn, Instagram, YouTube). Comms/Admin only.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_comms_pending_webinars",
+      "description": "Returns webinars that need communication action.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_tribe_webinars",
+      "description": "Returns webinars for your tribe or chapter.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_partner_followups",
+      "description": "Lists upcoming and overdue follow-ups across all partner entities (from partner_interactions.follow_up_date). Useful for 'what partner calls are due this week?'.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_partner_pipeline",
+      "description": "Returns partner pipeline: entities by status, stale alerts, contact info. Sponsors/Admin only.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_card_partners",
+      "description": "Inverse of list_partner_cards. Returns all partners linked to a given board card — useful for opening a card and understanding which partners are stakeholders. Returns link_role, partner_name, chapter, entity_type, status, contact_name, linked_by_name.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_partner_attachments",
+      "description": "List attachments (proposals, MoUs, draft contracts, meeting notes) filed against a partner entity.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_partner_cards",
+      "description": "List all board cards linked to a partner entity. Returns link_role, board_item (title, status, due_date, assignee_name), board_name, partner_name, linked_by_name. Use to answer 'which cards is PMI-CE driving?' or 'what's the backlog for Partner X?'.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_partner_interactions",
+      "description": "List all interactions for a partner entity, newest first.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_partner_cards",
+      "description": "Cross-partner search of partner↔card links with optional filters. Use for queries like 'all deliverable cards across partners' or 'contract cards for PMI-CE chapter'. Returns full join: partner + card + board + assignee + linker.",
+      "domain": "partners",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "link_partner_to_card",
+      "description": "Link a partner entity to a board card (UPSERT — updates link_role+notes if link already exists). link_role must be one of: general | pipeline | deliverable | follow_up | contract | onboarding. Requires manage_partner authority.",
+      "domain": "partners",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "log_partner_interaction",
+      "description": "Log an interaction (meeting/call/email/doc) with a partner entity. Optional outcome + next_action + follow_up_date for pipeline tracking.",
+      "domain": "partners",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "manage_partner",
+      "description": "Create or update a partner entity in the pipeline. Sponsors/Admin only.",
+      "domain": "partners",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "unlink_partner_from_card",
+      "description": "Remove a partner↔card link. Idempotent (returns success=false if no row matched). Requires manage_partner authority.",
+      "domain": "partners",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_initiative_gamification",
+      "description": "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_member_cycle_xp",
+      "description": "Returns a member's per-cycle XP breakdown by source (attendance, learning, certs, badges, artifacts, courses, showcase, bonus). Use for individual coaching: 'where is my XP coming from this cycle?'",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_public_trail_ranking",
+      "description": "Returns the public ranking of learning trails (CPMAI + future): members ordered by completion percentage and recent activity. Public-readable for transparency on community learning progress.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_rankings",
+      "description": "Returns selection rankings split by track (researcher or leader) per CR-047 dual-ranking system. Formula: research_score = obj + int; leader_score = research*0.7 + leader_extra*0.3. Standard Competition Ranking (ISO 80000-2). Admin/GP/curator only.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_tribe_gamification",
+      "description": "Returns the gamification ranking inside a specific tribe (1-8): members sorted by total XP for the current cycle, with breakdown by category (attendance, badges, showcases). Internal view for tribe leaders and members tracking team momentum.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "recalculate_cycle_rankings",
+      "description": "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.",
+      "domain": "gamification",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "register_showcase",
+      "description": "Register a showcase/protagonist presentation for a member at a general meeting. Awards 15-25 XP depending on type.",
+      "domain": "gamification",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "export_audit_log_csv",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "gamification",
+      "permission": "admin",
+      "is_sensitive": true
+    },
+    {
+      "name": "compute_application_scores",
+      "description": "Recomputes aggregated PERT scores for an application from latest evaluations. Idempotent. Used after a re-submit or when verifying ranking. Authority: committee member or admin.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_detail",
+      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_interviews",
+      "description": "Returns scheduled and completed interviews for an application: interviewers, scheduled_at, duration, status (pending/completed/cancelled/noshow), notes. Used by committee to coordinate.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_returning_context",
+      "description": "Returns offboarding context for a returning candidate's selection application. Surfaces return_interest, return_window_suggestion, lessons_learned, recommendation_for_future from the candidate's prior member_offboarding_records (if any). Used by selection committee to inform re-application decisions. Admin only (manage_member).",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_score_breakdown",
+      "description": "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_evaluation_form",
+      "description": "Returns the evaluation form template for an application: cycle's criteria + your existing draft (if any). evaluation_type: 'objective' | 'interview' | 'leader_extra'. Use BEFORE submit_evaluation/submit_interview_scores to discover the rubric.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_evaluation_results",
+      "description": "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_committee",
+      "description": "Returns the selection committee for a cycle: members + role (lead/evaluator) + can_interview flag. Used to confirm who can evaluate or interview before delegating work.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_cycles",
+      "description": "Lists all selection cycles (ordered most-recent first) with cycle_code, title, status, dates. Use to discover cycle_id/cycle_code for downstream selection tools.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_pipeline_metrics",
+      "description": "Returns selection pipeline funnel metrics for a cycle (default: latest): total applications, by status, by chapter, conversion rates. Optional chapter filter. Admin/curator scope.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "manage_selection_committee",
+      "description": "Add or remove a member from a selection committee. Authority: requires 'promote' permission (admin/PM). Action 'add' inserts/upserts (default role='evaluator', can_interview=true); 'remove' deletes. Without confirm=true returns a preview (ADR-0018 W1).",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "mark_interview_status",
+      "description": "Updates interview status. Authority: interviewer or committee lead. Valid: 'completed' | 'cancelled' | 'rescheduled' | 'noshow'. Optional notes.",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "schedule_interview",
+      "description": "Books an interview for an application. Authority: must be committee lead (selection_committee.role='lead') or superadmin. Pass interviewer_ids array (members from the committee). Optional calendar_event_id (GCal/Outlook integration).",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "submit_evaluation",
+      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context. With confirm=true: writes to selection_evaluations (irreversible after phase closes).",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "submit_interview_scores",
+      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview. With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_application_contact",
+      "description": "Admin (manage_member) updates a candidate's contact info on a selection application: phone and/or linkedin_url. Both optional but at least one required. Used when a candidate emails the committee with corrected contact data — admin patches it server-side. Self-service candidate edit is NOT supported by this RPC.",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_wiki_health",
+      "description": "Returns wiki health report: stale pages (>90 days without update), PII warnings (emails, phones, CPFs in content), and incomplete metadata. Use to audit wiki quality.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_wiki_page",
+      "description": "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "knowledge_assets_latest",
+      "description": "Returns most recent knowledge assets (wiki + external sources). Optional source filter. Use to discover 'what was added recently to the knowledge base?'.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "knowledge_insights_backlog_candidates",
+      "description": "Returns prioritized knowledge insight backlog (ranked by impact*urgency*confidence). Default open, top 25. Use for 'what should we tackle next?' or curator triage.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "knowledge_insights_overview",
+      "description": "Returns aggregate overview of knowledge insights: per-taxonomy_area + insight_type counts, avg impact/urgency, max_detected_at. Default status='open', last 30 days. Used to spot which areas are accumulating signal.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "knowledge_search_text",
+      "description": "Full-text search of knowledge_assets (synced wiki + external research). Returns chunks with title + source + snippet + tags + relevance rank. Optional source filter (e.g. 'wiki'). Default match_count=8.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_hub_resources",
+      "description": "Search the resource library (247+ items) by keyword.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_knowledge",
+      "description": "Legacy text search across knowledge chunks (returns chunk + asset + tribe + theme context). Prefer knowledge_search_text or search_wiki_pages for new code. Kept for compat.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_wiki",
+      "description": "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance documents, architectural decisions (ADRs), research, and narrative knowledge.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "search_wiki_pages",
+      "description": "Full-text search of wiki_pages with optional domain (e.g. 'frameworks') and tag filters. Returns id, path, title, summary, tags, license, ip_track, headline (highlighted snippet) and rank. Use to discover narrative knowledge before answering 'what does the wiki say about X?'.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "wiki_health_report",
+      "description": "Returns wiki structural health (broken links, missing summaries, license gaps, etc.) per check_type. Used by curators to prioritize wiki quality work.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "promote_to_leader_track",
+      "description": "Promotes a researcher-track application to the leader track (CR-047 triaged_to_leader flow). Creates a new leader application cloned from the researcher one and links them bidirectionally. Admin/GP only.",
+      "domain": "admin",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "check_code_schema_drift",
+      "description": "Returns code-vs-schema drift findings: pg_proc / pg_view / pg_policy references to known-dropped columns. Strips line + block comments before regex match (no false positives from `-- ADR doc references`). Auto-verifies dropped state via information_schema. Empty result = no drift detected. Authority: view_internal_analytics. Use after DROP COLUMN deploys to verify cleanup, or as periodic audit.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_anomaly_report",
+      "description": "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_digest_health",
+      "description": "Returns weekly digest delivery health snapshot: 3 Saturday crons (member-digest, leader-digest, card-digest) status + count of digest_weekly notifications pending delivery. Health: green/yellow/red. Use to triage 'are members getting digests?' or detect cron silence.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_drive_discovery_health",
+      "description": "Returns Drive auto-discovery cron health: total/last_24h/unmatched/unpromoted counters + cron last_run + days_since + minutes_folders_active. Health: green (<=36h + success) / yellow (idle/no-folders) / red (>36h or failed). Authority: view_internal_analytics. ADR-0065 (Phase 4).",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_invitation_health",
+      "description": "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked/canceled), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_lgpd_cron_health",
+      "description": "Returns LGPD compliance cron health snapshot: 3 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly) with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y count of members 5y+ inactive not yet anonymized. Health signal: green (all crons <=35d), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + cron silent >35d). Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_weekly_member_digest",
+      "description": "Returns the weekly digest payload for a member: 7 sections (cards, engagements, events, publications, broadcasts, governance, achievements) + consumed_notification_ids. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_weekly_tribe_digest",
+      "description": "Returns the weekly tribe-level aggregate digest for leaders/coordinators: privacy-preserving summary (X members overdue, Y cards next week, Z without assignee, tribe health %). No PII per-member. Used by send-weekly-leader-digest cron (Saturday 12:30 UTC).",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_invitations_for_my_initiatives",
+      "description": "List invitations (especially pending self-service requests) for initiatives where you are owner/coordinator. Admin sees all. Includes is_self_request flag distinguishing requests from owner-initiated invites. Logs PII access (#85 LGPD Onda C). Use to triage join requests before review_initiative_request.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_invitations_sent_by_me",
+      "description": "List initiative invitations sent by you. Useful for owners/coordinators tracking who they've invited. Filter by status optionally.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_my_initiative_invitations",
+      "description": "List initiative invitations where you are the invitee. Filter by status (pending/accepted/declined/expired/revoked). Defaults to 'pending'. Stale-pending past expires_at are transitioned to 'expired' by hourly cron (`expire-stale-invitations-hourly`); admins can audit via `get_invitation_health`.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "respond_to_initiative_invitation",
+      "description": "Respond to a pending initiative invitation as the invitee. response='accept' creates engagement automatically; response='decline' marks invitation declined with optional reason. Auto-expires invitations past their 72h expiry window.",
+      "domain": "health",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_audit_log",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "health",
+      "permission": "admin",
+      "is_sensitive": true
+    }
+  ]
+}

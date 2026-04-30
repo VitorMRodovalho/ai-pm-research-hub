@@ -487,6 +487,25 @@ const enUS: Record<string, string> = {
   'agenda.item6.title': 'Q&A & Closing',
   'agenda.item6.desc': 'Links, PMI courses, official photo.',
 
+  // ── MCP Catalog Docs (/docs/mcp) ──
+  'mcp.docs.pageTitle': 'MCP Catalog — Núcleo IA & GP',
+  'mcp.docs.label': 'Núcleo MCP Server',
+  'mcp.docs.title': 'MCP Tools Catalog',
+  'mcp.docs.subtitle': 'The Núcleo MCP server exposes operational tools via Model Context Protocol — accessible from Claude.ai, Claude Code, Cursor, and other MCP clients. Use the filter below to explore by domain.',
+  'mcp.docs.stat.total': 'Tools',
+  'mcp.docs.stat.read': 'Read',
+  'mcp.docs.stat.write': 'Write',
+  'mcp.docs.stat.admin': 'Admin',
+  'mcp.docs.searchPlaceholder': 'Search by name or description…',
+  'mcp.docs.filter.all': 'All',
+  'mcp.docs.legend.read': 'read',
+  'mcp.docs.legend.write': 'write',
+  'mcp.docs.legend.admin': 'admin (management)',
+  'mcp.docs.toolsLabel': 'tools',
+  'mcp.docs.sensitive': 'Detail restricted',
+  'mcp.docs.footer.generated': 'Manifest generated on',
+  'mcp.docs.footer.source': 'MCP endpoint',
+
   // ── Chapters ──
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
