@@ -494,7 +494,7 @@ const enUS: Record<string, string> = {
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
-  'chapters.cta': 'Want to bring your chapter? Talk to the PM →',
+  'chapters.cta': 'For PMI chapters: contact the PM to begin integration →',
 
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
@@ -970,8 +970,8 @@ const enUS: Record<string, string> = {
   'resources.volunteerResearcher.title': 'Role: Researcher Level 4',
   'resources.volunteerResearcher.text': 'AI knowledge researcher and multiplier.',
   'resources.volunteerResearcher.linkText': 'Apply →',
-  'resources.volunteerLeader.title': 'Role: Tribe Leader',
-  'resources.volunteerLeader.text': 'Lead researcher and topic facilitator.',
+  'resources.volunteerLeader.title': 'Role: Initiative Lead (Tribe or Project)',
+  'resources.volunteerLeader.text': 'Lead a research tribe or cross-cutting initiative (AI pilot, webinar, comms). Leaders receive a PMI statement and access to management tools.',
   'resources.volunteerLeader.linkText': 'Apply →',
 
   // ── Footer ──
