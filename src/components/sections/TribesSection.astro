@@ -143,9 +143,13 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                           hover:shadow-md transition-all duration-300"
                    id={`t-${tr.id}`}
                    data-quadrant={tr.quadrant}>
-                {/* Header — always visible */}
-                <div class="flex items-center gap-4 px-5 py-4 cursor-pointer"
-                     data-tribe-header={tr.id}>
+                {/* Header — always visible (keyboard-accessible button) */}
+                <button type="button"
+                        class="w-full flex items-center gap-4 px-5 py-4 cursor-pointer bg-transparent border-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal focus-visible:outline-offset-[-2px]"
+                        data-tribe-header={tr.id}
+                        aria-expanded="false"
+                        aria-controls={`tb-${tr.id}`}
+                        aria-labelledby={`tn-${tr.id}`}>
                   <div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center
                               text-white font-extrabold text-base flex-shrink-0"
                        id={`tp-${tr.id}`}
@@ -176,10 +180,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                       {initialCounts[tr.id] || 0}/{MAX_SLOTS}
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
-                     id={`tb-${tr.id}`}>
+                     id={`tb-${tr.id}`}
+                     role="region"
+                     aria-labelledby={`tn-${tr.id}`}>
                   <div class="pb-5 pt-3 border-t border-[var(--border-subtle)]">
                     <p id={`td-${tr.id}`} class="text-[.88rem] text-[var(--text-secondary)] mb-3">{tr.description}</p>
 
@@ -267,19 +273,23 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     return member?.operational_role || member?.role || 'guest';
   }
 
-  // ── Accordion toggle ──
+  // ── Accordion toggle (button native handles Enter/Space; aria-expanded synced) ──
   document.querySelectorAll('[data-tribe-header]').forEach((el) => {
     el.addEventListener('click', () => {
       const id = el.getAttribute('data-tribe-header');
       const body = document.getElementById(`tb-${id}`);
       if (!body) return;
       const wasOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
-      // Close all
+      // Close all + reset aria-expanded
       document.querySelectorAll('[id^="tb-"]').forEach((b) => {
         b.style.maxHeight = '0px';
       });
+      document.querySelectorAll('[data-tribe-header]').forEach((h) => {
+        h.setAttribute('aria-expanded', 'false');
+      });
       if (!wasOpen) {
         body.style.maxHeight = body.scrollHeight + 'px';
+        el.setAttribute('aria-expanded', 'true');
       }
     });
   });
