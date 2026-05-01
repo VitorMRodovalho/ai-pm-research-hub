@@ -2165,6 +2165,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_application_gate_attempts (p87 Sprint A.3.c — Issue #117)
+  mcp.tool("get_application_gate_attempts", "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS), caller name, payload snapshot (consent/eval_count/score/status at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).", {
+    application_id: z.string().describe("UUID of the selection_applications row")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_gate_attempts", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_gate_attempts", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_application_gate_attempts", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_application_gate_attempts", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_gate_attempts", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_gate_attempts", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== ONBOARDING (issue #86 — persona "new member" unblock) =====
 
   // TOOL: get_my_onboarding
