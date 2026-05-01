@@ -978,10 +978,24 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         const errorMsg = r.error_message ? `<div class="mt-2 text-[12px] text-red-700 bg-red-50 rounded-lg p-2">⚠️ ${esc(r.error_message)}</div>` : '';
 
         // p87 Sprint C.c: raises_the_bar prominent display (PM mindset Vitor 2026-05-01)
+        // p87 Sprint #119 ratify: adicionar hint operacional baseado em validation report
+        // (precision YES 75%, recall YES 33% — usar como filtro positivo, não auto-reject)
         const raisesBar = snapshot?.raises_the_bar;
+        const fitForRoleScore = snapshot?.fit_for_role?.score ?? 0;
         const raisesBarBadge = raisesBar?.verdict
           ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${raisesBarColors[raisesBar.verdict] || 'bg-gray-50 text-gray-700 border-gray-300'}">${raisesBarLabels[raisesBar.verdict] || raisesBar.verdict.toUpperCase()}</span>`
           : '';
+
+        // Operational hint baseado em #119 validation findings (n=14 cycle3-2026)
+        let operationalHint = '';
+        if (raisesBar?.verdict === 'yes' && fitForRoleScore >= 4) {
+          operationalHint = `<div class="text-[11px] mt-1 text-emerald-800 font-semibold">⭐ Skip-to-interview eligible — high precision shortlist (validated 75% precision em cycle3-2026)</div>`;
+        } else if (raisesBar?.verdict === 'no') {
+          operationalHint = `<div class="text-[11px] mt-1 text-amber-700">⚠️ Soft signal apenas — NÃO usar como auto-reject (validated 67% false-negative rate em cycle3-2026; comissão deve revisar via LinkedIn/par-revisão)</div>`;
+        } else if (raisesBar?.verdict === 'uncertain') {
+          operationalHint = `<div class="text-[11px] mt-1 text-blue-700">↺ Par-revisão prioritária — AI sinal não-conclusivo</div>`;
+        }
+
         const raisesBarBlock = raisesBar?.verdict
           ? `<div class="border-l-4 ${raisesBar.verdict === 'yes' ? 'border-emerald-500' : raisesBar.verdict === 'no' ? 'border-red-500' : 'border-amber-500'} bg-[var(--surface-base)] rounded-r p-3 mb-2">
               <div class="flex items-center gap-2 mb-1">
@@ -989,6 +1003,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                 ${raisesBarBadge}
               </div>
               <p class="text-[12px] text-[var(--text-primary)]">${esc(raisesBar.rationale || '—')}</p>
+              ${operationalHint}
             </div>`
           : '';
 

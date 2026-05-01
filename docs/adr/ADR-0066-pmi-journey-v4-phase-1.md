@@ -294,3 +294,46 @@ Vitor articulou explicitamente em WhatsApp 2026-05-01 11:30 BRT:
 - 6 candidatos cycle3-2026-b2 com AI rodada, apenas 1 (João Uzejka) com peer-review humana → benchmark do que workflow correto produz
 
 Assisted-By: Claude (Anthropic)
+
+---
+
+## Amendment 2 — 2026-05-01 (later same day) — `raises_the_bar` rubric operational adoption
+
+**Trigger:** Issue [#119](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/119) MVP validation (n=14 cycle3-2026 sample) revelou propriedades estatísticas da rubric AI:
+
+| Métrica | Valor (n=14) |
+|---|---|
+| Precision YES | 75% (3/4 — high) |
+| Recall YES | 33% (3/9 — low) |
+| Specificity NO | 80% (4/5) |
+| False Negative Rate | 67% (6/9 — alto) |
+| F1 (YES) | 0.46 |
+
+Full report: `docs/research/raises_the_bar_validation_cycle3_2026.md`.
+
+### Decisão operacional (PM ratify 2026-05-01)
+
+A rubric `raises_the_bar` é **conservadora e específica** — ancora em "evidências factuais articuladas no texto da aplicação". Útil como filtro positivo (high precision), inadequado como gate único de rejeição (high false-negative rate). Decisão humana frequentemente usa contexto não-textual (LinkedIn, anotações entrevista, prior PMI community knowledge, chapter representation) que AI não recebe.
+
+**Política de uso (cycle3-2026-b2 e futuros):**
+
+1. **`raises_the_bar = yes` + `fit_for_role >= 4`** → **skip-to-interview shortlist** (high-precision); par-revisão humana ainda obrigatória (não substitui evals)
+2. **`raises_the_bar = no`** → **soft signal apenas, NÃO auto-reject**. Comissão deve revisar via LinkedIn / contexto chapter / par-revisão antes de decisão.
+3. **`raises_the_bar = uncertain`** → par-revisão prioritária (AI sinal não-conclusivo)
+
+UI hint implementado em admin/selection.astro (Análises IA tab):
+- Verde: ⭐ Skip-to-interview eligible (when YES + fit>=4)
+- Âmbar: ⚠️ Soft signal apenas — NÃO auto-reject (when NO)
+- Azul: ↺ Par-revisão prioritária (when uncertain)
+
+### Próximos passos (deferred)
+
+- Sprint 3.b: expand sample n=14 → n=63 (full cycle3-2026 com final outcome) via pg_cron throttled
+- Sprint 4 (após Sprint 3.b ratify): evolução prompt rubric — adicionar `potential_signal` orthogonal a track-record + considerar input opcional `linkedin_summary` (consent-gated)
+
+### Trace
+- PM ratify 2026-05-01 (post-MVP report review)
+- p87 marathon ULTRA-EXTENDED (~7h elapsed)
+- Issue #119 comment c/ findings: `https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/119#issuecomment-4361229912`
+
+Assisted-By: Claude (Anthropic)
