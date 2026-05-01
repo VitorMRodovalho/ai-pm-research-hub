@@ -231,7 +231,8 @@ test('astro island foundation includes React and dnd-kit for kanban evolution', 
   const publicationsIsland = read('src/components/boards/PublicationsBoardIsland.tsx');
   const tribeIsland = read('src/components/boards/TribeKanbanIsland.tsx');
   assert.equal(astroConfig.includes("import react from '@astrojs/react'"), true);
-  assert.equal(astroConfig.includes('integrations: [react()]'), true);
+  assert.match(astroConfig, /integrations:\s*\[[\s\S]*?react\(\)[\s\S]*?\]/,
+    'integrations array must include react() (formatting-tolerant — sitemap was added in p84)');
   assert.equal(packageJson.includes('"@astrojs/react"'), true);
   assert.equal(packageJson.includes('"react"'), true);
   assert.equal(packageJson.includes('"@dnd-kit/core"'), true);
