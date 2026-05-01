@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Lang } from '../../i18n/utils';
 import { getPMISupabaseClient } from './supabaseClient';
+import EnrichmentCard from './EnrichmentCard';
+import InterviewTopicsOptIn from './InterviewTopicsOptIn';
 
 interface OnboardingProgressEntry {
   step_key: string;
@@ -100,8 +102,25 @@ export default function PMIOnboardingPortal({
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileSavedAt, setProfileSavedAt] = useState<number | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [enrichmentStatus, setEnrichmentStatus] = useState<any | null>(null);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
+
+  const loadEnrichmentStatus = useCallback(async () => {
+    if (!sb || !token) return;
+    try {
+      const { data, error } = await sb.rpc('get_application_enrichment_status', { p_token: token });
+      if (error) {
+        // Token may not have profile_completion scope yet (pre-portal-active gate); silently ignore
+        return;
+      }
+      setEnrichmentStatus(data);
+    } catch { /* swallow */ }
+  }, [sb, token]);
+
+  useEffect(() => {
+    loadEnrichmentStatus();
+  }, [loadEnrichmentStatus, payload?.application?.has_consent]);
   const T = (k: string) => i18n[k] ?? k;
 
   if (!payload) {
@@ -511,6 +530,27 @@ export default function PMIOnboardingPortal({
           )}
         </div>
       </section>
+
+      {/* p86 Wave 5b-2: AI-augmented self-improvement cards (Card B + Card A) */}
+      {enrichmentStatus?.has_analysis && (
+        <>
+          <InterviewTopicsOptIn
+            token={token}
+            sb={sb}
+            areasToProbe={Array.isArray(enrichmentStatus.areas_to_probe) ? enrichmentStatus.areas_to_probe : []}
+            T={T}
+          />
+          {enrichmentStatus.should_offer_enrichment && (
+            <EnrichmentCard
+              token={token}
+              sb={sb}
+              status={enrichmentStatus}
+              T={T}
+              onEnriched={() => { setTimeout(() => loadEnrichmentStatus(), 8000); }}
+            />
+          )}
+        </>
+      )}
 
       <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
