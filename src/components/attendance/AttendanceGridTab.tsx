@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -176,14 +176,15 @@ function normalizeRate(raw: number): number {
   return raw;
 }
 
-function statusCell(v: string | undefined) {
+function statusCell(v: string | undefined, hasReason: boolean = false) {
   switch (v) {
     case 'present':
       return { label: '\u2705', bg: 'bg-green-100 dark:bg-green-900/30', csv: 'P' };
     case 'absent':
       return { label: '\u274C', bg: 'bg-red-100 dark:bg-red-900/30', csv: 'F' };
     case 'excused':
-      return { label: '\u26A0\uFE0F', bg: 'bg-blue-100 dark:bg-blue-900/30', csv: 'FJ' };
+      // p87 Sprint UX: asterisco quando reason persistida (audit trail visible)
+      return { label: hasReason ? '\u26A0\uFE0F*' : '\u26A0\uFE0F', bg: 'bg-blue-100 dark:bg-blue-900/30', csv: 'FJ' };
     default:
       return { label: '\u2014', bg: 'bg-gray-100 dark:bg-gray-800/40', csv: 'NA' };
   }
@@ -291,30 +292,34 @@ export default function AttendanceGridTab() {
   }, [memberReady]);
 
   /* Toggle attendance cell — click handler for managers */
-  /* Toggle cycles: absent → present → excused → absent */
+  /* p87 bug Ana Carla fix (2026-05-01, Sprint UX):
+     Cycle SHORTENED: na/absent → present, present → absent, excused → absent.
+     Excused only set via long-press modal (handleSetExcused) to capture reason.
+     Confirms before destroying persisted reason on excused → absent. */
   const handleToggle = useCallback(async (eventId: string, memberId: string, current: string) => {
     const sb = getSb();
     if (!sb || toggling) return;
     const cellKey = `${eventId}:${memberId}`;
+
+    // Cycle: present/excused → absent, na/absent → present (skip excused)
+    const nextState: 'present' | 'absent' = current === 'present' || current === 'excused' ? 'absent' : 'present';
+
+    // Confirm before destroying persisted reason
+    if (current === 'excused' && excuseReasons[cellKey]) {
+      const persistedReason = excuseReasons[cellKey];
+      const confirmMsg = (t('attendance.grid.confirmDestroyReason', 'Isso removerá o motivo registrado: "{reason}". Continuar?') || 'Confirmar?').replace('{reason}', persistedReason);
+      if (!window.confirm(confirmMsg)) return;
+    }
+
     setToggling(cellKey);
     try {
-      // Cycle: absent/none → present, present → excused, excused → absent
-      const nextState = current === 'present' ? 'excused' : current === 'excused' ? 'absent' : 'present';
-
-      if (nextState === 'excused') {
-        const { error: rpcErr } = await sb.rpc('mark_member_excused', {
-          p_event_id: eventId, p_member_id: memberId, p_excused: true,
-        });
-        if (rpcErr) throw rpcErr;
-      } else {
-        const { error: rpcErr } = await sb.rpc('mark_member_present', {
-          p_event_id: eventId, p_member_id: memberId, p_present: nextState === 'present',
-        });
-        if (rpcErr) throw rpcErr;
-        // If going from excused to absent, also clear excused flag
-        if (current === 'excused') {
-          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
-        }
+      const { error: rpcErr } = await sb.rpc('mark_member_present', {
+        p_event_id: eventId, p_member_id: memberId, p_present: nextState === 'present',
+      });
+      if (rpcErr) throw rpcErr;
+      // If going from excused to absent, also clear excused flag
+      if (current === 'excused') {
+        await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
       }
 
       // Optimistic update in local data
@@ -330,9 +335,12 @@ export default function AttendanceGridTab() {
         }
         return updated;
       });
+      // Clear persisted reason if excused was cleared
+      if (current === 'excused') {
+        setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
+      }
       const toastMap: Record<string, string> = {
         present: t('attendance.grid.toastPresent', '✅ Presente'),
-        excused: t('attendance.grid.toastExcused', '⚠️ Falta justificada'),
         absent: t('attendance.grid.toastAbsent', '❌ Ausente'),
       };
       (window as any).toast?.(toastMap[nextState], 'success');
@@ -342,11 +350,104 @@ export default function AttendanceGridTab() {
     } finally {
       setToggling(null);
     }
-  }, [toggling]);
+  }, [toggling, excuseReasons, t]);
+
+  /* p87 long-press modal state (Layer 2+3 — captures reason for excused) */
+  const [excusedModal, setExcusedModal] = useState<null | { eventId: string; memberId: string; memberName: string; current: string }>(null);
+  const [reasonDraft, setReasonDraft] = useState('');
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  const startLongPress = useCallback((data: { eventId: string; memberId: string; memberName: string; current: string }) => {
+    longPressFiredRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      setExcusedModal(data);
+      setReasonDraft(excuseReasons[`${data.eventId}:${data.memberId}`] || '');
+    }, 300);
+  }, [excuseReasons]);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  /* Sets state via modal — handles all 3 states with optional reason */
+  const handleSetState = useCallback(async (state: 'present' | 'absent' | 'excused', reason: string = '') => {
+    if (!excusedModal) return;
+    const sb = getSb();
+    if (!sb) return;
+    const { eventId, memberId, current } = excusedModal;
+    const cellKey = `${eventId}:${memberId}`;
+
+    // Confirm if destroying persisted reason
+    if (current === 'excused' && state !== 'excused' && excuseReasons[cellKey]) {
+      const persistedReason = excuseReasons[cellKey];
+      const confirmMsg = (t('attendance.grid.confirmDestroyReason', 'Isso removerá o motivo registrado: "{reason}". Continuar?') || 'Confirmar?').replace('{reason}', persistedReason);
+      if (!window.confirm(confirmMsg)) return;
+    }
+
+    setExcusedModal(null);
+    setToggling(cellKey);
+    try {
+      if (state === 'excused') {
+        const { error } = await sb.rpc('mark_member_excused', {
+          p_event_id: eventId, p_member_id: memberId, p_excused: true, p_reason: reason || null,
+        });
+        if (error) throw error;
+      } else {
+        const { error: e1 } = await sb.rpc('mark_member_present', {
+          p_event_id: eventId, p_member_id: memberId, p_present: state === 'present',
+        });
+        if (e1) throw e1;
+        if (current === 'excused') {
+          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        }
+      }
+
+      // Optimistic update
+      setData(prev => {
+        if (!prev) return prev;
+        const updated = JSON.parse(JSON.stringify(prev)) as GridData;
+        for (const tribe of updated.tribes) {
+          for (const m of tribe.members) {
+            if (m.member_id === memberId) m.attendance[eventId] = state as any;
+          }
+        }
+        return updated;
+      });
+      // Update reason map
+      if (state === 'excused' && reason) {
+        setExcuseReasons(prev => ({ ...prev, [cellKey]: reason }));
+      } else if (state !== 'excused') {
+        setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
+      }
+
+      const toastMap: Record<string, string> = {
+        present: t('attendance.grid.toastPresent', '✅ Presente'),
+        excused: t('attendance.grid.toastExcused', '⚠️ Falta justificada'),
+        absent: t('attendance.grid.toastAbsent', '❌ Ausente'),
+      };
+      (window as any).toast?.(toastMap[state], 'success');
+    } catch (e: any) {
+      console.error('SetState failed:', e);
+      (window as any).toast?.('Erro ao registrar presença', 'error');
+    } finally {
+      setToggling(null);
+    }
+  }, [excusedModal, excuseReasons, t]);
 
   /* Document-level click delegation for attendance cells */
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const clickHandler = (e: MouseEvent) => {
+      // p87 Sprint UX: skip click if long-press already fired (modal opened)
+      if (longPressFiredRef.current) {
+        longPressFiredRef.current = false;
+        return;
+      }
       const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
       if (!target) return;
       const eventId = target.dataset.toggleEvent!;
@@ -354,9 +455,62 @@ export default function AttendanceGridTab() {
       const current = target.dataset.toggleCurrent || 'none';
       handleToggle(eventId, memberId, current);
     };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, [handleToggle]);
+
+    // p87 Sprint UX: long-press 300ms opens modal with 3-state choice + reason input
+    let pressTimer: ReturnType<typeof setTimeout> | null = null;
+    const pointerDownHandler = (e: PointerEvent) => {
+      const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
+      if (!target) return;
+      longPressFiredRef.current = false;
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        longPressFiredRef.current = true;
+        const eventId = target.dataset.toggleEvent!;
+        const memberId = target.dataset.toggleMember!;
+        const memberName = target.dataset.toggleMemberName || 'Membro';
+        const current = target.dataset.toggleCurrent || 'none';
+        setExcusedModal({ eventId, memberId, memberName, current });
+        setReasonDraft(excuseReasons[`${eventId}:${memberId}`] || '');
+      }, 300);
+    };
+    const pointerUpHandler = () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    };
+    const contextMenuHandler = (e: MouseEvent) => {
+      // Prevent iOS native context menu when long-press fires on attendance cell
+      const target = (e.target as HTMLElement)?.closest('[data-toggle-event]');
+      if (target) e.preventDefault();
+    };
+
+    // Keyboard a11y: Enter/Space toggles cell (WCAG 2.1.1)
+    const keyHandler = (e: KeyboardEvent) => {
+      const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
+      if (!target) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const eventId = target.dataset.toggleEvent!;
+        const memberId = target.dataset.toggleMember!;
+        const current = target.dataset.toggleCurrent || 'none';
+        handleToggle(eventId, memberId, current);
+      }
+    };
+
+    document.addEventListener('click', clickHandler);
+    document.addEventListener('pointerdown', pointerDownHandler);
+    document.addEventListener('pointerup', pointerUpHandler);
+    document.addEventListener('pointercancel', pointerUpHandler);
+    document.addEventListener('contextmenu', contextMenuHandler);
+    document.addEventListener('keydown', keyHandler);
+    return () => {
+      document.removeEventListener('click', clickHandler);
+      document.removeEventListener('pointerdown', pointerDownHandler);
+      document.removeEventListener('pointerup', pointerUpHandler);
+      document.removeEventListener('pointercancel', pointerUpHandler);
+      document.removeEventListener('contextmenu', contextMenuHandler);
+      document.removeEventListener('keydown', keyHandler);
+      if (pressTimer) clearTimeout(pressTimer);
+    };
+  }, [handleToggle, excuseReasons]);
 
   /* Responsive */
   useEffect(() => {
@@ -608,14 +762,23 @@ export default function AttendanceGridTab() {
             enableSorting: false,
             meta: { weekNumber: ev.week_number, date: ev.date },
             cell: ({ row }) => {
-              const st = statusCell(row.original.attendance[ev.id]);
+              const cellKey = `${ev.id}:${row.original.memberId}`;
+              const reason = row.original.attendance[ev.id] === 'excused' ? excuseReasons[cellKey] : undefined;
+              const st = statusCell(row.original.attendance[ev.id], !!reason);
               const manage = canManageAttendance();
+              const titleText = reason
+                ? `⚠️ ${reason}`
+                : manage
+                  ? `${ev.title} — clique para alternar / segurar para menu`
+                  : ev.title;
               return (
                 <span
-                  className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30' : ''}`}
+                  className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none' : ''}`}
+                  title={titleText}
                   {...(manage ? {
                     'data-toggle-event': ev.id,
                     'data-toggle-member': row.original.memberId,
+                    'data-toggle-member-name': row.original.name,
                     'data-toggle-current': row.original.attendance[ev.id] || 'none',
                     role: 'button',
                     tabIndex: 0,
@@ -1125,6 +1288,72 @@ export default function AttendanceGridTab() {
         {t('attendance.grid.showing', 'Showing')} {table.getRowModel().rows.length}{' '}
         {t('attendance.grid.of', 'of')} {flatRows.length} {t('attendance.grid.members', 'members')}
       </p>
+
+      {/* p87 Sprint UX: Excused state modal (long-press / right-click trigger) */}
+      {excusedModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="excused-modal-title"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setExcusedModal(null); }}
+        >
+          <div className="bg-[var(--surface-card)] dark:bg-gray-800 rounded-2xl p-5 max-w-md w-full shadow-2xl border border-[var(--border-default)]">
+            <h3 id="excused-modal-title" className="text-base font-bold mb-1 text-[var(--text-primary)]">
+              {t('attendance.grid.modal.title', 'Marcar presença')}
+            </h3>
+            <p className="text-sm text-[var(--text-muted)] mb-4">
+              {excusedModal.memberName}
+            </p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleSetState('present')}
+                className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-green-200 dark:border-green-800 transition-colors"
+              >
+                ✅ {t('attendance.grid.modal.present', 'Presente')}
+              </button>
+
+              <div className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => handleSetState('excused', reasonDraft.trim())}
+                  className="w-full bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-blue-300 dark:border-blue-700 transition-colors mb-2"
+                >
+                  ⚠️ {t('attendance.grid.modal.excused', 'Falta justificada')}
+                </button>
+                <input
+                  type="text"
+                  value={reasonDraft}
+                  onChange={(e) => setReasonDraft(e.target.value)}
+                  placeholder={t('attendance.grid.modal.reasonPlaceholder', 'Motivo (recomendado)')}
+                  aria-label={t('attendance.grid.modal.reasonAriaLabel', 'Motivo da falta justificada')}
+                  aria-describedby="excused-reason-hint"
+                  className="w-full text-sm border border-blue-300 dark:border-blue-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-[var(--text-primary)]"
+                />
+                <p id="excused-reason-hint" className="text-[11px] text-[var(--text-muted)] mt-1">
+                  {t('attendance.grid.modal.reasonHint', 'Recomendado para registro de auditoria. Não obrigatório.')}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSetState('absent')}
+                className="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-red-200 dark:border-red-800 transition-colors"
+              >
+                ❌ {t('attendance.grid.modal.absent', 'Ausente')}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExcusedModal(null)}
+              className="mt-4 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] underline"
+            >
+              {t('attendance.grid.modal.cancel', 'Cancelar')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1407,17 +1636,24 @@ function SmartTribeSection({
                       {r.chapter}
                     </td>
                     {relevantEvents.map((ev) => {
-                      const st = statusCell(r.attendance[ev.id]);
-                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[`${ev.id}:${r.memberId}`] : undefined;
+                      const cellKey = `${ev.id}:${r.memberId}`;
+                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[cellKey] : undefined;
+                      const st = statusCell(r.attendance[ev.id], !!reason);
+                      const titleText = reason
+                        ? `⚠️ ${reason}`
+                        : manage
+                          ? `${ev.title} — clique para alternar / segurar para menu`
+                          : ev.title;
                       return (
                         <td key={ev.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
                           <span
-                            className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30' : ''}`}
-                            title={reason || undefined}
+                            className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none' : ''}`}
+                            title={titleText}
                             {...(manage
                               ? {
                                   'data-toggle-event': ev.id,
                                   'data-toggle-member': r.memberId,
+                                  'data-toggle-member-name': r.name,
                                   'data-toggle-current': r.attendance[ev.id] || 'none',
                                   role: 'button',
                                   tabIndex: 0,
@@ -1522,13 +1758,30 @@ function MobileCardList({
                 <tbody>
                   <tr>
                     {myEvents.map((ev) => {
-                      const st = statusCell(r.attendance[ev.id]);
-                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[`${ev.id}:${r.memberId}`] : undefined;
+                      const cellKey = `${ev.id}:${r.memberId}`;
+                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[cellKey] : undefined;
+                      const st = statusCell(r.attendance[ev.id], !!reason);
+                      const manage = canManageAttendance();
+                      const titleText = reason
+                        ? `⚠️ ${reason}`
+                        : manage
+                          ? `${fmtDate(ev.date)} ${ev.title} — toque para alternar / segure para menu`
+                          : `${fmtDate(ev.date)} ${ev.title}`;
                       return (
                         <td key={ev.id} className="px-0.5 text-center">
                           <span
-                            title={reason ? `⚠️ ${reason}` : `${fmtDate(ev.date)} ${ev.title}`}
-                            className={`inline-flex items-center justify-center w-7 h-6 text-[10px] rounded ${st.bg}`}
+                            title={titleText}
+                            className={`inline-flex items-center justify-center w-9 h-8 text-[10px] rounded ${st.bg} ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none active:scale-95 transition-transform' : ''}`}
+                            {...(manage
+                              ? {
+                                  'data-toggle-event': ev.id,
+                                  'data-toggle-member': r.memberId,
+                                  'data-toggle-member-name': r.name,
+                                  'data-toggle-current': r.attendance[ev.id] || 'none',
+                                  role: 'button',
+                                  tabIndex: 0,
+                                }
+                              : {})}
                           >
                             {st.label}
                           </span>
@@ -1557,6 +1810,7 @@ function BulkExcusedForm({ members, t, onDone }: { members: FlatRow[]; t: (k: st
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [reason, setReason] = useState('');
+  const [overrideExisting, setOverrideExisting] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const uniqueMembers = useMemo(() => {
@@ -1571,10 +1825,29 @@ function BulkExcusedForm({ members, t, onDone }: { members: FlatRow[]; t: (k: st
     setLoading(true);
     try {
       const { data, error } = await sb.rpc('bulk_mark_excused', {
-        p_member_id: memberId, p_date_from: dateFrom, p_date_to: dateTo, p_reason: reason || null,
+        p_member_id: memberId,
+        p_date_from: dateFrom,
+        p_date_to: dateTo,
+        p_reason: reason || null,
+        p_override_existing: overrideExisting,
       });
       if (error) throw error;
-      (window as any).toast?.(`${data?.events_marked || 0} eventos marcados como falta justificada`, 'success');
+      // p87 Sprint UX: differentiated toast when 0 marked + skipped > 0
+      const marked = data?.events_marked || 0;
+      const skipped = data?.events_skipped || 0;
+      if (marked === 0 && skipped > 0) {
+        (window as any).toast?.(
+          t('attendance.grid.bulkSkippedAll', `Nenhum evento alterado — ${skipped} eventos já têm presença marcada. Marque "Sobrescrever existentes" para forçar.`).replace('{n}', String(skipped)),
+          'warning'
+        );
+      } else if (marked === 0) {
+        (window as any).toast?.(t('attendance.grid.bulkNoEvents', 'Nenhum evento elegível encontrado no período.'), 'warning');
+      } else {
+        (window as any).toast?.(
+          t('attendance.grid.bulkSuccess', `${marked} eventos marcados como falta justificada${skipped > 0 ? ' (' + skipped + ' preservados)' : ''}`).replace('{n}', String(marked)).replace('{skipped}', String(skipped)),
+          'success'
+        );
+      }
       onDone();
     } catch (e: any) {
       (window as any).toast?.(e?.message || 'Erro', 'error');
@@ -1587,18 +1860,39 @@ function BulkExcusedForm({ members, t, onDone }: { members: FlatRow[]; t: (k: st
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
       <h4 className="text-sm font-bold text-amber-800">{t('attendance.grid.bulkExcusedTitle', 'Marcar Falta Justificada em Lote')}</h4>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <select value={memberId} onChange={e => setMemberId(e.target.value)}
-          className="text-sm rounded-lg border border-amber-300 px-3 py-2 bg-white">
-          <option value="">{t('attendance.grid.selectMember', 'Selecione membro...')}</option>
-          {uniqueMembers.map(m => <option key={m.memberId} value={m.memberId}>{m.name}</option>)}
-        </select>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder="De" />
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder="Até" />
-        <input type="text" value={reason} onChange={e => setReason(e.target.value)}
-          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder={t('attendance.grid.excuseReason', 'Motivo (opcional)')} />
+        <label className="text-sm" aria-label={t('attendance.grid.selectMemberLabel', 'Membro')}>
+          <span className="block text-[10px] uppercase tracking-wide text-amber-700 mb-0.5 font-bold">{t('attendance.grid.selectMemberLabel', 'Membro')}</span>
+          <select value={memberId} onChange={e => setMemberId(e.target.value)}
+            aria-label={t('attendance.grid.selectMemberLabel', 'Membro')}
+            className="w-full text-sm rounded-lg border border-amber-300 px-3 py-2 bg-white">
+            <option value="">{t('attendance.grid.selectMember', 'Selecione membro...')}</option>
+            {uniqueMembers.map(m => <option key={m.memberId} value={m.memberId}>{m.name}</option>)}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="block text-[10px] uppercase tracking-wide text-amber-700 mb-0.5 font-bold">{t('attendance.grid.bulkDateFrom', 'De')}</span>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            aria-label={t('attendance.grid.bulkDateFrom', 'De')}
+            className="w-full text-sm rounded-lg border border-amber-300 px-3 py-2" />
+        </label>
+        <label className="text-sm">
+          <span className="block text-[10px] uppercase tracking-wide text-amber-700 mb-0.5 font-bold">{t('attendance.grid.bulkDateTo', 'Até')}</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            aria-label={t('attendance.grid.bulkDateTo', 'Até')}
+            className="w-full text-sm rounded-lg border border-amber-300 px-3 py-2" />
+        </label>
+        <label className="text-sm">
+          <span className="block text-[10px] uppercase tracking-wide text-amber-700 mb-0.5 font-bold">{t('attendance.grid.excuseReasonLabel', 'Motivo')}</span>
+          <input type="text" value={reason} onChange={e => setReason(e.target.value)}
+            aria-label={t('attendance.grid.excuseReasonLabel', 'Motivo')}
+            className="w-full text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder={t('attendance.grid.excuseReason', 'Opcional')} />
+        </label>
       </div>
+      <label className="flex items-center gap-2 text-xs text-amber-800 cursor-pointer">
+        <input type="checkbox" checked={overrideExisting} onChange={e => setOverrideExisting(e.target.checked)}
+          className="rounded border-amber-300" />
+        <span>{t('attendance.grid.overrideExisting', 'Sobrescrever marcações existentes (presente/ausente já registrados)')}</span>
+      </label>
       <button onClick={handleSubmit} disabled={loading || !memberId || !dateFrom || !dateTo}
         className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg border-0 cursor-pointer hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">
         {loading ? '...' : t('attendance.grid.bulkExcusedSubmit', 'Marcar como Falta Justificada')}
