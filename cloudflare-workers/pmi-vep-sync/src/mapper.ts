@@ -41,7 +41,8 @@ export function mapPmiToNucleo(
       ?? detail.coverLetterInfo?.linkedinUrl
       ?? null,
     resume_url: detail.resumeUrl ?? null,
-    chapter: parseChapterFromMembership(detail.membershipStatus ?? ''),
+    chapter: parseChapterFromMembership(detail.membershipStatus ?? '')
+          ?? normalizeChapterAffiliation(responses.chapter_affiliation ?? null),
     membership_status: detail.membershipStatus ?? null,
     certifications: (detail.certifications ?? []).join(','),
     role_applied: opp.role_default,
@@ -122,6 +123,39 @@ function parseChapterFromMembership(ms: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Normalize chapter_affiliation raw field para canon (PMIRS → PMI-RS).
+ *
+ * Fix p87 #118: PMI VEP form retorna affiliation sem hífen ("PMIRS" /
+ * "PMI RS"), o que não casa com canônico chapter_registry (PMI-RS).
+ * Fallback usado quando parseChapterFromMembership não consegue resolver
+ * via membership_status (caso João Uzejka — membership "Active" não tem
+ * state name, mas chapter_affiliation tem "PMIRS").
+ */
+export function normalizeChapterAffiliation(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  // Strip whitespace, hyphens, dots → uppercase compact form
+  const s = raw.toUpperCase().replace(/[\s\-_.]/g, '');
+  const map: Record<string, string> = {
+    'PMIGO': 'PMI-GO',
+    'PMICE': 'PMI-CE',
+    'PMIDF': 'PMI-DF',
+    'PMIMG': 'PMI-MG',
+    'PMIRS': 'PMI-RS',
+    'PMIPE': 'PMI-PE',
+    'PMISP': 'PMI-SP',
+    'PMIRJ': 'PMI-RJ',
+    'PMIPR': 'PMI-PR',
+    'PMISC': 'PMI-SC',
+    'PMIBA': 'PMI-BA',
+    'PMIES': 'PMI-ES',
+    'PMIAM': 'PMI-AM',
+    'PMIPB': 'PMI-PB',
+    'PMIRN': 'PMI-RN',
+  };
+  return map[s] ?? null;
 }
 
 /**
