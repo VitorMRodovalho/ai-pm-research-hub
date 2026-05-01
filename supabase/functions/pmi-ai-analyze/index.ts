@@ -128,7 +128,7 @@ async function callGeminiAnalyzeOnce(userPrompt: string): Promise<Response> {
         contents: [{ parts: [{ text: userPrompt }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 4096,
           responseMimeType: "application/json",
           responseSchema: ANALYSIS_SCHEMA,
         },
