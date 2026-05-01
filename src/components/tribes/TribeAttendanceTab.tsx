@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { AttendanceCell } from '../attendance/AttendanceCell';
 import { getTribePermissions } from '../../lib/tribePermissions';
@@ -23,7 +23,11 @@ interface AttendanceMember {
   rate: number;
   present_count: number;
   eligible_count: number;
-  attendance: Record<string, 'present' | 'absent' | 'na'>;
+  attendance: Record<string, CellStatus>;
+  member_status?: string;
+  detractor_status?: string;
+  consecutive_absences?: number;
+  chapter?: string;
 }
 
 interface AttendanceSummary {
@@ -138,16 +142,31 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     if (result) setData(result as AttendanceGrid);
   }, [getSb, tribeId, initiativeId, filter]);
 
+  /* p87 Bug Ana Carla fix (Sprint UX): cycle present↔absent only.
+     Excused state via long-press modal (handleSetState) — captures reason. */
   const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
-    if (currentStatus === 'na') return;
+    if (currentStatus === 'na' || currentStatus === 'scheduled') return;
     const sb = getSb();
     if (!sb) return;
-    const newPresent = currentStatus !== 'present';
     const memberName = (Array.isArray(data?.members) ? data.members : []).find(m => m.id === memberId)?.name || '';
+    const cellKey = `${eventId}:${memberId}`;
+
+    // If currently excused, confirm before destroying (going to absent)
+    if (currentStatus === 'excused' && excuseReasons[cellKey]) {
+      const reason = excuseReasons[cellKey];
+      const confirmMsg = (t('attendance.grid.confirmDestroyReason', 'Isso removerá o motivo registrado: "{reason}". Continuar?') || 'Confirmar?').replace('{reason}', reason);
+      if (!window.confirm(confirmMsg)) return;
+    }
+
+    // Cycle: present → absent, absent/excused → present
+    const newPresent = currentStatus !== 'present';
     try {
       await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
+      if (currentStatus === 'excused') {
+        await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
+      }
       await refreshGrid();
-      // Show toast with undo
       const msg = `${memberName}: ${newPresent ? t('attendance.grid.toastPresent', '✅ Presente') : t('attendance.grid.toastAbsent', '❌ Ausente')}`;
       setUndoToast({
         msg,
@@ -163,7 +182,95 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     } catch (e: any) {
       (window as any).toast?.(e.message || 'Erro', 'error');
     }
-  }, [getSb, tribeId, initiativeId, filter, data, refreshGrid]);
+  }, [getSb, tribeId, initiativeId, filter, data, refreshGrid, excuseReasons, t]);
+
+  /* p87 Sprint UX: modal state for excused via long-press */
+  const [excusedModal, setExcusedModal] = useState<null | { eventId: string; memberId: string; memberName: string; current: CellStatus }>(null);
+  const [reasonDraft, setReasonDraft] = useState('');
+  const [excuseReasons, setExcuseReasons] = useState<Record<string, string>>({});
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  /* Load existing excuse reasons for tooltip + modal pre-fill */
+  useEffect(() => {
+    (async () => {
+      const sb = getSb();
+      if (!sb) return;
+      try {
+        const { data: excuses } = await sb.from('attendance')
+          .select('event_id, member_id, excuse_reason')
+          .eq('excused', true)
+          .not('excuse_reason', 'is', null);
+        if (excuses) {
+          const map: Record<string, string> = {};
+          for (const ex of excuses) {
+            map[`${ex.event_id}:${ex.member_id}`] = ex.excuse_reason as string;
+          }
+          setExcuseReasons(map);
+        }
+      } catch { /* best effort */ }
+    })();
+  }, [data]);
+
+  const startLongPress = useCallback((eventId: string, memberId: string, memberName: string, current: CellStatus) => {
+    longPressFiredRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      setExcusedModal({ eventId, memberId, memberName, current });
+      setReasonDraft(excuseReasons[`${eventId}:${memberId}`] || '');
+    }, 300);
+  }, [excuseReasons]);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+  }, []);
+
+  const handleSetState = useCallback(async (state: 'present' | 'absent' | 'excused', reason: string = '') => {
+    if (!excusedModal) return;
+    const sb = getSb();
+    if (!sb) return;
+    const { eventId, memberId, memberName, current } = excusedModal;
+    const cellKey = `${eventId}:${memberId}`;
+
+    // Confirm if destroying persisted reason
+    if (current === 'excused' && state !== 'excused' && excuseReasons[cellKey]) {
+      const persistedReason = excuseReasons[cellKey];
+      const confirmMsg = (t('attendance.grid.confirmDestroyReason', 'Isso removerá o motivo registrado: "{reason}". Continuar?') || 'Confirmar?').replace('{reason}', persistedReason);
+      if (!window.confirm(confirmMsg)) return;
+    }
+
+    setExcusedModal(null);
+    try {
+      if (state === 'excused') {
+        await sb.rpc('mark_member_excused', {
+          p_event_id: eventId, p_member_id: memberId, p_excused: true, p_reason: reason || null,
+        });
+      } else {
+        await sb.rpc('mark_member_present', {
+          p_event_id: eventId, p_member_id: memberId, p_present: state === 'present',
+        });
+        if (current === 'excused') {
+          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        }
+      }
+      await refreshGrid();
+      // Update local reasons cache
+      if (state === 'excused' && reason) {
+        setExcuseReasons(prev => ({ ...prev, [cellKey]: reason }));
+      } else if (state !== 'excused') {
+        setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
+      }
+      const toastMap: Record<string, string> = {
+        present: t('attendance.grid.toastPresent', '✅ Presente'),
+        excused: t('attendance.grid.toastExcused', '⚠️ Falta justificada'),
+        absent: t('attendance.grid.toastAbsent', '❌ Ausente'),
+      };
+      (window as any).toast?.(`${memberName}: ${toastMap[state]}`, 'success');
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro', 'error');
+    }
+  }, [excusedModal, excuseReasons, refreshGrid, t]);
 
   // Self check-in handler
   const handleSelfCheckIn = useCallback(async (eventId: string) => {
@@ -333,9 +440,11 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
       </div>
 
       {/* ---------- Legend ---------- */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)] mb-2 px-1">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)] mb-1 px-1">
         <span>✅ {t('attendance.legend_present', 'Presente')}</span>
         <span>❌ {t('attendance.legend_absent', 'Ausente')}</span>
+        <span>⚠️ {t('attendance.legend_excused', 'Falta justificada')}</span>
+        <span>⚠️* {t('attendance.legend_excused_reason', 'com motivo')}</span>
         <span>— {t('attendance.legend_not_required', 'Não convocado')}</span>
         <span className="text-[var(--border-color)]">|</span>
         <span>🌐 {t('attendance.legend_general', 'Geral')}</span>
@@ -343,6 +452,19 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
         <span>👥 {t('attendance.legend_leadership', 'Liderança')}</span>
         <span>🚀 Kickoff</span>
       </div>
+
+      {/* p87 Sprint UX: help banner explaining cycle + long-press */}
+      {canToggleAttendance && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2 mb-2 flex items-start gap-2 text-[11px] text-blue-800 dark:text-blue-200">
+          <span className="text-base leading-none">💡</span>
+          <div>
+            <strong>{t('attendance.helpTitle', 'Como marcar presença')}:</strong>{' '}
+            {t('attendance.helpClick', 'Clique rápido alterna entre Presente ✅ e Ausente ❌.')}{' '}
+            <strong>{t('attendance.helpLongPress', 'Toque longo (300ms) ou segure o mouse')}</strong>{' '}
+            {t('attendance.helpLongPressDetail', 'abre menu com Falta Justificada ⚠️ + campo de motivo (opcional, recomendado).')}
+          </div>
+        </div>
+      )}
 
       {/* ---------- Attendance Grid ---------- */}
       <div className="overflow-x-auto rounded-lg border border-[var(--border-color,#e5e7eb)]">
@@ -394,26 +516,57 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
                     {member.member_status === 'alumni' && <span className="text-[9px] text-gray-400 ml-1">(Alumni)</span>}
                   </td>
 
-                  {/* Attendance cells — interactive via AttendanceCell */}
+                  {/* Attendance cells — interactive via AttendanceCell + long-press wrapper */}
                   {events.map(ev => {
                     const status = (member.attendance[ev.id] ?? 'na') as CellStatus;
                     const isSelf = member.id === currentMemberId;
+                    const cellKey = `${ev.id}:${member.id}`;
+                    const reason = status === 'excused' ? excuseReasons[cellKey] : undefined;
+                    const titleText = reason
+                      ? `⚠️ ${reason}`
+                      : canToggleAttendance
+                        ? `${member.name} — ${ev.title} — clique alterna / segure para menu`
+                        : `${member.name} — ${ev.title}: ${status}`;
+
+                    // p87 Sprint UX: wrap with pointer handlers for long-press → modal
+                    const cellContent = (
+                      <AttendanceCell
+                        status={status}
+                        canToggle={canToggleAttendance}
+                        isSelf={isSelf}
+                        canSelfCheckIn={isSelf && canSelfCheckIn}
+                        isWithinWindow={isWithinCheckInWindow(ev.date)}
+                        onToggle={() => {
+                          // Skip if long-press already fired (modal opened)
+                          if (longPressFiredRef.current) {
+                            longPressFiredRef.current = false;
+                            return;
+                          }
+                          handleToggle(ev.id, member.id, status);
+                        }}
+                        onCheckIn={() => handleSelfCheckIn(ev.id)}
+                      />
+                    );
 
                     return (
                       <td
                         key={ev.id}
                         className="px-1.5 py-1.5 text-center whitespace-nowrap"
-                        title={`${member.name} — ${ev.title}: ${status}`}
+                        title={titleText}
                       >
-                        <AttendanceCell
-                          status={status}
-                          canToggle={canToggleAttendance}
-                          isSelf={isSelf}
-                          canSelfCheckIn={isSelf && canSelfCheckIn}
-                          isWithinWindow={isWithinCheckInWindow(ev.date)}
-                          onToggle={() => handleToggle(ev.id, member.id, status)}
-                          onCheckIn={() => handleSelfCheckIn(ev.id)}
-                        />
+                        {canToggleAttendance && status !== 'na' && status !== 'scheduled' ? (
+                          <span
+                            className="inline-block select-none"
+                            onPointerDown={() => startLongPress(ev.id, member.id, member.name, status)}
+                            onPointerUp={cancelLongPress}
+                            onPointerCancel={cancelLongPress}
+                            onPointerLeave={cancelLongPress}
+                            onContextMenu={(e) => e.preventDefault()}
+                          >
+                            {cellContent}
+                            {reason && <sup className="text-[9px] text-blue-600 ml-0.5" title={reason}>*</sup>}
+                          </span>
+                        ) : cellContent}
                       </td>
                     );
                   })}
@@ -442,6 +595,68 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
           <button onClick={undoToast.undo} className="text-blue-400 font-semibold hover:text-blue-300 border-0 bg-transparent cursor-pointer text-sm">
             {t('attendance.toast_undo', 'Desfazer')}
           </button>
+        </div>
+      )}
+
+      {/* p87 Sprint UX: Excused state modal (long-press trigger) */}
+      {excusedModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tribe-excused-modal-title"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setExcusedModal(null); }}
+        >
+          <div className="bg-[var(--surface-card,#fff)] dark:bg-gray-800 rounded-2xl p-5 max-w-md w-full shadow-2xl border border-[var(--border-default)]">
+            <h3 id="tribe-excused-modal-title" className="text-base font-bold mb-1 text-[var(--text-primary)]">
+              {t('attendance.grid.modal.title', 'Marcar presença')}
+            </h3>
+            <p className="text-sm text-[var(--text-muted)] mb-4">{excusedModal.memberName}</p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleSetState('present')}
+                className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-green-200 dark:border-green-800 transition-colors"
+              >
+                ✅ {t('attendance.grid.modal.present', 'Presente')}
+              </button>
+              <div className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => handleSetState('excused', reasonDraft.trim())}
+                  className="w-full bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-blue-300 dark:border-blue-700 transition-colors mb-2"
+                >
+                  ⚠️ {t('attendance.grid.modal.excused', 'Falta justificada')}
+                </button>
+                <input
+                  type="text"
+                  value={reasonDraft}
+                  onChange={(e) => setReasonDraft(e.target.value)}
+                  placeholder={t('attendance.grid.modal.reasonPlaceholder', 'Motivo (recomendado)')}
+                  aria-label={t('attendance.grid.modal.reasonAriaLabel', 'Motivo da falta justificada')}
+                  aria-describedby="tribe-excused-reason-hint"
+                  className="w-full text-sm border border-blue-300 dark:border-blue-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-[var(--text-primary)]"
+                />
+                <p id="tribe-excused-reason-hint" className="text-[11px] text-[var(--text-muted)] mt-1">
+                  {t('attendance.grid.modal.reasonHint', 'Recomendado para registro de auditoria. Não obrigatório.')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSetState('absent')}
+                className="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-red-200 dark:border-red-800 transition-colors"
+              >
+                ❌ {t('attendance.grid.modal.absent', 'Ausente')}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExcusedModal(null)}
+              className="mt-4 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] underline"
+            >
+              {t('attendance.grid.modal.cancel', 'Cancelar')}
+            </button>
+          </div>
         </div>
       )}
     </div>

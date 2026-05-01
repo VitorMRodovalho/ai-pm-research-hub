@@ -1128,16 +1128,31 @@ export default function AttendanceGridTab() {
         <span className="font-semibold text-[var(--text-primary)]">
           {t('attendance.grid.legend', 'Legenda')}:
         </span>
+        <span>✅ {t('attendance.legend_present', 'Presente')}</span>
+        <span>❌ {t('attendance.legend_absent', 'Ausente')}</span>
+        <span>⚠️ {t('attendance.legend_excused', 'Falta justificada')}</span>
+        <span title={t('attendance.legend_excused_reason_hint', 'Asterisco indica motivo registrado')}>⚠️* {t('attendance.legend_excused_reason', 'com motivo')}</span>
+        <span>— {t('attendance.legend_not_required', 'Não convocado')}</span>
+        <span className="text-[var(--border-default)]">|</span>
         <span>🌐 <strong>G</strong> = {t('attendance.grid.legendGeral', 'Geral')}</span>
-        <span className="text-[var(--border-default)]">|</span>
         <span>🔬 <strong>T</strong> = {t('attendance.grid.legendTribo', 'Tribo')}</span>
-        <span className="text-[var(--border-default)]">|</span>
         <span>🚀 <strong>K</strong> = {t('attendance.grid.legendKickoff', 'Kickoff')}</span>
-        <span className="text-[var(--border-default)]">|</span>
         <span>👥 <strong>L</strong> = {t('attendance.grid.legendLideranca', 'Liderança')}</span>
-        <span className="text-[var(--border-default)]">|</span>
         <span>📢 <strong>C</strong> = {t('attendance.grid.legendComms', 'Comms')}</span>
       </div>
+
+      {/* p87 Sprint UX: help banner explaining cycle + long-press */}
+      {canManageAttendance() && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2 flex items-start gap-2 text-[11px] text-blue-800 dark:text-blue-200">
+          <span className="text-base leading-none">💡</span>
+          <div>
+            <strong>{t('attendance.helpTitle', 'Como marcar presença')}:</strong>{' '}
+            {t('attendance.helpClick', 'Clique rápido alterna entre Presente ✅ e Ausente ❌.')}{' '}
+            <strong>{t('attendance.helpLongPress', 'Toque longo (300ms) ou segure o mouse')}</strong>{' '}
+            {t('attendance.helpLongPressDetail', 'abre menu com Falta Justificada ⚠️ + campo de motivo (opcional, recomendado).')}
+          </div>
+        </div>
+      )}
 
       {/* Grid / Mobile */}
       {isMobile ? (
