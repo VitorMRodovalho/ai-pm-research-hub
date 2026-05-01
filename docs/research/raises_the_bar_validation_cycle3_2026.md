@@ -2,7 +2,7 @@
 
 **Issue**: [#119](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/119)
 **Date**: 2026-05-01 (p87 marathon)
-**Status**: **MVP / PRELIMINAR** — sample n=14 (Gemini quota cap day-1; expand pendente)
+**Status**: **MVP FINAL** — sample n=14 (Gemini Free Tier cap; full n=63 expansion requires Tier 1 paid OR pg_cron throttled << 2 RPM. Tentativa Sprint 3.b com cron 5/min hit 429 quota — aborted).
 **LGPD path**: Option B (PII-stripped) — anonymize_application_for_ai_training RPC + pmi-ai-analyze-research EF
 **ADR**: ADR-0066 Amendment 2026-05-01 + ADR-0067 N1 Art.20 Safeguards
 
@@ -130,11 +130,14 @@
 3. **Adicionar input opcional**: linkedin_summary text + chapter_history para enriquecer contexto AI sem violar LGPD (com consent retroativo se Option A futuro)
 4. **Calibrar prompt para CBGPL launch context**: durante hiring sprint inicial de community-building, threshold "raise the bar" pode flexibilizar para incluir "qualified contributor" não apenas "exceptional"
 
-### Para Sprint 3.b expansion
-- Atual sample n=14 (cap Gemini quota free tier ~50/min)
-- Pool restante: ~49 candidatos cycle3-2026 elegíveis
-- Approach: pg_cron job com 5/min rate (~10 min para completar) OR upgrade Gemini Tier 1 (paid) para burst
-- Custo estimado restante: ~$2-3 USD
+### Para Sprint 3.b expansion (status: aborted day-1)
+- Sample atual n=14 final (Free Tier Gemini hit 429 quota mesmo com pg_cron 5/min throttle — Sprint 3.b cron `p87_research_expand_throttle` job_id=32 created + dropped após 24 failed tentativas adicionais)
+- Pool restante: 41 candidatos cycle3-2026 elegíveis sem completed run
+- Approach revised: requires either:
+  1. **Gemini Tier 1 paid** (~$2-3 USD para 41 calls + retry buffer) — instantâneo
+  2. **pg_cron muito conservativo** (1-2 RPM × ~30 min) — slow mas free
+  3. **Distributed across days** (free tier reset diário) — split em 4 days × ~10 candidates
+- Recomendação: Tier 1 paid quando PM autorizar. n=63 completo permite findings statistically robust (current n=14 já dá direction signal claro mas confidence intervals largos).
 
 ---
 
