@@ -24,9 +24,11 @@ globs: supabase/**/*.sql, src/lib/database.gen.ts
 Rule:
 - `mcp__claude_ai_Supabase__execute_sql` is for **read-only or DML** (SELECT, INSERT/UPDATE/DELETE on data, NOTIFY, EXPLAIN). Test calls during validation are fine.
 - `mcp__claude_ai_Supabase__apply_migration` is for **all DDL** (CREATE/ALTER/DROP on tables, functions, types, policies, triggers, indexes, views; GRANT/REVOKE; COMMENT ON). Including `CREATE OR REPLACE FUNCTION`.
-- DDL via `apply_migration` auto-creates the migration file in `supabase/migrations/`. Always pair with `supabase migration repair --status applied <timestamp>` so local CLI state and remote agree.
-- Followed by `NOTIFY pgrst, 'reload schema'` if the change affects PostgREST surface (RPC signatures, view shapes, policies on exposed tables).
-- The contract test `tests/contracts/rpc-migration-coverage.test.mjs` will fail in CI when a new function appears in `pg_proc` without a `CREATE FUNCTION` block in any migration — catches accidental DDL via the wrong tool.
+- **`apply_migration` via MCP applies DDL to remote DB only.** It does NOT (a) write a local migration file, NOR (b) register the version in `supabase_migrations.schema_migrations`. Caught 2x in p86 (Wave 5d shipping). Manual sync required:
+  1. After `apply_migration` succeeds, `Write` a local file at `supabase/migrations/<timestamp>_<name>.sql` with the same SQL (timestamp = next-greater than current head; `SELECT version FROM supabase_migrations.schema_migrations ORDER BY version DESC LIMIT 1` to find current).
+  2. Run `supabase migration repair --status applied <timestamp>` to register in CLI tracking + sync to `schema_migrations` table.
+  3. `NOTIFY pgrst, 'reload schema'` via `execute_sql` if the change affects PostgREST surface (RPC signatures, view shapes, policies on exposed tables).
+- Without the manual sync, `tests/contracts/rpc-migration-coverage.test.mjs` will fail in CI when a new function appears in `pg_proc` without a `CREATE FUNCTION` block in any migration — catches accidental DDL via the wrong tool **and** the apply_migration MCP gap.
 
 ## LGPD Compliance (GC-162)
 - All new tables MUST have RLS enabled
