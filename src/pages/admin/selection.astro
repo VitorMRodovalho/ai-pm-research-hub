@@ -651,6 +651,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Entrevista</button>
         <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Comunicação</button>
         <button data-modal-tab="ai-runs" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Análises IA</button>
+        <button data-modal-tab="audit-log" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Auditoria</button>
       </div>
 
       <!-- TAB: Info -->
@@ -778,6 +779,13 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <p class="text-sm text-[var(--text-muted)]">Carregando análises IA...</p>
         </div>
       </div>
+
+      <!-- TAB: Auditoria — gate_attempts timeline (p87 Sprint A.3.b / Issue #117) -->
+      <div id="modal-tab-audit-log" class="hidden">
+        <div id="audit-log-container" class="space-y-3">
+          <p class="text-sm text-[var(--text-muted)]">Carregando auditoria...</p>
+        </div>
+      </div>
     `;
 
     // #91 G4: lazy-load returning candidate offboarding context
@@ -796,13 +804,14 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           b.classList.toggle('border-transparent', !isActive);
           b.classList.toggle('text-[var(--text-secondary)]', !isActive);
         });
-        ['info', 'evaluate', 'interview', 'comms', 'ai-runs'].forEach(t => {
+        ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'audit-log'].forEach(t => {
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
         if (tab === 'evaluate') loadEvaluationForm(row.id);
         if (tab === 'interview') loadInterviewForm(row);
         if (tab === 'comms') loadCommunications(row.id);
         if (tab === 'ai-runs') loadAiAnalysisRuns(row.id);
+        if (tab === 'audit-log') loadGateAuditLog(row.id);
       });
     });
 
@@ -985,6 +994,96 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       container.innerHTML = summary + '<div class="space-y-2 mt-3">' + runsHtml + '</div>';
     } catch (e: any) {
       container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar análises IA: ${esc(e.message || 'desconhecido')}</p>`;
+    }
+  }
+
+  /* ── p87 Sprint A.3.b: Auditoria tab — gate_attempts timeline (Issue #117) ─── */
+  async function loadGateAuditLog(applicationId: string) {
+    const container = document.getElementById('audit-log-container');
+    if (!container || !sb) return;
+    container.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando auditoria...</p>';
+    try {
+      const { data, error } = await sb.rpc('get_application_gate_attempts', {
+        p_application_id: applicationId,
+      });
+      if (error) throw error;
+      const attempts = Array.isArray(data) ? data : [];
+
+      if (attempts.length === 0) {
+        container.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhuma tentativa de schedule_interview ou issue_interview_booking_token registrada para este candidato.</p>';
+        return;
+      }
+
+      const gateCodeColors: Record<string,string> = {
+        P0001: 'bg-red-50 text-red-700',
+        P0002: 'bg-orange-50 text-orange-700',
+        P0003: 'bg-amber-50 text-amber-700',
+        P0004: 'bg-purple-50 text-purple-700',
+      };
+      const gateCodeLabels: Record<string,string> = {
+        P0001: 'Sem AI',
+        P0002: 'Sem par-revisão',
+        P0003: 'Sem score',
+        P0004: 'Status inválido',
+      };
+      const rpcLabels: Record<string,string> = {
+        schedule_interview: 'Agendar entrevista',
+        issue_interview_booking_token: 'Emitir link booking',
+      };
+
+      const passed = attempts.filter((a: any) => a.gate_passed).length;
+      const failed = attempts.filter((a: any) => !a.gate_passed).length;
+      const bypassUsed = attempts.filter((a: any) => a.bypass_granted).length;
+
+      const summary = `
+        <div class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-xl p-3">
+          <div class="flex flex-wrap items-center gap-3 text-[12px]">
+            <div><span class="text-[var(--text-muted)]">Tentativas:</span> <strong>${attempts.length}</strong></div>
+            <div class="text-emerald-700"><span class="text-[var(--text-muted)]">Passaram:</span> <strong>${passed}</strong></div>
+            <div class="text-red-700"><span class="text-[var(--text-muted)]">Falharam:</span> <strong>${failed}</strong></div>
+            ${bypassUsed > 0 ? `<div class="text-purple-700"><span class="text-[var(--text-muted)]">Bypass usado:</span> <strong>${bypassUsed}x</strong></div>` : ''}
+          </div>
+        </div>
+      `;
+
+      const rowsHtml = attempts.map((a: any) => {
+        const dt = new Date(a.attempted_at).toLocaleString('pt-BR');
+        const passedBadge = a.gate_passed
+          ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">PASSOU</span>'
+          : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${gateCodeColors[a.gate_failed_code] || 'bg-red-50 text-red-700'}">${gateCodeLabels[a.gate_failed_code] || 'FALHOU'}</span>`;
+        const bypassBadge = a.bypass_requested
+          ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.bypass_granted ? 'bg-purple-50 text-purple-700' : 'bg-gray-50 text-gray-600'}">${a.bypass_granted ? 'BYPASS GRANTED' : 'BYPASS DENIED'}</span>`
+          : '';
+        const rpcLabel = rpcLabels[a.rpc_name] || a.rpc_name;
+        const callerName = a.caller_name || '—';
+        const reason = a.gate_failed_reason ? `<div class="mt-1 text-[11px] text-red-700">⚠️ ${esc(a.gate_failed_reason)}</div>` : '';
+
+        const payloadEntries = a.payload && typeof a.payload === 'object' ? Object.entries(a.payload) : [];
+        const payloadHtml = payloadEntries.length > 0
+          ? `<div class="mt-2 grid grid-cols-2 gap-1 text-[10px]">${payloadEntries.map(([k, v]: [string, any]) => `<div class="bg-[var(--surface-base)] rounded px-2 py-1"><span class="text-[var(--text-muted)]">${esc(k)}:</span> <code class="text-[var(--text-primary)]">${esc(String(v ?? '—'))}</code></div>`).join('')}</div>`
+          : '';
+
+        return `<details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl">
+          <summary class="cursor-pointer px-4 py-3 flex items-center gap-2 flex-wrap select-none">
+            <strong class="text-[13px] text-navy">${esc(rpcLabel)}</strong>
+            ${passedBadge}
+            ${bypassBadge}
+            <span class="text-[11px] text-[var(--text-muted)]">${dt}</span>
+            <span class="text-[11px] text-[var(--text-muted)] ml-auto">por ${esc(callerName)}</span>
+          </summary>
+          <div class="px-4 pb-4 space-y-1 border-t border-[var(--border-default)] pt-3">
+            ${reason}
+            ${payloadHtml}
+            <div class="text-[10px] text-[var(--text-muted)] pt-1">
+              <span>Code: ${esc(a.gate_failed_code || '—')}</span>
+            </div>
+          </div>
+        </details>`;
+      }).join('');
+
+      container.innerHTML = summary + '<div class="space-y-2 mt-3">' + rowsHtml + '</div>';
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar auditoria: ${esc(e.message || 'desconhecido')}</p>`;
     }
   }
 
