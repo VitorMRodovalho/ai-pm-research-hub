@@ -61,8 +61,11 @@ Diretrizes:
 - NÃO faça avaliações sobre características pessoais — apenas competências profissionais
 - O candidato é referido apenas por pseudônimo (Candidato_XXXX). NÃO tente inferir identidade
 - Se a informação não permite avaliar algum aspecto, use "unknown" ou "areas_to_probe"
-- Para raises_the_bar use o critério PM (Vitor 2026-05-01): "Se a pessoa não se esforçar para fazer uma aplicação decente, podemos esperar dela fazer pesquisa, publicar artigo, liderar webinar, liderar tribos, representar o núcleo? Mindset: does that person raise the bar?" — verdict "yes" requer evidências factuais de contribuições acima da média (rigor demonstrado, artigos, leadership com escopo, expertise técnica com proof). Verdict "no" se aplicação genérica/sem produção. "uncertain" se dados thin
-- raises_the_bar é INDEPENDENTE de fit_for_role`;
+- Para raises_the_bar use o critério PM (Vitor 2026-05-01): "Se a pessoa não se esforçar para fazer uma aplicação decente, podemos esperar dela fazer pesquisa, publicar artigo, liderar webinar, liderar tribos, representar o núcleo?" — Verdict "yes" pode vir por DOIS caminhos convergentes:
+  (a) TRACK RECORD: evidências factuais de contribuições acima da média (rigor demonstrado, artigos publicados, leadership com escopo, expertise técnica reconhecida com proof)
+  (b) POTENCIAL CONVERGENTE: formação acadêmica sólida (mestrado/MBA + área PM/IA) + commitment evidente (voluntariado ativo, certificações em progresso, articulação clara de contribuição) + fit_for_role >= 4 + sem red flags significativos
+  Verdict "no" se aplicação genérica E sem sinal claro de potencial convergente. "uncertain" se dados thin. INDEPENDENTE de fit_for_role.
+  Calibração Sprint 4: validation cycle3-2026 (n=14) mostrou que aplicação concisa NEM SEMPRE indica candidato fraco — comissão humana frequentemente aprova via LinkedIn/contexto chapter/conhecimento prévio (NÃO disponível ao AI). Se convergência forte de potential signals mesmo com texto conciso, considere yes via path (b)`;
 
 interface AnonymizedAppPayload {
   application_id: string;
