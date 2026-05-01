@@ -224,3 +224,73 @@ Migration `20260516220000_phase_b_pmi_journey_v4_one_off_direct_insert.sql`:
 - **Frontend portal `/pmi-onboarding/[token]`** ainda fora do escopo (welcome email leva pra 404 até portal ser criado em sessão dedicada)
 - **PM action**: rodar script no PMI VEP recruiter dashboard quando quiser sync; review SQL queries para validar
 - **Long-term**: relacionamento PMI parceria poderá um dia habilitar API automática + cron real. Worker code preservado para esse futuro
+
+---
+
+## Amendment 2026-05-01 — Workflow Gate gap surfacing (PMI Journey Phase 2 trigger)
+
+**Trigger:** Vice-GP Fabricio Costa reportou via WhatsApp 2026-05-01 09:42 BRT que via 2 entrevistas marcadas para o dia seguinte sem que tivesse sido feita análise inicial. Sweep p87 confirmou:
+
+- **Thayanne Monteiro** (`1e529a68-…`): AI fit_for_role=1/5 ("aplicação extremamente genérica"), 0 par-revisões humanas, status=`submitted`/interview_status=`none`. Calendar booking foi feito sem que `mark_interview_status` ou `schedule_interview` fossem chamados.
+- **Danilo Nascimento** (`d05ddb44-…`): AI fit_for_role=3/5 (junior viável), 0 par-revisões humanas, status=`interview_pending` (flipped sem precondições). Mesmo gap.
+- **João Uzejka dos Santos**: único candidato cycle3-2026-b2 com 2 par-revisões humanas → score 137 → único pronto para entrevista legítima.
+- **0 rows futuras em `selection_interviews`** — Calendar bookings não chegam ao DB (#116).
+
+### Causa raiz (ratificação)
+
+Spec Phase 1 (este ADR) entregou substrate (workers, tokens, RPCs, AI consent, video screening). Mas **não definiu gate explícito entre AI pre-screen → par-revisão humana → entrevista**. Resultado:
+
+1. Calendar booking link público (`https://calendar.app.google/gh9WjefjcmisVLoh7`) sem token-gate por aplicação
+2. Apps Script auto-add-guests não chama `schedule_interview` RPC (Calendar↔DB sync gap = #116)
+3. RPC `mark_interview_status('pending')` callable sem precondição AI/score/peer-review
+4. Workflow mental do PM ("AI roda → comissão revisa par → score → cutoff → entrevista") não está reificado em código
+
+### Decisão (Phase 2 trigger)
+
+**Adicionar workflow gate em 3 layers** — captura formal em Issue [#117](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/117):
+
+1. **RPC-level precondition** (`schedule_interview` + `mark_interview_status`):
+   - Gate 1: `consent_ai_analysis_at IS NOT NULL AND ai_analysis IS NOT NULL`
+   - Gate 2: `(SELECT COUNT(*) FROM selection_evaluations WHERE application_id = …) >= 2`
+   - Gate 3: `objective_score_avg >= cycle.objective_cutoff_formula`
+   - Bypass: `can(auth.uid(), 'manage_member')` lead-only para edge cases (recommendation letters, returning members)
+   - Erro coded: `GATE_NO_AI` / `GATE_NO_PEER_REVIEW` / `GATE_NO_SCORE`
+
+2. **Calendar booking page token-gated** — substituir link Google Calendar Appointment Slots universal por endpoint próprio `/interview-booking/<token>` que:
+   - Valida token (TTL 14 dias, scope `interview_booking`)
+   - Verifica gate (AI + 2 evals + score)
+   - Embeda widget Calendar OR redireciona com query params Apps Script lê
+   - Token gerado quando comissão chama `mark_interview_status('pending')` legítimo
+
+3. **Audit log** para tentativas que falham gate (não temos `audit_events` table; criar como parte de #117).
+
+### Mindset PM (raise the bar)
+
+Vitor articulou explicitamente em WhatsApp 2026-05-01 11:30 BRT:
+
+> "Se uma pessoa não se esforçar para pelo menos fazer uma aplicação decente, será que podemos esperar dela fazer pesquisa, publicar artigo, liderar webinar, liderar tribos, representar o núcleo? Mindset bastante influenciado pelo ambiente que vivo aqui, profissionalmente: 'does that person raise the bar?' Única pergunta que temos que responder do início ao fim."
+
+**Implicação para gate**: critério `objective_cutoff_formula` deve refletir esse threshold. Sub-tarefa: amendar AI prompt do EF `pmi-ai-analyze` para incluir dimensão explícita "would this candidate raise the bar?" como rubric criterion. Sub-tarefa: documentar no rubric de evaluation humana mesma dimensão.
+
+### Hotfix p87 (não código — operacional)
+
+- Email `pre_eval_pause` (template novo) disparado para Thayanne (`5effc0ba-d225-4003-8fc8-39429a7fbad3`) e Danilo (`d4976563-99da-462e-8d8a-7783bcb9faf0`) explicando descompasso e novos próximos passos
+- Danilo `status` revertido `interview_pending → submitted` (sem score, sem par-revisão = não pronto para entrevista)
+- Fabricio cancela 2 events Calendar do lado dele
+- João Uzejka (single legítimo) preservado
+
+### Status
+
+- **Spec gap** Phase 1 reconhecido (este amendment fecha o documental)
+- **Phase 2 implementation** = Issue #117 (gate RPC + Calendar token + audit), bloqueada em quiet window pós-CBGPL launch
+- **#116 Calendar sync** (subset urgente Phase 2) ainda em backlog — Apps Script webhook → schedule_interview
+
+### Trace
+
+- WhatsApp Vitor + Fabricio 2026-05-01 09:42–11:50 BRT
+- p87 sweep findings (sessão dedicada)
+- Issue #116 comment p87 + Issue #117 spinoff
+- Routine `trig_01DYnnv5uimkc5PqnzeyaPnv` (armed 2026-05-02T14:00Z) verificará Thayanne reschedule outcome
+- 6 candidatos cycle3-2026-b2 com AI rodada, apenas 1 (João Uzejka) com peer-review humana → benchmark do que workflow correto produz
+
+Assisted-By: Claude (Anthropic)
