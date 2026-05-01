@@ -175,15 +175,57 @@ Deno.serve(async (req) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const t0 = Date.now();
 
+  // Optional triggered_by from caller (give_consent_via_token / request_application_enrichment / cron / admin)
+  // Default derived from selection_applications.enrichment_count below.
+  const triggeredByFromBody: string | undefined = body?.triggered_by;
+
+  // p86 Wave 5b-1b: insert ai_analysis_runs row up-front, update on completion / fail.
+  // Backward-compat: still maintain selection_applications.ai_analysis column (additive).
+  let runId: string | null = null;
+
   try {
     const { data: app, error: appErr } = await sb
       .from("selection_applications")
-      .select("id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
+      .select("id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, consent_ai_analysis_at, consent_ai_analysis_revoked_at, enrichment_count")
       .eq("id", application_id)
-      .single<AppRow>();
+      .single<AppRow & { enrichment_count: number }>();
     if (appErr || !app) return json({ error: "application_not_found", detail: appErr?.message }, 404);
     if (!app.consent_ai_analysis_at || app.consent_ai_analysis_revoked_at) {
       return json({ error: "consent_required", message: "Candidato não deu consent ou revogou. AI analysis não roda." }, 403);
+    }
+
+    // Compute run_index = MAX(run_index) + 1 for this application
+    const { data: lastRun } = await sb
+      .from("ai_analysis_runs")
+      .select("run_index")
+      .eq("application_id", application_id)
+      .order("run_index", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextRunIndex = (lastRun?.run_index ?? 0) + 1;
+
+    // Derive triggered_by: explicit body parameter, else infer from enrichment_count
+    // (consent path → enrichment_count = 0 ; enrichment path → already incremented to >= 1)
+    const triggeredBy = triggeredByFromBody && ["consent", "enrichment_request", "admin_retry", "cron_retry"].includes(triggeredByFromBody)
+      ? triggeredByFromBody
+      : (app.enrichment_count > 0 ? "enrichment_request" : "consent");
+
+    // Insert run row (status='running')
+    const { data: insertedRun, error: insertErr } = await sb
+      .from("ai_analysis_runs")
+      .insert({
+        application_id,
+        run_index: nextRunIndex,
+        triggered_by: triggeredBy,
+        status: "running",
+        model_version: "gemini-2.5-flash",
+      })
+      .select("id")
+      .single();
+    if (insertErr) {
+      console.warn("[pmi-ai-analyze] ai_analysis_runs INSERT failed:", insertErr.message);
+    } else {
+      runId = insertedRun?.id ?? null;
     }
 
     const analysis = await callGeminiAnalyze(app);
@@ -209,16 +251,53 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", application_id);
-    if (updErr) return json({ error: "db_update_failed", detail: updErr.message }, 500);
+    if (updErr) {
+      // Update run row to failed (best-effort)
+      if (runId) {
+        await sb.from("ai_analysis_runs").update({
+          status: "failed",
+          error_message: `db_update_failed: ${updErr.message}`,
+          duration_ms: Date.now() - t0,
+          completed_at: new Date().toISOString(),
+        }).eq("id", runId);
+      }
+      return json({ error: "db_update_failed", detail: updErr.message }, 500);
+    }
+
+    // Update run row → completed
+    if (runId) {
+      const { error: runUpdErr } = await sb
+        .from("ai_analysis_runs")
+        .update({
+          status: "completed",
+          ai_analysis_snapshot: aiAnalysisPayload,
+          duration_ms: Date.now() - t0,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", runId);
+      if (runUpdErr) console.warn("[pmi-ai-analyze] ai_analysis_runs UPDATE failed:", runUpdErr.message);
+    }
 
     return json({
       success: true,
       application_id,
+      run_id: runId,
+      run_index: nextRunIndex,
+      triggered_by: triggeredBy,
       gemini_ms: t1 - t0,
       total_ms: Date.now() - t0,
       tags_count: focusTags.length,
     });
   } catch (e) {
+    // Update run row → failed (best-effort)
+    if (runId) {
+      await sb.from("ai_analysis_runs").update({
+        status: "failed",
+        error_message: String(e).substring(0, 1000),
+        duration_ms: Date.now() - t0,
+        completed_at: new Date().toISOString(),
+      }).eq("id", runId);
+    }
     return json({ error: "analyze_failed", detail: String(e) }, 500);
   }
 });
