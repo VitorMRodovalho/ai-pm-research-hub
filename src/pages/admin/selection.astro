@@ -94,6 +94,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">Data</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
                 </tr>
@@ -611,6 +612,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
           <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">Detalhes</button>

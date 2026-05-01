@@ -51,7 +51,27 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <div id="camp-templates" class="space-y-4"></div>
 
       <!-- Send History -->
-      <div id="camp-history" class="hidden space-y-4"></div>
+      <div id="camp-history" class="hidden">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <label class="text-[12px] font-semibold text-[var(--fg-muted)]">Filtrar:</label>
+          <select id="camp-history-filter-cat" class="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] text-[12px]">
+            <option value="all">Todas categorias</option>
+            <option value="onboarding">Onboarding</option>
+            <option value="operational">Operacional</option>
+            <option value="announcement">Comunicado</option>
+            <option value="newsletter">Newsletter</option>
+          </select>
+          <select id="camp-history-filter-source" class="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] text-[12px]">
+            <option value="all">Todas origens</option>
+            <option value="pmi-vep-sync">PMI VEP sync (welcomes)</option>
+            <option value="request_interview_reschedule">Reagendamento entrevista</option>
+            <option value="cron_failure">Cron failure</option>
+            <option value="manual">Manual</option>
+          </select>
+          <span id="camp-history-count" class="text-[11px] text-[var(--fg-muted)] ml-auto"></span>
+        </div>
+        <div id="camp-history-list" class="space-y-4"></div>
+      </div>
 
       <!-- Template Editor Modal -->
       <div id="tmpl-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
@@ -545,35 +565,94 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
   }
 
+  let _historyAllSends: any[] = [];
+  let _historyAnalyticsMap: Record<string, any> = {};
+  let _historyAttached = false;
+
   async function loadHistory(sb: any) {
-    const { data } = await sb.from('campaign_sends').select('*, campaign_templates(name)').order('created_at', { ascending: false });
-    const container = document.getElementById('camp-history')!;
+    const { data } = await sb.from('campaign_sends').select('*, campaign_templates(name, category)').order('created_at', { ascending: false });
+    const list = document.getElementById('camp-history-list')!;
     if (!data || data.length === 0) {
-      container.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">${document.getElementById('ai18n-nor')?.textContent || 'No campaigns.'}</p>`;
+      list.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">${document.getElementById('ai18n-nor')?.textContent || 'No campaigns.'}</p>`;
+      document.getElementById('camp-history-count')!.textContent = '';
       return;
     }
 
     // Load aggregate analytics for mini-stats (sent campaigns only)
-    let analyticsMap: Record<string, any> = {};
+    _historyAnalyticsMap = {};
     try {
       const { data: aggData } = await sb.rpc('get_campaign_analytics');
       if (aggData?.recent_sends) {
         for (const rs of aggData.recent_sends) {
-          analyticsMap[rs.id] = rs;
+          _historyAnalyticsMap[rs.id] = rs;
         }
       }
     } catch { /* analytics RPC may not exist yet */ }
 
-    container.innerHTML = data.map((s: any) => {
+    _historyAllSends = data;
+
+    // Wire filters once
+    if (!_historyAttached) {
+      document.getElementById('camp-history-filter-cat')?.addEventListener('change', renderHistoryList);
+      document.getElementById('camp-history-filter-source')?.addEventListener('change', renderHistoryList);
+      _historyAttached = true;
+    }
+
+    renderHistoryList();
+  }
+
+  function renderHistoryList() {
+    const list = document.getElementById('camp-history-list')!;
+    const catFilter = (document.getElementById('camp-history-filter-cat') as HTMLSelectElement)?.value || 'all';
+    const srcFilter = (document.getElementById('camp-history-filter-source') as HTMLSelectElement)?.value || 'all';
+
+    const filtered = _historyAllSends.filter((s: any) => {
+      if (catFilter !== 'all' && s.campaign_templates?.category !== catFilter) return false;
+      if (srcFilter !== 'all') {
+        const src = s.audience_filter?.source || 'manual';
+        if (srcFilter === 'manual' && (src === 'pmi-vep-sync' || src === 'request_interview_reschedule' || src === 'cron_failure')) return false;
+        if (srcFilter !== 'manual' && src !== srcFilter) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('camp-history-count')!.textContent =
+      `${filtered.length} de ${_historyAllSends.length} envio${_historyAllSends.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">Nenhum envio com este filtro.</p>`;
+      return;
+    }
+
+    const catLabels: Record<string,string> = {
+      onboarding: 'Onboarding', operational: 'Operacional',
+      announcement: 'Comunicado', newsletter: 'Newsletter',
+    };
+    const catColors: Record<string,string> = {
+      onboarding: 'bg-purple-50 text-purple-700',
+      operational: 'bg-amber-50 text-amber-700',
+      announcement: 'bg-blue-50 text-blue-700',
+      newsletter: 'bg-emerald-50 text-emerald-700',
+    };
+
+    list.innerHTML = filtered.map((s: any) => {
       const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400', pending_delivery: 'text-amber-400' };
       const dt = s.sent_at ? new Date(s.sent_at).toLocaleString('pt-BR') : new Date(s.created_at).toLocaleString('pt-BR');
-      const stats = analyticsMap[s.id];
+      const stats = _historyAnalyticsMap[s.id];
       const miniStats = stats
         ? `<span class="text-xs text-[var(--fg-muted)] mt-1 block">📬 ${stats.delivered} · 👁️ ${stats.opened} · 🖱️ ${stats.clicked}${stats.bounced > 0 ? ` · 🔴 ${stats.bounced}` : ''}</span>`
         : '';
+      const cat = s.campaign_templates?.category;
+      const catBadge = cat ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${catColors[cat] || 'bg-gray-100 text-gray-700'}">${catLabels[cat] || cat}</span>` : '';
+      const src = s.audience_filter?.source;
+      const srcBadge = src && src !== 'manual' ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${src}</span>` : '';
       return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between">
         <div>
-          <h3 class="font-semibold text-[var(--fg)]">${s.campaign_templates?.name || 'Template removido'}</h3>
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <h3 class="font-semibold text-[var(--fg)]">${s.campaign_templates?.name || 'Template removido'}</h3>
+            ${catBadge}
+            ${srcBadge}
+          </div>
           <p class="text-sm text-[var(--fg-muted)]">${s.recipient_count} destinatários · ${dt}</p>
           <span class="${statusColors[s.status] || 'text-gray-400'} text-sm font-medium">${s.status}</span>
           ${miniStats}
@@ -582,8 +661,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>`;
     }).join('');
 
-    container.querySelectorAll('[data-stats]').forEach(btn => {
-      btn.addEventListener('click', () => openAnalytics(sb, (btn as HTMLElement).dataset.stats!));
+    list.querySelectorAll('[data-stats]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sb = (window as any).navGetSb?.();
+        if (sb) openAnalytics(sb, (btn as HTMLElement).dataset.stats!);
+      });
     });
   }
 
