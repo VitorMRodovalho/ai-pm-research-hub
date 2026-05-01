@@ -950,6 +950,17 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         return;
       }
 
+      const raisesBarColors: Record<string,string> = {
+        yes: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+        no: 'bg-red-50 text-red-700 border-red-300',
+        uncertain: 'bg-amber-50 text-amber-700 border-amber-300',
+      };
+      const raisesBarLabels: Record<string,string> = {
+        yes: '⬆ ELEVA A BARRA',
+        no: '⬇ NÃO ELEVA',
+        uncertain: '◐ INCERTO',
+      };
+
       const runsHtml = runs.map((r: any) => {
         const tbBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${triggeredByColors[r.triggered_by] || 'bg-gray-100 text-gray-700'}">${triggeredByLabels[r.triggered_by] || r.triggered_by}</span>`;
         const statusBadge = `<span class="${statusColors[r.status] || 'text-gray-500'} text-[11px] font-bold uppercase">${r.status}</span>`;
@@ -966,15 +977,32 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         const fieldsChanged = Array.isArray(r.fields_changed) ? r.fields_changed : [];
         const errorMsg = r.error_message ? `<div class="mt-2 text-[12px] text-red-700 bg-red-50 rounded-lg p-2">⚠️ ${esc(r.error_message)}</div>` : '';
 
+        // p87 Sprint C.c: raises_the_bar prominent display (PM mindset Vitor 2026-05-01)
+        const raisesBar = snapshot?.raises_the_bar;
+        const raisesBarBadge = raisesBar?.verdict
+          ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${raisesBarColors[raisesBar.verdict] || 'bg-gray-50 text-gray-700 border-gray-300'}">${raisesBarLabels[raisesBar.verdict] || raisesBar.verdict.toUpperCase()}</span>`
+          : '';
+        const raisesBarBlock = raisesBar?.verdict
+          ? `<div class="border-l-4 ${raisesBar.verdict === 'yes' ? 'border-emerald-500' : raisesBar.verdict === 'no' ? 'border-red-500' : 'border-amber-500'} bg-[var(--surface-base)] rounded-r p-3 mb-2">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[11px] font-bold ${raisesBar.verdict === 'yes' ? 'text-emerald-700' : raisesBar.verdict === 'no' ? 'text-red-700' : 'text-amber-700'}">Raise the bar?</span>
+                ${raisesBarBadge}
+              </div>
+              <p class="text-[12px] text-[var(--text-primary)]">${esc(raisesBar.rationale || '—')}</p>
+            </div>`
+          : '';
+
         return `<details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl">
           <summary class="cursor-pointer px-4 py-3 flex items-center gap-2 flex-wrap select-none">
             <strong class="text-[13px] text-navy">Run #${r.run_index}</strong>
             ${tbBadge}
             ${statusBadge}
+            ${raisesBarBadge}
             <span class="text-[11px] text-[var(--text-muted)]">${startedDt}</span>
             <span class="text-[11px] text-[var(--text-muted)] ml-auto">⏱ ${duration} • Fit ${fitScore}/5 • ${seniority}</span>
           </summary>
           <div class="px-4 pb-4 space-y-2 border-t border-[var(--border-default)] pt-3">
+            ${raisesBarBlock}
             ${summary2 ? `<div><span class="text-[11px] text-[var(--text-muted)]">Sumário</span><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded p-2 mt-1">${esc(summary2)}</p></div>` : ''}
             ${strengths.length ? `<div><span class="text-[11px] text-[var(--text-muted)]">Forças identificadas</span><ul class="text-[12px] mt-1 list-disc list-inside text-emerald-700">${strengths.map((s: string) => `<li>${esc(s)}</li>`).join('')}</ul></div>` : ''}
             ${areasToProbe.length ? `<div><span class="text-[11px] text-[var(--text-muted)]">Áreas a explorar (entrevista)</span><ul class="text-[12px] mt-1 list-disc list-inside text-blue-700">${areasToProbe.map((s: string) => `<li>${esc(s)}</li>`).join('')}</ul></div>` : ''}
