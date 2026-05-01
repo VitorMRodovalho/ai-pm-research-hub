@@ -28,7 +28,7 @@ const json = (d: unknown, s = 200) =>
 
 const ANALYSIS_SCHEMA = {
   type: "object",
-  required: ["summary", "seniority_signal", "leadership_signal", "ai_pm_focus_areas", "fit_for_role", "key_strengths", "areas_to_probe", "red_flags"],
+  required: ["summary", "seniority_signal", "leadership_signal", "ai_pm_focus_areas", "fit_for_role", "raises_the_bar", "key_strengths", "areas_to_probe", "red_flags"],
   properties: {
     summary: { type: "string", description: "2-3 frases executivas em PT-BR sobre o candidato" },
     seniority_signal: { type: "string", enum: ["junior","mid","senior","principal","unknown"] },
@@ -45,6 +45,15 @@ const ANALYSIS_SCHEMA = {
       properties: {
         score: { type: "integer", minimum: 1, maximum: 5 },
         rationale: { type: "string" }
+      }
+    },
+    raises_the_bar: {
+      type: "object",
+      required: ["verdict", "rationale"],
+      description: "PM mindset (Vitor 2026-05-01): 'Does this candidate raise the bar of the team?' Critério-chave que orienta toda a seleção do início ao fim.",
+      properties: {
+        verdict: { type: "string", enum: ["yes", "no", "uncertain"], description: "yes=evidências apontam contribuições acima da média; no=aplicação genérica/sem evidência de produção/contribuição relevante; uncertain=ambíguo ou dados thin" },
+        rationale: { type: "string", description: "Justificativa concisa em PT-BR ancorada em evidências do texto do candidato" }
       }
     },
     key_strengths: { type: "array", items: { type: "string" }, maxItems: 5 },
@@ -67,7 +76,8 @@ Diretrizes:
 - NÃO faça avaliações sobre características pessoais (gênero, etnia, idade, religião) — apenas competências profissionais
 - Se a informação não permite avaliar algum aspecto, use "unknown" no enum ou liste explicitamente em "areas_to_probe"
 - Red flags = sinais factuais preocupantes (incoerências no texto, ausência total de experiência relevante para o role aplicado, expectativas desalinhadas com programa voluntário). Não use red flags pra preferências subjetivas
-- Tags em ai_pm_focus_areas devem ser em snake_case e refletir áreas concretas evidenciadas (não inventadas)`;
+- Tags em ai_pm_focus_areas devem ser em snake_case e refletir áreas concretas evidenciadas (não inventadas)
+- Para raises_the_bar use o critério PM (Vitor Maia Rodovalho, GP, 2026-05-01): "Se a pessoa não se esforçar para fazer uma aplicação decente, podemos esperar dela fazer pesquisa, publicar artigo, liderar webinar, liderar tribos, representar o núcleo? Mindset: does that person raise the bar?" — verdict "yes" requer evidências factuais de contribuições acima da média (rigor de pesquisa demonstrado, artigos publicados, leadership exercida com escopo, expertise técnica reconhecida com proof). Verdict "no" se aplicação é genérica, sem produção/contribuição relevante evidenciada, ou candidato busca primeira oportunidade sem preparação. "uncertain" se dados são thin demais para julgar. Esta avaliação é INDEPENDENTE de fit_for_role: alguém pode ter fit_for_role=4 e raises_the_bar="no" (cumpridor mas não eleva), ou fit_for_role=2 e raises_the_bar="yes" (precisa de mentoria mas com sinal forte de potencial)`;
 
 interface AppRow {
   id: string;
