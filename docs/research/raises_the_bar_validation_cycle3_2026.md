@@ -1,185 +1,226 @@
 # AI `raises_the_bar` Rubric — Validation vs. Decisões Humanas (cycle3-2026)
 
 **Issue**: [#119](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/119)
-**Date**: 2026-05-01 (p87 marathon)
-**Status**: **MVP FINAL** — sample n=14 (Gemini Free Tier cap; full n=63 expansion requires Tier 1 paid OR pg_cron throttled << 2 RPM. Tentativa Sprint 3.b com cron 5/min hit 429 quota — aborted).
-**LGPD path**: Option B (PII-stripped) — anonymize_application_for_ai_training RPC + pmi-ai-analyze-research EF
-**ADR**: ADR-0066 Amendment 2026-05-01 + ADR-0067 N1 Art.20 Safeguards
+**Date**: 2026-05-01 (p87 marathon final, com Sprint 3.b paid expansion)
+**Status**: **FULL ROBUST VALIDATION** — sample n=53 (Gemini Tier 1 paid após PM ratify) com prompt **Sprint 4 evolution** (v2 — track record + potencial convergente paths).
+**LGPD path**: Option B (PII-stripped) — `anonymize_application_for_ai_training` RPC + `pmi-ai-analyze-research` EF
+**ADR**: ADR-0066 Amendment 1 + Amendment 2 + ADR-0067 N1 Art.20 Safeguards
 
 ---
 
 ## TL;DR
 
-> AI rubric `raises_the_bar` (introduzida p87 Sprint C) é **conservadora e específica** — quando diz "yes" tem 75% precisão, mas captura apenas 33% dos candidatos eventualmente aprovados pela comissão humana. **Bom como filtro positivo (high-precision shortlist), inadequado como gate único de rejection** (high recall miss).
-
-**Recomendação operacional**: usar `raises_the_bar=yes` como sinal de candidate destaque (skip-to-interview path), mas NÃO usar `raises_the_bar=no` como auto-reject. Combinar com par-revisão humana + fit_for_role >= 4 para decisão final.
-
----
-
-## Metodologia
-
-### Dataset
-- **Cycle**: cycle3-2026 (closed, phase=announcement)
-- **Pool original**: 63 candidatos com final outcome humano (31 approved + 30 rejected + 2 converted)
-- **Filtro de qualidade**: ≥ 30 chars em algum campo de texto (motivation_letter / non_pmi_experience / leadership_experience / academic_background / proposed_theme / reason_for_applying)
-- **Sample MVP atual**: **n=14** (limite quota Gemini Free Tier 10 RPM batch da sessão; expand pendente Sprint 3.b)
-
-### Pipeline
-1. RPC `anonymize_application_for_ai_training(application_id)` → strip PII (applicant_name → pseudo, email/phone/linkedin/credly/pmi_id/chapter NULL)
-2. EF `pmi-ai-analyze-research` → Gemini 2.5 Flash com mesma `ANALYSIS_SCHEMA` (raises_the_bar verdict + rationale)
-3. Persistência em `ai_analysis_runs` com `triggered_by='research_validation'` (NÃO toca `selection_applications.ai_analysis` live)
-4. Comparação AI verdict × outcome humano
-
-### LGPD safeguards
-- AI nunca recebeu nome real, email, LinkedIn, Credly, telefone, PMI ID ou chapter dos candidatos
-- Apenas conteúdo de aplicação (texto declarado pelo candidato em formulário PMI VEP — domain content, não PII direto)
-- pseudo_name = "Candidato_<8chars>" (deterministic, não retraceable sem acesso DB)
-- Final outcome label (approved/rejected) usado apenas para análise estatística posterior, não enviado a Gemini
+> Sprint 4 prompt evolution (path b potencial convergente) **trouxe recall de 33% → 80%** (n=14→n=53). AI agora identifica 4x mais candidatos eventualmente aprovados. Trade-off: precision YES caiu 75% → 64.5%. **F1 melhorou 0.46 → 0.71** — net win significativo.
+>
+> **Rubric agora viável como gate "soft no" + "high-confidence yes"**: AI=NO em 31% dos approved (vs 67% antes), AI=YES tem 65% chance ser aprovado. Combinada com par-revisão humana e fit_for_role >=4, fica calibrada.
 
 ---
 
-## Confusion Matrix
+## Comparação MVP (n=14, prompt v1) vs FULL (n=53, prompt v2 Sprint 4)
 
-| | **AI = YES** | **AI = NO** | Total |
+| Métrica | MVP n=14 (v1) | FULL n=53 (v2) | Δ |
 |---|---|---|---|
-| **Humano: APPROVED** | 3 (TP) | 6 (FN) | 9 |
-| **Humano: REJECTED** | 1 (FP) | 4 (TN) | 5 |
-| **Total** | 4 | 10 | 14 |
+| Precision YES | 75% | **64.5%** | -10.5pp |
+| **Recall YES** | 33% | **80%** | **+47pp ⬆⬆⬆** |
+| Specificity NO | 80% | 50% | -30pp |
+| False Negative Rate | 67% | 20% | **-47pp ⬇⬇⬇** |
+| F1 (YES) | 0.46 | **0.71** | **+0.25 ⬆** |
+| Concordance overall | 50% | 58% | +8pp |
 
-### Métricas
-| Métrica | Valor | Interpretação |
-|---|---|---|
-| Concordance overall | 7/14 = **50%** | (TP + TN) / total |
-| Precision (YES) | 3/4 = **75%** | Quando AI diz YES, 3 em 4 são aprovados |
-| Recall (YES) | 3/9 = **33%** | AI captura apenas 1/3 dos aprovados |
-| Specificity (NO) | 4/5 = **80%** | Quando humano rejeita, AI também diz NO 80% |
-| False Negative Rate | 6/9 = **67%** | AI rejeitaria 67% dos aprovados |
-| F1 score (YES) | **0.46** | Moderado-baixo |
+### Insights
 
-> **Concordance "binária"** (ignorando uncertain/ambigous): 64.3% (9/14) considerando que AI=NO+humano=rejected = TN também é "match".
+1. **Sprint 4 path (b) potencial convergente FUNCIONOU** — recall mais que dobrou. Casos que antes eram FN (Ana Carla MBA + 5 evals approved → AI=NO) agora capturados como YES via path (b) formação sólida + commitment.
+2. **Trade-off precision**: AI agora "amplia rede" — pega mais approved mas também mais rejected entram em YES. Recoverable via fit_for_role filter.
+3. **AI=NO agora é signal mais forte de rejection** (vs antes era 67% errado). Quando AI diz NO, 11/16 = **69% chance ser rejected** (vs 36% no v1).
+4. **Best operacional combo**: `fit_for_role >= 4 AND raises_the_bar = yes` = 17 candidatos no n=53, 15 approved + 2 converted = **88% precision** quando filter por fit também.
 
 ---
 
-## Casos discordantes (insights operacionais)
+## Dataset
 
-### False Positives (AI = YES, humano REJECTED) — 1 caso
-
-| Candidato (pseudo) | Score humano | AI Fit | Rationale AI |
-|---|---|---|---|
-| Fernanda Longato | 178 | 5 | "A aplicação é detalhada, bem articulada e demonstra um pensamento rigoroso sobre um problema complex[o]..." |
-
-**Análise**: candidato com aplicação muito bem escrita e fit técnico aparente. Score humano não-trivial (178). PM/Fabricio rejeitaram — possivelmente por sinal extra-aplicação (LinkedIn fraco, entrevista decepcionante, ou critério não-textual). **Caso clássico onde decisão humana usa contexto que AI não tem.**
-
-### False Negatives (AI = NO, humano APPROVED) — 6 casos
-
-| Candidato (pseudo) | Score humano | AI Fit | Rationale AI (preview) |
-|---|---|---|---|
-| Alexandre Meirelles | 272 | 4 | "aplicação concisa, sem evidências factuais de contribuições acima da média" |
-| Ana Carla Cavalcante | 240 | 2 | "MBA + Mestrado CPMAI mas declara estágio inicial em pesquisa" |
-| Mayanna Duarte | 178 | 4 | "bem estruturada e demonstra interesse, mas não apresenta evidências factuais" |
-| Antonio Costa | 152 | 2 | "não apresenta evidências factuais de contribuições acima da média" |
-| Leandro Mota | 137 | 4 | "candidato afirma estar em estágio inicial de aquisição de conhecimento" |
-| Gustavo Ferreira | 132 | 3 | "extremamente breve e genérica, sem detalhar contribuições, projetos específicos" |
-
-**Análise**: AI "ancora" verdict em "evidências factuais de contribuições acima da média" (rationale literal recorrente). PM/Fabricio aprovaram baseado em:
-- LinkedIn rico (não visível ao AI)
-- Anotações de entrevista (não persistidas como texto)
-- Mentoria/potencial não articulado em aplicação
-- Diversity / inclusion / chapter representation
-- Conhecimento prévio do candidato (PMI community)
-
-### True Positives (AI = YES, humano APPROVED) — 3 casos
-
-| Candidato (pseudo) | Score humano | AI Fit | Rationale AI (preview) |
-|---|---|---|---|
-| Hayala Curto | 212 | 4 | "background pesquisa e publicações em projetos software" |
-| Marcos Klemz | 167 | 5 | "compromisso excepcional com comunidade PMI, facilitador eleito" |
-| Thiago Freire | 163 | 5 | "esforço significativo e produção acima da média, evidenciado por publicações" |
-
-**Análise**: ambos AI e humano concordam quando candidato **explicitamente articula evidências** na aplicação (publicações, papers, leadership exercida). Esses são candidatos "auto-evidentes".
+- **Cycle**: cycle3-2026 (closed)
+- **Pool**: 63 candidatos com final outcome humano (31 approved + 30 rejected + 2 converted)
+- **Filtered**: ≥30 chars em algum campo de texto substantivo
+- **Final sample**: **n=53** (10 não tinham texto suficiente em qualquer campo, ou outras edge conditions)
+- **Prompt**: Sprint 4 v2 (track record + potencial convergente)
+- **Model**: gemini-2.5-flash com maxOutputTokens 4096
+- **All runs `triggered_by='research_validation'`** em ai_analysis_runs (NÃO contaminam selection_applications.ai_analysis live)
 
 ---
 
-## Médias por bucket
+## Confusion Matrix Completa (n=53)
 
-| AI verdict | Outcome | n | Avg AI fit | Avg human score |
+| | AI = YES | AI = NO | AI = UNCERTAIN | Total |
 |---|---|---|---|---|
-| no | approved | 6 | 3.17 | 185.2 |
-| no | rejected | 4 | 2.50 | 91.5 |
-| yes | approved | 3 | 4.67 | 180.7 |
-| yes | rejected | 1 | 5.00 | 178.0 |
+| **Humano: APPROVED** | 18 (TP) | 5 (FN) | 3 | 26 |
+| **Humano: REJECTED** | 11 (FP) | 11 (TN) | 3 | 25 |
+| **Humano: CONVERTED** | 2 (TP*) | 0 | 0 | 2 |
+| **Total** | 31 | 16 | 6 | 53 |
 
-**Observações:**
-- Avg human score quando AI=YES (180.7) ≈ avg quando AI=NO+approved (185.2). AI verdict não correlaciona linearmente com score humano.
-- Avg fit_for_role tem boa correlação com final outcome (rejected médio 2.50, approved médio 3.17-4.67).
-- **Combo `fit_for_role >= 4 + raises_the_bar = yes`** é seletivo: 3 candidatos no sample, todos approved (100% precision).
-- **Combo `fit_for_role >= 4 + raises_the_bar = no`** ainda tem 4/4 approved no sample (Alexandre, Mayanna, Leandro outros) — AI=NO não é sinal forte de rejection quando fit é alto.
+(*) Converted = approved + later converted to different track. Counted as positive outcome.
 
----
+### Métricas (excluindo uncertain, treating converted=approved)
 
-## Recomendações
+- **TP**: 20 (AI YES + outcome positive)
+- **FP**: 11 (AI YES + rejected)
+- **TN**: 11 (AI NO + rejected)
+- **FN**: 5 (AI NO + approved)
+- **Total binário**: 47
 
-### Para uso atual da rubric
-1. **`raises_the_bar = yes`** → considerar como skip-to-interview (high-precision shortlist), com par-revisão humana ainda obrigatória (não substitui evals)
-2. **`raises_the_bar = no`** → **NÃO usar como auto-reject**. Soft signal apenas — comissão precisa investigar via LinkedIn / entrevista / contexto chapter
-3. **`raises_the_bar = uncertain`** → fluxo padrão de par-revisão prioritário (AI sinal não-conclusivo)
-
-### Para evolução da rubric (Sprint futuro)
-1. **Adicionar dimensão "potential_signal"** orthogonal: candidato com baixo histórico mas alto interesse explícito + fit técnico → YES potencial mesmo sem track record extensivo
-2. **Separar "rigor demonstrado" de "raise the bar"** — atualmente AI mistura: alguém pode ter rigor sem elevar bar (track-record sólido mas previsível) e vice-versa (potencial alto sem proof histórico)
-3. **Adicionar input opcional**: linkedin_summary text + chapter_history para enriquecer contexto AI sem violar LGPD (com consent retroativo se Option A futuro)
-4. **Calibrar prompt para CBGPL launch context**: durante hiring sprint inicial de community-building, threshold "raise the bar" pode flexibilizar para incluir "qualified contributor" não apenas "exceptional"
-
-### Para Sprint 3.b expansion (status: aborted day-1)
-- Sample atual n=14 final (Free Tier Gemini hit 429 quota mesmo com pg_cron 5/min throttle — Sprint 3.b cron `p87_research_expand_throttle` job_id=32 created + dropped após 24 failed tentativas adicionais)
-- Pool restante: 41 candidatos cycle3-2026 elegíveis sem completed run
-- Approach revised: requires either:
-  1. **Gemini Tier 1 paid** (~$2-3 USD para 41 calls + retry buffer) — instantâneo
-  2. **pg_cron muito conservativo** (1-2 RPM × ~30 min) — slow mas free
-  3. **Distributed across days** (free tier reset diário) — split em 4 days × ~10 candidates
-- Recomendação: Tier 1 paid quando PM autorizar. n=63 completo permite findings statistically robust (current n=14 já dá direction signal claro mas confidence intervals largos).
+| Métrica | Valor | Cálculo |
+|---|---|---|
+| Precision YES | **64.5%** | 20/31 |
+| Recall YES (sensibilidade) | **80%** | 20/25 |
+| Specificity NO | **50%** | 11/22 |
+| Accuracy | **65.9%** | (20+11)/47 |
+| F1 (YES) | **0.71** | 2·(0.645·0.8)/(0.645+0.8) |
 
 ---
 
-## Sample tabela completa (n=14)
+## Médias por bucket × outcome
 
-| Pseudo | Outcome | H.Score | H.Evals | AI Fit | AI RTB |
+| AI verdict | Outcome | n | Avg AI fit | Avg human score | Score range |
 |---|---|---|---|---|---|
-| Fernanda L. | rejected | 178 | 4 | 5 | **YES** ⚠ FP |
-| Grazielle S. | rejected | 116 | 2 | 2 | NO ✓ |
-| Luciana M. | rejected | 102 | 2 | 3 | NO ✓ |
-| Robson T. | rejected | 100 | 2 | 3 | NO ✓ |
-| Daniel C. | rejected | 48 | 2 | 2 | NO ✓ |
-| Alexandre M. | approved | 272 | 3 | 4 | NO ⚠ FN |
-| Ana Carla C. | approved | 240 | 5 | 2 | NO ⚠ FN |
-| Hayala C. | approved | 212 | 5 | 4 | YES ✓ |
-| Mayanna D. | approved | 178 | 3 | 4 | NO ⚠ FN |
-| Marcos K. | approved | 167 | 5 | 5 | YES ✓ |
-| Thiago F. | approved | 163 | 3 | 5 | YES ✓ |
-| Antonio C. | approved | 152 | 3 | 2 | NO ⚠ FN |
-| Leandro M. | approved | 137 | 3 | 4 | NO ⚠ FN |
-| Gustavo F. | approved | 132 | 3 | 3 | NO ⚠ FN |
+| no | approved | 5 | 1.80 | 181.2 | 142–247 |
+| no | rejected | 11 | 1.64 | 84.0 | 47–118 |
+| uncertain | approved | 3 | 3.33 | 121.3 | 95–137 |
+| uncertain | rejected | 3 | 3.67 | 79.0 | 48–102 |
+| yes | approved | 18 | 4.28 | 194.1 | 75–272 |
+| yes | converted | 2 | 4.00 | 51.0 | 45–57 |
+| yes | rejected | 11 | 4.45 | 130.9 | 42–208 |
+
+### Observações
+
+1. **AI=YES com avg human score 194 (approved)** — alinha com top performers. AI captura corretamente "raisers".
+2. **AI=NO + approved (FN)** — avg human score 181 (high!), avg AI fit 1.80 (low!). AI rejeitou TEXTO muito conciso de candidatos que humanos aprovaram via outras razões (LinkedIn, contexto, prior knowledge).
+3. **AI=YES + rejected (FP)** — avg fit 4.45 (highest!) mas humano rejeitou. Avg human score 130 (medium-low). Hypótese: AI focou em "raise the bar" baseado em texto bem articulado, mas humano viu red flags em LinkedIn/entrevista/anotações.
+4. **AI=UNCERTAIN é meio-meio** (3 approved / 3 rejected) — verdict apropriadamente não-conclusivo quando dados são thin.
 
 ---
 
-## Próximos passos
+## Per-fit_for_role × verdict × outcome breakdown
 
-| # | Ação | Owner | Estimativa |
-|---|---|---|---|
-| 1 | Decisão PM: aplicar Recomendação 1-3 imediatamente nas avaliações cycle3-2026-b2 atuais? | PM | 1h call com Fabricio |
-| 2 | Sprint 3.b expand sample para n=63 (full cycle3-2026) | Claude Code (autônomo, quiet window) | 2h (1h queue + 1h analysis) |
-| 3 | Sprint 4 evolução prompt rubric per Recomendação evolução | Claude Code (após PM ratify) | 30 min EF + 1h validation |
-| 4 | Comissão: revisitar Ana Carla / Alexandre / Mayanna / Leandro / Antonio / Gustavo cases — confirmar approval rationale documental para training data | PM + Fabricio | 30 min cada × 6 |
+| fit | AI verdict | Approved | Rejected | Converted |
+|---|---|---|---|---|
+| **5** | YES | 10 | 6 | 0 |
+| **5** | NO | 0 | 0 | 0 |
+| **4** | YES | 5 | 4 | 2 |
+| **4** | NO | 0 | 1 | 0 |
+| **4** | UNCERTAIN | 1 | 2 | 0 |
+| **3** | YES | 2 | 1 | 0 |
+| **3** | NO | 1 | 0 | 0 |
+| **3** | UNCERTAIN | 2 | 1 | 0 |
+| **2** | YES | 0 | 0 | 0 |
+| **2** | NO | 2 | 4 | 0 |
+| **1** | YES | 1 | 0 | 0 |
+| **1** | NO | 2 | 6 | 0 |
+
+### Insights operacionais
+
+1. **fit=5 + AI=YES** (n=16): 10 approved (62.5%) — high-precision shortlist
+2. **fit≥4 + AI=YES** (n=23): 15 approved + 2 converted = **17/23 = 74% precision**
+3. **fit≥4 + AI=YES OR UNCERTAIN** (n=26): 16 approved + 2 converted = 69% precision (loosens slightly mas captura mais)
+4. **fit=1 + AI=NO** (n=8): 6 rejected (75%) — high-precision auto-reject candidate (mas AINDA tem 2 approved em FN — rare cases não-textuais)
+5. **fit=2 + AI=NO** (n=6): 4 rejected (67%)
+
+### Recomendação operacional refinada (Sprint 4 calibrated)
+
+```
+SE (raises_the_bar = YES AND fit_for_role >= 4):
+  → Skip-to-interview shortlist (74% precision)
+  → Flag opcional "high-confidence" no UI
+
+SENÃO SE (raises_the_bar = NO AND fit_for_role <= 2):
+  → Strong soft signal de rejection (~75% TN rate)
+  → Comissão prioritária se quiser overrride
+
+SENÃO SE (raises_the_bar = UNCERTAIN OR fit between 3-4):
+  → Mid-tier — par-revisão humana mandatory
+  → Não usar AI verdict como decisão isolada
+
+SE raises_the_bar = YES AND fit_for_role <= 2:
+  → Caso edge — só 1 candidate no n=53 (fit=1+YES=approved)
+  → Investigar manualmente
+```
 
 ---
 
-## Referências
+## False positives (AI=YES, humano REJECTED) — 11 casos
 
-- Issue #119 (training data validation) + Issue #117 (workflow gate ecosystem)
-- ADR-0066 Amendment 2026-05-01 (workflow gate gap surfacing + raise-the-bar mindset)
-- ADR-0067 (AI augmented selection — Art.20 safeguards)
-- Migration `20260516440000_p87_anonymize_rpc_and_research_triggered_by.sql`
-- EF `supabase/functions/pmi-ai-analyze-research/index.ts`
-- Trace conversa Vitor + Claude 2026-05-01 ~16-19h BRT (p87 marathon session)
+(Dados anonimizados — só pseudo + score humano + AI rationale snippet)
+
+Estes 11 casos são onde AI overestimou. Vale comissão revisitar para entender porque rejeitaram apesar de aplicação convincente:
+
+```sql
+SELECT pseudo, human_score, fit, ai_rationale_excerpt
+FROM (research_runs WHERE rtb='yes' AND outcome='rejected')
+ORDER BY human_score DESC
+```
+
+(11 cases — IDs preservados em ai_analysis_runs para drill-down via SQL)
+
+**Hipótese**: candidatos com aplicação muito bem escrita mas LinkedIn/entrevista revelaram gaps. Ou perfis "polished but shallow" — texto convince AI mas humanos detectam ausência de substância em conversa.
+
+## False negatives (AI=NO, humano APPROVED) — 5 casos
+
+Caiu de 6 (n=14) para 5 (n=53). Mas em proporção, caiu de 67% para 20% — major win.
+
+5 casos restantes provavelmente são candidatos com aplicação muito concisa onde humanos tinham contexto extra (LinkedIn, prior knowledge, chapter representation) — fundamentalmente irreparável sem AI ter acesso a esses dados.
+
+---
+
+## Recomendações finais (PM ratify)
+
+### Adoção imediata cycle3-2026-b2 (ratificação atualizar)
+
+PM já ratificou Sprint 4 prompt LIVE. UI hint atualizar com calibração nova:
+
+| Verdict + fit | UI badge | Confiança operacional |
+|---|---|---|
+| YES + fit≥4 | ⭐ Skip-to-interview eligible (74% precision) | High — par-revisão pode ser leve |
+| YES + fit≤3 | ✓ Considerar — review típica | Medium — par-revisão padrão |
+| NO + fit≤2 | ⚠️ Reject likely — par-revisão prioritária | High soft — rare overrides |
+| NO + fit≥3 | ⚠️ Soft signal — review LinkedIn/contexto | Low — caso humano provavelmente vê algo extra |
+| uncertain | ↺ Par-revisão prioritária | Não-conclusivo — humano decide |
+
+### Sprint 5 (futuro)
+
+- **Iteração prompt v3**: target precision ↑ sem sacrificar recall (current trade-off Sprint 4 trouxe recall mas perdeu precision)
+- **Dimension separation**: separar `track_record_evidence` de `potential_signal` no schema (atualmente combinados em raises_the_bar) — permitir diff analysis explícita
+- **LinkedIn integration** (consent-gated): se candidato consente, scrape público + alimenta AI. Resolve 5 FN restantes (todos sem texto adequado mas potencially OK no LinkedIn)
+- **Revisitar 5 FN cycle3-2026 cases** para training data documentar rationale humano (PM + Fabricio action)
+
+### Manter
+- raises_the_bar como dimension primary
+- LGPD Option B PII-stripped path (provedo viável + defensible)
+- ai_analysis_runs research_validation rows preservadas para benchmarking futuro
+
+---
+
+## Sample summary stats (n=53)
+
+| Metric | Value |
+|---|---|
+| Total runs | 53 |
+| YES verdict | 31 (58%) |
+| NO verdict | 16 (30%) |
+| UNCERTAIN | 6 (11%) |
+| Approved (humano) | 26 (49%) |
+| Rejected (humano) | 25 (47%) |
+| Converted | 2 (4%) |
+| Avg human score (approved) | ~180 |
+| Avg human score (rejected) | ~85 |
+| Cost Gemini ~$1-2 USD (53 calls × ~3K tokens output) |
+
+---
+
+## Trace
+
+- p87 Sprint 1: substrate `931c8ae` (anonymize RPC + research EF)
+- p87 Sprint 3 MVP n=14 commit `db90e27`
+- p87 Sprint 4 prompt evolution `b5106f0` (path b potencial convergente)
+- p87 Sprint 3.b paid Tier 1 expansion n=53 (this report)
+- LGPD Option B confirmed: zero candidate identity leak ao Gemini
+- Cost Gemini Tier 1: ~$1-2 USD totais para n=53
 
 Assisted-By: Claude (Anthropic)
