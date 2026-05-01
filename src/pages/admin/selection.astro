@@ -649,6 +649,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <button data-modal-tab="info" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Informações</button>
         <button data-modal-tab="evaluate" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Avaliar</button>
         <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Entrevista</button>
+        <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Comunicação</button>
       </div>
 
       <!-- TAB: Info -->
@@ -762,6 +763,13 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         </div>
         ` : ''}
       </div>
+
+      <!-- TAB: Comunicação (p86 #5) -->
+      <div id="modal-tab-comms" class="hidden">
+        <div id="comms-container" class="space-y-3">
+          <p class="text-sm text-[var(--text-muted)]">Carregando comunicações...</p>
+        </div>
+      </div>
     `;
 
     // #91 G4: lazy-load returning candidate offboarding context
@@ -780,11 +788,12 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           b.classList.toggle('border-transparent', !isActive);
           b.classList.toggle('text-[var(--text-secondary)]', !isActive);
         });
-        ['info', 'evaluate', 'interview'].forEach(t => {
+        ['info', 'evaluate', 'interview', 'comms'].forEach(t => {
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
         if (tab === 'evaluate') loadEvaluationForm(row.id);
         if (tab === 'interview') loadInterviewForm(row);
+        if (tab === 'comms') loadCommunications(row.id);
       });
     });
 
@@ -873,6 +882,68 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     });
 
     modal.classList.remove('hidden');
+  }
+
+  /* ── p86 #5: Comunicação tab — campaign sends to applicant.email ─── */
+  async function loadCommunications(applicationId: string) {
+    const container = document.getElementById('comms-container');
+    if (!container || !sb) return;
+    container.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando comunicações...</p>';
+    try {
+      const { data, error } = await sb.rpc('get_application_communications', {
+        p_application_id: applicationId,
+      });
+      if (error) throw error;
+      const comms = data?.communications || [];
+      if (comms.length === 0) {
+        container.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhuma comunicação enviada a este candidato ainda.</p>';
+        return;
+      }
+      const catLabels: Record<string,string> = {
+        onboarding: 'Onboarding', operational: 'Operacional',
+        announcement: 'Comunicado', newsletter: 'Newsletter',
+      };
+      const catColors: Record<string,string> = {
+        onboarding: 'bg-purple-50 text-purple-700',
+        operational: 'bg-amber-50 text-amber-700',
+        announcement: 'bg-blue-50 text-blue-700',
+        newsletter: 'bg-emerald-50 text-emerald-700',
+      };
+      container.innerHTML = `
+        <p class="text-[11px] text-[var(--text-muted)]">${comms.length} comunicação(ões) enviada(s) para <strong>${esc(data.applicant_email)}</strong></p>
+        ${comms.map((c: any) => {
+          const dt = c.send_sent_at ? new Date(c.send_sent_at).toLocaleString('pt-BR') : new Date(c.send_created_at).toLocaleString('pt-BR');
+          const cat = c.template_category;
+          const catBadge = cat ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${catColors[cat] || 'bg-gray-100 text-gray-700'}">${catLabels[cat] || cat}</span>` : '';
+          const srcBadge = c.audience_source && c.audience_source !== 'manual' ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${esc(c.audience_source)}</span>` : '';
+          const statusColors: Record<string,string> = { sent: 'text-emerald-700', sending: 'text-amber-600', pending_delivery: 'text-amber-600', throttled: 'text-amber-600', failed: 'text-red-600', draft: 'text-gray-500' };
+          const deliveryStatus = c.recipient_delivered ? 'Entregue' : (c.recipient_bounced_at ? 'Bounced' : c.recipient_error_message ? 'Erro' : c.send_status === 'pending_delivery' ? 'Pendente' : '—');
+          const deliveryColor = c.recipient_delivered ? 'text-emerald-700' : (c.recipient_bounced_at || c.recipient_error_message) ? 'text-red-700' : 'text-amber-600';
+          const openInfo = c.recipient_opened_at && !c.recipient_bot_suspected ? `<span class="text-[11px] text-[var(--text-muted)]">👁️ Aberto ${c.recipient_open_count || 1}x · primeiro em ${new Date(c.recipient_opened_at).toLocaleString('pt-BR')}</span>` : '';
+          const clickInfo = c.recipient_clicked_at ? `<span class="text-[11px] text-[var(--text-muted)]">🖱️ Clicou ${c.recipient_click_count || 1}x</span>` : '';
+          const bounceInfo = c.recipient_bounced_at ? `<span class="text-[11px] text-red-700">🔴 Bounce ${esc(c.recipient_bounce_type || '')} em ${new Date(c.recipient_bounced_at).toLocaleString('pt-BR')}</span>` : '';
+          const errorInfo = c.recipient_error_message ? `<div class="text-[11px] text-red-700 mt-1">⚠️ ${esc(c.recipient_error_message)}</div>` : '';
+          return `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <strong class="text-[13px] text-navy">${esc(c.template_name)}</strong>
+              ${catBadge}
+              ${srcBadge}
+            </div>
+            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+              <span>${dt}</span>
+              <span class="${statusColors[c.send_status] || 'text-gray-500'} font-semibold">${esc(c.send_status)}</span>
+              <span class="${deliveryColor} font-semibold">📬 ${deliveryStatus}</span>
+              ${openInfo}
+              ${clickInfo}
+              ${bounceInfo}
+            </div>
+            ${errorInfo}
+          </div>`;
+        }).join('')}
+      `;
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar comunicações: ${esc(e.message || 'desconhecido')}</p>`;
+    }
   }
 
   /* ── #91 G4: returning candidate offboarding context ─────────────── */
