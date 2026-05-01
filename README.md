@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-59%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![MCP](https://img.shields.io/badge/MCP-236%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -44,10 +44,10 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | Events held | 209 |
 | Governance entries | 160+ |
 | Blog posts | 9 |
-| MCP tools | 64 (51 read · 13 write) |
-| Edge Functions | 21 |
-| i18n keys | 3,900+ (3 locales) |
-| Tests | 779 passing |
+| MCP tools | 236 (157 read · 79 write) |
+| Edge Functions | 31 |
+| i18n keys | 4,000+ (3 locales) |
+| Tests | 1,408 passing (1,443 with service-role) |
 | Monthly cost | $0 |
 
 ---
@@ -81,9 +81,9 @@ graph LR
 
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
-        E --> I[PostgreSQL<br/>189+ RPC · RLS]
-        F --> J[Edge Functions<br/>20 deployed]
-        I --> K[pg_cron<br/>4 jobs]
+        E --> I[PostgreSQL<br/>500+ RPC · RLS]
+        F --> J[Edge Functions<br/>31 deployed]
+        I --> K[pg_cron<br/>10+ jobs]
     end
 
     subgraph "Observability"
@@ -109,7 +109,7 @@ graph LR
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
 | **Database** | Supabase PostgreSQL | 200+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (68 tools) | AI assistants query platform via natural language |
+| **MCP** | Custom server (236 tools) | AI assistants query platform via natural language |
 | **Server Logic** | Supabase Edge Functions (21) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
@@ -121,7 +121,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 68 tools (54 read + 14 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 236 tools (157 read + 79 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -158,7 +158,7 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Verified (68 tools) |
+| Claude.ai | Verified (236 tools) |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |
