@@ -5077,6 +5077,27 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // recirculate_governance_doc — workflow: lock pending draft + supersede current chain + email curators (#122)
+  mcp.tool("recirculate_governance_doc", "Re-circulação de documento governance pós-redraft (Material change). Locks pending draft, supersedes current approval_chain, creates new chain with same gates, and emails recipients via parametrized template. Use dry_run=true para preview (default). Default recipients = all members eligible to sign first gate (curators for most docs); pass recipient_emails para override explicito. Requires manage_member authority. Sediment p88 ADR-0068 Round 5 (#122).", {
+    chain_id: z.string().describe("UUID of current approval_chain to supersede (status must be review or active)"),
+    dry_run: z.boolean().optional().describe("Preview without execution. Default: true"),
+    recipient_emails: z.array(z.string()).optional().describe("Explicit recipient email list. If null/omitted, auto-computed from members eligible to sign first gate")
+  }, async (params: { chain_id: string; dry_run?: boolean; recipient_emails?: string[] }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "recirculate_governance_doc", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.chain_id)) { await logUsage(sb, member.id, "recirculate_governance_doc", false, "Invalid chain_id", start); return err("chain_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "recirculate_governance_doc", false, "Unauthorized", start); return err("Unauthorized — manage_member authority required"); }
+    const { data, error } = await sb.rpc("recirculate_governance_doc", {
+      p_chain_id: params.chain_id,
+      p_dry_run: params.dry_run ?? true,
+      p_recipient_emails: params.recipient_emails ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "recirculate_governance_doc", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "recirculate_governance_doc", true, undefined, start);
+    return ok(data);
+  });
+
   // delete_document_version_draft — remove an unlocked draft (emits audit log)
   mcp.tool("delete_document_version_draft", "DELETE an unlocked draft version permanently. Fails if the version is locked (locked versions are immutable). Records the deletion in admin_audit_log. Requires manage_member authority.", {
     version_id: z.string().describe("UUID of document_versions row to delete")
@@ -5211,7 +5232,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.54.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.55.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5231,6 +5252,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.54.0", tools: 237, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.55.0", tools: 238, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
