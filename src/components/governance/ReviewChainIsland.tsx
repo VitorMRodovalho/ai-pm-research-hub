@@ -97,7 +97,8 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const [detail, setDetail] = useState<WorkflowDetail | null>(null);
   const [contentHtml, setContentHtml] = useState<string>('');
   const [prevVersion, setPrevVersion] = useState<{ version_id: string; version_label: string; content_html: string; locked_at: string | null } | null>(null);
-  const [viewMode, setViewMode] = useState<'document' | 'diff'>('document');
+  const [nextDraft, setNextDraft] = useState<{ version_id: string; version_label: string; content_html: string; authored_at: string; notes: string | null } | null>(null);
+  const [viewMode, setViewMode] = useState<'document' | 'diff' | 'draft' | 'draft_diff'>('document');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [signing, setSigning] = useState<string>('');
@@ -145,6 +146,18 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
         version_label: pRes.data.version_label,
         content_html: pRes.data.content_html,
         locked_at: pRes.data.locked_at,
+      });
+    }
+
+    // Load next draft (if any) for review of pending iteration (p88, ADR-0068)
+    const nRes = await sb.rpc('get_next_draft_version', { p_version_id: dRes.data.version_id });
+    if (nRes.data && nRes.data.exists) {
+      setNextDraft({
+        version_id: nRes.data.version_id,
+        version_label: nRes.data.version_label,
+        content_html: nRes.data.content_html,
+        authored_at: nRes.data.authored_at,
+        notes: nRes.data.notes,
       });
     }
 
@@ -257,23 +270,76 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
         </div>
       )}
 
+      {nextDraft && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-700 text-base">📝</span>
+            <div className="flex-1">
+              <h3 className="text-[13px] font-bold text-amber-900">
+                Próxima versão (draft pendente): <strong>{nextDraft.version_label}</strong>
+              </h3>
+              <p className="text-[11px] text-amber-800 mt-0.5">
+                Criado em {fmtDT(nextDraft.authored_at)} · {nextDraft.content_html.length.toLocaleString()} caracteres ·
+                {' '}<button type="button" onClick={() => setViewMode('draft')}
+                  className="underline font-semibold cursor-pointer hover:text-amber-900 bg-transparent border-0 p-0">
+                  visualizar conteúdo
+                </button>
+                {' · '}
+                <button type="button" onClick={() => setViewMode('draft_diff')}
+                  className="underline font-semibold cursor-pointer hover:text-amber-900 bg-transparent border-0 p-0">
+                  comparar com {detail.version_label}
+                </button>
+              </p>
+              {nextDraft.notes && (
+                <details className="mt-2">
+                  <summary className="text-[11px] font-semibold text-amber-900 cursor-pointer hover:text-amber-700">
+                    Changelog (notes da v{nextDraft.version_label})
+                  </summary>
+                  <div className="mt-1 p-2 rounded bg-white/60 border border-amber-200 text-[10px] text-amber-900 whitespace-pre-line max-h-40 overflow-y-auto">
+                    {nextDraft.notes}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
-          {prevVersion && (
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-default)] bg-[var(--surface-hover)]">
-              <div role="tablist" className="inline-flex rounded-lg border border-[var(--border-default)] bg-white p-0.5">
+          {(prevVersion || nextDraft) && (
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-default)] bg-[var(--surface-hover)] flex-wrap">
+              <div role="tablist" className="inline-flex rounded-lg border border-[var(--border-default)] bg-white p-0.5 flex-wrap">
                 <button type="button" role="tab" aria-selected={viewMode === 'document'}
                   onClick={() => setViewMode('document')}
                   className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'document' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'}`}
                 >
-                  Documento
+                  Documento ({detail.version_label})
                 </button>
-                <button type="button" role="tab" aria-selected={viewMode === 'diff'}
-                  onClick={() => setViewMode('diff')}
-                  className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'diff' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'}`}
-                >
-                  Diff {prevVersion.version_label} ↔ {detail.version_label}
-                </button>
+                {prevVersion && (
+                  <button type="button" role="tab" aria-selected={viewMode === 'diff'}
+                    onClick={() => setViewMode('diff')}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'diff' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'}`}
+                  >
+                    Diff {prevVersion.version_label} ↔ {detail.version_label}
+                  </button>
+                )}
+                {nextDraft && (
+                  <>
+                    <button type="button" role="tab" aria-selected={viewMode === 'draft'}
+                      onClick={() => setViewMode('draft')}
+                      className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'draft' ? 'bg-amber-600 text-white' : 'bg-transparent text-amber-800'}`}
+                    >
+                      Draft {nextDraft.version_label}
+                    </button>
+                    <button type="button" role="tab" aria-selected={viewMode === 'draft_diff'}
+                      onClick={() => setViewMode('draft_diff')}
+                      className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'draft_diff' ? 'bg-amber-600 text-white' : 'bg-transparent text-amber-800'}`}
+                    >
+                      Diff {detail.version_label} ↔ Draft
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -284,6 +350,16 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
                 current={{ version_id: detail.version_id, version_label: detail.version_label, content_html: contentHtml, locked_at: detail.locked_at }}
               />
             </div>
+          ) : viewMode === 'draft_diff' && nextDraft ? (
+            <div className="px-4 py-3">
+              <VersionDiffViewer
+                previous={{ version_id: detail.version_id, version_label: detail.version_label, content_html: contentHtml, locked_at: detail.locked_at }}
+                current={{ version_id: nextDraft.version_id, version_label: nextDraft.version_label, content_html: nextDraft.content_html, locked_at: null }}
+              />
+            </div>
+          ) : viewMode === 'draft' && nextDraft ? (
+            <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)] border-l-4 border-amber-400"
+                 dangerouslySetInnerHTML={{ __html: nextDraft.content_html }} />
           ) : (
             <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)]"
                  dangerouslySetInnerHTML={{ __html: contentHtml }} />
