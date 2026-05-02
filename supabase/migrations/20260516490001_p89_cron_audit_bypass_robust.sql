@@ -23,7 +23,7 @@ CREATE OR REPLACE FUNCTION public.get_weekly_tribe_digest(p_tribe_id integer)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $$
 DECLARE
   v_caller_id uuid;
   v_tribe record;
@@ -127,7 +127,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$;
+$$;
 
 COMMENT ON FUNCTION public.get_weekly_tribe_digest(integer) IS
   'Build weekly per-tribe digest (privacy-preserving aggregates). Auth: tribe leader OR manage_member; service_role/cron bypass via auth.role() OR (request.jwt.claims IS NULL) (ADR-0028 robust adapter — anteriormente bypass restrito a auth.role() falhava em cron sem JWT).';
