@@ -159,6 +159,12 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
         authored_at: nRes.data.authored_at,
         notes: nRes.data.notes,
       });
+      // PM feedback p88: quando há draft pendente, abrir review direto na versão
+      // do draft. Curador entra na URL e lê o texto novo imediatamente — sem
+      // pensar que não houve revisão (fricção observada). Tab pode ser trocada
+      // para 'document' (versão lacrada) ou 'draft_diff' (comparação) a qualquer
+      // momento via tab buttons.
+      setViewMode('draft');
     }
 
     setLoading(false);
