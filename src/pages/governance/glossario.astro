@@ -1,0 +1,157 @@
+---
+/**
+ * /governance/glossario — Glossário canônico do Núcleo IA & GP
+ *
+ * URL pública referenciada na Cláusula 13.5 da Política de Publicação e
+ * Propriedade Intelectual como espelho dinâmico do glossário §13. Atualiza-se
+ * automaticamente conforme nova versão da Política é lacrada (current) ou
+ * conforme draft pendente é registrado (em revisão).
+ *
+ * Carrega via RPC SECDEF `get_governance_glossary()` (anon-grant) — glossário
+ * contém apenas definições genéricas (Track A/B/C, licenças CC/MIT/Apache,
+ * termos operacionais). Frontend extrai §13 do content_html da Política.
+ *
+ * Em caso de divergência interpretativa entre esta página e o texto oficial
+ * da Política, prevalece a Política (Cláusula 13.5).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createClient } from '@supabase/supabase-js';
+
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+
+const { data: glossaryData } = await sbAnon.rpc('get_governance_glossary');
+
+// Extract §13 fragment from content_html via regex
+function extractGlossarySection(html: string | null): string {
+  if (!html) return '';
+  const match = html.match(/<h3>\s*<strong>\s*13\.\s*Glossário\s*<\/strong>\s*<\/h3>([\s\S]*?)(?=<h3>|$)/);
+  return match ? match[1] : '';
+}
+
+const latest = glossaryData?.latest;
+const currentLocked = glossaryData?.current_locked;
+const history = glossaryData?.history || [];
+
+const latestGlossaryHtml = extractGlossarySection(latest?.content_html);
+const currentGlossaryHtml = extractGlossarySection(currentLocked?.content_html);
+
+// Decide qual mostrar como "vigente"
+const showLatestAsDraft = latest && !latest.is_locked;
+const displayHtml = currentGlossaryHtml || latestGlossaryHtml;
+const displayLabel = currentLocked?.version_label || latest?.version_label || '—';
+const displayIsLocked = !!currentLocked;
+const displayDate = currentLocked?.locked_at || latest?.date;
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  } catch { return iso; }
+}
+---
+
+<BaseLayout title="Glossário — Núcleo IA & GP" activePage="governance" lang="pt-BR">
+  <div class="max-w-[900px] mx-auto px-4 py-10 space-y-8">
+    <header class="text-center space-y-2">
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy">
+        Glossário Canônico
+      </h1>
+      <p class="text-sm text-[var(--text-muted)]">
+        Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gestão de Projetos
+      </p>
+      <p class="text-xs text-[var(--text-muted)] italic">
+        AI &amp; PM Study and Research Hub
+      </p>
+    </header>
+
+    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900">
+      <strong>📖 Espelho dinâmico da Cláusula 13 da Política de Publicação e Propriedade Intelectual.</strong>
+      Esta página atualiza-se automaticamente conforme nova versão da Política é lacrada.
+      Em caso de divergência interpretativa, prevalece o texto oficial da Política
+      (Cláusula 13.5).
+    </div>
+
+    {!displayHtml && (
+      <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-8 text-center">
+        <p class="text-sm text-[var(--text-secondary)]">
+          O glossário será publicado a partir da próxima versão lacrada da Política.
+          Em revisão pelos curadores.
+        </p>
+      </div>
+    )}
+
+    {displayHtml && (
+      <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-6">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-default)] flex-wrap gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">Versão {displayLabel}</h2>
+            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">
+              {displayIsLocked ? '✅ Vigente · Lacrada' : '⏳ Em revisão · Draft pendente curadoria'}
+              {' em '}{fmtDate(displayDate)}
+            </p>
+          </div>
+          {showLatestAsDraft && currentLocked && (
+            <span class="text-[10px] text-amber-800 italic max-w-[300px] text-right">
+              Versão lacrada vigente: {currentLocked.version_label}.
+              Existe draft em revisão pendente: {latest.version_label}.
+            </span>
+          )}
+        </div>
+
+        <article
+          class="prose prose-sm max-w-none text-[var(--text-primary)]"
+          set:html={displayHtml}
+        />
+
+        {showLatestAsDraft && latestGlossaryHtml && latestGlossaryHtml !== currentGlossaryHtml && (
+          <details class="mt-6 pt-4 border-t border-[var(--border-default)]">
+            <summary class="text-[12px] font-bold text-amber-800 cursor-pointer hover:text-amber-900">
+              ⏳ Visualizar próxima versão em revisão ({latest.version_label})
+            </summary>
+            <div class="mt-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
+              <p class="text-[10px] text-amber-900 mb-3 italic">
+                Este conteúdo está em revisão pelos curadores e ainda não foi
+                ratificado. Em caso de divergência, prevalece a versão lacrada acima.
+              </p>
+              <article
+                class="prose prose-sm max-w-none text-[var(--text-primary)]"
+                set:html={latestGlossaryHtml}
+              />
+            </div>
+          </details>
+        )}
+      </section>
+    )}
+
+    {history.length > 1 && (
+      <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] p-4">
+        <h3 class="text-[13px] font-bold text-[var(--text-primary)] mb-2">Histórico de versões da Política</h3>
+        <ul class="text-[11px] text-[var(--text-secondary)] space-y-1">
+          {history.map((v: any) => (
+            <li class="flex items-center gap-2">
+              <span class="font-mono text-[10px]">{v.version_label}</span>
+              <span>·</span>
+              <span>{v.is_locked ? '✅ Lacrada' : '⏳ Draft'}</span>
+              {v.is_current && <span class="text-green-700 font-semibold">(vigente)</span>}
+              <span>·</span>
+              <span>{fmtDate(v.date)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <footer class="text-center pt-6 border-t border-[var(--border-default)]">
+      <p class="text-[11px] text-[var(--text-muted)]">
+        Política de Publicação e Propriedade Intelectual completa:{' '}
+        <a href="/admin/governance/documents" class="underline hover:text-navy">acesso restrito a curadores via plataforma</a>
+      </p>
+      <p class="text-[10px] text-[var(--text-muted)] italic mt-2">
+        Núcleo IA &amp; GP — projeto voluntário interinstitucional sediado em PMI Goiás (PMI-GO).
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
