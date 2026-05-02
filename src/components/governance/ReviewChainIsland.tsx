@@ -102,6 +102,11 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [signing, setSigning] = useState<string>('');
+  const [showRecirculate, setShowRecirculate] = useState(false);
+  const [recirculateLoading, setRecirculateLoading] = useState(false);
+  const [recirculatePreview, setRecirculatePreview] = useState<any>(null);
+  const [recirculateError, setRecirculateError] = useState<string>('');
+  const [recirculateExecuting, setRecirculateExecuting] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -197,6 +202,53 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
     (window as any).toast?.('Assinatura registrada (' + String(res.data?.signature_hash || '').slice(0, 12) + '…)', 'success');
     setTimeout(() => load(), 600);
     setSigning('');
+  }
+
+  async function openRecirculate() {
+    const sb = getSb();
+    if (!sb || !detail) return;
+    setShowRecirculate(true);
+    setRecirculateLoading(true);
+    setRecirculateError('');
+    setRecirculatePreview(null);
+    const res = await sb.rpc('recirculate_governance_doc', {
+      p_chain_id: detail.chain_id,
+      p_dry_run: true,
+      p_recipient_emails: null,
+    });
+    if (res.error || res.data?.error) {
+      setRecirculateError(res.error?.message || res.data?.error || 'Erro ao carregar preview');
+      setRecirculateLoading(false);
+      return;
+    }
+    setRecirculatePreview(res.data);
+    setRecirculateLoading(false);
+  }
+
+  async function executeRecirculate() {
+    const sb = getSb();
+    if (!sb || !detail) return;
+    const count = recirculatePreview?.recipient_count || 0;
+    if (!confirm(`Confirma re-circulação?\n\nEsta ação:\n• Lacra o draft v${recirculatePreview?.draft_version?.version_label}\n• Marca chain atual como superseded\n• Cria nova chain com gates copiados\n• Envia ${count} email${count === 1 ? '' : 's'} aos recipients listados\n\nNão é reversível.`)) return;
+    setRecirculateExecuting(true);
+    setRecirculateError('');
+    const res = await sb.rpc('recirculate_governance_doc', {
+      p_chain_id: detail.chain_id,
+      p_dry_run: false,
+      p_recipient_emails: null,
+    });
+    if (res.error || res.data?.error) {
+      setRecirculateError(res.error?.message || res.data?.error || 'Erro ao executar');
+      setRecirculateExecuting(false);
+      return;
+    }
+    if (res.data?.new_chain_id) {
+      (window as any).toast?.(`Re-circulação executada — ${res.data.recipients_count} email(s) enfileirados`, 'success');
+      setTimeout(() => { window.location.href = `/admin/governance/documents/${res.data.new_chain_id}`; }, 800);
+    } else {
+      setRecirculateExecuting(false);
+      setShowRecirculate(false);
+    }
   }
 
   if (loading) {
@@ -307,6 +359,14 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
                 </details>
               )}
             </div>
+            {isAdmin && detail.chain_status === 'review' && (
+              <button type="button" onClick={openRecirculate}
+                className="shrink-0 rounded-lg bg-orange-600 text-white text-[11px] font-bold px-3 py-2 border-0 cursor-pointer hover:bg-orange-700"
+                title="Lacrar este draft, marcar a chain atual como superseded, criar nova chain de revisão e notificar curadores via email"
+              >
+                🔄 Re-circular<br/>aos curadores
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -436,6 +496,103 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
           </table>
         </div>
       </details>
+
+      {showRecirculate && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => !recirculateExecuting && setShowRecirculate(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">🔄 Re-circular aos curadores</h3>
+              <button type="button" onClick={() => !recirculateExecuting && setShowRecirculate(false)}
+                disabled={recirculateExecuting}
+                aria-label="Fechar"
+                className="text-gray-500 hover:text-gray-900 text-xl leading-none bg-transparent border-0 cursor-pointer disabled:cursor-not-allowed px-1">
+                ×
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {recirculateLoading && (
+                <p className="text-sm text-gray-600">Carregando preview…</p>
+              )}
+              {recirculateError && (
+                <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {recirculateError}
+                </div>
+              )}
+              {recirculatePreview && !recirculateError && (
+                <>
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+                    <strong>Atenção:</strong> esta ação não é reversível. Lacra o draft, marca a chain atual como superseded, cria nova chain de revisão e envia emails aos recipients.
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-0.5">Documento</h4>
+                    <p className="text-[14px] text-gray-900">{recirculatePreview.document?.title}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-0.5">Versão atual</h4>
+                      <p className="text-[13px] text-gray-900">{recirculatePreview.current_chain?.version_label}</p>
+                      <p className="text-[10px] text-gray-500">#{recirculatePreview.current_chain?.version_number} · status: {recirculatePreview.current_chain?.status}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-0.5">Draft pendente</h4>
+                      <p className="text-[13px] text-amber-800 font-semibold">{recirculatePreview.draft_version?.version_label}</p>
+                      <p className="text-[10px] text-gray-500">#{recirculatePreview.draft_version?.version_number} · changelog: {recirculatePreview.draft_version?.notes_present ? `${recirculatePreview.draft_version.notes_length} chars` : 'sem notes'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Recipients ({recirculatePreview.recipient_count}) — gate: {recirculatePreview.first_gate_kind}
+                    </h4>
+                    {recirculatePreview.recipient_count === 0 ? (
+                      <p className="text-[12px] text-gray-500 italic">Nenhum recipient identificado</p>
+                    ) : (
+                      <ul className="text-[12px] space-y-1 max-h-40 overflow-y-auto bg-gray-50 rounded p-2 border border-gray-200">
+                        {(recirculatePreview.recipients || []).map((r: any, i: number) => (
+                          <li key={i} className="flex justify-between items-center">
+                            <span><strong>{r.first_name}</strong> &lt;{r.email}&gt;</span>
+                            <span className="text-gray-500 text-[10px]">{r.source}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-gray-600 uppercase mb-0.5">Gates copiadas para nova chain</h4>
+                    <p className="text-[12px] text-gray-700">
+                      {(recirculatePreview.gates_to_copy || []).map((g: any) => `${GATE_LABELS[g.kind] || g.kind}`).join(' → ')}
+                    </p>
+                  </div>
+                  {(recirculatePreview.warnings || []).length > 0 && (
+                    <div>
+                      <h4 className="text-[11px] font-bold text-amber-800 uppercase mb-1">Avisos</h4>
+                      <ul className="text-[11px] text-amber-900 space-y-1">
+                        {recirculatePreview.warnings.map((w: any, i: number) => (
+                          <li key={i}>• <strong>{w.code}:</strong> {w.message}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-end gap-2">
+              <button type="button" onClick={() => setShowRecirculate(false)} disabled={recirculateExecuting}
+                className="rounded-lg bg-white text-gray-700 text-[12px] font-semibold px-3 py-1.5 border border-gray-300 cursor-pointer hover:bg-gray-50 disabled:opacity-50">
+                Cancelar
+              </button>
+              <button type="button" onClick={executeRecirculate}
+                disabled={!recirculatePreview || recirculateExecuting || !!recirculateError}
+                className="rounded-lg bg-orange-600 text-white text-[12px] font-bold px-3 py-1.5 border-0 cursor-pointer hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                {recirculateExecuting
+                  ? 'Executando…'
+                  : `Confirmar e re-circular (${recirculatePreview?.recipient_count || 0} email${recirculatePreview?.recipient_count === 1 ? '' : 's'})`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
