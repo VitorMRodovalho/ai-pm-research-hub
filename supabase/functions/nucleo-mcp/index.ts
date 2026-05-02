@@ -5211,7 +5211,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.53.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.54.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5231,6 +5231,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.53.0", tools: 236, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.54.0", tools: 237, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
