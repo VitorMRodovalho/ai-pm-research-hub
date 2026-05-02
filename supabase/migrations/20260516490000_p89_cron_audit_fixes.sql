@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION public.get_weekly_tribe_digest(p_tribe_id integer)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $$
 DECLARE
   v_caller_id uuid;
   v_tribe record;
@@ -130,7 +130,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$;
+$$;
 
 COMMENT ON FUNCTION public.get_weekly_tribe_digest(integer) IS
   'Build weekly per-tribe digest (privacy-preserving aggregates, no individual data). Auth: tribe leader OR manage_member; service_role bypass para cron orchestrator (ADR-0028 — generate_weekly_leader_digest_cron). Fix p89: anteriormente cron falhava 100% pois auth.uid()=null em cron context.';
