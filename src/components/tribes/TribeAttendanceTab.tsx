@@ -132,6 +132,13 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
   // Toggle handler with toast + undo
   const [undoToast, setUndoToast] = useState<{ msg: string; undo: () => void } | null>(null);
 
+  /* p87 Sprint UX: modal state for excused via long-press */
+  const [excusedModal, setExcusedModal] = useState<null | { eventId: string; memberId: string; memberName: string; current: CellStatus }>(null);
+  const [reasonDraft, setReasonDraft] = useState('');
+  const [excuseReasons, setExcuseReasons] = useState<Record<string, string>>({});
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+
   const refreshGrid = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
@@ -183,13 +190,6 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
       (window as any).toast?.(e.message || 'Erro', 'error');
     }
   }, [getSb, tribeId, initiativeId, filter, data, refreshGrid, excuseReasons, t]);
-
-  /* p87 Sprint UX: modal state for excused via long-press */
-  const [excusedModal, setExcusedModal] = useState<null | { eventId: string; memberId: string; memberName: string; current: CellStatus }>(null);
-  const [reasonDraft, setReasonDraft] = useState('');
-  const [excuseReasons, setExcuseReasons] = useState<Record<string, string>>({});
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFiredRef = useRef(false);
 
   /* Load existing excuse reasons for tooltip + modal pre-fill */
   useEffect(() => {
