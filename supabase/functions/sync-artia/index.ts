@@ -265,6 +265,222 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Create-structure mode (Phase C.2): build WBS folders + activities under Núcleo project ──
+    if (mode === 'create-structure') {
+      const dryRun = url.searchParams.get('dry_run') !== 'false' // default true (safe)
+      const token = await getArtiaToken()
+
+      // Núcleo project + known top-level folders (per discovery findings)
+      const NUCLEO_PROJECT_ID = 6391775
+      const NUCLEO_TOP_FOLDERS: Record<string, number> = {
+        iniciacao: 6391776,      // 01 - Iniciação (confirmed)
+        planejamento: 6391777,   // 02 - Planejamento (confirmed)
+        execucao: 6399648,       // 03 - Execução (assumed — page 2 listing match)
+        monitoramento: 6399649,  // 04 - Monitoramento e Controle (confirmed = ARTIA_KPI_FOLDER)
+        encerramento: 6399650,   // 05 - Encerramento (assumed — page 2 listing match)
+      }
+
+      // Define structure plan: 15 sub-folders + ~30 activities
+      type ActivitySpec = { title: string; description: string; statusId: number; completedPercent: number; recurrence?: 'weekly'|'monthly' }
+      type FolderSpec = { code: string; parent: keyof typeof NUCLEO_TOP_FOLDERS; name: string; activities: ActivitySpec[] }
+
+      const STRUCTURE_PLAN: FolderSpec[] = [
+        // ── Iniciação ──
+        { code: '01.01', parent: 'iniciacao', name: '01.01 - Termo de Abertura do Projeto (TAP)', activities: [
+          { title: 'Elaborar TAP Ciclo 3 (2026.1)', description: 'TAP elaborado 2026-05-05 por Vitor Maia Rodovalho (GP). Drive: docs/TAP_CICLO3_2026.md no repo + Google Doc institucional em Núcleo IA & GP/2026/1. Iniciação/. Versão 1.0 (draft inicial). 18 seções + Apêndice A + Apêndice B.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+          { title: 'Revisar TAP', description: 'Revisão técnica realizada por Vitor + análise estrutural via 7 confirmações PM (Tribos pausadas / sponsors / Política IP independente). Pronto para aprovação.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+          { title: 'Aprovar TAP — Sponsor PMI-GO', description: 'Aguardando assinatura Ivan Lourenço (Presidente PMI-GO). Capítulo informal — assinatura formal não-bloqueante per PM directive 2026-05-05.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 50 },
+          { title: 'Anexar TAP no Drive Institucional', description: 'TAP arquivado em Drive PMI-GO institucional Núcleo IA & GP/2026/1. Iniciação/ (Google Doc). Histórico fundacional 2024 preservado em zArchive.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        { code: '01.02', parent: 'iniciacao', name: '01.02 - Registro das Partes Interessadas', activities: [
+          { title: 'Matriz RACI consolidada — TAP §14', description: 'Sponsors (Ivan + 4 capítulos parceiros via Acordos Cooperação) + GP Vitor + Vice-GP Fabricio + Comitê Curadoria (Roberto/Sarah/Fabricio) + 7 líderes de tribo + Coordenação CPMAI Herlon + 48 voluntários + stakeholders externos (PMI Latam Natália, PMI Global PMI×AI Champion).', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        { code: '01.03', parent: 'iniciacao', name: '01.03 - Reunião de Kick-off Ciclo 3 (2026.1)', activities: [
+          { title: 'Kick-off realizado 2026-03-05 17:15', description: 'Evento de Abertura Ciclo 3 (2026/1) realizado em 2026-03-05 às 17:15 EST. Drive recording: Núcleo IA & GP/2026/1. Iniciação/Kick-off Ciclo 3/. Migração da pasta Calendar event Drive pessoal → institucional realizada 2026-05-05.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        { code: '01.04', parent: 'iniciacao', name: '01.04 - Templates Institucionais', activities: [
+          { title: 'TAP institucional Ciclo 3 (2026.1)', description: 'Template PMI-GO 18 seções + Apêndices A/B. Localização: docs/TAP_CICLO3_2026.md (markdown source) + Google Doc institucional Drive.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+          { title: 'Manual de Governança', description: 'Aprovado 2025-12 (Ciclo 2). Localização: Drive PMI-GO institucional. Próxima revisão: trimestral pós-aprovação TAP ou demanda mudança escopo material.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+          { title: 'Política Institucional de Publicação e IP', description: 'Em revisão pelo Comitê de Curadoria (6 chains v6/v5/v1 em review aguardando assinaturas Roberto/Sarah/Fabricio). Independente do TAP — paralelo. Localização: instrumentos-ip/ + plataforma /governance.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 75 },
+          { title: 'Acordos de Cooperação Bilateral (4)', description: '4/4 assinados: PMI-GO ↔ PMI-CE / DF / MG / RS. Drive PMI-GO institucional. Cobre adesão dos demais capítulos sem necessidade de assinatura no TAP.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        // ── Planejamento ──
+        { code: '02.01', parent: 'planejamento', name: '02.01 - Planejar Orçamento Ciclo 3', activities: [
+          { title: 'Orçamento R$ 0,00 — operação voluntária', description: 'Operação 100% voluntária. Sem orçamento dedicado de salários, contratações ou compras. Recursos via voluntários PMI + PMI-GO sponsor (infraestrutura). Eventuais participações em LIM Lima/Detroit Summit custeadas individualmente.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        { code: '02.02', parent: 'planejamento', name: '02.02 - Planejar Voluntários', activities: [
+          { title: 'Processo seletivo metrificado — 48 voluntários ativos', description: 'Processo seletivo Ciclo 3 estruturado dentro da plataforma nucleoia.vitormr.dev. 33 candidatos em processo + 26 ativos + 6 inativados + 31 não selecionados. 3 vagas centralizadas IDs 64966/6497/66470.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 80 },
+        ]},
+        { code: '02.03', parent: 'planejamento', name: '02.03 - Planejar Cronograma Anual 2026', activities: [
+          { title: 'Cronograma Q1-Q4 — TAP §9 e §10', description: '16 marcos principais 2026: TAP aprovação Mai · Política IP Comitê Mai · LIM Lima Ago · Detroit Out · Lições aprendidas Dez · Pipeline 10 artigos + 6 webinares + 3 pilotos contínuo.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+        ]},
+        { code: '02.04', parent: 'planejamento', name: '02.04 - Planejar Publicações', activities: [
+          { title: 'Pipeline +10 artigos publicados 2026', description: 'Meta TAP §16: 10 artigos publicados (revistas, ProjectManagement.com, blogs PMI). Atual 0/10. Pipeline ativo via 7 tribos + Comitê de Curadoria.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 0 },
+        ]},
+        { code: '02.05', parent: 'planejamento', name: '02.05 - Planejar Webinares e Eventos Externos', activities: [
+          { title: 'Pipeline +6 webinares 2026 H2', description: 'Meta TAP §16: 6 webinares + Talks. Atual 0/6. + LIM Lima Aug 2026 (sessão aceita) + Detroit Out 2026 (submissão em planejamento).', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 0 },
+        ]},
+        // ── Monitoramento e Controle ──
+        { code: '04.02', parent: 'monitoramento', name: '04.02 - Status Reports Mensais 2026', activities: [
+          { title: 'Status Report Mensal — Ciclo 3 (2026)', description: 'Status report mensal gerado automaticamente via cron sync-artia-status-report-monthly (1º dia do mês 07:00 UTC). Fonte: _artia_safe_monthly_metrics + cycle_evolution + weekly_member_digest. LGPD-safe: agregados, sem PII.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 0, recurrence: 'monthly' },
+        ]},
+        { code: '04.03', parent: 'monitoramento', name: '04.03 - Atas Plenárias Mensais', activities: [
+          { title: 'Ata Plenária Mensal — Ciclo 3', description: 'Ata da reunião plenária mensal do programa. Atualizada via cron sync-artia-rituals-weekly (Seg 08:00 UTC). LGPD-safe: lista por roles agregados, sem nomes individuais.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 0, recurrence: 'monthly' },
+        ]},
+        { code: '04.04', parent: 'monitoramento', name: '04.04 - Atas de Tribos Semanais', activities: [
+          { title: 'Atas Consolidadas das 7 Tribos', description: 'Resumo semanal das reuniões de 7 tribos ativas (Radar Tec / Agentes Autônomos / Cultura&Change / Talentos / ROI&Portfólio / Governança / Inclusão). Atualizada via cron sync-artia-rituals-weekly. LGPD-safe.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 0, recurrence: 'weekly' },
+        ]},
+        { code: '04.06', parent: 'monitoramento', name: '04.06 - Riscos do Programa 2026', activities: [
+          // 11 risks loaded dynamically from program_risks table at execution time
+        ]},
+        // ── Encerramento ──
+        { code: '05.01', parent: 'encerramento', name: '05.01 - Lições Aprendidas Ciclo 3', activities: [
+          { title: 'Reunião de Lições Aprendidas — Dezembro 2026', description: 'Programada para 2026-12-10 (TAP §9). Encerramento Ciclo 3.', statusId: ARTIA_STATUS.A_INICIAR, completedPercent: 0 },
+          { title: 'Documento de Lições Aprendidas Consolidado', description: 'A elaborar 2026-12-10 a 2026-12-15. Cobertura PMO Audit Bloco 7 (Lições Aprendidas N/A em ciclo ativo).', statusId: ARTIA_STATUS.A_INICIAR, completedPercent: 0 },
+        ]},
+        { code: '05.02', parent: 'encerramento', name: '05.02 - Termo de Encerramento (TEP) Ciclo 3', activities: [
+          { title: 'Elaborar TEP', description: 'Termo de Encerramento do Projeto Ciclo 3. A elaborar em Dez/2026.', statusId: ARTIA_STATUS.A_INICIAR, completedPercent: 0 },
+          { title: 'Aprovar TEP', description: 'Aprovação Sponsor PMI-GO + transição para Ciclo 4 (2027).', statusId: ARTIA_STATUS.A_INICIAR, completedPercent: 0 },
+        ]},
+      ]
+
+      // Load 11 risks dynamically from DB (LGPD-safe — no PII)
+      const { data: risksData } = await sb.from('program_risks')
+        .select('risk_code, risk_title, cause, consequence, treatment, status, probability, impact, responsible_role')
+        .eq('cycle_year', 2026)
+        .order('risk_code')
+      const riskActivities: ActivitySpec[] = (risksData || []).map((r: any) => ({
+        title: `${r.risk_code}: ${r.risk_title}`,
+        description: `[${(r.probability || 'n/a').toUpperCase()} prob × ${(r.impact || 'n/a').toUpperCase()} impacto] Causa: ${r.cause}\nConsequência: ${r.consequence}\nTratamento: ${r.treatment}\nResponsável: ${r.responsible_role || 'n/a'}\nStatus: ${r.status}`,
+        statusId: r.status === 'mitigado' || r.status === 'encerrado' ? ARTIA_STATUS.ENCERRADO
+                : r.status === 'em_tratamento' ? ARTIA_STATUS.ANDAMENTO
+                : ARTIA_STATUS.A_INICIAR,
+        completedPercent: r.status === 'mitigado' ? 100 : r.status === 'em_tratamento' ? 50 : r.status === 'encerrado' ? 100 : 0,
+      }))
+      // Inject risks into 04.06 folder spec
+      const risksFolder = STRUCTURE_PLAN.find(f => f.code === '04.06')
+      if (risksFolder) risksFolder.activities = riskActivities
+
+      // ── Project metadata update plan ──
+      const PROJECT_METADATA = {
+        description: 'Núcleo de Estudos e Pesquisa em IA & GP — Ciclo 3 (2026). Programa voluntário inter-capítulos PMI Brasil sediado no PMI Goiás. 5 capítulos parceiros (PMI-GO/CE/DF/MG/RS), 7 tribos M.O.R.E., 48 voluntários ativos, plataforma própria nucleoia.vitormr.dev. Concebido 2024-03 (PMI-GO + Antonio Marcos GP), GP atual Vitor Maia Rodovalho desde 2024-04.',
+        justification: 'PMI Global tem direcionado sinalização forte para AI (PMI×AI Champion, Detroit 2026, publicações). Núcleo atua como catalisador nacional (potencialmente internacional) reunindo voluntários selecionados. Estrutura comunitária replicável + alinhada framework M.O.R.E. + tripé sustentabilidade.',
+        premise: 'Adesão capítulos PMI parceiros via Acordos Cooperação · apoio diretorias PMI-GO · filiação PMI dos voluntários · reuniões mensais por tribo + plenárias mensais · revisão Comitê de Curadoria · Vice-GP designado mitiga single-point-of-failure · plataforma nucleoia.vitormr.dev como tool operacional.',
+        restriction: 'Não realização eventos em datas conflito calendário PMI-GO · operação 100% voluntária (sem orçamento) · LGPD compliance produção conteúdo · disclaimer PMI® obrigatório · aprovações externas via canal PMI-GO → PMI Latam → PMI Global · submissões via Comitê de Curadoria.',
+        lastInformations: `Status atual ${new Date().toISOString().split('T')[0]}: Ciclo 3 em execução · 5 capítulos ativos · 7 tribos · 48 voluntários · 13 iniciativas ativas · TAP v1.0 elaborado aguardando assinatura · Política IP em revisão (6 chains) · LIM Lima Aug aceita · Detroit Out em planejamento · Auditoria PMO 17% → plano remediação Phase C ativo.`,
+      }
+
+      // ── Plan summary ──
+      const totalFolders = STRUCTURE_PLAN.length
+      const totalActivities = STRUCTURE_PLAN.reduce((s, f) => s + f.activities.length, 0)
+
+      if (dryRun) {
+        return new Response(JSON.stringify({
+          mode: 'create-structure',
+          dry_run: true,
+          plan_summary: {
+            project_metadata_update: 'updateProject(NUCLEO 6391775) — description/justification/premise/restriction/lastInformations',
+            folders_to_create: totalFolders,
+            activities_to_create: totalActivities,
+            risks_loaded_from_db: riskActivities.length,
+          },
+          project_metadata: PROJECT_METADATA,
+          structure_plan: STRUCTURE_PLAN,
+        }, null, 2), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // ── Live execution ──
+      const created: any = { folders: [], activities: [], errors: [], updateProject: null }
+
+      // 1. Update Project metadata
+      try {
+        const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')
+        const updateProjectQuery = `mutation { updateProject(id: "${NUCLEO_PROJECT_ID}", accountId: ${ARTIA_ACCOUNT_ID}, description: "${escapeStr(PROJECT_METADATA.description)}", justification: "${escapeStr(PROJECT_METADATA.justification)}", premise: "${escapeStr(PROJECT_METADATA.premise)}", restriction: "${escapeStr(PROJECT_METADATA.restriction)}", lastInformations: "${escapeStr(PROJECT_METADATA.lastInformations)}") { id name } }`
+        const res = await fetch(ARTIA_GQL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: updateProjectQuery }),
+        })
+        const data = await res.json()
+        created.updateProject = data?.errors ? { errors: data.errors } : { ok: true, id: data?.data?.updateProject?.id }
+      } catch (e) {
+        created.errors.push({ step: 'updateProject', error: (e as Error).message })
+      }
+
+      // 2. createFolder for each + createActivity for each child
+      const escSimple = (s: string) => s.replace(/"/g, '\\"').replace(/\n/g, ' ').slice(0, 4500) // safety cap
+
+      for (const folder of STRUCTURE_PLAN) {
+        const parentId = NUCLEO_TOP_FOLDERS[folder.parent]
+        const folderQuery = `mutation { createFolder(name: "${folder.name.replace(/"/g, '\\"')}", parentId: ${parentId}, accountId: ${ARTIA_ACCOUNT_ID}, completedPercent: 0) { id name } }`
+        try {
+          const res = await fetch(ARTIA_GQL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ query: folderQuery }),
+          })
+          const data = await res.json()
+          if (data?.errors) {
+            created.errors.push({ step: 'createFolder', folder: folder.name, errors: data.errors })
+            continue
+          }
+          const folderId = parseInt(data?.data?.createFolder?.id)
+          created.folders.push({ code: folder.code, name: folder.name, id: folderId })
+
+          // Persist back to artia_discovery_dumps for audit
+          await sb.from('artia_discovery_dumps').insert({
+            account_id: ARTIA_ACCOUNT_ID,
+            project_id: NUCLEO_PROJECT_ID,
+            project_name: 'Núcleo de IA & GP',
+            dump_kind: 'folders_list',
+            payload: { code: folder.code, id: folderId, name: folder.name, parent_id: parentId },
+            source_query: folderQuery.slice(0, 500),
+            notes: `Phase C.2 createFolder ${folder.code}`,
+          })
+
+          await new Promise(r => setTimeout(r, 400)) // rate limit safety
+
+          // 3. Create activities under this new folder
+          for (const act of folder.activities) {
+            const actQuery = `mutation { createActivity(title: "${escSimple(act.title)}", folderId: ${folderId}, accountId: ${ARTIA_ACCOUNT_ID}, responsibleId: ${ARTIA_RESPONSIBLE_ID}, description: "${escSimple(act.description)}", completedPercent: ${act.completedPercent}, customStatusId: ${act.statusId}) { id title } }`
+            try {
+              const aRes = await fetch(ARTIA_GQL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ query: actQuery }),
+              })
+              const aData = await aRes.json()
+              if (aData?.errors) {
+                created.errors.push({ step: 'createActivity', folder: folder.code, title: act.title, errors: aData.errors })
+              } else {
+                const actId = parseInt(aData?.data?.createActivity?.id)
+                created.activities.push({ folder_code: folder.code, folder_id: folderId, activity_id: actId, title: act.title })
+              }
+            } catch (e) {
+              created.errors.push({ step: 'createActivity exception', error: (e as Error).message })
+            }
+            await new Promise(r => setTimeout(r, 300))
+          }
+        } catch (e) {
+          created.errors.push({ step: 'createFolder exception', folder: folder.name, error: (e as Error).message })
+        }
+      }
+
+      await sb.from('mcp_usage_log').insert({
+        tool_name: 'sync-artia-create-structure',
+        success: created.errors.length === 0,
+        execution_ms: 0,
+        response_summary: JSON.stringify({ folders_created: created.folders.length, activities_created: created.activities.length, errors: created.errors.length }),
+      })
+
+      return new Response(JSON.stringify({
+        mode: 'create-structure',
+        dry_run: false,
+        result: created,
+      }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // ── Introspect-types mode (Phase C.1.7): dump Activity/Comment type schemas + key mutation args ──
     if (mode === 'introspect-types') {
       const token = await getArtiaToken()
