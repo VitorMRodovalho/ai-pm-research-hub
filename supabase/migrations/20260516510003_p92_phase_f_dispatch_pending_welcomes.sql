@@ -155,11 +155,15 @@ BEGIN
         ),
         jsonb_build_object(
           'source', 'dispatch_pending_welcomes',
-          'rpc_version', 'p92_phase_f_v1',
+          'rpc_version', 'p92_phase_f_v2',
           'cycle_id', v_app.cycle_id,
           'incident', 'p91-bulk-import-skip-welcome'
         )
       );
+
+      -- p92 v2: throttle Resend (5 req/sec hard cap). 0.3s = 3.3 req/sec, safe.
+      -- Sem isso, batch >5 hits 429 rate_limit_exceeded (caught p92 round 1).
+      PERFORM pg_sleep(0.3);
 
     EXCEPTION WHEN OTHERS THEN
       v_skipped := v_skipped + 1;
