@@ -185,7 +185,102 @@ Per PM decisão 2026-05-05:
 8. **Vitor envia Gmail draft William** (manual)
 9. **Vitor confirma se a Ana Karina email está em spam** (verificar via gmail mcp se candidato respondeu reclamando)
 
-## 4. Sediment patterns p91
+## 4. Auditoria do spec Apps Script (`docs/specs/p87-calendar-webhook-apps-script.md`) — pré-Phase B
+
+PM solicitou auditoria do spec antes de executar setup manual. Issues encontrados:
+
+### 🔴 BLOCKERS (precisam ser fixed antes de Vitor seguir o spec)
+
+**B1. `getEventsForDay()` só busca eventos de HOJE**
+```javascript
+// Atual (line 56):
+const events = cal.getEventsForDay(new Date()).filter(ev => ev.getDateCreated() > since);
+```
+Candidato que agenda entrevista para 2+ dias no futuro: o evento NÃO aparece em `getEventsForDay(today)`. Webhook nunca dispara → selection_interviews não sincroniza.
+
+**Fix:** trocar por janela ampla:
+```javascript
+const now = new Date();
+const farFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+const events = cal.getEvents(now, farFuture).filter(ev => ev.getDateCreated() > since);
+```
+
+**B2. interviewer_emails mismatch (members.email vs Calendar guest email)**
+
+Apps Script identifica time por `teamEmails = ['vitorodovalho@gmail.com', 'fabriciorcc@gmail.com']` (Gmails pessoais). Webhook (`src/pages/api/calendar-webhook.ts:99`) faz `.in('email', interviewer_emails)` em `members.email` que tem emails INSTITUCIONAIS:
+- members.email Vitor = `vitor.rodovalho@outlook.com` (NÃO `vitorodovalho@gmail.com`)
+- Resultado: `interviewer_ids = []` → notificação de interview agendada não é enviada ao interviewer + dashboard mostra entrevista órfã
+
+**Fix p92 Phase B (curto prazo):** Apps Script translation map antes de POST:
+```javascript
+const EMAIL_ALIAS = {
+  'vitorodovalho@gmail.com': 'vitor.rodovalho@outlook.com',
+  // 'fabricio.personal@gmail.com': 'fabriciorcc@gmail.com'  // se necessário
+};
+const normalizedInterviewers = interviewerEmails.map(e => EMAIL_ALIAS[e.toLowerCase()] ?? e);
+```
+
+**Fix p92 Phase B (médio prazo):** adicionar coluna `members.alternate_emails text[]` + atualizar webhook para fazer lookup em ambas. Permite cada interviewer registrar seu Gmail pessoal sem hardcode.
+
+**B3. Webhook não limpa `interview_status='needs_reschedule'` no re-booking**
+
+Quando candidato re-agenda após reschedule request:
+- Apps Script captura novo evento Calendar → POST webhook
+- Webhook UPDATE existing selection_interviews row (status → scheduled) ✅
+- Webhook UPDATE selection_applications status → 'interview_scheduled' ✅
+- **MAS** `selection_applications.interview_status` continua `'needs_reschedule'` → admin UI mostra badge âmbar "Já solicitado" mesmo após re-booking
+
+**Fix p92 Phase B:** webhook clear `interview_status` quando UPDATE detected:
+```typescript
+// src/pages/api/calendar-webhook.ts:140
+if (app.status !== 'interview_scheduled') {
+  await sb.from('selection_applications').update({
+    status: 'interview_scheduled',
+    interview_status: null,                              // <-- ADD
+    interview_reschedule_reason: null,                   // <-- ADD
+    interview_reschedule_requested_at: null,             // <-- ADD
+    updated_at: new Date().toISOString(),
+  }).eq('id', app.id);
+}
+```
+
+### 🟡 IMPORTANT (devem ser fixed no spec)
+
+**B4. Spec line 138 referencia worker URL legada**: `platform.ai-pm-research-hub.workers.dev`. Canonical é `nucleoia.vitormr.dev`. PM já configurou `CALENDAR_WEBHOOK_SECRET` corretamente (wrangler secret list confirma) — atualizar texto do spec.
+
+**B5. OAuth scopes na primeira execução não documentados**: Apps Script precisa autorizar acesso ao Calendar API + UrlFetchApp. Adicionar nota no spec: "Na primeira execução do `smokeTest()`, Google solicita autorização — aceitar todas as scopes".
+
+**B6. Trigger `Calendar updated` fires para qualquer mudança** (criação, edição, deleção). Spec não filtra: pode causar webhooks duplicados em edits. Webhook é idempotente em `calendar_event_id` então UPDATE é safe, mas adicionar filter no script: `if (ev.getDateCreated() > since)` (já está mas reforça documentação).
+
+### 🟢 MINOR (cosmetic)
+
+**B7. `calendar_event_url` format inválido**: `https://calendar.google.com/calendar/u/0/r/eventedit/${encodeURIComponent(ev.getId())}` — eid Google usa base64 específico, URL gerada não abre evento. Apenas para `notes` display, baixo impacto.
+
+**B8. `smokeTest()` busca evento de amanhã**: se não tiver, falha silenciosamente. Aceitar `eventId` como parâmetro:
+```javascript
+function smokeTest(eventId) {
+  const cal = CalendarApp.getCalendarById('nucleoia@pmigo.org.br');
+  const ev = eventId ? cal.getEventById(eventId) : cal.getEvents(new Date(), new Date(Date.now() + 7*24*3600*1000))[0];
+  if (!ev) { Logger.log('No event'); return; }
+  syncEventToWebhook(ev);
+}
+```
+
+### ✅ Validados (não são issues)
+
+- **`/interview-booking/[token]` enforces gate upstream** (`src/pages/interview-booking/[token].astro:1-100`): valida token via `validate_interview_booking_token` RPC ANTES de redirecionar para `https://calendar.app.google/gh9WjefjcmisVLoh7`. Webhook bypass do gate é justificável.
+- **Booking URL não leaka via templates email**: query confirmou nenhum template tem URL hardcoded; apenas `interview_reschedule_request` usa `{{booking_url}}` populado pelo RPC (gate já passou no original interview).
+- **`CALENDAR_WEBHOOK_SECRET` está configurado** no Worker (wrangler secret list confirma).
+
+### Decisões PM 2026-05-05 (após audit)
+
+| # | Decisão | Aplicação |
+|---|---|---|
+| 1 | Auditar spec antes de utilizar | ✅ Done — 3 BLOCKERs + 3 IMPORTANT identified |
+| 2 | Manter `https://calendar.app.google/gh9WjefjcmisVLoh7` | ✅ Confirmed |
+| 3 | Peer review trigger model: round-robin | ✅ Phase C deve implementar round-robin entre committee members |
+
+## 5. Sediment patterns p91
 
 1. **`audience_filter.variables` é load-bearing** — sem essa key no JSONB, send-campaign EF renderiza placeholders literalmente. Migration drift entre 220000 e 230000 mostra que mudanças nesta estrutura têm blast radius alto.
 
