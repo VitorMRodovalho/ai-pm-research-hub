@@ -18,7 +18,12 @@
  *   - Glossário <li><strong>Termo.</strong> definição</li> renderiza com
  *     termo em bold via Text spans
  */
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+
+// Disable react-pdf default hyphenation (hyphen library) — em docs jurídicos
+// PT-BR queremos palavras inteiras: "Propriedade Intelectual" não "Pro-priedade".
+// Callback retorna array com 1 elemento = 0 split points = sem hifenização.
+Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a' },
@@ -157,6 +162,24 @@ function decodeEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
+// Substitui caracteres fora da encoding WinAnsi (Helvetica padrão) por
+// equivalentes Latin-1 ou ASCII. Necessário para arrows (→), emoji e dingbats
+// que aparecem nos docs governance mas não renderizam na fonte default do
+// @react-pdf/renderer. Mantém en/em-dash, smart quotes, bullet, ellipsis e
+// midpoint (todos em WinAnsi 0x80-0x9F).
+function sanitizeText(text: string): string {
+  return text
+    .replace(/→/g, '›')                                    // U+2192 → U+203A (single right angle, em WinAnsi)
+    .replace(/←/g, '‹')                                    // U+2190 → U+2039
+    .replace(/↔/g, ' <-> ')                                // U+2194 (sem equiv WinAnsi)
+    .replace(/⇒/g, '›')                                    // U+21D2
+    .replace(/⇐/g, '‹')                                    // U+21D0
+    .replace(/[↑↓↕]/g, '|')                                // arrows verticais
+    .replace(/✓/g, '[OK]')                                 // U+2713 checkmark
+    .replace(/[✗✕]/g, '[X]')                              // U+2717/U+2715 cross
+    .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '');       // emoji surrogate pairs (📝 ⚠️ etc.)
+}
+
 function mergeAdjacent(segments: Segment[]): Segment[] {
   const result: Segment[] = [];
   for (const seg of segments) {
@@ -172,8 +195,14 @@ function mergeAdjacent(segments: Segment[]): Segment[] {
 }
 
 function parseInlineSegments(html: string): Segment[] {
-  // Convert <br> → newline first
-  const normalized = html.replace(/<br\s*\/?>/gi, '\n');
+  // Pre-process:
+  // 1. Strip nested block tags (p/div/span/section/article) preservando conteúdo —
+  //    fix §4.5.4 royalties onde <li><p>(a) text</p></li> vazava "p>(a)/p>" para o output.
+  // 2. <br> → newline
+  let normalized = html
+    .replace(/<\/(p|div|span|section|article)\s*>/gi, ' ')
+    .replace(/<(p|div|span|section|article)[^>]*>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n');
   const segments: Segment[] = [];
   // Stack-based: track current bold/italic/href as we encounter open/close tags
   const stack: { bold?: boolean; italic?: boolean; href?: string }[] = [{}];
@@ -203,7 +232,11 @@ function parseInlineSegments(html: string): Segment[] {
       }
     }
   }
-  return mergeAdjacent(segments).filter((s) => s.text.length > 0);
+  // Apply char sanitization to each segment text (after merging) — converts
+  // arrows (→ → ›), emoji (📝 → ''), checkmarks (✓ → [OK]) etc. para Helvetica WinAnsi.
+  return mergeAdjacent(segments)
+    .map((s) => ({ ...s, text: sanitizeText(s.text) }))
+    .filter((s) => s.text.length > 0);
 }
 
 function parseHtml(html: string): Node[] {
@@ -347,7 +380,7 @@ export default function ChainPDFDocument({
         {isDraft && (
           <View style={styles.draftBanner} fixed>
             <Text style={styles.draftBannerText}>
-              📝 RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
+              RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
             </Text>
           </View>
         )}
@@ -404,7 +437,7 @@ export default function ChainPDFDocument({
         {isDraft && (
           <View style={styles.draftBanner} fixed>
             <Text style={styles.draftBannerText}>
-              📝 RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
+              RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
             </Text>
           </View>
         )}
@@ -498,7 +531,7 @@ export default function ChainPDFDocument({
         <Page size="A4" style={styles.page}>
           <View style={styles.draftBanner} fixed>
             <Text style={styles.draftBannerText}>
-              📝 RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
+              RASCUNHO — REVISÃO INTERNA · NÃO É VERSÃO OFICIAL
             </Text>
           </View>
           <View style={styles.headerBar}>
