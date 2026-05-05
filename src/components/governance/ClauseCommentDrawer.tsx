@@ -13,6 +13,10 @@ type Comment = {
   resolved_at: string | null;
   resolved_by_name: string | null;
   resolution_note: string | null;
+  // p93b: inheritance fields — set when comment was made on a prior version
+  from_version_id: string | null;
+  from_version_label: string | null;
+  is_inherited: boolean;
 };
 
 type Props = {
@@ -92,6 +96,7 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
     const { data, error } = await sb.rpc('list_document_comments', {
       p_version_id: versionId,
       p_include_resolved: includeResolved,
+      p_include_prior_versions: true,
     });
     if (!error && Array.isArray(data)) setComments(data);
     setLoading(false);
@@ -149,6 +154,7 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
   }
 
   const openCount = comments.filter(c => !c.resolved_at).length;
+  const inheritedOpenCount = comments.filter(c => !c.resolved_at && c.is_inherited).length;
   const changeNotes = comments.filter(c => c.visibility === 'change_notes');
   const reviewComments = comments.filter(c => c.visibility !== 'change_notes');
 
@@ -175,9 +181,12 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
   return (
     <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden flex flex-col h-full">
       <header className="px-4 py-3 border-b border-[var(--border-default)] bg-[var(--surface-hover)]">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-1">
           <h3 className="text-sm font-bold text-[var(--text-primary)]">Comentários</h3>
-          {openCount > 0 && <span className="inline-block rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">{openCount} abertos</span>}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {openCount > 0 && <span className="inline-block rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">{openCount} abertos</span>}
+            {inheritedOpenCount > 0 && <span className="inline-block rounded-full bg-orange-50 border border-orange-300 px-2 py-0.5 text-[10px] font-semibold text-orange-800" title="Comentários de versões anteriores (ainda abertos)">↩ {inheritedOpenCount} herdados</span>}
+          </div>
         </div>
         <label className="flex items-center gap-2 text-[11px] mt-2 cursor-pointer">
           <input type="checkbox" checked={includeResolved} onChange={e => setIncludeResolved(e.target.checked)} className="w-3.5 h-3.5 accent-navy" />
@@ -212,10 +221,15 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
             </header>
             <ul className="divide-y divide-[var(--border-subtle)]">
               {grouped[key].map(c => (
-                <li key={c.id} className={`px-2 py-2 ${c.resolved_at ? 'opacity-60' : ''}`}>
+                <li key={c.id} className={`px-2 py-2 ${c.resolved_at ? 'opacity-60' : ''} ${c.is_inherited ? 'border-l-2 border-orange-300 bg-orange-50/40' : ''}`}>
                   <div className="flex items-center gap-2 flex-wrap">
                     <strong className="text-[11px] text-[var(--text-primary)]">{c.author_name}</strong>
                     <span className={`inline-block rounded-full border px-1.5 py-0 text-[9px] font-semibold ${visibilityCls(c.visibility)}`}>{visibilityLabel(c.visibility)}</span>
+                    {c.is_inherited && c.from_version_label && (
+                      <span className="inline-block rounded-full border border-orange-300 bg-orange-100 px-1.5 py-0 text-[9px] font-semibold text-orange-900" title="Comentário herdado de versão anterior">
+                        ↩ {c.from_version_label}
+                      </span>
+                    )}
                     <span className="text-[10px] text-[var(--text-muted)]">{fmt(c.created_at)}</span>
                   </div>
                   <p className="text-[12px] text-[var(--text-primary)] mt-1 whitespace-pre-wrap">{c.body}</p>
