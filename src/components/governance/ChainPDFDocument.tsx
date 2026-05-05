@@ -171,13 +171,14 @@ function sanitizeText(text: string): string {
   return text
     .replace(/→/g, '›')                                    // U+2192 → U+203A (single right angle, em WinAnsi)
     .replace(/←/g, '‹')                                    // U+2190 → U+2039
-    .replace(/↔/g, ' <-> ')                                // U+2194 (sem equiv WinAnsi)
+    .replace(/↔/g, '<->')                                  // U+2194 sem espaços — source provê spacing
     .replace(/⇒/g, '›')                                    // U+21D2
     .replace(/⇐/g, '‹')                                    // U+21D0
     .replace(/[↑↓↕]/g, '|')                                // arrows verticais
     .replace(/✓/g, '[OK]')                                 // U+2713 checkmark
     .replace(/[✗✕]/g, '[X]')                              // U+2717/U+2715 cross
-    .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '');       // emoji surrogate pairs (📝 ⚠️ etc.)
+    .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '')        // emoji surrogate pairs (📝 ⚠️ etc.)
+    .replace(/\s{2,}/g, ' ');                              // collapse any double spaces criados pelos replaces
 }
 
 function mergeAdjacent(segments: Segment[]): Segment[] {
