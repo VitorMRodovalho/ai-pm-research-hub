@@ -265,6 +265,147 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Show-childs mode (Phase C.1.6): confirm folder structure per project via showProject.childs ──
+    if (mode === 'show-childs') {
+      const token = await getArtiaToken()
+      const knownProjects = [
+        { id: 6391775, name: 'Núcleo de IA & GP' },
+        { id: 6354910, name: 'PMLab' },
+        { id: 6399637, name: 'Programa PMThanks' },
+        { id: 6399640, name: 'Student Club' },
+      ]
+      const results: any[] = []
+
+      // Try various childs query shapes
+      const childsQueryVariants = [
+        `{ showProject(accountId: ${ARTIA_ACCOUNT_ID}, id: "PROJID") { id name childs { edges { node { ... on Folder { id name } } } } } }`,
+        `{ showProject(accountId: ${ARTIA_ACCOUNT_ID}, id: "PROJID") { id name childs { id name } } }`,
+        `{ showProject(accountId: ${ARTIA_ACCOUNT_ID}, id: "PROJID") { id name } }`,
+      ]
+
+      for (const proj of knownProjects) {
+        let success = false
+        for (const tmpl of childsQueryVariants) {
+          const q = tmpl.replace('PROJID', String(proj.id))
+          const res = await fetch(ARTIA_GQL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ query: q }),
+          })
+          const data = await res.json()
+          if (!data.errors) {
+            results.push({ project: proj.name, project_id: proj.id, query: q, response: data?.data?.showProject })
+            await sb.from('artia_discovery_dumps').insert({
+              account_id: ARTIA_ACCOUNT_ID,
+              project_id: proj.id,
+              project_name: proj.name,
+              dump_kind: 'projects_list',
+              payload: data?.data?.showProject,
+              source_query: q,
+              notes: `show-childs project ${proj.name}`,
+            })
+            success = true
+            break
+          }
+        }
+        if (!success) {
+          results.push({ project: proj.name, project_id: proj.id, error: 'all variants failed' })
+        }
+        await new Promise(r => setTimeout(r, 200))
+      }
+
+      // Also test scope: try to access a hypothetical project ID we don't see in listing
+      const hiddenIdTests = ['9999999', '1', '6390000', '6400000']
+      const hiddenResults: any[] = []
+      for (const hid of hiddenIdTests) {
+        const q = `{ showProject(accountId: ${ARTIA_ACCOUNT_ID}, id: "${hid}") { id name } }`
+        const res = await fetch(ARTIA_GQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: q }),
+        })
+        const data = await res.json()
+        hiddenResults.push({ id: hid, errors: data.errors, data: data?.data?.showProject })
+        await new Promise(r => setTimeout(r, 200))
+      }
+
+      return new Response(JSON.stringify({
+        mode: 'show-childs',
+        known_projects_results: results,
+        hidden_id_scope_tests: hiddenResults,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ── Verify-access mode (Phase C.1.5): test if other PMI-GO projects exist beyond our visible 4 ──
+    if (mode === 'verify-access') {
+      const token = await getArtiaToken()
+      const findings: any = { pages_tried: [], folders_per_page: {}, total_folders: 0, project_ids_inferred: new Set<number>(), folder_type_fields: null, project_type_fields: null }
+
+      // 1. Paginate listingFolders to discover all folders in account
+      for (let page = 1; page <= 10; page++) {
+        const q = `{ listingFolders(accountId: ${ARTIA_ACCOUNT_ID}, page: ${page}) { id name } }`
+        const res = await fetch(ARTIA_GQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: q }),
+        })
+        const data = await res.json()
+        const list = data?.data?.listingFolders ?? []
+        findings.pages_tried.push(page)
+        findings.folders_per_page[`page_${page}`] = list.length
+        if (list.length === 0) break
+        findings.total_folders += list.length
+        await sb.from('artia_discovery_dumps').insert({
+          account_id: ARTIA_ACCOUNT_ID,
+          dump_kind: 'folders_list',
+          payload: list,
+          source_query: q,
+          notes: `verify-access page ${page} (${list.length} folders)`,
+        })
+        // Brief rate limit
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      // 2. Introspect Folder type fields
+      const folderTypeRes = await fetch(ARTIA_GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          query: `{ __type(name: "Folder") { fields { name type { name kind ofType { name kind } } } } }`,
+        }),
+      })
+      const folderTypeData = await folderTypeRes.json()
+      findings.folder_type_fields = folderTypeData?.data?.__type?.fields ?? null
+
+      // 3. Introspect Project type fields
+      const projectTypeRes = await fetch(ARTIA_GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          query: `{ __type(name: "Project") { fields { name type { name kind ofType { name kind } } } } }`,
+        }),
+      })
+      const projectTypeData = await projectTypeRes.json()
+      findings.project_type_fields = projectTypeData?.data?.__type?.fields ?? null
+
+      await sb.from('artia_discovery_dumps').insert({
+        account_id: ARTIA_ACCOUNT_ID,
+        dump_kind: 'projects_list',
+        payload: { folder_type: findings.folder_type_fields, project_type: findings.project_type_fields },
+        source_query: '__type Folder + __type Project',
+        notes: 'verify-access type introspection',
+      })
+
+      return new Response(JSON.stringify({
+        mode: 'verify-access',
+        pages_tried: findings.pages_tried,
+        folders_per_page: findings.folders_per_page,
+        total_folders: findings.total_folders,
+        folder_type_fields: findings.folder_type_fields?.map((f: any) => `${f.name}: ${f.type?.name || f.type?.ofType?.name}`),
+        project_type_fields: findings.project_type_fields?.map((f: any) => `${f.name}: ${f.type?.name || f.type?.ofType?.name}`),
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // ── Introspection mode (Phase C.1.0): dump GraphQL schema fields ──
     if (mode === 'introspect') {
       const token = await getArtiaToken()
