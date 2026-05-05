@@ -2,8 +2,151 @@
 
 **Data**: 2026-05-05
 **Trigger**: Auditoria de Governança PMO PMI-GO 2026 (Núcleo IA = 17% conformidade · 14 não-conformidades)
-**Status**: 🔄 Spec inicial — aguardando discovery Artia + decisão PM
+**Status**: 🟢 Phase C.1 (discovery) ✅ COMPLETO 2026-05-05 — schema descoberto + estrutura PMLab mapeada · Phase C.2-C.5 aguardando decisão PM
 **Origem session**: p94 (handoff `memory/handoff_p94_artia_sync_audit.md`)
+
+---
+
+## ✅ Phase C.1 Discovery — Findings (2026-05-05)
+
+### 1. Artia GraphQL schema descoberto (via introspection)
+
+**Query fields (READ)**:
+- `listingProjects(accountId)` — projetos do account
+- `listingFolders(accountId, page)` — folders no account (NÃO project-scoped)
+- `listingActivities(accountId, folderId)` — activities em uma folder
+- `showProject(accountId, id)` · `showFolder(id)` · `showActivity(accountId, id, folderId)`
+- + listingFinances, listingTimeEntries, listingCostCenters, listingServiceOrders
+
+**Mutation fields (WRITE)** — relevantes para Phase C.5:
+- `createProject` · `updateProject` · `destroyProject`
+- `createFolder` · `updateFolder` · `destroyFolder` · `changeFolderStatus`
+- `createActivity` · `updateActivity` ✓ (já usado) · `destroyActivities` · `changeCustomStatusActivity` ✓
+- `createComment` · `createTimeEntry` · `createFinance`
+
+> **Insight**: o naming convention é `listing*`/`show*` para reads e `create*`/`update*`/`destroy*` para writes. NÃO segue convenção GraphQL clássica (`projects`, `findProjects`, etc).
+
+### 2. Visibilidade limitada do client_id
+
+Nosso `ARTIA_CLIENT_ID/SECRET` enxerga apenas **4 projects** (de ~14 esperados pela auditoria):
+| Project ID | Nome | Conformidade na auditoria |
+|---|---|---|
+| 6391775 | Núcleo de IA & GP | **17% (Crítica) ⚠️** |
+| 6354910 | PMLab | 64% |
+| 6399637 | Programa PMThanks | (não auditado) |
+| 6399640 | Student Club | (não auditado) |
+
+**Não visíveis** (porém na auditoria PMO): Seminário, Curso GP, Imersão, PM Day, GP em Campo, Meetup, Pacto Inovação, Webinar, Almoço Projetos, Melhores do Ano, Projeto Liderança, **PMO (74%)**.
+
+→ Para benchmark da estrutura "ideal", usaremos **PMLab** (64%, tem estrutura completa).
+
+### 3. PMLab — estrutura WBS-PMBOK descoberta (template a replicar)
+
+**5 fases-mãe** (PMBOK process groups):
+- `01- Iniciação` (id 6354911)
+- `02- Planejamento` (id 6354912)
+- `03- Execução` (id 6355334)
+- `04- Monitoramento e Controle` (id 6354915)
+- `05- Encerramento` (id 6354916)
+
+**Sub-folders hierárquicas** com naming `XX.YY-Nome` e `XX.YY.ZZ-Nome`:
+
+```
+01- Iniciação
+├── 01.01-Elaborar Termo de Abertura do Projeto
+│   └── 01.01.01-Termo de Abertura do Projeto (TAP)
+│       ├── Activity: Elaborar TAP
+│       ├── Activity: Revisar TAP
+│       ├── Activity: Aprovar TAP
+│       └── Activity: Enviar TAP para o marketing
+└── 01.02-Identificar as Partes Interessadas
+    └── 01.02.01-Registro das Partes Interessadas
+        └── Activity: Identificar e registar no TAP
+
+02- Planejamento
+├── 02.01-Planejar orçamento → Activities: Planejar orçamento, Aprovar orçamento
+├── 02.02-Planejar analistas
+├── 02.03-Planejar cronograma completo
+├── 02.04-Planejar divulgação → Activities: Planejar Divulgação, Aprovar Divulgação
+├── 02.05-Planejar 1ª edição
+└── 02.06-Planejar 2ª edição
+
+03- Execução
+├── (root) Activity: Divulgação 1ª Edição
+├── 03.01-Selecionar analistas
+├── 03.02-Realizar 1ª edição → Activities: Execução, Contratar Local, Organizar Lanches, Organizar local, Certificados
+└── 03.03-Realizar 2ª edição
+
+04- Monitoramento e Controle
+├── 04.01-Status Report 1ª Edição
+└── 04.02-Status Report 2ª Edição
+
+05- Encerramento
+├── Activity: Reunião de lições aprendidas
+├── Activity: Elaboração do Termo de Encerramento do Projeto (TEP)
+└── Activity: Aprovação do TEP
+```
+
+### 4. Núcleo de IA & GP — estrutura ATUAL descoberta
+
+**Apenas 2 folders top-level visíveis no listing** (vs PMLab's ~22):
+- `01 - Iniciação` (id 6391776) — vazio ou quase vazio
+- `02 - Planejamento` (id 6391777)
+
+**Folder oculto em uso**: ARTIA_KPI_FOLDER `6399649` (hardcoded em sync-artia EF) — onde os 9 KPIs vivem. NÃO aparece em `listingFolders(page: 1)` — provável paginação ou folder archived/hidden.
+
+**Faltando completamente**:
+- ❌ `03 - Execução`
+- ❌ `04 - Monitoramento e Controle` (KPI folder existe mas isolado · sem sub-pastas Status Report)
+- ❌ `05 - Encerramento`
+- ❌ Sub-folder `01.01-Elaborar TAP` + `01.01.01-TAP` com activities Elaborar/Revisar/Aprovar TAP
+- ❌ Sub-folder `01.02-Partes Interessadas`
+- ❌ Sub-folders Planejamento (orçamento, cronograma, divulgação)
+- ❌ Sub-folders Status Report periódicos
+
+### 5. Por que a auditoria deu 17% — explicado pela estrutura
+
+| Bloco PMO | Score | Razão estrutural Artia |
+|---|---|---|
+| TAP 0% | Crítico | Não existe folder `01.01.01-TAP` nem activities Elaborar/Revisar/Aprovar TAP |
+| Templates 0% | Crítico | Não existe sub-folder com TAP template institutional anexado |
+| Kick-off 0% | Crítico | Não existe activity "Kick-off realizado" em folder `01- Iniciação` |
+| Uso do Artia 0% | Crítico | TAP não está repassado · Planejamento sem WBS · Riscos/Custos sem activities |
+| Monitoramento 0% | Crítico | Não existe folder `04.01-Status Report` periódico |
+| Lições Aprendidas N/A | (em curso) | Será aplicável em Dez/2026 (folder `05- Encerramento`) |
+| Cadastros 100% ✓ | OK | Único bloco já feito (membros + email + Drive) |
+
+### 6. Plano de remediação (Phase C.2-C.5) baseado nos findings
+
+**Phase C.2 — Replicar estrutura PMBOK no projeto Núcleo (Artia)**:
+1. Criar 3 folders top-level faltando: `03 - Execução`, `04 - Monitoramento e Controle`, `05 - Encerramento`
+2. Criar sub-folders WBS sob `01 - Iniciação`:
+   - `01.01-Elaborar Termo de Abertura do Projeto`
+     - `01.01.01-Termo de Abertura do Projeto (TAP)` com activities (Elaborar/Revisar/Aprovar/Anexar Drive)
+   - `01.02-Identificar as Partes Interessadas`
+     - `01.02.01-Registro das Partes Interessadas` com activity referenciando TAP §14 RACI
+   - `01.03-Reunião de Kick-off Ciclo 3` com activity "Kick-off realizado 2026-03-05" + link para Drive `1. Iniciação/Kick-off`
+3. Criar sub-folders sob `02 - Planejamento`:
+   - `02.01-Planejar orçamento` (R$ 0,00 baseline, 2 activities: Planejar/Aprovar)
+   - `02.02-Planejar voluntários` (cf. processo seletivo metrificado)
+   - `02.03-Planejar cronograma anual` (Q1-Q4 marcos do TAP §9)
+   - `02.04-Planejar publicações` (pipeline 10 artigos)
+   - `02.05-Planejar webinares` (6 + LIM Lima + Detroit)
+4. Criar sub-folders sob `04 - Monitoramento e Controle`:
+   - Mover ARTIA_KPI_FOLDER `6399649` para sub-folder `04.01-KPIs anuais`
+   - `04.02-Status Report Mensal` (12 activities — uma por mês 2026)
+   - `04.03-Atas Plenárias Mensais` (12 activities)
+   - `04.04-Atas Tribos Mensais` (sub-grupos por tribo)
+
+**Phase C.3 — EF push automation** (já especificado em §6 do doc original)
+
+### 7. Decisões pendentes para PM antes de Phase C.2
+
+1. **Criar folders via EF** (mutations `createFolder`) ou **manualmente via Artia UI** (mais rápido, ~10min)?
+2. **Pedir ao PMO PMI-GO acesso ampliado** ao client_id Artia para vermos os outros 10 projetos (Seminário, PMO 74% etc)? Útil para benchmark.
+3. **Aceitar a hierarquia "1ª/2ª Edição" do PMLab** (project-cycle naming) ou usar nossa naming "Ciclo 3 (2026)" para sub-folders?
+
+---
 
 ---
 

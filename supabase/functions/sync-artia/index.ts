@@ -70,8 +70,194 @@ async function updateArtiaActivity(token: string, activityId: number, pct: numbe
   return true
 }
 
+// ── Discovery mode (Phase C.1) ──
+// Triggered via ?mode=discover. Lists projects + folders + sample activities for the account.
+// Persists results to artia_discovery_dumps for offline analysis.
+async function runDiscoveryMode(sb: any, token: string): Promise<any> {
+  const summary: any = {
+    started_at: new Date().toISOString(),
+    queries_attempted: 0,
+    queries_succeeded: 0,
+    queries_failed: 0,
+    projects_found: 0,
+    folders_found: 0,
+    activities_sampled: 0,
+    errors: [],
+  }
+
+  // Helper: GraphQL query with auth + dump persist
+  async function gql(query: string, variables?: any): Promise<any> {
+    const res = await fetch(ARTIA_GQL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ query, variables }),
+    })
+    return await res.json()
+  }
+
+  async function persistDump(kind: string, payload: any, opts?: { project_id?: number; project_name?: string; source_query?: string; notes?: string }) {
+    await sb.from('artia_discovery_dumps').insert({
+      account_id: ARTIA_ACCOUNT_ID,
+      project_id: opts?.project_id ?? null,
+      project_name: opts?.project_name ?? null,
+      dump_kind: kind,
+      payload: payload,
+      source_query: opts?.source_query ?? null,
+      notes: opts?.notes ?? null,
+    })
+  }
+
+  // ── Step 1: List projects in account (Artia uses listing* prefix per introspection) ──
+  // Try multiple field selection variants since Project type fields are unknown
+  const projectsQueries = [
+    { name: 'listingProjects+full', q: `{ listingProjects(accountId: ${ARTIA_ACCOUNT_ID}) { id title customStatus { id name } } }` },
+    { name: 'listingProjects+title', q: `{ listingProjects(accountId: ${ARTIA_ACCOUNT_ID}) { id title } }` },
+    { name: 'listingProjects+name', q: `{ listingProjects(accountId: ${ARTIA_ACCOUNT_ID}) { id name } }` },
+    { name: 'listingProjects+id', q: `{ listingProjects(accountId: ${ARTIA_ACCOUNT_ID}) { id } }` },
+  ]
+
+  let projectsList: any[] = []
+  for (const variant of projectsQueries) {
+    summary.queries_attempted++
+    try {
+      const data = await gql(variant.q)
+      if (data.errors) {
+        summary.queries_failed++
+        await persistDump('error', { query_variant: variant.name, errors: data.errors }, { source_query: variant.q, notes: `listingProjects attempt: ${variant.name}` })
+        continue
+      }
+      const list = data?.data?.listingProjects ?? []
+      if (Array.isArray(list) && list.length > 0) {
+        summary.queries_succeeded++
+        projectsList = list
+        summary.projects_found = list.length
+        await persistDump('projects_list', list, { source_query: variant.q, notes: `Successful variant: ${variant.name}` })
+        break
+      }
+    } catch (e) {
+      summary.queries_failed++
+      summary.errors.push({ step: 'projects_list', variant: variant.name, error: (e as Error).message })
+      await persistDump('error', { query_variant: variant.name, error: (e as Error).message }, { source_query: variant.q, notes: `listingProjects exception: ${variant.name}` })
+    }
+  }
+
+  if (projectsList.length === 0) {
+    summary.errors.push({ step: 'projects_list', fatal: true, note: 'All listingProjects field-selection variants failed.' })
+    return summary
+  }
+
+  // ── Step 2: List ALL folders in account (account-scoped, not project-scoped per introspection) ──
+  // Folders may have project_id or similar field linking them to a project
+  const foldersQueries = [
+    { name: 'listingFolders+full', q: `{ listingFolders(accountId: ${ARTIA_ACCOUNT_ID}, page: 1) { id title projectId } }` },
+    { name: 'listingFolders+title', q: `{ listingFolders(accountId: ${ARTIA_ACCOUNT_ID}, page: 1) { id title } }` },
+    { name: 'listingFolders+name', q: `{ listingFolders(accountId: ${ARTIA_ACCOUNT_ID}, page: 1) { id name } }` },
+    { name: 'listingFolders+id', q: `{ listingFolders(accountId: ${ARTIA_ACCOUNT_ID}, page: 1) { id } }` },
+  ]
+
+  let allFolders: any[] = []
+  for (const variant of foldersQueries) {
+    summary.queries_attempted++
+    try {
+      const data = await gql(variant.q)
+      if (data.errors) {
+        summary.queries_failed++
+        await persistDump('error', { query_variant: variant.name, errors: data.errors }, { source_query: variant.q, notes: `listingFolders attempt: ${variant.name}` })
+        continue
+      }
+      const list = data?.data?.listingFolders ?? []
+      if (Array.isArray(list) && list.length > 0) {
+        summary.queries_succeeded++
+        allFolders = list
+        summary.folders_found = list.length
+        await persistDump('folders_list', list, { source_query: variant.q, notes: `Account-level folders found via ${variant.name}` })
+        break
+      }
+    } catch (e) {
+      summary.queries_failed++
+      summary.errors.push({ step: 'folders_list', variant: variant.name, error: (e as Error).message })
+    }
+  }
+
+  // ── Step 2b: Show details of our project + 4 high-conformance projects ──
+  // Per audit: PMO 74%, PM Lab 64%, Projeto Liderança 58%, Melhores do Ano 56%, Pacto Inovação 50%
+  const projectsToInspect = projectsList.slice(0, 8)
+  for (const proj of projectsToInspect) {
+    const projId = parseInt(proj.id)
+    if (!projId || isNaN(projId)) continue
+
+    const showProjectQuery = `{ showProject(accountId: ${ARTIA_ACCOUNT_ID}, id: "${projId}") { id title } }`
+    summary.queries_attempted++
+    try {
+      const data = await gql(showProjectQuery)
+      if (data.errors) {
+        summary.queries_failed++
+        await persistDump('error', { query_variant: 'showProject', errors: data.errors }, { project_id: projId, project_name: proj.title, source_query: showProjectQuery })
+        continue
+      }
+      summary.queries_succeeded++
+      await persistDump('projects_list', data?.data?.showProject, { project_id: projId, project_name: proj.title, source_query: showProjectQuery, notes: 'showProject detail' })
+    } catch (e) {
+      summary.queries_failed++
+    }
+
+    await new Promise(r => setTimeout(r, 200))
+  }
+
+  // ── Step 3: For top 10 folders, sample up to 20 activities ──
+  const foldersToInspect = allFolders.slice(0, 12)
+  for (const folder of foldersToInspect) {
+    const folderId = parseInt(folder.id)
+    if (!folderId || isNaN(folderId)) continue
+
+    const activitiesQueries = [
+      { name: 'listingActivities+full', q: `{ listingActivities(accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${folderId}) { id title description completedPercent customStatus { id name } } }` },
+      { name: 'listingActivities+title', q: `{ listingActivities(accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${folderId}) { id title } }` },
+      { name: 'listingActivities+id', q: `{ listingActivities(accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${folderId}) { id } }` },
+    ]
+
+    for (const variant of activitiesQueries) {
+      summary.queries_attempted++
+      try {
+        const data = await gql(variant.q)
+        if (data.errors) {
+          summary.queries_failed++
+          if (summary.queries_failed < 8) {
+            await persistDump('error', { query_variant: variant.name, folder_title: folder.title, errors: data.errors }, { source_query: variant.q })
+          }
+          continue
+        }
+        const list = data?.data?.listingActivities ?? []
+        if (Array.isArray(list)) {
+          summary.queries_succeeded++
+          summary.activities_sampled += list.length
+          await persistDump('activities_sample', { folder_id: folderId, folder_title: folder.title, activities: list }, { source_query: variant.q, notes: `${list.length} activities in folder "${folder.title}" via ${variant.name}` })
+          break
+        }
+      } catch (e) {
+        summary.queries_failed++
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 200))
+  }
+
+  summary.completed_at = new Date().toISOString()
+  return summary
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  // Parse mode from query params or JSON body
+  const url = new URL(req.url)
+  let mode = url.searchParams.get('mode') || ''
+  if (!mode && req.method === 'POST') {
+    try {
+      const body = await req.clone().json()
+      mode = body?.mode || ''
+    } catch { /* ignore parse errors */ }
+  }
 
   try {
     const sb = createClient(
@@ -79,6 +265,75 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Introspection mode (Phase C.1.0): dump GraphQL schema fields ──
+    if (mode === 'introspect') {
+      const token = await getArtiaToken()
+      // Query 1: list all root Query fields
+      const queryFieldsRes = await fetch(ARTIA_GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          query: `{ __schema { queryType { name fields { name description args { name type { name kind ofType { name kind } } } type { name kind ofType { name kind } } } } } }`,
+        }),
+      })
+      const queryFieldsData = await queryFieldsRes.json()
+      // Query 2: list mutation fields (for context)
+      const mutFieldsRes = await fetch(ARTIA_GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          query: `{ __schema { mutationType { name fields { name args { name } } } } }`,
+        }),
+      })
+      const mutFieldsData = await mutFieldsRes.json()
+
+      await sb.from('artia_discovery_dumps').insert({
+        account_id: ARTIA_ACCOUNT_ID,
+        dump_kind: 'projects_list', // overload for schema dump
+        payload: { schema_query: queryFieldsData?.data, schema_mutation: mutFieldsData?.data },
+        source_query: '__schema introspection',
+        notes: 'Schema introspection dump — root Query and Mutation fields',
+      })
+
+      return new Response(JSON.stringify({
+        mode: 'introspect',
+        query_fields: queryFieldsData?.data?.__schema?.queryType?.fields?.map((f: any) => ({
+          name: f.name,
+          args: f.args?.map((a: any) => `${a.name}: ${a.type?.name || a.type?.ofType?.name}`),
+          returns: f.type?.name || f.type?.ofType?.name,
+        })) ?? [],
+        mutation_fields: mutFieldsData?.data?.__schema?.mutationType?.fields?.map((f: any) => f.name) ?? [],
+        errors: queryFieldsData?.errors || mutFieldsData?.errors || null,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ── Discovery mode (Phase C.1) ──
+    if (mode === 'discover') {
+      let token: string
+      try {
+        token = await getArtiaToken()
+      } catch (e) {
+        return new Response(JSON.stringify({
+          mode: 'discover',
+          error: 'Artia auth failed',
+          details: (e as Error).message,
+        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const summary = await runDiscoveryMode(sb, token)
+      await sb.from('mcp_usage_log').insert({
+        tool_name: 'sync-artia-discover',
+        success: summary.queries_succeeded > 0,
+        execution_ms: 0,
+        response_summary: JSON.stringify(summary),
+      })
+
+      return new Response(JSON.stringify({ mode: 'discover', ...summary }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── Default mode: KPI sync (existing logic) ──
     const results: Record<string, { current: number; pct: number; synced: boolean }> = {}
     const now = new Date().toISOString().split('T')[0]
 
