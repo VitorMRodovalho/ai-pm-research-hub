@@ -265,6 +265,55 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Introspect-types mode (Phase C.1.7): dump Activity/Comment type schemas + key mutation args ──
+    if (mode === 'introspect-types') {
+      const token = await getArtiaToken()
+      const typesToInspect = ['Activity', 'Comment', 'Project', 'Folder', 'CustomStatus', 'TimeEntry']
+      const typeData: Record<string, any> = {}
+      for (const t of typesToInspect) {
+        const res = await fetch(ARTIA_GQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            query: `{ __type(name: "${t}") { fields { name type { name kind ofType { name kind } } } } }`,
+          }),
+        })
+        const data = await res.json()
+        typeData[t] = data?.data?.__type?.fields?.map((f: any) => `${f.name}: ${f.type?.name || f.type?.ofType?.name || 'list'}`) ?? null
+      }
+
+      // Inspect key mutation args
+      const mutationsToInspect = ['createActivity', 'updateActivity', 'createComment', 'createFolder', 'updateFolder']
+      const mutationData: Record<string, any> = {}
+      for (const m of mutationsToInspect) {
+        const res = await fetch(ARTIA_GQL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            query: `{ __schema { mutationType { fields(includeDeprecated: false) { name args { name type { name kind ofType { name kind } } } } } } }`,
+          }),
+        })
+        const data = await res.json()
+        const fields = data?.data?.__schema?.mutationType?.fields ?? []
+        const target = fields.find((f: any) => f.name === m)
+        if (target) mutationData[m] = target.args.map((a: any) => `${a.name}: ${a.type?.name || a.type?.ofType?.name || a.type?.kind}`)
+      }
+
+      await sb.from('artia_discovery_dumps').insert({
+        account_id: ARTIA_ACCOUNT_ID,
+        dump_kind: 'projects_list',
+        payload: { types: typeData, mutations: mutationData },
+        source_query: '__type Activity/Comment/etc + mutation args',
+        notes: 'introspect-types comprehensive dump',
+      })
+
+      return new Response(JSON.stringify({
+        mode: 'introspect-types',
+        types: typeData,
+        mutation_args: mutationData,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // ── Show-childs mode (Phase C.1.6): confirm folder structure per project via showProject.childs ──
     if (mode === 'show-childs') {
       const token = await getArtiaToken()
