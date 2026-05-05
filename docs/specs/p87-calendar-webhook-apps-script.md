@@ -67,10 +67,15 @@ const EMAIL_ALIAS = {
  * filter abaixo garante que só processamos eventos novos (criados nos últimos
  * 5 min) — edits a eventos antigos não dispatcham (acceptable: candidatos
  * raramente editam após booking).
+ *
+ * IMPORTANTE: para testar manualmente via "Run" no editor, use `smokeTest()`
+ * (não `onCalendarEventCreated`). Ao rodar onCalendarEventCreated diretamente,
+ * o param `e` vem undefined e o código abaixo cai no fallback `nucleoia@…`.
  */
 function onCalendarEventCreated(e) {
-  // Calendar API trigger event provides calendarId
-  const calendarId = e.calendarId || 'nucleoia@pmigo.org.br';
+  // Quando rodado manualmente via "Run" no editor, e === undefined → usar fallback.
+  // Trigger real fornece e.calendarId.
+  const calendarId = (e && e.calendarId) || 'nucleoia@pmigo.org.br';
   const cal = CalendarApp.getCalendarById(calendarId);
   if (!cal) return;
 
@@ -189,57 +194,92 @@ Apps Script editor → **Triggers** (clock icon) → **Add Trigger**:
 - Event type: `Calendar updated`
 - Save
 
-### 5. Configure Cloudflare Worker env
+### 5. Configure Cloudflare Worker env (PM action — apenas 1 secret novo)
 
-Worker (canonical domain `nucleoia.vitormr.dev`, deployed em `astro-pm-hub-v2`) precisa **3 secrets** para o webhook funcionar:
+**O que é:** O webhook que está em `nucleoia.vitormr.dev/api/calendar-webhook` precisa acessar Supabase com permissão de service_role para escrever em `selection_interviews` + atualizar `selection_applications`. Esse acesso usa um secret guardado no Worker da Cloudflare.
+
+**O que falta:** Apenas **1 secret novo** — `SUPABASE_SERVICE_ROLE_KEY`. Os outros 2 (`CALENDAR_WEBHOOK_SECRET` e `PUBLIC_SUPABASE_URL`) já estão configurados (p92 verificado).
+
+**Caminho A — Cloudflare Dashboard (recomendado se CLI auth quebrar)**
+
+Esse caminho NÃO usa wrangler CLI, evita auth issues:
+
+1. Abrir https://dash.cloudflare.com/ e login
+2. Account: navegar até **Workers & Pages**
+3. Selecionar Worker `platform`
+4. Aba **Settings** → seção **Variables and Secrets** → botão **+ Add**
+5. Type: `Secret`. Variable name: `SUPABASE_SERVICE_ROLE_KEY`. Value: cole do Supabase dashboard → Settings → API → secção "service_role secret" (esse é o JWT longo que começa com `eyJ...`)
+6. **Save**
+
+Pronto. O Worker vai usar esse valor automaticamente nas próximas requisições — não precisa redeploy.
+
+**Caminho B — wrangler CLI (alternativa)**
 
 ```bash
-# B4 fix (p92): worker URL canonical é nucleoia.vitormr.dev — legacy
-# `platform.ai-pm-research-hub.workers.dev` redireciona via 301.
-# Wrangler deploy do projeto root (NÃO subdir cloudflare-workers/pmi-vep-sync).
-cd /path/to/ai-pm-research-hub
-
-# 1) Calendar webhook shared secret — PM já configurou (wrangler secret list confirma 2026-05-05)
-npx wrangler secret put CALENDAR_WEBHOOK_SECRET
-# Paste same hex value as Apps Script WEBHOOK_SECRET
-
-# 2) Supabase service role key — REQUIRED para webhook acessar selection_applications/selection_interviews
-# (p92 audit identificou: webhook retornava 503 webhook_not_configured pois SERVICE_ROLE_KEY ausente)
+cd /home/vitormrodovalho/projects/ai-pm-research-hub
 npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-# Paste from Supabase dashboard → Settings → API → service_role secret
-# DO NOT commit this value; treat as production credential.
-
-# 3) (Optional) SUPABASE_URL — webhook fallback to PUBLIC_SUPABASE_URL (build-time .env) is fine
-#    Set explicitly only if PUBLIC_SUPABASE_URL diverges from runtime URL.
+# Cole o valor quando perguntado
 ```
 
-**p92 verification** (2026-05-05 02:25 UTC): após Astro v6 env-access fix shipped (`b01eea33`), webhook responde:
-- `HTTP 503 {"error":"webhook_not_configured"}` quando `SUPABASE_SERVICE_ROLE_KEY` ausente (current state)
-- `HTTP 401 {"error":"unauthorized"}` quando secret está set mas X-Calendar-Secret header errado
-- `HTTP 200 {success: true, ...}` quando tudo correto + body válido
-- `HTTP 404 {"error":"application_not_found"}` quando email não bate
+⚠️ Se aparecer erro `Authentication error [code: 10000]` ou `Invalid access token [code: 9109]`, o token wrangler expirou (caught p92 2026-05-05 ~07:00 UTC). Soluções:
+- Re-autenticar: `npx wrangler login` (abre browser local)
+- Ou usar Caminho A (dashboard)
 
-PM precisa rodar `npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY` antes do Apps Script setup.
+**p92 verification — webhook response shape após shipping**:
+- `HTTP 503 {"error":"webhook_not_configured"}` ← *current state*; ocorre quando `SUPABASE_SERVICE_ROLE_KEY` ausente
+- `HTTP 401 {"error":"unauthorized"}` ← secret set mas header `X-Calendar-Secret` errado
+- `HTTP 200 {success: true, ...}` ← tudo correto + body válido
+- `HTTP 404 {"error":"application_not_found"}` ← guest_email não bate com candidato no DB
 
-### 6. OAuth authorization (primeira execução)
+Quando o secret estiver setado, próximo `curl` retorna 401 (não 503) — confirma config OK.
 
-B5 fix (p92): Na primeira execução do `smokeTest()` (ou primeiro fire do trigger), Google solicita autorização para os scopes:
+### 6. OAuth authorization (acontece automaticamente — não é "step" manual separado)
 
-- `https://www.googleapis.com/auth/calendar.readonly` — ler eventos + guests
-- `https://www.googleapis.com/auth/script.external_request` — POST para webhook URL externa
+**Não é uma ação separada.** É só uma nota: na primeira vez que você clica "Run" em qualquer função do Apps Script (incluindo `smokeTest()`), o Google abre uma janela popup pedindo autorização para acessar o Calendar e fazer requisições externas. Você aceita uma vez e funciona daí em diante.
 
-Aceitar todas as permissões. Se aparecer warning "App não verificada", clicar em "Avançado" → "Acessar nucleoia-calendar-sync (não verificada)" — é normal para Apps Script bound a contas não-Workspace.
+Scopes que o Google vai pedir:
+- `https://www.googleapis.com/auth/calendar.readonly` — ler eventos + lista de convidados
+- `https://www.googleapis.com/auth/script.external_request` — fazer POST para o webhook (`nucleoia.vitormr.dev`)
 
-### 7. Smoke test
+**Importante**: a primeira execução pode mostrar "Esta aplicação não foi verificada pelo Google". É **normal** para Apps Scripts pessoais ou bound a contas não-Workspace. Caminho:
 
-1. Apps Script editor → run `smokeTest()` function manually (sem args = pega primeiro evento próximos 7 dias)
-2. Check execution log → should show "Webhook OK" or specific error
-3. Verify in DB: `SELECT * FROM selection_interviews ORDER BY created_at DESC LIMIT 1`
-4. Should see new row with `calendar_event_id` populated
+1. Clicar **"Avançado"** (no canto inferior do warning)
+2. Clicar **"Acessar nucleoia-calendar-sync (não seguro)"**
+3. Aprovar os 2 scopes
+4. Pronto — não pedirá novamente para esse projeto
+
+**TL;DR**: você não precisa fazer nada para "configurar" OAuth. Só precisa clicar Run e aceitar quando o Google perguntar.
+
+### 7. Smoke test (primeira validação)
+
+⚠️ **NÃO clique Run em `onCalendarEventCreated`** — essa função espera o param `e` que só vem do trigger. Rodar manualmente lança `TypeError: Cannot read properties of undefined (reading 'calendarId')` (caught p92 quando PM tentou).
+
+✅ **Use `smokeTest()` para teste manual:**
+
+1. No editor Apps Script, no dropdown "Selecionar função", escolher **`smokeTest`**
+2. Clicar **Run** (▶)
+3. Primeira vez: Google pede autorização — aceitar (ver step 6)
+4. Aba **Execução log** deve mostrar `"Webhook OK for ..."` ou erro específico
+5. Verificar DB:
+   ```sql
+   SELECT id, application_id, scheduled_at, status, calendar_event_id, created_at
+   FROM selection_interviews
+   ORDER BY created_at DESC LIMIT 1;
+   ```
+6. Deve aparecer linha nova com `calendar_event_id` populado
+
+**Para testar o trigger automático** (não só manual): crie um evento no Calendar `nucleoia@pmigo.org.br` com um candidato real como guest → o trigger fire dentro de ~1 minuto → webhook recebe → linha em `selection_interviews`.
 
 ---
 
-## Webhook contract
+## Webhook contract (referência apenas — não exige ação PM)
+
+⚠️ **Esta seção é DOCUMENTAÇÃO técnica do que o webhook aceita/retorna**. Você (PM) não precisa fazer nada com ela. É útil para:
+- Debugar erros se algo não funcionar (saber o que cada HTTP status significa)
+- Futuras integrações com outros sistemas
+- Auditoria de quem chama o webhook
+
+O Apps Script faz a chamada automática — você não constrói o payload manualmente.
 
 ### Request
 
