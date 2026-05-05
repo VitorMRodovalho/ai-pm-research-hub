@@ -94,6 +94,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title="Workflow indicators: IA / Pares / Entrevista / Token / Vídeo">Pipeline</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">Data</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
@@ -396,6 +397,51 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
   };
 
+  /* p92 Phase D — pipeline workflow indicators (5 mini-badges per candidate).
+     Compact one-glance status for AI / peer review / interview / token usage / video.
+     Each badge: dot color (emerald=done, amber=partial, gray=pending) + tooltip. */
+  function pipelineBadges(r: any): string {
+    const aiDone = r.ai_analysis_done === true;
+    const peerCount = Number(r.peer_eval_count ?? 0);
+    const peerPending = Number(r.peer_invites_pending ?? 0);
+    const interviewSched = r.interview_scheduled === true;
+    const tokenUsed = r.token_consumed === true;
+    const videoDone = r.video_screening_done === true;
+
+    const dot = (color: string, label: string, hint: string) =>
+      `<span title="${esc(hint)}" class="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold ${color}">${label}</span>`;
+
+    const aiBadge = aiDone
+      ? dot('bg-emerald-100 text-emerald-700', 'IA', 'AI analysis concluída + consent dado')
+      : dot('bg-gray-100 text-gray-400', 'IA', 'Aguardando AI / consent');
+
+    const peerLabel = `${peerCount}/2`;
+    const peerColor = peerCount >= 2
+      ? 'bg-emerald-100 text-emerald-700'
+      : peerCount === 1
+        ? 'bg-amber-100 text-amber-700'
+        : peerPending > 0
+          ? 'bg-blue-100 text-blue-700'
+          : 'bg-gray-100 text-gray-400';
+    const peerHint = `${peerCount} avaliação(ões) submetida(s)` +
+      (peerPending > 0 ? `, ${peerPending} convite(s) pendente(s)` : '');
+    const peerBadge = dot(peerColor, peerLabel, peerHint);
+
+    const interviewBadge = interviewSched
+      ? dot('bg-emerald-100 text-emerald-700', 'EN', 'Entrevista agendada/realizada')
+      : dot('bg-gray-100 text-gray-400', 'EN', 'Sem entrevista agendada');
+
+    const tokenBadge = tokenUsed
+      ? dot('bg-emerald-100 text-emerald-700', 'TK', 'Candidato acessou portal pelo menos 1×')
+      : dot('bg-gray-100 text-gray-400', 'TK', 'Token nunca consumido (não acessou portal)');
+
+    const videoBadge = videoDone
+      ? dot('bg-emerald-100 text-emerald-700', 'VD', 'Vídeo screening uploaded ou opted-out')
+      : dot('bg-gray-100 text-gray-400', 'VD', 'Sem vídeo screening');
+
+    return `<div class="inline-flex items-center gap-1">${aiBadge}${peerBadge}${interviewBadge}${tokenBadge}${videoBadge}</div>`;
+  }
+
   /* ── load cycles ──────────────────────────────────── */
   async function loadCycles() {
     const { data } = await sb.rpc('get_selection_cycles');
@@ -456,7 +502,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -558,7 +604,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     if (!tbody) return;
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -612,6 +658,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-3 py-2.5">${pipelineBadges(r)}</td>
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">

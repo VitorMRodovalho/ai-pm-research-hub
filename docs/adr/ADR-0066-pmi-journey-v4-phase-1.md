@@ -337,3 +337,52 @@ UI hint implementado em admin/selection.astro (Análises IA tab):
 - Issue #119 comment c/ findings: `https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/119#issuecomment-4361229912`
 
 Assisted-By: Claude (Anthropic)
+
+---
+
+## Amendment 3 — 2026-05-05 (p92) — Worker `_bucket` filter (Bug #2)
+
+**Trigger:** p91 audit (`docs/specs/p91-selection-journey-audit.md`) catalogou 7 bugs estruturais na jornada de seleção, originados de relato do candidato William Junio (link onboarding broken). Bug #2 = welcomes spurious para 4 não-candidatos no batch 04-29 (`Hayala/Ana Carla/Marcos` já líderes ativos PMI; `Adalberto` declinou em 2025-12-23).
+
+### Root cause
+
+`extract_pmi_volunteer.js` (browser script) varre as 3 abas do recruiter dashboard (`submitted` / `qualified` / `rejected`) e POSTa todas para o worker `/ingest`. Worker `cloudflare-workers/pmi-vep-sync/src/index.ts:268` chamava `dispatchWelcome` SEM checar `_bucket` ou `statusId`. Resultado: qualquer linha nova (`was_new=true`) recebia welcome, inclusive lideranças ativas re-importadas e candidatos rejeitados.
+
+### Decision
+
+Worker é a **single source of truth gate**. Spec/script preserva archive completo (3 buckets em `selection_applications`) — útil para lifecycle data. Mas dispatch de welcome+token só dispara quando `app._bucket === 'submitted' && app.statusId === 2` (PMI VEP `Submitted` enum).
+
+```typescript
+// cloudflare-workers/pmi-vep-sync/src/index.ts (Phase A p92)
+if (result.was_new) {
+  summary.applications_new++;
+  const isPendingApplicant = app._bucket === 'submitted' && app.statusId === 2;
+  if (!isPendingApplicant) {
+    summary.welcomes_skipped_non_submitted++;
+  } else {
+    // issueOnboardingToken + dispatchWelcome
+  }
+}
+```
+
+`IngestSummary.welcomes_skipped_non_submitted` instrumenta visibilidade (quantos foram filtrados em cada run).
+
+### Recovery executado em p91 (PM aprovou cada item)
+
+| # | Ação | Detalhes |
+|---|---|---|
+| 1 | Anulação 4 tokens inválidos | `expires_at=now()` Hayala/Ana Carla/Marcos/Adalberto |
+| 2 | Welcome corretos resend | Herlon (`bf21ab32`/`c2111bc2`) + Ana Pacheco (`cd93951c`/`ac7fa21e`) + DJEIMIYS (`64c06a27`/`4778119f`) — todos delivered |
+| 3 | Gmail draft William | Reply `r-5580222886714244339` em `nucleoia@pmigo.org.br` Drafts (pending PM send) |
+| 4 | Audit log | 7 entries `admin_audit_log` com incident `p91-pmi-vep-sync-status-filter-gap` |
+
+### Bulk dispatch ainda BLOQUEADO
+
+PM 2026-05-05: 18 candidatos `status='submitted'` sem `onboarding_token` (Bug #3 — bulk import via SQL bypassa worker `was_new=true` trigger) NÃO devem receber welcome até bugs Phase A/B/C resolvidos. Phase F (bulk dispatch) é a última fase do p92, executada quando workflow downstream estiver fluindo.
+
+### Trace
+- p91 audit `docs/specs/p91-selection-journey-audit.md` §1 Bug #2
+- William Junio thread Gmail `19ddab9069399422` (origin)
+- p92 Phase A commit (this session)
+
+Assisted-By: Claude (Anthropic)

@@ -248,6 +248,7 @@ export interface IngestSummary {
   applications_skipped: number;
   applications_skipped_prior_cycle: number;  // existing in different (closed) cycle
   welcome_dispatched: number;
+  welcomes_skipped_non_submitted: number;    // _bucket != 'submitted' OR statusId != 2 (qualified leaders + rejected)
   errors: Array<{ scope: string; ref?: string; error: string }>;
   pmi_token_expiring_soon?: boolean;
 }
