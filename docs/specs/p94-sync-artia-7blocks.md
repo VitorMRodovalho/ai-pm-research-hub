@@ -2,7 +2,7 @@
 
 **Data**: 2026-05-05
 **Trigger**: Auditoria de Governança PMO PMI-GO 2026 (Núcleo IA = 17% conformidade · 14 não-conformidades)
-**Status**: 🟢 Phase C.1 (discovery) ✅ COMPLETO 2026-05-05 — schema descoberto + estrutura PMLab mapeada · Phase C.2-C.5 aguardando decisão PM
+**Status**: 🟢 Phase C.1 (discovery) ✅ + Phase C.2 (build-out) ✅ COMPLETOS 2026-05-05 · Phase C.3 (crons sustentabilidade) + C.4 (ADR amendment) + C.5 (backfill avulso) próximos
 **Origem session**: p94 (handoff `memory/handoff_p94_artia_sync_audit.md`)
 
 ---
@@ -140,11 +140,102 @@ Nosso `ARTIA_CLIENT_ID/SECRET` enxerga apenas **4 projects** (de ~14 esperados p
 
 **Phase C.3 — EF push automation** (já especificado em §6 do doc original)
 
-### 7. Decisões pendentes para PM antes de Phase C.2
+### 7. Decisões PM (2026-05-05)
 
-1. **Criar folders via EF** (mutations `createFolder`) ou **manualmente via Artia UI** (mais rápido, ~10min)?
-2. **Pedir ao PMO PMI-GO acesso ampliado** ao client_id Artia para vermos os outros 10 projetos (Seminário, PMO 74% etc)? Útil para benchmark.
-3. **Aceitar a hierarquia "1ª/2ª Edição" do PMLab** (project-cycle naming) ou usar nossa naming "Ciclo 3 (2026)" para sub-folders?
+1. ✅ EF mutations (não manual)
+2. ✅ NÃO pedir acesso PMO ampliado — scope dos 4 projetos visíveis suficiente para Phase C.2-C.5
+3. ✅ Naming `YYYY.S` (ano/semestre) — `Ciclo 3 (2026.1)` etc
+
+---
+
+## ✅ Phase C.2 SHIPPED (2026-05-05)
+
+### 1. Migrations executadas (3 + 1 hotfix)
+- `20260516530000` — `artia_discovery_dumps` (Phase C.1 já)
+- `20260516530001` — artia_*_id columns em governance_documents/initiatives/events/board_items + 4 indexes
+- `20260516530002` — `program_risks` table + RLS V4 + 11 risks seed do TAP §13 + trigger updated_at
+- `20260516530003` + `_3b_fix` — `artia_status_reports` cache + 2 LGPD-safe helpers `_artia_safe_event_summary` e `_artia_safe_monthly_metrics`
+
+### 2. EF sync-artia v3 (5 modes)
+- `default` (existente — KPI weekly sync)
+- `?mode=introspect` — dump GraphQL schema
+- `?mode=verify-access` — pagination + Folder/Project type intro
+- `?mode=show-childs` — showProject + scope test
+- `?mode=introspect-types` — Activity/Comment/mutation args
+- `?mode=create-structure&dry_run=true|false` — Phase C.2 build-out
+
+### 3. Estrutura criada no Artia (live, 0 erros)
+
+**Project metadata atualizado** (description/justification/premise/restriction/lastInformations) — 1 mutation `updateProject(6391775)` ✓
+
+**15 sub-folders novos** (IDs sequenciais 6516550-6516564):
+
+```
+01 - Iniciação (parent 6391776)
+├── 01.01 - Termo de Abertura do Projeto (TAP) [6516550]
+│     └─ 4 activities: Elaborar / Revisar / Aprovar / Anexar Drive
+├── 01.02 - Registro das Partes Interessadas [6516551]
+│     └─ 1 activity: Matriz RACI consolidada TAP §14
+├── 01.03 - Reunião de Kick-off Ciclo 3 (2026.1) [6516552]
+│     └─ 1 activity: Kick-off realizado 2026-03-05 17:15
+└── 01.04 - Templates Institucionais [6516553]
+      └─ 4 activities: TAP / Manual Governança / Política IP (em revisão) / Acordos Cooperação
+
+02 - Planejamento (parent 6391777)
+├── 02.01 - Planejar Orçamento Ciclo 3 [6516554] (1 activity R$ 0,00)
+├── 02.02 - Planejar Voluntários [6516555] (1 activity 48 ativos)
+├── 02.03 - Planejar Cronograma Anual 2026 [6516556] (1 activity)
+├── 02.04 - Planejar Publicações [6516557] (1 activity 0/10 artigos)
+└── 02.05 - Planejar Webinares e Eventos Externos [6516558] (1 activity 0/6 + LIM + Detroit)
+
+04 - Monitoramento e Controle (parent 6399649)
+├── 04.02 - Status Reports Mensais 2026 [6516559] (1 activity recurrence='monthly')
+├── 04.03 - Atas Plenárias Mensais [6516560] (1 activity recurrence='monthly')
+├── 04.04 - Atas de Tribos Semanais [6516561] (1 activity recurrence='weekly')
+└── 04.06 - Riscos do Programa 2026 [6516562]
+      └─ 11 activities (1 por risco TAP §13, status workflow ABERTO/EM_TRATAMENTO/MITIGADO)
+
+05 - Encerramento (parent 6399650)
+├── 05.01 - Lições Aprendidas Ciclo 3 [6516563] (2 activities A_INICIAR Dez/2026)
+└── 05.02 - Termo de Encerramento (TEP) Ciclo 3 [6516564] (2 activities A_INICIAR Dez/2026)
+```
+
+**33 activities criadas** distribuídas conforme estrutura acima.
+
+### 4. Verificação end-to-end (2026-05-05)
+- listingFolders pre-Phase C.2: 35 folders total
+- listingFolders pós-Phase C.2: **50 folders** (+15 ✓ confirmadas)
+- updateProject ok=true (id 6391775)
+- 0 erros em todas 49 mutations (1 updateProject + 15 createFolder + 33 createActivity)
+- LGPD helpers testados em produção (April 39 events/43.8h · May 35 events/48 vol)
+
+### 5. Mapeamento auditoria 7 blocos → cobertura Phase C.2
+
+| Bloco PMO | Score atual | Estrutura criada Phase C.2 | Cobertura esperada na próxima auditoria |
+|---|---|---|---|
+| TAP (1) | 0% | 01.01 + 01.04 (TAP) + Project metadata | ≥75% (depende assinatura Ivan) |
+| Cadastros (2) | 100% | (já OK) | 100% |
+| Templates (3) | 0% | 01.04 (TAP/Manual/Política IP/Acordos) + Project metadata | ≥75% |
+| Kick-off (4) | 0% | 01.03 (Kick-off realizado 2026-03-05) | 100% (Drive folder migrado + activity criada) |
+| Uso do Artia (5) | 0% | 01.01 TAP + 02.0X Planejamento + 04.06 Riscos + Custos no metadata | ≥80% (TAP repassado ✓ Plano ✓ Riscos ✓ Custos ✓) |
+| Monitoramento (6) | 0% | 04.02 Status Reports (recurrence) + 04.03 Atas + 04.04 Atas Tribos + 04 KPIs (já existe) | ≥75% após Phase C.3 crons rodarem |
+| Lições (7) | N/A | 05.01 + 05.02 placeholders Dez/2026 | N/A até encerramento |
+
+**Score esperado pós-Phase C.2**: 17% → ~70-80% (depende crons C.3 popularem descriptions periodicamente)
+
+---
+
+## 🔜 Phase C.3 (próxima) — Crons de sustentabilidade
+
+5 crons + 1 trigger event-driven a implementar:
+1. `sync-artia-kpi-weekly` (existente — manter)
+2. `sync-artia-monitoring-daily` (NOVO) — atividades ≤10d
+3. `sync-artia-status-report-monthly` (NOVO) — gera + sync para folder 04.02 activity ID 6516559+
+4. `sync-artia-rituals-weekly` (NOVO) — atas + ritos para folders 04.03/04.04
+5. `sync-artia-risks-monthly` (NOVO) — sync program_risks → 04.06 activities
+6. **Event-driven**: trigger SQL AFTER UPDATE em governance_documents (atualiza folder 01.04 activities) + AFTER INSERT em events.type='kick_off' (atualiza 01.03)
+
+Cada cron usa LGPD helpers + atualiza `artia_synced_at` em platform tables. Estimativa: 4-5h em sessão p95 dedicada.
 
 ---
 
