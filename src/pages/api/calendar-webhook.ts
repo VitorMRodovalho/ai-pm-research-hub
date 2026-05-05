@@ -81,11 +81,21 @@ export const POST: APIRoute = async ({ request }) => {
 
   const sb = createClient(supabaseUrl, serviceRoleKey);
 
-  // Lookup application by email (case-insensitive, prefer interview-bound statuses)
+  // Lookup application by email (case-insensitive). Include all pre-interview pipeline
+  // statuses — candidato pode agendar quando está em qualquer fase ativa do pipeline
+  // antes de aprovado/rejeitado terminal. p92 fix: 'objective_eval' (peer review em curso)
+  // estava ausente após Phase C status transition, causando 404 falsos.
   const { data: candidates } = await sb.from('selection_applications')
     .select('id, applicant_name, status, interview_status, cycle_id')
     .ilike('email', guest_email)
-    .in('status', ['interview_pending', 'interview_scheduled', 'submitted'])
+    .in('status', [
+      'submitted',
+      'screening',
+      'objective_eval',
+      'objective_cutoff',
+      'interview_pending',
+      'interview_scheduled',
+    ])
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -93,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!app) {
     return jsonResponse({
       error: 'application_not_found',
-      hint: 'No selection_applications row matched the guest_email in interview_pending/interview_scheduled/submitted statuses',
+      hint: 'No selection_applications row matched the guest_email in active pipeline statuses (submitted/screening/objective_eval/objective_cutoff/interview_pending/interview_scheduled)',
       guest_email,
     }, 404);
   }
