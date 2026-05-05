@@ -204,6 +204,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     applications_skipped: 0,
     applications_skipped_prior_cycle: 0,
     welcome_dispatched: 0,
+    welcomes_skipped_non_submitted: 0,
     errors: []
   };
 
@@ -256,39 +257,52 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
 
       if (result.was_new) {
         summary.applications_new++;
-        try {
-          const token = await issueOnboardingToken(db, {
-            source_type: 'pmi_application',
-            source_id: result.id,
-            scopes: ['profile_completion', 'video_screening', 'consent_giving'],
-            ttl_days: ttlDays,
-            issued_by_worker: WORKER_NAME + '-ingest'
-          });
 
-          const welcomeResult = await dispatchWelcome(db, env, {
-            application_id: result.id,
-            applicant_name: mapped.applicant_name,
-            email: mapped.email,
-            role_applied: mapped.role_applied,
-            chapter: mapped.chapter,
-            token
-          });
+        // Bug #2 fix (p91 audit, p92 Phase A): only dispatch welcome+token to
+        // pending applicants from the submitted bucket. Qualified bucket =
+        // already-active leaders from prior cycles; rejected bucket = declined
+        // or withdrawn. Both are tracked in selection_applications for archive
+        // (rich lifecycle data) but must NOT trigger onboarding email — that
+        // sent welcomes to 4 unintended recipients on 2026-04-29
+        // (Hayala/AnaCarla/Marcos already PMI leaders; Adalberto declined).
+        const isPendingApplicant = app._bucket === 'submitted' && app.statusId === 2;
+        if (!isPendingApplicant) {
+          summary.welcomes_skipped_non_submitted++;
+        } else {
+          try {
+            const token = await issueOnboardingToken(db, {
+              source_type: 'pmi_application',
+              source_id: result.id,
+              scopes: ['profile_completion', 'video_screening', 'consent_giving'],
+              ttl_days: ttlDays,
+              issued_by_worker: WORKER_NAME + '-ingest'
+            });
 
-          if (welcomeResult.success) {
-            summary.welcome_dispatched++;
-          } else {
+            const welcomeResult = await dispatchWelcome(db, env, {
+              application_id: result.id,
+              applicant_name: mapped.applicant_name,
+              email: mapped.email,
+              role_applied: mapped.role_applied,
+              chapter: mapped.chapter,
+              token
+            });
+
+            if (welcomeResult.success) {
+              summary.welcome_dispatched++;
+            } else {
+              summary.errors.push({
+                scope: 'welcome',
+                ref: result.id,
+                error: welcomeResult.reason ?? 'dispatch failed'
+              });
+            }
+          } catch (e: any) {
             summary.errors.push({
-              scope: 'welcome',
+              scope: 'token_or_welcome',
               ref: result.id,
-              error: welcomeResult.reason ?? 'dispatch failed'
+              error: e.message
             });
           }
-        } catch (e: any) {
-          summary.errors.push({
-            scope: 'token_or_welcome',
-            ref: result.id,
-            error: e.message
-          });
         }
       } else {
         summary.applications_updated++;

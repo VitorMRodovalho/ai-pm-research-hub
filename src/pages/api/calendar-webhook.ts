@@ -38,6 +38,9 @@
  */
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+// Astro v6 removed `locals.runtime.env` — use `cloudflare:workers` env binding instead.
+// Fallback to import.meta.env for local dev where runtime is null.
+import { env as cfEnv } from 'cloudflare:workers';
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -46,11 +49,13 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env: any = (locals as any)?.runtime?.env ?? import.meta.env;
-  const supabaseUrl = env.SUPABASE_URL || env.PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  const sharedSecret = env.CALENDAR_WEBHOOK_SECRET;
+export const POST: APIRoute = async ({ request }) => {
+  // PUBLIC_SUPABASE_URL is build-time injected (import.meta.env). Service role key
+  // and webhook secret are runtime (cfEnv). Read from each source individually
+  // — using a generic fallback would hide misconfigurations.
+  const supabaseUrl = (cfEnv as any)?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = (cfEnv as any)?.SUPABASE_SERVICE_ROLE_KEY;
+  const sharedSecret = (cfEnv as any)?.CALENDAR_WEBHOOK_SECRET;
 
   if (!supabaseUrl || !serviceRoleKey || !sharedSecret) {
     return jsonResponse({ error: 'webhook_not_configured' }, 503);
@@ -78,7 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Lookup application by email (case-insensitive, prefer interview-bound statuses)
   const { data: candidates } = await sb.from('selection_applications')
-    .select('id, applicant_name, status, cycle_id')
+    .select('id, applicant_name, status, interview_status, cycle_id')
     .ilike('email', guest_email)
     .in('status', ['interview_pending', 'interview_scheduled', 'submitted'])
     .order('created_at', { ascending: false })
@@ -136,13 +141,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
     interviewId = inserted.id;
   }
 
-  // Advance application status if not already interview_scheduled
+  // Advance application status + clear pending reschedule flags (Bug #6 p92 Phase B B3).
+  // If the candidate previously requested reschedule, this booking is the response —
+  // mark interview_status as 'rescheduled' (audit-friendly differentiation).
+  // Otherwise (first-time booking via webhook), mark as 'scheduled'.
+  // Both clear the amber "Já solicitado" badge in admin/selection.astro:759.
+  const newInterviewStatus = app.interview_status === 'needs_reschedule' ? 'rescheduled' : 'scheduled';
+  const appUpdates: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+    interview_status: newInterviewStatus,
+    interview_reschedule_reason: null,
+    interview_reschedule_requested_at: null,
+  };
   if (app.status !== 'interview_scheduled') {
-    await sb.from('selection_applications').update({
-      status: 'interview_scheduled',
-      updated_at: new Date().toISOString(),
-    }).eq('id', app.id);
+    appUpdates.status = 'interview_scheduled';
   }
+  await sb.from('selection_applications').update(appUpdates).eq('id', app.id);
 
   return jsonResponse({
     success: true,
