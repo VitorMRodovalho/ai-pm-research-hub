@@ -460,5 +460,63 @@ Maturidades remanescentes em 1 ou 1.x:
 
 - **B) ARM-1 Captação deep dive** — landing `/volunteer` + interest form pré-cycle + UTM dashboard
 
+---
+
+## ARM-1 Captação — Completion Report (2026-05-06 sessão p108 cont.)
+
+**Status: backend shipped + frontend ImpactPageIsland updated. ADR-0072 written.**
+
+PM ratificou continuação direto do ARM-9 Features para ARM-1 na mesma sessão p108. Substrato MUITO mais maduro que projetado — `visitor_leads` table existia + RLS permite anon insert + form em /about já capturava (sem UTM/promote/funnel).
+
+### Reframes durante audit
+
+1. **Substrato parcial existia.** Reportado maturidade 1 baseado em "sem instrumentação UTM" — mas table + RLS + form já existiam. Real maturidade pré-p108 ≈ 1.5.
+2. **`/volunteer` page rejected.** Em vez de criar nova rota, surface via `/about` existente que já tinha form. Reduz complexidade UI sem perda de valor.
+3. **`get_volunteer_funnel` mention em memory** apontava para função inexistente. Criada nova `get_volunteer_funnel_stats` com nome distinto.
+
+### Entregáveis
+
+| # | Item | Resolução |
+|---|------|-----------|
+| Schema | ALTER `visitor_leads` + 8 colunas (utm_data, referrer_member_id, promoted/dismissed tracking, dedupe_email_normalized GENERATED) + 4 indexes + status CHECK | Migration `20260516890000` |
+| RPC.1 | `capture_visitor_lead(p_payload jsonb)` — public anon-callable, LGPD consent + email format + idempotente | Migration |
+| RPC.2 | `list_visitor_leads(p_status, p_chapter, p_limit)` — admin view | Migration |
+| RPC.3 | `promote_lead_to_application(p_lead_id, p_cycle_id, p_pmi_id)` — admin promote a selection_application | Migration |
+| RPC.4 | `dismiss_visitor_lead(p_lead_id, p_reason)` — admin discard | Migration |
+| RPC.5 | `get_volunteer_funnel_stats(p_cycle_id)` — funnel breakdown leads + apps + by_source UTM + by_chapter | Migration |
+| Frontend | `ImpactPageIsland.tsx` LeadCaptureForm refactor: direct insert → RPC + URL query UTM/referrer capture | `src/components/islands/ImpactPageIsland.tsx` |
+| ADR | ADR-0072 ARM-1 Lead Capture & Funnel | `docs/adr/ADR-0072-*.md` |
+
+### Estado pós-Captação ARM-1
+
+- 1 migration (`20260516890000`)
+- 5 RPCs (1 anon + 4 admin)
+- 1 frontend file updated
+- 4 indexes + 1 CHECK constraint
+- Invariants 13/13 = 0 violations (no regressions)
+- Build clean, tests baseline
+
+### ARM-1 maturidade atualizada
+
+| Phase | Maturidade |
+|-------|------------|
+| Pré-p108 (reportado) | 1 |
+| Pós-audit (real) | 1.5 |
+| Pós-Captação backend + frontend update | **3.0** |
+
+### ARM media plataforma final p108
+
+≈ 2.40 (pós ARM-9) → **≈ 2.55** (pós ARM-1). ARM-1 entrega +0.15 isolado.
+
+Maturidades remanescentes em 1 ou 1.x:
+- **ARM-5 Interview** (depende #92/#116 Calendar — bloqueado em PM action)
+
+### Pendentes (não-bloqueantes pós ARM-1)
+
+1. **Frontend `/admin/funnel` dashboard** com `get_volunteer_funnel_stats` — Onda 4 browser session
+2. **MCP exposure** 5 RPCs ARM-1 + 6 RPCs ARM-9 (~1h batch próxima sessão)
+3. **i18n** novos strings se UI futura criada
+4. **Auto-promote cron** quando cycle abre (atualmente manual via promote_lead_to_application)
+
 
 
