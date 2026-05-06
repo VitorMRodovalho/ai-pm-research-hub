@@ -1,0 +1,219 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render translations for client-side rendering of dynamic data
+const I18N = {
+  title: t('meStatus.title', lang),
+  subtitle: t('meStatus.subtitle', lang),
+  loading: t('meStatus.loading', lang),
+  error: t('meStatus.error', lang),
+  notAuthenticated: t('meStatus.notAuthenticated', lang),
+  empty: t('meStatus.empty', lang),
+  cycleHeading: t('meStatus.cycleHeading', lang),
+  roleLabel: t('meStatus.roleLabel', lang),
+  appliedAtLabel: t('meStatus.appliedAtLabel', lang),
+  lastUpdateLabel: t('meStatus.lastUpdateLabel', lang),
+  linkedinLabel: t('meStatus.linkedinLabel', lang),
+  resumeLabel: t('meStatus.resumeLabel', lang),
+  viewProfile: t('meStatus.viewProfile', lang),
+  evaluationsSubmitted: t('meStatus.evaluationsSubmitted', lang),
+  aiConsentGranted: t('meStatus.aiConsentGranted', lang),
+  aiConsentMissing: t('meStatus.aiConsentMissing', lang),
+  evaluationsBlindNote: t('meStatus.evaluationsBlindNote', lang),
+  badge: {
+    submitted: t('meStatus.statusBadge.submitted', lang),
+    screening: t('meStatus.statusBadge.screening', lang),
+    objective_eval: t('meStatus.statusBadge.objective_eval', lang),
+    interview_pending: t('meStatus.statusBadge.interview_pending', lang),
+    interview_scheduled: t('meStatus.statusBadge.interview_scheduled', lang),
+    interview_done: t('meStatus.statusBadge.interview_done', lang),
+    final_eval: t('meStatus.statusBadge.final_eval', lang),
+    approved: t('meStatus.statusBadge.approved', lang),
+    converted: t('meStatus.statusBadge.converted', lang),
+    rejected: t('meStatus.statusBadge.rejected', lang),
+    objective_cutoff: t('meStatus.statusBadge.objective_cutoff', lang),
+    cancelled: t('meStatus.statusBadge.cancelled', lang),
+    withdrawn: t('meStatus.statusBadge.withdrawn', lang),
+    waitlist: t('meStatus.statusBadge.waitlist', lang),
+  },
+  next: {
+    submitted: t('meStatus.nextStep.submitted', lang),
+    screening: t('meStatus.nextStep.screening', lang),
+    objective_eval: t('meStatus.nextStep.objective_eval', lang),
+    interview_pending: t('meStatus.nextStep.interview_pending', lang),
+    interview_scheduled: t('meStatus.nextStep.interview_scheduled', lang),
+    interview_done: t('meStatus.nextStep.interview_done', lang),
+    final_eval: t('meStatus.nextStep.final_eval', lang),
+    approved: t('meStatus.nextStep.approved', lang),
+    converted: t('meStatus.nextStep.converted', lang),
+    rejected: t('meStatus.nextStep.rejected', lang),
+    objective_cutoff: t('meStatus.nextStep.objective_cutoff', lang),
+    cancelled: t('meStatus.nextStep.cancelled', lang),
+    withdrawn: t('meStatus.nextStep.withdrawn', lang),
+    waitlist: t('meStatus.nextStep.waitlist', lang),
+  },
+};
+const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 'pt-BR';
+---
+
+<BaseLayout title={I18N.title} activePage="minha-candidatura" lang={lang}>
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">{I18N.title}</h1>
+      <p class="text-sm text-[var(--text-muted)] mt-1">{I18N.subtitle}</p>
+    </header>
+
+    <div id="me-status-container" class="space-y-4">
+      <div id="me-status-loading" class="text-center py-12 text-sm text-[var(--text-muted)]">
+        {I18N.loading}
+      </div>
+      <div id="me-status-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"></div>
+      <div id="me-status-empty" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+        {I18N.empty}
+      </div>
+      <div id="me-status-cards" class="space-y-4"></div>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+      <a href={base + '/profile'} class="text-sm text-[var(--accent)] hover:underline">{I18N.viewProfile} →</a>
+    </div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ I18N, dateLocale }}>
+  window.__ME_STATUS_I18N = I18N;
+  window.__ME_STATUS_DATE_LOCALE = dateLocale;
+</script>
+<script>
+  import { getSupabase } from '../lib/supabase';
+
+  const I = (window as any).__ME_STATUS_I18N;
+  const DATE_LOCALE = (window as any).__ME_STATUS_DATE_LOCALE || 'pt-BR';
+
+  const $ = (id: string) => document.getElementById(id);
+  const show = (id: string) => $(id)?.classList.remove('hidden');
+  const hide = (id: string) => $(id)?.classList.add('hidden');
+
+  function fmtDate(iso: string | null): string {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch { return iso; }
+  }
+
+  function badgeClass(status: string): string {
+    if (['approved','converted'].includes(status)) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (['rejected','objective_cutoff','cancelled','withdrawn'].includes(status)) return 'bg-red-50 text-red-700 border-red-200';
+    if (['waitlist'].includes(status)) return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (['interview_scheduled','interview_done','final_eval'].includes(status)) return 'bg-blue-50 text-blue-700 border-blue-200';
+    return 'bg-gray-50 text-gray-700 border-gray-200';
+  }
+
+  function renderCard(app: any): string {
+    const badgeText = I.badge[app.status] || app.status;
+    const nextText = I.next[app.status] || '';
+    const evalsCount = app.submitted_evaluations_count;
+    const showEvalsCount = typeof evalsCount === 'number';
+    const evalsLine = showEvalsCount ? I.evaluationsSubmitted.replace('{n}', String(evalsCount)) : null;
+
+    const linkedin = app.linkedin_url
+      ? `<a href="${app.linkedin_url}" target="_blank" rel="noopener" class="text-[var(--accent)] hover:underline">${I.linkedinLabel}</a>`
+      : '<span class="text-[var(--text-muted)]">—</span>';
+    const resume = app.resume_url
+      ? `<a href="${app.resume_url}" target="_blank" rel="noopener" class="text-[var(--accent)] hover:underline">${I.resumeLabel}</a>`
+      : '<span class="text-[var(--text-muted)]">—</span>';
+    const aiConsent = app.ai_consent_granted ? I.aiConsentGranted : I.aiConsentMissing;
+    const aiConsentClass = app.ai_consent_granted ? 'text-emerald-700' : 'text-amber-700';
+
+    return `
+      <article class="bg-white border border-[var(--border-default)] rounded-2xl p-5 shadow-sm">
+        <header class="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">${I.cycleHeading} ${escapeHtml(app.cycle_code || '')}</p>
+            <h2 class="text-base font-bold text-[var(--text-primary)] mt-0.5">${escapeHtml(app.cycle_title || '')}</h2>
+          </div>
+          <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-full border ${badgeClass(app.status)}">
+            ${escapeHtml(badgeText)}
+          </span>
+        </header>
+
+        <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">${escapeHtml(nextText)}</p>
+
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
+          <div>
+            <dt class="text-[var(--text-muted)]">${I.roleLabel}</dt>
+            <dd class="font-medium">${escapeHtml(app.role_applied || '—')}</dd>
+          </div>
+          <div>
+            <dt class="text-[var(--text-muted)]">${I.appliedAtLabel}</dt>
+            <dd class="font-medium">${fmtDate(app.created_at)}</dd>
+          </div>
+          <div>
+            <dt class="text-[var(--text-muted)]">${I.linkedinLabel}</dt>
+            <dd>${linkedin}</dd>
+          </div>
+          <div>
+            <dt class="text-[var(--text-muted)]">${I.resumeLabel}</dt>
+            <dd>${resume}</dd>
+          </div>
+          <div>
+            <dt class="text-[var(--text-muted)]">${I.lastUpdateLabel}</dt>
+            <dd class="font-medium">${fmtDate(app.updated_at)}</dd>
+          </div>
+          <div>
+            <dt class="text-[var(--text-muted)]">IA</dt>
+            <dd class="font-medium ${aiConsentClass}">${escapeHtml(aiConsent)}</dd>
+          </div>
+        </dl>
+
+        ${evalsLine ? `
+          <p class="mt-4 pt-3 border-t border-[var(--border-default)] text-[11px] text-[var(--text-muted)]">
+            <strong class="font-semibold">${escapeHtml(evalsLine)}</strong> · ${escapeHtml(I.evaluationsBlindNote)}
+          </p>
+        ` : ''}
+      </article>
+    `;
+  }
+
+  function escapeHtml(s: any): string {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+  }
+
+  async function load() {
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      hide('me-status-loading');
+      const errEl = $('me-status-error');
+      if (errEl) { errEl.textContent = I.notAuthenticated; show('me-status-error'); }
+      return;
+    }
+
+    const { data, error } = await sb.rpc('get_my_application_status');
+    hide('me-status-loading');
+
+    if (error || (data && data.error)) {
+      const errEl = $('me-status-error');
+      if (errEl) {
+        errEl.textContent = (data && data.error) ? I.notAuthenticated : I.error;
+        show('me-status-error');
+      }
+      return;
+    }
+
+    const apps = data?.applications || [];
+    if (!apps.length) {
+      show('me-status-empty');
+      return;
+    }
+
+    const cards = $('me-status-cards');
+    if (cards) cards.innerHTML = apps.map(renderCard).join('');
+  }
+
+  load();
+</script>
