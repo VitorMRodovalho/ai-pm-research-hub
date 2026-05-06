@@ -25,6 +25,14 @@
 | [RUNBOOK.md](RUNBOOK.md) | Deploy, pg_cron, email, auth, monitoramento, emergências |
 | [GOVERNANCE_CHANGELOG.md](GOVERNANCE_CHANGELOG.md) | Histórico de decisões estruturais (GC-001 → GC-131+) |
 
+## Para planejamento e tracking
+
+| Documento | Descrição |
+|-----------|-----------|
+| [BACKLOG.md](BACKLOG.md) | Ponteiro para fontes de trabalho: GitHub Issues (operacional) + memory log (cross-session) + ADRs (decisões) + handoffs (sessões) |
+| [council/README.md](council/README.md) | Estrutura do multi-agent council (12 sub-agents em 3 tiers) |
+| [council/decisions/](council/decisions/) | Decision log de revisões estratégicas |
+
 ---
 
 ## Convenções
