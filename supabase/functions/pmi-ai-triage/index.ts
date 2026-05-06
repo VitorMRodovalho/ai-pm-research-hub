@@ -75,12 +75,15 @@ Validation cycle3-2026 (n=14) mostrou que aplicação genérica/concisa NEM SEMP
 
 Este score é NON-BINDING. Decisão humana é autoritária — o score serve só como signal de pre-screen para priorização visual da equipe de avaliação. Comitê humano valida (ou rejeita) cada conclusão.`;
 
+// NOTE: Anthropic structured outputs don't support `minimum`/`maximum` on integer types
+// (returns 400 invalid_request_error). Range 0-10 is enforced in the prompt rubric +
+// validated client-side after parsing (see callsite below).
 const TRIAGE_SCHEMA = {
   type: "object",
   required: ["score", "reasoning", "confidence"],
   additionalProperties: false,
   properties: {
-    score: { type: "integer", minimum: 0, maximum: 10 },
+    score: { type: "integer" },
     reasoning: { type: "string" },
     confidence: { type: "string", enum: ["high", "medium", "low"] },
   },

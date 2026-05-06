@@ -6056,6 +6056,9 @@ Critério: ajude o entrevistador a calibrar conforme o critério "raises the bar
 
 Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
 
+    // NOTE: Anthropic structured outputs don't support `minItems`/`maxItems` on array types
+    // (returns 400 invalid_request_error). Counts (3 questions, 3-5 focus areas) are enforced
+    // in the system prompt + validated client-side after parsing (see callsite below).
     const briefingSchema = {
       type: "object",
       required: ["personalized_questions", "interview_focus_areas", "preparation_notes"],
@@ -6063,8 +6066,6 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
       properties: {
         personalized_questions: {
           type: "array",
-          minItems: 3,
-          maxItems: 3,
           items: {
             type: "object",
             required: ["question", "rationale"],
@@ -6075,7 +6076,7 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
             },
           },
         },
-        interview_focus_areas: { type: "array", minItems: 3, maxItems: 5, items: { type: "string" } },
+        interview_focus_areas: { type: "array", items: { type: "string" } },
         preparation_notes: { type: "string" },
       },
     };
