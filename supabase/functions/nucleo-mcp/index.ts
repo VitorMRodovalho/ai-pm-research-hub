@@ -1570,6 +1570,124 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== #94 W2 PUBLICATION IDEAS PIPELINE (5 tools) =====
+  // ADR-0020 Accepted + Amendment 1. PM decisions 2A+2B+2C+2D ratified.
+
+  // propose_publication_idea — any active member
+  mcp.tool("propose_publication_idea", "Propõe uma idea de publicação no pipeline unificado. Qualquer member ativo. Status inicial: draft. source_type opcional: meeting_action|hub_resource|wiki_page|external_research|experiment|partnership|webinar|ata_decision|other.", {
+    title: z.string().describe("Título da idea"),
+    summary: z.string().optional().describe("Resumo / sinopse"),
+    source_type: z.string().optional().describe("Tipo de fonte (polymorphic): meeting_action | hub_resource | wiki_page | external_research | experiment | partnership | webinar | ata_decision | other"),
+    source_id: z.string().optional().describe("UUID do recurso de origem (mesmo set quando source_type set)"),
+    tribe_id: z.number().optional().describe("Tribe ID (legacy_tribe_id) opcional"),
+    initiative_id: z.string().optional().describe("UUID da initiative associada (opcional)"),
+    author_ids: z.array(z.string()).optional().describe("Array de member UUIDs como autores. Default: [proposer]"),
+    proposed_channels: z.array(z.string()).optional().describe("Canais propostos. Ex: ['blog','newsletter','linkedin','medium','dev_to','pmi_org','pm_com']"),
+    series_id: z.string().optional().describe("UUID de publication_series (opcional)"),
+    series_position: z.number().optional().describe("Position dentro da série (opcional)"),
+    target_languages: z.array(z.string()).optional().describe("Idiomas alvo. Default: ['pt-BR']. Ex: ['pt-BR','en-US']"),
+    metadata: z.record(z.string(), z.any()).optional().describe("Metadata jsonb (AI-generated flag, originality check ref, etc)")
+  }, async (params: { title: string; summary?: string; source_type?: string; source_id?: string; tribe_id?: number; initiative_id?: string; author_ids?: string[]; proposed_channels?: string[]; series_id?: string; series_position?: number; target_languages?: string[]; metadata?: Record<string, unknown> }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "propose_publication_idea", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("propose_publication_idea", {
+      p_title: params.title,
+      p_summary: params.summary ?? null,
+      p_source_type: params.source_type ?? null,
+      p_source_id: params.source_id ?? null,
+      p_tribe_id: params.tribe_id ?? null,
+      p_initiative_id: params.initiative_id ?? null,
+      p_author_ids: params.author_ids ?? null,
+      p_proposed_channels: params.proposed_channels ?? null,
+      p_series_id: params.series_id ?? null,
+      p_series_position: params.series_position ?? null,
+      p_target_languages: params.target_languages ?? null,
+      p_metadata: params.metadata ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "propose_publication_idea", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "propose_publication_idea", true, undefined, start);
+    return ok(data);
+  });
+
+  // advance_idea_stage — state machine transitions
+  mcp.tool("advance_idea_stage", "Avança state da idea. 9 stages: draft → proposed → researching → writing → review → curation → approved → published → archived. Approved/published só comitê (manage_event). Rework permitido: review/curation → writing.", {
+    idea_id: z.string().describe("UUID da idea"),
+    new_stage: z.string().describe("Próximo stage"),
+    review_sub_stage: z.string().optional().describe("Quando new_stage=review: tribe_review | leader_review"),
+    notes: z.string().optional().describe("Notas do reviewer (especialmente para archived)")
+  }, async (params: { idea_id: string; new_stage: string; review_sub_stage?: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "advance_idea_stage", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("advance_idea_stage", {
+      p_idea_id: params.idea_id,
+      p_new_stage: params.new_stage,
+      p_review_sub_stage: params.review_sub_stage ?? null,
+      p_notes: params.notes ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "advance_idea_stage", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "advance_idea_stage", true, undefined, start);
+    return ok(data);
+  });
+
+  // fork_idea_to_channel — record intent + bump proposed_channels[]
+  mcp.tool("fork_idea_to_channel", "Registra intenção de fork de idea para canal específico. Adiciona ao proposed_channels[]. W3 orchestrator vai automatizar criação downstream rows; v1 (W2): apenas registra intent + audit trail.", {
+    idea_id: z.string().describe("UUID da idea"),
+    channel: z.string().describe("Canal alvo (ex: blog, newsletter, linkedin, medium, dev_to, pmi_org, pm_com, youtube, podcast)"),
+    payload_hint: z.record(z.string(), z.any()).optional().describe("Sugestões de payload (ex: campaign_template_id, blog_post category) para W3")
+  }, async (params: { idea_id: string; channel: string; payload_hint?: Record<string, unknown> }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "fork_idea_to_channel", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("fork_idea_to_channel", {
+      p_idea_id: params.idea_id,
+      p_channel: params.channel,
+      p_payload_hint: params.payload_hint ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "fork_idea_to_channel", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "fork_idea_to_channel", true, undefined, start);
+    return ok(data);
+  });
+
+  // link_idea_to_series — attach to publication_series
+  mcp.tool("link_idea_to_series", "Liga idea a uma publication_series ativa com optional position. Apenas proposer ou comitê (manage_event/manage_member).", {
+    idea_id: z.string().describe("UUID da idea"),
+    series_id: z.string().describe("UUID da publication_series (deve estar is_active=true)"),
+    position: z.number().optional().describe("Position dentro da série (opcional)")
+  }, async (params: { idea_id: string; series_id: string; position?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "link_idea_to_series", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("link_idea_to_series", {
+      p_idea_id: params.idea_id,
+      p_series_id: params.series_id,
+      p_position: params.position ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "link_idea_to_series", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "link_idea_to_series", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_idea_pipeline — read view (proposer sees own; comitê sees all)
+  mcp.tool("get_idea_pipeline", "Lista publication_ideas com summary by_stage. Members veem apenas próprias; comitê vê todas. Filtros: tribe_id, stage, series_id (todos opcionais).", {
+    tribe_id: z.number().optional().describe("Filtrar por tribe ID (opcional)"),
+    stage_filter: z.string().optional().describe("Filtrar por stage: draft | proposed | researching | writing | review | curation | approved | published | archived"),
+    series_id: z.string().optional().describe("Filtrar por publication_series UUID (opcional)")
+  }, async (params: { tribe_id?: number; stage_filter?: string; series_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_idea_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_idea_pipeline", {
+      p_tribe_id: params.tribe_id ?? null,
+      p_stage_filter: params.stage_filter ?? null,
+      p_series_id: params.series_id ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "get_idea_pipeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_idea_pipeline", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
     const start = Date.now();
@@ -5485,7 +5603,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.58.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.59.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5505,6 +5623,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.58.0", tools: 252, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.59.0", tools: 257, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
