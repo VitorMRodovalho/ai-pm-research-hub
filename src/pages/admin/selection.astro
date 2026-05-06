@@ -442,6 +442,43 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     return `<div class="inline-flex items-center gap-1">${aiBadge}${peerBadge}${interviewBadge}${tokenBadge}${videoBadge}</div>`;
   }
 
+  /* Issue #116 Part 2 — 6-stage pipeline timeline (modal info tab expanded view).
+     Verbose counterpart of pipelineBadges(). Shows stage label + state + detail
+     so committee (Fabricio) can see at-a-glance where each candidate is in flow.
+     States: done (emerald) / current (amber) / pending (gray). */
+  function pipelineTimeline(r: any): string {
+    const isTerminal = ['approved', 'rejected', 'converted', 'withdrawn', 'cancelled'].includes(r.status);
+    const peerCount = Number(r.peer_eval_count ?? 0);
+    const submittedAt = r.application_date || r.created_at;
+
+    const stages = [
+      { label: 'Aplicação', state: 'done', detail: submittedAt ? new Date(submittedAt).toLocaleDateString('pt-BR') : 'Submetida' },
+      { label: 'Análise IA', state: r.ai_analysis_done ? 'done' : (r.consent_ai_analysis_at ? 'current' : 'pending'), detail: r.ai_analysis_done ? 'Concluída' : (r.consent_ai_analysis_at ? 'Em curso' : 'Aguardando consent') },
+      { label: 'Par-revisão', state: peerCount >= 2 ? 'done' : peerCount > 0 ? 'current' : 'pending', detail: `${peerCount}/2 avaliações` },
+      { label: 'Vídeo', state: r.video_screening_done ? 'done' : 'pending', detail: r.video_screening_done ? 'OK ou opt-out' : 'Não realizado' },
+      { label: 'Entrevista', state: r.interview_scheduled ? 'done' : 'pending', detail: r.interview_scheduled ? 'Agendada' : 'Não agendada' },
+      { label: 'Decisão', state: isTerminal ? 'done' : 'pending', detail: isTerminal ? (STATUS_LABELS[r.status] || r.status) : 'Em andamento' },
+    ];
+
+    const colors: Record<string, { bg: string; brd: string; ic: string; tx: string; sub: string }> = {
+      done:    { bg: 'bg-emerald-50', brd: 'border-emerald-200', ic: 'bg-emerald-500 text-white',                            tx: 'text-emerald-800', sub: 'text-emerald-600' },
+      current: { bg: 'bg-amber-50',   brd: 'border-amber-200',   ic: 'bg-amber-500 text-white',                              tx: 'text-amber-800',   sub: 'text-amber-600' },
+      pending: { bg: 'bg-gray-50',    brd: 'border-gray-200',    ic: 'bg-white text-gray-400 border border-gray-300',         tx: 'text-gray-500',    sub: 'text-gray-400' },
+    };
+
+    return `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      ${stages.map((s, i) => {
+        const c = colors[s.state];
+        const icon = s.state === 'done' ? '✓' : s.state === 'current' ? '●' : (i + 1).toString();
+        return `<div class="flex flex-col items-center text-center px-2 py-2 rounded-lg border ${c.bg} ${c.brd}">
+          <div class="w-7 h-7 rounded-full ${c.ic} flex items-center justify-center text-[12px] font-bold mb-1">${icon}</div>
+          <div class="text-[11px] font-bold ${c.tx}">${esc(s.label)}</div>
+          <div class="text-[10px] ${c.sub} mt-0.5 leading-tight">${esc(s.detail)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
   /* ── load cycles ──────────────────────────────────── */
   async function loadCycles() {
     const { data } = await sb.rpc('get_selection_cycles');
@@ -703,6 +740,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
       <!-- TAB: Info -->
       <div id="modal-tab-info">
+        <!-- Issue #116 Part 2: 6-stage pipeline timeline (full modal width, above 2-col grid) -->
+        <div class="mb-5">
+          ${pipelineTimeline(row)}
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
             <!-- Badges row -->
