@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.31.0 — 158 tools (101R + 57W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.64.0 — 266 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.64.0: +1 partnership orchestrator wrapping #97 W3 G4 — create_external_speaker_engagement.
+//   Atomic Partnership→Initiative tree: initiative (origin_partner_entity_id per G1) +
+//   global project_board + lead/co speaker engagements (metadata.presenter_role per G2) +
+//   board_items from deadlines (source_type=external_partner per G3) + partner_interaction
+//   note + last_interaction_at bump. Replaces manual SQL playbook from W1 LATAM LIM.
+//   Auth: manage_partner OR manage_member at organization scope.
 // v2.31.0: +1 self-management tool wrapping ADR-0050 — set_my_gamification_visibility
 //   (member-managed leaderboard visibility, LGPD-compliant opt-out). Plus
 //   get_gamification_leaderboard surface change: +pagination (limit/offset),
@@ -2012,6 +2018,62 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "manage_partner", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "manage_partner", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "manage_partner", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 52b: create_external_speaker_engagement — Partnership→Initiative orchestrator (#97 W3 G4)
+  mcp.tool("create_external_speaker_engagement", "Orchestrates Partnership→Initiative journey atomically: creates initiative + global project_board + lead/co speaker engagements + board_items from deadlines + partner_interaction log in a single transaction. For external speaker journeys (congress submissions like LATAM LIM, workshops). Caller must have manage_partner OR manage_member at organization scope. Replaces the manual SQL playbook from #97 W1. Issue #97 W3 G4.", {
+    partner_entity_id: z.string().describe("UUID of existing partner_entity (the originating partnership)"),
+    lead_person_id: z.string().describe("UUID of lead presenter (persons.id)"),
+    initiative_title: z.string().describe("Title of the initiative to create (e.g. 'LATAM LIM 2026 — From Five Chapters to One Platform')"),
+    co_person_id: z.string().optional().describe("UUID of co presenter — must differ from lead. Optional second speaker."),
+    initiative_kind: z.string().optional().describe("Initiative kind. Default: congress. Allowed (must permit speaker kind): congress | workshop | study_group | research_tribe."),
+    initiative_description: z.string().optional().describe("Description text for the initiative"),
+    deadlines: z.string().optional().describe("JSON array of milestones to create as board_items (source_type=external_partner). Shape: [{title, due_date 'YYYY-MM-DD', baseline_date?, description?, status?, tags?: [text], is_portfolio_item?: bool}]"),
+    whatsapp_url: z.string().optional().describe("WhatsApp group URL — stored in initiative.metadata.whatsapp_url"),
+    meeting_link: z.string().optional().describe("Meeting link URL — stored in initiative.metadata.meeting_link"),
+    drive_folder_url: z.string().optional().describe("Drive folder URL — stored in initiative.metadata.drive_folder_url"),
+    board_domain_key: z.string().optional().describe("project_boards.domain_key. Default: publications_submissions")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_external_speaker_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_entity_id)) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, "Invalid partner_entity_id", start); return err("partner_entity_id must be a UUID"); }
+    if (!isUUID(params.lead_person_id)) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, "Invalid lead_person_id", start); return err("lead_person_id must be a UUID"); }
+    if (params.co_person_id && !isUUID(params.co_person_id)) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, "Invalid co_person_id", start); return err("co_person_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_partner')) && !(await canV4(sb, member.id, 'manage_member'))) {
+      await logUsage(sb, member.id, "create_external_speaker_engagement", false, "Unauthorized", start);
+      return err("Unauthorized — requires manage_partner or manage_member at organization scope.");
+    }
+    let deadlinesJson: any = [];
+    if (params.deadlines) {
+      try {
+        deadlinesJson = JSON.parse(params.deadlines);
+        if (!Array.isArray(deadlinesJson)) {
+          await logUsage(sb, member.id, "create_external_speaker_engagement", false, "deadlines must be JSON array", start);
+          return err("deadlines must be a JSON array of {title, due_date, ...} objects");
+        }
+      } catch (e: any) {
+        await logUsage(sb, member.id, "create_external_speaker_engagement", false, "deadlines parse error", start);
+        return err(`deadlines JSON parse error: ${e.message}`);
+      }
+    }
+    const { data, error } = await sb.rpc("create_external_speaker_engagement", {
+      p_partner_entity_id: params.partner_entity_id,
+      p_lead_person_id: params.lead_person_id,
+      p_initiative_title: params.initiative_title,
+      p_co_person_id: params.co_person_id || null,
+      p_initiative_kind: params.initiative_kind || 'congress',
+      p_initiative_description: params.initiative_description || null,
+      p_deadlines: deadlinesJson,
+      p_whatsapp_url: params.whatsapp_url || null,
+      p_meeting_link: params.meeting_link || null,
+      p_drive_folder_url: params.drive_folder_url || null,
+      p_board_domain_key: params.board_domain_key || 'publications_submissions',
+    });
+    if (error) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "create_external_speaker_engagement", true, undefined, start);
     return ok(data);
   });
 
@@ -5712,7 +5774,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.63.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.64.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5732,6 +5794,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.63.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.64.0", tools: 266, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
