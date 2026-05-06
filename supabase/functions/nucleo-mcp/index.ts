@@ -1,5 +1,6 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.64.0 — 266 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.65.0 — 267 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.65.0: +1 ARM Onda 2.4 health observability — get_selection_health (Pattern 43 saturation).
 // v2.64.0: +1 partnership orchestrator wrapping #97 W3 G4 — create_external_speaker_engagement.
 //   Atomic Partnership→Initiative tree: initiative (origin_partner_entity_id per G1) +
 //   global project_board + lead/co speaker engagements (metadata.presenter_role per G2) +
@@ -3545,6 +3546,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_selection_health — admin observability for selection funnel (ARM Onda 2.4 — p107)
+  mcp.tool("get_selection_health", "Returns selection funnel health: active cycle, application counts per stage (kanban-like), stale_tokens_48h (welcome tokens not consumed >48h), welcome_backlog (approved without dispatched welcome), status of 4 critical crons (send-notification-emails, retry-pending-ai-analyses, nudge-reschedule-pending-daily, detect-onboarding-overdue-daily) with last_run_at + last_5_status, and a green/yellow/red health_signal. Authority: view_internal_analytics (admin/comitê). Use when triaging 'is the selection funnel healthy?' before/during a cycle.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_selection_health");
+    if (error) { await logUsage(sb, member.id, "get_selection_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_selection_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_selection_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_weekly_member_digest — preview/inspect a member's pending weekly digest
   mcp.tool("get_weekly_member_digest", "Returns the weekly digest payload for a member: 7 sections (cards, engagements, events, publications, broadcasts, governance, achievements) + consumed_notification_ids. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.", {
     member_id: z.string().describe("Member UUID")
@@ -5774,7 +5787,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.64.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.65.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5794,6 +5807,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.64.0", tools: 266, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.65.0", tools: 267, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
