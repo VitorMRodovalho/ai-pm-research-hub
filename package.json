@@ -77,6 +77,6 @@
     "eslint-plugin-react": "^7.37.5",
     "playwright": "^1.59.1",
     "typescript": "^6.0.2",
-    "wrangler": "^4.80.0"
+    "wrangler": "^4.88.0"
   }
 }
