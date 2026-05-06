@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.66.0 — 268 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.67.0 — 279 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.67.0: +11 tools p108 ARM-9 Features + ARM-1 Captação:
+//   ARM-9 (6): stage_alumni_for_re_engagement, list_re_engagement_pipeline, invite_alumni_to_re_engage,
+//             respond_re_engagement, cancel_re_engagement, detect_inactive_members.
+//   ARM-1 (5): capture_visitor_lead, list_visitor_leads, promote_lead_to_application,
+//             dismiss_visitor_lead, get_volunteer_funnel_stats.
+//   Auth: manage_member para todos admin tools; respond_re_engagement self-action; capture_visitor_lead anon.
 // v2.66.0: +1 ARM P1 calibration observability — get_evaluator_calibration_stats.
 // v2.65.0: +1 ARM Onda 2.4 health observability — get_selection_health (Pattern 43 saturation).
 // v2.64.0: +1 partnership orchestrator wrapping #97 W3 G4 — create_external_speaker_engagement.
@@ -5792,6 +5798,173 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_chapter_dashboard", true, undefined, start);
     return ok(data);
   });
+
+  // ═════════════════════════════════════════════════════════════════
+  // p108 ARM-9 Features (6 tools): re-engagement pipeline + inactivity detection
+  // ═════════════════════════════════════════════════════════════════
+
+  mcp.tool("stage_alumni_for_re_engagement", "Stage an alumni member into the re-engagement pipeline for a specific cycle. Admin manual curation step (cron auto-stages on cycle open). Returns existing pipeline_id if already staged (idempotent).", {
+    member_id: z.string().describe("UUID of the alumni member"),
+    cycle_code: z.string().describe("Target cycle code (e.g., 'cycle_3')"),
+    source: z.string().optional().describe("Source: 'manual_admin' (default) or 'cron_new_cycle'")
+  }, async (params: { member_id: string; cycle_code: string; source?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "stage_alumni_for_re_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("stage_alumni_for_re_engagement", {
+      p_member_id: params.member_id, p_cycle_code: params.cycle_code, p_source: params.source ?? 'manual_admin'
+    });
+    if (error) { await logUsage(sb, member.id, "stage_alumni_for_re_engagement", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "stage_alumni_for_re_engagement", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("list_re_engagement_pipeline", "List re-engagement pipeline entries with member info, staged/invited/responded/cancelled metadata. Filter by state and/or cycle_code. Admin only (manage_member).", {
+    state: z.string().optional().describe("Filter: staged/invited/declined/accepted/cancelled"),
+    cycle_code: z.string().optional().describe("Filter by cycle code")
+  }, async (params: { state?: string; cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_re_engagement_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_re_engagement_pipeline", {
+      p_state: params.state ?? null, p_cycle_code: params.cycle_code ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "list_re_engagement_pipeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_re_engagement_pipeline", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("invite_alumni_to_re_engage", "Move pipeline entry from staged → invited. Sends notification to alumni with optional custom message. Admin only.", {
+    pipeline_id: z.string().describe("UUID of the re_engagement_pipeline entry"),
+    message: z.string().optional().describe("Optional custom invitation message")
+  }, async (params: { pipeline_id: string; message?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "invite_alumni_to_re_engage", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("invite_alumni_to_re_engage", {
+      p_pipeline_id: params.pipeline_id, p_message: params.message ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "invite_alumni_to_re_engage", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "invite_alumni_to_re_engage", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("respond_re_engagement", "Alumni self-action: accept or decline a re-engagement invitation. Only the invited member can respond.", {
+    pipeline_id: z.string().describe("UUID of the re_engagement_pipeline entry"),
+    response: z.enum(["accepted", "declined"]).describe("accepted or declined"),
+    note: z.string().optional().describe("Optional response note")
+  }, async (params: { pipeline_id: string; response: "accepted" | "declined"; note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "respond_re_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("respond_re_engagement", {
+      p_pipeline_id: params.pipeline_id, p_response: params.response, p_note: params.note ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "respond_re_engagement", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "respond_re_engagement", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("cancel_re_engagement", "Admin cancellation: void a pipeline entry pre-response. Cannot cancel from terminal states (accepted/declined/already-cancelled).", {
+    pipeline_id: z.string().describe("UUID of the re_engagement_pipeline entry"),
+    reason: z.string().optional().describe("Optional cancellation reason")
+  }, async (params: { pipeline_id: string; reason?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "cancel_re_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("cancel_re_engagement", {
+      p_pipeline_id: params.pipeline_id, p_reason: params.reason ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "cancel_re_engagement", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "cancel_re_engagement", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("detect_inactive_members", "Find active members with no attendance in inactivity_threshold_days (default 180, configurable via site_config). Returns candidates list. Set dry_run=false to notify managers proposing inactive transition. Admin only.", {
+    dry_run: z.boolean().optional().describe("If true (default), returns candidates without notifying managers. If false, sends manager notifications.")
+  }, async (params: { dry_run?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "detect_inactive_members", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("detect_inactive_members", { p_dry_run: params.dry_run ?? true });
+    if (error) { await logUsage(sb, member.id, "detect_inactive_members", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "detect_inactive_members", true, undefined, start);
+    return ok(data);
+  });
+
+  // ═════════════════════════════════════════════════════════════════
+  // p108 ARM-1 Captação (5 tools): visitor_leads pipeline + funnel stats
+  // ═════════════════════════════════════════════════════════════════
+
+  mcp.tool("capture_visitor_lead", "Capture a public visitor lead (name, email, optional phone/chapter/role/message). LGPD: lgpd_consent must be true. Idempotent on same email + status=new. Public anon-callable from external forms (CRM integrations, landing pages).", {
+    payload: z.record(z.unknown()).describe("Lead payload: { name (req), email (req), lgpd_consent (req=true), phone, chapter_interest, role_interest, message, source, utm_data, referrer_member_id }")
+  }, async (params: { payload: Record<string, unknown> }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    const { data, error } = await sb.rpc("capture_visitor_lead", { p_payload: params.payload });
+    if (error) { await logUsage(sb, member?.id ?? null, "capture_visitor_lead", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id ?? null, "capture_visitor_lead", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("list_visitor_leads", "List visitor leads with referrer/promoted/dismissed metadata. Filter by status (new/contacted/promoted/dismissed) and/or chapter_interest. Admin only (manage_member).", {
+    status: z.string().optional().describe("Filter status"),
+    chapter: z.string().optional().describe("Filter by chapter_interest"),
+    limit: z.number().optional().describe("Max rows (default 200)")
+  }, async (params: { status?: string; chapter?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_visitor_leads", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_visitor_leads", {
+      p_status: params.status ?? null, p_chapter: params.chapter ?? null, p_limit: params.limit ?? 200
+    });
+    if (error) { await logUsage(sb, member.id, "list_visitor_leads", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_visitor_leads", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("promote_lead_to_application", "Promote a visitor_lead into a selection_application for a specific cycle. Cycle must be 'open'. Lead must not already be promoted/dismissed. Admin only.", {
+    lead_id: z.string().describe("UUID of the visitor_lead"),
+    cycle_id: z.string().describe("UUID of the target selection_cycle (status must be 'open')"),
+    pmi_id: z.string().optional().describe("Optional PMI member ID to link to selection_application")
+  }, async (params: { lead_id: string; cycle_id: string; pmi_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "promote_lead_to_application", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("promote_lead_to_application", {
+      p_lead_id: params.lead_id, p_cycle_id: params.cycle_id, p_pmi_id: params.pmi_id ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "promote_lead_to_application", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "promote_lead_to_application", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("dismiss_visitor_lead", "Mark a visitor_lead as dismissed (admin discard). Cannot dismiss from terminal states (already promoted/dismissed). Admin only.", {
+    lead_id: z.string().describe("UUID of the visitor_lead"),
+    reason: z.string().optional().describe("Optional dismissal reason")
+  }, async (params: { lead_id: string; reason?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "dismiss_visitor_lead", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("dismiss_visitor_lead", {
+      p_lead_id: params.lead_id, p_reason: params.reason ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "dismiss_visitor_lead", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "dismiss_visitor_lead", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_volunteer_funnel_stats", "ARM-1 funnel breakdown: lead status counts + selection_application status counts (for cycle) + lead by_source (UTM-aware) + by_chapter. Pass cycle_id OR omit to use current open cycle. Admin only.", {
+    cycle_id: z.string().optional().describe("UUID of selection_cycle. Omit for current open cycle.")
+  }, async (params: { cycle_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_volunteer_funnel_stats", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_volunteer_funnel_stats", { p_cycle_id: params.cycle_id ?? null });
+    if (error) { await logUsage(sb, member.id, "get_volunteer_funnel_stats", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_volunteer_funnel_stats", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -5802,7 +5975,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.66.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.67.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5822,6 +5995,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.66.0", tools: 268, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.67.0", tools: 279, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
