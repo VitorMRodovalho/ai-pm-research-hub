@@ -239,3 +239,42 @@ Cada um é uma sessão dedicada de 4-6h spec + ship.
 ---
 
 **Documento mantido pelo PM. Atualizar ao concluir cada onda. Usar como ground truth de "qual o estado atual do pilar de Aquisição de Recursos" em todo handoff até maturidade média atingir 3.0.**
+
+---
+
+## Onda 1 — Completion Report (2026-05-06)
+
+**Status: 7/7 issues fechadas. 6 migrações aplicadas + 1 false positive.**
+
+| Issue | Resolução | Migration |
+|-------|-----------|-----------|
+| #134 | Hardening preventivo: RPC-only pattern documentado + REVOKE DML grants over-permissive em 9 tabelas + add `rpc_only_deny_all` em `selection_evaluation_anomalies` | `20260516710000` |
+| #135 | RESTRICTIVE policies `audit_log_no_delete` + `audit_log_no_update` + REVOKE DML mutations | `20260516720000` |
+| #136 | Guard `anonymized_at IS NULL` em `admin_reactivate_member` + audit log entry de tentativa rejeitada | `20260516730000` |
+| #137 | Retenção candidate 1095 → 730d (corrigido: valor real era 1095, não 1825) + audit entry | `20260516740000` |
+| #138 | **False positive** — bug já corrigido em commit `dd73031` antes desta sessão; log não atualizado | (nenhuma) |
+| #139 | Cron `detect-onboarding-overdue-daily` agendado às 13 UTC + cron-context auth bypass (ADR-0028 pattern) | `20260516750000` |
+| #140 | Invariant 12 + AFTER trigger sync + backfill idempotente (8 drift corrigidos em prod) | `20260516760000` |
+
+### Findings que mudaram interpretação dos audit reports
+
+1. **R1 corrigido pré-Onda 1:** `selection_applications` estava em full lockdown intencional (RPC-only via SECDEF), não leak. Severidade real: HIGH (defesa em profundidade), não CRITICAL.
+2. **R3 corrigido durante #137:** `candidate.retention_days_after_end` real era 1095d (3y), não 1825d (5y) como projetado pelo agent.
+3. **R4 confirmado e fechado durante #139:** cron de overdue de fato não existia; agendado.
+4. **#138 false positive:** auditoria importou item do issue/gap log sem cross-check git history. Sediment capturado.
+5. **Bonus drift detectado em #140:** 8 applications com `research_score` dessincronizado em prod (pré-trigger). Backfill executado.
+
+### Estado pós-Onda 1
+
+- 6 migrações 20260516710000 → 20260516760000 (+1 doc strategic + 1 test contract update)
+- 3 commits no `main`: cf78d93 (doc) + 895298f (compliance batch) + 7fed557 (operational batch)
+- Invariants **12/12 = 0 violations** (was 11/11)
+- ARM-8 maturidade reforçada: 3 → 3+ (aprofundou hardening preventivo)
+- Pattern detected: auditorias multi-lente devem cross-checar git log para items "abertos" no issue log
+
+### Próximas ondas
+
+- **Onda 2** (Visibility & Observability) ainda pending. 4-5h estimado.
+- **Onda 3** (AI Build) ainda pending decisão PM `analyze_application`.
+- **Onda 4** (Evaluator UX) ainda pending sessão browser.
+- **Onda 5** (Per-Pillar Deep Dive) ainda pending — escolher ARM-9 ou ARM-1 ou ARM-4.
