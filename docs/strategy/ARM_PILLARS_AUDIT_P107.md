@@ -518,5 +518,77 @@ Maturidades remanescentes em 1 ou 1.x:
 3. **i18n** novos strings se UI futura criada
 4. **Auto-promote cron** quando cycle abre (atualmente manual via promote_lead_to_application)
 
+---
+
+## Onda 3 AI Build — Completion Report (2026-05-06 sessão p108 cont. final)
+
+**Status: 4/4 entregáveis shipped. ADR-0074 ratificado. Smoke validado em produção.**
+
+PM ratificou Onda 3 AI Build (decisão 2 confirmada: B = Sonnet 4.6 + prompt cache rubrica). Foundation + Implementation + LGPD reinforcement em uma sessão. ARM-3 maturidade 2 → 3, ARM-11 AI Layer 2 → 3.
+
+### Reframes durante audit
+
+1. **Pipeline Gemini é complementar, não substituível.** Auditoria pré-shipping validou que `pmi-ai-analyze` (Gemini 2.5 Flash, qualitative narrative) tem features dedicadas que Sonnet 4.6 triage NÃO replica (raises_the_bar narrativo, key_strengths array, fields_changed diff). Decisão: dual-model — Gemini para qualitative, Sonnet 4.6 para scoring numérico, Haiku 4.5 para briefing on-demand.
+2. **Anthropic structured outputs schema subset é estrito.** `minimum`/`maximum` em integer + `minItems`/`maxItems` em array retornam 400. Validação client-side é load-bearing. Captured em `feedback_anthropic_structured_output_schema_limits.md`.
+3. **Cache mínimo Sonnet 4.6 é 2048 tokens.** Rubric atual (~600 tokens) abaixo do limite — não há cache hit. Custo real ~$0.020/call vs $0.0015 esperado com cache. Mitigação: enriquecer rubric ou aceitar pricing sem cache (~$1.60/ciclo n=80).
+
+### Entregáveis
+
+| # | Item | Resolução |
+|---|------|-----------|
+| 1 | `ai_processing_log` table (LGPD Art. 37 audit) | Migration `20260516930000`. RLS rpc-only. NUNCA conteúdo (só hashes SHA-256 + tokens + duration). 3 indexes. CHECK em status/purpose/model_provider. |
+| 2 | `selection_applications` triage cols | +5 cols: `ai_triage_score 0-10` + `ai_triage_reasoning ≤500c` + `ai_triage_confidence high\|medium\|low` + `ai_triage_at` + `ai_triage_model`. CHECK constraints. |
+| 3 | EF `pmi-ai-triage` (deployed v1) | Anthropic Sonnet 4.6 + prompt cache rubric. Consent gate respeitado (consent_ai_analysis_at NOT NULL + non revoked). Retry exponencial 429/529/500. Score NON-BINDING per LGPD Art. 20 §1. |
+| 4 | MCP nucleo-mcp v2.68.0 (282 tools) | `analyze_application` (admin invoke pmi-ai-triage) + `generate_interview_briefing` (Haiku 4.5 inline ~1-3s sync) + `list_ai_processing_log` (admin observability). |
+| ADR | ADR-0074 dual-model AI architecture | Formaliza arquitetura + LGPD Art. 20 §1 garantias + cost analysis. |
+| Follow-up | `_trg_purge_ai_analysis_on_consent_revocation` extended | Migration `20260516940000`. Trigger purga `ai_triage_*` em consent revoke. ai_processing_log retained per Art. 16. |
+
+### Smoke validation (2026-05-06 pós-deploy)
+
+| Caso | App | Score | Confidence | Latency | Resultado |
+|------|-----|-------|-----------|---------|-----------|
+| Rich data | LUIZ RAMOM (5385c motivation, MBAs FGV+CP3P+mestrado, 14a setor público) | **6** | medium | 7.0s | ✓ "sólida, track record moderado" — calibração precisa |
+| Thin data | THAYANNE (91c motivation) | **1** | high | 4.3s | ✓ "genérica, sem evidência" — modelo confidence alto na avaliação baixa |
+
+input_tokens 5587, output 185, ai_processing_log row completed. cache_creation/read=0 (rubric < Sonnet 4.6 2048 mínimo). Custo real ~$0.020/call → ~$1.60/ciclo n=80 (dentro estimativa $1-2 ADR).
+
+### Estado pós-Onda 3
+
+- 2 migrations Onda 3 totais (`20260516930000` + `20260516940000`)
+- Invariants 13/13 = 0 violations (no regressions)
+- 1 EF deployed (pmi-ai-triage v1)
+- 1 EF redeployed (nucleo-mcp v2.68.0, 282 tools — was 279)
+- ai_processing_log com 2+ rows (LUIZ RAMOM completed + THAYANNE completed + 1 failed pre-fix)
+- 2 selection_applications com ai_triage_* populated
+
+### ARM maturidade pós-Onda 3
+
+| ID | Pilar | Pré-Onda 3 | Pós-Onda 3 |
+|----|-------|------------|------------|
+| ARM-3 | Triage | 2 | **3** (pre-screen scoring funcional + LGPD compliant + observable) |
+| ARM-5 | Interview | 1 | **2** (briefing assistivo entregue; agendamento depende #92/#116 PM action) |
+| ARM-11 | AI Layer | 2 | **3** (dual-model + cross-purpose audit + LGPD-grade observability) |
+
+### ARM media plataforma final p108
+
+≈ 2.55 (pós ARM-1) → **≈ 2.65** (pós Onda 3). Onda 3 entrega +0.10 isolado. Maturidade média ainda longe de target 3.0; ARM-5 (Interview) ainda em 1.x dependente #92/#116.
+
+### Pendentes (não-bloqueantes pós-Onda 3)
+
+1. **PM action**: setar `ANTHROPIC_API_KEY` Supabase secret ✅ FEITO (smoke confirmou).
+2. **PM action**: atualizar Supabase CLI binary 2.95.4 → 2.98.2 (sudo, sistema) — opcional.
+3. **Frontend admin/selection inline AI panel** — tab "Análises IA" deprecated em favor de panel inline mostrando triage_score + reasoning + confidence + Gemini qualitative + briefing button (Onda 4 browser session).
+4. **i18n notification types em 3 idiomas** — `re_engagement_invitation`, `_accepted`, `_declined`, `arm9_inactivity_alert`, `certificate_issued`. ~24 strings. Defer para próxima frontend session.
+5. **Auto-triage cron** quando consent dá cure ou ciclo abre — defer até PM ratificar UX inline.
+6. **Calibration delta** — cron weekly comparando `ai_triage_score` vs `final_score` humano para detectar drift e flag manual recalibration.
+
+### Próximas sessões — disparadores
+
+| Sessão | Trigger | Modo |
+|--------|---------|------|
+| p109 | "Onda 4 evaluator UX inline AI" | Browser session |
+| p109 | "i18n batch ARM-9 + AI notifications" | Autonomous |
+| p110+ | "Onda 5 ARM-5 deep dive" | Bloqueado por #92/#116 |
+| p110+ | "calibration delta cron" | Autonomous backend |
 
 
