@@ -274,7 +274,36 @@ Cada um é uma sessão dedicada de 4-6h spec + ship.
 
 ### Próximas ondas
 
-- **Onda 2** (Visibility & Observability) ainda pending. 4-5h estimado.
+- **Onda 2** (Visibility & Observability) — **COMPLETA p107** (5/5 entregáveis, ver §Onda 2 Completion Report abaixo)
 - **Onda 3** (AI Build) ainda pending decisão PM `analyze_application`.
-- **Onda 4** (Evaluator UX) ainda pending sessão browser.
+- **Onda 4** (Evaluator UX) ainda pending sessão browser. Backend pieces pode adiantar (calibration metrics).
 - **Onda 5** (Per-Pillar Deep Dive) ainda pending — escolher ARM-9 ou ARM-1 ou ARM-4.
+
+---
+
+## Onda 2 — Completion Report (2026-05-06)
+
+**Status: 5/5 entregáveis shipped. 4 migrações + 3 frontend pages + 1 EF deploy.**
+
+| Item | Resolução | Migration / File |
+|------|-----------|-----------------|
+| 2.1 | `referral_source` + `referrer_member_id` (FK members) + `utm_data` jsonb em selection_applications. Backfill heurístico VEP (100 rows) | `20260516770000` |
+| 2.2 | `consent_records` table (LGPD Art. 7 I + Art. 8 §5) com subject polimórfico + RLS rpc-only + FK em selection_applications | `20260516780000` |
+| 2.3 | `my_eval_status` + `my_eval_score` + 2 stats rollup em `get_selection_dashboard`. Resolve FP-4 ux-leader | `20260516790000` |
+| 2.4 | `get_selection_health` RPC (Pattern 43 W7/W8/W9 + W10) + MCP tool exposure (v2.65.0, 267 tools) | `20260516800000` + EF deploy |
+| 2.5 | `/minha-candidatura.astro` + `/en/` + `/es/` redirects + ~50 i18n keys novas. Resolve FP-1 ux-leader | 6 frontend files |
+
+### Estado pós-Onda 2
+
+- Migrations applied: `20260516770000` → `20260516800000` (4 sequenciais)
+- MCP `nucleo-mcp` v2.65.0 deployed (267 tools, was 266)
+- Cloudflare Worker deployed (frontend live em `nucleoia.vitormr.dev/minha-candidatura`)
+- Commits: `55410c3` (visibility/observability backend) + `0588867` (frontend dashboard)
+- ARM-2/ARM-4/ARM-12 maturidade reforçada
+- ARM-8 maturidade reforçada (consent_records preenche gap LGPD Art. 7 I)
+
+### Próximos triggers já preparados
+
+- Backend autonomous-shippable: pii_access_log dossiê candidato, blind review RLS, calibration metrics RPC
+- Decisão PM bloqueante: analyze_application LLM W4 go/no-go
+- Sessão browser: inline AI panel evaluator + admin dashboard show selection_health
