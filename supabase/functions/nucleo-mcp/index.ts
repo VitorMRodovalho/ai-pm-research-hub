@@ -1586,8 +1586,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     series_id: z.string().optional().describe("UUID de publication_series (opcional)"),
     series_position: z.number().optional().describe("Position dentro da série (opcional)"),
     target_languages: z.array(z.string()).optional().describe("Idiomas alvo. Default: ['pt-BR']. Ex: ['pt-BR','en-US']"),
-    metadata: z.record(z.string(), z.any()).optional().describe("Metadata jsonb (AI-generated flag, originality check ref, etc)")
-  }, async (params: { title: string; summary?: string; source_type?: string; source_id?: string; tribe_id?: number; initiative_id?: string; author_ids?: string[]; proposed_channels?: string[]; series_id?: string; series_position?: number; target_languages?: string[]; metadata?: Record<string, unknown> }) => {
+    metadata: z.record(z.string(), z.any()).optional().describe("Metadata jsonb (AI-generated flag, originality check ref, etc)"),
+    themes: z.array(z.string()).optional().describe("Themes/tags da idea (text[]). Propagados como blog_posts.tags quando fork to blog channel.")
+  }, async (params: { title: string; summary?: string; source_type?: string; source_id?: string; tribe_id?: number; initiative_id?: string; author_ids?: string[]; proposed_channels?: string[]; series_id?: string; series_position?: number; target_languages?: string[]; metadata?: Record<string, unknown>; themes?: string[] }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "propose_publication_idea", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -1603,7 +1604,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       p_series_id: params.series_id ?? null,
       p_series_position: params.series_position ?? null,
       p_target_languages: params.target_languages ?? null,
-      p_metadata: params.metadata ?? null
+      p_metadata: params.metadata ?? null,
+      p_themes: params.themes ?? null
     });
     if (error) { await logUsage(sb, member.id, "propose_publication_idea", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "propose_publication_idea", true, undefined, start);
@@ -1631,8 +1633,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // fork_idea_to_channel — record intent + bump proposed_channels[]
-  mcp.tool("fork_idea_to_channel", "Registra intenção de fork de idea para canal específico. Adiciona ao proposed_channels[]. W3 orchestrator vai automatizar criação downstream rows; v1 (W2): apenas registra intent + audit trail.", {
+  // fork_idea_to_channel — W3.1: auto-scaffold blog draft when channel='blog' AND stage IN (approved, published)
+  mcp.tool("fork_idea_to_channel", "Registra intenção de fork de idea para canal. Adiciona ao proposed_channels[]. W3.1 (blog channel): auto-cria blog_posts draft com source_idea_id linked se idea status IN (approved, published). Idempotent — retorna existing se já criado. W3.2/W3.3 (newsletter, comms_media) deferred.", {
     idea_id: z.string().describe("UUID da idea"),
     channel: z.string().describe("Canal alvo (ex: blog, newsletter, linkedin, medium, dev_to, pmi_org, pm_com, youtube, podcast)"),
     payload_hint: z.record(z.string(), z.any()).optional().describe("Sugestões de payload (ex: campaign_template_id, blog_post category) para W3")
@@ -5710,7 +5712,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.60.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.61.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5730,6 +5732,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.60.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.61.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
