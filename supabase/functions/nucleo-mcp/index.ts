@@ -5222,6 +5222,94 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "search_partner_cards", true, undefined, start);
     return ok(data);
   });
+
+  // ─── p95 #128 (Frente 1 portfolio MCP wrappers — 4 tools) ──────────────────────────────
+  mcp.tool("get_portfolio_items", "List portfolio items (board_items where is_portfolio_item=true). Optional filters by tribe_id, status, cycle_code. Returns id, title, status, baseline_date, forecast_date, due_date, portfolio_kpi_refs, cycle_code. Gated by view_internal_analytics OR view_chapter_dashboards. Use for executive portfolio overview.", {
+    tribe_id: z.number().optional().describe("Filter by tribe (legacy_tribe_id integer)"),
+    status: z.string().optional().describe("Filter by board_item status"),
+    cycle_code: z.string().optional().describe("Filter by project_board cycle_code")
+  }, async (params: { tribe_id?: number; status?: string; cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_items", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_portfolio_items", {
+      p_tribe_id: params.tribe_id ?? null,
+      p_status: params.status ?? null,
+      p_cycle_code: params.cycle_code ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "get_portfolio_items", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_portfolio_items", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_portfolio_timeline", "Timeline view of portfolio items by month. Returns aggregated counts (planned/in_progress/done) grouped by due_date month. Used for executive trend analysis. Gated by internal RPC auth.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_timeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_portfolio_timeline");
+    if (error) { await logUsage(sb, member.id, "get_portfolio_timeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_portfolio_timeline", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_portfolio_planned_vs_actual", "Compare baseline_date vs actual completion date for portfolio items in a cycle. Returns variance metrics (early/on_time/late). Used for delivery quality analysis.", {
+    cycle: z.number().optional().describe("Cycle number. Default 3 (current).")
+  }, async (params: { cycle?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_planned_vs_actual", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_portfolio_planned_vs_actual", { p_cycle: params.cycle ?? 3 });
+    if (error) { await logUsage(sb, member.id, "get_portfolio_planned_vs_actual", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_portfolio_planned_vs_actual", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("exec_portfolio_board_summary", "Executive summary by project_board: counts by status, portfolio item ratio, recent activity. Used for cross-board executive view (GP/sponsor read).", {
+    include_inactive: z.boolean().optional().describe("Include archived/inactive boards. Default false.")
+  }, async (params: { include_inactive?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "exec_portfolio_board_summary", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("exec_portfolio_board_summary", { p_include_inactive: params.include_inactive ?? false });
+    if (error) { await logUsage(sb, member.id, "exec_portfolio_board_summary", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "exec_portfolio_board_summary", true, undefined, start);
+    return ok(data);
+  });
+
+  // ─── p95 #104 — Event attendance health monitor (Pattern 43) ─────────────────────
+  mcp.tool("get_event_attendance_health", "Health monitor for stale events with zero attendance marked. Returns count + sample of events past 24h-14d that have NO attendance row. Used by GP/deputy to spot meetings that didn't happen (líder forgot to cancel) OR meetings where attendance forgot. Pattern 43 reuse.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_event_attendance_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_event_attendance_health");
+    if (error) { await logUsage(sb, member.id, "get_event_attendance_health", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_event_attendance_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // ─── p95 #90 — Integração Nacional dashboard ────────────────────────────────────
+  mcp.tool("get_in_dashboard", "Integração Nacional consolidated view. Returns chapter count grouped by mou_stage (prospecting/agreed/mou_drafted/mou_sent/mou_signed/active) + per-chapter detail (next_action, follow_up_date, last_interaction_at). Use to track 14+ PMI BR chapters MOU lifecycle. Gated by view_internal_analytics OR manage_partner.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_in_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_in_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_in_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_in_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // ─── p95 #106 — Chapter-facing dashboard for Diretores Voluntariado ────────────
+  mcp.tool("get_chapter_dashboard", "Chapter-facing dashboard returning 8 blocks: people (by_role/by_status) + output (cards completed + publications) + attendance (rate + hub participation) + hours (PDU equivalent) + certifications (PMP/CPMAI/total) + partnerships + gamification (top contributors) + members detailed list. Pass chapter_code (e.g., 'PMI-GO') OR omit to get caller's own chapter. Gated: chapter_board sees own chapter; manage_member sees any.", {
+    chapter: z.string().optional().describe("Chapter code (e.g., 'PMI-GO'). Omit for caller's own chapter.")
+  }, async (params: { chapter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_chapter_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_chapter_dashboard", { p_chapter: params.chapter ?? null });
+    if (error) { await logUsage(sb, member.id, "get_chapter_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_chapter_dashboard", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -5232,7 +5320,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.55.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.56.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
