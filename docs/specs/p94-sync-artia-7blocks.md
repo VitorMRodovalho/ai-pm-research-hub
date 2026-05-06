@@ -2,7 +2,7 @@
 
 **Data**: 2026-05-05
 **Trigger**: Auditoria de Governança PMO PMI-GO 2026 (Núcleo IA = 17% conformidade · 14 não-conformidades)
-**Status**: 🟢 Phase C.1 + C.2 + C.2.5 (KPI 9→13) ✅ COMPLETOS 2026-05-05 · Phase C.3 (crons sustentabilidade) próximos
+**Status**: 🟢 Phase C.1 + C.2 + C.2.5 + C.3 ✅ TODOS COMPLETOS 2026-05-05 · Phase C.4 (ADR amendment) + C.5 (backfill avulso) opcionais futuros
 **Origem session**: p94 (handoff `memory/handoff_p94_artia_sync_audit.md`)
 
 ---
@@ -247,17 +247,61 @@ Default sync mode invocado live: **13/13 KPIs synced=true** · status=ok · arti
 
 ---
 
-## 🔜 Phase C.3 (próxima) — Crons de sustentabilidade
+## ✅ Phase C.3 SHIPPED — Crons de sustentabilidade (2026-05-05)
 
-5 crons + 1 trigger event-driven a implementar:
-1. `sync-artia-kpi-weekly` (existente — manter)
-2. `sync-artia-monitoring-daily` (NOVO) — atividades ≤10d
-3. `sync-artia-status-report-monthly` (NOVO) — gera + sync para folder 04.02 activity ID 6516559+
-4. `sync-artia-rituals-weekly` (NOVO) — atas + ritos para folders 04.03/04.04
-5. `sync-artia-risks-monthly` (NOVO) — sync program_risks → 04.06 activities
-6. **Event-driven**: trigger SQL AFTER UPDATE em governance_documents (atualiza folder 01.04 activities) + AFTER INSERT em events.type='kick_off' (atualiza 01.03)
+### Deliverables
+- Migration `20260516530005` — 2 pg_cron jobs + 1 event-driven trigger
+- EF sync-artia v5 — adicionou modes `?mode=backfill-risk-ids`, `?mode=cron-daily`, `?mode=cron-monthly`
 
-Cada cron usa LGPD helpers + atualiza `artia_synced_at` em platform tables. Estimativa: 4-5h em sessão p95 dedicada.
+### Crons ativos (3 totais)
+
+| Cron | Schedule | Mode invocado | Cobre auditoria |
+|---|---|---|---|
+| `sync-artia-weekly` (existente) | `30 5 * * 0` (Dom 05:30 UTC) | `default` | 13 KPIs (Critérios Sucesso 6d) |
+| `sync-artia-monitoring-daily` 🆕 | `0 6 * * *` (06:00 UTC daily) | `?mode=cron-daily` | Project.lastInformations + folder 04.04 atas tribos (6a + 6c) |
+| `sync-artia-status-report-monthly` 🆕 | `0 7 1 * *` (1º dia 07:00 UTC) | `?mode=cron-monthly` | folder 04.02 status report + 11 risks 04.06 (6b + 5c) |
+
+### Trigger event-driven
+
+`trg_artia_sync_on_govdoc_ratified` AFTER UPDATE OF current_ratified_at ON governance_documents:
+- Quando Política IP (ou outro doc) ratifica → enqueue async `cron-daily` para refrescar Project.lastInformations
+- Não-bloqueante (try/catch + RAISE NOTICE)
+- Cobertura: Bloco 3 Templates + atualiza KPI ip_policy_ratified em real-time
+
+### Smoke tests pós-deploy (2026-05-05)
+
+**Backfill risks** (req 2541): 11/11 risk activities mapeadas em `program_risks.artia_activity_id` (R-01→32811014 ... R-11→32811024)
+
+**cron-daily live** (req 2542):
+- `updateProject(6391775, lastInformations="<502 chars>")` ok=true
+- Compute via `_artia_safe_monthly_metrics` (LGPD-safe: 48 voluntários, 13 iniciativas, 35 eventos, 113.8h, 1 piloto, 47 cards ≤10d)
+- atas tribos com listingActivities lookup (após fix)
+
+**cron-monthly live** (req 2543):
+- Status Report 2026-04-01 gerado (702 chars markdown) → INSERT artia_status_reports
+- 11/11 risks synced via updateActivity per risk
+- 0 errors
+
+### Cobertura final dos 7 blocos da auditoria
+
+| Bloco | Pre-Phase C | Pós-C.1+C.2+C.2.5+C.3 | Como mantido vivo |
+|---|---|---|---|
+| TAP (1) | 0% | ≥75% | Folder 01.01 + Project.description (atualiza event-driven + manual edit) |
+| Cadastros (2) | 100% | 100% | Manual (sem cron) |
+| Templates (3) | 0% | ≥75% | Folder 01.04 + Project metadata + trigger event-driven em governance_documents |
+| Kick-off (4) | 0% | 100% | Folder 01.03 + activity criada (one-shot) |
+| Uso do Artia (5) | 0% | ≥80% | TAP/Plano/Riscos/Custos = folders 01.01/02.0X/04.06 + Project metadata |
+| Monitoramento (6) | 0% | ≥80% | KPIs weekly + lastInformations daily + status report monthly + atas weekly |
+| Lições (7) | N/A | N/A até Dez/2026 | Folder 05.01 placeholders, ativam Dez/2026 |
+
+**Score esperado próxima auditoria PMO**: 17% Crítica → ~75-85% (provável transição Atenção/Conforme)
+
+### Limitações documentadas
+
+1. **Movement infeasible** via updateActivity — Artia valida folder ownership. 9 KPIs originais ficam em 6399649, 4 novos em 6516663. Não-blocker.
+2. **atas tribos activity_id** — descoberto via listingActivities runtime (não persistido em registry). Funciona mas adiciona 1 GraphQL call por daily run.
+3. **Rate limit Artia** — não documentado, observado ~60 req/min OK em todos os tests. Cron ranges 1-15 mutations cada → seguro.
+4. **PMO scope** — vemos só 4/14 projetos auditados via listingProjects. Não-blocker para Núcleo (escopo é nosso projeto 6391775).
 
 ---
 
