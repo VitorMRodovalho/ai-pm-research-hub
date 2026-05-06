@@ -1688,6 +1688,113 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== #87 CANDIDATO + COMMITTEE MCP JOURNEY (8 tools) =====
+  // 6 new RPCs + 2 wrappers around existing select_tribe/deselect_tribe RPCs
+
+  // update_my_application — patch own non-evaluator fields
+  mcp.tool("update_my_application", "Atualiza campos do próprio application em ciclo ativo. Allowed: linkedin_url, resume_url, motivation_letter, areas_of_interest, leadership_experience, academic_background, non_pmi_experience, availability_declared, proposed_theme, credly_url, linkedin_relevant_posts, reason_for_applying, phone. Bloqueado durante evaluating/interviews/ranking phases.", {
+    fields: z.record(z.string(), z.any()).describe("Object com campos permitidos a atualizar")
+  }, async (params: { fields: Record<string, unknown> }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_my_application", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("update_my_application", { p_fields: params.fields });
+    if (error) { await logUsage(sb, member.id, "update_my_application", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_my_application", true, undefined, start);
+    return ok(data);
+  });
+
+  // upload_my_resume — sets resume_url
+  mcp.tool("upload_my_resume", "Atualiza resume_url do próprio application ativo. file_type default: pdf.", {
+    url: z.string().describe("URL do CV (Drive/Storage/etc)"),
+    file_type: z.string().optional().describe("Tipo do arquivo. Default: pdf")
+  }, async (params: { url: string; file_type?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "upload_my_resume", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("upload_my_resume", {
+      p_url: params.url,
+      p_file_type: params.file_type ?? 'pdf'
+    });
+    if (error) { await logUsage(sb, member.id, "upload_my_resume", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "upload_my_resume", true, undefined, start);
+    return ok(data);
+  });
+
+  // link_my_credly_badge — sets credly_url
+  mcp.tool("link_my_credly_badge", "Liga badge Credly ao próprio application ativo. badge_name opcional para tracking.", {
+    badge_url: z.string().describe("URL do badge Credly"),
+    badge_name: z.string().optional().describe("Nome do badge (opcional)")
+  }, async (params: { badge_url: string; badge_name?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "link_my_credly_badge", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("link_my_credly_badge", {
+      p_badge_url: params.badge_url,
+      p_badge_name: params.badge_name ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "link_my_credly_badge", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "link_my_credly_badge", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_my_application_status — own apps + phase + decision
+  mcp.tool("get_my_application_status", "Retorna status das próprias applications (todas), com phase do ciclo, fields editáveis ainda em arquivo, e (durante evaluating) count de evaluations submitted.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_application_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_application_status");
+    if (error) { await logUsage(sb, member.id, "get_my_application_status", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_application_status", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_my_evaluation_feedback — own scores ONLY in post-reveal phase
+  mcp.tool("get_my_evaluation_feedback", "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_evaluation_feedback", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_evaluation_feedback");
+    if (error) { await logUsage(sb, member.id, "get_my_evaluation_feedback", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_evaluation_feedback", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_my_committee_assignments — committee member's assigned apps
+  mcp.tool("get_my_committee_assignments", "Lista applications atribuídas ao caller como membro do comitê de seleção. Mostra i_have_submitted + my_evaluation_rows count.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_committee_assignments", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_committee_assignments");
+    if (error) { await logUsage(sb, member.id, "get_my_committee_assignments", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_committee_assignments", true, undefined, start);
+    return ok(data);
+  });
+
+  // select_tribe — wraps existing RPC (Tier 1 candidato selecionado)
+  mcp.tool("select_tribe", "Seleciona/atualiza tribe preferida do caller (candidato selecionado). Wrap RPC existente.", {
+    tribe_id: z.number().describe("Tribe ID (1-8)")
+  }, async (params: { tribe_id: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "select_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("select_tribe", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "select_tribe", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "select_tribe", true, undefined, start);
+    return ok(data);
+  });
+
+  // deselect_tribe — wraps existing RPC
+  mcp.tool("deselect_tribe", "Remove a seleção de tribe do caller. Wrap RPC existente.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "deselect_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("deselect_tribe");
+    if (error) { await logUsage(sb, member.id, "deselect_tribe", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "deselect_tribe", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
     const start = Date.now();
@@ -5603,7 +5710,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.59.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.60.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5623,6 +5730,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.59.0", tools: 257, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.60.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
