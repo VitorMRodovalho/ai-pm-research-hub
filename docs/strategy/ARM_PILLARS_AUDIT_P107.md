@@ -307,3 +307,38 @@ Cada um é uma sessão dedicada de 4-6h spec + ship.
 - Backend autonomous-shippable: pii_access_log dossiê candidato, blind review RLS, calibration metrics RPC
 - Decisão PM bloqueante: analyze_application LLM W4 go/no-go
 - Sessão browser: inline AI panel evaluator + admin dashboard show selection_health
+
+---
+
+## Pós-Onda 2 P1 batch (2026-05-06 follow-up)
+
+3 P1 items adicionais shipped na mesma sessão:
+
+| Item | Resolução | Commit |
+|------|-----------|--------|
+| pii_access_log dossiê candidato | Helper `_log_application_pii_access` + 2 RPCs (`get_application_score_breakdown`, `get_evaluation_form`) chamando helper após auth check. Migration `20260516810000` | `d415cb9` |
+| get_evaluator_calibration_stats RPC | Cycle summary + per_evaluator (bias_signed/abs + anomaly_count) + pair_divergence top 5. MCP v2.66.0 expose. Migration `20260516820000` | `d415cb9` |
+| localStorage onboarding → server-side | Tabela `member_quick_start_progress` + RPCs `get_my_quick_start_progress`/`upsert_my_quick_start_step`. Frontend onboarding.astro com merge offline+online + Wrangler deploy. Migration `20260516830000` | `215eacb` |
+| blind review RLS de selection_evaluations | **Verified — already enforced via rpc_only_deny_all + v_blind logic em get_application_score_breakdown.** Defesa em profundidade equivalente. Closed sem migration. | n/a |
+
+### Estado final p107
+
+- **9 commits no main** (cf78d93 → 215eacb)
+- **11 migrações** (`20260516710000` → `20260516830000`)
+- **MCP v2.66.0** (268 tools, was 266)
+- **2 Wrangler deploys** (Onda 2.5 + localStorage→RPC)
+- **Invariants 12/12 = 0 violations**
+- **5 P1 não-issue resolvidos (Onda 2)** + **3 P1 adicionais (post-Onda 2)** + **7 issues GitHub fechadas**
+
+### Maturidade ARM atualizada
+
+| ID | Pilar | Pré-p107 | Pós-p107 |
+|----|-------|----------|----------|
+| ARM-1 | Captação | 1 | 1+ (instrumentação UTM/referral_source pronta) |
+| ARM-2 | Application | 2 | 2+ (dashboard candidato live) |
+| ARM-4 | Evaluation Pipeline | 2 | 2+ (my_eval_status + calibration stats + invariant 12 + sync trigger) |
+| ARM-7 | Onboarding | 2 | 2+ (cron overdue + cross-device persistence) |
+| ARM-8 | Compliance & Audit | 3 | 3+ (consent_records + RLS hardening + audit_log immutability + pii_access_log dossier) |
+| ARM-12 | Observability | 2 | 2+ (get_selection_health Pattern 43) |
+
+ARM média estimada: ≈ 1.92 → ≈ 2.25.
