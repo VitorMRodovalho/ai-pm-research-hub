@@ -246,18 +246,65 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
 <script>
   import { getSupabase } from '../lib/supabase';
 
+  // p107 ARM P1: server-side persistence (RPC) com localStorage como fallback offline.
+  // Resolve gap "reset entre dispositivos" do audit p107.
   const STORAGE_KEY = 'onboarding_progress';
   const TOTAL = (window as any).__ONBOARDING_TOTAL || 8;
+  let _serverSynced = false;
 
-  function getCompleted(): Set<number> {
+  function getLocalCompleted(): Set<number> {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? new Set(JSON.parse(raw)) : new Set();
     } catch { return new Set(); }
   }
 
-  function saveCompleted(completed: Set<number>) {
+  function saveLocalCompleted(completed: Set<number>) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]));
+  }
+
+  // Cache em memória (sincronizado com server quando possível)
+  let _completed: Set<number> = getLocalCompleted();
+
+  function getCompleted(): Set<number> { return _completed; }
+
+  async function saveCompleted(completed: Set<number>) {
+    _completed = completed;
+    saveLocalCompleted(completed); // fallback offline
+    // Server sync best-effort
+    try {
+      const sb = getSupabase();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      // Diff-based: chamamos upsert para cada idx (toggle done/undone). Para simplicidade,
+      // re-syncamos toda a lista chamando upsert_my_quick_start_step por step que mudou.
+      // Aqui usamos abordagem simplificada: server-side recebe full state via toggle individual.
+    } catch (_) { /* offline fallback */ }
+  }
+
+  async function syncFromServer(): Promise<void> {
+    try {
+      const sb = getSupabase();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const { data, error } = await sb.rpc('get_my_quick_start_progress');
+      if (error || !data || data.error) return;
+      const serverSteps: number[] = Array.isArray(data.completed_steps) ? data.completed_steps : [];
+      // Merge: union local + server (caso usuário tenha marcado offline e online)
+      const merged = new Set<number>([..._completed, ...serverSteps]);
+      _completed = merged;
+      saveLocalCompleted(merged);
+      _serverSynced = true;
+    } catch (_) { /* keep local */ }
+  }
+
+  async function persistStep(idx: number, done: boolean): Promise<void> {
+    try {
+      const sb = getSupabase();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      await sb.rpc('upsert_my_quick_start_step', { p_step_idx: idx, p_done: done });
+    } catch (_) { /* keep local */ }
   }
 
   function updateUI() {
@@ -318,6 +365,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
       const completed = getCompleted();
       completed.add(idx);
       saveCompleted(completed);
+      persistStep(idx, true);
       updateUI();
       return;
     }
@@ -328,6 +376,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
       const completed = getCompleted();
       completed.delete(idx);
       saveCompleted(completed);
+      persistStep(idx, false);
       updateUI();
     }
   });
@@ -354,6 +403,8 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
     } catch (_) { /* keep placeholder */ }
   }
 
+  // Initial load: render localStorage immediately (fast); then sync from server (cross-device merge)
   updateUI();
   loadDeadline();
+  syncFromServer().then(() => updateUI());
 </script>
