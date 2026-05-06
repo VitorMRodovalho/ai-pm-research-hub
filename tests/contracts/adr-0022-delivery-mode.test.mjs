@@ -32,6 +32,20 @@ function loadCatalog() {
 const allSQL = loadAllMigrationsConcat();
 const catalog = loadCatalog();
 
+// Match latest CREATE OR REPLACE FUNCTION public.<name> body across all migrations.
+// PostgreSQL allows arbitrary dollar-quoting tags ($$, $function$, $body$, …); the
+// backreference \1 ensures we close on the same tag we opened with. Returns the full
+// match (so callers can read body via [2] or wrapper text via [0]).
+function findLatestFunctionMatch(name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${escaped}\\b[\\s\\S]*?AS\\s+(\\$\\w*\\$)([\\s\\S]*?)\\1`,
+    'gi'
+  );
+  const matches = [...allSQL.matchAll(regex)];
+  return matches.length > 0 ? matches[matches.length - 1] : null;
+}
+
 test('ADR-0022 W1: catalog declares ≥3 delivery_modes', () => {
   const modes = Object.keys(catalog.delivery_modes);
   assert.ok(modes.includes('transactional_immediate'));
@@ -73,10 +87,9 @@ test('ADR-0022 W1: helper SQL covers every transactional_immediate + suppress ty
   // Extract the LATEST CREATE/REPLACE _delivery_mode_for function body. Multiple
   // migrations may redefine this helper; runtime behavior tracks the last one
   // applied (CREATE OR REPLACE semantics) — so the contract checks the last.
-  const helperRegex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\._delivery_mode_for[\s\S]*?\$function\$([\s\S]*?)\$function\$/gi;
-  const matches = [...allSQL.matchAll(helperRegex)];
-  assert.ok(matches.length > 0, '_delivery_mode_for body not located.');
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('_delivery_mode_for');
+  assert.ok(match, '_delivery_mode_for body not located.');
+  const body = match[2];
 
   for (const [type, info] of Object.entries(catalog.types)) {
     if (info.delivery_mode === 'digest_weekly') continue;  // covered by ELSE branch
@@ -117,10 +130,9 @@ test('ADR-0022 W2: members.notify_delivery_mode_pref column declared with 4-mode
 
 test('ADR-0022 W2: get_weekly_member_digest RPC declared with 7 sections', () => {
   // Find LAST definition (CREATE OR REPLACE semantics)
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_weekly_member_digest\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0, 'get_weekly_member_digest must be declared.');
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('get_weekly_member_digest');
+  assert.ok(match, 'get_weekly_member_digest must be declared.');
+  const body = match[2];
 
   // 7 section keys must appear in body
   const requiredSections = [
@@ -137,10 +149,9 @@ test('ADR-0022 W2: get_weekly_member_digest RPC declared with 7 sections', () =>
 });
 
 test('ADR-0022 W2: generate_weekly_member_digest_cron orchestrator declared', () => {
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.generate_weekly_member_digest_cron[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0, 'generate_weekly_member_digest_cron must be declared.');
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('generate_weekly_member_digest_cron');
+  assert.ok(match, 'generate_weekly_member_digest_cron must be declared.');
+  const body = match[2];
 
   // Must call get_weekly_member_digest
   assert.ok(body.includes('get_weekly_member_digest'),
@@ -157,10 +168,9 @@ test('ADR-0022 W2: set_my_notification_prefs RPC declared (member self-edit)', (
   assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.set_my_notification_prefs/i.test(allSQL),
     'set_my_notification_prefs RPC must be declared for /settings/notifications page.');
   // Must be SECURITY DEFINER (gates by auth.uid)
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.set_my_notification_prefs[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0);
-  const wrapper = matches[matches.length - 1][0];
+  const match = findLatestFunctionMatch('set_my_notification_prefs');
+  assert.ok(match);
+  const wrapper = match[0];
   assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
     'set_my_notification_prefs must be SECURITY DEFINER.');
 });
@@ -168,10 +178,9 @@ test('ADR-0022 W2: set_my_notification_prefs RPC declared (member self-edit)', (
 // ─── W3 contracts (p62) ───
 
 test('ADR-0022 W3: get_weekly_tribe_digest RPC declared with aggregate-only sections', () => {
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_weekly_tribe_digest\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0, 'get_weekly_tribe_digest must be declared.');
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('get_weekly_tribe_digest');
+  assert.ok(match, 'get_weekly_tribe_digest must be declared.');
+  const body = match[2];
 
   // Aggregate keys (privacy-preserving — no individual cards)
   const requiredAggs = [
@@ -186,10 +195,9 @@ test('ADR-0022 W3: get_weekly_tribe_digest RPC declared with aggregate-only sect
 });
 
 test('ADR-0022 W3: generate_weekly_leader_digest_cron orchestrator declared', () => {
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.generate_weekly_leader_digest_cron[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0, 'generate_weekly_leader_digest_cron must be declared.');
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('generate_weekly_leader_digest_cron');
+  assert.ok(match, 'generate_weekly_leader_digest_cron must be declared.');
+  const body = match[2];
 
   assert.ok(body.includes('get_weekly_tribe_digest'),
     'Leader orchestrator must call get_weekly_tribe_digest RPC.');
@@ -205,9 +213,8 @@ test('ADR-0022 W3: tribe_broadcast urgent rate-limit trigger declared', () => {
   assert.ok(/CREATE\s+TRIGGER\s+trg_tribe_broadcast_urgent_rate_limit/i.test(allSQL),
     'Trigger trg_tribe_broadcast_urgent_rate_limit must be declared.');
   // Must enforce 1/week limit
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\._tribe_broadcast_urgent_rate_limit[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  const body = matches[matches.length - 1][1];
+  const match = findLatestFunctionMatch('_tribe_broadcast_urgent_rate_limit');
+  const body = match[2];
   assert.ok(/v_actor_count\s*>=\s*1/i.test(body),
     'Rate-limit must enforce >= 1 (1 batch per week per actor).');
   assert.ok(/rate_limit_exceeded/i.test(body),

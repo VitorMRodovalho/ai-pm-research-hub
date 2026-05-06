@@ -48,6 +48,18 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // for ADR-0022 W2 communication batching (p61). Set only via /settings/notifications RPC
   // set_my_notification_prefs(); not derivable from any other state. CHECK constraint enforces enum.
   ['members.notify_delivery_mode_pref', 'User-chosen email delivery mode (ADR-0022 W2); no derivation source'],
+  // External Artia activity ID (p94c2 traceability columns). Set by Artia sync workflow
+  // when initiative is mirrored to Artia. Not derivable — Artia is external system.
+  // Companion column artia_synced_at tracks last sync timestamp. ADR-0069.
+  ['initiatives.artia_activity_id', 'External Artia activity ID for portfolio sync (ADR-0069); no derivation source'],
+  // External Artia folder ID for initiative grouping (p94c2). Set at Artia mirror creation.
+  // Not derivable — Artia is external system.
+  ['initiatives.artia_folder_id', 'External Artia folder ID for portfolio sync (ADR-0069); no derivation source'],
+  // Sync timestamp for Artia mirror (p94c2). Updated by Artia sync EF; not derivable.
+  ['initiatives.artia_synced_at', 'Last successful Artia sync timestamp (ADR-0069); no derivation source'],
+  // FK linking initiative to originating partner_entity (p95 #97 G1, Partnership→Initiative journey).
+  // NULL for organic initiatives. Set once at initiative creation when seeded from a partner; not derivable.
+  ['initiatives.origin_partner_entity_id', 'Optional FK to source partner (#97 G1 external speaker journey); no derivation source'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.
