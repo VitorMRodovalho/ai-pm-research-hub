@@ -1405,6 +1405,48 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL 38.1 (#131): get_comms_pipeline — Comms self-service: webinars promo asset readiness
+  mcp.tool("get_comms_pipeline", "Returns webinars pipeline with promo asset readiness (briefing_doc / sympla_event / promo_kit / comms_kickoff). Comms/Board/Admin only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_comms_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'write_board')) && !(await canV4(sb, member.id, 'manage_event')) && !(await canV4(sb, member.id, 'manage_member'))) {
+      await logUsage(sb, member.id, "get_comms_pipeline", false, "Unauthorized", start);
+      return err("Unauthorized: requires comms/board/admin authority");
+    }
+    const { data, error } = await sb.rpc("get_comms_pipeline");
+    if (error) { await logUsage(sb, member.id, "get_comms_pipeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_comms_pipeline", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 38.2 (#131): update_webinar_comms_assets — Comms self-service patcher
+  mcp.tool("update_webinar_comms_assets", "Patches webinar promo assets (briefing_doc_url / sympla_event_url / promo_kit_url / mark comms kickoff). Comms/Board/Admin only.", {
+    webinar_id: z.string().describe("Webinar UUID"),
+    briefing_doc_url: z.string().optional().describe("Briefing doc URL (Drive/Notion). Optional."),
+    sympla_event_url: z.string().optional().describe("Sympla event URL. Optional."),
+    promo_kit_url: z.string().optional().describe("Promo kit URL (Drive folder). Optional."),
+    mark_kickoff: z.boolean().optional().describe("Mark comms_kickoff_at = now() if not already set. Default: false")
+  }, async (params: { webinar_id: string; briefing_doc_url?: string; sympla_event_url?: string; promo_kit_url?: string; mark_kickoff?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_webinar_comms_assets", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'write_board')) && !(await canV4(sb, member.id, 'manage_event')) && !(await canV4(sb, member.id, 'manage_member'))) {
+      await logUsage(sb, member.id, "update_webinar_comms_assets", false, "Unauthorized", start);
+      return err("Unauthorized: requires comms/board/admin authority");
+    }
+    const { data, error } = await sb.rpc("update_webinar_comms_assets", {
+      p_webinar_id: params.webinar_id,
+      p_briefing_doc_url: params.briefing_doc_url ?? null,
+      p_sympla_event_url: params.sympla_event_url ?? null,
+      p_promo_kit_url: params.promo_kit_url ?? null,
+      p_mark_kickoff: params.mark_kickoff ?? false
+    });
+    if (error) { await logUsage(sb, member.id, "update_webinar_comms_assets", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_webinar_comms_assets", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
     const start = Date.now();
@@ -5320,7 +5362,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.56.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.57.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5340,6 +5382,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.55.0", tools: 238, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.57.0", tools: 247, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
