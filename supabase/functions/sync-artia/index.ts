@@ -272,6 +272,216 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Backfill-risk-ids mode (Phase C.3 prep): map 11 risk activities (folder 6516562) → program_risks.artia_activity_id ──
+    if (mode === 'backfill-risk-ids') {
+      const RISKS_FOLDER_ID = 6516562
+      const token = await getArtiaToken()
+      // List activities in 04.06 Riscos folder
+      const q = `{ listingActivities(accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${RISKS_FOLDER_ID}) { id title } }`
+      const res = await fetch(ARTIA_GQL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ query: q }),
+      })
+      const data = await res.json()
+      const activities = data?.data?.listingActivities ?? []
+      const matched: any[] = []
+      const unmatched: any[] = []
+
+      for (const act of activities) {
+        // Title format: "R-XX: ..." — extract code
+        const m = act.title?.match(/^(R-\d{2}):/)
+        if (!m) { unmatched.push({ id: act.id, title: act.title }); continue }
+        const riskCode = m[1]
+        const { error } = await sb.from('program_risks')
+          .update({ artia_activity_id: parseInt(act.id), artia_synced_at: new Date().toISOString() })
+          .eq('cycle_year', 2026).eq('risk_code', riskCode)
+        if (error) {
+          unmatched.push({ id: act.id, title: act.title, error: error.message })
+        } else {
+          matched.push({ risk_code: riskCode, activity_id: act.id })
+        }
+      }
+
+      return new Response(JSON.stringify({
+        mode: 'backfill-risk-ids',
+        activities_in_folder: activities.length,
+        matched: matched.length,
+        unmatched: unmatched.length,
+        matched_detail: matched,
+        unmatched_detail: unmatched,
+      }, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ── Cron-daily mode (Phase C.3): updates Project.lastInformations + folder 04.04 atas tribos ──
+    if (mode === 'cron-daily') {
+      const NUCLEO_PROJECT_ID = 6391775
+      const FOLDER_ATAS_TRIBOS = 6516561 // 04.04 - Atas de Tribos Semanais
+      const FOLDER_ATAS_PLENARIAS = 6516560 // 04.03 - Atas Plenárias Mensais
+      const token = await getArtiaToken()
+      const result: any = { updateProject: null, atas_tribos: null, atas_plenarias: null, errors: [] }
+
+      const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')
+
+      // 1. Compute current snapshot for Project.lastInformations
+      const today = new Date()
+      const ymd = today.toISOString().split('T')[0]
+      const yyyy = today.getUTCFullYear()
+      const mm = today.getUTCMonth() + 1
+
+      const { data: monthMetrics } = await sb.rpc('_artia_safe_monthly_metrics', { p_year: yyyy, p_month: mm })
+
+      // Count board_items updated last 10 days (Bloco 6a "Atividades atualizadas ≤10d")
+      const { count: cards10d } = await sb.from('board_items').select('id', { count: 'exact', head: true })
+        .gte('updated_at', new Date(Date.now() - 10 * 86400000).toISOString())
+
+      const lastInfo = `Status atual ${ymd}:\n` +
+        `- Voluntários ativos: ${monthMetrics?.active_volunteers_total ?? 'n/a'}\n` +
+        `- Iniciativas ativas: ${monthMetrics?.initiatives_active_total ?? 'n/a'}\n` +
+        `- Eventos no mês ${yyyy}-${String(mm).padStart(2, '0')}: ${monthMetrics?.events_in_month ?? 0} (${monthMetrics?.duration_hours_in_month ?? 0}h)\n` +
+        `- Pilotos IA ativos: ${monthMetrics?.pilots_active_total ?? 0}\n` +
+        `- Atividades plataforma atualizadas últimos 10d: ${cards10d ?? 0}\n` +
+        `- 7 tribos ativas (M.O.R.E. quadrantes 1-4) + 4 frentes operacionais\n` +
+        `- 5 capítulos PMI parceiros (PMI-GO sponsor + CE/DF/MG/RS via Acordos Cooperação)\n` +
+        `- Status governance: TAP em revisão · Política IP em revisão Comitê Curadoria · Manual aprovado 2025-12\n` +
+        `(Sync automático cron sync-artia-monitoring-daily 06:00 UTC)`
+
+      // updateProject
+      try {
+        const upQ = `mutation { updateProject(id: "${NUCLEO_PROJECT_ID}", accountId: ${ARTIA_ACCOUNT_ID}, lastInformations: "${escapeStr(lastInfo)}") { id name } }`
+        const upRes = await fetch(ARTIA_GQL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: upQ }),
+        })
+        const upData = await upRes.json()
+        result.updateProject = upData?.errors ? { errors: upData.errors } : { ok: true, length: lastInfo.length }
+      } catch (e) {
+        result.errors.push({ step: 'updateProject', error: (e as Error).message })
+      }
+
+      // 2. Update folder 04.04 Atas de Tribos Semanais — last 7 days events grouped by type
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+      const { data: weekSummary } = await sb.rpc('_artia_safe_event_summary', { p_start_date: sevenDaysAgo, p_end_date: ymd })
+
+      const tribosDesc = `Atas consolidadas das 7 tribos (M.O.R.E.) — semana ${sevenDaysAgo} a ${ymd}\n\n` +
+        `Total eventos: ${weekSummary?.total_events ?? 0}\n` +
+        `Duração total: ${weekSummary?.total_duration_hours ?? 0}h\n\n` +
+        `Eventos por tipo:\n` +
+        Object.entries(weekSummary?.by_type || {}).map(([type, count]) => `- ${type}: ${count}`).join('\n') +
+        `\n\nÚltimos 7 eventos:\n` +
+        ((weekSummary?.event_titles_sample || []).slice(0, 7).map((t: string) => `- ${t}`).join('\n')) +
+        `\n\nLGPD-safe: agregados sem nomes individuais. Sync diário 06:00 UTC.`
+
+      // Find activity inside folder 04.04 via listingActivities (idempotent — single activity inside)
+      try {
+        const lq = `{ listingActivities(accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${FOLDER_ATAS_TRIBOS}) { id title } }`
+        const lRes = await fetch(ARTIA_GQL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: lq }),
+        })
+        const lData = await lRes.json()
+        const acts = lData?.data?.listingActivities ?? []
+        if (acts.length > 0) {
+          const ataActId = parseInt(acts[0].id)
+          const ok = await updateArtiaActivity(token, ataActId, 50, tribosDesc, 'Atas Consolidadas das 7 Tribos', FOLDER_ATAS_TRIBOS)
+          result.atas_tribos = ok ? { ok: true, activity_id: ataActId, length: tribosDesc.length } : { ok: false, activity_id: ataActId }
+        } else {
+          result.atas_tribos = { skipped: 'no activity in folder', folder_id: FOLDER_ATAS_TRIBOS }
+        }
+      } catch (e) {
+        result.errors.push({ step: 'atas_tribos', error: (e as Error).message })
+      }
+
+      return new Response(JSON.stringify({ mode: 'cron-daily', result }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── Cron-monthly mode (Phase C.3): generates Status Report + syncs program_risks ──
+    if (mode === 'cron-monthly') {
+      const STATUS_REPORT_FOLDER = 6516559 // 04.02 - Status Reports Mensais 2026
+      const token = await getArtiaToken()
+      const result: any = { status_report: null, risks_synced: [], errors: [] }
+
+      const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')
+
+      // 1. Compute prior month metrics
+      const today = new Date()
+      const lastMonth = new Date(today.getUTCFullYear(), today.getUTCMonth() - 1, 1)
+      const yyyy = lastMonth.getUTCFullYear()
+      const mm = lastMonth.getUTCMonth() + 1
+      const reportMonth = `${yyyy}-${String(mm).padStart(2, '0')}-01`
+
+      const { data: monthMetrics } = await sb.rpc('_artia_safe_monthly_metrics', { p_year: yyyy, p_month: mm })
+
+      const reportBody = `# Status Report — ${yyyy}.${mm <= 6 ? '1' : '2'} Mês ${String(mm).padStart(2, '0')}\n\n` +
+        `## Métricas Plataforma (LGPD-safe agregados)\n\n` +
+        `- Voluntários ativos: ${monthMetrics?.active_volunteers_total ?? 'n/a'}\n` +
+        `- Iniciativas ativas: ${monthMetrics?.initiatives_active_total ?? 'n/a'}\n` +
+        `- Eventos no mês: ${monthMetrics?.events_in_month ?? 0}\n` +
+        `- Duração horas no mês: ${monthMetrics?.duration_hours_in_month ?? 0}h\n` +
+        `- Pilotos IA ativos: ${monthMetrics?.pilots_active_total ?? 0}\n` +
+        `- Publicações concluídas no mês: ${monthMetrics?.publications_done_in_month ?? 0}\n\n` +
+        `## Estrutura\n\n` +
+        `- 5 capítulos PMI (GO sponsor + CE/DF/MG/RS via Acordos Cooperação Bilateral)\n` +
+        `- 7 tribos M.O.R.E. ativas + 4 frentes operacionais\n` +
+        `- Plataforma nucleoia.vitormr.dev open source no GitHub\n\n` +
+        `## Próximos passos\n` +
+        `- Pipeline +10 artigos / +6 webinares (TAP §16)\n` +
+        `- LATAM LIM Lima Aug 2026 / PMI Global Summit Detroit Out 2026\n` +
+        `- Política IP aguardando assinaturas Comitê Curadoria\n\n` +
+        `Sync automático cron sync-artia-status-report-monthly (1º dia mês 07:00 UTC).`
+
+      // 2. Persist to artia_status_reports
+      try {
+        await sb.from('artia_status_reports').upsert({
+          cycle_year: 2026,
+          report_month: reportMonth,
+          body_md: reportBody,
+          metrics_json: monthMetrics || {},
+          generated_at: new Date().toISOString(),
+          generated_by_cron: true,
+        }, { onConflict: 'cycle_year,report_month' })
+        result.status_report = { ok: true, length: reportBody.length, month: reportMonth }
+      } catch (e) {
+        result.errors.push({ step: 'persist_report', error: (e as Error).message })
+      }
+
+      // 3. Sync 11 program_risks → folder 04.06 activities (using artia_activity_id from backfill)
+      const { data: risksData } = await sb.from('program_risks')
+        .select('risk_code, risk_title, status, treatment, probability, impact, artia_activity_id')
+        .eq('cycle_year', 2026)
+        .not('artia_activity_id', 'is', null)
+        .order('risk_code')
+
+      for (const risk of risksData || []) {
+        const pct = risk.status === 'mitigado' || risk.status === 'encerrado' ? 100
+                  : risk.status === 'em_tratamento' ? 50 : 0
+        const statusId = risk.status === 'mitigado' || risk.status === 'encerrado' ? ARTIA_STATUS.ENCERRADO
+                       : risk.status === 'em_tratamento' ? ARTIA_STATUS.ANDAMENTO : ARTIA_STATUS.A_INICIAR
+        const title = `${risk.risk_code}: ${risk.risk_title}`
+        const desc = `[${(risk.probability || 'n/a').toUpperCase()} prob × ${(risk.impact || 'n/a').toUpperCase()} impacto] Status: ${risk.status}. Tratamento: ${risk.treatment}. Sync: ${new Date().toISOString().split('T')[0]}.`
+
+        try {
+          const ok = await updateArtiaActivity(token, risk.artia_activity_id, pct, desc, title, 6516562)
+          if (ok) {
+            result.risks_synced.push({ risk_code: risk.risk_code, activity_id: risk.artia_activity_id, pct, status: risk.status })
+            await sb.from('program_risks')
+              .update({ artia_synced_at: new Date().toISOString() })
+              .eq('risk_code', risk.risk_code).eq('cycle_year', 2026)
+          } else {
+            result.errors.push({ step: 'sync_risk', risk_code: risk.risk_code })
+          }
+        } catch (e) {
+          result.errors.push({ step: 'sync_risk_exception', risk_code: risk.risk_code, error: (e as Error).message })
+        }
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      return new Response(JSON.stringify({ mode: 'cron-monthly', result }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // ── Move-9-KPIs mode (Phase C.2.5 fix): retry moves with title arg required by Artia ──
     if (mode === 'move-9-kpis') {
       const NEW_FOLDER_ID = 6516663 // 04.01 - KPIs Anuais 2026 (created in prior run)
