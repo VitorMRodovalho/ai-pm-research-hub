@@ -52,6 +52,17 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Iniciar Triagem</button>
         </div>
 
+        <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) -->
+        <div class="flex flex-wrap gap-2 items-center mb-2 text-[12px]">
+          <span class="text-[var(--text-muted)] font-semibold">Filtros rápidos:</span>
+          <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title="Esconde aprovados, rejeitados, lista de espera, convertidos, withdraw, cancelled">👁 Ocultar decididos</button>
+          <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">Todos</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title="Só candidatos onde você ainda NÃO submeteu avaliação">⏳ Minhas pendentes</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="evaluated_mine" title="Só candidatos onde você já submeteu avaliação">✓ Já avaliei</button>
+          </div>
+        </div>
+
         <!-- Filters -->
         <div class="flex flex-wrap gap-3 items-center mb-4">
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
@@ -94,6 +105,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title="Sua avaliação pessoal (objetiva)">Minha aval.</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title="Workflow indicators: IA / Pares / Entrevista / Token / Vídeo">Pipeline</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">Data</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
@@ -267,12 +279,12 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     </div>
   </div>
 
-  <!-- APPLICANT DETAIL MODAL -->
-  <div id="applicant-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <!-- APPLICANT DETAIL MODAL — p109 Onda 4 Fase 4: a11y dialog semantics -->
+  <div id="applicant-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-name" aria-hidden="true">
     <div class="bg-[var(--surface-card)] rounded-2xl shadow-2xl max-w-[800px] w-full max-h-[90vh] overflow-y-auto">
       <div class="sticky top-0 bg-[var(--surface-card)] border-b border-[var(--border-default)] px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
         <h2 id="modal-name" class="text-lg font-extrabold text-navy">—</h2>
-        <button id="modal-close" class="text-2xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy">&times;</button>
+        <button id="modal-close" class="text-2xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy" aria-label="Fechar modal">&times;</button>
       </div>
       <div class="p-6 space-y-5" id="modal-body">
         <!-- Populated dynamically -->
@@ -303,6 +315,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
   let filterSearch = '';
   let sortCol = 'final_score';
   let sortAsc = false;
+  // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
+  // o que ainda falta avaliar e o que já foi decidido.
+  let filterHideDecided = true;       // default ON — esconde approved/rejected/etc
+  let filterMyEval: 'all' | 'pending_mine' | 'evaluated_mine' = 'all';
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -396,6 +412,25 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     approved: 'Aprovado', rejected: 'Rejeitado', waitlist: 'Lista de Espera',
     converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
   };
+
+  /* p109 Onda 4 Fase 1.2 — "Minha avaliação" badge na lista (FP-4).
+     Resolve PM pain "já avaliei?" sem precisar abrir o modal.
+     Reads my_eval_status from get_selection_dashboard (Onda 2.3). */
+  function myEvalBadge(r: any): string {
+    const status = r.my_eval_status as 'submitted' | 'draft' | 'invited' | 'not_invited' | undefined;
+    const score = r.my_eval_score;
+    if (status === 'submitted') {
+      const scoreStr = score != null ? ` (${Number(score).toFixed(1)})` : '';
+      return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 whitespace-nowrap" title="Você submeteu avaliação objetiva${scoreStr}">✓ Avaliei${scoreStr}</span>`;
+    }
+    if (status === 'draft') {
+      return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 whitespace-nowrap" title="Você tem rascunho — falta submeter">⚠ Rascunho</span>`;
+    }
+    if (status === 'invited') {
+      return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 whitespace-nowrap" title="Você foi convidado — pendente">📨 Convidado</span>`;
+    }
+    return `<span class="text-[10px] text-[var(--text-muted)]" title="Sem convite individual">—</span>`;
+  }
 
   /* p92 Phase D — pipeline workflow indicators (5 mini-badges per candidate).
      Compact one-glance status for AI / peer review / interview / token usage / video.
@@ -539,7 +574,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -579,6 +614,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       }
       if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+      // p109 Onda 4 Fase 3: hideDecided + myEval quick filters
+      if (filterHideDecided && ['approved', 'rejected', 'cancelled', 'withdrawn', 'converted', 'waitlist'].includes(r.status)) return false;
+      if (filterMyEval === 'pending_mine' && r.my_eval_status === 'submitted') return false;
+      if (filterMyEval === 'evaluated_mine' && r.my_eval_status !== 'submitted') return false;
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -641,7 +680,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     if (!tbody) return;
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -695,6 +734,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
         <td class="px-3 py-2.5">${pipelineBadges(r)}</td>
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
@@ -805,26 +845,8 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         </div>
       </div>
 
-      <!-- TAB: Interview -->
+      <!-- TAB: Interview (p109 Onda 4 Fase 1.4: scoringDiv prepended renders briefing + contextual + unified scoring; Roteiro estático removido — fundido com sliders por pilar) -->
       <div id="modal-tab-interview" class="hidden">
-        <!-- S2+S8: Interview questions guide -->
-        ${(currentCycle?.interview_questions || []).length ? `
-        <details class="mb-4 border border-[var(--border-default)] rounded-xl">
-          <summary class="px-4 py-2.5 text-[13px] font-bold text-navy cursor-pointer select-none">Roteiro de Perguntas (${(currentCycle?.interview_questions || []).length} pilares)</summary>
-          <div class="px-4 pb-4 space-y-3">
-            ${(currentCycle?.interview_questions || []).map((p: any) => `
-              <div class="bg-[var(--surface-base)] rounded-lg p-3">
-                <div class="flex items-center gap-2 mb-1.5">
-                  <h5 class="text-[12px] font-bold text-[var(--text-primary)]">${esc(p.label)}</h5>
-                  ${p.scored ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-navy/10 text-navy">Pontuado</span>` : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Contextual</span>`}
-                </div>
-                <ol class="list-decimal list-inside space-y-1">
-                  ${(p.questions || []).map((q: string) => `<li class="text-[12px] text-[var(--text-secondary)] leading-relaxed">${esc(q)}</li>`).join('')}
-                </ol>
-              </div>
-            `).join('')}
-          </div>
-        </details>` : ''}
         ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">Agendar via link externo &rarr;</a>` : ''}
         <div class="space-y-4">
           <h4 class="text-sm font-bold text-navy">Agendar Entrevista</h4>
@@ -840,7 +862,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           </div>
           <button id="schedule-interview-btn" data-app-id="${esc(row.id)}" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Agendar</button>
         </div>
-        ${(row.status === 'interview_pending' || row.status === 'interview_scheduled') ? `
+        ${(row.status === 'interview_pending' || row.status === 'interview_scheduled' || row.status === 'interview_noshow') ? `
         <div class="space-y-3 mt-6 pt-4 border-t border-[var(--border-default)]">
           <div class="flex items-center gap-2">
             <h4 class="text-sm font-bold text-amber-700">Pedir Reagendamento</h4>
@@ -988,6 +1010,9 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     });
 
     modal.classList.remove('hidden');
+    // p109 Onda 4 Fase 4: a11y — sync aria-hidden + initial focus
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => (document.getElementById('modal-close') as HTMLButtonElement | null)?.focus(), 0);
   }
 
   /* ── p86 Wave 5b-3: Análises IA tab — ai_analysis_runs timeline ─── */
@@ -1351,17 +1376,371 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     }
   }
 
+  /* ── p109 Onda 4 Fase 1: inline AI panel helpers ──── */
+
+  // Map raises_the_bar verdict → badge color/label (mirrors loadAiAnalysisRuns)
+  const RAISES_BAR_COLORS: Record<string, string> = {
+    yes: 'bg-emerald-50 text-emerald-700 border border-emerald-300',
+    no: 'bg-red-50 text-red-700 border border-red-300',
+    uncertain: 'bg-amber-50 text-amber-700 border border-amber-300',
+  };
+  const RAISES_BAR_LABELS: Record<string, string> = {
+    yes: '⬆ ELEVA A BARRA',
+    no: '⬇ NÃO ELEVA',
+    uncertain: '◐ INCERTO',
+  };
+  const RAISES_BAR_LABELS_SHORT: Record<string, string> = {
+    yes: '⬆ ELEVA',
+    no: '⬇ NÃO',
+    uncertain: '◐ INCERTO',
+  };
+  const TRIAGE_CONFIDENCE_COLOR: Record<string, string> = {
+    high: 'text-emerald-700',
+    medium: 'text-amber-700',
+    low: 'text-red-700',
+  };
+
+  /**
+   * Render thumbs/override UI for an AI signal (Fase 2).
+   * purpose: 'sonnet_triage' | 'gemini_qualitative'
+   * existing: existing validation row (or null)
+   */
+  function renderValidationControls(applicationId: string, purpose: 'sonnet_triage' | 'gemini_qualitative', existing: any): string {
+    const action = existing?.validation_action;
+    const overrideScore = existing?.override_score;
+    const validatedAt = existing?.validated_at;
+
+    const agreeActive = action === 'agree' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-[var(--surface-card)] text-emerald-700 border-emerald-300 hover:bg-emerald-50';
+    const disagreeActive = action === 'disagree' ? 'bg-red-600 text-white border-red-700' : 'bg-[var(--surface-card)] text-red-700 border-red-300 hover:bg-red-50';
+    const overrideActive = action === 'override' ? 'bg-amber-600 text-white border-amber-700' : 'bg-[var(--surface-card)] text-amber-700 border-amber-300 hover:bg-amber-50';
+
+    let overrideInput = '';
+    if (purpose === 'sonnet_triage') {
+      overrideInput = `<input type="number" min="0" max="10" step="0.5" value="${overrideScore ?? ''}" placeholder="0-10"
+        data-validation-purpose="${purpose}" data-validation-app="${esc(applicationId)}"
+        class="ai-validation-override-input text-[11px] px-2 py-1 w-16 border border-amber-300 rounded ${action === 'override' ? '' : 'hidden'}" />`;
+    }
+
+    const stateLine = action
+      ? `<span class="text-[10px] text-[var(--text-muted)]">Sua: ${action === 'agree' ? '👍 Concordo' : action === 'disagree' ? '👎 Discordo' : `✏️ ${overrideScore}`} · ${validatedAt ? new Date(validatedAt).toLocaleString('pt-BR') : ''}</span>`
+      : `<span class="text-[10px] text-[var(--text-muted)] italic">Sem validação ainda</span>`;
+
+    return `<div class="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-[var(--border-subtle)]">
+      <button class="ai-validation-btn text-[11px] px-2 py-1 rounded font-semibold cursor-pointer border ${agreeActive}"
+        data-validation-purpose="${purpose}" data-validation-app="${esc(applicationId)}" data-validation-action="agree"
+        title="Concordo com este sinal AI">👍</button>
+      <button class="ai-validation-btn text-[11px] px-2 py-1 rounded font-semibold cursor-pointer border ${disagreeActive}"
+        data-validation-purpose="${purpose}" data-validation-app="${esc(applicationId)}" data-validation-action="disagree"
+        title="Discordo deste sinal AI">👎</button>
+      ${purpose === 'sonnet_triage' ? `<button class="ai-validation-btn text-[11px] px-2 py-1 rounded font-semibold cursor-pointer border ${overrideActive}"
+        data-validation-purpose="${purpose}" data-validation-app="${esc(applicationId)}" data-validation-action="override"
+        title="Override — meu próprio score">✏️ Override</button>${overrideInput}` : ''}
+      ${stateLine}
+    </div>`;
+  }
+
+  /**
+   * Render the inline AI panel (Pain #2 — sinais IA inline ao avaliar).
+   * Reads ai_triage_*, ai_analysis, last_briefing_* from the application object
+   * (extended in get_evaluation_form via migration 970000).
+   * Default collapsed; expand → 2 columns Sonnet/Gemini side by side.
+   * p109 Onda 4 Fase 2: thumbs/override controls (validations array from list_my_ai_validations).
+   */
+  function renderInlineAiPanel(app: any, validations: any[] = []): string {
+    const sonnetVal = validations.find((v: any) => v.ai_purpose === 'sonnet_triage') || null;
+    const geminiVal = validations.find((v: any) => v.ai_purpose === 'gemini_qualitative') || null;
+    const hasConsent = !!app.consent_ai_analysis_at;
+    const hasTriage = app.ai_triage_score !== null && app.ai_triage_score !== undefined;
+    const hasGemini = !!app.ai_analysis;
+    const hasBriefing = !!app.last_briefing_jsonb;
+
+    // Summary chips (collapsed view)
+    const sonnetChip = hasTriage
+      ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy" title="Sonnet 4.6 triage">S4.6: ${app.ai_triage_score}/10 <span class="${TRIAGE_CONFIDENCE_COLOR[app.ai_triage_confidence] || 'text-gray-600'}">(${app.ai_triage_confidence})</span></span>`
+      : (hasConsent
+          ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" title="Sonnet 4.6 não rodou ainda">S4.6: —</span>`
+          : '');
+    const verdict = app.ai_analysis?.raises_the_bar?.verdict;
+    const geminiChip = verdict
+      ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${RAISES_BAR_COLORS[verdict]}" title="Gemini raises_the_bar">G: ${RAISES_BAR_LABELS_SHORT[verdict]}</span>`
+      : (hasConsent && !hasGemini
+          ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">G: —</span>`
+          : '');
+
+    // No consent → minimal placeholder, no actions
+    if (!hasConsent) {
+      return `<div class="bg-[var(--surface-base)] rounded-xl p-3 mb-4 border border-[var(--border-default)]">
+        <div class="text-[12px] text-[var(--text-muted)] italic">🤖 Sinais IA indisponíveis — candidato não deu consent para análise (LGPD Art. 20 §1).</div>
+      </div>`;
+    }
+
+    // Sonnet 4.6 column body
+    let sonnetBlock: string;
+    if (hasTriage) {
+      sonnetBlock = `
+        <div class="flex items-baseline gap-2 mb-1.5">
+          <span class="text-[22px] font-extrabold text-navy">${app.ai_triage_score}</span>
+          <span class="text-[11px] text-[var(--text-muted)]">/10</span>
+          <span class="text-[10px] font-bold uppercase ${TRIAGE_CONFIDENCE_COLOR[app.ai_triage_confidence] || 'text-gray-600'}">${esc(app.ai_triage_confidence || '—')}</span>
+        </div>
+        <p class="text-[12px] text-[var(--text-primary)] leading-relaxed mb-2">${esc(app.ai_triage_reasoning || '—')}</p>
+        <div class="text-[10px] text-[var(--text-muted)]">${esc(app.ai_triage_model || 'sonnet-4-6')} · ${app.ai_triage_at ? new Date(app.ai_triage_at).toLocaleString('pt-BR') : '—'}</div>`;
+    } else {
+      sonnetBlock = `<p class="text-[11px] text-[var(--text-muted)] italic">Triage não rodou ainda. Clique para gerar score.</p>`;
+    }
+
+    // Gemini column body — uses snapshot from selection_applications.ai_analysis (most recent)
+    const aa = app.ai_analysis;
+    let geminiBlock: string;
+    if (aa) {
+      const verdictBadge = verdict
+        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${RAISES_BAR_COLORS[verdict]}">${RAISES_BAR_LABELS[verdict]}</span>`
+        : '';
+      const fitScore = aa.fit_for_role?.score ?? '—';
+      const seniority = aa.seniority_signal ?? '—';
+      const strengths = Array.isArray(aa.key_strengths) ? aa.key_strengths.slice(0, 3) : [];
+      const probes = Array.isArray(aa.areas_to_probe) ? aa.areas_to_probe.slice(0, 3) : [];
+      const reds = Array.isArray(aa.red_flags) ? aa.red_flags.slice(0, 3) : [];
+      geminiBlock = `
+        <div class="flex items-center gap-2 flex-wrap mb-1.5">
+          ${verdictBadge}
+          <span class="text-[10px] text-[var(--text-muted)]">Fit ${esc(String(fitScore))}/5 · ${esc(seniority)}</span>
+        </div>
+        ${aa.raises_the_bar?.rationale ? `<p class="text-[12px] text-[var(--text-primary)] leading-relaxed mb-2">${esc(aa.raises_the_bar.rationale)}</p>` : ''}
+        ${strengths.length ? `<div class="text-[11px] mb-0.5"><strong class="text-emerald-700">Forças:</strong> <span class="text-[var(--text-primary)]">${strengths.map((s: string) => esc(s)).join(' · ')}</span></div>` : ''}
+        ${probes.length ? `<div class="text-[11px] mb-0.5"><strong class="text-blue-700">Probar:</strong> <span class="text-[var(--text-primary)]">${probes.map((s: string) => esc(s)).join(' · ')}</span></div>` : ''}
+        ${reds.length ? `<div class="text-[11px] mb-0.5"><strong class="text-red-700">Red flags:</strong> <span class="text-[var(--text-primary)]">${reds.map((s: string) => esc(s)).join(' · ')}</span></div>` : ''}`;
+    } else {
+      geminiBlock = `<p class="text-[11px] text-[var(--text-muted)] italic">Análise Gemini ausente. Tab "Análises IA" vazio.</p>`;
+    }
+
+    // Triage action button (always shown when consent exists)
+    const triageBtnLabel = hasTriage ? '↻ Re-rodar Triage' : '▶ Rodar Triage Sonnet 4.6';
+    const triageBtnClass = hasTriage
+      ? 'text-[10px] px-2 py-1 rounded bg-[var(--surface-card)] text-navy font-semibold hover:bg-navy/10 cursor-pointer border border-navy/30'
+      : 'text-[10px] px-2 py-1 rounded bg-navy text-white font-semibold hover:opacity-90 cursor-pointer border-0';
+    const triageBtn = `<button class="run-triage-btn ${triageBtnClass}" data-app-id="${esc(app.id)}">${triageBtnLabel}</button>`;
+
+    // Briefing button + last_briefing note
+    const briefingBtnLabel = hasBriefing ? '↻ Regenerar briefing' : '📝 Gerar briefing entrevista (Haiku 4.5)';
+    const briefingBtnClass = hasBriefing
+      ? 'text-[12px] px-3 py-1.5 rounded-lg bg-[var(--surface-card)] text-purple-700 font-bold hover:bg-purple-50 cursor-pointer border border-purple-300'
+      : 'text-[12px] px-3 py-1.5 rounded-lg bg-purple-600 text-white font-bold hover:opacity-90 cursor-pointer border-0';
+    const briefingBtn = `<button id="generate-briefing-btn" class="${briefingBtnClass}" data-app-id="${esc(app.id)}">${briefingBtnLabel}</button>`;
+    const briefingNote = hasBriefing
+      ? `<span class="text-[10px] text-[var(--text-muted)]">Último em ${new Date(app.last_briefing_at).toLocaleString('pt-BR')} · ver tab Entrevista</span>`
+      : `<span class="text-[10px] text-[var(--text-muted)]">Briefing aparece na tab Entrevista</span>`;
+
+    // p109 Onda 4 Fase 2: validation thumbs/override controls per purpose
+    const sonnetValidationCtrl = hasTriage
+      ? renderValidationControls(app.id, 'sonnet_triage', sonnetVal)
+      : '';
+    const geminiValidationCtrl = hasGemini
+      ? renderValidationControls(app.id, 'gemini_qualitative', geminiVal)
+      : '';
+
+    return `<details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4" id="inline-ai-panel">
+      <summary class="px-4 py-2.5 cursor-pointer select-none flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[12px] font-bold text-navy">🤖 Sinais IA</span>
+          <span class="text-[10px] text-[var(--text-muted)]">— validar contra impressão</span>
+          ${sonnetChip}
+          ${geminiChip}
+        </div>
+        <span class="text-[10px] text-[var(--text-muted)]">expandir/recolher</span>
+      </summary>
+      <div class="px-4 pb-4 border-t border-[var(--border-subtle)] pt-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div class="bg-[var(--surface-base)] rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <h5 class="text-[12px] font-bold text-navy">Sonnet 4.6 · Triage</h5>
+              ${triageBtn}
+            </div>
+            ${sonnetBlock}
+            ${sonnetValidationCtrl}
+          </div>
+          <div class="bg-[var(--surface-base)] rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <h5 class="text-[12px] font-bold text-navy">Gemini · Qualitative</h5>
+              <button class="goto-ai-tab-btn text-[10px] text-purple-600 underline cursor-pointer bg-transparent border-0 p-0">Tab Análises IA →</button>
+            </div>
+            ${geminiBlock}
+            ${geminiValidationCtrl}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 items-center">
+          ${briefingBtn}
+          ${briefingNote}
+        </div>
+        <p class="text-[10px] text-[var(--text-muted)] italic mt-2">⚠️ Sinais IA são NON-BINDING (LGPD Art. 20 §1). Avaliação humana é autoritária.</p>
+      </div>
+    </details>`;
+  }
+
+  /**
+   * Trigger Sonnet 4.6 triage via pmi-ai-triage EF.
+   * Refreshes evaluation form on success to show new score.
+   */
+  async function triggerTriage(applicationId: string, btn: HTMLButtonElement | null) {
+    const oldText = btn?.textContent ?? '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Rodando…'; }
+    try {
+      const { data, error } = await sb.functions.invoke('pmi-ai-triage', {
+        body: { application_id: applicationId, triggered_by: 'admin_inline_panel' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error + (data.detail ? ` (${data.detail})` : ''));
+      if (!data?.success) throw new Error('Resposta inesperada do EF');
+      toast(`Triage gerado: ${data.score}/10 (${data.confidence})`);
+      loadEvaluationForm(applicationId);
+      loadDashboard();
+    } catch (e: any) {
+      toast(e.message || 'Erro ao rodar triage', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = oldText; }
+    }
+  }
+
+  /**
+   * Trigger Haiku 4.5 briefing via pmi-ai-briefing EF.
+   * Persists to last_briefing_jsonb. Auto-switches to interview tab on success.
+   */
+  async function triggerBriefing(applicationId: string, btn: HTMLButtonElement | null) {
+    const oldText = btn?.textContent ?? '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando…'; }
+    try {
+      const { data, error } = await sb.functions.invoke('pmi-ai-briefing', {
+        body: { application_id: applicationId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error + (data.detail ? ` (${data.detail})` : ''));
+      if (!data?.success) throw new Error('Resposta inesperada do EF');
+      toast('Briefing pronto — abrindo tab Entrevista');
+      // Auto-switch to interview tab (Opção C — briefing vive lá)
+      const modalBody = document.getElementById('modal-body');
+      const interviewBtn = modalBody?.querySelector('[data-modal-tab="interview"]') as HTMLButtonElement | null;
+      interviewBtn?.click();
+    } catch (e: any) {
+      toast(e.message || 'Erro ao gerar briefing', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = oldText; }
+    }
+  }
+
+  /**
+   * Render the briefing card for the interview tab.
+   * Reads last_briefing_jsonb from the application object (extended in get_evaluation_form).
+   * If no briefing yet → CTA to generate. If exists → expanded card with questions/focus/notes.
+   */
+  function renderBriefingCard(applicationId: string, app: any): string {
+    const briefing = app?.last_briefing_jsonb;
+    const generatedAt = app?.last_briefing_at;
+    const model = app?.last_briefing_model || 'claude-haiku-4-5';
+    const hasConsent = !!app?.consent_ai_analysis_at;
+
+    if (!briefing) {
+      // No briefing yet — placeholder + CTA (only if consent exists)
+      const cta = hasConsent
+        ? `<button class="briefing-generate-btn px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90" data-app-id="${esc(applicationId)}">📝 Gerar briefing entrevista (Haiku 4.5)</button>`
+        : `<span class="text-[11px] text-[var(--text-muted)] italic">Briefing AI indisponível — sem consent.</span>`;
+      return `<div class="bg-purple-50/40 border border-purple-200 rounded-xl p-3 mb-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h4 class="text-[12px] font-bold text-purple-700">📋 Briefing entrevista (Haiku 4.5)</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Gere 3 perguntas personalizadas + áreas de foco + notas de preparação. ~1-3s.</p>
+          </div>
+          ${cta}
+        </div>
+      </div>`;
+    }
+
+    // Briefing exists — render full card
+    const questions = Array.isArray(briefing.personalized_questions) ? briefing.personalized_questions : [];
+    const focusAreas = Array.isArray(briefing.interview_focus_areas) ? briefing.interview_focus_areas : [];
+    const prepNotes = briefing.preparation_notes || '';
+    const dateStr = generatedAt ? new Date(generatedAt).toLocaleString('pt-BR') : '—';
+
+    const questionsHtml = questions.map((q: any, i: number) => `
+      <div class="bg-[var(--surface-card)] rounded-lg p-3 border border-purple-100">
+        <div class="flex items-start gap-2">
+          <span class="text-[11px] font-bold text-purple-700 shrink-0">${i + 1}.</span>
+          <div class="flex-1">
+            <p class="text-[13px] font-semibold text-[var(--text-primary)] mb-1">${esc(q.question || '')}</p>
+            ${q.rationale ? `<p class="text-[11px] text-[var(--text-muted)] italic">→ ${esc(q.rationale)}</p>` : ''}
+          </div>
+        </div>
+      </div>`).join('');
+
+    const focusHtml = focusAreas.length
+      ? `<ul class="space-y-1 mt-2">${focusAreas.map((f: string) => `<li class="text-[12px] text-[var(--text-primary)] flex items-start gap-1.5"><span class="text-purple-700 shrink-0">▸</span><span>${esc(f)}</span></li>`).join('')}</ul>`
+      : '<p class="text-[11px] text-[var(--text-muted)] italic mt-1">—</p>';
+
+    return `<details open class="bg-purple-50/30 border border-purple-200 rounded-xl mb-3" id="briefing-card">
+      <summary class="px-4 py-2.5 cursor-pointer select-none flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="text-[12px] font-bold text-purple-700">📋 Briefing entrevista</span>
+          <span class="text-[10px] text-[var(--text-muted)]">${esc(model)} · ${dateStr}</span>
+        </div>
+        <div class="flex gap-2">
+          <button class="briefing-copy-btn text-[10px] px-2 py-1 rounded bg-[var(--surface-card)] text-purple-700 font-semibold hover:bg-purple-100 cursor-pointer border border-purple-300" data-app-id="${esc(applicationId)}" title="Copiar para clipboard">📋 Copiar</button>
+          <button class="briefing-regenerate-btn text-[10px] px-2 py-1 rounded bg-[var(--surface-card)] text-purple-700 font-semibold hover:bg-purple-100 cursor-pointer border border-purple-300" data-app-id="${esc(applicationId)}">↻ Regenerar</button>
+        </div>
+      </summary>
+      <div class="px-4 pb-4 border-t border-purple-200 pt-3 space-y-3">
+        ${prepNotes ? `<div><h5 class="text-[11px] font-bold text-purple-700 mb-1">Notas de preparação</h5><p class="text-[12px] text-[var(--text-primary)] bg-[var(--surface-card)] rounded p-2.5 leading-relaxed">${esc(prepNotes)}</p></div>` : ''}
+        <div>
+          <h5 class="text-[11px] font-bold text-purple-700 mb-1">Perguntas personalizadas (${questions.length})</h5>
+          <div class="space-y-2">${questionsHtml}</div>
+        </div>
+        <div>
+          <h5 class="text-[11px] font-bold text-purple-700 mb-1">Áreas de atenção (${focusAreas.length})</h5>
+          ${focusHtml}
+        </div>
+        <p class="text-[10px] text-[var(--text-muted)] italic">⚠️ Sugestão AI — ajuste conforme dinâmica real da entrevista.</p>
+      </div>
+    </details>`;
+  }
+
+  /**
+   * Wire up briefing card buttons (generate / regenerate / copy) in the interview tab.
+   */
+  function wireUpInterviewBriefing(container: Element, applicationId: string) {
+    container.querySelector('.briefing-generate-btn')?.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      triggerBriefing(applicationId, ev.currentTarget as HTMLButtonElement);
+    });
+    container.querySelector('.briefing-regenerate-btn')?.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      triggerBriefing(applicationId, ev.currentTarget as HTMLButtonElement);
+    });
+    container.querySelector('.briefing-copy-btn')?.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const card = container.querySelector('#briefing-card');
+      if (!card) return;
+      const text = (card as HTMLElement).innerText.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Briefing copiado');
+      } catch { toast('Erro ao copiar', 'error'); }
+    });
+  }
+
   /* ── evaluation form ──────────────────────────────── */
   async function loadEvaluationForm(applicationId: string) {
     const container = document.getElementById('eval-form-container');
     if (!container) return;
     container.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando...</p>';
     try {
-      const { data, error } = await sb.rpc('get_evaluation_form', {
-        p_application_id: applicationId, p_evaluation_type: 'objective',
-      });
-      if (error) throw error;
+      // p109 Onda 4 Fase 2: fetch validations in parallel for inline thumbs state
+      const [formRes, validationsRes] = await Promise.all([
+        sb.rpc('get_evaluation_form', { p_application_id: applicationId, p_evaluation_type: 'objective' }),
+        sb.rpc('list_my_ai_validations', { p_application_id: applicationId }),
+      ]);
+      if (formRes.error) throw formRes.error;
+      const data = formRes.data;
       if (!data) throw new Error('Sem dados');
+      const validations = Array.isArray(validationsRes?.data?.validations) ? validationsRes.data.validations : [];
 
       const criteria = data.criteria || [];
       const draft = data.draft;
@@ -1389,6 +1768,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           ${app.certifications ? `<div class="text-[10px] mb-1.5"><span class="font-bold text-[var(--text-secondary)]">Certificações:</span> ${esc(app.certifications)}</div>` : ''}
           ${contactLinks ? `<div class="flex gap-1.5 flex-wrap">${contactLinks}</div>` : ''}
         </div>`;
+
+      // p109 Onda 4 Fase 1: inline AI panel (Pain #2 — sinais IA inline ao avaliar).
+      // Fase 2: thumbs/override por purpose (sonnet_triage + gemini_qualitative).
+      const aiPanel = renderInlineAiPanel(app, validations);
 
       // Essay display
       const essayFields = [
@@ -1420,23 +1803,39 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       container.innerHTML = `
         <div class="space-y-4">
           ${contextPanel}
+          ${aiPanel}
           ${essaySection}
           ${isObserver ? '<div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 font-semibold">Modo observador — você pode ver as informações mas não pode pontuar.</div>' : ''}
           ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliação já submetida e bloqueada.</div>' : ''}
           ${!isObserver ? `<h4 class="text-sm font-bold text-navy">Avaliação Objetiva</h4>` : ''}
           ${!isObserver ? criteria.map((c: any) => {
             const cMax = c.max || 10;
-            const defaultVal = draft?.scores?.[c.key] ?? Math.round(cMax / 2);
+            const savedScore = draft?.scores?.[c.key];
+            const defaultVal = savedScore ?? Math.round(cMax / 2);
+            const submittedNote = draft?.criterion_notes?.[c.key] || '';
+            // p109 Onda 4 Fase 4 (FP-5): when locked, render value read-only (not disabled slider)
+            const valueDisplay = isLocked
+              ? `<div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  <span class="text-2xl font-extrabold text-emerald-700">${savedScore ?? '—'}</span>
+                  <span class="text-[11px] text-emerald-600 font-semibold">/ ${cMax} (lock)</span>
+                </div>`
+              : `<input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
+                  data-eval-key="${esc(c.key)}" aria-label="${esc(c.label)} score 0-${cMax}"
+                  class="w-full accent-navy" />`;
+            const noteDisplay = isLocked
+              ? (submittedNote
+                  ? `<div class="text-[12px] text-[var(--text-primary)] bg-emerald-50/40 border border-emerald-200 rounded-lg p-2 mt-1.5"><strong class="text-[10px] text-emerald-700 uppercase">Pré-nota</strong><br>${esc(submittedNote)}</div>`
+                  : '')
+              : `<textarea data-eval-note-key="${esc(c.key)}" aria-label="Pré-nota ${esc(c.label)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Pré-nota: justifique o score deste critério...">${esc(submittedNote)}</textarea>`;
             return `
             <div class="bg-[var(--surface-base)] rounded-xl p-3">
               <div class="flex items-center justify-between mb-1">
                 <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight}, 0-${cMax})</span></label>
-                <span class="eval-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${draft?.scores?.[c.key] ?? '—'}</span>
+                ${!isLocked ? `<span class="eval-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${savedScore ?? '—'}</span>` : ''}
               </div>
-              <input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
-                data-eval-key="${esc(c.key)}" ${!canScore ? 'disabled' : ''}
-                class="w-full accent-navy" />
+              ${valueDisplay}
               ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
+              ${noteDisplay}
             </div>`;
           }).join('') : ''}
           ${!isObserver ? `<textarea id="eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas privadas (só você vê)..." ${!canScore ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>` : ''}
@@ -1445,6 +1844,81 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <div id="leader-extra-container"></div>
         </div>
       `;
+
+      // p109 Onda 4 Fase 1: inline AI panel handlers
+      container.querySelector('.run-triage-btn')?.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        triggerTriage(applicationId, ev.currentTarget as HTMLButtonElement);
+      });
+      container.querySelector('#generate-briefing-btn')?.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        triggerBriefing(applicationId, ev.currentTarget as HTMLButtonElement);
+      });
+      container.querySelector('.goto-ai-tab-btn')?.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const modalBody = document.getElementById('modal-body');
+        const aiTabBtn = modalBody?.querySelector('[data-modal-tab="ai-runs"]') as HTMLButtonElement | null;
+        aiTabBtn?.click();
+      });
+
+      // p109 Onda 4 Fase 2: validation thumbs/override handlers
+      container.querySelectorAll<HTMLButtonElement>('.ai-validation-btn').forEach((btn) => {
+        btn.addEventListener('click', async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const purpose = btn.dataset.validationPurpose as 'sonnet_triage' | 'gemini_qualitative';
+          const action = btn.dataset.validationAction as 'agree' | 'disagree' | 'override';
+          if (!purpose || !action) return;
+
+          // For override action on sonnet_triage, require non-empty override input
+          let overrideScore: number | null = null;
+          if (action === 'override') {
+            const inp = container.querySelector(`.ai-validation-override-input[data-validation-purpose="${purpose}"]`) as HTMLInputElement | null;
+            if (inp) inp.classList.remove('hidden');
+            const v = inp?.value?.trim() ?? '';
+            if (v === '') {
+              inp?.focus();
+              toast('Digite o score (0-10) para override', 'error');
+              return;
+            }
+            const n = Number(v);
+            if (Number.isNaN(n) || n < 0 || n > 10) {
+              toast('Override score deve ser entre 0 e 10', 'error');
+              return;
+            }
+            overrideScore = n;
+          }
+
+          // Snapshot AI signal at validation time (from current app data)
+          const aiScore = purpose === 'sonnet_triage' ? (app.ai_triage_score ?? null) : null;
+          const aiVerdict = purpose === 'gemini_qualitative' ? (app.ai_analysis?.raises_the_bar?.verdict ?? null) : null;
+          const aiModel = purpose === 'sonnet_triage' ? (app.ai_triage_model ?? 'claude-sonnet-4-6') : 'gemini-2.5-flash';
+
+          btn.disabled = true;
+          try {
+            const { data, error } = await sb.rpc('record_ai_validation', {
+              p_application_id: applicationId,
+              p_ai_purpose: purpose,
+              p_validation_action: action,
+              p_ai_score: aiScore,
+              p_ai_verdict: aiVerdict,
+              p_ai_model: aiModel,
+              p_override_score: overrideScore,
+              p_comment: null,
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            toast(`Validação salva: ${action === 'agree' ? '👍 Concordo' : action === 'disagree' ? '👎 Discordo' : `✏️ Override ${overrideScore}`}`);
+            loadEvaluationForm(applicationId);  // refresh state
+          } catch (e: any) {
+            toast(e.message || 'Erro ao salvar validação', 'error');
+            btn.disabled = false;
+          }
+        });
+      });
 
       // Range slider live display
       container.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
@@ -1461,13 +1935,18 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         container.querySelectorAll<HTMLInputElement>('input[type="range"][data-eval-key]').forEach(slider => {
           if (slider.dataset.evalKey) scores[slider.dataset.evalKey] = parseInt(slider.value, 10);
         });
+        // p109 Onda 4 Fase 1.1: criterion_notes per pillar (mirrors interview tab pattern)
+        const criterionNotes: Record<string, string> = {};
+        container.querySelectorAll<HTMLTextAreaElement>('textarea[data-eval-note-key]').forEach(ta => {
+          if (ta.dataset.evalNoteKey && ta.value.trim()) criterionNotes[ta.dataset.evalNoteKey] = ta.value.trim();
+        });
         const notes = (container.querySelector('#eval-notes') as HTMLTextAreaElement)?.value || '';
         const btn = container.querySelector('#submit-evaluation-btn') as HTMLButtonElement;
         if (btn) { btn.disabled = true; btn.textContent = 'Submetendo...'; }
         try {
           const { data: result, error } = await sb.rpc('submit_evaluation', {
             p_application_id: applicationId, p_evaluation_type: 'objective',
-            p_scores: scores, p_notes: notes,
+            p_scores: scores, p_notes: notes, p_criterion_notes: criterionNotes,
           });
           if (error) throw error;
           toast(result?.all_submitted ? `Avaliacao submetida — PERT: ${result.pert_score}` : 'Avaliacao submetida');
@@ -1523,6 +2002,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                 data-leader-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
                 class="w-full accent-purple-600" />
               <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
+              <textarea data-leader-note-key="${esc(c.key)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Pré-nota: justifique este critério de liderança..." ${isLocked ? 'disabled' : ''}>${esc(draft?.criterion_notes?.[c.key] || '')}</textarea>
             </div>
           `).join('')}
           <textarea id="leader-eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas sobre lideranca..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
@@ -1545,13 +2025,18 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         leaderContainer.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
           if (slider.dataset.leaderKey) scores[slider.dataset.leaderKey] = parseInt(slider.value, 10);
         });
+        // p109 Onda 4 Fase 1.1: criterion_notes per pillar (leader_extra)
+        const criterionNotes: Record<string, string> = {};
+        leaderContainer.querySelectorAll<HTMLTextAreaElement>('textarea[data-leader-note-key]').forEach(ta => {
+          if (ta.dataset.leaderNoteKey && ta.value.trim()) criterionNotes[ta.dataset.leaderNoteKey] = ta.value.trim();
+        });
         const notes = (leaderContainer.querySelector('#leader-eval-notes') as HTMLTextAreaElement)?.value || '';
         const btn = leaderContainer.querySelector('#submit-leader-eval-btn') as HTMLButtonElement;
         if (btn) { btn.disabled = true; btn.textContent = 'Submetendo...'; }
         try {
           const { data: result, error } = await sb.rpc('submit_evaluation', {
             p_application_id: applicationId, p_evaluation_type: 'leader_extra',
-            p_scores: scores, p_notes: notes,
+            p_scores: scores, p_notes: notes, p_criterion_notes: criterionNotes,
           });
           if (error) throw error;
           toast('Avaliacao de lideranca submetida');
@@ -1976,33 +2461,105 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     }
   }
 
-  /* ── interview scoring form ──────────────────────── */
+  /* ── interview scoring form (p109 Onda 4 Fase 1.4: unificado + briefing topo) ── */
   async function loadInterviewForm(row: any) {
     const container = document.getElementById('modal-tab-interview');
     if (!container) return;
 
-    // Keep existing scheduling section, append interview scoring below
+    // p109 Onda 4 Fase 1.4: scoringDiv PREPENDED so briefing card + scoring stay above
+    // the static Agendar/Reschedule forms. Roteiro+Pilares unificados aqui (não mais estático).
     let scoringDiv = container.querySelector('#interview-scoring-section');
     if (scoringDiv) scoringDiv.remove();
 
     scoringDiv = document.createElement('div');
     scoringDiv.id = 'interview-scoring-section';
-    scoringDiv.className = 'space-y-4 mt-4 border-t border-[var(--border-default)] pt-4';
+    scoringDiv.className = 'space-y-4 mb-4';
     scoringDiv.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando entrevista...</p>';
-    container.appendChild(scoringDiv);
+    container.prepend(scoringDiv);
 
     try {
-      const { data: interviewsRaw } = await sb.rpc('get_application_interviews', { p_application_id: row.id });
-      const interviews = Array.isArray(interviewsRaw) ? interviewsRaw : [];
+      // p109 Onda 4 Fase 1: fetch interviews + form data (form gives last_briefing_*) in parallel.
+      // form data is needed regardless of interview status to render briefing card.
+      const [interviewsRes, formRes] = await Promise.all([
+        sb.rpc('get_application_interviews', { p_application_id: row.id }),
+        sb.rpc('get_evaluation_form', { p_application_id: row.id, p_evaluation_type: 'interview' }),
+      ]);
+      const interviews = Array.isArray(interviewsRes?.data) ? interviewsRes.data : [];
+      const formData = formRes?.error ? null : formRes?.data;
+      const formApp = formData?.application || {};
+
+      // p109 Onda 4 Fase 1: briefing card (Opção C — vive na tab Entrevista).
+      // Renders persisted last_briefing_jsonb. PM clica "Regenerar" para nova chamada Haiku.
+      let html = renderBriefingCard(row.id, formApp);
+
+      // p109 Onda 4 Fase 1.4: Perguntas contextuais (pilares scored=false, ex: Background).
+      // Não pontuadas — só roteiro para o entrevistador. Collapsible.
+      const allPillars = (currentCycle?.interview_questions || []) as any[];
+      const contextualPillars = allPillars.filter((p: any) => !p.scored);
+      const scoredPillars = allPillars.filter((p: any) => p.scored);
+      if (contextualPillars.length) {
+        html += `<details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4">
+          <summary class="px-4 py-2.5 text-[13px] font-bold text-navy cursor-pointer select-none">📋 Perguntas contextuais (não pontuadas) · ${contextualPillars.length} pilar${contextualPillars.length > 1 ? 'es' : ''}</summary>
+          <div class="px-4 pb-3 space-y-3 pt-2">
+            ${contextualPillars.map((p: any) => `
+              <div class="bg-[var(--surface-base)] rounded-lg p-3">
+                <h5 class="text-[12px] font-bold text-[var(--text-primary)] mb-1.5">${esc(p.label)}</h5>
+                <ol class="list-decimal list-inside space-y-1">
+                  ${(p.questions || []).map((q: string) => `<li class="text-[12px] text-[var(--text-secondary)] leading-relaxed">${esc(q)}</li>`).join('')}
+                </ol>
+              </div>
+            `).join('')}
+          </div>
+        </details>`;
+      }
 
       if (!interviews?.length) {
-        scoringDiv.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Nenhuma entrevista agendada.</p>';
+        // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
+        // está em status que permite entrevista (interview_pending+). Cria row com now+30min
+        // e re-renderiza para exibir o scoring form.
+        const canStartLive = ['interview_pending', 'interview_scheduled', 'interview_done'].includes(row.status)
+          || formData?.application?.status === 'interview_pending';
+        if (canStartLive) {
+          html += `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
+            <p class="text-sm text-amber-800 font-semibold mb-2">Sem entrevista agendada</p>
+            <p class="text-[12px] text-amber-700 mb-3">Para pontuar a entrevista (objetiva ou live), crie o registro abaixo. Cria com horário atual + 30min como duração — você pode ajustar depois.</p>
+            <button id="start-live-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">▶ Iniciar avaliação ao vivo</button>
+          </div>`;
+        } else {
+          html += '<p class="text-sm text-[var(--text-muted)] mt-4">Nenhuma entrevista agendada ainda.</p>';
+        }
+        scoringDiv.innerHTML = html;
+        wireUpInterviewBriefing(scoringDiv, row.id);
+        // Wire up live start button (creates interview row + reloads tab)
+        scoringDiv.querySelector('#start-live-interview-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          btn.disabled = true; btn.textContent = '⏳ Criando…';
+          try {
+            // p109 Onda 4 Fase 1 fix: bypass_gate=true para entrevista live (admin emergency path).
+            // Logado em gate_attempts (audit trail) — PM justifica gate-skip pelo modo live.
+            const { data, error } = await sb.rpc('schedule_interview', {
+              p_application_id: row.id,
+              p_interviewer_ids: [MEMBER.id],
+              p_scheduled_at: new Date().toISOString(),
+              p_duration_minutes: 30,
+              p_bypass_gate: true,
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            toast('Entrevista iniciada (gate bypass) — formulário disponível');
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || 'Erro ao iniciar entrevista', 'error');
+            btn.disabled = false; btn.textContent = '▶ Iniciar avaliação ao vivo';
+          }
+        });
         return;
       }
 
       const interview = interviews[0];
       const statusLabel = STATUS_LABELS[`interview_${interview.status}`] || interview.status;
-      let html = `<div class="bg-[var(--surface-base)] rounded-xl p-3 mb-3">
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 mb-3 mt-4">
         <div class="flex items-center justify-between">
           <span class="text-[12px] font-bold text-[var(--text-secondary)]">Entrevista: ${esc(statusLabel)}</span>
           <span class="text-[11px] text-[var(--text-muted)]">${interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleString('pt-BR') : '—'}</span>
@@ -2017,13 +2574,13 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         </div>`;
       }
 
-      // Gap 2: Interview scoring form
-      if (interview.status === 'scheduled' || interview.status === 'completed') {
+      // Gap 2: Interview scoring form (uses already-fetched formData)
+      // p109 Onda 4 Fase 1.4: UNIFICADO — cada critério renderiza com as perguntas
+      // do pilar correspondente (match por criterion_key === c.key) acima do slider.
+      // Roteiro+Pilares deixaram de ser blocos separados.
+      if ((interview.status === 'scheduled' || interview.status === 'completed') && formData) {
         try {
-          const { data: formData, error: formError } = await sb.rpc('get_evaluation_form', {
-            p_application_id: row.id, p_evaluation_type: 'interview',
-          });
-          if (!formError && formData) {
+          if (formData) {
             const criteria = formData.criteria || [];
             const draft = formData.draft;
             const isLocked = formData.is_locked;
@@ -2034,18 +2591,42 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
             }
             html += criteria.map((c: any) => {
               const cMax = c.max || 10;
-              const defaultVal = draft?.scores?.[c.key] ?? Math.round(cMax / 2);
+              const savedScore = draft?.scores?.[c.key];
+              const defaultVal = savedScore ?? Math.round(cMax / 2);
+              const submittedNote = draft?.criterion_notes?.[c.key] || '';
+              const matchedPillar = scoredPillars.find((p: any) => p.criterion_key === c.key);
+              const questionsBlock = matchedPillar && Array.isArray(matchedPillar.questions) && matchedPillar.questions.length
+                ? `<div class="bg-navy/5 border-l-4 border-navy rounded-r p-2.5 mb-2">
+                    <p class="text-[10px] font-bold text-navy uppercase mb-1">Roteiro de perguntas</p>
+                    <ol class="list-decimal list-inside space-y-1">
+                      ${matchedPillar.questions.map((q: string) => `<li class="text-[12px] text-[var(--text-primary)] leading-relaxed">${esc(q)}</li>`).join('')}
+                    </ol>
+                  </div>`
+                : '';
+              // p109 Onda 4 Fase 4 (FP-5): when locked, render value read-only
+              const valueDisplay = isLocked
+                ? `<div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-2">
+                    <span class="text-2xl font-extrabold text-emerald-700">${savedScore ?? '—'}</span>
+                    <span class="text-[11px] text-emerald-600 font-semibold">/ ${cMax} (lock)</span>
+                  </div>`
+                : `<input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
+                    data-intv-key="${esc(c.key)}" aria-label="${esc(c.label)} score 0-${cMax}"
+                    class="w-full accent-navy" />`;
+              const noteDisplay = isLocked
+                ? (submittedNote
+                    ? `<div class="text-[12px] text-[var(--text-primary)] bg-emerald-50/40 border border-emerald-200 rounded-lg p-2 mt-1.5"><strong class="text-[10px] text-emerald-700 uppercase">Pré-nota</strong><br>${esc(submittedNote)}</div>`
+                    : '')
+                : `<textarea data-intv-note-key="${esc(c.key)}" aria-label="Pré-nota ${esc(c.label)}" class="w-full mt-1.5 px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-12 resize-none" placeholder="Pré-nota: justifique o score deste pilar...">${esc(submittedNote)}</textarea>`;
               return `
               <div class="bg-[var(--surface-base)] rounded-xl p-3">
-                <div class="flex items-center justify-between mb-1">
-                  <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight}, 0-${cMax})</span></label>
-                  <span class="intv-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${draft?.scores?.[c.key] ?? '—'}</span>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-[13px] font-bold text-navy">${esc(c.label)} <span class="text-[var(--text-muted)] text-[11px] font-normal">(peso ${c.weight}, 0-${cMax})</span></label>
+                  ${!isLocked ? `<span class="intv-score-display text-base font-bold text-navy" data-key="${esc(c.key)}">${savedScore ?? '—'}</span>` : ''}
                 </div>
-                <input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
-                  data-intv-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
-                  class="w-full accent-navy" />
+                ${questionsBlock}
+                ${valueDisplay}
                 ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
-                <textarea data-intv-note-key="${esc(c.key)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Notas sobre ${esc(c.label)}..." ${isLocked ? 'disabled' : ''}>${esc(draft?.criterion_notes?.[c.key] || '')}</textarea>
+                ${noteDisplay}
               </div>`;
             }).join('');
 
@@ -2059,6 +2640,9 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       }
 
       scoringDiv.innerHTML = html;
+
+      // p109 Onda 4 Fase 1: wire up briefing card handlers (generate/regenerate/copy)
+      wireUpInterviewBriefing(scoringDiv, row.id);
 
       // Wire up slider live display
       scoringDiv.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
@@ -2334,6 +2918,33 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     document.getElementById('sel-chapter')?.addEventListener('change', (e) => { filterChapter = (e.target as HTMLSelectElement).value; applyFilters(); });
     document.getElementById('sel-status')?.addEventListener('change', (e) => { filterStatus = (e.target as HTMLSelectElement).value; applyFilters(); });
 
+    // p109 Onda 4 Fase 3: quick filters (hideDecided + myEval)
+    document.getElementById('filter-hide-decided')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterHideDecided = !filterHideDecided;
+      btn.dataset.active = filterHideDecided ? 'true' : 'false';
+      btn.classList.toggle('bg-navy/10', filterHideDecided);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterHideDecided);
+      btn.classList.toggle('text-navy', filterHideDecided);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterHideDecided);
+      btn.textContent = filterHideDecided ? '👁 Ocultar decididos' : '👁‍🗨 Mostrar decididos';
+      applyFilters();
+    });
+
+    document.getElementById('filter-myeval-toggle')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('.filter-myeval-btn');
+      if (!btn) return;
+      filterMyEval = (btn.dataset.myeval || 'all') as 'all' | 'pending_mine' | 'evaluated_mine';
+      document.querySelectorAll('.filter-myeval-btn').forEach((b) => {
+        const isActive = (b as HTMLElement).dataset.myeval === filterMyEval;
+        b.classList.toggle('bg-navy', isActive);
+        b.classList.toggle('text-white', isActive);
+        b.classList.toggle('bg-[var(--surface-card)]', !isActive);
+        b.classList.toggle('text-[var(--text-secondary)]', !isActive);
+      });
+      applyFilters();
+    });
+
     // Search
     document.getElementById('sel-search')?.addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
@@ -2438,12 +3049,22 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       addEssayMappingRow(container, nextIdx, 'motivation_letter');
     });
 
-    // Modal close
-    document.getElementById('modal-close')?.addEventListener('click', () => {
-      document.getElementById('applicant-modal')?.classList.add('hidden');
-    });
+    // Modal close (p109 Onda 4 Fase 4: a11y aria-hidden sync + Escape key)
+    function closeApplicantModal() {
+      const m = document.getElementById('applicant-modal');
+      if (!m || m.classList.contains('hidden')) return;
+      m.classList.add('hidden');
+      m.setAttribute('aria-hidden', 'true');
+    }
+    document.getElementById('modal-close')?.addEventListener('click', closeApplicantModal);
     document.getElementById('applicant-modal')?.addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) (e.target as HTMLElement).classList.add('hidden');
+      if (e.target === e.currentTarget) closeApplicantModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const m = document.getElementById('applicant-modal');
+        if (m && !m.classList.contains('hidden')) closeApplicantModal();
+      }
     });
 
     // CSV file input
