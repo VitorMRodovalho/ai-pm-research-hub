@@ -170,8 +170,10 @@ test('migration adds profile_completed_at to members', () => {
 test('ImpactPageIsland has lead capture form', () => {
   const content = readFile('src/components/islands/ImpactPageIsland.tsx');
   assert.ok(content.includes('LeadCaptureForm'), 'Must include LeadCaptureForm component');
-  assert.ok(content.includes('visitor_leads'), 'Must insert into visitor_leads table');
+  // ARM-1 (ADR-0072): migrated from direct visitor_leads.insert() to capture_visitor_lead RPC
+  assert.ok(content.includes('capture_visitor_lead'), 'Must call capture_visitor_lead RPC');
   assert.ok(content.includes('lgpd_consent'), 'Must include lgpd_consent field');
+  assert.ok(content.includes('utm_'), 'Must capture UTM params from URL');
 });
 
 test('lead form has LGPD consent checkbox', () => {
