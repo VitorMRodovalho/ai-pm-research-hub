@@ -1633,8 +1633,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // fork_idea_to_channel — W3.1: auto-scaffold blog draft when channel='blog' AND stage IN (approved, published)
-  mcp.tool("fork_idea_to_channel", "Registra intenção de fork de idea para canal. Adiciona ao proposed_channels[]. W3.1 (blog channel): auto-cria blog_posts draft com source_idea_id linked se idea status IN (approved, published). Idempotent — retorna existing se já criado. W3.2/W3.3 (newsletter, comms_media) deferred.", {
+  // fork_idea_to_channel — W3.1+W3.2: auto-scaffold blog (channel='blog') OR newsletter campaign_template (channel='newsletter'|'email')
+  mcp.tool("fork_idea_to_channel", "Registra intenção de fork de idea para canal + auto-scaffold downstream row se idea status IN (approved, published). Channels: 'blog'/'blog_post' → cria blog_posts draft; 'newsletter'/'email' → cria campaign_templates draft (category=newsletter). Idempotent. Multi-channel: mesma idea pode forkar para blog AND newsletter simultaneamente. W3.3 social/comms_media deferred.", {
     idea_id: z.string().describe("UUID da idea"),
     channel: z.string().describe("Canal alvo (ex: blog, newsletter, linkedin, medium, dev_to, pmi_org, pm_com, youtube, podcast)"),
     payload_hint: z.record(z.string(), z.any()).optional().describe("Sugestões de payload (ex: campaign_template_id, blog_post category) para W3")
@@ -5712,7 +5712,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.61.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.62.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5732,6 +5732,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.61.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.62.0", tools: 265, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
