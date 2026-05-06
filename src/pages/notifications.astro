@@ -56,6 +56,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     review_requested: '\u{1F50D}', review_completed: '\u2705', curation_approved: '\u{1F389}',
     curation_revision: '\u{1F4DD}', sla_warning: '\u23F0', attendance_reminder: '\u{1F4CD}',
     inactivity_alert: '\u26A0\uFE0F', kpi_milestone: '\u{1F3AF}', publication_published: '\u{1F4F0}',
+    // ARM-9 re-engagement (p108) + ARM-9 G3 cert + G4 inactivity alias
+    re_engagement_invitation: '\u{1F91D}', re_engagement_accepted: '\u2705', re_engagement_declined: '\u274C',
+    arm9_inactivity_alert: '\u26A0\uFE0F', certificate_issued: '\u{1F393}',
   };
 
   function timeAgo(dateStr: string): string {
