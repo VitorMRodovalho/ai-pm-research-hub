@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-56%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
+[![MCP](https://img.shields.io/badge/MCP-266%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -38,15 +38,15 @@ Fundado en 2024 como piloto en PMI Goias, el proyecto evoluciono hacia una alian
 
 | Indicador | Valor |
 |-----------|-------|
-| Investigadores activos (Ciclo 3) | 50 |
+| Investigadores activos (Ciclo 3) | 52 |
 | Lineas de investigacion (Tribos) | 7 |
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
-| Entradas de gobernanza | 135+ |
+| Entradas de gobernanza | 160+ |
 | Posts en el blog | 9 |
-| Herramientas MCP | 64 (51 lectura · 13 escritura) |
-| Edge Functions | 20 |
-| Claves i18n | 3.735+ (3 idiomas) |
-| Tests | 779 |
+| Herramientas MCP | 266 |
+| Edge Functions | 32 |
+| Claves i18n | 4.000+ (3 idiomas) |
+| Tests | 1.418 pasando (1.456 con service-role) |
 | Costo mensual | $0 |
 
 ---
@@ -109,7 +109,7 @@ graph LR
 | **Base de Datos** | Supabase PostgreSQL | 189+ funciones SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
 | **MCP** | Servidor personalizado (64 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
-| **Logica Server** | Supabase Edge Functions (20) | Sync Credly, asistencia, MCP, campañas, PostHog proxy |
+| **Logica Server** | Supabase Edge Functions (32) | Sync Credly, asistencia, MCP, campañas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de producto, session replay |
 | **Errores** | Sentry | Monitoreo de errores en tiempo real |
 | **Cron** | pg_cron (4 jobs) | Sync Credly, asistencia, alertas detractores, recordatorios |
@@ -227,9 +227,9 @@ npm test
 │   ├── lib/            # Cliente Supabase, auth, utilitarios
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 20 Edge Functions
+│   ├── functions/      # 32 Edge Functions
 │   └── migrations/     # Migraciones de base de datos
-├── tests/              # 779 tests pasando
+├── tests/              # 1.418 tests pasando
 ├── docs/               # Gobernanza, guias, specs
 └── scripts/            # Scripts de auditoria y utilitarios
 ```
