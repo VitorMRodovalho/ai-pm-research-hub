@@ -272,6 +272,73 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // ── Backfill-initiatives mode (Phase C.5): create activity per active initiative in folder 03 Execução ──
+    if (mode === 'backfill-initiatives') {
+      const FOLDER_EXECUCAO = 6399648 // 03 - Execução (Núcleo)
+      const dryRun = url.searchParams.get('dry_run') !== 'false'
+      const token = await getArtiaToken()
+      const result: any = { created: [], skipped: [], errors: [] }
+
+      // Query active initiatives without artia_activity_id yet
+      const { data: initiatives } = await sb.from('initiatives')
+        .select('id, title, description, kind, status')
+        .eq('status', 'active')
+        .is('artia_activity_id', null)
+        .order('kind').order('title')
+
+      if (dryRun) {
+        return new Response(JSON.stringify({
+          mode: 'backfill-initiatives',
+          dry_run: true,
+          target_folder: FOLDER_EXECUCAO,
+          initiatives_to_create: (initiatives || []).length,
+          plan: (initiatives || []).map((i: any) => ({
+            id: i.id, title: i.title, kind: i.kind,
+            artia_target_folder: FOLDER_EXECUCAO,
+          })),
+        }, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const escapeStr = (s: string) => (s || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ').slice(0, 4500)
+
+      for (const init of initiatives || []) {
+        const kindLabel: Record<string, string> = {
+          research_tribe: 'Tribo de Pesquisa M.O.R.E.',
+          workgroup: 'Frente Operacional',
+          committee: 'Comitê',
+          congress: 'Submissão Externa',
+          study_group: 'Grupo de Estudos',
+        }
+        const title = `[${kindLabel[init.kind] || init.kind}] ${init.title}`
+        const desc = `${kindLabel[init.kind] || init.kind} ativa no Ciclo 3 (2026.1). ${init.description ? init.description.slice(0, 1500) : 'Iniciativa registrada na plataforma.'} \n\nFonte: nucleoia.vitormr.dev/initiatives. ID plataforma: ${init.id}.`
+        const createQuery = `mutation { createActivity(title: "${escapeStr(title)}", folderId: ${FOLDER_EXECUCAO}, accountId: ${ARTIA_ACCOUNT_ID}, responsibleId: ${ARTIA_RESPONSIBLE_ID}, description: "${escapeStr(desc)}", completedPercent: 50, customStatusId: ${ARTIA_STATUS.ANDAMENTO}) { id title } }`
+        try {
+          const cRes = await fetch(ARTIA_GQL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ query: createQuery }),
+          })
+          const cData = await cRes.json()
+          if (cData?.errors) {
+            result.errors.push({ initiative_id: init.id, title: init.title, errors: cData.errors })
+          } else {
+            const actId = parseInt(cData?.data?.createActivity?.id)
+            // Persist back to platform
+            await sb.from('initiatives')
+              .update({ artia_activity_id: actId, artia_folder_id: FOLDER_EXECUCAO, artia_synced_at: new Date().toISOString() })
+              .eq('id', init.id)
+            result.created.push({ initiative_id: init.id, title: init.title, kind: init.kind, activity_id: actId })
+          }
+        } catch (e) {
+          result.errors.push({ initiative_id: init.id, exception: (e as Error).message })
+        }
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      return new Response(JSON.stringify({ mode: 'backfill-initiatives', dry_run: false, result }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // ── Backfill-risk-ids mode (Phase C.3 prep): map 11 risk activities (folder 6516562) → program_risks.artia_activity_id ──
     if (mode === 'backfill-risk-ids') {
       const RISKS_FOLDER_ID = 6516562
