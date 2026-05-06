@@ -396,4 +396,69 @@ Total Features: 7-10h. Standalone session recomendada.
 
 ARM média ponderada: ≈ 2.25 (pós Onda 1+2+P1) → ≈ 2.30 (pós Foundation ARM-9). Ainda longe de target 3.0; ARM-1 (Captação maturidade 1) e ARM-5 (Interview maturidade 1) ainda dominam o cap.
 
+---
+
+## Onda 5 ARM-9 Features — Completion Report (2026-05-06 sessão p108 cont.)
+
+**Status: G2 + G3 + G4 + Post-G2 shipped. ARM-9 completo. ADR-0071 amended.**
+
+PM ratificou continuação na mesma sessão p108 com "tudo na recomendação". 4 migrations adicionais aplicadas.
+
+### Entregáveis
+
+| # | Item | Migration |
+|---|------|-----------|
+| G2.1 | ENUM `re_engagement_state` + tabela `re_engagement_pipeline` com state consistency CHECK + partial unique index | `20260516850000` |
+| G2.2 | 5 RPCs: stage/list/invite/respond/cancel + trigger `trg_auto_stage_alumni_on_cycle_open` | `20260516850000` |
+| G3 | `certificates.type='alumni_recognition'` + auto-emit em `admin_offboard_member` (graceful degradation) | `20260516860000` |
+| G4 | `site_config.inactivity_threshold_days=180` + `detect_inactive_members` RPC + cron weekly | `20260516870000` |
+| Post-G2 | `validate_status_transition` BLOCKS alumni→active + `admin_reactivate_member` guard (requires accepted pipeline entry) | `20260516880000` |
+
+### Workflow completo alumni (full lifecycle)
+
+```
+saída amigável → alumni status (G3 auto badge)
+       ↓ ciclo novo abre OU admin manual
+staged → invited (notif + email) → accepted | declined
+       ↓ accepted
+admin_reactivate_member (guard: accepted pipeline) → active
+```
+
+### Estado pós-Features ARM-9
+
+- 5 migrations ARM-9 totais (`20260516840000` → `20260516880000`)
+- Invariants 13/13 = 0 violations (no regressions)
+- 4 novas operações: stage, invite, respond, cancel + 1 cron + 1 trigger
+- Tracker em `re_engagement_pipeline` (RLS rpc-only) com state machine enforced via CHECK
+- Alumni badge automático em offboard amigável (`preserves_return_eligibility=true`)
+- Inactivity detection weekly com manager-in-the-loop (não auto-transitiona)
+
+### ARM-9 maturidade final
+
+| Phase | Maturidade | Ship |
+|-------|------------|------|
+| Pré-p108 (reportado) | 1 | — |
+| Pós-audit profundo | 2.5 | — |
+| Pós-Foundation | 2.7 | p108 (Foundation) |
+| Pós-Features | **3.5** | p108 (Features) |
+
+### ARM media plataforma final p108
+
+≈ 2.25 → ≈ 2.30 (Foundation) → **≈ 2.40** (Features). ARM-9 entrega +0.15 isolado.
+
+Maturidades remanescentes em 1 ou 1.x:
+- **ARM-1 Captação** (próxima sessão p109 conforme plano ABCD)
+- **ARM-5 Interview** (depende #92/#116 Calendar — bloqueado)
+
+### Pendentes (não-bloqueantes pós-Features ARM-9)
+
+1. **MCP exposure** 5 RPCs novos (admin) + 1 alumni-self via nucleo-mcp. Esforço ~30min em sessão futura.
+2. **Frontend UI** alumni `/me/re-engagement/[id]` + admin `/admin/members?filter=inactive_candidates`. Defer para Onda 4 browser session.
+3. **i18n** novos notification types em 3 idiomas. Defer para próxima frontend session.
+
+### Próxima sessão (p109) conforme plano ABCD
+
+- **B) ARM-1 Captação deep dive** — landing `/volunteer` + interest form pré-cycle + UTM dashboard
+
+
 
