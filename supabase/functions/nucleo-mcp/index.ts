@@ -1,5 +1,6 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.65.0 — 267 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.66.0 — 268 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.66.0: +1 ARM P1 calibration observability — get_evaluator_calibration_stats.
 // v2.65.0: +1 ARM Onda 2.4 health observability — get_selection_health (Pattern 43 saturation).
 // v2.64.0: +1 partnership orchestrator wrapping #97 W3 G4 — create_external_speaker_engagement.
 //   Atomic Partnership→Initiative tree: initiative (origin_partner_entity_id per G1) +
@@ -3558,6 +3559,20 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_evaluator_calibration_stats — admin/comitê calibração observability (ARM P1 post-Onda 2 — p107)
+  mcp.tool("get_evaluator_calibration_stats", "Returns evaluator calibration metrics for a selection cycle: cycle_summary (total_applications, total_evaluators, overall_mean, overall_stddev), per_evaluator (bias_signed/abs vs overall_mean, stddev, anomaly_count from selection_evaluation_anomalies), pair_divergence (top 5 evaluator pairs with largest mean diff in shared applications). Useful for calibration sessions pre-final-decision or between cycles. Authority: view_internal_analytics. Optional cycle_code arg (defaults to most recent cycle).", {
+    cycle_code: z.string().optional().describe("Optional cycle code (e.g. 'C03'). Defaults to most recent cycle.")
+  }, async (params: { cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_evaluator_calibration_stats", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_evaluator_calibration_stats", { p_cycle_code: params.cycle_code ?? null });
+    if (error) { await logUsage(sb, member.id, "get_evaluator_calibration_stats", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_evaluator_calibration_stats", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_evaluator_calibration_stats", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_weekly_member_digest — preview/inspect a member's pending weekly digest
   mcp.tool("get_weekly_member_digest", "Returns the weekly digest payload for a member: 7 sections (cards, engagements, events, publications, broadcasts, governance, achievements) + consumed_notification_ids. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.", {
     member_id: z.string().describe("Member UUID")
@@ -5787,7 +5802,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.65.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.66.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5807,6 +5822,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.65.0", tools: 267, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.66.0", tools: 268, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
