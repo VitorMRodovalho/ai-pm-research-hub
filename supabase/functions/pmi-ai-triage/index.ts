@@ -29,8 +29,17 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 const json = (d: unknown, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json" } });
+  new Response(JSON.stringify(d), {
+    status: s,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
 
 // Cached rubric — load-bearing for prompt cache (~5K tokens, identical across all calls in window)
 const TRIAGE_RUBRIC = `# Rubrica de Triage — Núcleo IA & GP do PMI Brasil
@@ -198,6 +207,7 @@ async function callAnthropicTriage(userPrompt: string): Promise<AnthropicRespons
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   const ah = req.headers.get("Authorization") ?? "";
@@ -212,7 +222,29 @@ Deno.serve(async (req) => {
       }
     } catch { /* not JWT */ }
   }
-  if (!isServiceRole) return json({ error: "service_role only" }, 401);
+
+  // p109 Onda 4 Fase 1: accept user JWT with manage_member permission (admin/GP).
+  // Pattern mirrors MCP analyze_application tool — same auth gate for cron + admin invocation.
+  let callerMemberId: string | null = null;
+  if (!isServiceRole) {
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    if (!SUPABASE_ANON_KEY) return json({ error: "anon_key_missing" }, 503);
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: ah } },
+    });
+    const { data: userData } = await userClient.auth.getUser();
+    if (!userData?.user) return json({ error: "unauthorized" }, 401);
+    const sbSrv = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: memberRow } = await sbSrv.from("members").select("id").eq("auth_id", userData.user.id).maybeSingle();
+    if (!memberRow?.id) return json({ error: "member_not_found" }, 403);
+    const { data: canRes } = await sbSrv.rpc("can_by_member", {
+      p_member_id: memberRow.id,
+      p_action: "manage_member",
+    });
+    if (canRes !== true) return json({ error: "forbidden", message: "manage_member required" }, 403);
+    callerMemberId = memberRow.id;
+  }
+
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 503);
 
   const body = await req.json().catch(() => ({}));
@@ -256,6 +288,7 @@ Deno.serve(async (req) => {
         model_id: "claude-sonnet-4-6",
         purpose: "triage",
         triggered_by: triggeredBy,
+        caller_member_id: callerMemberId,
         prompt_hash: promptHash,
         status: "running",
       })
