@@ -342,3 +342,58 @@ Cada um é uma sessão dedicada de 4-6h spec + ship.
 | ARM-12 | Observability | 2 | 2+ (get_selection_health Pattern 43) |
 
 ARM média estimada: ≈ 1.92 → ≈ 2.25.
+
+---
+
+## Onda 5 ARM-9 Foundation — Completion Report (2026-05-06 sessão p108)
+
+**Status: G5 + G6 shipped. G1 reframed (não era drift), G7 (`withdrawn`) explicitly NOT added.**
+
+### Reframes durante audit
+
+1. **Substrato 2x mais maduro do que projetado.** ARM-9 reportado em maturidade 1, audit revelou ~2.5: `member_status` text+CHECK com 5 states + 3 triggers ativos + 17 RPCs + 3 crons LGPD + `member_offboarding_records` 19 campos + `offboard_reason_categories` 10 códigos com flags semânticos.
+2. **G1 não era drift.** A row `VP Desenvolvimento Profissional (PMI-GO)` é placeholder institucional whitelisted em `check_schema_invariants` — design intencional, não bug.
+3. **G6 invariant 13** complementa L (não substitui). L checa existência de offboarding record; N checa `offboarded_at NOT NULL` na própria row de `members` (defense-in-depth).
+4. **`withdrawn` rejeitado**: `inactive` + reason `policy_violation` (com `is_volunteer_fault=true` + `preserves_return_eligibility=false`) já comunica caso unilateral.
+
+### Entregáveis
+
+| # | Item | Resolução | Migration |
+|---|------|-----------|-----------|
+| Foundation.1 | Backfill 14 terminal members com `offboarded_at NULL` | `COALESCE(status_changed_at, updated_at, created_at, now())` preservando whitelist | `20260516840000` |
+| Foundation.2 | `validate_status_transition(p_from, p_to)` helper | IMMUTABLE function raises 22023 em (candidate ↔ terminal); self-transition idempotent | `20260516840000` |
+| Foundation.3 | `admin_offboard_member` upgrade | Calls validate_status_transition; audit log entry `member.status_transition_blocked` em case de fail | `20260516840000` |
+| Foundation.4 | Invariant N (`N_terminal_status_offboarded_at_present`) | Defense-in-depth complement to L. Total 13 invariants (was 12) | `20260516840000` |
+| ADR | ADR-0071 Member Lifecycle State Machine | Formaliza state machine + transitions + Features path | `docs/adr/ADR-0071-*.md` |
+
+### Estado pós-Foundation ARM-9
+
+- 1 migration applied (`20260516840000`)
+- Invariants **13/13 = 0 violations** (was 12/12)
+- 5 alumni members com `offboarded_at` backfilled de NULL para tracked timestamps
+- `validate_status_transition` smoke tests PASS (active→alumni allowed; active↔candidate blocked)
+- 0 mudança user-facing visible (tighten apenas casos truly invalid)
+
+### ARM-9 maturidade atualizada
+
+| Phase | Maturidade |
+|-------|------------|
+| Pré-p108 | 2.5 (ajustado do reportado 1 após audit profundo) |
+| Pós-Foundation p108 | 2.7 (state machine documentada + invariant + transition validation) |
+| Target pós-Features (sessão dedicada) | 3.5 (re-engagement pipeline + alumni badge + inactivity cron) |
+
+### Próxima sessão — ARM-9 Features (G2+G3+G4)
+
+| # | Item | Esforço | Bloqueio |
+|---|------|---------|----------|
+| G2 | `re_engagement_pipeline` table + RPCs (staged → invited → declined/accepted) + cron quando ciclo abre | 3-4h | Decisão UI (admin curates list before notify alumni) |
+| G3 | `certificates.type='alumni_recognition'` + auto-emit em `admin_offboard_member` quando reason preserves_return_eligibility | 2-3h | Decisão visual badge (Credly path?) |
+| G4 | `detect_inactive_members` cron 180d configurável via `site_config.inactivity_threshold_days` | 2-3h | Threshold configuration UI |
+
+Total Features: 7-10h. Standalone session recomendada.
+
+### ARM media plataforma atualizada
+
+ARM média ponderada: ≈ 2.25 (pós Onda 1+2+P1) → ≈ 2.30 (pós Foundation ARM-9). Ainda longe de target 3.0; ARM-1 (Captação maturidade 1) e ARM-5 (Interview maturidade 1) ainda dominam o cap.
+
+
