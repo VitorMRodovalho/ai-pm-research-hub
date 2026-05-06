@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.67.0 — 279 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.68.0 — 282 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.68.0: +3 tools p108 ARM Onda 3 AI Build (ADR-0074):
+//   analyze_application (Sonnet 4.6 triage via pmi-ai-triage EF), generate_interview_briefing
+//   (Haiku 4.5 inline), list_ai_processing_log (admin observability LGPD Art. 37).
+//   Auth: manage_member para analyze; view_pii para briefing; view_internal_analytics para list.
+//   Pre-req: ANTHROPIC_API_KEY Supabase secret (PM action pendente).
 // v2.67.0: +11 tools p108 ARM-9 Features + ARM-1 Captação:
 //   ARM-9 (6): stage_alumni_for_re_engagement, list_re_engagement_pipeline, invite_alumni_to_re_engage,
 //             respond_re_engagement, cancel_re_engagement, detect_inactive_members.
@@ -5965,6 +5970,238 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_volunteer_funnel_stats", true, undefined, start);
     return ok(data);
   });
+
+  // ===== ARM Onda 3 AI Build (ADR-0074) — analyze_application + generate_interview_briefing + list_ai_processing_log =====
+
+  // TOOL: analyze_application — invoke pmi-ai-triage EF (Sonnet 4.6 + cached rubric)
+  mcp.tool("analyze_application", "ARM-3 Onda 3 (ADR-0074): triggers AI triage scoring (Claude Sonnet 4.6 + cached rubric) for a selection_application. Updates ai_triage_score (0-10) + ai_triage_reasoning + ai_triage_confidence. NON-BINDING per LGPD Art. 20 §1 — decisão humana é autoritária. Requires consent_ai_analysis_at NOT NULL on the application. Admin only (manage_member). Logs to ai_processing_log.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "analyze_application", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "analyze_application", false, "Unauthorized", start); return err("Unauthorized: admin/GP only."); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "analyze_application", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
+
+    const efRes = await fetch(`${SUPABASE_URL}/functions/v1/pmi-ai-triage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ application_id: params.application_id, triggered_by: "admin_request" }),
+    });
+    const efData = await efRes.json().catch(() => ({}));
+    if (!efRes.ok) {
+      const msg = efData?.error ?? `EF status ${efRes.status}`;
+      await logUsage(sb, member.id, "analyze_application", false, msg, start);
+      return err(`pmi-ai-triage failed: ${msg}${efData?.detail ? ` (${efData.detail})` : ''}`);
+    }
+    await logUsage(sb, member.id, "analyze_application", true, undefined, start);
+    return ok(efData);
+  });
+
+  // TOOL: generate_interview_briefing — Anthropic Haiku 4.5 inline
+  mcp.tool("generate_interview_briefing", "ARM-5 Onda 3 (ADR-0074): generates 3 personalized interview questions + áreas de atenção for a candidate via Claude Haiku 4.5. Uses application data + ai_analysis snapshot (Gemini qualitative) + ai_triage_* if present. Sync, latency ~1-3s. Auth: view_pii (committee + admin). Logs to ai_processing_log. NOT persisted — generated on-demand per click.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "generate_interview_briefing", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'view_pii'))) { await logUsage(sb, member.id, "generate_interview_briefing", false, "Unauthorized", start); return err("Unauthorized: committee/admin only (view_pii)"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "generate_interview_briefing", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
+
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+    if (!ANTHROPIC_API_KEY) {
+      await logUsage(sb, member.id, "generate_interview_briefing", false, "ANTHROPIC_API_KEY missing", start);
+      return err("ANTHROPIC_API_KEY not configured (PM action pendente — ADR-0074)");
+    }
+
+    // Service-role client for reading app data + writing log (bypasses RLS after canV4 gate above)
+    const sbSrv = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: app, error: appErr } = await sbSrv
+      .from("selection_applications")
+      .select("id, applicant_name, role_applied, motivation_letter, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, ai_analysis, ai_triage_score, ai_triage_reasoning, ai_triage_confidence")
+      .eq("id", params.application_id)
+      .single();
+    if (appErr || !app) {
+      await logUsage(sb, member.id, "generate_interview_briefing", false, "application_not_found", start);
+      return err(`Application not found: ${appErr?.message ?? 'no row'}`);
+    }
+
+    const userPromptParts: string[] = [
+      `# Candidato: ${app.applicant_name}`,
+      `# Função aplicada: ${app.role_applied}`,
+    ];
+    if (app.certifications) userPromptParts.push(`\n## Certificações\n${app.certifications}`);
+    if (app.academic_background) userPromptParts.push(`\n## Formação\n${app.academic_background}`);
+    if (app.motivation_letter) userPromptParts.push(`\n## Carta de motivação\n${app.motivation_letter}`);
+    if (app.leadership_experience) userPromptParts.push(`\n## Liderança\n${app.leadership_experience}`);
+    if (app.proposed_theme) userPromptParts.push(`\n## Tema proposto\n${app.proposed_theme}`);
+    if (app.reason_for_applying) userPromptParts.push(`\n## Razão da aplicação\n${app.reason_for_applying}`);
+    if (app.areas_of_interest) userPromptParts.push(`\n## Áreas de interesse\n${app.areas_of_interest}`);
+    if (app.ai_analysis) userPromptParts.push(`\n## Análise prévia (Gemini snapshot)\n${JSON.stringify(app.ai_analysis).slice(0, 1500)}`);
+    if (app.ai_triage_score !== null && app.ai_triage_score !== undefined) {
+      userPromptParts.push(`\n## Triage Sonnet 4.6\nScore ${app.ai_triage_score}/10 (confidence: ${app.ai_triage_confidence ?? 'n/a'}). Reasoning: ${app.ai_triage_reasoning ?? '-'}`);
+    }
+    userPromptParts.push(`\nGere briefing JSON conforme schema.`);
+    const userPrompt = userPromptParts.join("\n");
+
+    const systemPrompt = `Você assiste entrevistadores do programa Núcleo IA & GP do PMI Brasil. Gere briefing de entrevista para o candidato:
+- 3 perguntas personalizadas que probam pontos específicos do perfil (1 técnica, 1 sobre liderança/contribuição, 1 aberta sobre fit cultural)
+- Áreas de atenção para o entrevistador focar (3-5 bullets curtos)
+- Notas de preparação (3-4 frases sobre como abordar a conversa)
+
+Critério: ajude o entrevistador a calibrar conforme o critério "raises the bar" — produção, leadership, expertise técnica, commitment. Não invente; ancorada em evidências do payload.
+
+Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
+
+    const briefingSchema = {
+      type: "object",
+      required: ["personalized_questions", "interview_focus_areas", "preparation_notes"],
+      additionalProperties: false,
+      properties: {
+        personalized_questions: {
+          type: "array",
+          minItems: 3,
+          maxItems: 3,
+          items: {
+            type: "object",
+            required: ["question", "rationale"],
+            additionalProperties: false,
+            properties: {
+              question: { type: "string" },
+              rationale: { type: "string" },
+            },
+          },
+        },
+        interview_focus_areas: { type: "array", minItems: 3, maxItems: 5, items: { type: "string" } },
+        preparation_notes: { type: "string" },
+      },
+    };
+
+    const sha256Hex = async (text: string): Promise<string> => {
+      const data = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+    };
+    const promptHash = await sha256Hex(systemPrompt + "\n---\n" + userPrompt);
+
+    const { data: logRow } = await sbSrv
+      .from("ai_processing_log")
+      .insert({
+        application_id: params.application_id,
+        model_provider: "anthropic",
+        model_id: "claude-haiku-4-5",
+        purpose: "briefing",
+        triggered_by: "manual",
+        caller_member_id: member.id,
+        prompt_hash: promptHash,
+        status: "running",
+      })
+      .select("id")
+      .single();
+    const logId = logRow?.id ?? null;
+
+    try {
+      const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+          output_config: { format: { type: "json_schema", schema: briefingSchema } },
+        }),
+      });
+
+      if (!anthropicRes.ok) {
+        const errText = await anthropicRes.text();
+        throw new Error(`Anthropic ${anthropicRes.status}: ${errText.slice(0, 300)}`);
+      }
+
+      const anthropicData = await anthropicRes.json();
+      const textBlock = anthropicData.content?.find((b: { type: string }) => b.type === "text");
+      if (!textBlock?.text) throw new Error("no text block in Anthropic response");
+      const briefing = JSON.parse(textBlock.text);
+
+      if (!Array.isArray(briefing.personalized_questions) || briefing.personalized_questions.length !== 3) {
+        throw new Error("invalid briefing structure: personalized_questions");
+      }
+      if (!Array.isArray(briefing.interview_focus_areas) || briefing.interview_focus_areas.length < 3) {
+        throw new Error("invalid briefing structure: interview_focus_areas");
+      }
+
+      const responseHash = await sha256Hex(JSON.stringify(briefing));
+
+      if (logId) {
+        const usage = anthropicData.usage ?? {};
+        await sbSrv.from("ai_processing_log").update({
+          response_hash: responseHash,
+          input_tokens: usage.input_tokens ?? null,
+          output_tokens: usage.output_tokens ?? null,
+          cache_creation_tokens: 0,
+          cache_read_tokens: 0,
+          duration_ms: Date.now() - start,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        }).eq("id", logId);
+      }
+
+      await logUsage(sb, member.id, "generate_interview_briefing", true, undefined, start);
+      return ok({
+        success: true,
+        application_id: params.application_id,
+        log_id: logId,
+        model: "claude-haiku-4-5",
+        duration_ms: Date.now() - start,
+        briefing,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (logId) {
+        await sbSrv.from("ai_processing_log").update({
+          error_message: msg.substring(0, 1000),
+          duration_ms: Date.now() - start,
+          status: "failed",
+          completed_at: new Date().toISOString(),
+        }).eq("id", logId);
+      }
+      await logUsage(sb, member.id, "generate_interview_briefing", false, msg, start);
+      return err(`Briefing failed: ${msg}`);
+    }
+  });
+
+  // TOOL: list_ai_processing_log — admin observability (LGPD Art. 37)
+  mcp.tool("list_ai_processing_log", "ARM Onda 3 (ADR-0074): admin observability over ai_processing_log (LGPD Art. 37 audit). Filter by application_id, purpose (triage|briefing|qualitative|enrichment|other), status (running|completed|failed), limit 1-200. Returns rows with hashes truncated (12 chars). Auth: view_internal_analytics.", {
+    application_id: z.string().optional().describe("Filter by application UUID"),
+    purpose: z.string().optional().describe("Filter by purpose: triage|briefing|qualitative|enrichment|other"),
+    status: z.string().optional().describe("Filter by status: running|completed|failed"),
+    limit: z.number().optional().describe("Max rows (default 50, max 200)")
+  }, async (params: { application_id?: string; purpose?: string; status?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_ai_processing_log", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.application_id && !isUUID(params.application_id)) {
+      await logUsage(sb, member.id, "list_ai_processing_log", false, "Invalid application_id", start);
+      return err("application_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("list_ai_processing_log", {
+      p_application_id: params.application_id ?? null,
+      p_purpose: params.purpose ?? null,
+      p_status: params.status ?? null,
+      p_limit: params.limit ?? 50,
+    });
+    if (error) { await logUsage(sb, member.id, "list_ai_processing_log", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_ai_processing_log", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_ai_processing_log", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -5975,7 +6212,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.67.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.68.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5995,6 +6232,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.67.0", tools: 279, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.68.0", tools: 282, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
