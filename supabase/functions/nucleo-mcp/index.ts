@@ -1447,6 +1447,129 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ===== #130 WEBINAR PROPOSALS WORKFLOW (5 tools) =====
+
+  // create_webinar_proposal — any active member proposes a webinar (status=submitted)
+  mcp.tool("create_webinar_proposal", "Propõe um webinar para review do comitê. Status inicial: submitted. format_type: palestra|painel|dupla|lightning|workshop.", {
+    proposed_title: z.string().describe("Título proposto do webinar"),
+    format_type: z.string().describe("Formato: palestra | painel | dupla | lightning | workshop"),
+    proposed_by_tribe_id: z.number().optional().describe("Tribe ID que propôs (opcional)"),
+    series_id: z.string().optional().describe("UUID da publication_series (opcional)"),
+    themes: z.array(z.string()).optional().describe("Temas / tags (opcional)"),
+    proposed_speakers: z.array(z.string()).optional().describe("Array de member UUIDs sugeridos como palestrantes (opcional)"),
+    quadrant_anchor: z.number().optional().describe("ID do quadrante âncora (integer; opcional)"),
+    notes: z.string().optional().describe("Notas / contexto adicional (opcional)")
+  }, async (params: { proposed_title: string; format_type: string; proposed_by_tribe_id?: number; series_id?: string; themes?: string[]; proposed_speakers?: string[]; quadrant_anchor?: number; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_webinar_proposal", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("create_webinar_proposal", {
+      p_proposed_title: params.proposed_title,
+      p_format_type: params.format_type,
+      p_proposed_by_tribe_id: params.proposed_by_tribe_id ?? null,
+      p_series_id: params.series_id ?? null,
+      p_themes: params.themes ?? null,
+      p_proposed_speakers: params.proposed_speakers ?? null,
+      p_quadrant_anchor: params.quadrant_anchor ?? null,
+      p_notes: params.notes ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "create_webinar_proposal", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "create_webinar_proposal", true, undefined, start);
+    return ok(data);
+  });
+
+  // update_webinar_proposal — proposer or comitê edits (only pre-approval states)
+  mcp.tool("update_webinar_proposal", "Edita proposal pré-aprovação. Apenas proposer ou comitê (manage_event/manage_member). Permitido em status draft/submitted/review.", {
+    proposal_id: z.string().describe("UUID da proposal"),
+    proposed_title: z.string().optional(),
+    format_type: z.string().optional().describe("palestra | painel | dupla | lightning | workshop"),
+    proposed_by_tribe_id: z.number().optional(),
+    series_id: z.string().optional(),
+    themes: z.array(z.string()).optional(),
+    proposed_speakers: z.array(z.string()).optional(),
+    quadrant_anchor: z.number().optional(),
+    notes: z.string().optional()
+  }, async (params: { proposal_id: string; proposed_title?: string; format_type?: string; proposed_by_tribe_id?: number; series_id?: string; themes?: string[]; proposed_speakers?: string[]; quadrant_anchor?: number; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_webinar_proposal", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("update_webinar_proposal", {
+      p_proposal_id: params.proposal_id,
+      p_proposed_title: params.proposed_title ?? null,
+      p_format_type: params.format_type ?? null,
+      p_proposed_by_tribe_id: params.proposed_by_tribe_id ?? null,
+      p_series_id: params.series_id ?? null,
+      p_themes: params.themes ?? null,
+      p_proposed_speakers: params.proposed_speakers ?? null,
+      p_quadrant_anchor: params.quadrant_anchor ?? null,
+      p_notes: params.notes ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "update_webinar_proposal", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_webinar_proposal", true, undefined, start);
+    return ok(data);
+  });
+
+  // review_webinar_proposal — comitê approve/reject (manage_event)
+  mcp.tool("review_webinar_proposal", "Comitê review de proposal: approve | reject | mark_review. Requer manage_event. rejection_reason obrigatório quando decision=reject.", {
+    proposal_id: z.string().describe("UUID da proposal"),
+    decision: z.string().describe("approve | reject | mark_review"),
+    rejection_reason: z.string().optional().describe("Razão da rejeição (obrigatória quando decision=reject)"),
+    review_notes: z.string().optional().describe("Notas adicionais do reviewer")
+  }, async (params: { proposal_id: string; decision: string; rejection_reason?: string; review_notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "review_webinar_proposal", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "review_webinar_proposal", false, "Unauthorized", start); return err("Unauthorized: requires manage_event (comitê)"); }
+    const { data, error } = await sb.rpc("review_webinar_proposal", {
+      p_proposal_id: params.proposal_id,
+      p_decision: params.decision,
+      p_rejection_reason: params.rejection_reason ?? null,
+      p_review_notes: params.review_notes ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "review_webinar_proposal", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "review_webinar_proposal", true, undefined, start);
+    return ok(data);
+  });
+
+  // convert_proposal_to_webinar — only when status=approved (manage_event)
+  mcp.tool("convert_proposal_to_webinar", "Converte proposal aprovada em webinar row. Status deve ser approved. Cria webinars row + linka via webinar_id. Requer manage_event.", {
+    proposal_id: z.string().describe("UUID da proposal aprovada"),
+    scheduled_at: z.string().describe("ISO timestamp da data/hora do webinar (timestamptz)"),
+    chapter_code: z.string().describe("Chapter code (ex: GO, CE, DF, MG, RS)"),
+    duration_min: z.number().optional().describe("Duração em minutos. Default: 60"),
+    initiative_id: z.string().optional().describe("UUID da initiative associada (opcional)")
+  }, async (params: { proposal_id: string; scheduled_at: string; chapter_code: string; duration_min?: number; initiative_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "convert_proposal_to_webinar", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "convert_proposal_to_webinar", false, "Unauthorized", start); return err("Unauthorized: requires manage_event"); }
+    const { data, error } = await sb.rpc("convert_proposal_to_webinar", {
+      p_proposal_id: params.proposal_id,
+      p_scheduled_at: params.scheduled_at,
+      p_chapter_code: params.chapter_code,
+      p_duration_min: params.duration_min ?? 60,
+      p_initiative_id: params.initiative_id ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "convert_proposal_to_webinar", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "convert_proposal_to_webinar", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_webinar_proposals — read view (proposer sees own; comitê sees all)
+  mcp.tool("list_webinar_proposals", "Lista webinar proposals. Membros veem apenas próprias; comitê (manage_event/manage_member) vê todas. Filter por status opcional.", {
+    status_filter: z.string().optional().describe("Filtrar por status: draft | submitted | review | approved | rejected | converted_to_webinar")
+  }, async (params: { status_filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_webinar_proposals", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_webinar_proposals", {
+      p_status_filter: params.status_filter ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "list_webinar_proposals", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_webinar_proposals", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
     const start = Date.now();
@@ -5362,7 +5485,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.57.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.58.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -5382,6 +5505,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.57.0", tools: 247, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.58.0", tools: 252, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
