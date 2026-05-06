@@ -1,8 +1,9 @@
 # ADR-0020: Publication Pipeline — primitivo unificado `publication_ideas` + `publication_series`
 
-- Status: Proposed
-- Data: 2026-04-21
-- Autor: Claude (debug session 9908f3, issue #94, sessão de encerramento 23h50) — aguardando aprovação PM
+- Status: Accepted (p95 2026-05-05 — PM Vitor ratified after W1 stable 22 days in prod)
+- Data: 2026-04-21 (Proposed) → 2026-05-05 (Accepted)
+- Autor: Claude (debug session 9908f3, issue #94, sessão de encerramento 23h50)
+- Última revisão: p95 — Amendment 1 (PM decisions 2B+2C+2D)
 - Escopo: Formaliza arquitetura de pipeline de publicação do Núcleo unificando 5 flows hoje paralelos (hub_resources → wiki → submission → publication → blog → newsletter). Inspirado em padrões observados em akitaonrails.com/en (21 anos de blog, 500+ posts agrupados em séries temáticas) e 10 cases de mercado (Stratechery, One Useful Thing, Engineering blogs, Dev.to, GitHub Blog, arXiv, Substack, MDPI, Building in Public, PM.com/PMI.org).
 
 ## Contexto
@@ -218,4 +219,57 @@ Se métricas falham: revisar se séries estão com dono claro (atribuição), ca
 
 ## Aprovação
 
-Aguarda revisão PM Vitor. W1 já aplicado como conservative bet (aditivo, rollback fácil). W2-W5 aguardam validação.
+W1 aplicado p35 como conservative bet (aditivo, rollback fácil). 22 dias em prod sem regressão.
+
+**Status: Accepted p95 (2026-05-05)** — PM Vitor ratified.
+
+---
+
+## Amendment 1 (p95 2026-05-05) — 4 PM decisions for W2
+
+PM Vitor ratified 4 decisions enabling W2 (`publication_ideas` table) shipping:
+
+### D1 (PM 2A) — Status promotion
+Proposed → **Accepted**. W1 substrate stable, spec sólida, no objections raised in 22d window.
+
+### D2 (PM 2B) — Editorial language policy
+**PT-BR primary + EN obrigatório para Frontiers Newsletter (audience PMI Latam) — bilingual content via jsonb expansion.**
+
+Rationale:
+- Resolve #96 EN-only vs PT-first conflict
+- Aligns with ADR-0010 (narrative knowledge) + atende ambos públicos (BR voluntários ~40% não-EN-fluentes vs PMI Latam audience EN-required)
+- Cost: tradução effort scales linearly per post; mitigation = AI-assisted translation (Anthropic via existing infra) + human review for tier-1 content (Frontiers Newsletter)
+- jsonb fields (`title_i18n`, `description_i18n`, `body_html_i18n` etc.) já usado em `blog_posts` + `publication_series`. Pattern consistent.
+- `target_languages text[] DEFAULT ARRAY['pt-BR']` for `publication_ideas` (each idea declara seus idiomas explicitamente)
+
+### D3 (PM 2C) — Channel taxonomy
+**Liberate all proposed channels** (`proposed_channels text[]` aceita PMI.org, PM.com, blog interno, newsletter, LinkedIn, Medium, Dev.to, YouTube, podcast).
+
+Rationale:
+- Maximum optionality: each `publication_ideas` row pode declarar 1-N channels candidates
+- Não compromete a publicar em todos — só lista possíveis
+- PMI brand guidelines aplicam case-by-case na `stage='approved'` review
+- Substack/Ghost out of scope (Resend + React Email já cobre)
+- Cross-platform syndication respeita CC-BY-SA quando aplicável (ADR-0010)
+
+### D4 (PM 2D) — Polymorphic source FK pattern
+**Endorse polymorphic** — `source_type text + source_id uuid` (no FK constraint, but indexed).
+
+Rationale:
+- An idea pode vir de hub_resource OR wiki_page OR meeting_action OR external_research OR experiment OR partnership OR webinar OR ata_decision (8 source types per spec)
+- Strict FK per source type would explode schema with N nullable FK columns OR N intermediate tables
+- Postgres handles polymorphic well via filtered indexes (`CREATE INDEX ... WHERE source_type = 'X'`)
+- Trade-off accepted: integrity validation moves to application layer (RPC on insert) instead of FK constraint
+- Pattern precedent: `notifications.source_type/source_id` (existing, working)
+
+### Implementation gate
+
+Amendment 1 unblocks W2 (`publication_ideas` table) implementation. Schema migration TBD next session.
+
+W2 dependencies (validated):
+- ✅ ADR-0020 Accepted
+- ✅ EN/PT decision (jsonb i18n pattern)
+- ✅ Channel taxonomy (text[] enum)
+- ✅ Polymorphic FK (text + uuid + filtered indexes)
+
+W3-W5 (multi-channel pipeline, RSS/author pages, dark mode, etc.) follow W2.
