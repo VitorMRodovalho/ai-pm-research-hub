@@ -6,17 +6,25 @@ const ARTIA_GQL = 'https://api.artia.com/graphql'
 const ARTIA_ACCOUNT_ID = 6345833
 const ARTIA_PROJECT_ID = 6391775
 
-// Artia activity IDs and PT titles for each KPI (folder 04 - Monitoramento)
-const KPI_ACTIVITY_MAP: Record<string, { id: number; label: string }> = {
-  chapters_participating: { id: 32528756, label: 'KPI: 8 Capítulos Participantes' },
-  entities_partners: { id: 32528757, label: 'KPI: 3 Entidades Parceiras' },
-  trail_completion: { id: 32528758, label: 'KPI: 70% Trilha IA Completa' },
-  cpmai_certified: { id: 32528759, label: 'KPI: 2+ CPMAI Certificados no Ano' },
-  articles_published: { id: 32528760, label: 'KPI: 10+ Artigos Publicados' },
-  webinars_realized: { id: 32528762, label: 'KPI: 6+ Webinares ou Talks' },
-  pilots_ia_copilot: { id: 32528763, label: 'KPI: 3+ Pilotos IA Copiloto' },
-  hours_meetings: { id: 32528764, label: 'KPI: 90+ Horas de Encontros' },
-  hours_impact: { id: 32528765, label: 'KPI: 1800+ Horas de Impacto' },
+// Artia activity IDs + folder per KPI
+// Pre-Phase C.2.5: 9 KPIs in folder 6399649 (04 - Monitoramento e Controle root)
+// Phase C.2.5 added 4 new KPIs in folder 6516663 (04.01 - KPIs Anuais 2026 sub-folder)
+// NOTE: 9 existing not movable via updateActivity (Artia validates folder ownership) — they stay in 6399649
+const KPI_ACTIVITY_MAP: Record<string, { id: number; label: string; folderId: number }> = {
+  chapters_participating: { id: 32528756, label: 'KPI: 8 Capítulos Participantes', folderId: 6399649 },
+  entities_partners: { id: 32528757, label: 'KPI: 3 Entidades Parceiras', folderId: 6399649 },
+  trail_completion: { id: 32528758, label: 'KPI: 70% Trilha IA Completa', folderId: 6399649 },
+  cpmai_certified: { id: 32528759, label: 'KPI: 2+ CPMAI Certificados no Ano', folderId: 6399649 },
+  articles_published: { id: 32528760, label: 'KPI: 10+ Artigos Publicados', folderId: 6399649 },
+  webinars_realized: { id: 32528762, label: 'KPI: 6+ Webinares ou Talks', folderId: 6399649 },
+  pilots_ia_copilot: { id: 32528763, label: 'KPI: 3+ Pilotos IA Copiloto', folderId: 6399649 },
+  hours_meetings: { id: 32528764, label: 'KPI: 90+ Horas de Encontros', folderId: 6399649 },
+  hours_impact: { id: 32528765, label: 'KPI: 1800+ Horas de Impacto', folderId: 6399649 },
+  // Phase C.2.5 — 4 new KPIs in 04.01 sub-folder (6516663)
+  lim_lima_accepted: { id: 32811576, label: 'KPI: LATAM LIM Lima 2026 (Sessão Aceita)', folderId: 6516663 },
+  detroit_submission: { id: 32811577, label: 'KPI: PMI Global Summit Detroit 2026 (Submissão)', folderId: 6516663 },
+  ip_policy_ratified: { id: 32811578, label: 'KPI: Política IP aprovada Comitê de Curadoria', folderId: 6516663 },
+  cooperation_agreements_signed: { id: 32811579, label: 'KPI: Acordos de Cooperação Bilateral assinados', folderId: 6516663 },
 }
 
 interface ArtiaToken { token: string }
@@ -39,10 +47,9 @@ async function getArtiaToken(): Promise<string> {
 
 // Artia custom status IDs (PMI-GO standard)
 const ARTIA_STATUS = { A_INICIAR: 317052, ANDAMENTO: 328049, ENCERRADO: 317054 }
-const ARTIA_KPI_FOLDER = 6399649
 const ARTIA_RESPONSIBLE_ID = 298786 // "GP Projeto Núcleo IA"
 
-async function updateArtiaActivity(token: string, activityId: number, pct: number, desc: string, title: string): Promise<boolean> {
+async function updateArtiaActivity(token: string, activityId: number, pct: number, desc: string, title: string, folderId: number): Promise<boolean> {
   const safeDesc = desc.replace(/"/g, '\\"').replace(/\n/g, ' ')
   const safeTitle = title.replace(/"/g, '\\"')
   // Update % and title
@@ -64,7 +71,7 @@ async function updateArtiaActivity(token: string, activityId: number, pct: numbe
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({
-      query: `mutation { changeCustomStatusActivity(id: "${activityId}", accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${ARTIA_KPI_FOLDER}, customStatusId: ${targetStatus}, status: ${isClosed}) { id status } }`,
+      query: `mutation { changeCustomStatusActivity(id: "${activityId}", accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${folderId}, customStatusId: ${targetStatus}, status: ${isClosed}) { id status } }`,
     }),
   })
   return true
@@ -264,6 +271,145 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
+
+    // ── Move-9-KPIs mode (Phase C.2.5 fix): retry moves with title arg required by Artia ──
+    if (mode === 'move-9-kpis') {
+      const NEW_FOLDER_ID = 6516663 // 04.01 - KPIs Anuais 2026 (created in prior run)
+      const token = await getArtiaToken()
+      const result: any = { moved: [], errors: [] }
+
+      const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
+      for (const [kpiKey, mapping] of Object.entries(KPI_ACTIVITY_MAP)) {
+        // updateActivity requires title arg (mandatory per Artia schema)
+        const moveQuery = `mutation { updateActivity(id: "${mapping.id}", accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${NEW_FOLDER_ID}, title: "${escapeStr(mapping.label)}") { id title } }`
+        try {
+          const res = await fetch(ARTIA_GQL, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ query: moveQuery }),
+          })
+          const data = await res.json()
+          if (data?.errors) {
+            result.errors.push({ kpi: kpiKey, errors: data.errors })
+          } else {
+            result.moved.push({ kpi_key: kpiKey, activity_id: mapping.id, new_folder: NEW_FOLDER_ID })
+          }
+        } catch (e) {
+          result.errors.push({ kpi: kpiKey, exception: (e as Error).message })
+        }
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      return new Response(JSON.stringify({ mode: 'move-9-kpis', result }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── Reorganize-KPIs mode (Phase C.2.5): create sub-folder 04.01 + move 9 + create 4 new KPIs ──
+    if (mode === 'reorganize-kpis') {
+      const dryRun = url.searchParams.get('dry_run') !== 'false'
+      const token = await getArtiaToken()
+      const result: any = { folder: null, moved: [], created: [], errors: [] }
+
+      const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')
+
+      // Step 1: Create sub-folder 04.01-KPIs Anuais 2026 under existing 04 Monitoramento (6399649)
+      const newFolderName = '04.01 - KPIs Anuais 2026'
+      const folderQuery = `mutation { createFolder(name: "${newFolderName}", parentId: 6399649, accountId: ${ARTIA_ACCOUNT_ID}, completedPercent: 0) { id name } }`
+
+      if (dryRun) {
+        // Dry-run preview
+        return new Response(JSON.stringify({
+          mode: 'reorganize-kpis',
+          dry_run: true,
+          plan: {
+            step_1_create_folder: { name: newFolderName, parentId: 6399649 },
+            step_2_move_activities: Object.entries(KPI_ACTIVITY_MAP).map(([k, v]) => ({ kpi_key: k, activity_id: v.id, target: 'NEW_FOLDER' })),
+            step_3_create_new: ['lim_lima_accepted', 'detroit_submission', 'ip_policy_ratified', 'cooperation_agreements_signed'],
+            total_mutations_estimate: 1 + 9 + 4,
+          },
+        }, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // LIVE: Step 1 — create folder
+      try {
+        const fRes = await fetch(ARTIA_GQL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ query: folderQuery }),
+        })
+        const fData = await fRes.json()
+        if (fData?.errors) {
+          result.errors.push({ step: 'createFolder', errors: fData.errors })
+          return new Response(JSON.stringify({ mode: 'reorganize-kpis', dry_run: false, result }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const newFolderId = parseInt(fData?.data?.createFolder?.id)
+        result.folder = { id: newFolderId, name: newFolderName }
+
+        await sb.from('artia_discovery_dumps').insert({
+          account_id: ARTIA_ACCOUNT_ID, project_id: 6391775, project_name: 'Núcleo de IA & GP',
+          dump_kind: 'folders_list',
+          payload: { code: '04.01', id: newFolderId, name: newFolderName, parent_id: 6399649 },
+          source_query: folderQuery.slice(0, 500), notes: 'Phase C.2.5 sub-folder 04.01-KPIs',
+        })
+
+        await new Promise(r => setTimeout(r, 400))
+
+        // Step 2: Move 9 existing KPI activities to new sub-folder via updateActivity(folderId=NEW)
+        for (const [kpiKey, mapping] of Object.entries(KPI_ACTIVITY_MAP)) {
+          const moveQuery = `mutation { updateActivity(id: "${mapping.id}", accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${newFolderId}) { id title } }`
+          try {
+            const mRes = await fetch(ARTIA_GQL, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ query: moveQuery }),
+            })
+            const mData = await mRes.json()
+            if (mData?.errors) {
+              result.errors.push({ step: 'moveKPI', kpi: kpiKey, errors: mData.errors })
+            } else {
+              result.moved.push({ kpi_key: kpiKey, activity_id: mapping.id, new_folder: newFolderId })
+            }
+          } catch (e) {
+            result.errors.push({ step: 'moveKPI exception', kpi: kpiKey, error: (e as Error).message })
+          }
+          await new Promise(r => setTimeout(r, 300))
+        }
+
+        // Step 3: Create 4 new KPI activities in new sub-folder
+        const newKpis = [
+          { key: 'lim_lima_accepted', title: 'KPI: LATAM LIM Lima 2026 (1/1 sessão aceita)', desc: 'TAP §16 Critério 10. Sessão aceita para apresentação Agosto 2026 em Lima/Peru.', pct: 100, status: ARTIA_STATUS.ENCERRADO },
+          { key: 'detroit_submission', title: 'KPI: PMI Global Summit Detroit 2026 (0/1 em planejamento)', desc: 'TAP §16 Critério 11. Submissão em planejamento para Outubro 2026 em Detroit/EUA.', pct: 0, status: ARTIA_STATUS.A_INICIAR },
+          { key: 'ip_policy_ratified', title: 'KPI: Política IP aprovada Comitê (em revisão — 6 chains v6/v5/v1)', desc: 'TAP §16 Critério 12. Doc cfb15185 status under_review. Aguardando assinaturas Roberto/Sarah/Fabricio.', pct: 75, status: ARTIA_STATUS.ANDAMENTO },
+          { key: 'cooperation_agreements_signed', title: 'KPI: Acordos Cooperação Bilateral (4/4 assinados)', desc: 'TAP §16 Critério 13. PMI-GO ↔ PMI-CE/DF/MG/RS. 4/4 assinados. Drive PMI-GO institucional.', pct: 100, status: ARTIA_STATUS.ENCERRADO },
+        ]
+
+        for (const k of newKpis) {
+          const createQuery = `mutation { createActivity(title: "${escapeStr(k.title)}", folderId: ${newFolderId}, accountId: ${ARTIA_ACCOUNT_ID}, responsibleId: ${ARTIA_RESPONSIBLE_ID}, description: "${escapeStr(k.desc)}", completedPercent: ${k.pct}, customStatusId: ${k.status}) { id title } }`
+          try {
+            const cRes = await fetch(ARTIA_GQL, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ query: createQuery }),
+            })
+            const cData = await cRes.json()
+            if (cData?.errors) {
+              result.errors.push({ step: 'createNewKPI', kpi: k.key, errors: cData.errors })
+            } else {
+              const actId = parseInt(cData?.data?.createActivity?.id)
+              result.created.push({ kpi_key: k.key, activity_id: actId, folder_id: newFolderId })
+            }
+          } catch (e) {
+            result.errors.push({ step: 'createNewKPI exception', kpi: k.key, error: (e as Error).message })
+          }
+          await new Promise(r => setTimeout(r, 300))
+        }
+
+      } catch (e) {
+        result.errors.push({ step: 'overall', error: (e as Error).message })
+      }
+
+      return new Response(JSON.stringify({ mode: 'reorganize-kpis', dry_run: false, result }, null, 2), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // ── Create-structure mode (Phase C.2): build WBS folders + activities under Núcleo project ──
     if (mode === 'create-structure') {
@@ -822,6 +968,44 @@ Deno.serve(async (req) => {
     }
     results.hours_impact = { current: impactHours, pct: Math.round((impactHours / 1800) * 100), synced: false }
 
+    // ── Phase C.2.5 — 4 new KPIs (read manual values from annual_kpi_targets, auto-update ip_policy from governance_documents) ──
+
+    // 10. LIM Lima accepted (manual=1)
+    const { data: limData } = await sb.from('annual_kpi_targets')
+      .select('current_value, target_value')
+      .eq('kpi_key', 'lim_lima_accepted').eq('cycle', 3).maybeSingle()
+    const limCurrent = Number(limData?.current_value ?? 1)
+    const limTarget = Number(limData?.target_value ?? 1)
+    results.lim_lima_accepted = { current: limCurrent, pct: Math.round((limCurrent / limTarget) * 100), synced: false }
+
+    // 11. Detroit submission (manual=0 currently, in_planning)
+    const { data: detData } = await sb.from('annual_kpi_targets')
+      .select('current_value, target_value')
+      .eq('kpi_key', 'detroit_submission').eq('cycle', 3).maybeSingle()
+    const detCurrent = Number(detData?.current_value ?? 0)
+    const detTarget = Number(detData?.target_value ?? 1)
+    results.detroit_submission = { current: detCurrent, pct: Math.round((detCurrent / detTarget) * 100), synced: false }
+
+    // 12. IP Policy ratified (auto from governance_documents.current_ratified_at)
+    const { data: ipDoc } = await sb.from('governance_documents')
+      .select('current_ratified_at')
+      .eq('id', 'cfb15185-2800-4441-9ff1-f36096e83aa8')
+      .maybeSingle()
+    const ipRatified = ipDoc?.current_ratified_at ? 1 : 0
+    // Auto-update annual_kpi_targets to reflect ratification state
+    await sb.from('annual_kpi_targets')
+      .update({ current_value: ipRatified, updated_at: new Date().toISOString() })
+      .eq('kpi_key', 'ip_policy_ratified').eq('cycle', 3)
+    results.ip_policy_ratified = { current: ipRatified, pct: ipRatified === 1 ? 100 : 75, synced: false }
+
+    // 13. Cooperation agreements signed (manual=4)
+    const { data: coopData } = await sb.from('annual_kpi_targets')
+      .select('current_value, target_value')
+      .eq('kpi_key', 'cooperation_agreements_signed').eq('cycle', 3).maybeSingle()
+    const coopCurrent = Number(coopData?.current_value ?? 4)
+    const coopTarget = Number(coopData?.target_value ?? 4)
+    results.cooperation_agreements_signed = { current: coopCurrent, pct: Math.round((coopCurrent / coopTarget) * 100), synced: false }
+
     // ── Update annual_kpi_targets (current_value for non-auto KPIs) ──
     for (const [key, val] of Object.entries(results)) {
       await sb.from('annual_kpi_targets')
@@ -845,7 +1029,7 @@ Deno.serve(async (req) => {
         if (!mapping) continue
         const desc = `Sincronizado automaticamente em ${now}. Valor: ${val.current}. Meta progress: ${val.pct}%.`
         const title = `${mapping.label} (atual: ${val.current})`
-        const ok = await updateArtiaActivity(artiaToken, mapping.id, val.pct, desc, title)
+        const ok = await updateArtiaActivity(artiaToken, mapping.id, val.pct, desc, title, mapping.folderId)
         results[key].synced = ok
       }
     }

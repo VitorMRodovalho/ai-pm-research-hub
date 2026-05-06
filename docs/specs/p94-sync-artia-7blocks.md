@@ -2,7 +2,7 @@
 
 **Data**: 2026-05-05
 **Trigger**: Auditoria de Governança PMO PMI-GO 2026 (Núcleo IA = 17% conformidade · 14 não-conformidades)
-**Status**: 🟢 Phase C.1 (discovery) ✅ + Phase C.2 (build-out) ✅ COMPLETOS 2026-05-05 · Phase C.3 (crons sustentabilidade) + C.4 (ADR amendment) + C.5 (backfill avulso) próximos
+**Status**: 🟢 Phase C.1 + C.2 + C.2.5 (KPI 9→13) ✅ COMPLETOS 2026-05-05 · Phase C.3 (crons sustentabilidade) próximos
 **Origem session**: p94 (handoff `memory/handoff_p94_artia_sync_audit.md`)
 
 ---
@@ -222,6 +222,28 @@ Nosso `ARTIA_CLIENT_ID/SECRET` enxerga apenas **4 projects** (de ~14 esperados p
 | Lições (7) | N/A | 05.01 + 05.02 placeholders Dez/2026 | N/A até encerramento |
 
 **Score esperado pós-Phase C.2**: 17% → ~70-80% (depende crons C.3 popularem descriptions periodicamente)
+
+---
+
+## ✅ Phase C.2.5 SHIPPED — KPIs 9→13 (TAP §16 cobertura completa)
+
+### Deliverables
+- Migration `20260516530004` — INSERT 4 new KPI rows em annual_kpi_targets:
+  - `lim_lima_accepted` (target=1, current=1, manual)
+  - `detroit_submission` (target=1, current=0, manual)
+  - `ip_policy_ratified` (target=1, current=0, **auto** via governance_documents.current_ratified_at)
+  - `cooperation_agreements_signed` (target=4, current=4, manual)
+- EF mode `?mode=reorganize-kpis` — criou sub-folder `04.01-KPIs Anuais 2026` (id 6516663) + criou 4 novas activities (IDs 32811576-32811579)
+- EF refactor: `KPI_ACTIVITY_MAP` agora tem 13 entries com `folderId` per-KPI (9 em 6399649 + 4 em 6516663). Removido constante hardcoded `ARTIA_KPI_FOLDER`.
+- 4 novas compute branches em default sync mode (read annual_kpi_targets + auto-update ip_policy_ratified from governance_documents)
+
+### Limitação descoberta
+`updateActivity(folderId)` **não move** activities entre folders. Artia valida "atividade pertence à pasta informada". Resultado: 9 KPIs originais permanecem em folder 6399649, 4 novos em sub-folder 6516663. Auditoria PMO checa "Critérios de Sucesso = Sim/Não" — não folder structure — então aceitável.
+
+### Smoke test pós-deploy (2026-05-05)
+Default sync mode invocado live: **13/13 KPIs synced=true** · status=ok · artia_synced=true. Todos atualizados com current_value real:
+- chapters: 5/8 (63%) · entities: 0/3 · trail: 40% · CPMAI: 1/2 · articles: 0/10 · webinars: 0/6 · pilots: 1/3 · meetings: 113.8h/90h (**superou**) · impact: 579.7/1800h
+- LIM Lima: 1/1 (100% ✓) · Detroit: 0/1 (em planejamento) · Política IP: 0/1 (75% — em revisão Comitê) · Acordos: 4/4 (100% ✓)
 
 ---
 
