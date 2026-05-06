@@ -220,7 +220,18 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
     try {
       const sb = (window as any).navGetSb?.();
       if (!sb) throw new Error('No client');
-      const { error } = await sb.from('visitor_leads').insert([{
+
+      // ARM-1: capture UTM + referral from URL query params
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+      const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
+      const utm: Record<string, string> = {};
+      for (const k of utmKeys) {
+        const v = params.get(k);
+        if (v) utm[k] = v;
+      }
+      const refMember = params.get('ref') || params.get('referrer');
+
+      const payload: Record<string, unknown> = {
         name: form.name,
         email: form.email,
         phone: form.phone || null,
@@ -228,9 +239,14 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
         role_interest: form.role_interest || null,
         message: form.message || null,
         lgpd_consent: true,
-        source: 'website',
-      }]);
+        source: utm.utm_source ? `utm:${utm.utm_source}` : 'website',
+      };
+      if (Object.keys(utm).length > 0) payload.utm_data = utm;
+      if (refMember) payload.referrer_member_id = refMember;
+
+      const { data, error } = await sb.rpc('capture_visitor_lead', { p_payload: payload });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       setStatus('success');
     } catch {
       setStatus('error');
