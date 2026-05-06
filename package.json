@@ -51,7 +51,7 @@
     "@tiptap/extension-image": "^3.22.2",
     "@tiptap/extension-link": "^3.22.2",
     "@tiptap/extension-placeholder": "^3.22.2",
-    "@tiptap/pm": "^3.22.2",
+    "@tiptap/pm": "^3.22.5",
     "@tiptap/react": "^3.22.2",
     "@tiptap/starter-kit": "^3.22.2",
     "astro": "^6.1.3",
