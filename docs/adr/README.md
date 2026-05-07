@@ -72,6 +72,13 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0066-pmi-journey-v4-phase-1.md` — PMI Journey v4 Phase 1: Cloudflare worker + token-auth portal substrate. **Status: Accepted (2026-04-28); Amendment 2026-04-29 (passive ingest pivot); Amendment 2 2026-05-01 (Phase 2 trigger + workflow gate gap surfacing).**
 - `ADR-0067-ai-augmented-selection-art20-safeguards.md` — AI-Augmented Selection: LGPD Art. 20 safeguards + human-in-the-loop invariant.
 - `ADR-0068-governance-docs-curadoria-redraft-framework.md` — Governance docs curadoria redraft framework (Path A/B + Material/Editorial change). **Status: Proposed (2026-05-01) — aguardando ratificação curadores + revisão advogado humano licenciado.**
+- `ADR-0069-artia-bidirectional-sync-pattern.md` — Artia bidirectional sync pattern (PMO PMI-GO portfolio).
+- `ADR-0070-external-speaker-artifact-conventions.md` — External speaker artifact conventions (engagement schema hardening).
+- `ADR-0071-member-lifecycle-state-machine.md` — Member lifecycle state machine (ARM-9 foundation).
+- `ADR-0072-arm1-lead-capture-funnel.md` — ARM-1 lead capture funnel (visitor_leads enrichment).
+- `ADR-0073-issue116-calendar-booking-sync-apps-script.md` — #116 calendar booking sync via Apps Script.
+- `ADR-0074-onda3-arm-dual-model-ai-architecture.md` — ARM Onda 3 dual-model AI architecture (Sonnet 4.6 triage + Haiku 4.5 briefing + Gemini qualitative legacy).
+- `ADR-0075-cv-extraction-pipeline.md` — CV extraction pipeline: Deno + unpdf EF + cron 15min + lazy fallback in pmi-ai-triage. **Status: Proposed (2026-05-07) — pending implementation session.**
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
