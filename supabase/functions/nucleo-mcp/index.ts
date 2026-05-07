@@ -3570,6 +3570,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_extraction_health — admin observability for cv extraction pipeline (ADR-0075 Amendment A — p117)
+  mcp.tool("get_extraction_health", "Returns CV extraction pipeline health: backlog_eligible (apps with consent + resume_url + missing cv_extracted_text), 24h activity (completed_24h/failed_24h counts + last_success_at/last_failure_at), failure_samples_24h (top 3 errors for triage), cron stats (extract-cv-text-15min schedule + last_run_at + last_5_runs), and a green/yellow/red health_signal. Authority: view_internal_analytics. Use when triaging 'is CV extraction working?' or 'why are recent triages running without CV input?'.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_extraction_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_extraction_health");
+    if (error) { await logUsage(sb, member.id, "get_extraction_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_extraction_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_extraction_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_evaluator_calibration_stats — admin/comitê calibração observability (ARM P1 post-Onda 2 — p107)
   mcp.tool("get_evaluator_calibration_stats", "Returns evaluator calibration metrics for a selection cycle: cycle_summary (total_applications, total_evaluators, overall_mean, overall_stddev), per_evaluator (bias_signed/abs vs overall_mean, stddev, anomaly_count from selection_evaluation_anomalies), pair_divergence (top 5 evaluator pairs with largest mean diff in shared applications). Useful for calibration sessions pre-final-decision or between cycles. Authority: view_internal_analytics. Optional cycle_code arg (defaults to most recent cycle).", {
     cycle_code: z.string().optional().describe("Optional cycle code (e.g. 'C03'). Defaults to most recent cycle.")
