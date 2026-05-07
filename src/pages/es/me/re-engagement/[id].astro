@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { t } from '../../../../i18n/utils';
+export const prerender = false;
+const lang = 'es-LATAM' as const;
+const { id } = Astro.params;
+---
+<BaseLayout title={t('reEngagement.page.title', lang)} activePage="" lang={lang}>
+  <meta http-equiv="refresh" content={`0;url=/me/re-engagement/${id}?lang=es-LATAM`}>
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <p class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</p>
+  </div>
+</BaseLayout>

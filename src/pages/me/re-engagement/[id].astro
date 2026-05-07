@@ -1,0 +1,284 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import Toast from '../../../components/ui/Toast.astro';
+
+export const prerender = false;
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { id } = Astro.params;
+---
+
+<BaseLayout title={t('reEngagement.page.title', lang)} activePage="" lang={lang}>
+  <div class="max-w-[680px] mx-auto px-4 py-8">
+    <!-- Loading -->
+    <div id="re-loading" class="text-center py-16 text-[var(--text-muted)] text-sm">
+      {t('common.loading', lang)}
+    </div>
+
+    <!-- Auth required -->
+    <div id="re-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F510;</div>
+      <p class="font-semibold text-amber-800">{t('reEngagement.page.loginRequired', lang)}</p>
+      <a href={`/?lang=${lang}`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('notifications.goHome', lang)}
+      </a>
+    </div>
+
+    <!-- Error -->
+    <div id="re-error" class="hidden bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x26A0;&#xFE0F;</div>
+      <p class="font-semibold text-red-800" id="re-error-msg">{t('reEngagement.page.notFound', lang)}</p>
+      <a href={`/notifications?lang=${lang}`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('reEngagement.page.backToNotifications', lang)}
+      </a>
+    </div>
+
+    <!-- Pipeline panel -->
+    <div id="re-panel" class="hidden space-y-6">
+      <header class="space-y-2">
+        <span class="inline-block px-2.5 py-1 rounded-full text-[.65rem] font-bold uppercase tracking-wide bg-blue-100 text-blue-800">
+          {t('reEngagement.page.kicker', lang)}
+        </span>
+        <h1 class="text-2xl font-extrabold text-navy leading-tight" id="re-title">
+          {t('reEngagement.page.title', lang)}
+        </h1>
+        <p class="text-sm text-[var(--text-secondary)]" id="re-subtitle"></p>
+      </header>
+
+      <!-- State: invited (primary action) -->
+      <section id="re-state-invited" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6 space-y-5">
+        <div class="space-y-2">
+          <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--text-muted)]">
+            {t('reEngagement.page.invitationLabel', lang)}
+          </h2>
+          <p class="text-[.95rem] leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap" id="re-message">
+          </p>
+          <p class="text-xs text-[var(--text-muted)]" id="re-invited-meta"></p>
+        </div>
+
+        <div class="space-y-2 border-t border-[var(--border-subtle)] pt-4">
+          <label for="re-note" class="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+            {t('reEngagement.page.noteLabel', lang)}
+            <span class="text-[var(--text-muted)] normal-case font-normal ml-1">
+              ({t('reEngagement.page.noteOptional', lang)})
+            </span>
+          </label>
+          <textarea
+            id="re-note"
+            rows="3"
+            maxlength="1000"
+            placeholder={t('reEngagement.page.notePlaceholder', lang)}
+            class="w-full px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-sm focus:outline-none focus:ring-2 focus:ring-orange/40"
+          ></textarea>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button
+            id="re-accept-btn"
+            data-action="accepted"
+            class="flex-1 min-w-[180px] px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm cursor-pointer border-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span class="re-btn-label">&#x2705; {t('reEngagement.page.acceptButton', lang)}</span>
+            <span class="re-btn-spinner hidden">{t('common.loading', lang)}</span>
+          </button>
+          <button
+            id="re-decline-btn"
+            data-action="declined"
+            class="flex-1 min-w-[180px] px-5 py-3 bg-[var(--surface-base)] hover:bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-default)] rounded-xl font-semibold text-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span class="re-btn-label">{t('reEngagement.page.declineButton', lang)}</span>
+            <span class="re-btn-spinner hidden">{t('common.loading', lang)}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- State: accepted -->
+      <section id="re-state-accepted" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-3">
+        <div class="text-3xl">&#x2705;</div>
+        <h2 class="text-lg font-bold text-emerald-900">{t('reEngagement.page.acceptedTitle', lang)}</h2>
+        <p class="text-sm text-emerald-800" id="re-accepted-body"></p>
+        <p class="text-sm text-emerald-800 italic" id="re-accepted-note"></p>
+      </section>
+
+      <!-- State: declined -->
+      <section id="re-state-declined" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6 space-y-3">
+        <div class="text-3xl">&#x1F44B;</div>
+        <h2 class="text-lg font-bold text-[var(--text-primary)]">{t('reEngagement.page.declinedTitle', lang)}</h2>
+        <p class="text-sm text-[var(--text-secondary)]" id="re-declined-body"></p>
+        <p class="text-sm text-[var(--text-muted)] italic" id="re-declined-note"></p>
+      </section>
+
+      <!-- State: cancelled -->
+      <section id="re-state-cancelled" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 space-y-3">
+        <div class="text-3xl">&#x26A0;&#xFE0F;</div>
+        <h2 class="text-lg font-bold text-amber-900">{t('reEngagement.page.cancelledTitle', lang)}</h2>
+        <p class="text-sm text-amber-800" id="re-cancelled-body"></p>
+      </section>
+
+      <!-- State: staged (edge case — not invited yet) -->
+      <section id="re-state-staged" class="hidden bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 space-y-3">
+        <div class="text-3xl">&#x23F3;</div>
+        <h2 class="text-lg font-bold text-[var(--text-primary)]">{t('reEngagement.page.stagedTitle', lang)}</h2>
+        <p class="text-sm text-[var(--text-secondary)]">{t('reEngagement.page.stagedBody', lang)}</p>
+      </section>
+
+      <footer class="text-center pt-4">
+        <a href={`/notifications?lang=${lang}`} class="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] no-underline">
+          &larr; {t('reEngagement.page.backToNotifications', lang)}
+        </a>
+      </footer>
+    </div>
+  </div>
+
+  <Toast />
+
+  <span id="i18n-acceptedBody" class="hidden">{t('reEngagement.page.acceptedBody', lang)}</span>
+  <span id="i18n-declinedBody" class="hidden">{t('reEngagement.page.declinedBody', lang)}</span>
+  <span id="i18n-cancelledBody" class="hidden">{t('reEngagement.page.cancelledBody', lang)}</span>
+  <span id="i18n-cancelledBodyWithReason" class="hidden">{t('reEngagement.page.cancelledBodyWithReason', lang)}</span>
+  <span id="i18n-noResponseNote" class="hidden">{t('reEngagement.page.noResponseNote', lang)}</span>
+  <span id="i18n-genericMessage" class="hidden">{t('reEngagement.page.genericMessage', lang)}</span>
+  <span id="i18n-invitedMeta" class="hidden">{t('reEngagement.page.invitedMeta', lang)}</span>
+  <span id="i18n-subtitle" class="hidden">{t('reEngagement.page.subtitle', lang)}</span>
+  <span id="i18n-toastAccepted" class="hidden">{t('reEngagement.page.toastAccepted', lang)}</span>
+  <span id="i18n-toastDeclined" class="hidden">{t('reEngagement.page.toastDeclined', lang)}</span>
+  <span id="i18n-toastError" class="hidden">{t('reEngagement.page.toastError', lang)}</span>
+  <span id="i18n-confirmDecline" class="hidden">{t('reEngagement.page.confirmDecline', lang)}</span>
+  <span id="i18n-pipelineId" class="hidden" data-id={id}></span>
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let pipeline: any = null;
+
+  function el(id: string) { return document.getElementById(id); }
+  function txt(id: string) { return el(id)?.textContent || ''; }
+  function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtDate(iso: string | null): string {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+
+  function showOnly(panel: 'loading' | 'denied' | 'error' | 'panel') {
+    ['re-loading', 're-denied', 're-error', 're-panel'].forEach(id => el(id)?.classList.add('hidden'));
+    el(`re-${panel}`)?.classList.remove('hidden');
+  }
+
+  function showState(state: string) {
+    ['invited', 'accepted', 'declined', 'cancelled', 'staged'].forEach(s => el(`re-state-${s}`)?.classList.add('hidden'));
+    el(`re-state-${state}`)?.classList.remove('hidden');
+  }
+
+  function showError(msg: string) {
+    const err = el('re-error-msg');
+    if (err) err.textContent = msg;
+    showOnly('error');
+  }
+
+  async function loadInvitation() {
+    if (!sb) return;
+    const pipelineId = el('i18n-pipelineId')?.dataset.id;
+    if (!pipelineId) { showError(txt('i18n-toastError')); return; }
+
+    const { data, error } = await sb.rpc('get_my_re_engagement_invitation', { p_pipeline_id: pipelineId });
+    if (error || !data || (data as any).error) {
+      const msg = error?.message || (data as any)?.error || txt('i18n-toastError');
+      showError(msg);
+      return;
+    }
+
+    pipeline = data;
+    showOnly('panel');
+
+    const subtitleTpl = txt('i18n-subtitle');
+    const subtitle = el('re-subtitle');
+    if (subtitle) subtitle.textContent = subtitleTpl.replace('{cycle}', pipeline.cycle_code || '');
+
+    showState(pipeline.state);
+
+    if (pipeline.state === 'invited') {
+      const msg = el('re-message');
+      if (msg) msg.textContent = pipeline.invitation_message || txt('i18n-genericMessage').replace('{cycle}', pipeline.cycle_code || '');
+      const meta = el('re-invited-meta');
+      if (meta) meta.textContent = txt('i18n-invitedMeta').replace('{date}', fmtDate(pipeline.invited_at));
+    } else if (pipeline.state === 'accepted') {
+      const body = el('re-accepted-body');
+      if (body) body.textContent = txt('i18n-acceptedBody').replace('{date}', fmtDate(pipeline.responded_at));
+      const note = el('re-accepted-note');
+      if (note && pipeline.response_note) note.textContent = `"${pipeline.response_note}"`;
+    } else if (pipeline.state === 'declined') {
+      const body = el('re-declined-body');
+      if (body) body.textContent = txt('i18n-declinedBody').replace('{date}', fmtDate(pipeline.responded_at));
+      const note = el('re-declined-note');
+      if (note && pipeline.response_note) note.textContent = `"${pipeline.response_note}"`;
+    } else if (pipeline.state === 'cancelled') {
+      const body = el('re-cancelled-body');
+      const tpl = pipeline.cancellation_reason ? txt('i18n-cancelledBodyWithReason') : txt('i18n-cancelledBody');
+      if (body) body.textContent = tpl.replace('{date}', fmtDate(pipeline.cancelled_at)).replace('{reason}', pipeline.cancellation_reason || '');
+    }
+  }
+
+  function setBusy(busy: boolean) {
+    ['re-accept-btn', 're-decline-btn'].forEach(id => {
+      const btn = el(id) as HTMLButtonElement | null;
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.querySelector('.re-btn-label')?.classList.toggle('hidden', busy);
+      btn.querySelector('.re-btn-spinner')?.classList.toggle('hidden', !busy);
+    });
+  }
+
+  async function respond(action: 'accepted' | 'declined') {
+    if (!sb || !pipeline) return;
+    if (action === 'declined' && !confirm(txt('i18n-confirmDecline'))) return;
+    const note = (el('re-note') as HTMLTextAreaElement | null)?.value.trim() || null;
+
+    setBusy(true);
+    try {
+      const { data, error } = await sb.rpc('respond_re_engagement', {
+        p_pipeline_id: pipeline.pipeline_id,
+        p_response: action,
+        p_note: note,
+      });
+      if (error || (data as any)?.error) {
+        const msg = error?.message || (data as any)?.error || txt('i18n-toastError');
+        (window as any).toast?.(msg, 'error');
+        setBusy(false);
+        return;
+      }
+      const successMsg = action === 'accepted' ? txt('i18n-toastAccepted') : txt('i18n-toastDeclined');
+      (window as any).toast?.(successMsg, 'success');
+      setTimeout(loadInvitation, 600);
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || txt('i18n-toastError'), 'error');
+      setBusy(false);
+    }
+  }
+
+  function bind() {
+    el('re-accept-btn')?.addEventListener('click', () => respond('accepted'));
+    el('re-decline-btn')?.addEventListener('click', () => respond('declined'));
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    bind();
+
+    const m = (window as any).navGetMember?.();
+    if (m) { loadInvitation(); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) loadInvitation();
+    }) as EventListener);
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { loadInvitation(); return; }
+    } catch (e) {}
+
+    showOnly('denied');
+  }
+
+  boot();
+</script>
