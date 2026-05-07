@@ -3,7 +3,7 @@
 **Status**: Proposed
 **Date**: 2026-05-07
 **Decider**: PM Vitor Maia Rodovalho (GP Núcleo IA & GP)
-**Trigger**: p116 backfill manual revelou que `cv_extracted_text` esteve vazio para todos candidatos por ~23 dias após ADR-0059 W1 ter shipado a coluna. Auditoria pós-p116 mostrou 55 selection_applications dos últimos 90 dias com `resume_url IS NOT NULL AND cv_extracted_text IS NULL` — gap operacional sem pipeline de captação.
+**Trigger**: p116 backfill manual revelou que `cv_extracted_text` esteve vazio por ~23 dias após ADR-0059 W1 ter shipado a coluna — pipeline de captação inexistente. Audit p117 refinado mostrou que backlog actionable hoje = 0 (todos "órfãos" sem consent), mas a ausência do pipeline silenciosamente penaliza qualquer próximo candidato com consent + resume_url que fluir via vep-sync.
 
 ---
 
@@ -18,33 +18,53 @@ ADR-0074 (p108 Onda 3) shipou `pmi-ai-triage` que, após p116 (commit `b1da718`)
 
 Mas o **pipeline que preenche essa coluna nunca foi implementado**. Em p116, fizemos backfill manual de 16 candidatos do cycle3-2026-b2 via script Python local (`/tmp/extract_cv.py`, não-commitado, one-shot) usando pypdf + URLs frescas de SAS extraídas de um JSON do worker `pmi-vep-sync`.
 
-### Evidência da urgência (p116 audit)
+### Evidência: gap real, mas backlog actionable = 0
+
+Audit inicial p117 (broad):
 
 ```sql
 SELECT 
   COUNT(*) AS total_apps,
   COUNT(*) FILTER (WHERE cv_extracted_text IS NOT NULL) AS with_extracted,
-  COUNT(*) FILTER (WHERE resume_url IS NOT NULL AND cv_extracted_text IS NULL) AS need_extraction,
-  COUNT(*) FILTER (WHERE resume_url IS NULL) AS no_resume
+  COUNT(*) FILTER (WHERE resume_url IS NOT NULL AND cv_extracted_text IS NULL) AS need_extraction
 FROM selection_applications
 WHERE created_at > now() - interval '90 days';
--- total=103, with_extracted=16, need_extraction=55, no_resume=32
+-- total=103, with_extracted=16, need_extraction=55
 ```
 
-55 apps órfãos (3.4× o volume de cycle3-2026-b2 sozinho). Backfill manual não escala — cada novo ciclo gera novos órfãos enquanto o pipeline está ausente.
+Audit refinado (p117, post hoc) — filtrar por consent é load-bearing:
+
+```sql
+SELECT
+  COUNT(*) AS total_with_consent_90d,
+  COUNT(*) FILTER (WHERE cv_extracted_text IS NOT NULL) AS extracted,
+  COUNT(*) FILTER (WHERE resume_url IS NOT NULL AND cv_extracted_text IS NULL) AS need_extraction_with_consent
+FROM selection_applications
+WHERE created_at > now() - interval '90 days'
+  AND consent_ai_analysis_at IS NOT NULL
+  AND consent_ai_analysis_revoked_at IS NULL;
+-- total_with_consent=16, extracted=16, need_extraction_with_consent=0
+```
+
+**Backlog actionable hoje = 0.** Os 55 "órfãos" do audit broad NÃO TÊM consent_ai_analysis_at e portanto nunca seriam alvo do pipeline (cron RPC + EF guard ambos requerem consent ativo). A urgência real desta ADR é **forward-looking**: novo candidato com consent que entre via vep-sync precisa ter cv_extracted_text populado para a triagem AI (ADR-0074) operar com input completo.
+
+### Por que ainda vale shipar
+
+- Próximo ciclo seleção (ou ciclo3-2026-b3 quando expandir consent collection) gerará novos rows com consent + resume_url. Sem pipeline, repete o gap p116 (script ad-hoc, drift bilateral revelado tarde demais).
+- Lazy fallback em pmi-ai-triage cobre edge case "admin clica Triage em app que ainda não foi extraído pelo cron"; sem ADR shipped, esse path silenciosamente envia prompt sem CV.
+- Pipeline é pré-requisito de qualquer evolução de ARM-11 acima de 4.5 (calibração precisa de input completo para drift bilateral ser sinal de prompt tuning, não de pipeline gap).
+- Pattern reusável: futuras enrichments (LinkedIn se aprovado, etc.) seguem o mesmo molde EF + cron + ai_processing_log.
 
 ### Drift bilateral revelado em p116
 
-A/B re-triage pós-backfill mostrou que CVs ricos podem mover scores significativamente (João Coelho 4→7, Thayanne 1→3). Sem CV, AI triage opera com input incompleto e gera scores enviesados (tendência a subestimar). O pipeline é load-bearing para a calibração de ARM-11 evoluir além de 4.5.
+A/B re-triage pós-backfill mostrou que CVs ricos podem mover scores significativamente (João Coelho 4→7, Thayanne 1→3). Sem CV, AI triage opera com input incompleto e gera scores enviesados (tendência a subestimar). Pipeline é load-bearing para calibração futura.
 
 ### Restrições upstream (worker pmi-vep-sync)
 
 - `resume_url` é uma URL SAS Azure com validade ~24h
 - Worker `pmi-vep-sync` (Cloudflare Worker, repo separado) faz refresh dessas URLs
-- Worker tem histórico de bot-detection do Azure (0 runs consecutivos no email alert recente — handoff p116)
-- Sem worker funcionando, URLs eventualmente expiram e janela de extração fecha
-
-Pipeline de extração precisa rodar **dentro da janela de validade do SAS** ou requerer fresh URLs do worker.
+- Audit p117: worker IS operating (last application inserted ~1h13m antes do audit; 13 rows/7d, dentro do volume normal de fluxo de candidaturas). SAS tokens em apps recentes válidos por ~22h+. **Boot prompt p116/p117 estavam errados** sobre "0 runs" — sinal de email alert era diferente do indicador real de função worker.
+- Pipeline de extração precisa rodar dentro da janela de validade do SAS (15min cron + 22h SAS = margem confortável)
 
 ### Não-escopo
 
