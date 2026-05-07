@@ -1,6 +1,6 @@
 # ADR-0075: CV Extraction Pipeline — Deno + unpdf + cron-driven backfill
 
-**Status**: Proposed
+**Status**: Accepted (2026-05-07 — smoke 3 paths PASS)
 **Date**: 2026-05-07
 **Decider**: PM Vitor Maia Rodovalho (GP Núcleo IA & GP)
 **Trigger**: p116 backfill manual revelou que `cv_extracted_text` esteve vazio por ~23 dias após ADR-0059 W1 ter shipado a coluna — pipeline de captação inexistente. Audit p117 refinado mostrou que backlog actionable hoje = 0 (todos "órfãos" sem consent), mas a ausência do pipeline silenciosamente penaliza qualquer próximo candidato com consent + resume_url que fluir via vep-sync.
@@ -304,6 +304,49 @@ Adicionar `cv_extraction_attempts smallint DEFAULT 0` em selection_applications?
 - LGPD Art. 37 (registros de tratamento — ai_processing_log)
 - LGPD Art. 16 (retenção — purge via cycle_decision_date documentado em ADR-0059)
 - p116 handoff: `memory/handoff_p116_post_cv_extraction.md` (manual backfill evidence + 55 orphans + drift bilateral)
-- p117 boot prompt: `memory/next_session_prompt.md`
+- p117 handoff: `memory/handoff_p117_post_adr_0075_implementation.md` (full cycle: design + audit + impl + smoke)
 - unpdf: https://github.com/unjs/unpdf (Deno-supported per repo README)
 - Anthropic PDF support: https://platform.claude.com/docs/en/build-with-claude/pdf-support (Option B reference for future)
+
+---
+
+## Amendment A — 2026-05-07: Implementation shipped, status promoted to Accepted
+
+Implementação completa em mesma sessão p117 (commit `5507352`):
+
+| Component | File | Verified |
+|-----------|------|----------|
+| ADR | `docs/adr/ADR-0075-cv-extraction-pipeline.md` | This doc |
+| EF extract-cv-text | `supabase/functions/extract-cv-text/index.ts` | Deployed (script size 1.559MB) |
+| Migration | `supabase/migrations/20260517080000_arm11_adr_0075_cv_extraction_pipeline.sql` | Applied via MCP + local file + CLI repair |
+| Cron job | `extract-cv-text-15min` | Scheduled (jobid 43, active=true, `*/15 * * * *`) |
+| pmi-ai-triage lazy fallback | `supabase/functions/pmi-ai-triage/index.ts` (line 122 + 274) | Deployed |
+
+### Smoke evidence (3 paths, all PASS)
+
+| Path | App | Pre chars | Post chars | Status | Duration | Log row |
+|------|-----|-----------|------------|--------|----------|---------|
+| Direct EF invoke | Alexandre Fortes | 2153 → null | 2104 | 200 | 1351ms | status=completed, both hashes set |
+| Idempotency re-run | Alexandre (already populated) | 2104 | 2104 | 200 noop_reason=already_extracted | early return | 0 new logs (correct) |
+| Batch RPC (cron simulation, `SET LOCAL role TO service_role`) | João Uzejka | 6548 → null | 6393 | 200 triggered_by=cron | 1585ms | status=completed |
+
+Pre vs post char count diff (2153→2104, 6548→6393) é ~2-2.4% — diferença normal entre pypdf (p116 backfill) e unpdf (atual). Mesma posição estrutural; diferença é só whitespace handling.
+
+### Bug caught durante smoke (resolvido em mesma sessão)
+
+EF auth gate retornou 401 na primeira invocação porque `tk !== Deno.env.SUPABASE_SERVICE_ROLE_KEY` falhou: vault.decrypted_secrets `service_role_key` e env var injetada NÃO bateram string-to-string. Fix: copiar pattern JWT-decode `payload.role === 'service_role'` de pmi-ai-triage. Sediment registrado em `memory/feedback_service_role_jwt_decode_pattern.md`.
+
+### Decisão de implementação não-óbvia: PDF detection via magic header
+
+Azure Blob serve octet-stream para PDFs (não `application/pdf`). Inspeção de `bytes[0..4] === '%PDF'` é mais confiável que checar `Content-Type` header. EF combina ambos os checks (magic OR content-type) para máxima cobertura.
+
+### Critérios de Accepted cumpridos
+
+- ✅ Implementação shipped (3 componentes principais)
+- ✅ Smoke 3 paths PASS (cobre direct invoke + idempotency + batch RPC)
+- ✅ Build clean (npx astro build)
+- ✅ Invariants 13/13 (no violations any severity)
+- ✅ Push to origin/main
+- ✅ Sediment lessons capturadas (auth pattern + audit gate)
+
+ARM-11 maturidade 4.5 → **5.0** (gathering pipeline operational + drift dashboard pré-existente + audit refinado).

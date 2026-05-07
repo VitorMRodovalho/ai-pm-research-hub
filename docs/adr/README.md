@@ -78,7 +78,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0072-arm1-lead-capture-funnel.md` — ARM-1 lead capture funnel (visitor_leads enrichment).
 - `ADR-0073-issue116-calendar-booking-sync-apps-script.md` — #116 calendar booking sync via Apps Script.
 - `ADR-0074-onda3-arm-dual-model-ai-architecture.md` — ARM Onda 3 dual-model AI architecture (Sonnet 4.6 triage + Haiku 4.5 briefing + Gemini qualitative legacy).
-- `ADR-0075-cv-extraction-pipeline.md` — CV extraction pipeline (forward-looking): Deno + unpdf EF + cron 15min + lazy fallback in pmi-ai-triage. Audit revelou backlog actionable = 0 hoje (todos "órfãos" sem consent); urgência é para próximos ciclos com consent collection. **Status: Proposed (2026-05-07).**
+- `ADR-0075-cv-extraction-pipeline.md` — CV extraction pipeline: Deno + unpdf EF + cron 15min + lazy fallback in pmi-ai-triage. Audit revelou backlog actionable = 0 hoje (todos "órfãos" sem consent); pipeline forward-looking. **Status: Accepted (2026-05-07 — smoke 3 paths PASS, Amendment A documenta evidence).**
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
