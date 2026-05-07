@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, RefreshCw, Bot, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Loader2, RefreshCw, Bot, TrendingUp, TrendingDown, Minus, PlayCircle } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface ValidatorRow {
@@ -104,6 +104,8 @@ export default function AiCalibrationIsland() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cycleFilter, setCycleFilter] = useState<string>('');
+  const [triggering, setTriggering] = useState(false);
+  const [triggerToast, setTriggerToast] = useState<string | null>(null);
 
   const lang = useMemo(() => {
     if (typeof window === 'undefined') return 'pt-BR';
@@ -141,6 +143,28 @@ export default function AiCalibrationIsland() {
     };
     boot();
   }, [fetchData, getSb]);
+
+  const handleTriggerRun = useCallback(async () => {
+    const sb = getSb();
+    if (!sb || triggering) return;
+    setTriggering(true);
+    setError(null);
+    setTriggerToast(null);
+    const { data: result, error: rpcErr } = await sb.rpc('trigger_ai_calibration_run');
+    if (rpcErr) {
+      setError(rpcErr.message);
+    } else if (result?.error) {
+      setError(result.error);
+    } else {
+      const cycles = result?.cycles_processed ?? 0;
+      setTriggerToast(
+        t('comp.aiCalibration.triggerSuccess', `Calibração executada — ${cycles} ciclo(s) processado(s).`).replace('{cycles}', String(cycles))
+      );
+      await fetchData();
+      setTimeout(() => setTriggerToast(null), 5000);
+    }
+    setTriggering(false);
+  }, [getSb, fetchData, triggering, t]);
 
   const cycleOptions = useMemo(() => {
     if (!data?.runs) return [] as Array<{ id: string; code: string }>;
@@ -220,6 +244,20 @@ export default function AiCalibrationIsland() {
           </select>
           <button
             type="button"
+            onClick={handleTriggerRun}
+            disabled={triggering}
+            title={t('comp.aiCalibration.triggerHint', 'Roda agora a calibração e gera nova rodada com as validações desde o último cron.')}
+            className="px-3 py-2 rounded-lg border border-[var(--accent-primary)] text-[var(--accent-primary)] text-sm font-medium hover:bg-[var(--accent-primary)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          >
+            {triggering
+              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              : <PlayCircle className="h-4 w-4" aria-hidden />}
+            {triggering
+              ? t('comp.aiCalibration.triggerRunning', 'Rodando...')
+              : t('comp.aiCalibration.triggerRun', 'Rodar agora')}
+          </button>
+          <button
+            type="button"
             onClick={fetchData}
             className="px-3 py-2 rounded-lg bg-[var(--accent-primary)] text-white text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
           >
@@ -228,6 +266,16 @@ export default function AiCalibrationIsland() {
           </button>
         </div>
       </header>
+
+      {triggerToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-sm"
+        >
+          {triggerToast}
+        </div>
+      )}
 
       {/* Latest Run card */}
       <section className={cardClass + ' mb-6'} aria-labelledby="latest-run-heading">
