@@ -89,6 +89,10 @@ const { lang = 'pt-BR' } = Astro.props;
           class="hidden mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#05BFE0] text-navy rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
           {t('hero.joinMeet', lang)} →
         </a>
+        <a id="hero-general-youtube" href="#" target="_blank" rel="noopener"
+          class="hidden mt-2 ml-2 inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
+          🎥 {t('hero.watchYoutube', lang)} →
+        </a>
       </div>
 
       <!-- Tribe Info -->
@@ -141,6 +145,7 @@ const { lang = 'pt-BR' } = Astro.props;
 <span id="hero-i18n-today" class="hidden">{t('hero.member.today', lang)}</span>
 <span id="hero-i18n-noMeetings" class="hidden">{t('hero.member.noMeetings', lang)}</span>
 <span id="hero-i18n-joinMeet" class="hidden">{t('hero.joinMeet', lang)}</span>
+<span id="hero-i18n-watchYoutube" class="hidden">{t('hero.watchYoutube', lang)}</span>
 <span id="hero-i18n-noTribe" class="hidden">{t('hero.member.noTribe', lang)}</span>
 <span id="hero-i18n-goWorkspace" class="hidden">{t('hero.member.goWorkspace', lang)}</span>
 <span id="hero-i18n-noData" class="hidden">{t('hero.member.noData', lang)}</span>
@@ -208,6 +213,7 @@ const { lang = 'pt-BR' } = Astro.props;
       const dateEl = document.getElementById('hero-general-date');
       const timeEl = document.getElementById('hero-general-time');
       const linkEl = document.getElementById('hero-general-link') as HTMLAnchorElement;
+      const ytEl = document.getElementById('hero-general-youtube') as HTMLAnchorElement;
 
       sb.from('events')
         .select('id, title, date, meeting_link, recording_url, youtube_url, duration_minutes')
@@ -237,6 +243,10 @@ const { lang = 'pt-BR' } = Astro.props;
             if (ev.meeting_link && linkEl) {
               linkEl.href = ev.meeting_link;
               linkEl.classList.remove('hidden');
+            }
+            if (isToday && ev.youtube_url && ytEl) {
+              ytEl.href = ev.youtube_url;
+              ytEl.classList.remove('hidden');
             }
             if (!isToday) {
               const lastWithRecording = (evts || []).reverse().find(function(e: any) {

@@ -29,8 +29,59 @@ const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
     <div class="mt-4">
       <SyncHealthWidget client:load lang={lang} />
     </div>
+
+    <div class="mt-6 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 class="text-base font-bold text-[var(--text-primary)]">Próxima Reunião Geral</h3>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">Cria evento <code>type=geral</code> em <strong>last+14 dias</strong>. Reusa Meet recorrente; YouTube live opcional.</p>
+        </div>
+        <button id="btn-create-next-geral"
+          class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all">
+          Criar próxima quinzenal
+        </button>
+      </div>
+      <div id="next-geral-status" class="mt-3 hidden text-sm"></div>
+    </div>
   </div>
 </AdminLayout>
+
+<script>
+  import { getSupabase } from '../../lib/supabase';
+  const btn = document.getElementById('btn-create-next-geral') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('next-geral-status') as HTMLDivElement | null;
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      const meet = prompt('Meet URL (obrigatório, ex: https://meet.google.com/xxx-yyyy-zzz):', 'https://meet.google.com/jgu-ibro-tiq');
+      if (!meet || !meet.trim()) return;
+      const yt = prompt('YouTube live URL (opcional, deixe em branco se ainda não existir):', '');
+      btn.disabled = true;
+      btn.textContent = 'Criando...';
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb.rpc('create_next_geral_meeting', {
+          p_meeting_link: meet.trim(),
+          p_youtube_url: yt && yt.trim() ? yt.trim() : null,
+        });
+        if (error) throw error;
+        if (statusEl) {
+          statusEl.classList.remove('hidden');
+          statusEl.classList.add('text-green-600');
+          statusEl.innerHTML = `Criado: <strong>${(data as any)?.title}</strong> em <strong>${(data as any)?.date}</strong>`;
+        }
+      } catch (e: any) {
+        if (statusEl) {
+          statusEl.classList.remove('hidden');
+          statusEl.classList.add('text-red-600');
+          statusEl.textContent = 'Erro: ' + (e?.message || String(e));
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Criar próxima quinzenal';
+      }
+    });
+  }
+</script>
 
 <script is:inline>
   document.addEventListener('DOMContentLoaded', () => {

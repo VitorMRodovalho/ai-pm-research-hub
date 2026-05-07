@@ -483,6 +483,7 @@ const esLATAM: Record<string, string> = {
   'hero.nextGeneralMeeting': 'Próxima reunión general:',
   'hero.meetingSchedule': 'Cronograma recurrente del ciclo',
   'hero.joinMeet': 'Entrar al Meet',
+  'hero.watchYoutube': 'Ver en vivo por YouTube',
   'hero.stat.members': 'investigadores',
   'hero.stat.tribes': 'tribus',
   'hero.stat.initiatives': 'iniciativas',
