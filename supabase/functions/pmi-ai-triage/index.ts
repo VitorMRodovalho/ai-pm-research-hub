@@ -113,9 +113,14 @@ interface AppRow {
   certifications: string | null;
   areas_of_interest: string | null;
   availability_declared: string | null;
+  cv_extracted_text: string | null;
   consent_ai_analysis_at: string | null;
   consent_ai_analysis_revoked_at: string | null;
 }
+
+// Cap CV text inclusion to control prompt cost. Median CV ~5500 chars; outliers
+// (Edinan 21498) get truncated. Tail typically has less signal than head.
+const CV_TEXT_MAX_CHARS = 12000;
 
 function buildUserPrompt(app: AppRow): string {
   const parts: string[] = [];
@@ -132,6 +137,14 @@ function buildUserPrompt(app: AppRow): string {
   if (app.reason_for_applying) parts.push(`\n## Razão da aplicação\n${app.reason_for_applying}`);
   if (app.areas_of_interest) parts.push(`\n## Áreas de interesse\n${app.areas_of_interest}`);
   if (app.availability_declared) parts.push(`\n## Disponibilidade\n${app.availability_declared}`);
+  if (app.cv_extracted_text && app.cv_extracted_text.trim().length > 0) {
+    let cv = app.cv_extracted_text.trim();
+    const truncated = cv.length > CV_TEXT_MAX_CHARS;
+    if (truncated) cv = cv.slice(0, CV_TEXT_MAX_CHARS);
+    parts.push(
+      `\n## CV extraído do PDF/TXT (pode conter ruído de extração — interprete com flexibilidade${truncated ? `; truncado em ${CV_TEXT_MAX_CHARS} chars do total ${app.cv_extracted_text.length}` : ""})\n${cv}`,
+    );
+  }
   parts.push(`\nAplique a rubrica e retorne JSON válido { score: 0-10, reasoning: <=500 chars PT-BR, confidence: high|medium|low }.`);
   return parts.join("\n");
 }
@@ -262,7 +275,7 @@ Deno.serve(async (req) => {
     const { data: app, error: appErr } = await sb
       .from("selection_applications")
       .select(
-        "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, consent_ai_analysis_at, consent_ai_analysis_revoked_at",
+        "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, consent_ai_analysis_at, consent_ai_analysis_revoked_at",
       )
       .eq("id", application_id)
       .single<AppRow>();
