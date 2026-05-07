@@ -200,7 +200,7 @@ export default function AiCalibrationIsland() {
             {t('comp.aiCalibration.title', 'Calibração de IA')}
           </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            {t('comp.aiCalibration.subtitle', '')}
+            {t('comp.aiCalibration.subtitle', 'Drift entre Sonnet 4.6 (triagem IA) e avaliadores humanos. Última rodada do cron + breakdown por validador.')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -270,7 +270,7 @@ export default function AiCalibrationIsland() {
           )}
         </div>
         <p className="text-xs text-[var(--text-muted)] mt-2 italic">
-          {t('comp.aiCalibration.deltaTooltip', '')}
+          {t('comp.aiCalibration.deltaTooltip', 'Diferença humano - IA. Positivo = humano deu score maior; negativo = IA superestimou.')}
         </p>
       </section>
 
@@ -285,7 +285,7 @@ export default function AiCalibrationIsland() {
 
         {!breakdown || breakdown.global.total_validations === 0 ? (
           <p className="text-sm text-[var(--text-muted)] py-2">
-            {t('comp.aiCalibration.validatorEmpty', '')}
+            {t('comp.aiCalibration.validatorEmpty', 'Sem validações registradas no período (janela 4 semanas). Use 👍/👎/Override na tela de avaliação para gerar dados.')}
           </p>
         ) : (
           <>
@@ -399,7 +399,7 @@ export default function AiCalibrationIsland() {
         </h2>
         {outliers.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)] py-2">
-            {t('comp.aiCalibration.outliersEmpty', '')}
+            {t('comp.aiCalibration.outliersEmpty', 'Sem outliers (nenhuma app com Sonnet score + final_score neste ciclo).')}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -438,7 +438,7 @@ export default function AiCalibrationIsland() {
         </h2>
         {data.runs.length <= 1 ? (
           <p className="text-sm text-[var(--text-muted)] py-2">
-            {t('comp.aiCalibration.historyEmpty', '')}
+            {t('comp.aiCalibration.historyEmpty', 'Apenas 1 rodada disponível. Histórico aparece quando o cron rodar mais vezes.')}
           </p>
         ) : (
           <div className="overflow-x-auto">
