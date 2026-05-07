@@ -114,8 +114,38 @@ interface AppRow {
   areas_of_interest: string | null;
   availability_declared: string | null;
   cv_extracted_text: string | null;
+  resume_url: string | null;
   consent_ai_analysis_at: string | null;
   consent_ai_analysis_revoked_at: string | null;
+}
+
+// p117 ADR-0075 lazy fallback: when triage runs and CV text is missing but
+// resume_url is present, sync-await extract-cv-text EF before building prompt.
+// Bounded timeout so triage proceeds with empty CV if extraction is slow/down.
+const LAZY_EXTRACT_TIMEOUT_MS = 12_000;
+
+async function lazyExtractCv(applicationId: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LAZY_EXTRACT_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/extract-cv-text`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ application_id: applicationId, triggered_by: "inline_triage_fallback" }),
+        signal: controller.signal,
+      });
+      return res.ok;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    console.warn("[pmi-ai-triage] lazy extract failed:", e instanceof Error ? e.message : String(e));
+    return false;
+  }
 }
 
 // Cap CV text inclusion to control prompt cost. Median CV ~5500 chars; outliers
@@ -272,11 +302,12 @@ Deno.serve(async (req) => {
     : "admin_request";
 
   try {
-    const { data: app, error: appErr } = await sb
+    const SELECT_COLS =
+      "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, resume_url, consent_ai_analysis_at, consent_ai_analysis_revoked_at";
+
+    let { data: app, error: appErr } = await sb
       .from("selection_applications")
-      .select(
-        "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, consent_ai_analysis_at, consent_ai_analysis_revoked_at",
-      )
+      .select(SELECT_COLS)
       .eq("id", application_id)
       .single<AppRow>();
     if (appErr || !app) {
@@ -287,6 +318,21 @@ Deno.serve(async (req) => {
         { error: "consent_required", message: "Candidato não deu consent ou revogou. AI triage não roda." },
         403,
       );
+    }
+
+    // p117 ADR-0075 lazy fallback: ensure cv_extracted_text is populated before
+    // building prompt. If cron hasn't picked up this app yet (race window),
+    // synchronously dispatch extraction with bounded timeout, then re-fetch.
+    if (app.resume_url && (!app.cv_extracted_text || app.cv_extracted_text.trim().length === 0)) {
+      const ok = await lazyExtractCv(application_id);
+      if (ok) {
+        const refresh = await sb
+          .from("selection_applications")
+          .select(SELECT_COLS)
+          .eq("id", application_id)
+          .single<AppRow>();
+        if (refresh.data) app = refresh.data;
+      }
     }
 
     const userPrompt = buildUserPrompt(app);
