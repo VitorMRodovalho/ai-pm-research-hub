@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2, RefreshCw, Bot, TrendingUp, TrendingDown, Minus, PlayCircle, X, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
+} from 'recharts';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface ValidatorRow {
@@ -248,6 +251,27 @@ export default function AiCalibrationIsland() {
   const breakdown = latest?.validator_breakdown ?? null;
   const outliers = (latest?.sample_payload ?? []) as OutlierRow[];
   const purposes = breakdown?.by_purpose ? Object.entries(breakdown.by_purpose) : [];
+
+  const driftSeries = useMemo(() => {
+    if (!data?.runs || data.runs.length < 2) return [];
+    const langTag = lang === 'pt-BR' ? 'pt-BR' : lang === 'es-LATAM' ? 'es-ES' : 'en-US';
+    return [...data.runs]
+      .reverse()
+      .map((r, idx) => ({
+        idx,
+        ran_at: r.ran_at,
+        label: new Date(r.ran_at).toLocaleString(langTag, {
+          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+        }),
+        mean_delta_abs: r.mean_delta_abs ?? null,
+        mean_delta_signed: r.mean_delta_signed ?? null,
+        n_compared: r.n_compared,
+        drift_count_high: r.drift_count_high,
+        triggered_by: r.triggered_by,
+      }));
+  }, [data, lang]);
+
+  const driftThreshold = latest?.drift_threshold ?? 2;
 
   const cardClass = 'bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5';
   const tileClass = 'flex flex-col gap-1';
@@ -551,6 +575,77 @@ export default function AiCalibrationIsland() {
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      {/* Drift over time */}
+      <section className={cardClass + ' mb-6'} aria-labelledby="drift-trend-heading">
+        <h2 id="drift-trend-heading" className={sectionTitle}>
+          {t('comp.aiCalibration.driftTrend', 'Drift ao longo do tempo')}
+        </h2>
+        {driftSeries.length < 2 ? (
+          <p className="text-sm text-[var(--text-muted)] py-2">
+            {t('comp.aiCalibration.driftTrendEmpty', 'Histórico curto. Plot aparece quando houver 2+ rodadas registradas.')}
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-[var(--text-muted)] mb-3">
+              {t('comp.aiCalibration.driftTrendHint', 'Cada ponto = 1 rodada. Linha rosa = média absoluta dos deltas (quanto menor, melhor calibrado). Linha azul = delta médio sinalizado (positivo = humano > IA). Banda tracejada = limite de drift alto.')}
+            </p>
+            <div className="w-full" style={{ height: 320 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={driftSeries} margin={{ top: 10, right: 16, bottom: 32, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
+                  <XAxis
+                    dataKey="label"
+                    stroke="var(--text-muted)"
+                    tick={{ fontSize: 11 }}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis stroke="var(--text-muted)" tick={{ fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                    formatter={(value: number, name: string) => [Number(value).toFixed(2), name]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <ReferenceLine
+                    y={driftThreshold}
+                    stroke="#f43f5e"
+                    strokeDasharray="4 2"
+                    label={{ value: `+${driftThreshold}`, fill: '#f43f5e', fontSize: 10, position: 'right' }}
+                  />
+                  <ReferenceLine
+                    y={-driftThreshold}
+                    stroke="#f43f5e"
+                    strokeDasharray="4 2"
+                    label={{ value: `−${driftThreshold}`, fill: '#f43f5e', fontSize: 10, position: 'right' }}
+                  />
+                  <ReferenceLine y={0} stroke="var(--text-muted)" />
+                  <Line
+                    type="monotone"
+                    dataKey="mean_delta_abs"
+                    stroke="#f43f5e"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    name={t('comp.aiCalibration.meanDeltaAbs', 'Δ médio (abs)')}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="mean_delta_signed"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    name={t('comp.aiCalibration.meanDeltaSigned', 'Δ médio (signed)')}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </section>
 
