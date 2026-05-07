@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, RefreshCw, Bot, TrendingUp, TrendingDown, Minus, PlayCircle } from 'lucide-react';
+import { Loader2, RefreshCw, Bot, TrendingUp, TrendingDown, Minus, PlayCircle, X, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface ValidatorRow {
@@ -31,6 +31,32 @@ interface ValidatorBreakdown {
   };
   by_validator: ValidatorRow[];
   by_purpose: Record<string, PurposeBreakdown>;
+}
+
+interface ValidationDetail {
+  id: string;
+  application_id: string;
+  applicant_name: string;
+  cycle_code: string | null;
+  application_status: string | null;
+  ai_purpose: string;
+  ai_model: string | null;
+  ai_score: number | null;
+  ai_verdict: string | null;
+  validation_action: 'agree' | 'disagree' | 'override' | string;
+  override_score: number | null;
+  comment: string | null;
+  validated_at: string;
+}
+
+interface ValidationDetailsResponse {
+  validator_id: string;
+  validator_name: string | null;
+  validations: ValidationDetail[];
+  count: number;
+  cycle_filter: string | null;
+  limit: number;
+  error?: string;
 }
 
 interface OutlierRow {
@@ -106,6 +132,10 @@ export default function AiCalibrationIsland() {
   const [cycleFilter, setCycleFilter] = useState<string>('');
   const [triggering, setTriggering] = useState(false);
   const [triggerToast, setTriggerToast] = useState<string | null>(null);
+  const [drillValidator, setDrillValidator] = useState<{ id: string; name: string | null } | null>(null);
+  const [drillDetails, setDrillDetails] = useState<ValidationDetailsResponse | null>(null);
+  const [drillLoading, setDrillLoading] = useState(false);
+  const [drillError, setDrillError] = useState<string | null>(null);
 
   const lang = useMemo(() => {
     if (typeof window === 'undefined') return 'pt-BR';
@@ -165,6 +195,43 @@ export default function AiCalibrationIsland() {
     }
     setTriggering(false);
   }, [getSb, fetchData, triggering, t]);
+
+  const openDrill = useCallback(async (validatorId: string, validatorName: string | null) => {
+    const sb = getSb();
+    if (!sb) return;
+    setDrillValidator({ id: validatorId, name: validatorName });
+    setDrillLoading(true);
+    setDrillError(null);
+    setDrillDetails(null);
+    const { data: result, error: rpcErr } = await sb.rpc('list_validations_by_validator', {
+      p_validator_id: validatorId,
+      p_limit: 100,
+      p_cycle_id: cycleFilter || null,
+    });
+    if (rpcErr) {
+      setDrillError(rpcErr.message);
+    } else if (result?.error) {
+      setDrillError(result.error);
+    } else {
+      setDrillDetails(result as ValidationDetailsResponse);
+    }
+    setDrillLoading(false);
+  }, [getSb, cycleFilter]);
+
+  const closeDrill = useCallback(() => {
+    setDrillValidator(null);
+    setDrillDetails(null);
+    setDrillError(null);
+  }, []);
+
+  useEffect(() => {
+    if (!drillValidator) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDrill();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drillValidator, closeDrill]);
 
   const cycleOptions = useMemo(() => {
     if (!data?.runs) return [] as Array<{ id: string; code: string }>;
@@ -380,8 +447,16 @@ export default function AiCalibrationIsland() {
                     </thead>
                     <tbody>
                       {breakdown.by_validator.map((v) => (
-                        <tr key={v.validator_id} className="border-b border-[var(--border-default)] last:border-b-0">
-                          <td className="py-2 pr-3">{v.name || DASH}</td>
+                        <tr
+                          key={v.validator_id}
+                          onClick={() => openDrill(v.validator_id, v.name)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrill(v.validator_id, v.name); } }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={t('comp.aiCalibration.drillOpenAria', `Ver validações de ${v.name || ''}`).replace('{name}', v.name || '')}
+                          className="border-b border-[var(--border-default)] last:border-b-0 cursor-pointer hover:bg-[var(--surface-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:ring-inset"
+                        >
+                          <td className="py-2 pr-3 text-[var(--accent-primary)] font-medium underline-offset-2 hover:underline">{v.name || DASH}</td>
                           <td className="py-2 pr-3 text-right">{v.validations_n}</td>
                           <td className="py-2 pr-3 text-right">
                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${agreementColor(v.agreement_rate)}`}>
@@ -521,6 +596,120 @@ export default function AiCalibrationIsland() {
           </div>
         )}
       </section>
+
+      {drillValidator && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 py-8 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) closeDrill(); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="drill-heading"
+        >
+          <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+            <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-[var(--border-default)]">
+              <div>
+                <h2 id="drill-heading" className="text-lg font-bold text-[var(--text-primary)]">
+                  {t('comp.aiCalibration.drillTitle', 'Validações por avaliador')}
+                </h2>
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">
+                  {drillValidator.name || t('comp.aiCalibration.drillUnknown', 'Avaliador sem nome')}
+                  {drillDetails && (
+                    <span className="ml-2 text-xs">
+                      · {drillDetails.count} {t('comp.aiCalibration.drillCountSuffix', 'validações')}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDrill}
+                aria-label={t('comp.aiCalibration.drillClose', 'Fechar')}
+                className="p-1.5 rounded-lg hover:bg-[var(--surface-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                <X className="h-5 w-5" aria-hidden />
+              </button>
+            </header>
+
+            <div className="overflow-y-auto px-5 py-4 flex-1">
+              {drillLoading && (
+                <div className="flex items-center justify-center py-12 text-[var(--text-muted)]">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  {t('comp.aiCalibration.drillLoading', 'Carregando validações...')}
+                </div>
+              )}
+              {drillError && (
+                <p className="text-sm text-rose-600 py-3">{drillError}</p>
+              )}
+              {!drillLoading && !drillError && drillDetails && drillDetails.count === 0 && (
+                <p className="text-sm text-[var(--text-muted)] py-3">
+                  {t('comp.aiCalibration.drillEmpty', 'Nenhuma validação encontrada para este avaliador no ciclo selecionado.')}
+                </p>
+              )}
+              {!drillLoading && !drillError && drillDetails && drillDetails.count > 0 && (
+                <ul className="flex flex-col gap-3">
+                  {drillDetails.validations.map((vd) => {
+                    const actionBadge =
+                      vd.validation_action === 'agree'
+                        ? { Icon: ThumbsUp, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300', label: t('comp.aiCalibration.actionAgree', 'Concorda') }
+                        : vd.validation_action === 'disagree'
+                          ? { Icon: ThumbsDown, cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300', label: t('comp.aiCalibration.actionDisagree', 'Discorda') }
+                          : { Icon: Edit3, cls: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300', label: t('comp.aiCalibration.actionOverride', 'Override') };
+                    const purposeLabel =
+                      vd.ai_purpose === 'sonnet_triage'
+                        ? t('comp.aiCalibration.purposeSonnet', 'Sonnet Triage')
+                        : vd.ai_purpose === 'gemini_qualitative'
+                          ? t('comp.aiCalibration.purposeGeminiQualitative', 'Gemini Qualitative')
+                          : vd.ai_purpose === 'gemini_eleva_bar'
+                            ? t('comp.aiCalibration.purposeGemini', 'Gemini')
+                            : vd.ai_purpose;
+                    return (
+                      <li key={vd.id} className="border border-[var(--border-default)] rounded-lg p-3 bg-[var(--surface-elevated)]">
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-[var(--text-primary)]">{vd.applicant_name}</span>
+                            <span className="text-xs text-[var(--text-muted)]">
+                              {vd.cycle_code || DASH}
+                              {vd.application_status && <> · {vd.application_status}</>}
+                            </span>
+                          </div>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-semibold ${actionBadge.cls}`}>
+                            <actionBadge.Icon className="h-3 w-3" aria-hidden />
+                            {actionBadge.label}
+                          </span>
+                        </div>
+                        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-1 text-xs mb-2">
+                          <div className="flex flex-col">
+                            <dt className="text-[var(--text-muted)]">{t('comp.aiCalibration.drillPurpose', 'Propósito')}</dt>
+                            <dd className="text-[var(--text-primary)] font-medium">{purposeLabel}</dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[var(--text-muted)]">{t('comp.aiCalibration.drillAiScore', 'Score IA')}</dt>
+                            <dd className="text-[var(--text-primary)] font-medium">{vd.ai_score !== null ? fmtNum(vd.ai_score, 1) : (vd.ai_verdict || DASH)}</dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[var(--text-muted)]">{t('comp.aiCalibration.drillOverride', 'Override')}</dt>
+                            <dd className="text-[var(--text-primary)] font-medium">{vd.override_score !== null ? fmtNum(vd.override_score, 1) : DASH}</dd>
+                          </div>
+                          <div className="flex flex-col">
+                            <dt className="text-[var(--text-muted)]">{t('comp.aiCalibration.drillValidatedAt', 'Quando')}</dt>
+                            <dd className="text-[var(--text-primary)] font-medium">{fmtDateTime(vd.validated_at, lang)}</dd>
+                          </div>
+                        </dl>
+                        {vd.comment && (
+                          <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
+                            <p className="text-xs text-[var(--text-muted)] mb-1">{t('comp.aiCalibration.drillComment', 'Comentário')}</p>
+                            <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{vd.comment}</p>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
