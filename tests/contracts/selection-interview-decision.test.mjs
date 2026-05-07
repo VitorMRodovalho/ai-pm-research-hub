@@ -122,10 +122,17 @@ test('submit_interview_scores uses PERT formula on completion', () => {
   assert.ok(/\/\s*8/i.test(body), 'PERT must divide by 8');
 });
 
-test('submit_interview_scores computes final_score = objective + interview', () => {
+test('submit_interview_scores delegates final_score to trigger (p113 fix)', () => {
   const body = findFunctionBody('submit_interview_scores');
-  assert.ok(/final_score\s*=\s*COALESCE\s*\(\s*objective_score_avg/i.test(body),
-    'Must compute final_score from objective_score_avg + interview');
+  // p113 fix Bug A: function MUST NOT write final_score directly. The bug used
+  // `final_score = COALESCE(objective_score_avg, 0) + v_pert_score` which clobbered
+  // the correct value already computed by trg_recompute_application_scores via
+  // compute_application_scores. Function now only updates interview_score + status,
+  // letting the trigger derive final_score = research_score = obj_pert + int_pert.
+  assert.ok(!/final_score\s*=\s*COALESCE\s*\(\s*objective_score_avg/i.test(body),
+    'Must NOT use the legacy objective_score_avg formula (clobbers trigger output)');
+  assert.ok(/interview_score\s*=\s*v_pert_score/i.test(body),
+    'Must still set interview_score from PERT');
 });
 
 test('submit_interview_scores advances to final_eval when all submit', () => {
