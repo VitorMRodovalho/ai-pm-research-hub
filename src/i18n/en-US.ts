@@ -483,6 +483,7 @@ const enUS: Record<string, string> = {
   'hero.nextGeneralMeeting': 'Next general meeting:',
   'hero.meetingSchedule': 'Recurring cycle schedule',
   'hero.joinMeet': 'Join Meet',
+  'hero.watchYoutube': 'Watch live on YouTube',
   'hero.stat.members': 'researchers',
   'hero.stat.tribes': 'tribes',
   'hero.stat.initiatives': 'initiatives',

@@ -483,6 +483,7 @@ const ptBR: Record<string, string> = {
   'hero.nextGeneralMeeting': 'Próxima reunião geral:',
   'hero.meetingSchedule': 'Cronograma recorrente do ciclo',
   'hero.joinMeet': 'Entrar no Meet',
+  'hero.watchYoutube': 'Assistir live no YouTube',
   'hero.stat.members': 'pesquisadores',
   'hero.stat.tribes': 'tribos',
   'hero.stat.initiatives': 'iniciativas',
