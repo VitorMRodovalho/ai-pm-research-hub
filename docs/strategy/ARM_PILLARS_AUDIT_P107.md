@@ -452,9 +452,9 @@ Maturidades remanescentes em 1 ou 1.x:
 
 ### Pendentes (não-bloqueantes pós-Features ARM-9)
 
-1. **MCP exposure** 5 RPCs novos (admin) + 1 alumni-self via nucleo-mcp. Esforço ~30min em sessão futura.
-2. **Frontend UI** alumni `/me/re-engagement/[id]` + admin `/admin/members?filter=inactive_candidates`. Defer para Onda 4 browser session.
-3. **i18n** novos notification types em 3 idiomas. Defer para próxima frontend session.
+1. ~~**MCP exposure** 5 RPCs novos (admin) + 1 alumni-self via nucleo-mcp~~ — ✅ SHIPPED (nucleo-mcp/index.ts ~5915+: `stage_alumni_for_re_engagement`, `list_re_engagement_pipeline`, `invite_alumni_to_re_engage`, `respond_re_engagement`, `cancel_re_engagement`). Verified p117 audit.
+2. **Frontend UI** alumni `/me/re-engagement/[id]` + admin `/admin/members?filter=inactive_candidates`. Defer para Onda 4 browser session. _Status p117: ainda pending; pages don't exist em src/pages/me/ ou src/pages/admin/._
+3. ~~**i18n** novos notification types em 3 idiomas~~ — ✅ SHIPPED (`notifications.types.re_engagement_invitation/_accepted/_declined` + `arm9_inactivity_alert` em pt-BR/en-US/es-LATAM).
 
 ### Próxima sessão (p109) conforme plano ABCD
 
@@ -513,10 +513,10 @@ Maturidades remanescentes em 1 ou 1.x:
 
 ### Pendentes (não-bloqueantes pós ARM-1)
 
-1. **Frontend `/admin/funnel` dashboard** com `get_volunteer_funnel_stats` — Onda 4 browser session
-2. **MCP exposure** 5 RPCs ARM-1 + 6 RPCs ARM-9 (~1h batch próxima sessão)
-3. **i18n** novos strings se UI futura criada
-4. **Auto-promote cron** quando cycle abre (atualmente manual via promote_lead_to_application)
+1. **Frontend `/admin/funnel` dashboard** com `get_volunteer_funnel_stats` — Onda 4 browser session. _Status p117: ainda pending._
+2. ~~**MCP exposure** 5 RPCs ARM-1 + 6 RPCs ARM-9~~ — ✅ SHIPPED. ARM-1 (`capture_visitor_lead`, `list_visitor_leads`, `promote_lead_to_application`, `dismiss_visitor_lead`, `get_volunteer_funnel_stats`) + ARM-9 (5 RPCs cited above) registered em nucleo-mcp. Verified p117.
+3. **i18n** novos strings se UI futura criada — ainda contingent em #1.
+4. **Auto-promote cron** quando cycle abre (atualmente manual via promote_lead_to_application). _Status p117: ainda pending._
 
 ---
 
@@ -576,11 +576,11 @@ input_tokens 5587, output 185, ai_processing_log row completed. cache_creation/r
 ### Pendentes (não-bloqueantes pós-Onda 3)
 
 1. **PM action**: setar `ANTHROPIC_API_KEY` Supabase secret ✅ FEITO (smoke confirmou).
-2. **PM action**: atualizar Supabase CLI binary 2.95.4 → 2.98.2 (sudo, sistema) — opcional.
-3. **Frontend admin/selection inline AI panel** — tab "Análises IA" deprecated em favor de panel inline mostrando triage_score + reasoning + confidence + Gemini qualitative + briefing button (Onda 4 browser session).
-4. **i18n notification types em 3 idiomas** — `re_engagement_invitation`, `_accepted`, `_declined`, `arm9_inactivity_alert`, `certificate_issued`. ~24 strings. Defer para próxima frontend session.
-5. **Auto-triage cron** quando consent dá cure ou ciclo abre — defer até PM ratificar UX inline.
-6. **Calibration delta** — cron weekly comparando `ai_triage_score` vs `final_score` humano para detectar drift e flag manual recalibration.
+2. **PM action**: atualizar Supabase CLI binary 2.95.4 → 2.98.2 (sudo, sistema) — opcional. _Status p117: ainda pending._
+3. ~~**Frontend admin/selection inline AI panel**~~ — ✅ SHIPPED p109 Onda 4 (handoff_p109).
+4. ~~**i18n notification types em 3 idiomas**~~ — ✅ SHIPPED. 5 keys × 3 langs = 15 strings (re_engagement_invitation/_accepted/_declined, arm9_inactivity_alert, certificate_issued).
+5. **Auto-triage cron** quando consent dá cure ou ciclo abre — defer até PM ratificar UX inline. _Status p117: ainda pending; ADR-0075 cron já roda 15min para extraction, mas auto-triage on-consent é separado._
+6. ~~**Calibration delta**~~ — ✅ SHIPPED p110-p115 (Onda 5: drift dashboard + cron `compute-ai-calibration-weekly` + bug fixes B/A).
 
 ### Próximas sessões — disparadores
 
