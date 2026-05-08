@@ -99,6 +99,20 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             </div>
           </div>
           <div id="attendance-tag-filter" class="hidden px-5 py-2 border-b border-[var(--border-subtle)] flex gap-2 flex-wrap"></div>
+          <!-- Auto-applied tribe filter pill (p122c — surface implicit filter so members can clear it) -->
+          <div id="auto-tribe-filter-pill" class="hidden px-5 py-2 border-b border-[var(--border-subtle)]">
+            <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-950/30 border border-blue-300 dark:border-blue-800 px-3 py-1 text-[12px] text-blue-900 dark:text-blue-200">
+              <span>🔬 {t('attendance.autoTribeFilter.label', lang) || 'Filtrando por sua tribo:'}</span>
+              <strong id="auto-tribe-filter-name">—</strong>
+              <button type="button"
+                class="ml-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 text-[11px] font-bold border-0 cursor-pointer transition-colors"
+                data-action="clear-auto-tribe-filter"
+                aria-label={t('attendance.autoTribeFilter.clearAria', lang) || 'Limpar filtro de tribo'}
+                title={t('attendance.autoTribeFilter.clearTitle', lang) || 'Mostrar eventos de todas as tribos'}>
+                ✕ {t('attendance.autoTribeFilter.clear', lang) || 'Mostrar todas'}
+              </button>
+            </div>
+          </div>
           <div class="p-5" id="events-list">
             <LoadingSkeleton variant="row" count={3} />
           </div>
@@ -659,10 +673,21 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           opt.textContent = `T${t.id} — ${t.name}${!t.is_active ? ' (inativa)' : ''}`;
           sel.appendChild(opt);
         });
-      // Non-GP members with a tribe: default filter to their own tribe
+      // Non-GP members with a tribe: default filter to their own tribe.
+      // p122c: surface this auto-filter via a clearable pill so members can opt out
+      // (without the pill, the implicit filter looked like missing data — see issue log).
       if (!isGPLevel() && MEMBER?.tribe_id) {
         sel.value = String(MEMBER.tribe_id);
         sel.classList.remove('hidden');
+        const myTribe = allTribes.find((t: any) => t.id === MEMBER.tribe_id);
+        if (myTribe) {
+          const pill = document.getElementById('auto-tribe-filter-pill');
+          const nameEl = document.getElementById('auto-tribe-filter-name');
+          if (pill && nameEl) {
+            nameEl.textContent = `T${myTribe.id} — ${myTribe.name}`;
+            pill.classList.remove('hidden');
+          }
+        }
         renderEvents();
       }
     } catch (e: any) {
@@ -982,6 +1007,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'clear-event-filters':
           clearAttendanceFilters();
           break;
+        case 'clear-auto-tribe-filter': {
+          const sel = document.getElementById('events-tribe-filter') as HTMLSelectElement | null;
+          if (sel) sel.value = '';
+          document.getElementById('auto-tribe-filter-pill')?.classList.add('hidden');
+          renderEvents();
+          break;
+        }
         case 'check-in':
           checkIn(target.dataset.eventId || '');
           break;
