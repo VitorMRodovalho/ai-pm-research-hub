@@ -3705,6 +3705,14 @@ const ptBR: Record<string, string> = {
   'showcase.type.quick_insight': 'Insight Rápido',
   'showcase.type.awareness': 'Sensibilização',
 
+  // ── event detail / roster modal showcase form ──
+  'eventDetail.addShowcase': 'Adicionar Showcase',
+  'eventDetail.showcaseMember': 'Membro',
+  'eventDetail.showcaseType': 'Tipo',
+  'eventDetail.showcaseTitle': 'Título',
+  'eventDetail.save': 'Salvar',
+  'eventDetail.cancel': 'Cancelar',
+
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Pauta',
   'meetings.agenda.add': 'Adicionar Pauta',

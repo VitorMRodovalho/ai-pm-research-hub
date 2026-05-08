@@ -3699,6 +3699,14 @@ const enUS: Record<string, string> = {
   'showcase.type.quick_insight': 'Quick Insight',
   'showcase.type.awareness': 'Awareness',
 
+  // ── event detail / roster modal showcase form ──
+  'eventDetail.addShowcase': 'Add Showcase',
+  'eventDetail.showcaseMember': 'Member',
+  'eventDetail.showcaseType': 'Type',
+  'eventDetail.showcaseTitle': 'Title',
+  'eventDetail.save': 'Save',
+  'eventDetail.cancel': 'Cancel',
+
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Agenda',
   'meetings.agenda.add': 'Add Agenda',
