@@ -35,3 +35,8 @@ Rule:
 - No anon access to PII (members.email, phone, pmi_id, auth_id)
 - Ghost users (authenticated without member record) get NOTHING from PII tables
 - Public data via SECURITY DEFINER RPCs only (get_public_leaderboard, get_public_platform_stats)
+
+## V4 Authority audit — before proposing seed expansion
+**Sediment p122e:** auditorias mecânicas de `engagement_kind_permissions` × actions produzem false positives recorrentes porque V4 tem três caminhos paralelos de autoridade (combos seedados + designation-based gates + RPC inline scoping). Antes de declarar gap ou propor `INSERT INTO engagement_kind_permissions ...`, executar o **procedimento de 4 etapas** em `docs/reference/V4_AUTHORITY_MODEL.md` (matriz capability→path + checklist).
+
+Anti-pattern documentado: "seed expansion como atalho" em actions destrutivas (`manage_member`, `manage_platform`) cria privilege escalation que viola invariante "member lifecycle = GP-only" (LGPD Art. 18).
