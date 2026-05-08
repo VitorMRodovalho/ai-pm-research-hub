@@ -63,8 +63,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">OK</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Fail</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Erro%</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Latência</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Último</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colLatency', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colLast', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
               </tr>
             </thead>
@@ -155,25 +155,25 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <option value="inactive">{t('adoption.status.inactive', lang)}</option>
               <option value="dormant">{t('adoption.status.dormant', lang)}</option>
               <option value="never">{t('adoption.status.never', lang)}</option>
-              <option disabled>── Papel ──</option>
-              <option value="role:researcher">Pesquisador</option>
-              <option value="role:tribe_leader">Líder de Tribo</option>
-              <option value="role:comms_leader">Líder de Comunicação</option>
-              <option value="role:sponsor">Sponsor</option>
-              <option value="role:chapter_liaison">Chapter Liaison</option>
-              <option value="role:manager">Gerente</option>
-              <option value="role:facilitator">Facilitador</option>
-              <option value="role:communicator">Comunicador</option>
-              <option disabled>── Designação ──</option>
+              <option disabled>── {t('admin.adoption.filterRoleHeader', lang)} ──</option>
+              <option value="role:researcher">{t('role.researcher', lang)}</option>
+              <option value="role:tribe_leader">{t('role.tribe_leader', lang)}</option>
+              <option value="role:comms_leader">{t('role.comms_leader', lang)}</option>
+              <option value="role:sponsor">{t('role.sponsor', lang)}</option>
+              <option value="role:chapter_liaison">{t('role.chapter_liaison', lang)}</option>
+              <option value="role:manager">{t('role.manager', lang)}</option>
+              <option value="role:facilitator">{t('role.facilitator', lang)}</option>
+              <option value="role:communicator">{t('role.communicator', lang)}</option>
+              <option disabled>── {t('admin.adoption.filterDesigHeader', lang)} ──</option>
               <option value="desig:ambassador">Ambassador</option>
               <option value="desig:founder">Founder</option>
               <option value="desig:curator">Curator</option>
               <option value="desig:comms_leader">Comms Leader</option>
               <option value="desig:comms_member">Comms Member</option>
               <option value="desig:co_gp">Co-GP</option>
-              <option value="desig:none">Sem designação</option>
+              <option value="desig:none">{t('admin.adoption.noDesignation', lang)}</option>
             </select>
-            <input id="adp-search" type="text" placeholder="Buscar..." class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)] w-36" />
+            <input id="adp-search" type="text" placeholder={t('common.search', lang)} class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)] w-36" />
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -200,7 +200,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div id="panel-visitors" class="hidden space-y-6">
         <div>
           <h2 class="text-lg font-extrabold text-navy">👻 Visitantes Externos</h2>
-          <p class="text-[.72rem] text-[var(--text-muted)] mt-1">Usuários que fizeram login mas não possuem registro de membro. Possíveis candidatos ou logins duplicados.</p>
+          <p class="text-[.72rem] text-[var(--text-muted)] mt-1">{t('admin.adoption.visitorsDescription', lang)}</p>
         </div>
 
         <!-- Ghost KPIs -->
@@ -209,7 +209,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <!-- Ghost List -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
           <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
-            <h3 class="text-sm font-bold text-navy">Lista de Visitantes Logados</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.adoption.visitorsListTitle', lang)}</h3>
             <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">LGPD: dados de auth.users — consentidos via login OAuth</p>
           </div>
           <div class="overflow-x-auto">
