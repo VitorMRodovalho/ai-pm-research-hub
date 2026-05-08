@@ -2,6 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <AdminLayout title={t('report.adminTitle', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Relatório Executivo'}]}>
@@ -48,7 +49,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
 
         <div class="flex gap-3">
-          <a href="/report" target="_blank" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold hover:bg-[var(--surface-hover)]">
+          <a href={`${langPrefix}/report`} target="_blank" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold hover:bg-[var(--surface-hover)]">
             {t('report.preview', lang)}
           </a>
           <button id="btn-save-config" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">

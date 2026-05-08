@@ -61,6 +61,8 @@ function fmtDate(dateStr: string): string {
 
 /* ────── Component ────── */
 export default function MemberDetailIsland({ memberId }: { memberId: string }) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const t = usePageI18n();
   const [data, setData] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -188,7 +190,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     <div className="max-w-[900px] mx-auto">
       {/* Section 1 — Header */}
       <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5 mb-4 relative">
-        <a href="/admin/members" className="inline-flex items-center gap-1.5 text-teal-500 text-sm font-semibold mb-4 no-underline hover:underline">
+        <a href={`${lp}/admin/members`} className="inline-flex items-center gap-1.5 text-teal-500 text-sm font-semibold mb-4 no-underline hover:underline">
           <ArrowLeft size={14} /> {t('comp.memberDetail.backToMembers', 'Back to Members')}
         </a>
 

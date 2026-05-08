@@ -5,6 +5,7 @@ import { buildPageI18n } from '../i18n/pageI18n';
 import PublicationsBoardIsland from '../components/boards/PublicationsBoardIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 ---
 
@@ -57,7 +58,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     <!-- CTA -->
     <div id="pub-cta" class="hidden text-center py-6 border-t border-[var(--border-subtle)]">
       <p class="text-sm text-[var(--text-secondary)] mb-3">{t('publications.ctaText', lang)}</p>
-      <a href="/teams" class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      <a href={`${langPrefix}/teams`} class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('publications.ctaButton', lang)}
       </a>
     </div>
@@ -143,7 +144,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
               {t('publications.subtitle', lang)}
             </p>
           </div>
-          <a href="/admin/curatorship" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
+          <a href={`${langPrefix}/admin/curatorship`} class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
             {t('publications.openCuratorship', lang)}
           </a>
         </div>

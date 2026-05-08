@@ -44,6 +44,8 @@ function setViewInURL(view: View) {
 }
 
 export default function GovernancePage() {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const t = usePageI18n();
   const lang = detectLang();
   const [view, setViewState] = useState<View>(getViewFromURL);
@@ -163,7 +165,7 @@ export default function GovernancePage() {
           <p className="text-xs text-[var(--text-muted)]">{t('governance.docusign_ref', 'DocuSign B2AFB185 · Aprovado 22/Set/2025')}</p>
         </div>
         {isGP && (
-          <a href="/admin/governance-v2"
+          <a href={`${lp}/admin/governance-v2`}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[11px] font-semibold text-[var(--text-muted)] no-underline hover:text-[var(--text-primary)] hover:border-navy transition-colors shrink-0">
             ⚙️ Admin
           </a>

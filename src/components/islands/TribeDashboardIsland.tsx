@@ -33,6 +33,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDashboardProps) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const t = usePageI18n();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
               )}
             </div>
           </div>
-          <a href="/admin" className="text-xs text-[var(--text-secondary)] hover:text-navy no-underline">
+          <a href={`${lp}/admin`} className="text-xs text-[var(--text-secondary)] hover:text-navy no-underline">
             {t('comp.tribe.back', '← Back')}
           </a>
         </div>

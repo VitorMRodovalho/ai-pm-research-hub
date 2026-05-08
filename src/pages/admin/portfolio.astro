@@ -4,6 +4,7 @@ import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
 import PlannedVsActualSection from '../../components/portfolio/PlannedVsActualSection';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 // Build i18n bundle for client-side script
 const scriptI18n = JSON.stringify({
@@ -341,7 +342,7 @@ const scriptI18n = JSON.stringify({
           ? (_i18n.globalScope || 'Global')
           : b.board_scope || '';
       return `
-        <a href="/admin/board/${b.id}" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 no-underline hover:border-teal transition-all block">
+        <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/admin/board/${b.id}" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 no-underline hover:border-teal transition-all block">
           <div class="text-sm font-semibold text-navy">${escH(b.board_name || (_i18n.board || 'Board'))}</div>
           <div class="text-[.68rem] text-[var(--text-muted)] mt-1">${escH(scope)} · ${escH(b.domain_key || '')}</div>
         </a>

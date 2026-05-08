@@ -8,6 +8,7 @@ import BlogEditorIsland from '../../components/admin/blog/BlogEditorIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <AdminLayout title={t('blog.adminTitle', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Blog'}]}>
@@ -270,7 +271,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           </div>
           <div class="flex gap-2">
             <button data-edit-post="${p.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Editar</button>
-            ${p.status === 'published' ? `<a href="/blog/${p.slug}" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Ver</a>` : ''}
+            ${p.status === 'published' ? `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/blog/${p.slug}" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Ver</a>` : ''}
           </div>
         </div>
       </div>`;

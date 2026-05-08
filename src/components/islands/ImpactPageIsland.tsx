@@ -315,7 +315,7 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
             <input type="checkbox" checked={form.lgpd_consent} onChange={e => { setForm(f => ({ ...f, lgpd_consent: e.target.checked })); setConsentError(false); }}
               className="mt-1 flex-shrink-0" />
             <span className="text-xs text-[var(--text-secondary)]">
-              {l.leadConsent} <a href="/privacy" target="_blank" className="text-teal underline">Privacy</a>
+              {l.leadConsent} <a href={`${lp}/privacy`} target="_blank" className="text-teal underline">Privacy</a>
             </span>
           </label>
           {consentError && <p className="text-xs text-red-600 mt-1">{l.leadConsentRequired}</p>}
@@ -330,7 +330,9 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
   );
 }
 
-export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
+export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
+  // p123 i18n nav: prefix preserves /en /es when navigating between sections
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [data, setData] = useState<ImpactData | null>(null);
   const [loading, setLoading] = useState(true);
   const l = LABELS[lang] || LABELS['pt-BR'];
@@ -449,7 +451,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
             ))}
           </div>
           <div className="text-center mt-4">
-            <a href="/publications" className="text-sm font-semibold text-teal hover:underline">{l.viewAll} &rarr;</a>
+            <a href={`${lp}/publications`} className="text-sm font-semibold text-teal hover:underline">{l.viewAll} &rarr;</a>
           </div>
         </section>
       )}
@@ -517,8 +519,8 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
       <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center">
         <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{l.cta}</h2>
         <div className="flex flex-wrap justify-center gap-4">
-          <a href="/admin/selection" className="px-6 py-3 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaSelection}</a>
-          <a href="/publications" className="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaArticles}</a>
+          <a href={`${lp}/admin/selection`} className="px-6 py-3 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaSelection}</a>
+          <a href={`${lp}/publications`} className="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaArticles}</a>
           <a href="mailto:nucleoia@pmigo.org.br" className="px-6 py-3 border-2 border-navy text-navy rounded-xl font-semibold text-sm hover:bg-navy hover:text-white transition-all no-underline">{l.ctaContact}</a>
         </div>
       </section>

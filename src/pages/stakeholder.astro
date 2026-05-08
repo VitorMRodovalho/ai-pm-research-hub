@@ -5,6 +5,7 @@ import ChapterDashboard from '../components/chapter/ChapterDashboard';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <BaseLayout title={t('stakeholder.title', lang) || 'Chapter Dashboard'} activePage="stakeholder" lang={lang}>
@@ -30,7 +31,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <li>🤖 {t('stakeholder.welcome.mcp', lang) || 'Integração com IA — pergunte ao Claude ou ChatGPT sobre seu capítulo'}</li>
             <li>📋 {t('stakeholder.welcome.needs', lang) || 'Reporte necessidades do capítulo via MCP: submit_chapter_need'}</li>
           </ul>
-          <a href="/privacy" class="text-xs text-[var(--color-teal)] hover:underline">{t('stakeholder.welcome.privacy', lang) || 'Política de Privacidade'}</a>
+          <a href={`${langPrefix}/privacy`} class="text-xs text-[var(--color-teal)] hover:underline">{t('stakeholder.welcome.privacy', lang) || 'Política de Privacidade'}</a>
         </div>
         <button id="dismiss-welcome" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0 p-1" title="Fechar">✕</button>
       </div>

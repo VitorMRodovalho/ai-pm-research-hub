@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 <BaseLayout title={t('volunteer.title', lang)} activePage="volunteer-agreement" lang={lang}>
   <main class="max-w-[720px] mx-auto px-4 py-8" id="va-app">
@@ -13,7 +14,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   window.__vaLang = lang;
 </script>
 
+<script is:inline define:vars={{ langPrefix }}>
+  window.__LANG_PREFIX = langPrefix;
+</script>
 <script>
+  const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
   import { getSupabase } from '../lib/supabase';
   import { t } from '../i18n/utils';
   import type { Lang } from '../i18n/utils';
@@ -150,7 +155,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <div class="flex justify-between"><span class="text-[var(--text-muted)]">${t('volunteer.success.date', lang)}</span><span class="text-[var(--text-primary)]">${fmtDatetime(result.signed_at, lang)}</span></div>
         </div>
         <p class="text-xs text-[var(--text-muted)] mt-4">${t('volunteer.success.pending', lang)}</p>
-        <a href="/verify/${encodeURIComponent(result.verification_code)}" class="inline-block mt-4 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-navy no-underline hover:bg-[var(--surface-hover)]">
+        <a href="${lp}/verify/${encodeURIComponent(result.verification_code)}" class="inline-block mt-4 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-navy no-underline hover:bg-[var(--surface-hover)]">
           \uD83D\uDD0D ${t('volunteer.success.verify', lang)}
         </a>
       </div>`;
@@ -161,7 +166,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <div class="text-center py-12">
         <div class="text-4xl mb-3">\u2705</div>
         <h2 class="text-lg font-bold text-[var(--text-primary)]">${t('volunteer.alreadySigned', lang)}</h2>
-        <a href="/certificates" class="inline-block mt-4 px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">
+        <a href="${lp}/certificates" class="inline-block mt-4 px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">
           ${t('volunteer.alreadySigned.viewCerts', lang)}
         </a>
       </div>`;

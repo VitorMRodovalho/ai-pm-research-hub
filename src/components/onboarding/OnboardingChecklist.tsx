@@ -39,6 +39,8 @@ const L: Record<string, Record<string, string>> = {
 
 export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
+  // p123 i18n nav: prefix preserves /en /es when navigating between sections
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [steps, setSteps] = useState<Step[]>([]);
   const [total, setTotal] = useState(0);
   const [completed, setCompleted] = useState(0);
@@ -131,27 +133,27 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                       </button>
                     )}
                     {s.step_id === 'complete_profile' && (
-                      <a href="/profile" className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-200">
+                      <a href={`${lp}/profile`} className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-200">
                         👤 {l.markDone}
                       </a>
                     )}
                     {s.step_id === 'meet_tribe' && member?.tribe_id && (
-                      <a href={`/tribe/${member.tribe_id}`} className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">
+                      <a href={`${lp}/tribe/${member.tribe_id}`} className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">
                         🔬 {l.visitTribe}
                       </a>
                     )}
                     {s.step_id === 'start_trail' && (
-                      <a href="/gamification" className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-200">
+                      <a href={`${lp}/gamification`} className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-200">
                         🎓 {l.viewTrail}
                       </a>
                     )}
                     {s.step_id === 'volunteer_term' && (
-                      <a href="/volunteer-agreement" className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-semibold no-underline hover:opacity-90">
+                      <a href={`${lp}/volunteer-agreement`} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-semibold no-underline hover:opacity-90">
                         📄 {l.accept}
                       </a>
                     )}
                     {s.step_id === 'first_meeting' && (
-                      <a href="/attendance" className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-[10px] font-semibold no-underline hover:bg-green-200">
+                      <a href={`${lp}/attendance`} className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-[10px] font-semibold no-underline hover:bg-green-200">
                         📅 Ver reunioes
                       </a>
                     )}

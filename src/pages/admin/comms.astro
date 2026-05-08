@@ -7,6 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Midia Social'}]}>
@@ -25,7 +26,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1f512;</div>
       <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
-      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      <a href={`${langPrefix}/admin`} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('admin.comms.backAdmin', lang)}
       </a>
     </div>
@@ -37,7 +38,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <h1 class="text-2xl font-extrabold text-navy">Midia Social</h1>
           <p class="text-sm text-[var(--text-secondary)]">Metricas de YouTube, Instagram e LinkedIn</p>
         </div>
-        <a href="/admin/comms-ops" class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
+        <a href={`${langPrefix}/admin/comms-ops`} class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
           &larr; Comunicacao (Ops)
         </a>
       </div>
