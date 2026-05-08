@@ -3,6 +3,7 @@ import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -115,9 +116,9 @@ const { lang = 'pt-BR' } = Astro.props;
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
         <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.quickActions', lang)}</div>
         <div class="space-y-2">
-          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.createEvent', lang)}</a>
-          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.registerAttendance', lang)}</a>
-          <a href="/gamification" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.viewRanking', lang)}</a>
+          <a href={`${langPrefix}/attendance`} class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.createEvent', lang)}</a>
+          <a href={`${langPrefix}/attendance`} class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.registerAttendance', lang)}</a>
+          <a href={`${langPrefix}/gamification`} class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.viewRanking', lang)}</a>
         </div>
       </div>
     </div>
@@ -154,6 +155,11 @@ const { lang = 'pt-BR' } = Astro.props;
 <span id="hero-i18n-combined" class="hidden">{t('hero.member.combinedLabel', lang)}</span>
 <span id="hero-i18n-dropout" class="hidden">{t('hero.member.dropoutRisk', lang)}</span>
 <span id="hero-i18n-locale" class="hidden">{t('hero.dateLocale', lang)}</span>
+<span id="hero-lang-prefix" class="hidden" data-prefix={langPrefix}></span>
+
+<script is:inline define:vars={{ langPrefix }}>
+  if (typeof window !== 'undefined' && !window.__LANG_PREFIX) window.__LANG_PREFIX = langPrefix;
+</script>
 
 <script>
   import { hasPermission } from '../../lib/permissions';
@@ -299,8 +305,9 @@ const { lang = 'pt-BR' } = Astro.props;
       } else {
         const infoEl = document.getElementById('hero-tribe-info');
         if (infoEl) {
+          const lp = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
           infoEl.innerHTML = `<div class="text-sm text-white/50">${i18nNoTribe}</div>
-            <a href="/workspace" class="mt-2 text-[.8rem] text-[#05BFE0] font-semibold no-underline hover:underline">${i18nGoWorkspace}</a>`;
+            <a href="${lp}/workspace" class="mt-2 text-[.8rem] text-[#05BFE0] font-semibold no-underline hover:underline">${i18nGoWorkspace}</a>`;
         }
       }
 

@@ -2,6 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const { id } = Astro.params;
 ---
 <BaseLayout title={t('publications.title', lang)} activePage="publications" lang={lang}>
@@ -72,7 +73,7 @@ const { id } = Astro.params;
       const events: any[] = sub.lifecycle_events || [];
 
       app.innerHTML = `
-        <a href="/publications/submissions" class="inline-flex items-center gap-1 text-sm text-navy font-semibold no-underline hover:underline mb-4">\u2190 ${t('publications.detail.back', lang)}</a>
+        <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/publications/submissions" class="inline-flex items-center gap-1 text-sm text-navy font-semibold no-underline hover:underline mb-4">\u2190 ${t('publications.detail.back', lang)}</a>
 
         <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
           <div class="flex items-center gap-2 flex-wrap mb-2">

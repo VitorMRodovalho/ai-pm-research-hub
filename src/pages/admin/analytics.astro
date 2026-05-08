@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadChapters } from '../../lib/chapters';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const sbAnon = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
@@ -67,7 +68,7 @@ const ANALYTICS_I18N = {
     <div id="analytics-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('admin.analytics.denied', lang)}</p>
-      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      <a href={`${langPrefix}/admin`} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('admin.analytics.backAdmin', lang)}
       </a>
     </div>

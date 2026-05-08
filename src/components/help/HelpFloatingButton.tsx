@@ -307,6 +307,8 @@ interface Props {
 }
 
 export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [member, setMember] = useState<MemberForPermission | null>(null);
@@ -446,7 +448,7 @@ export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
 
               {/* Links */}
               <div className="border-t border-[var(--border-default)] pt-3 mt-3 space-y-1 text-[.8rem]">
-                <a href="/privacy" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                <a href={`${lp}/privacy`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   📜 {LABELS.privacy[lang]}
                 </a>
                 <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">

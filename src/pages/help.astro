@@ -9,6 +9,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
 ---
 
@@ -25,7 +26,7 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       <p class="text-sm text-[var(--text-secondary)] mt-1">{t('help.visitorDesc', lang)}</p>
       <div class="mt-4">
         <span class="text-sm font-semibold text-[var(--text-primary)]">{t('help.visitorCta', lang)}</span>
-        <a href="/about" class="ml-2 text-sm font-bold text-teal no-underline hover:underline">
+        <a href={`${langPrefix}/about`} class="ml-2 text-sm font-bold text-teal no-underline hover:underline">
           {t('help.visitorCtaBtn', lang)}
         </a>
       </div>
@@ -83,7 +84,7 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
         </div>
       </div>
       <div class="flex gap-3">
-        <a href="/profile" id="onb-modal-cta"
+        <a href={`${langPrefix}/profile`} id="onb-modal-cta"
           class="flex-1 text-center px-4 py-2.5 bg-teal text-white rounded-xl text-sm font-bold no-underline hover:opacity-90 transition-all">
           {t('onb.modalCta', lang)}
         </a>

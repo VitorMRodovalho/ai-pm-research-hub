@@ -18,6 +18,8 @@ function useLang(p?: string): string {
 }
 
 export default function VolunteerComplianceWidget({ lang: propLang }: Props) {
+  // p123 i18n nav: prefix preserves /en /es when navigating between sections
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const lang = useLang(propLang);
   const t = L[lang] || L['pt-BR'];
   const [data, setData] = useState<any>(null);
@@ -76,8 +78,7 @@ export default function VolunteerComplianceWidget({ lang: propLang }: Props) {
       </div>
 
       {/* Link to full view */}
-      <a
-        href="/admin/certificates"
+      <a href={`${lp}/admin/certificates`}
         className="block text-center text-[10px] font-semibold text-teal hover:underline no-underline"
       >
         {t.viewAll} →

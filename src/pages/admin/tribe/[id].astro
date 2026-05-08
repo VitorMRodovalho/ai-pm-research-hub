@@ -5,6 +5,7 @@ import { buildPageI18n } from '../../../i18n/pageI18n';
 import TribeDashboardIsland from '../../../components/islands/TribeDashboardIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const tribeId = Astro.params.id!;
 const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
 ---
@@ -15,7 +16,7 @@ const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('tribeDashboard.denied', lang)}</p>
-      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('tribeDashboard.back', lang)}
       </a>
     </div>
