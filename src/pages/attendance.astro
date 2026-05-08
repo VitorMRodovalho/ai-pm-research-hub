@@ -632,9 +632,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   function isInCheckinWindow(ev: any): boolean {
     if (!ev?.date) return false;
     const now = Date.now();
-    const evStart = new Date(ev.date + 'T00:00:00').getTime();
-    const windowOpen = evStart - 2 * 60 * 60 * 1000;   // -2h
-    const windowClose = evStart + 24 * 60 * 60 * 1000;  // +24h
+    // Compute scheduled END = date + time_start + duration (fallback: end-of-day 23:59)
+    const [h, m] = String(ev.time_start || '23:59').split(':').map(Number);
+    const evEnd = new Date(ev.date + 'T00:00:00');
+    evEnd.setHours(h, m + (ev.duration_minutes || 60), 0);
+    // Scheduled START = end - duration
+    const evStart = evEnd.getTime() - (ev.duration_minutes || 60) * 60 * 1000;
+    // Self check-in window: 2h before scheduled start until 48h after scheduled end.
+    // Per spec: researchers self-register within 48h; tribe_leader/GP get unlimited
+    // override via "Register (Admin)" button (canAdminCheckin) for cases beyond this.
+    const windowOpen = evStart - 2 * 60 * 60 * 1000;
+    const windowClose = evEnd.getTime() + 48 * 60 * 60 * 1000;
     return now >= windowOpen && now <= windowClose;
   }
 

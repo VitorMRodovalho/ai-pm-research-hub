@@ -19,17 +19,30 @@ const sb = createClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
 
+// Two-step fetch: blog_posts (anon-readable RLS for status=published) + public_members
+// (LGPD-safe view) for the author name. The original nested join `members:author_member_id(name)`
+// failed under anon role because the public.members table denies anon SELECT — every blog post
+// returned NULL (and the page rendered "Artigo não encontrado") since 18/Apr p27 RLS hardening.
 const { data: post } = await sb.from('blog_posts')
-  .select('*, members:author_member_id(name)')
+  .select('*')
   .eq('slug', slug)
   .eq('status', 'published')
-  .single();
+  .maybeSingle();
+
+let authorName = '';
+if (post?.author_member_id) {
+  const { data: author } = await sb.from('public_members')
+    .select('name')
+    .eq('id', post.author_member_id)
+    .maybeSingle();
+  authorName = author?.name || '';
+}
 
 const postTitle = post?.title?.[langKey] || post?.title?.['pt-BR'] || '';
 const postBody = post?.body_html?.[langKey] || post?.body_html?.['pt-BR'] || '';
 const postExcerpt = post?.excerpt?.[langKey] || post?.excerpt?.['pt-BR'] || '';
 const postCategory = post?.category || '';
-const postAuthor = post?.members?.name || '';
+const postAuthor = authorName;
 const postDate = post?.published_at
   ? new Date(post.published_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
   : '';
