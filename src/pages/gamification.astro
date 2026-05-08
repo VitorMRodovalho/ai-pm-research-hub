@@ -4,6 +4,7 @@ import Toast from '../components/ui/Toast.astro';
 import ScoringInfoPopover from '../components/ui/ScoringInfoPopover.tsx';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 const GAM_I18N = {
   loading: t('gamification.loading', lang),
@@ -1165,7 +1166,7 @@ const SCORING_I18N = {
           <div class="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
         </div>
         <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[10px] font-semibold cursor-pointer border-0 hover:opacity-90" onclick="(async()=>{await sb.rpc('record_certificate_download',{p_cert_id:'${c.id}'});window.downloadCertificatePDF({member_name:'${MEMBER.name}',type:'${c.type}',title:'${c.title||''}',period_start:'${c.period_start||''}',period_end:'${c.period_end||''}',function_role:'${c.function_role||''}',language:'${c.language||'pt-BR'}',verification_code:'${c.verification_code||''}'})})()">📥 PDF</button>
-        <a href="/verify/${c.verification_code}" target="_blank" class="text-[10px] text-blue-500 hover:underline no-underline ml-1">🔗 ${I.certVerify || 'Verificar'}</a>
+        <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${c.verification_code}" target="_blank" class="text-[10px] text-blue-500 hover:underline no-underline ml-1">🔗 ${I.certVerify || 'Verificar'}</a>
       </div>`;
       }).join('');
     } catch (e: any) {
@@ -1565,7 +1566,7 @@ const SCORING_I18N = {
       <td class="px-2 py-1.5 text-center"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${STATUS_BADGE[c.status] || ''}">${c.status}</span></td>
       <td class="px-2 py-1.5 text-center whitespace-nowrap">
         <button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="download-cert" data-cert='${JSON.stringify({member_name:c.member_name,type:c.type,title:c.title||'',period_start:c.period_start||'',period_end:c.period_end||'',function_role:c.function_role||'',language:c.language||'pt-BR',verification_code:c.verification_code||'',description:c.description||'',issued_by:c.issued_by||''}).replace(/'/g,"&#39;")}'>📄 PDF</button>
-        <a href="/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
+        <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
         ${c.status !== 'revoked' ? `<button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="edit-cert" data-cert-id="${c.id}" data-cert-title="${(c.title||'').replace(/"/g,'&quot;')}" data-cert-desc="${(c.description||'').replace(/"/g,'&quot;').replace(/\n/g,'&#10;')}" data-cert-period-start="${c.period_start||''}" data-cert-period-end="${c.period_end||''}" data-cert-role="${c.function_role||''}" data-cert-type="${c.type||''}" data-cert-lang="${c.language||'pt-BR'}">✏️</button>` : ''}
         ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅</button>` : ''}
         ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}">🔴</button>` : ''}

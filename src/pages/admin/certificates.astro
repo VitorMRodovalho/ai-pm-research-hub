@@ -3,6 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import VolunteerAgreementPanel from '../../components/admin/VolunteerAgreementPanel';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <AdminLayout title={t('admin.certificates.title', lang)} breadcrumbs={[{label:'Pessoas'},{label:'Certificados'}]}>
@@ -167,7 +168,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                       data-pdf-cert-id="${esc(c.id)}">
                       📄 PDF
                     </button>
-                    <a href="/verify/${esc(c.verification_code)}" target="_blank" rel="noopener" class="text-[11px] text-purple-600 no-underline hover:underline">🔗 verificar</a>
+                    <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${esc(c.verification_code)}" target="_blank" rel="noopener" class="text-[11px] text-purple-600 no-underline hover:underline">🔗 verificar</a>
                   </div>
                 `;
               }).join('')}

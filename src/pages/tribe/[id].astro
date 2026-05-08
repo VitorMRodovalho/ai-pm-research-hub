@@ -13,6 +13,7 @@ import TribeAttendanceTab from '../../components/tribes/TribeAttendanceTab';
 import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { getStaticTribeFallback } from '../../lib/tribes/catalog';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.kanban', 'comp.common', 'comp.board', 'comp.card', 'comp.tribe', 'tribe_dashboard', 'common'], lang);
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);
@@ -185,7 +186,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       <div class="text-2xl mb-2">🔒</div>
       <p class="font-semibold text-amber-800">{TRIBE_I18N.accessRestricted}</p>
       <p class="text-sm text-amber-700 mt-1">{t('tribe.deniedExplore', lang)}</p>
-      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">{t('tribe.openProfile', lang)}</a>
+      <a href={`${langPrefix}/profile`} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">{t('tribe.openProfile', lang)}</a>
     </div>
     <div id="tribe-shell" class="hidden">
     <!-- Header -->
@@ -293,9 +294,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   <PresentationLayer context="tribe" tribeId={tribeId} lang={lang} />
 </BaseLayout>
 
-<script is:inline define:vars={{ TRIBE_I18N, tribeId }}>
+<script is:inline define:vars={{ TRIBE_I18N, tribeId, langPrefix }}>
   window.__TRIBE_I18N = typeof TRIBE_I18N !== 'undefined' ? TRIBE_I18N : {};
   window.__TRIBE_ID = typeof tribeId !== 'undefined' ? tribeId : 0;
+  window.__LANG_PREFIX = typeof langPrefix !== 'undefined' ? langPrefix : '';
 </script>
 <script>
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
@@ -307,6 +309,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
+  // p123 i18n nav: prefix preserves /en /es when navigating between sections
+  const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
   // V4: initiative_id resolved on load (set by resolveInitiativeId below)
   let INITIATIVE_ID: string | null = null;
 
@@ -535,23 +539,23 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const el = document.getElementById('tribe-context-switch');
     if (!el) return;
     const activeLinks = contextCatalog.active.map((tribe: any) => `
-      <a href="/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
+      <a href="${lp}/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
         <span class="w-4 h-4 rounded-full bg-navy/10 text-navy text-[10px] flex items-center justify-center font-bold">${tribe.id}</span>
         ${escapeHtml(buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo' }))}
       </a>
     `);
 
     const opLinks = contextCatalog.operational.map((tribe: any) => `
-      <a href="/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
+      <a href="${lp}/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
         <span class="w-4 h-4 rounded-full bg-purple/10 text-purple text-[10px] flex items-center justify-center font-bold">${tribe.id}</span>
         ${escapeHtml(buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo' }))}
       </a>
     `);
-    const webinars = `<a href="/webinars" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">🎙️ Webinars</a>`;
+    const webinars = `<a href="${lp}/webinars" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">🎙️ Webinars</a>`;
     const opWithWebinars = [webinars, ...opLinks];
 
     const legacyLinks = contextCatalog.legacy.map((legacy: any) => `
-      <a href="/#team" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
+      <a href="${lp}/#team" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
         <span class="text-[10px]">🏛️</span>
         ${escapeHtml(legacy.legacy_name || `Legado #${legacy.id}`)}
       </a>
@@ -760,8 +764,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               <h3 class="text-sm font-bold text-navy">${I18N.pastMeetings || 'Reuniões Anteriores'}</h3>
             </div>
             <div class="flex items-center gap-3">
-              <a href="/meetings" class="text-xs font-semibold text-teal-600 no-underline hover:underline">📝 ${I18N.viewAllMinutes || 'Ver Atas'}</a>
-              <a href="/attendance" class="text-xs font-semibold text-navy no-underline hover:underline">${I18N.viewAllEvents || 'Ver todos'} →</a>
+              <a href="${lp}/meetings" class="text-xs font-semibold text-teal-600 no-underline hover:underline">📝 ${I18N.viewAllMinutes || 'Ver Atas'}</a>
+              <a href="${lp}/attendance" class="text-xs font-semibold text-navy no-underline hover:underline">${I18N.viewAllEvents || 'Ver todos'} →</a>
             </div>
           </div>
           <div class="px-5 py-2">${pastHtml}</div>
@@ -849,17 +853,17 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           <h2 class="text-xl font-semibold text-navy mb-4">${escapeHtml(I18N.sharedRefs || 'Referências Compartilhadas')}</h2>
           <p class="text-[13px] text-[var(--text-secondary)] mb-4">Materiais de estudo, rascunhos públicos e recursos curados pela comunidade.</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="/publications" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
+            <a href="${lp}/publications" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">📚</span>
               <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.showcase || 'Vitrine de Publicações')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Todos os artefatos publicados</span>
             </a>
-            <a href="/webinars" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
+            <a href="${lp}/webinars" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🎓</span>
               <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.webinarsEvents || 'Webinars & Eventos')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Agenda e gravações</span>
             </a>
-            <a href="/admin/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
+            <a href="${lp}/admin/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🔗</span>
               <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.knowledgeBase || 'Base de Conhecimento')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Artigos, cursos e referências</span>

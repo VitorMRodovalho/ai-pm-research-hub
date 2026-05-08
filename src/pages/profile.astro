@@ -4,6 +4,7 @@ import Toast from '../components/ui/Toast.astro';
 import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const PROFILE_I18N = {
   emailAlreadyRegistered: t('profile.emailAlreadyRegistered', lang),
   emailAdded: t('profile.emailAdded', lang),
@@ -177,7 +178,7 @@ const PROFILE_I18N = {
             <span id="va-missing-list"></span>
           </div>
         </div>
-        <a id="va-action-btn" href="/volunteer-agreement" class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
+        <a id="va-action-btn" href={`${langPrefix}/volunteer-agreement`} class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
           {t('profile.volunteerBanner.action', lang)}
         </a>
       </div>
@@ -201,6 +202,9 @@ const PROFILE_I18N = {
   </div>
 </BaseLayout>
 
+<script is:inline define:vars={{ PROFILE_I18N, langPrefix }}>
+  window.__LANG_PREFIX = langPrefix;
+</script>
 <script is:inline define:vars={{ PROFILE_I18N }}>
   window.__PROFILE_I18N = typeof PROFILE_I18N !== 'undefined' ? PROFILE_I18N : {};
 </script>
@@ -772,7 +776,7 @@ const PROFILE_I18N = {
                 : `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`}
           </a>
 
-          <a href="/gamification" class="bg-emerald-50/60 rounded-xl p-3 no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
+          <a href="${lp}/gamification" class="bg-emerald-50/60 rounded-xl p-3 no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
             <div class="flex items-center gap-1.5 mb-2">
               <span class="text-base">⭐</span>
               <span class="text-[.68rem] font-bold text-[var(--text-secondary)] uppercase tracking-wide">${PROFILE_I18N.weekWeeklyXp}</span>
@@ -898,6 +902,8 @@ const PROFILE_I18N = {
     const el = document.getElementById('profile-content');
     if (!el) return;
 
+    // p123 i18n nav: prefix preserves /en /es when navigating between sections
+    const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
     const safeName = String(m?.name || PROFILE_I18N.defaultName || 'Membro');
     const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
     const comp = getCompleteness(m);
@@ -1117,7 +1123,7 @@ const PROFILE_I18N = {
           </div>
           <p class="text-[.65rem] text-[var(--text-muted)] mt-3">
             Endereço e telefone são sempre usados no Termo de Voluntariado. Essas opções controlam apenas se outros membros podem ver no seu perfil público.
-            <a href="/privacy" class="text-teal hover:underline no-underline">Ler Política de Privacidade</a>
+            <a href="${lp}/privacy" class="text-teal hover:underline no-underline">Ler Política de Privacidade</a>
           </p>
         </div>
 
@@ -1143,7 +1149,7 @@ const PROFILE_I18N = {
               <div class="text-[.65rem] text-[var(--text-muted)]">Baixar JSON com todos os seus dados pessoais e contribuições (portabilidade)</div>
             </div>
           </button>
-          <a href="/privacy"
+          <a href="${lp}/privacy"
             class="flex items-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-left no-underline hover:border-navy transition-colors">
             <span class="text-xl">📄</span>
             <div class="flex-1 min-w-0">

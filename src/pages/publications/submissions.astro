@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 <BaseLayout title={t('publications.title', lang) + ' — ' + t('publications.subtitle', lang)} activePage="publications" lang={lang}>
   <main class="max-w-[900px] mx-auto px-4 py-8" id="pub-app">
@@ -94,7 +95,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     return `<div class="space-y-3">${filtered.map(sub => {
       const statusCls = STATUS_COLORS[sub.status] || STATUS_COLORS.draft;
-      return `<a href="/publications/submissions/${sub.id}" class="block bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4 no-underline hover:border-navy transition-colors">
+      return `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/publications/submissions/${sub.id}" class="block bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4 no-underline hover:border-navy transition-colors">
         <div class="flex items-start gap-3">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">

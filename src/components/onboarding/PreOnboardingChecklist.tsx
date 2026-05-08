@@ -72,6 +72,8 @@ function icon(key: string): string {
 
 export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
+  // p123 i18n nav: prefix preserves /en /es when navigating between sections
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [data, setData] = useState<PreOnboardingData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,13 +156,13 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
                 {!done && (
                   <div className="mt-1.5 flex gap-2 flex-wrap">
                     {s.step_key === 'complete_profile' && (
-                      <a href="/profile" className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-200">{l.profile}</a>
+                      <a href={`${lp}/profile`} className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-200">{l.profile}</a>
                     )}
                     {s.step_key === 'setup_credly' && (
-                      <a href="/profile" className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-200">{l.profile}</a>
+                      <a href={`${lp}/profile`} className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-200">{l.profile}</a>
                     )}
                     {s.step_key === 'read_blog' && (
-                      <a href="/blog" className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">{l.blog}</a>
+                      <a href={`${lp}/blog`} className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">{l.blog}</a>
                     )}
                     {s.step_key === 'start_pmi_certs' && (
                       <a href="https://www.pmi.org/learning" target="_blank" rel="noopener" className="px-2.5 py-1 rounded-lg bg-teal/10 text-teal text-[10px] font-semibold no-underline hover:bg-teal/20">{l.pmi}</a>

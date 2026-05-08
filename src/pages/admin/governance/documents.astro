@@ -20,7 +20,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
     <!-- Subtab nav (matches /admin/governance-v2) -->
     <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
-      <a href="/admin/governance-v2"
+      <a href={`${langPrefix}/admin/governance-v2`}
         class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
         Change Requests & Boards
       </a>
@@ -39,7 +39,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         </p>
       </div>
       <div class="flex gap-2">
-        <a href="/admin/governance/ip-ratification" class="text-[11px] text-[var(--text-muted)] hover:text-navy no-underline px-3 py-1.5 rounded border border-[var(--border-default)] bg-white">
+        <a href={`${langPrefix}/admin/governance/ip-ratification`} class="text-[11px] text-[var(--text-muted)] hover:text-navy no-underline px-3 py-1.5 rounded border border-[var(--border-default)] bg-white">
           Admin lifecycle (legado)
         </a>
       </div>
@@ -223,7 +223,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
             '</div>' +
             '<div class="flex items-center gap-2">' +
               '<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + s.cls + '">' + s.label + '</span>' +
-              '<a href="/admin/governance/documents/' + esc(detail.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">Revisar →</a>' +
+              '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(detail.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">Revisar →</a>' +
             '</div>' +
           '</div>' +
           '<div class="mb-3">' + pipelineHtml(detail) + '</div>' +
@@ -305,7 +305,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               '<strong class="text-[13px] text-[var(--text-primary)]">' + esc(r.document_title) + '</strong>' +
               '<span class="text-[10px] text-[var(--text-muted)] ml-2">' + esc(r.version_label || '') + ' · atualizado ' + fmtRelDate(r.updated_at) + '</span>' +
             '</div>' +
-            '<a href="/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">Continuar editando</a>' +
+            '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">Continuar editando</a>' +
           '</li>'
         );
       }).join('');
@@ -333,7 +333,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         return (
           '<li class="flex items-center justify-between gap-3 py-1">' +
             '<span class="text-[12px] text-[var(--text-primary)]"><strong>' + esc(d.title) + '</strong> <span class="text-[10px] text-[var(--text-muted)]">' + esc(d.doc_type || '') + '</span></span>' +
-            '<a href="/admin/governance/documents/' + esc(d.id) + '/versions/new" class="rounded bg-white border border-navy text-navy text-[11px] font-bold px-3 py-1 no-underline hover:bg-navy hover:text-white">+ Nova versão</a>' +
+            '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(d.id) + '/versions/new" class="rounded bg-white border border-navy text-navy text-[11px] font-bold px-3 py-1 no-underline hover:bg-navy hover:text-white">+ Nova versão</a>' +
           '</li>'
         );
       }).join('');

@@ -23,6 +23,8 @@ const SESSION_KEY_CONSENT_SHOWN = 'nia_consent_shown_v1';
 const SESSION_KEY_REVAL_SHOWN = 'nia_revalidation_shown_v1';
 
 export default function PrivacyGateModal({ lang = 'pt-BR' }: { lang?: string }) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const [status, setStatus] = useState<PrivacyStatus | null>(null);
   const [show, setShow] = useState<'consent' | 'revalidation' | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -120,8 +122,7 @@ export default function PrivacyGateModal({ lang = 'pt-BR' }: { lang?: string }) 
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 items-center">
-            <a
-              href="/privacy"
+            <a href={`${lp}/privacy`}
               target="_blank"
               rel="noopener"
               className="flex-1 text-center px-4 py-2.5 rounded-lg border border-navy text-navy text-sm font-semibold no-underline hover:bg-navy/5 transition-colors"
@@ -169,8 +170,7 @@ export default function PrivacyGateModal({ lang = 'pt-BR' }: { lang?: string }) 
             >
               Mais tarde
             </button>
-            <a
-              href="/profile"
+            <a href={`${lp}/profile`}
               className="flex-1 text-center px-4 py-2 rounded-lg border border-navy text-navy text-xs font-semibold no-underline hover:bg-navy/5"
             >
               Revisar perfil

@@ -25,6 +25,8 @@ const PRIO_COLORS: Record<string, string> = {
 };
 
 export default function GovernanceApprovalTab({ t, getSb, member }: Props) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -236,7 +238,7 @@ export default function GovernanceApprovalTab({ t, getSb, member }: Props) {
 
       {/* Preview link */}
       <div className="text-center pt-2">
-        <a href="/governance/preview" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-[var(--text-primary)] no-underline hover:bg-[var(--surface-hover)] transition-colors">
+        <a href={`${lp}/governance/preview`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-[var(--text-primary)] no-underline hover:bg-[var(--surface-hover)] transition-colors">
           📋 {t('governance.previewLink', 'Preview Manual R3')}
         </a>
       </div>

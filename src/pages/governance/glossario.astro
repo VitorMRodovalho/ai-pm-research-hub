@@ -16,6 +16,9 @@
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createClient } from '@supabase/supabase-js';
+import { getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 const sbAnon = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -147,7 +150,7 @@ function fmtDate(iso: string | null | undefined): string {
     <footer class="text-center pt-6 border-t border-[var(--border-default)]">
       <p class="text-[11px] text-[var(--text-muted)]">
         Política de Publicação e Propriedade Intelectual completa:{' '}
-        <a href="/admin/governance/documents" class="underline hover:text-navy">acesso restrito a curadores via plataforma</a>
+        <a href={`${langPrefix}/admin/governance/documents`} class="underline hover:text-navy">acesso restrito a curadores via plataforma</a>
       </p>
       <p class="text-[10px] text-[var(--text-muted)] italic mt-2">
         Núcleo IA &amp; GP — projeto voluntário interinstitucional sediado em PMI Goiás (PMI-GO).

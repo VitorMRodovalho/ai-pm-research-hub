@@ -446,6 +446,8 @@ function DragOverlayCard({ title }: { title: string }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
+  // p123 i18n nav: derive prefix from current URL since lang prop isn't passed
+  const lp = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en' : (typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '');
   const t = usePageI18n();
   const { member: authMember, isLoading: memberLoading } = useMemberContext();
   const [loading, setLoading] = useState(true);
@@ -842,7 +844,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
       ) : null}
 
       <p className="text-[12px] text-[var(--text-secondary)]">
-        {ui.publishedNote || 'Itens publicados aparecem em '}<a href="/publications" className="text-blue-900 font-semibold underline hover:no-underline">{pubLinkLabel}</a>
+        {ui.publishedNote || 'Itens publicados aparecem em '}<a href={`${lp}/publications`} className="text-blue-900 font-semibold underline hover:no-underline">{pubLinkLabel}</a>
       </p>
 
       {modalItem ? <ReviewRubricDialog item={modalItem} open={!!modalItem} onClose={() => setModalItem(null)} onSubmit={handleReviewSubmit} ui={ui} /> : null}

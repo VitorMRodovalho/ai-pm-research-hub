@@ -7,6 +7,7 @@ import { buildPageI18n } from '../../../i18n/pageI18n';
 const { id } = Astro.params;
 const isNew = id === 'new';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'common'], lang);
 ---
 <AdminLayout title={isNew ? t('admin.members.title', lang) : t('comp.memberDetail.editTitle', lang)} breadcrumbs={[{label:t('common.back', lang)},{label:t('admin.members.title', lang)}]}>
@@ -14,7 +15,7 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="flex items-center gap-3 mb-6">
-      <a href="/admin" class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← Voltar</a>
+      <a href={`${langPrefix}/admin`} class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← Voltar</a>
       <h1 class="text-xl font-extrabold text-navy" id="page-title">
         {isNew ? '+ Novo Membro' : '✏️ Editar Membro'}
       </h1>
