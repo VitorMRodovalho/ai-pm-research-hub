@@ -3700,6 +3700,14 @@ const esLATAM: Record<string, string> = {
   'showcase.type.quick_insight': 'Insight Rápido',
   'showcase.type.awareness': 'Sensibilización',
 
+  // ── event detail / roster modal showcase form ──
+  'eventDetail.addShowcase': 'Agregar Showcase',
+  'eventDetail.showcaseMember': 'Miembro',
+  'eventDetail.showcaseType': 'Tipo',
+  'eventDetail.showcaseTitle': 'Título',
+  'eventDetail.save': 'Guardar',
+  'eventDetail.cancel': 'Cancelar',
+
   // ── meetings (meeting journey) ─��
   'meetings.agenda.title': 'Agenda',
   'meetings.agenda.add': 'Agregar Agenda',

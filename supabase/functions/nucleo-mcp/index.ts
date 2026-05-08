@@ -5914,7 +5914,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ═════════════════════════════════════════════════════════════════
 
   mcp.tool("capture_visitor_lead", "Capture a public visitor lead (name, email, optional phone/chapter/role/message). LGPD: lgpd_consent must be true. Idempotent on same email + status=new. Public anon-callable from external forms (CRM integrations, landing pages).", {
-    payload: z.record(z.unknown()).describe("Lead payload: { name (req), email (req), lgpd_consent (req=true), phone, chapter_interest, role_interest, message, source, utm_data, referrer_member_id }")
+    payload: z.record(z.string(), z.unknown()).describe("Lead payload: { name (req), email (req), lgpd_consent (req=true), phone, chapter_interest, role_interest, message, source, utm_data, referrer_member_id }")
   }, async (params: { payload: Record<string, unknown> }) => {
     const start = Date.now();
     const member = await getMember(sb);
@@ -6225,7 +6225,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.68.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.68.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6245,6 +6245,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.68.0", tools: 282, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.68.1", tools: 282, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
