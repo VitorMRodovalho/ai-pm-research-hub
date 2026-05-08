@@ -15,18 +15,38 @@ globs: supabase/functions/nucleo-mcp/**
 - Health observability: `get_invitation_health` (W7) + `get_lgpd_cron_health` (W8) + `get_digest_health` (W9 issue #99) — Pattern 43 saturation reached
 
 ## Pre-Deploy Check (MANDATORY)
-Before deploying nucleo-mcp EF, check for duplicate tool names:
+
+### 1. Duplicate tool names
 ```bash
 grep 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts | awk -F'"' '{print $2}' | sort | uniq -d
 ```
-Must return empty. Duplicate names cause SDK boot crash → HTTP 500 on ALL requests including `initialize`. Smoke test with curl after deploy:
+Must return empty. Duplicate names cause SDK boot crash → HTTP 500 on ALL requests including `initialize`. If 500 with "already registered": rename the duplicate tool.
+
+### 2. Zod 3→4 incompatibilities (sediment p122b — silent tools/list breakage)
+The project pins `npm:zod@4.3.6`. Zod-3-style usage compiles fine but breaks tools/list at request time with `Cannot read properties of undefined (reading '_zod')` — the SDK's JSON-Schema converter reaches into a key that doesn't exist and the whole list fails. Initialize keeps working, so the breakage is invisible in basic smoke tests.
 ```bash
+# Single-arg z.record (Zod 3) — must be z.record(keySchema, valueSchema) in Zod 4
+grep -nE 'z\.record\([^,)]*\)' supabase/functions/nucleo-mcp/index.ts | grep -v ', '
+
+# Top-level format helpers that moved (Zod 4 has them, but the canonical spelling is z.string().X())
+grep -nE 'z\.(uuid|email|url|cuid|cuid2|ulid|emoji|datetime|nanoid)\s*\(' supabase/functions/nucleo-mcp/index.ts
+```
+Both must return empty. The first command caught the `capture_visitor_lead` regression (p122b commit `65ad84b`); the second is preventive for future tools.
+
+### 3. Smoke after deploy — verify both initialize AND tools/list
+```bash
+# initialize
 curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp" \
-  -H "Content-Type: application/json" -H "Authorization: Bearer test" \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "Authorization: Bearer test" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}' \
   -w "\nHTTP:%{http_code}\n"
+
+# tools/list — required to catch _zod-style failures that initialize misses
+curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp" \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "Authorization: Bearer test" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 ```
-Expected: HTTP 200 + serverInfo. If 500 with "already registered": rename the duplicate tool.
+Expected: HTTP 200 + serverInfo on initialize, AND a non-empty `result.tools[]` array on tools/list. If tools/list returns `{"error":{"code":-32603,"message":"Cannot read properties of undefined..."}}` despite initialize succeeding, you have a Zod 3→4 issue — re-run grep #2 above.
 
 ## SDK Compatibility
 - **SDK 1.29.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
