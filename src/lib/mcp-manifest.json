@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-04-30T18:41:08.847Z",
+  "generated_at": "2026-05-08T19:10:24.359Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 236,
+  "total": 283,
   "by_domain": {
-    "personal": 17,
-    "tribe": 61,
-    "board": 58,
-    "events": 14,
-    "governance": 21,
-    "comms": 5,
+    "personal": 20,
+    "tribe": 82,
+    "board": 64,
+    "events": 15,
+    "governance": 22,
+    "comms": 12,
     "partners": 11,
     "gamification": 8,
-    "selection": 16,
+    "selection": 23,
     "knowledge": 11,
     "admin": 1,
-    "health": 13
+    "health": 14
   },
   "by_permission": {
-    "read": 148,
-    "write": 79,
+    "read": 177,
+    "write": 97,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -37,6 +37,13 @@
     "health"
   ],
   "tools": [
+    {
+      "name": "get_my_application_status",
+      "description": "Retorna status das próprias applications (todas), com phase do ciclo, fields editáveis ainda em arquivo, e (durante evaluating) count de evaluations submitted.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
     {
       "name": "get_my_assigned_cards",
       "description": "Returns all board cards assigned to you (in_progress, review, backlog). Shows title, status, tribe, role, due date.",
@@ -73,8 +80,22 @@
       "is_sensitive": false
     },
     {
+      "name": "get_my_committee_assignments",
+      "description": "Lista applications atribuídas ao caller como membro do comitê de seleção. Mostra i_have_submitted + my_evaluation_rows count.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_my_credly_status",
       "description": "Returns your Credly badge status: badges, verification date, CPMAI certification.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_evaluation_feedback",
+      "description": "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -154,6 +175,27 @@
       "description": "Toggle your visibility on the gamification leaderboard. Set opt_out=true to hide your name + points from the public ranking (your data is preserved, only display is suppressed). LGPD-compliant member self-management. Idempotent — no-op if value unchanged. ADR-0050 (#101).",
       "domain": "personal",
       "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "capture_visitor_lead",
+      "description": "Capture a public visitor lead (name, email, optional phone/chapter/role/message). LGPD: lgpd_consent must be true. Idempotent on same email + status=new. Public anon-callable from external forms (CRM integrations, landing pages).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "deselect_tribe",
+      "description": "Remove a seleção de tribe do caller. Wrap RPC existente.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "fork_idea_to_channel",
+      "description": "Registra intenção de fork de idea para canal + auto-scaffold downstream artifact se idea status IN (approved, published). Channels: 'blog'/'blog_post' → cria blog_posts draft; 'newsletter'/'email' → cria campaign_templates draft (category=newsletter); 'linkedin'/'instagram'/'twitter'/'youtube'/'tiktok'/'facebook'/'medium'/'dev_to'/'social' → registra brief em idea.metadata.briefs[channel] (V1 Opção B; V2 may migrate to comms_briefs table). Idempotent: blog/newsletter return existing row; social briefs overwrite latest payload_hint per channel. Multi-channel supported.",
+      "domain": "tribe",
+      "permission": "read",
       "is_sensitive": false
     },
     {
@@ -250,6 +292,13 @@
     {
       "name": "get_hub_announcements",
       "description": "Returns active announcements from the Hub.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_idea_pipeline",
+      "description": "Lista publication_ideas com summary by_stage. Members veem apenas próprias; comitê vê todas. Filtros: tribe_id, stage, series_id (todos opcionais).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -360,6 +409,20 @@
       "is_sensitive": false
     },
     {
+      "name": "get_volunteer_funnel_stats",
+      "description": "ARM-1 funnel breakdown: lead status counts + selection_application status counts (for cycle) + lead by_source (UTM-aware) + by_chapter. Pass cycle_id OR omit to use current open cycle. Admin only.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_ai_processing_log",
+      "description": "ARM Onda 3 (ADR-0074): admin observability over ai_processing_log (LGPD Art. 37 audit). Filter by application_id, purpose (triage|briefing|qualitative|enrichment|other), status (running|completed|failed), limit 1-200. Returns rows with hashes truncated (12 chars). Auth: view_internal_analytics.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_change_requests",
       "description": "List change requests with optional status/type filters. Status: 'draft' | 'under_review' | 'approved' | 'rejected' | 'withdrawn'.",
       "domain": "tribe",
@@ -416,6 +479,20 @@
       "is_sensitive": false
     },
     {
+      "name": "list_re_engagement_pipeline",
+      "description": "List re-engagement pipeline entries with member info, staged/invited/responded/cancelled metadata. Filter by state and/or cycle_code. Admin only (manage_member).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_visitor_leads",
+      "description": "List visitor leads with referrer/promoted/dismissed metadata. Filter by status (new/contacted/promoted/dismissed) and/or chapter_interest. Admin only (manage_member).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "request_to_join_initiative",
       "description": "Request to join an initiative via self-service (Notion-style). Initiative must have join_policy='request_to_join' or 'open'. Message MUST be at least 50 characters describing your motivation. Owner of initiative will review and accept/decline. Default engagement kind inferred by initiative kind (study_group_participant, workgroup_member, committee_member, volunteer, observer).",
       "domain": "tribe",
@@ -430,8 +507,29 @@
       "is_sensitive": false
     },
     {
+      "name": "select_tribe",
+      "description": "Seleciona/atualiza tribe preferida do caller (candidato selecionado). Wrap RPC existente.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "send_notification_to_tribe",
       "description": "Send a notification to all active members of your tribe.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "stage_alumni_for_re_engagement",
+      "description": "Stage an alumni member into the re-engagement pipeline for a specific cycle. Admin manual curation step (cron auto-stages on cycle open). Returns existing pipeline_id if already staged (idempotent).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "upload_my_resume",
+      "description": "Atualiza resume_url do próprio application ativo. file_type default: pdf.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -451,6 +549,13 @@
       "is_sensitive": false
     },
     {
+      "name": "advance_idea_stage",
+      "description": "Avança state da idea. 9 stages: draft → proposed → researching → writing → review → curation → approved → published → archived. Approved/published só comitê (manage_event). Rework permitido: review/curation → writing.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "approve_change_request",
       "description": "Record your signoff on a change request. action: 'approve' | 'reject' | 'abstain'. Signature hash + timestamp captured for audit. Permissions: CR approver role assigned to the CR.",
       "domain": "tribe",
@@ -460,6 +565,13 @@
     {
       "name": "bulk_mark_excused",
       "description": "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Tribe leaders can mark own tribe. Admins can mark anyone.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "cancel_re_engagement",
+      "description": "Admin cancellation: void a pipeline entry pre-response. Cannot cancel from terminal states (accepted/declined/already-cancelled).",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -479,6 +591,27 @@
       "is_sensitive": false
     },
     {
+      "name": "create_external_speaker_engagement",
+      "description": "Orchestrates Partnership→Initiative journey atomically: creates initiative + global project_board + lead/co speaker engagements + board_items from deadlines + partner_interaction log in a single transaction. For external speaker journeys (congress submissions like LATAM LIM, workshops). Caller must have manage_partner OR manage_member at organization scope. Replaces the manual SQL playbook from #97 W1. Issue #97 W3 G4.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "detect_inactive_members",
+      "description": "Find active members with no attendance in inactivity_threshold_days (default 180, configurable via site_config). Returns candidates list. Set dry_run=false to notify managers proposing inactive transition. Admin only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "dismiss_visitor_lead",
+      "description": "Mark a visitor_lead as dismissed (admin discard). Cannot dismiss from terminal states (already promoted/dismissed). Admin only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "exec_cert_timeline",
       "description": "Returns cohort timeline of certificate issuance across N months: rolling pct of cohort that earned tier 1/2 + avg days-to-tier. Used in exec dashboards to track progression health.",
       "domain": "tribe",
@@ -493,6 +626,13 @@
       "is_sensitive": false
     },
     {
+      "name": "invite_alumni_to_re_engage",
+      "description": "Move pipeline entry from staged → invited. Sends notification to alumni with optional custom message. Admin only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "invite_to_initiative",
       "description": "Invite one or more members to an initiative. Owner/coordinator (when kind_scope allows) OR admin (manage_member). Message MUST be at least 50 characters describing role + commitment. Returns per-invitee {created, skip_reason}. Skips invitees already engaged or with pending invitation.",
       "domain": "tribe",
@@ -500,8 +640,22 @@
       "is_sensitive": false
     },
     {
+      "name": "link_idea_to_series",
+      "description": "Liga idea a uma publication_series ativa com optional position. Apenas proposer ou comitê (manage_event/manage_member).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "link_initiative_to_drive",
       "description": "Vincula uma pasta Google Drive a uma iniciativa (tribo, comitê, workgroup, congresso). Diferentes link_purpose: 'workspace' (raiz da iniciativa, default), 'minutes' (atas), 'archive' (histórico), 'shared_resources' (templates). Authority: manage_member OR can(write, initiative). Idempotent.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "link_my_credly_badge",
+      "description": "Liga badge Credly ao próprio application ativo. badge_name opcional para tracking.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -516,6 +670,13 @@
     {
       "name": "mark_member_excused",
       "description": "Mark a member as excused (falta justificada) for an event. Tribe leaders can mark their own tribe members. Admins can mark anyone.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "propose_publication_idea",
+      "description": "Propõe uma idea de publicação no pipeline unificado. Qualquer member ativo. Status inicial: draft. source_type opcional: meeting_action|hub_resource|wiki_page|external_research|experiment|partnership|webinar|ata_decision|other.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -537,6 +698,13 @@
     {
       "name": "resolve_document_comment",
       "description": "Mark a document comment as resolved, with optional resolution note. Permission: original commenter OR document curator OR approval chain signer.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "respond_re_engagement",
+      "description": "Alumni self-action: accept or decline a re-engagement invitation. Only the invited member can respond.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -640,6 +808,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_chapter_dashboard",
+      "description": "Chapter-facing dashboard returning 8 blocks: people (by_role/by_status) + output (cards completed + publications) + attendance (rate + hub participation) + hours (PDU equivalent) + certifications (PMP/CPMAI/total) + partnerships + gamification (top contributors) + members detailed list. Pass chapter_code (e.g., 'PMI-GO') OR omit to get caller's own chapter. Gated: chapter_board sees own chapter; manage_member sees any.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_cpmai_leaderboard",
       "description": "Returns CPMAI course leaderboard. Optional course_id filter — when omitted, returns aggregate across all CPMAI courses. Use to gauge course completion progress.",
       "domain": "board",
@@ -649,6 +824,13 @@
     {
       "name": "get_curation_dashboard",
       "description": "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Admin only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_in_dashboard",
+      "description": "Integração Nacional consolidated view. Returns chapter count grouped by mou_stage (prospecting/agreed/mou_drafted/mou_sent/mou_signed/active) + per-chapter detail (next_action, follow_up_date, last_interaction_at). Use to track 14+ PMI BR chapters MOU lifecycle. Gated by view_internal_analytics OR manage_partner.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -675,8 +857,29 @@
       "is_sensitive": false
     },
     {
+      "name": "get_portfolio_items",
+      "description": "List portfolio items (board_items where is_portfolio_item=true). Optional filters by tribe_id, status, cycle_code. Returns id, title, status, baseline_date, forecast_date, due_date, portfolio_kpi_refs, cycle_code. Gated by view_internal_analytics OR view_chapter_dashboards. Use for executive portfolio overview.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_portfolio_overview",
       "description": "Returns the executive portfolio overview — all boards, cards, statuses, and overdue items. Admin/GP only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_portfolio_planned_vs_actual",
+      "description": "Compare baseline_date vs actual completion date for portfolio items in a cycle. Returns variance metrics (early/on_time/late). Used for delivery quality analysis.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_portfolio_timeline",
+      "description": "Timeline view of portfolio items by month. Returns aggregated counts (planned/in_progress/done) grouped by due_date month. Used for executive trend analysis. Gated by internal RPC auth.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -864,6 +1067,13 @@
       "is_sensitive": false
     },
     {
+      "name": "exec_portfolio_board_summary",
+      "description": "Executive summary by project_board: counts by status, portfolio item ratio, recent activity. Used for cross-board executive view (GP/sponsor read).",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "link_board_to_drive",
       "description": "Vincula uma pasta Google Drive a um board. PM/admin operation. Idempotent (reuse on duplicate). Para integração com pasta institucional do Núcleo (nucleoia@pmigo.org.br Workspace) — ver docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md para PM-side setup. Authority: manage_member OR board_admin.",
       "domain": "board",
@@ -992,6 +1202,13 @@
     {
       "name": "get_attendance_ranking",
       "description": "Returns the attendance ranking — members sorted by attendance rate and total meetings.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_event_attendance_health",
+      "description": "Health monitor for stale events with zero attendance marked. Returns count + sample of events past 24h-14d that have NO attendance row. Used by GP/deputy to spot meetings that didn't happen (líder forgot to cancel) OR meetings where attendance forgot. Pattern 43 reuse.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false
@@ -1144,6 +1361,13 @@
       "is_sensitive": false
     },
     {
+      "name": "recirculate_governance_doc",
+      "description": "Re-circulação de documento governance pós-redraft (Material change). Locks pending draft, supersedes current approval_chain, creates new chain with same gates, and emails recipients via parametrized template. Use dry_run=true para preview (default). Default recipients = all members eligible to sign first gate (curators for most docs); pass recipient_emails para override explicito. Requires manage_member authority. Sediment p88 ADR-0068 Round 5 (#122).",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "verify_certificate",
       "description": "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
       "domain": "governance",
@@ -1263,10 +1487,59 @@
       "is_sensitive": false
     },
     {
+      "name": "get_comms_pipeline",
+      "description": "Returns webinars pipeline with promo asset readiness (briefing_doc / sympla_event / promo_kit / comms_kickoff). Comms/Board/Admin only.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_tribe_webinars",
       "description": "Returns webinars for your tribe or chapter.",
       "domain": "comms",
       "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_webinar_proposals",
+      "description": "Lista webinar proposals. Membros veem apenas próprias; comitê (manage_event/manage_member) vê todas. Filter por status opcional.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "convert_proposal_to_webinar",
+      "description": "Converte proposal aprovada em webinar row. Status deve ser approved. Cria webinars row + linka via webinar_id. Requer manage_event.",
+      "domain": "comms",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_webinar_proposal",
+      "description": "Propõe um webinar para review do comitê. Status inicial: submitted. format_type: palestra|painel|dupla|lightning|workshop.",
+      "domain": "comms",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "review_webinar_proposal",
+      "description": "Comitê review de proposal: approve | reject | mark_review. Requer manage_event. rejection_reason obrigatório quando decision=reject.",
+      "domain": "comms",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_webinar_comms_assets",
+      "description": "Patches webinar promo assets (briefing_doc_url / sympla_event_url / promo_kit_url / mark comms kickoff). Comms/Board/Admin only.",
+      "domain": "comms",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_webinar_proposal",
+      "description": "Edita proposal pré-aprovação. Apenas proposer ou comitê (manage_event/manage_member). Permitido em status draft/submitted/review.",
+      "domain": "comms",
+      "permission": "write",
       "is_sensitive": false
     },
     {
@@ -1403,6 +1676,13 @@
       "is_sensitive": true
     },
     {
+      "name": "analyze_application",
+      "description": "ARM-3 Onda 3 (ADR-0074): triggers AI triage scoring (Claude Sonnet 4.6 + cached rubric) for a selection_application. Updates ai_triage_score (0-10) + ai_triage_reasoning + ai_triage_confidence. NON-BINDING per LGPD Art. 20 §1 — decisão humana é autoritária. Requires consent_ai_analysis_at NOT NULL on the application. Admin only (manage_member). Logs to ai_processing_log.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "compute_application_scores",
       "description": "Recomputes aggregated PERT scores for an application from latest evaluations. Idempotent. Used after a re-submit or when verifying ranking. Authority: committee member or admin.",
       "domain": "selection",
@@ -1410,8 +1690,22 @@
       "is_sensitive": false
     },
     {
+      "name": "generate_interview_briefing",
+      "description": "ARM-5 Onda 3 (ADR-0074): generates 3 personalized interview questions + áreas de atenção for a candidate via Claude Haiku 4.5. Uses application data + ai_analysis snapshot (Gemini qualitative) + ai_triage_* if present. Sync, latency ~1-3s. Auth: view_pii (committee + admin). Logs to ai_processing_log. NOT persisted — generated on-demand per click.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_application_detail",
       "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_application_gate_attempts",
+      "description": "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS), caller name, payload snapshot (consent/eval_count/score/status at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1452,6 +1746,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_evaluator_calibration_stats",
+      "description": "Returns evaluator calibration metrics for a selection cycle: cycle_summary (total_applications, total_evaluators, overall_mean, overall_stddev), per_evaluator (bias_signed/abs vs overall_mean, stddev, anomaly_count from selection_evaluation_anomalies), pair_divergence (top 5 evaluator pairs with largest mean diff in shared applications). Useful for calibration sessions pre-final-decision or between cycles. Authority: view_internal_analytics. Optional cycle_code arg (defaults to most recent cycle).",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_selection_committee",
       "description": "Returns the selection committee for a cycle: members + role (lead/evaluator) + can_interview flag. Used to confirm who can evaluate or interview before delegating work.",
       "domain": "selection",
@@ -1461,6 +1762,13 @@
     {
       "name": "get_selection_cycles",
       "description": "Lists all selection cycles (ordered most-recent first) with cycle_code, title, status, dates. Use to discover cycle_id/cycle_code for downstream selection tools.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_selection_health",
+      "description": "Returns selection funnel health: active cycle, application counts per stage (kanban-like), stale_tokens_48h (welcome tokens not consumed >48h), welcome_backlog (approved without dispatched welcome), status of 4 critical crons (send-notification-emails, retry-pending-ai-analyses, nudge-reschedule-pending-daily, detect-onboarding-overdue-daily) with last_run_at + last_5_status, and a green/yellow/red health_signal. Authority: view_internal_analytics (admin/comitê). Use when triaging 'is the selection funnel healthy?' before/during a cycle.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1482,6 +1790,13 @@
     {
       "name": "mark_interview_status",
       "description": "Updates interview status. Authority: interviewer or committee lead. Valid: 'completed' | 'cancelled' | 'rescheduled' | 'noshow'. Optional notes.",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "promote_lead_to_application",
+      "description": "Promote a visitor_lead into a selection_application for a specific cycle. Cycle must be 'open'. Lead must not already be promoted/dismissed. Admin only.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
@@ -1510,6 +1825,13 @@
     {
       "name": "update_application_contact",
       "description": "Admin (manage_member) updates a candidate's contact info on a selection application: phone and/or linkedin_url. Both optional but at least one required. Used when a candidate emails the committee with corrected contact data — admin patches it server-side. Self-service candidate edit is NOT supported by this RPC.",
+      "domain": "selection",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "update_my_application",
+      "description": "Atualiza campos do próprio application em ciclo ativo. Allowed: linkedin_url, resume_url, motivation_letter, areas_of_interest, leadership_experience, academic_background, non_pmi_experience, availability_declared, proposed_theme, credly_url, linkedin_relevant_posts, reason_for_applying, phone. Bloqueado durante evaluating/interviews/ranking phases.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
@@ -1622,6 +1944,13 @@
     {
       "name": "get_drive_discovery_health",
       "description": "Returns Drive auto-discovery cron health: total/last_24h/unmatched/unpromoted counters + cron last_run + days_since + minutes_folders_active. Health: green (<=36h + success) / yellow (idle/no-folders) / red (>36h or failed). Authority: view_internal_analytics. ADR-0065 (Phase 4).",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_extraction_health",
+      "description": "Returns CV extraction pipeline health: backlog_eligible (apps with consent + resume_url + missing cv_extracted_text), 24h activity (completed_24h/failed_24h counts + last_success_at/last_failure_at), failure_samples_24h (top 3 errors for triage), cron stats (extract-cv-text-15min schedule + last_run_at + last_5_runs), and a green/yellow/red health_signal. Authority: view_internal_analytics. Use when triaging 'is CV extraction working?' or 'why are recent triages running without CV input?'.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
