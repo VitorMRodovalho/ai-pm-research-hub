@@ -455,8 +455,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER?.operational_role !== 'tribe_leader' && !isParticipant) return false;
       // Type filter
       if (typeF !== 'todos' && ev.type !== typeF) return false;
-      // Tribe filter (use == for type coercion: tribe_id may be string or number)
-      if (tribeF && ev.tribe_id != tribeF) return false;
+      // Tribe filter — scope to tribo events only. Non-tribo events (geral/kickoff/lideranca/
+      // webinar/evento_externo) are cross-cutting and must not be hidden when a tribe filter is
+      // applied. Without this scope, the auto-applied tribe filter for non-GP members hides
+      // every event that lacks an initiative_id (post-Phase 3e RPC derives tribe_id from
+      // initiatives.legacy_tribe_id, so non-initiative events always have tribe_id=null).
+      // (use != for type coercion: tribe_id may be string or number)
+      if (tribeF && ev.type === 'tribo' && ev.tribe_id != tribeF) return false;
       // Tag filter
       if (ACTIVE_TAG_FILTER) {
         const evTags = EVENT_TAG_MAP[ev.id] || [];
