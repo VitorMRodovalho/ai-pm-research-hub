@@ -297,6 +297,18 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
             >
               ⬇ Auditoria
             </a>
+            {/* p122d sediment: shortcut for surgical redaction (typo / leaked editorial comment).
+                Editor opens pre-populated with the current locked content; admin edits, saves a
+                v(N+1) draft, and recirculates from the chain page (one extra click). */}
+            {isAdmin && detail.chain_status === 'review' && !nextDraft && (
+              <a
+                href={`/admin/governance/documents/${detail.document_id}/versions/new`}
+                className="rounded-lg bg-white text-purple-800 text-[11px] font-semibold px-2.5 py-1 border border-purple-300 hover:bg-purple-50"
+                title="Criar nova versão pré-carregada com o texto atual — útil para correções redacionais (typo, leak de comentário) sem reescrever do zero"
+              >
+                ✏️ Redigir nova versão
+              </a>
+            )}
             <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>{statusMeta.label}</span>
           </div>
         </div>
