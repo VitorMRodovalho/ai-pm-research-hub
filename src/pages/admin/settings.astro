@@ -11,39 +11,39 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <div class="max-w-[700px] mx-auto px-4 pb-12">
     <div id="settings-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
-      <p class="font-semibold text-amber-800">Acesso restrito a Superadmin</p>
+      <p class="font-semibold text-amber-800">{t('admin.settings.deniedSuperadmin', lang)}</p>
       <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
 
     <div id="settings-panel" class="hidden space-y-6">
       <div class="mb-6">
-        <h1 class="text-2xl font-extrabold text-navy">Configurações do Site</h1>
-        <p class="text-sm text-[var(--text-secondary)] mt-1">Configurações globais para replicação multi-tenant (S-RM5)</p>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.settings.title', lang)}</h1>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.settings.description', lang)}</p>
       </div>
 
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Parâmetros</h2>
+          <h2 class="text-sm font-bold text-navy">{t('admin.settings.parameters', lang)}</h2>
           <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Altere e salve. Apenas Superadmin pode editar.</p>
         </div>
         <div class="p-5 space-y-4">
           <div>
-            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Termo do grupo</label>
-            <input type="text" id="cfg-group-term" placeholder="Núcleo" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">Ex: Núcleo, Chapter, Chapter PMI</p>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.groupTermLabel', lang)}</label>
+            <input type="text" id="cfg-group-term" placeholder={t('admin.settings.groupTermPlaceholder', lang)} class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">{t('admin.settings.groupTermHint', lang)}</p>
           </div>
           <div>
-            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Ciclo padrão (ID)</label>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleDefaultLabel', lang)}</label>
             <input type="text" id="cfg-cycle-default" placeholder="—" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">ID do ciclo padrão quando não definido (opcional)</p>
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">{t('admin.settings.cycleDefaultHint', lang)}</p>
           </div>
           <div>
             <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Webhook URL</label>
             <input type="url" id="cfg-webhook-url" placeholder="https://..." class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">URL para notificações externas (opcional)</p>
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">{t('admin.settings.webhookHint', lang)}</p>
           </div>
           <button id="cfg-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-            Salvar configurações
+            {t('admin.settings.saveBtn', lang)}
           </button>
         </div>
       </div>
@@ -51,8 +51,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <!-- ── Platform Settings (Configurable Limits) ── -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Limites da Plataforma</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Limites configuráveis. Alterações requerem justificativa e são registadas no log de auditoria.</p>
+          <h2 class="text-sm font-bold text-navy">{t('admin.settings.platformLimits', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.platformLimitsHint', lang)}</p>
         </div>
         <div id="platform-settings" class="p-5 space-y-3">
           <p class="text-[.7rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
@@ -63,11 +63,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-bold text-navy">Gerenciamento de Ciclos</h2>
+            <h2 class="text-sm font-bold text-navy">{t('admin.settings.cycleManagement', lang)}</h2>
             <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Criar, editar e definir ciclo ativo.</p>
           </div>
           <button id="cycle-add-btn" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-            + Novo Ciclo
+            + {t('admin.settings.cycleAddBtn', lang)}
           </button>
         </div>
         <div id="cycle-list" class="p-5 space-y-3">
@@ -79,22 +79,22 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div id="cycle-modal-overlay" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
         <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 border border-[var(--border-default)]">
           <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
-            <h3 id="cycle-modal-title" class="text-sm font-bold text-navy">Novo Ciclo</h3>
+            <h3 id="cycle-modal-title" class="text-sm font-bold text-navy">{t('admin.settings.cycleNewTitle', lang)}</h3>
             <button id="cycle-modal-close" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0">&times;</button>
           </div>
           <div class="p-5 space-y-3">
             <div>
-              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Código</label>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleCodeLabel', lang)}</label>
               <input type="text" id="cyc-code" placeholder="cycle_4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
-              <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Identificador único (ex: cycle_4, pilot)</p>
+              <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.cycleCodeHint', lang)}</p>
             </div>
             <div>
               <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Nome</label>
-              <input type="text" id="cyc-label" placeholder="Ciclo 4 (2026/2)" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              <input type="text" id="cyc-label" placeholder={t('admin.settings.cycleNamePlaceholder', lang)} class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Abreviação</label>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleAbbrLabel', lang)}</label>
                 <input type="text" id="cyc-abbr" placeholder="C4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
               </div>
               <div>
@@ -104,17 +104,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Data Início</label>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleStartLabel', lang)}</label>
                 <input type="date" id="cyc-start" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Data Fim</label>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleEndLabel', lang)}</label>
                 <input type="date" id="cyc-end" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
-                <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Opcional (vazio = em andamento)</p>
+                <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.cycleEndHint', lang)}</p>
               </div>
             </div>
             <div>
-              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Ordem de exibição</label>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.cycleSortLabel', lang)}</label>
               <input type="number" id="cyc-sort" value="0" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
             </div>
             <button id="cycle-modal-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all mt-2">

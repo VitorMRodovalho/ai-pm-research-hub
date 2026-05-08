@@ -38,7 +38,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       <div class="flex gap-1 border-b border-[var(--border-default)]">
         <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Pipeline</button>
         <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Import CSV</button>
-        <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Comitê</button>
+        <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.committee', lang)}</button>
         <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Diversidade</button>
       </div>
 
@@ -55,12 +55,12 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
         <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) -->
         <div class="flex flex-wrap gap-2 items-center mb-2 text-[12px]">
-          <span class="text-[var(--text-muted)] font-semibold">Filtros rápidos:</span>
-          <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title="Esconde aprovados, rejeitados, lista de espera, convertidos, withdraw, cancelled">👁 Ocultar decididos</button>
+          <span class="text-[var(--text-muted)] font-semibold">{t('admin.selection.quickFilters', lang)}</span>
+          <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>👁 Ocultar decididos</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">Todos</button>
-            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title="Só candidatos onde você ainda NÃO submeteu avaliação">⏳ Minhas pendentes</button>
-            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="evaluated_mine" title="Só candidatos onde você já submeteu avaliação">✓ Já avaliei</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>⏳ Minhas pendentes</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="evaluated_mine" title={t('admin.selection.alreadyReviewedHint', lang)}>{t('admin.selection.iAlreadyEvaluated', lang)}</button>
           </div>
         </div>
 
@@ -69,10 +69,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">Todos</button>
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">Pesquisador</button>
-            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">Líder</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">{t('admin.selection.leader', lang)}</button>
           </div>
           <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
-            <option value="all">Todos os Capítulos</option>
+            <option value="all">{t('admin.selection.allChapters', lang)}</option>
           </select>
           <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
             <option value="all">Todos os Status</option>
@@ -84,7 +84,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
             <option value="rejected">Rejected</option><option value="waitlist">Waitlist</option>
             <option value="converted">Converted</option><option value="withdrawn">Withdrawn</option><option value="cancelled">Cancelled</option>
           </select>
-          <input type="text" id="sel-search" placeholder="Buscar nome ou e-mail..."
+          <input type="text" id="sel-search" placeholder={t('admin.selection.searchNameEmail', lang)}
             class="flex-1 min-w-[180px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] focus:outline-none" />
           <span id="sel-count" class="text-[12px] text-[var(--text-muted)] font-semibold whitespace-nowrap"></span>
         </div>
@@ -101,16 +101,16 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Track</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">Pesquisa</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
-                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title="Sua avaliação pessoal (objetiva)">Minha aval.</th>
-                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title="Workflow indicators: IA / Pares / Entrevista / Token / Vídeo">Pipeline</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>Minha aval.</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>Pipeline</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">Data</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.actions', lang)}</th>
                 </tr>
               </thead>
               <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
@@ -126,7 +126,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
             <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">Rejeitar</button>
             <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">Lista Espera</button>
           </div>
-          <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="Feedback em lote (opcional — aplicado a todos selecionados)" />
+          <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.bulkFeedback', lang)} />
         </div>
       </div>
 
@@ -148,18 +148,18 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Opportunity ID</label><input type="text" id="opp-id" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="64967" /></div>
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Papel Default</label><select id="opp-role" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]"><option value="researcher">Pesquisador</option><option value="leader">Líder</option></select></div>
             </div>
-            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Título</label><input type="text" id="opp-title" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="Pesquisador e multiplicador..." /></div>
+            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">{t('admin.selection.titleColumn', lang)}</label><input type="text" id="opp-title" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.opportunityTitlePh', lang)} /></div>
             <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">URL do VEP</label><input type="text" id="opp-url" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://volunteer.pmi.org/..." /></div>
             <div class="grid grid-cols-3 gap-3">
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Capítulo</label><input type="text" id="opp-chapter" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="PMI-GO" /></div>
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Vagas</label><input type="number" id="opp-positions" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" value="42" /></div>
-              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Dedicação</label><input type="text" id="opp-time" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="21-30 hours/month" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">{t('admin.selection.dedication', lang)}</label><input type="text" id="opp-time" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.dedicationOptHint', lang)} /></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Início</label><input type="date" id="opp-start" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">{t('admin.selection.startCol', lang)}</label><input type="date" id="opp-start" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" /></div>
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Fim</label><input type="date" id="opp-end" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" /></div>
             </div>
-            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Elegibilidade</label><textarea id="opp-eligibility" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-12" placeholder="Filiado ativo a um dos capítulos..."></textarea></div>
+            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Elegibilidade</label><textarea id="opp-eligibility" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-12" placeholder={t('admin.selection.chapterFilterHint', lang)}></textarea></div>
             <div>
               <label class="text-[10px] font-semibold text-[var(--text-secondary)]">Mapeamento de Perguntas (Essay Mapping)</label>
               <p class="text-[10px] text-[var(--text-muted)] mb-1">Defina qual campo do sistema recebe cada pergunta do formulário VEP (1 = primeira pergunta, 2 = segunda, etc.)</p>
@@ -181,12 +181,12 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <div class="flex flex-wrap gap-4 items-end">
             <div>
               <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Opportunity ID (do PMI VEP)</label>
-              <input type="text" id="import-opportunity" value="" placeholder="Ex: 64967"
+              <input type="text" id="import-opportunity" value="" placeholder={t('admin.selection.opportunityIdPh', lang)}
                 class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] w-40" />
             </div>
             <div>
-              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Título da vaga</label>
-              <input type="text" id="import-opportunity-title" value="" placeholder="Ex: Pesquisador e multiplicador"
+              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">{t('admin.selection.opportunityTitle', lang)}</label>
+              <input type="text" id="import-opportunity-title" value="" placeholder={t('admin.selection.opportunityTitlePh2', lang)}
                 class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] w-64" />
             </div>
             <div>
@@ -197,7 +197,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
               </select>
             </div>
           </div>
-          <p class="text-[11px] text-[var(--text-muted)]">O Opportunity ID está na URL do VEP: volunteer.pmi.org/.../opportunity/<strong>64967</strong>. O papel default é aplicado a todos os candidatos do CSV, podendo ser alterado individualmente depois.</p>
+          <p class="text-[11px] text-[var(--text-muted)]">{t('admin.selection.opportunityIdHint', lang)}<strong>64967</strong>. O papel default é aplicado a todos os candidatos do CSV, podendo ser alterado individualmente depois.</p>
 
           <!-- Drop zone -->
           <div id="csv-dropzone" class="border-2 border-dashed border-[var(--border-default)] rounded-xl p-8 text-center cursor-pointer hover:border-navy hover:bg-[var(--surface-hover)] transition-all">
@@ -218,7 +218,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                     <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Email</th>
                     <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Capítulo</th>
                     <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">VEP Status</th>
-                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Ação</th>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.selection.action', lang)}</th>
                   </tr>
                 </thead>
                 <tbody id="csv-preview-body"></tbody>
@@ -240,7 +240,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 class="text-lg font-bold text-navy">Métricas de Diversidade</h2>
+              <h2 class="text-lg font-bold text-navy">{t('admin.selection.diversityMetrics', lang)}</h2>
               <p class="text-xs text-[var(--text-muted)] mt-0.5">Distribuição por gênero, capítulo, setor, senioridade e região — dados anonimizados conforme LGPD Art. 11</p>
             </div>
           </div>
@@ -252,22 +252,22 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       <div id="tab-committee" class="hidden space-y-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-bold text-navy">Comitê de Seleção</h2>
+            <h2 class="text-lg font-bold text-navy">{t('admin.selection.selectionCommittee', lang)}</h2>
           </div>
           <p class="text-sm text-[var(--text-secondary)]">Membros do comitê avaliam candidatos em revisão cega. Mínimo de 2 avaliadores por candidato.</p>
 
           <!-- Add member search -->
           <div class="bg-[var(--surface-base)] rounded-xl p-4 space-y-3">
-            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Adicionar membro ao comitê</h4>
+            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">{t('admin.selection.addCommitteeMember', lang)}</h4>
             <div class="flex gap-3 items-end">
               <div class="flex-1 relative">
-                <input type="text" id="committee-search" placeholder="Buscar por nome..."
+                <input type="text" id="committee-search" placeholder={t('admin.selection.searchByName', lang)}
                   class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] focus:outline-none focus:ring-2 focus:ring-navy/40" />
                 <div id="committee-search-results" class="hidden absolute z-20 w-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl shadow-xl max-h-[200px] overflow-y-auto"></div>
               </div>
               <select id="committee-role-select" class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
                 <option value="evaluator">Avaliador</option>
-                <option value="lead">Líder do Comitê</option>
+                <option value="lead">{t('admin.selection.committeeLead', lang)}</option>
                 <option value="observer">Observador</option>
               </select>
             </div>
@@ -285,7 +285,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     <div class="bg-[var(--surface-card)] rounded-2xl shadow-2xl max-w-[800px] w-full max-h-[90vh] overflow-y-auto">
       <div class="sticky top-0 bg-[var(--surface-card)] border-b border-[var(--border-default)] px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
         <h2 id="modal-name" class="text-lg font-extrabold text-navy">—</h2>
-        <button id="modal-close" class="text-2xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy" aria-label="Fechar modal">&times;</button>
+        <button id="modal-close" class="text-2xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy" aria-label={t('admin.selection.closeModal', lang)}>&times;</button>
       </div>
       <div class="p-6 space-y-5" id="modal-body">
         <!-- Populated dynamically -->
