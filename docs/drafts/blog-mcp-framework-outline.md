@@ -1,8 +1,9 @@
 # Blog post outline — "Núcleo IA + MCP: framework AI-native para gestão de projetos"
 
-**Status:** Draft (Apr 30, 2026) — PM review + publish via /admin/blog quando CR-050 IP policy ratificada.
-**Target slug:** `mcp-framework-pmi-chapter` (replaces `mcp-server-launch` from Mar 2026)
-**Existing post to retire/redirect:** `/blog/mcp-server-launch` (title says "74 ferramentas" — stale 3.2× vs reality 236).
+**Status:** ✅ **Shipped 2026-05-08 (p122e)** — PM autorizou publicar sem aguardar CR-050 ratificação.
+**Slug:** `mcp-server-launch` (mantido — preserva URLs/SEO/inbound do Trentim/social).
+**Numbers refreshed:** 283 ferramentas (177R + 97W + 9 admin), 12 domínios, 48 voluntários, 7 tribos, 15 capítulos PMI Brasil, 1.295h impacto, 246 reuniões. Manifest regenerado em sync.
+**Smoke prod:** PT-BR / EN (`?lang=en-US`) / ES (`?lang=es-LATAM`) renderizando OK. EN/ES via `/en/blog/{slug}` e `/es/blog/{slug}` fazem meta-refresh ao mesmo endpoint com query param.
 
 **Audience:** Primary persona per product-leader council = **PMI Chapter Operator/President**. Secondary: PMs corporativos curiosos sobre AI-native ops.
 **Tone:** practitioner case study, not whitepaper. Honest about what's specific to Núcleo vs generic.
