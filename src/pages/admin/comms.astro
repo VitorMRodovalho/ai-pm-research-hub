@@ -35,13 +35,22 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <!-- Header with nav to Comunicacao -->
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-extrabold text-navy">Midia Social</h1>
-          <p class="text-sm text-[var(--text-secondary)]">Metricas de YouTube, Instagram e LinkedIn</p>
+          <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)]">{t('admin.comms.subtitle', lang)}</p>
         </div>
         <a href={`${langPrefix}/admin/comms-ops`} class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
-          &larr; Comunicacao (Ops)
+          {t('admin.comms.linkBackOps', lang)}
         </a>
       </div>
+      <!-- Hidden i18n strings for script-context lookups -->
+      <span id="ai18n-comms-status-active" class="hidden">{t('admin.comms.statusActive', lang)}</span>
+      <span id="ai18n-comms-status-expired" class="hidden">{t('admin.comms.expired', lang)}</span>
+      <span id="ai18n-comms-status-error" class="hidden">{t('admin.comms.statusError', lang)}</span>
+      <span id="ai18n-comms-time-never" class="hidden">{t('admin.comms.never', lang)}</span>
+      <span id="ai18n-comms-time-min" class="hidden">{t('admin.comms.timeMinAgo', lang)}</span>
+      <span id="ai18n-comms-time-hour" class="hidden">{t('admin.comms.timeHourAgo', lang)}</span>
+      <span id="ai18n-comms-time-day" class="hidden">{t('admin.comms.timeDayAgo', lang)}</span>
+      <span id="ai18n-comms-no-channel" class="hidden">{t('admin.comms.noChannel', lang)}</span>
 
       <!-- S1: Executive KPI Cards -->
       <section id="kpi-section" class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -565,20 +574,23 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── Channel Admin (leader+ only) ──
 
+  const _i18nText = (id: string, fallback: string): string =>
+    document.getElementById(id)?.textContent || fallback;
+
   const STATUS_MAP: Record<string, { dot: string; label: string; cls: string }> = {
-    active:        { dot: '\u{1F7E2}', label: 'Ativo',     cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-    token_expired: { dot: '\u{1F534}', label: 'Expirado',  cls: 'text-red-700 bg-red-50 border-red-200' },
-    error:         { dot: '\u{1F7E0}', label: 'Erro',      cls: 'text-amber-700 bg-amber-50 border-amber-200' },
+    active:        { dot: '\u{1F7E2}', label: _i18nText('ai18n-comms-status-active', 'Ativo'),     cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    token_expired: { dot: '\u{1F534}', label: _i18nText('ai18n-comms-status-expired', 'Expirado'), cls: 'text-red-700 bg-red-50 border-red-200' },
+    error:         { dot: '\u{1F7E0}', label: _i18nText('ai18n-comms-status-error', 'Erro'),       cls: 'text-amber-700 bg-amber-50 border-amber-200' },
   };
 
   function timeAgo(iso: string | null): string {
-    if (!iso) return 'Nunca';
+    if (!iso) return _i18nText('ai18n-comms-time-never', 'Nunca');
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}min atras`;
+    if (mins < 60) return `${mins}${_i18nText('ai18n-comms-time-min', 'min atrás')}`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h atras`;
-    return `${Math.floor(hrs / 24)}d atras`;
+    if (hrs < 24) return `${hrs}${_i18nText('ai18n-comms-time-hour', 'h atrás')}`;
+    return `${Math.floor(hrs / 24)}${_i18nText('ai18n-comms-time-day', 'd atrás')}`;
   }
 
   async function loadChannelConfig() {
@@ -586,7 +598,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (!grid) return;
     try {
       const { data, error } = await sb.rpc('comms_channel_status');
-      if (error || !data?.length) { grid.innerHTML = '<p class="text-xs text-[var(--text-muted)] col-span-full">Nenhum canal.</p>'; return; }
+      if (error || !data?.length) { grid.innerHTML = `<p class="text-xs text-[var(--text-muted)] col-span-full">${_i18nText('ai18n-comms-no-channel', 'Nenhum canal.')}</p>`; return; }
 
       grid.innerHTML = (data as any[]).map((ch: any) => {
         const s = STATUS_MAP[ch.sync_status] || STATUS_MAP.error;
