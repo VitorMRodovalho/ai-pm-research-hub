@@ -198,6 +198,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       <LoadingSkeleton variant="profile" />
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+    <!-- p124 hidden i18n strings for inline-script template literals -->
+    <span id="ai18n-t-switch" class="hidden">{t('tribe.contextSwitch', lang)}</span>
+    <span id="ai18n-t-attby" class="hidden">{t('tribe.attendanceByMember', lang)}</span>
     <div id="tribe-access-note" class="hidden mb-4"></div>
 
     <!-- Cross-tribe viewing banner -->
@@ -417,6 +420,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const code = _langCode();
     return row?.[`${field}_i18n`]?.[code] || row?.[field] || '';
   }
+  function _i18n(spanId: string, fallback: string): string {
+    return document.getElementById(spanId)?.textContent || fallback;
+  }
 
   let sb: any = null;
   let currentMember: any = null;
@@ -513,7 +519,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               <h1 class="text-[.95rem] font-bold text-[var(--text-primary)] truncate">${escapeHtml(tribeName)}</h1>
               ${quadrantLabel ? `<span class="px-2 py-0.5 rounded-md text-[.68rem] font-bold uppercase tracking-wide" style="color:${qColor};background:${qColor}15">${escapeHtml(quadrantLabel)}</span>` : ''}
               <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[.68rem] font-bold text-[var(--text-secondary)] bg-[var(--surface-section-cool)] border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer">
-                Trocar ▾
+                ${_i18n('ai18n-t-switch', 'Trocar')} ▾
               </button>
             </div>
             <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-lg p-3 max-w-xl absolute z-20"></div>
@@ -651,7 +657,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       </div>
       ${Array.isArray(data.top_contributors) && data.top_contributors.length > 0 ? `
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 mb-6">
-        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Presenca por Membro</h4>
+        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">${_i18n('ai18n-t-attby', 'Presença por Membro')}</h4>
         <div class="space-y-1.5">
           ${data.top_contributors.map((c: any) => {
             const barColor = (c.rate || 0) >= 75 ? '#10B981' : (c.rate || 0) >= 50 ? '#D97706' : '#BE2027';

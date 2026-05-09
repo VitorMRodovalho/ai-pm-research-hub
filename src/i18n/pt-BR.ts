@@ -4312,6 +4312,9 @@ const ptBR: Record<string, string> = {
   'admin.campaigns.funnelOpened': 'Abriram',
   'admin.campaigns.funnelClicked': 'Clicaram',
 
+  'tribe.contextSwitch': 'Trocar',
+  'tribe.attendanceByMember': 'Presença por Membro',
+
   'initiative.catalog.title': 'Iniciativas',
   'initiative.catalog.activeCount': '{count} iniciativa(s) ativa(s)',
   'initiative.catalog.youParticipateBadge': ' · {count} com sua participação',
