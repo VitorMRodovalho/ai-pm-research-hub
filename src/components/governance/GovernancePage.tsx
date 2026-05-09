@@ -54,6 +54,10 @@ export default function GovernancePage() {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
+  // p131: count de chains de governança onde o user atual tem eligible_gates
+  // pendentes (ratificação, ciência, curadoria, presidência, etc). Surge como
+  // callout no topo se > 0, com link para /governance/my-pending.
+  const [pendingRatificationsCount, setPendingRatificationsCount] = useState<number>(0);
   const highlightCR = getHighlightCR();
 
   const setView = useCallback((v: View) => {
@@ -83,13 +87,19 @@ export default function GovernancePage() {
 
         // Only load auth-gated data if member is present
         if (m) {
-          const [crRes, docRes] = await Promise.all([
+          const [crRes, docRes, pendRes] = await Promise.all([
             sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
             sb.rpc('get_governance_documents'),
+            sb.rpc('get_pending_ratifications'),
           ]);
           if (!cancelled) {
             setCrs(Array.isArray(crRes.data) ? crRes.data : []);
             setDocs(Array.isArray(docRes.data) ? docRes.data : []);
+            // p131: filtra rows onde realmente há gate eligível para o user
+            const pending = Array.isArray(pendRes.data) ? pendRes.data : [];
+            setPendingRatificationsCount(
+              pending.filter((r: any) => Array.isArray(r.eligible_gates) && r.eligible_gates.length > 0).length
+            );
           }
         }
       } catch (e) { console.warn('Governance load error:', e); }
@@ -171,6 +181,30 @@ export default function GovernancePage() {
           </a>
         )}
       </div>
+
+      {/* p131: callout de pendências de assinatura — surge só se há chains com
+          eligible_gates não-vazios para o user atual. Link rápido para a
+          página dedicada /governance/my-pending. */}
+      {pendingRatificationsCount > 0 && (
+        <a
+          href={`${lp}/governance/my-pending`}
+          className="block rounded-xl border-2 border-navy bg-blue-50/30 p-4 no-underline hover:bg-blue-50/60 transition-colors"
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-navy">
+                {t('governance.myPending.callout.title', 'Você tem assinaturas pendentes')}
+              </h3>
+              <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
+                {t('governance.myPending.callout.body', '{count} cadeia(s) de governança aguardam sua ação (ratificação, ciência, curadoria ou outra)').replace('{count}', String(pendingRatificationsCount))}
+              </p>
+            </div>
+            <span className="text-[12px] font-bold text-navy">
+              {t('governance.myPending.callout.cta', 'Ver minhas pendências →')}
+            </span>
+          </div>
+        </a>
+      )}
 
       {/* View selector — only show tabs if authenticated (visitors see manual directly) */}
       {!isVisitor && (

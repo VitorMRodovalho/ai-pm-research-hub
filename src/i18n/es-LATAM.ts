@@ -850,6 +850,10 @@ const esLATAM: Record<string, string> = {
   'governance.docs.statusSuperseded': 'Sustituido',
   // p130: /governance/my-pending — mis cadenas pendientes de firma.
   'governance.myPending.title': 'Mis firmas pendientes',
+  // p131: callout en /governance principal cuando user tiene pendientes
+  'governance.myPending.callout.title': 'Usted tiene firmas pendientes',
+  'governance.myPending.callout.body': '{count} cadena(s) de gobernanza aguardan su acción (ratificación, conocimiento, curaduría u otra)',
+  'governance.myPending.callout.cta': 'Ver mis pendientes →',
   'governance.myPending.intro': 'Cadenas de gobernanza en revisión donde su firma es requerida o está disponible. Incluye ratificación del miembro, conocimiento de líderes, curaduría, presidencia y otros gates según su rol.',
   'governance.myPending.loading': 'Verificando sus pendientes…',
   'governance.myPending.empty': 'Nada pendiente por ahora. Vuelva aquí cuando reciba un email de gobernanza.',
