@@ -127,7 +127,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         var tNum = isAll || isInformational ? 0 : Number(tStr);
         var signedCount = Number(g.signed_count) || 0;
         var eligibleCount = Array.isArray(g.eligible_pending) ? g.eligible_pending.length + signedCount : signedCount;
-        var satisfied = !isAll && !isInformational && signedCount >= tNum;
+        var eligiblePending = Array.isArray(g.eligible_pending) ? g.eligible_pending.length : 0;
+        var satisfied = !isInformational && (
+          isAll
+            ? signedCount > 0 && eligiblePending === 0
+            : signedCount >= tNum
+        );
         var state = isInformational
           ? (signedCount > 0 ? 'ackDone' : prevOK ? 'ackPending' : 'locked')
           : satisfied ? 'done' : prevOK ? 'active' : 'locked';
@@ -188,9 +193,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         if (isInformational) continue;  // ciência não bloqueia, não conta como ball-in-court
         var isAll = tStr === 'all';
         var tNum = isAll ? 0 : Number(tStr);
-        var satisfied = !isAll && Number(g.signed_count) >= tNum;
+        var pending = Array.isArray(g.eligible_pending) ? g.eligible_pending : [];
+        var satisfied = isAll
+          ? Number(g.signed_count) > 0 && pending.length === 0
+          : Number(g.signed_count) >= tNum;
         if (!satisfied && prevOK) {
-          var pending = Array.isArray(g.eligible_pending) ? g.eligible_pending : [];
           var names = pending.slice(0, 3).map(function(p){return p.name;}).join(', ');
           var extra = pending.length > 3 ? ' (+' + (pending.length - 3) + ')' : '';
           return {
