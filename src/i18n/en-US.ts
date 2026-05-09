@@ -4314,6 +4314,32 @@ const enUS: Record<string, string> = {
   'initiative.catalog.members': '{count} member(s)',
   'initiative.catalog.youParticipateInline': 'You participate',
 
+  'comp.gamification.totalXp': 'Total XP',
+  'comp.gamification.avgXp': 'Avg XP',
+  'comp.gamification.cycle': 'Cycle',
+  'comp.gamification.cycleXp': 'Cycle XP',
+  'comp.gamification.attendance': 'Attendance',
+  'comp.gamification.attendanceCol': 'Attendance',
+  'comp.gamification.certs': 'Certifications',
+  'comp.gamification.certsCol': 'Certs',
+  'comp.gamification.certCoverage': 'Cert Coverage',
+  'comp.gamification.badges': 'Badges',
+  'comp.gamification.badgesCol': 'Badges',
+  'comp.gamification.learning': 'Learning',
+  'comp.gamification.learningCol': 'Learning',
+  'comp.gamification.trail': 'Trail',
+  'comp.gamification.trailCompletion': 'Trail Complete',
+  'comp.gamification.tribeRank': 'Ranking',
+  'comp.gamification.tribeRanking': 'Tribe Ranking',
+  'comp.gamification.xpDistribution': 'XP Distribution',
+  'comp.gamification.monthlyTrend': 'Monthly XP Trend',
+  'comp.gamification.membersTable': 'Members',
+  'comp.gamification.name': 'Name',
+  'comp.gamification.noMembers': 'No members found',
+  'comp.gamification.noData': 'No data',
+  'comp.gamification.loading': 'Loading gamification...',
+  'comp.gamification.loadError': 'Failed to load gamification data',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
