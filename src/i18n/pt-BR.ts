@@ -4312,6 +4312,14 @@ const ptBR: Record<string, string> = {
   'admin.campaigns.funnelOpened': 'Abriram',
   'admin.campaigns.funnelClicked': 'Clicaram',
 
+  'initiative.catalog.title': 'Iniciativas',
+  'initiative.catalog.activeCount': '{count} iniciativa(s) ativa(s)',
+  'initiative.catalog.youParticipateBadge': ' · {count} com sua participação',
+  'initiative.catalog.empty': 'Nenhuma iniciativa encontrada.',
+  'initiative.catalog.loadError': 'Erro ao carregar iniciativas.',
+  'initiative.catalog.members': '{count} membro(s)',
+  'initiative.catalog.youParticipateInline': 'Você participa',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
