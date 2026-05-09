@@ -64,6 +64,13 @@ function fmt(d: string): string {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+// Extract clean version prefix from full label (e.g., "v2.6-p90c-material-fixes" → "v2.6")
+function versionPrefix(label: string | null): string {
+  if (!label) return '?';
+  const match = label.match(/^v[\d.]+/);
+  return match ? match[0] : label;
+}
+
 function visibilityLabel(v: Comment['visibility']): string {
   return v === 'curator_only' ? 'Só curadores/GP' : v === 'submitter_only' ? 'Só GP' : v === 'change_notes' ? 'Notas de alteração' : 'Público';
 }
@@ -155,6 +162,7 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
 
   const openCount = comments.filter(c => !c.resolved_at).length;
   const inheritedOpenCount = comments.filter(c => !c.resolved_at && c.is_inherited).length;
+  const newOpenCount = comments.filter(c => !c.resolved_at && !c.is_inherited).length;
   const changeNotes = comments.filter(c => c.visibility === 'change_notes');
   const reviewComments = comments.filter(c => c.visibility !== 'change_notes');
 
@@ -185,7 +193,8 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
           <h3 className="text-sm font-bold text-[var(--text-primary)]">Comentários</h3>
           <div className="flex items-center gap-1.5 flex-wrap">
             {openCount > 0 && <span className="inline-block rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">{openCount} abertos</span>}
-            {inheritedOpenCount > 0 && <span className="inline-block rounded-full bg-orange-50 border border-orange-300 px-2 py-0.5 text-[10px] font-semibold text-orange-800" title="Comentários de versões anteriores (ainda abertos)">↩ {inheritedOpenCount} herdados</span>}
+            {newOpenCount > 0 && <span className="inline-block rounded-full bg-emerald-50 border border-emerald-300 px-2 py-0.5 text-[10px] font-semibold text-emerald-900" title="Comentários abertos na versão atualmente em revisão (peso alto — riscos/alterações novas identificadas pelos curadores nesta rodada)">✓ {newOpenCount} novos</span>}
+            {inheritedOpenCount > 0 && <span className="inline-block rounded-full bg-orange-50 border border-orange-300 px-2 py-0.5 text-[10px] font-semibold text-orange-800" title="Comentários ainda abertos de versões anteriores (traceback histórico)">↩ {inheritedOpenCount} herdados</span>}
           </div>
         </div>
         <label className="flex items-center gap-2 text-[11px] mt-2 cursor-pointer">
@@ -225,11 +234,21 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
                   <div className="flex items-center gap-2 flex-wrap">
                     <strong className="text-[11px] text-[var(--text-primary)]">{c.author_name}</strong>
                     <span className={`inline-block rounded-full border px-1.5 py-0 text-[9px] font-semibold ${visibilityCls(c.visibility)}`}>{visibilityLabel(c.visibility)}</span>
-                    {c.is_inherited && c.from_version_label && (
-                      <span className="inline-block rounded-full border border-orange-300 bg-orange-100 px-1.5 py-0 text-[9px] font-semibold text-orange-900" title="Comentário herdado de versão anterior">
-                        ↩ {c.from_version_label}
+                    {c.is_inherited && c.from_version_label ? (
+                      <span
+                        className="inline-block rounded-full border border-orange-300 bg-orange-100 px-1.5 py-0 text-[9px] font-semibold text-orange-900"
+                        title={`Comentário herdado de versão anterior: ${c.from_version_label}`}
+                      >
+                        ↩ {versionPrefix(c.from_version_label)}
                       </span>
-                    )}
+                    ) : c.from_version_label ? (
+                      <span
+                        className="inline-block rounded-full border border-emerald-300 bg-emerald-100 px-1.5 py-0 text-[9px] font-semibold text-emerald-900"
+                        title={`Comentário feito na versão atualmente em revisão: ${c.from_version_label}`}
+                      >
+                        ✓ {versionPrefix(c.from_version_label)} · atual
+                      </span>
+                    ) : null}
                     <span className="text-[10px] text-[var(--text-muted)]">{fmt(c.created_at)}</span>
                   </div>
                   <p className="text-[12px] text-[var(--text-primary)] mt-1 whitespace-pre-wrap">{c.body}</p>
