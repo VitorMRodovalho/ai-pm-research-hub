@@ -200,6 +200,21 @@ const i18n = {
       });
     }
 
+    // p131 hotfix: também espera por member load. Sem isto, race condition
+    // entre navGetSb() e navGetMember() faz "Suas pendências" silenciar mesmo
+    // para users autenticados (memberId fica null no momento de loadChains).
+    function waitForMember(max) {
+      return new Promise(function (resolve) {
+        var tries = 0;
+        (function pick() {
+          var m = window.navGetMember && window.navGetMember();
+          if (m) return resolve(m);
+          if (++tries > (max || 20)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+
     function pipelineHtml(detail) {
       var labels = JSON.parse(GATE_LABELS_JSON);
       var gates = Array.isArray(detail.gates) ? detail.gates.slice().sort(function(a,b){return a.order - b.order;}) : [];
@@ -402,7 +417,8 @@ const i18n = {
         return;
       }
 
-      var member = window.navGetMember && window.navGetMember();
+      // p131 hotfix: aguarda member load para Suas pendências render corretamente
+      var member = await waitForMember();
       var memberId = member && member.id;
 
       var chainsRes = await sb
