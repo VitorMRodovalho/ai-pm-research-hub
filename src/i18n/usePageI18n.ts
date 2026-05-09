@@ -18,10 +18,30 @@ export function usePageI18n() {
   const [dict, setDict] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const el = document.getElementById('page-i18n');
-    if (el) {
-      try { setDict(JSON.parse(el.textContent || '{}')); } catch {}
-    }
+    // p124 fix — read BOTH global-i18n (BaseLayout) and page-i18n (per-page bundle)
+    // and merge client-side. Previously the merge happened in an inline script in
+    // BaseLayout, but that ran before <slot> was parsed, so the page-i18n script
+    // tag inside the slot didn't exist yet — the inline script then created a
+    // phantom page-i18n in <head> with ONLY global keys. The real page-i18n
+    // arrived later, and getElementById returned the FIRST (phantom) tag.
+    // Result: every page that mounted a usePageI18n island silently lost its
+    // page-specific keys (only the global ones survived).
+    let parsed: Record<string, string> = {};
+    try {
+      const globalEl = document.getElementById('global-i18n');
+      if (globalEl) parsed = JSON.parse(globalEl.textContent || '{}');
+    } catch {}
+    // page-i18n: there may be two (the phantom in <head> from BaseLayout's
+    // legacy merge script and the real one in <slot>). Merge them all so
+    // either ordering is safe.
+    const pageEls = document.querySelectorAll('script[id="page-i18n"]');
+    pageEls.forEach((el) => {
+      try {
+        const obj = JSON.parse(el.textContent || '{}');
+        parsed = { ...parsed, ...obj };
+      } catch {}
+    });
+    setDict(parsed);
   }, []);
 
   return (key: string, fallback?: string) => dict[key] || fallback || key;
