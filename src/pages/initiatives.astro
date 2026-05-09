@@ -11,6 +11,21 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     <div id="init-catalog-loading" class="text-center py-10 text-[var(--text-muted)]">{t('initiative.loading', lang)}</div>
     <div id="init-catalog" class="hidden"></div>
   </div>
+  <!-- Hidden i18n strings for script-context lookups (catalog page renders entirely in JS) -->
+  <span id="ai18n-i-title" class="hidden">{t('initiative.catalog.title', lang)}</span>
+  <span id="ai18n-i-active" class="hidden">{t('initiative.catalog.activeCount', lang)}</span>
+  <span id="ai18n-i-mybadge" class="hidden">{t('initiative.catalog.youParticipateBadge', lang)}</span>
+  <span id="ai18n-i-empty" class="hidden">{t('initiative.catalog.empty', lang)}</span>
+  <span id="ai18n-i-error" class="hidden">{t('initiative.catalog.loadError', lang)}</span>
+  <span id="ai18n-i-members" class="hidden">{t('initiative.catalog.members', lang)}</span>
+  <span id="ai18n-i-mine" class="hidden">{t('initiative.catalog.youParticipateInline', lang)}</span>
+  <span id="ai18n-i-k-committee" class="hidden">{t('initiative.kindBadge.committee', lang)}</span>
+  <span id="ai18n-i-k-workgroup" class="hidden">{t('initiative.kindBadge.workgroup', lang)}</span>
+  <span id="ai18n-i-k-study_group" class="hidden">{t('initiative.kindBadge.study_group', lang)}</span>
+  <span id="ai18n-i-k-book_club" class="hidden">{t('initiative.kindBadge.book_club', lang)}</span>
+  <span id="ai18n-i-k-congress" class="hidden">{t('initiative.kindBadge.congress', lang)}</span>
+  <span id="ai18n-i-k-workshop" class="hidden">{t('initiative.kindBadge.workshop', lang)}</span>
+  <span id="ai18n-i-k-research_tribe" class="hidden">{t('initiative.kindBadge.research_tribe', lang)}</span>
 </BaseLayout>
 
 <script>
@@ -25,6 +40,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const KIND_ORDER: Record<string, number> = {
     research_tribe: 0, workgroup: 1, committee: 2, study_group: 3, congress: 4, book_club: 5, workshop: 6,
   };
+
+  const _i18n = (id: string, fallback: string): string =>
+    document.getElementById(id)?.textContent || fallback;
+  const _i18nKind = (slug: string, fallback: string): string =>
+    _i18n(`ai18n-i-k-${slug}`, fallback);
 
   function escapeHtml(s: string): string {
     return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
@@ -48,7 +68,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     // Fetch all initiatives
     const { data, error } = await sb.rpc('list_initiatives', { p_kind: null, p_status: null });
     if (error || !data) {
-      loading.textContent = 'Erro ao carregar iniciativas.';
+      loading.textContent = _i18n('ai18n-i-error', 'Erro ao carregar iniciativas.');
       return;
     }
 
@@ -89,16 +109,26 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     // Count how many are "mine"
     const myCount = visible.filter((i: any) => myInitiativeIds.has(i.id)).length;
 
+    const titleStr = _i18n('ai18n-i-title', 'Iniciativas');
+    const activeStr = _i18n('ai18n-i-active', '{count} iniciativa(s) ativa(s)').replace('{count}', String(visible.length));
+    const myBadgeStr = myCount > 0
+      ? _i18n('ai18n-i-mybadge', ' · {count} com sua participação').replace('{count}', String(myCount))
+      : '';
+
     let html = `<div class="mb-6">
-      <h1 class="text-xl font-extrabold text-navy">Iniciativas</h1>
-      <p class="text-sm text-[var(--text-secondary)] mt-1">${visible.length} iniciativa(s) ativa(s)${myCount > 0 ? ` · ${myCount} com sua participacao` : ''}</p>
+      <h1 class="text-xl font-extrabold text-navy">${titleStr}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">${activeStr}${myBadgeStr}</p>
     </div>`;
+
+    const membersTpl = _i18n('ai18n-i-members', '{count} membro(s)');
+    const mineInlineStr = _i18n('ai18n-i-mine', 'Você participa');
 
     for (const kind of sortedKinds) {
       const items = groups[kind];
       const icon = KIND_ICONS[kind] || '📋';
       const color = KIND_COLORS[kind] || '#666';
-      const kindName = items[0]?.kind_display_name || kind.replace(/_/g, ' ');
+      // Prefer locale-aware kind label over DB display_name (DB is PT-only).
+      const kindName = _i18nKind(kind, items[0]?.kind_display_name || kind.replace(/_/g, ' '));
 
       html += `<div class="mb-6">
         <div class="flex items-center gap-2 mb-3">
@@ -110,6 +140,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           ${items.map((i: any) => {
             const isMine = myInitiativeIds.has(i.id);
             const memberCount = i.member_count || 0;
+            const membersStr = membersTpl.replace('{count}', String(memberCount));
             const statusBadge = i.status !== 'active'
               ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-semibold ml-1">${i.status}</span>`
               : '';
@@ -121,7 +152,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                     ${escapeHtml(i.title)}${statusBadge}
                   </div>
                   <div class="text-xs text-[var(--text-muted)] mt-0.5">
-                    👥 ${memberCount} membro(s)${isMine ? ' · <span class="text-teal-600 font-semibold">Voce participa</span>' : ''}
+                    👥 ${membersStr}${isMine ? ` · <span class="text-teal-600 font-semibold">${mineInlineStr}</span>` : ''}
                   </div>
                   ${i.description ? `<p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(i.description)}</p>` : ''}
                 </div>
@@ -133,7 +164,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     }
 
     if (visible.length === 0) {
-      html += '<p class="text-sm text-[var(--text-muted)] text-center py-8">Nenhuma iniciativa encontrada.</p>';
+      html += `<p class="text-sm text-[var(--text-muted)] text-center py-8">${_i18n('ai18n-i-empty', 'Nenhuma iniciativa encontrada.')}</p>`;
     }
 
     loading.classList.add('hidden');

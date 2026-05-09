@@ -4306,6 +4306,14 @@ const enUS: Record<string, string> = {
   'admin.campaigns.funnelOpened': 'Opened',
   'admin.campaigns.funnelClicked': 'Clicked',
 
+  'initiative.catalog.title': 'Initiatives',
+  'initiative.catalog.activeCount': '{count} active initiative(s)',
+  'initiative.catalog.youParticipateBadge': ' · {count} with your participation',
+  'initiative.catalog.empty': 'No initiatives found.',
+  'initiative.catalog.loadError': 'Error loading initiatives.',
+  'initiative.catalog.members': '{count} member(s)',
+  'initiative.catalog.youParticipateInline': 'You participate',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
