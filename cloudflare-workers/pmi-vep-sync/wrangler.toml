@@ -3,10 +3,16 @@ main = "src/index.ts"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Cron diário às 04:00 UTC (01:00 BRT). Worker decide internamente se executa
-# baseado em self-healing logic (cron_run_log + cadência de 72h).
+# p131 Q-N-c (2026-05-09): cron daily DESABILITADO. PMI VEP API exige
+# offline_access scope para refresh_token automático — PMI vep_ui app não
+# emite. Plano B (re-seed manual a cada 24h via wrangler kv put) é
+# operacionalmente inviável. Worker continua exposed via HTTP /ingest
+# (POST do JSON extraído pelo script extract_pmi_volunteer.js) — esse é o
+# canal único pós-Q-N-c. Re-habilitar quando PMI conceder API account
+# oficial OU descomentar `crons` linha abaixo + re-seedar manual.
 [triggers]
-crons = ["0 4 * * *"]
+crons = []
+# crons = ["0 4 * * *"]  # commented out — see comment above
 
 # Vars públicas (não-sensíveis)
 [vars]
