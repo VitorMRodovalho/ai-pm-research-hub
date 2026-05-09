@@ -14,26 +14,21 @@ import { useState, useEffect } from 'react';
  *   const t = usePageI18n();
  *   <span>{t('comp.tribe.members', 'Membros')}</span>
  */
+// p124 i18n hook — version 3 (force-bust cached chunk under same Vite hash;
+// see commit 0fee842 + 1efcb7b for the merge bug history).
 export function usePageI18n() {
   const [dict, setDict] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // p124 fix — read BOTH global-i18n (BaseLayout) and page-i18n (per-page bundle)
-    // and merge client-side. Previously the merge happened in an inline script in
-    // BaseLayout, but that ran before <slot> was parsed, so the page-i18n script
-    // tag inside the slot didn't exist yet — the inline script then created a
-    // phantom page-i18n in <head> with ONLY global keys. The real page-i18n
-    // arrived later, and getElementById returned the FIRST (phantom) tag.
-    // Result: every page that mounted a usePageI18n island silently lost its
-    // page-specific keys (only the global ones survived).
+    // Read global-i18n (always emitted by BaseLayout) plus every page-i18n
+    // tag (per-page bundle, may appear inside <slot/>). Merge in DOM order so
+    // page-specific keys override globals. Defensively handles parse errors
+    // and missing elements without throwing.
     let parsed: Record<string, string> = {};
     try {
       const globalEl = document.getElementById('global-i18n');
       if (globalEl) parsed = JSON.parse(globalEl.textContent || '{}');
     } catch {}
-    // page-i18n: there may be two (the phantom in <head> from BaseLayout's
-    // legacy merge script and the real one in <slot>). Merge them all so
-    // either ordering is safe.
     const pageEls = document.querySelectorAll('script[id="page-i18n"]');
     pageEls.forEach((el) => {
       try {
@@ -41,6 +36,9 @@ export function usePageI18n() {
         parsed = { ...parsed, ...obj };
       } catch {}
     });
+    if (typeof window !== 'undefined') {
+      (window as any).__USE_PAGE_I18N_VERSION__ = 3;
+    }
     setDict(parsed);
   }, []);
 
