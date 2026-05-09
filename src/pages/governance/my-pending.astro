@@ -85,6 +85,21 @@ const i18nBundle = buildPageI18n(['governance', 'common'], lang);
       });
     }
 
+    // p131 hotfix: aguarda member load (race condition entre navGetSb e navGetMember).
+    // Sem isto, user autenticado vê "Faça login" porque navGetMember() retornou
+    // null no exato momento da chamada (member ainda não inicializado pelo nav).
+    function waitForMember(maxTries) {
+      return new Promise(function(resolve) {
+        let tries = 0;
+        (function pick() {
+          const m = window.navGetMember && window.navGetMember();
+          if (m) return resolve(m);
+          if (++tries > (maxTries || 20)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+
     function statusPill(status) {
       const cls = status === 'review' ? 'bg-amber-100 text-amber-900 border-amber-300'
         : status === 'approved' ? 'bg-blue-100 text-blue-800 border-blue-300'
@@ -132,7 +147,8 @@ const i18nBundle = buildPageI18n(['governance', 'common'], lang);
         return;
       }
 
-      const member = (window).navGetMember && (window).navGetMember();
+      // p131 hotfix: aguarda member com retry (4s); cai em "anon" só se realmente não logou
+      const member = await waitForMember();
       if (!member) {
         loading.classList.add('hidden');
         anon.classList.remove('hidden');
