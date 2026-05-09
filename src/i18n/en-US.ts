@@ -4301,6 +4301,11 @@ const enUS: Record<string, string> = {
   'admin.partnerships.deleteConfirm': 'Delete this partnership?',
   'admin.partnerships.deleted': 'Partnership deleted.',
 
+  'admin.campaigns.funnelSent': 'Sent',
+  'admin.campaigns.funnelDelivered': 'Delivered',
+  'admin.campaigns.funnelOpened': 'Opened',
+  'admin.campaigns.funnelClicked': 'Clicked',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──

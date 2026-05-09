@@ -236,6 +236,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
   <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
   <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
+  <span id="ai18n-c-fsent" class="hidden">{t('admin.campaigns.funnelSent', lang)}</span>
+  <span id="ai18n-c-fdelivered" class="hidden">{t('admin.campaigns.funnelDelivered', lang)}</span>
+  <span id="ai18n-c-fopened" class="hidden">{t('admin.campaigns.funnelOpened', lang)}</span>
+  <span id="ai18n-c-fclicked" class="hidden">{t('admin.campaigns.funnelClicked', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -691,11 +695,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const f = data.funnel || {};
     const rates = data.rates || {};
     const funnelEl = document.getElementById('analytics-funnel')!;
+    const _i18n = (id: string, fallback: string) => document.getElementById(id)?.textContent || fallback;
     const funnelSteps = [
-      { label: 'Enviados', count: f.total || 0, rate: '', color: 'status-info' },
-      { label: 'Entregues', count: f.delivered || 0, rate: rates.delivery_rate ? `${rates.delivery_rate}%` : '', color: 'status-success' },
-      { label: 'Abriram', count: f.opened || 0, rate: rates.open_rate ? `${rates.open_rate}%` : '', color: 'status-warning' },
-      { label: 'Clicaram', count: f.clicked || 0, rate: rates.click_rate ? `${rates.click_rate}%` : '', color: 'status-accent' },
+      { label: _i18n('ai18n-c-fsent', 'Enviados'), count: f.total || 0, rate: '', color: 'status-info' },
+      { label: _i18n('ai18n-c-fdelivered', 'Entregues'), count: f.delivered || 0, rate: rates.delivery_rate ? `${rates.delivery_rate}%` : '', color: 'status-success' },
+      { label: _i18n('ai18n-c-fopened', 'Abriram'), count: f.opened || 0, rate: rates.open_rate ? `${rates.open_rate}%` : '', color: 'status-warning' },
+      { label: _i18n('ai18n-c-fclicked', 'Clicaram'), count: f.clicked || 0, rate: rates.click_rate ? `${rates.click_rate}%` : '', color: 'status-accent' },
     ];
     funnelEl.innerHTML = funnelSteps.map(s => `
       <div class="rounded-xl border p-4 text-center" style="background:var(--${s.color}-bg);color:var(--${s.color}-text);border-color:var(--${s.color}-border)">
