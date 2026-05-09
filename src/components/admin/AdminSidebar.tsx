@@ -91,6 +91,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },
       { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
       { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.governance.view' },
+      { href: '/governance/my-pending', label: { 'pt-BR': 'Minhas pendências', 'en-US': 'My pending signatures', 'es-LATAM': 'Mis firmas pendientes' }, icon: 'FileCheck', permission: 'workspace.access' },
       { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake', permission: 'admin.access' },
       { href: '/help', label: { 'pt-BR': 'Ajuda / Guia', 'en-US': 'Help / Guide', 'es-LATAM': 'Ayuda / Guía' }, icon: 'HelpCircle', permission: 'workspace.access' },
     ],

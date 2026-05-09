@@ -852,6 +852,10 @@ const ptBR: Record<string, string> = {
   'governance.docs.statusSuperseded': 'Substituído',
   // p130: /governance/my-pending — minhas cadeias pendentes de assinatura.
   'governance.myPending.title': 'Minhas pendências de assinatura',
+  // p131: callout em /governance principal quando user tem pendências
+  'governance.myPending.callout.title': 'Você tem assinaturas pendentes',
+  'governance.myPending.callout.body': '{count} cadeia(s) de governança aguardam sua ação (ratificação, ciência, curadoria ou outra)',
+  'governance.myPending.callout.cta': 'Ver minhas pendências →',
   'governance.myPending.intro': 'Cadeias de governança em revisão onde sua assinatura é necessária ou disponível. Inclui ratificação de membro, ciência das lideranças, curadoria, presidência e outros gates conforme seu papel.',
   'governance.myPending.loading': 'Verificando suas pendências…',
   'governance.myPending.empty': 'Nada pendente para você no momento. Volte aqui quando receber um email de governança.',

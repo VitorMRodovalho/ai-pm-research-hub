@@ -850,6 +850,10 @@ const enUS: Record<string, string> = {
   'governance.docs.statusSuperseded': 'Superseded',
   // p130: /governance/my-pending — my pending governance signatures.
   'governance.myPending.title': 'My pending signatures',
+  // p131: callout on /governance main when user has pending signatures
+  'governance.myPending.callout.title': 'You have pending signatures',
+  'governance.myPending.callout.body': '{count} governance chain(s) await your action (ratification, awareness, curation, or other)',
+  'governance.myPending.callout.cta': 'View my pending signatures →',
   'governance.myPending.intro': 'Governance chains in review where your signature is required or available. Covers member ratification, leader awareness, curator, presidency, and other gates as applicable to your role.',
   'governance.myPending.loading': 'Checking your pending signatures…',
   'governance.myPending.empty': 'Nothing pending for you right now. Come back when you receive a governance email.',
