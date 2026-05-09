@@ -14,7 +14,11 @@ import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { getStaticTribeFallback } from '../../lib/tribes/catalog';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
-const i18nBundle = buildPageI18n(['comp.kanban', 'comp.common', 'comp.board', 'comp.card', 'comp.tribe', 'tribe_dashboard', 'common'], lang);
+// p124: bundle MUST include 'comp.gamification', 'attendance', 'comp.attendance'
+// because TribeGamificationTab + TribeAttendanceTab call t() with those prefixes.
+// Pre-fix the bundle was missing them, so usePageI18n returned the JS fallback
+// (PT) for every key on those tabs.
+const i18nBundle = buildPageI18n(['comp.kanban', 'comp.common', 'comp.board', 'comp.card', 'comp.tribe', 'comp.gamification', 'comp.attendance', 'attendance', 'tribe_dashboard', 'common'], lang);
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);
 if (tribeId < 1) return Astro.redirect('/');
