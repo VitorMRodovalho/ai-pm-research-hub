@@ -1,5 +1,9 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.68.0 — 282 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.69.0 — 284 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// v2.69.0: +1 tool p133 ARM-10 hygiene (ADR-0022 W3 last-deliverable substrate):
+//   get_notifications_analytics — per-delivery_mode + per-type + timeseries notifications send rates.
+//   Complements get_digest_health (cron focus). Auth: view_internal_analytics.
+//   Open/click data NOT in notifications (lives in campaign_recipients via process_email_webhook).
 // v2.68.0: +3 tools p108 ARM Onda 3 AI Build (ADR-0074):
 //   analyze_application (Sonnet 4.6 triage via pmi-ai-triage EF), generate_interview_briefing
 //   (Haiku 4.5 inline), list_ai_processing_log (admin observability LGPD Art. 37).
@@ -3632,6 +3636,20 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_digest_health", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "get_digest_health", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "get_digest_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_notifications_analytics — ADR-0022 W3 last-deliverable substrate (p133 ARM-10 hygiene)
+  mcp.tool("get_notifications_analytics", "Returns notifications send rates and breakdown for window (default 28d): overall counts, by_delivery_mode (transactional_immediate / digest_weekly / suppress) with send_rate + avg_send_latency_minutes, by_type (top 20) with per-type send_rate, daily timeseries (last 30d). Use to triage 'are notifications being sent?' or which types lag. NOTE: open/click/bounce data lives in campaign_recipients (use get_comms_metrics_by_channel for campaign-level rates). Authority: view_internal_analytics.", {
+    window_days: z.number().optional().describe("Window in days (1-365, default 28)")
+  }, async (params: { window_days?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_notifications_analytics", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_notifications_analytics", { p_window_days: params.window_days ?? 28 });
+    if (error) { await logUsage(sb, member.id, "get_notifications_analytics", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_notifications_analytics", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_notifications_analytics", true, undefined, start);
     return ok(data);
   });
 
