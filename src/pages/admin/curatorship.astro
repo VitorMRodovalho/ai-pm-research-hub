@@ -45,7 +45,7 @@ const CUR_I18N = {
 };
 ---
 
-<AdminLayout title={CUR_I18N.meta} breadcrumbs={[{label:'Conteúdo'},{label:'Curadoria'}]}>
+<AdminLayout title={CUR_I18N.meta} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.breadcrumb.curatorship', lang)}]}>
   <div class="max-w-[1400px] mx-auto px-4 pb-8">
     <div class="mb-4">
       <h1 class="text-2xl font-extrabold text-navy">{CUR_I18N.title}</h1>
@@ -54,7 +54,7 @@ const CUR_I18N = {
     <!-- SSR denied fallback for smoke-routes (hidden once React hydrates) -->
     <div id="cur-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
-      <p class="font-semibold text-amber-800">Acesso restrito a administradores e lideres</p>
+      <p class="font-semibold text-amber-800">{t('admin.curatorship.deniedSsr', lang)}</p>
       <a href={`${langPrefix}/admin`} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>

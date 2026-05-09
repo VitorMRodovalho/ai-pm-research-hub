@@ -1,26 +1,27 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getLangFromURL, type Lang } from '../../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 import CrossTribeIsland from '../../components/islands/CrossTribeIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.cross', 'comp.tribe', 'comp.common'], lang);
+const deniedMsg = t('admin.tribes.denied', lang);
 ---
 
-<AdminLayout title="Comparativo de Tribos" breadcrumbs={[{label:'Pessoas'},{label:'Tribos'}]}>
+<AdminLayout title={t('admin.breadcrumb.tribesComparison', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('admin.breadcrumb.tribes', lang)}]}>
 
   <div id="cross-tribe-panel" class="max-w-[1200px] mx-auto px-4 pb-12">
     <div class="mb-6">
-      <h1 class="text-xl font-bold text-[var(--text-primary)]">Comparativo de Tribos — Ciclo 3</h1>
-      <p class="text-sm text-[var(--text-secondary)] mt-1">Visão consolidada de todas as tribos. Apenas GP/DM.</p>
+      <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.breadcrumb.tribesComparison', lang)} — Ciclo 3</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.tribes.subtitle', lang)}</p>
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <CrossTribeIsland client:load />
   </div>
 </AdminLayout>
 
-<script is:inline>
+<script is:inline define:vars={{ deniedMsg }}>
   document.addEventListener('DOMContentLoaded', () => {
     const check = () => {
       const member = (window as any).navMember;
@@ -28,7 +29,7 @@ const i18nBundle = buildPageI18n(['comp.cross', 'comp.tribe', 'comp.common'], la
       const isGP = member.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role) || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
       if (!isGP) {
         const panel = document.getElementById('cross-tribe-panel');
-        if (panel) panel.innerHTML = '<div class="text-center py-20"><p class="text-lg font-bold text-red-500">Acesso restrito a GP/DM</p></div>';
+        if (panel) panel.innerHTML = '<div class="text-center py-20"><p class="text-lg font-bold text-red-500">' + deniedMsg + '</p></div>';
       }
     };
     check();

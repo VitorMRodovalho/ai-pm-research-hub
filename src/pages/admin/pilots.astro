@@ -5,7 +5,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
-<AdminLayout title={t('pilots.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Pilotos'}]}>
+<AdminLayout title={t('pilots.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('pilots.title', lang)}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8">
 
     <div class="flex items-center justify-between mb-1">
