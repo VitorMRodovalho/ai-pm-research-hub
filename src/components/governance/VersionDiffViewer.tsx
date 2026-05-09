@@ -71,17 +71,75 @@ function markBlocks(html: string, otherHashes: Set<number>): string {
   }).join('');
 }
 
+// p130 T-13: extract clause anchors (§ X.Y.Z) próximos a paragraphs changed.
+// Heurística: se um bloco changed contém um padrão "X.Y" no início ou tem
+// header (h1-h3) com âncora antes/dentro do bloco, captura. Anchors únicos.
+const CLAUSE_RE = /(\b\d+\.\d+(?:\.\d+)?(?:[a-z])?\b|§\s*\d+(?:\.\d+)*[a-z]?|Art\.?\s*\d+|Cláusula\s*[\d.]+)/i;
+
+function extractAnchorsFromChanged(html: string): string[] {
+  const blocks = splitBlocks(html);
+  const anchors = new Set<string>();
+  for (const b of blocks) {
+    if (b.includes('vdv-changed') || b.match(/<\/(p|h[1-6]|li|blockquote)>/i)) {
+      const text = b.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const m = text.match(CLAUSE_RE);
+      if (m) anchors.add(m[1].replace(/\s+/g, ' '));
+    }
+  }
+  return Array.from(anchors).slice(0, 12);
+}
+
 export default function VersionDiffViewer({ previous, current }: Props) {
   const prevHashes = useMemo(() => buildHashSet(previous.content_html), [previous.content_html]);
   const currHashes = useMemo(() => buildHashSet(current.content_html), [current.content_html]);
   const prevMarked = useMemo(() => markBlocks(previous.content_html, currHashes), [previous.content_html, currHashes]);
   const currMarked = useMemo(() => markBlocks(current.content_html, prevHashes), [current.content_html, prevHashes]);
 
+  // p130 T-13: counts + clause anchors do current marked HTML para summary banner.
+  const summary = useMemo(() => {
+    const prevBlocks = splitBlocks(previous.content_html);
+    const currBlocks = splitBlocks(current.content_html);
+    const prevSet = new Set(prevBlocks.map(b => djb2(normalizeBlock(b))));
+    const currSet = new Set(currBlocks.map(b => djb2(normalizeBlock(b))));
+    let added = 0, removed = 0;
+    for (const b of currBlocks) {
+      const h = djb2(normalizeBlock(b));
+      if (!prevSet.has(h) && normalizeBlock(b).length > 0) added++;
+    }
+    for (const b of prevBlocks) {
+      const h = djb2(normalizeBlock(b));
+      if (!currSet.has(h) && normalizeBlock(b).length > 0) removed++;
+    }
+    return {
+      added,
+      removed,
+      total: prevBlocks.length,
+      anchors: extractAnchorsFromChanged(currMarked),
+    };
+  }, [previous.content_html, current.content_html, currMarked]);
+
   const prevRef = useRef<HTMLDivElement>(null);
   const currRef = useRef<HTMLDivElement>(null);
   const syncingRef = useRef(false);
   const [mobileView, setMobileView] = useState<'prev' | 'curr'>('curr');
   const [isMobile, setIsMobile] = useState(false);
+  const [changeIdx, setChangeIdx] = useState(0);
+
+  // p130 T-13: navega para próximo/anterior bloco .vdv-changed na pane atual.
+  function jumpToChange(direction: 1 | -1) {
+    const target = isMobile
+      ? (mobileView === 'curr' ? currRef.current : prevRef.current)
+      : currRef.current; // desktop: use current pane (mais relevante)
+    if (!target) return;
+    const items = target.querySelectorAll('.vdv-changed');
+    if (!items.length) return;
+    const next = (changeIdx + direction + items.length) % items.length;
+    setChangeIdx(next);
+    const el = items[next] as HTMLElement;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('vdv-flash');
+    setTimeout(() => el.classList.remove('vdv-flash'), 800);
+  }
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -118,6 +176,37 @@ export default function VersionDiffViewer({ previous, current }: Props) {
 
   const paneStyle = 'max-h-[60vh] overflow-y-auto prose prose-sm max-w-none px-4 py-3 text-[var(--text-primary)] bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg';
 
+  // p130 T-13: summary banner reutilizado em mobile + desktop.
+  const summaryBanner = (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 text-[12px] text-amber-900 flex-wrap">
+        <span><strong>{summary.added}</strong> adicionado(s)</span>
+        <span className="text-amber-300">·</span>
+        <span><strong>{summary.removed}</strong> removido(s)</span>
+        <span className="text-amber-300">·</span>
+        <span className="text-amber-700">{summary.total} parágrafo(s) na versão anterior</span>
+      </div>
+      {summary.anchors.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+          <span className="text-amber-700">Cláusulas tocadas:</span>
+          {summary.anchors.map(a => (
+            <span key={a} className="px-1.5 py-0.5 rounded-full border border-amber-300 bg-white font-mono text-amber-900">{a}</span>
+          ))}
+        </div>
+      )}
+      {(summary.added + summary.removed) > 0 && (
+        <div className="flex items-center gap-1 ml-auto">
+          <button type="button" onClick={() => jumpToChange(-1)}
+            className="rounded border border-amber-400 bg-white text-[11px] font-semibold px-2 py-0.5 text-amber-900 cursor-pointer hover:bg-amber-100"
+            title="Alteração anterior">↑ anterior</button>
+          <button type="button" onClick={() => jumpToChange(1)}
+            className="rounded border border-amber-400 bg-white text-[11px] font-semibold px-2 py-0.5 text-amber-900 cursor-pointer hover:bg-amber-100"
+            title="Próxima alteração">próxima ↓</button>
+        </div>
+      )}
+    </div>
+  );
+
   if (isMobile) {
     return (
       <div className="space-y-2">
@@ -143,14 +232,16 @@ export default function VersionDiffViewer({ previous, current }: Props) {
             </button>
           </div>
           <span className="text-[10px] text-[var(--text-muted)] italic">
-            Paragrafos alterados ficam destacados
+            Parágrafos alterados ficam destacados
           </span>
         </div>
+        {summaryBanner}
         <DiffStyles />
         <div
+          ref={mobileView === 'prev' ? prevRef : currRef}
           className={paneStyle}
           dangerouslySetInnerHTML={{ __html: mobileView === 'prev' ? prevMarked : currMarked }}
-          aria-label={mobileView === 'prev' ? `Versao ${previous.version_label}` : `Versao ${current.version_label}`}
+          aria-label={mobileView === 'prev' ? `Versão ${previous.version_label}` : `Versão ${current.version_label}`}
         />
       </div>
     );
@@ -158,8 +249,9 @@ export default function VersionDiffViewer({ previous, current }: Props) {
 
   return (
     <div className="space-y-2">
+      {summaryBanner}
       <div className="text-[11px] text-[var(--text-muted)] italic">
-        Paragrafos em destaque ambar nao tem correspondencia hash na outra versao (adicionados, removidos ou alterados).
+        Parágrafos em destaque âmbar não têm correspondência hash na outra versão (adicionados, removidos ou alterados).
       </div>
       <DiffStyles />
       <div className="grid grid-cols-2 gap-3">
@@ -171,7 +263,7 @@ export default function VersionDiffViewer({ previous, current }: Props) {
             ref={prevRef}
             className={paneStyle}
             dangerouslySetInnerHTML={{ __html: prevMarked }}
-            aria-label={`Versao anterior ${previous.version_label}`}
+            aria-label={`Versão anterior ${previous.version_label}`}
           />
         </div>
         <div>
@@ -182,7 +274,7 @@ export default function VersionDiffViewer({ previous, current }: Props) {
             ref={currRef}
             className={paneStyle}
             dangerouslySetInnerHTML={{ __html: currMarked }}
-            aria-label={`Versao atual ${current.version_label}`}
+            aria-label={`Versão atual ${current.version_label}`}
           />
         </div>
       </div>
@@ -195,6 +287,7 @@ function DiffStyles() {
     <style>{`
       .vdv-changed { background: #fff8e1; border-left: 3px solid #ffc107; padding-left: 8px; margin-left: -11px; }
       .vdv-unchanged { opacity: 0.92; }
+      .vdv-flash { background: #fde68a !important; transition: background 0.5s ease-out; }
     `}</style>
   );
 }

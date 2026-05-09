@@ -75,7 +75,15 @@ function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[]
     const isAll = tStr === 'all';
     const isInformational = tStr === '0';
     const tNum = isAll || isInformational ? 0 : Number(tStr);
-    const satisfied = !isAll && !isInformational && g.signed_count >= tNum;
+    // p130 fix: align satisfied calc with documents.astro pipelineHtml/ballInCourt (commit 1f2bc40).
+    // Old: `satisfied = !isAll && !isInformational && g.signed_count >= tNum` collapsed all isAll
+    // gates to false, blocking downstream gate eligibility detection even after the curator gate
+    // was fully satisfied. Surface: post-curator-complete chains hid leader_awareness/etc buttons.
+    const satisfied = isInformational
+      ? false
+      : isAll
+        ? g.signed_count > 0 && (g.eligible_pending || []).length === 0
+        : g.signed_count >= tNum;
     if (isInformational) {
       // Informational gate (threshold=0) só fica elegível depois que gate anterior
       // obrigatório foi satisfeito (respeita prevOK). Não muda prevOK — não bloqueia próximo.
@@ -92,9 +100,14 @@ function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[]
   return eligible;
 }
 
+
 export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const [member, setMember] = useState<any>(null);
   const [detail, setDetail] = useState<WorkflowDetail | null>(null);
+  // p130: gates the current user already signed in this chain — used to render a
+  // "Você já assinou: [gates]" callout so the chain detail page never feels empty
+  // for someone who already signed but has no further action on this chain.
+  const [mySignedGates, setMySignedGates] = useState<string[]>([]);
   const [contentHtml, setContentHtml] = useState<string>('');
   const [prevVersion, setPrevVersion] = useState<{ version_id: string; version_label: string; content_html: string; locked_at: string | null } | null>(null);
   const [nextDraft, setNextDraft] = useState<{ version_id: string; version_label: string; content_html: string; authored_at: string; notes: string | null } | null>(null);
@@ -139,6 +152,21 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
     const dRes = await sb.rpc('get_chain_workflow_detail', { p_chain_id: chainId });
     if (dRes.error || dRes.data?.error) { setError(dRes.error?.message || dRes.data?.error || 'Erro'); setLoading(false); return; }
     setDetail(dRes.data);
+
+    // p130: load this user's existing signatures in the chain so we can render
+    // "Você já assinou" callout. Surfaced when curators reported "não vejo nada
+    // na minha corte" after signing — UI was empty (no eligibleGates) but also
+    // gave no feedback that signing was already complete from their side.
+    try {
+      const sigRes = await sb
+        .from('approval_signoffs')
+        .select('gate_kind')
+        .eq('approval_chain_id', chainId)
+        .eq('signer_id', m.id);
+      if (!sigRes.error && Array.isArray(sigRes.data)) {
+        setMySignedGates(sigRes.data.map((r: any) => r.gate_kind));
+      }
+    } catch { /* non-fatal */ }
 
     const vRes = await sb.from('document_versions').select('content_html').eq('id', dRes.data.version_id).single();
     setContentHtml(vRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>');
@@ -323,6 +351,25 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
           <GovernancePipelineBar gates={detail.gates as any} gateLabels={GATE_LABELS} />
         </div>
       </header>
+
+      {/* p130: callout das assinaturas que o user já fez nesta versão da chain.
+          Surge mesmo quando eligibleGates=[] (nada mais a fazer aqui), evitando
+          a leitura "página vazia, algo está quebrado" reportada por curadores. */}
+      {mySignedGates.length > 0 && (
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3">
+          <h3 className="text-sm font-bold text-emerald-900 mb-1">
+            ✓ Você já assinou {mySignedGates.length === 1 ? 'este gate' : `${mySignedGates.length} gates`} desta versão
+          </h3>
+          <p className="text-[12px] text-emerald-800">
+            {mySignedGates.map(g => GATE_LABELS[g] || g).join(' · ')}
+          </p>
+          {eligibleGates.length === 0 && (
+            <p className="text-[11px] text-emerald-700 mt-1 italic">
+              Nada mais para você nesta versão. Acompanhe abaixo a evolução da cadeia.
+            </p>
+          )}
+        </div>
+      )}
 
       {eligibleGates.length > 0 && (
         <div className="rounded-xl border-2 border-navy bg-blue-50/30 p-4">
