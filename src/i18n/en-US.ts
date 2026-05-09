@@ -4282,6 +4282,25 @@ const enUS: Record<string, string> = {
   'admin.comms.linkBackOps': '← Communications (Ops)',
   'admin.comms.noChannel': 'No channels.',
 
+  'admin.partnerships.logInteraction': '+ Log interaction',
+  'admin.partnerships.logBtn': '+ Log',
+  'admin.partnerships.callType': 'Call',
+  'admin.partnerships.meetingType': 'Meeting',
+  'admin.partnerships.noteType': 'Note',
+  'admin.partnerships.summaryPlaceholder': 'Interaction summary...',
+  'admin.partnerships.outcomePlaceholder': 'Outcome (optional)',
+  'admin.partnerships.nextActionPlaceholder': 'Next step (optional)',
+  'admin.partnerships.outcomeLabel': 'Outcome:',
+  'admin.partnerships.editPartner': 'Edit Partnership',
+  'admin.partnerships.newPartner': 'New Partnership',
+  'admin.partnerships.summaryRequired': 'Summary is required.',
+  'admin.partnerships.interactionLogged': 'Interaction logged!',
+  'admin.partnerships.loadFailed': 'Failed to load partnerships.',
+  'admin.partnerships.fillRequired': 'Fill in name, type and date.',
+  'admin.partnerships.saved': 'Partnership saved!',
+  'admin.partnerships.deleteConfirm': 'Delete this partnership?',
+  'admin.partnerships.deleted': 'Partnership deleted.',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──

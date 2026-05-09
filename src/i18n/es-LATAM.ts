@@ -4283,6 +4283,25 @@ const esLATAM: Record<string, string> = {
   'admin.comms.linkBackOps': '← Comunicaciones (Ops)',
   'admin.comms.noChannel': 'Sin canales.',
 
+  'admin.partnerships.logInteraction': '+ Registrar interacción',
+  'admin.partnerships.logBtn': '+ Registrar',
+  'admin.partnerships.callType': 'Llamada',
+  'admin.partnerships.meetingType': 'Reunión',
+  'admin.partnerships.noteType': 'Nota',
+  'admin.partnerships.summaryPlaceholder': 'Resumen de la interacción...',
+  'admin.partnerships.outcomePlaceholder': 'Resultado (opcional)',
+  'admin.partnerships.nextActionPlaceholder': 'Próximo paso (opcional)',
+  'admin.partnerships.outcomeLabel': 'Resultado:',
+  'admin.partnerships.editPartner': 'Editar Asociación',
+  'admin.partnerships.newPartner': 'Nueva Asociación',
+  'admin.partnerships.summaryRequired': 'El resumen es obligatorio.',
+  'admin.partnerships.interactionLogged': '¡Interacción registrada!',
+  'admin.partnerships.loadFailed': 'Error al cargar asociaciones.',
+  'admin.partnerships.fillRequired': 'Completa nombre, tipo y fecha.',
+  'admin.partnerships.saved': '¡Asociación guardada!',
+  'admin.partnerships.deleteConfirm': '¿Eliminar esta asociación?',
+  'admin.partnerships.deleted': 'Asociación eliminada.',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
