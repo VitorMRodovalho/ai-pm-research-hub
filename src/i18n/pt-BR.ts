@@ -4288,6 +4288,25 @@ const ptBR: Record<string, string> = {
   'admin.comms.linkBackOps': '← Comunicação (Ops)',
   'admin.comms.noChannel': 'Nenhum canal.',
 
+  'admin.partnerships.logInteraction': '+ Registrar interação',
+  'admin.partnerships.logBtn': '+ Registrar',
+  'admin.partnerships.callType': 'Ligação',
+  'admin.partnerships.meetingType': 'Reunião',
+  'admin.partnerships.noteType': 'Nota',
+  'admin.partnerships.summaryPlaceholder': 'Resumo da interação...',
+  'admin.partnerships.outcomePlaceholder': 'Resultado (opcional)',
+  'admin.partnerships.nextActionPlaceholder': 'Próximo passo (opcional)',
+  'admin.partnerships.outcomeLabel': 'Resultado:',
+  'admin.partnerships.editPartner': 'Editar Parceria',
+  'admin.partnerships.newPartner': 'Nova Parceria',
+  'admin.partnerships.summaryRequired': 'Resumo obrigatório.',
+  'admin.partnerships.interactionLogged': 'Interação registrada!',
+  'admin.partnerships.loadFailed': 'Falha ao carregar parcerias.',
+  'admin.partnerships.fillRequired': 'Preencha nome, tipo e data.',
+  'admin.partnerships.saved': 'Parceria salva!',
+  'admin.partnerships.deleteConfirm': 'Excluir esta parceria?',
+  'admin.partnerships.deleted': 'Parceria excluída.',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
