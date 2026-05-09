@@ -4280,6 +4280,14 @@ const ptBR: Record<string, string> = {
   'admin.blog.editAction': 'Editar',
   'admin.blog.viewAction': 'Ver',
 
+  'admin.comms.statusActive': 'Ativo',
+  'admin.comms.statusError': 'Erro',
+  'admin.comms.timeMinAgo': 'min atrás',
+  'admin.comms.timeHourAgo': 'h atrás',
+  'admin.comms.timeDayAgo': 'd atrás',
+  'admin.comms.linkBackOps': '← Comunicação (Ops)',
+  'admin.comms.noChannel': 'Nenhum canal.',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
