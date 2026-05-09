@@ -32,6 +32,9 @@ function timeAgo(dateStr: string): string {
 
 export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
+  // p131: count de cadeias governance com eligible_gates pendentes para
+  // o user atual. Surge como link sticky no topo do dropdown se > 0.
+  const [pendingRatificationsCount, setPendingRatificationsCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -39,13 +42,24 @@ export default function NotificationBell() {
 
   const [authenticated, setAuthenticated] = useState(false);
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+  const langPrefix = typeof window !== 'undefined' && window.location.pathname.startsWith('/en/') ? '/en'
+    : typeof window !== 'undefined' && window.location.pathname.startsWith('/es/') ? '/es' : '';
 
-  // Poll unread count every 60s
+  // Poll counts every 60s
   const pollCount = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.rpc('get_unread_notification_count');
-    if (typeof data === 'number') setUnreadCount(data);
+    const [unreadRes, pendingRes] = await Promise.all([
+      sb.rpc('get_unread_notification_count'),
+      sb.rpc('get_pending_ratifications'),
+    ]);
+    if (typeof unreadRes.data === 'number') setUnreadCount(unreadRes.data);
+    // p131: filtra rows com eligible_gates não-vazias (matches /governance/my-pending logic)
+    if (Array.isArray(pendingRes.data)) {
+      setPendingRatificationsCount(
+        pendingRes.data.filter((r: any) => Array.isArray(r.eligible_gates) && r.eligible_gates.length > 0).length
+      );
+    }
   }, [getSb]);
 
   useEffect(() => {
@@ -137,6 +151,27 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+
+          {/* p131: link sticky de pending ratifications — surge no topo do dropdown
+              quando user tem chains de governança com eligible_gates pendentes.
+              Auxilia discovery sem poluir o badge do ícone com 2 contadores. */}
+          {pendingRatificationsCount > 0 && (
+            <a
+              href={`${langPrefix}/governance/my-pending`}
+              className="block px-4 py-2.5 border-b border-[var(--border-subtle)] bg-blue-50 hover:bg-blue-100 transition-colors no-underline"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">📜</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-bold text-navy">
+                    {pendingRatificationsCount} {pendingRatificationsCount === 1 ? 'pendência' : 'pendências'} de assinatura
+                  </div>
+                  <div className="text-[10px] text-navy/70">Cadeias de governança aguardam você → ver lista</div>
+                </div>
+                <span className="text-navy text-[12px] font-bold">→</span>
+              </div>
+            </a>
+          )}
 
           {/* List */}
           <div className="overflow-y-auto max-h-[340px]">
