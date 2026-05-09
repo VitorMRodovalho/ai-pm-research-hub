@@ -10,7 +10,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
-<AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Midia Social'}]}>
+<AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.comms.meta', lang)}]}>
   <style>
     @media print {
       nav, aside, header, footer, .no-print, #admin-sections, #btn-export-csv, #btn-export-pdf { display: none !important; }
