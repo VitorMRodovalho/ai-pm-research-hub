@@ -4275,6 +4275,14 @@ const esLATAM: Record<string, string> = {
   'admin.blog.editAction': 'Editar',
   'admin.blog.viewAction': 'Ver',
 
+  'admin.comms.statusActive': 'Activo',
+  'admin.comms.statusError': 'Error',
+  'admin.comms.timeMinAgo': 'min atrás',
+  'admin.comms.timeHourAgo': 'h atrás',
+  'admin.comms.timeDayAgo': 'd atrás',
+  'admin.comms.linkBackOps': '← Comunicaciones (Ops)',
+  'admin.comms.noChannel': 'Sin canales.',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
