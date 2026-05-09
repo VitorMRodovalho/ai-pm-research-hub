@@ -6,18 +6,100 @@
  * link para review view individual (/admin/governance/documents/[chainId]).
  * Escopo: Phase IP-3c P0. ADR-0016 + correções PM 2026-04-18 p33.
  * Auth: manage_member (admin); pipeline é read-all authenticated.
+ *
+ * p130 T-14: trilingue (PT-BR/EN-US/ES-LATAM). SSR strings via t(); JS inline
+ * recebe i18n bundle via define:vars (sem REST round-trip).
  */
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { getLangFromURL, type Lang } from '../../../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// p130 T-14: bundle de strings consumido pelo <script is:inline> abaixo.
+// Evita um round-trip REST para resolver i18n no client. Resolve no server,
+// embala com JSON.stringify, injeta via define:vars como uma única const.
+const i18n = {
+  signNowBtn: t('governance.docs.signNowBtn', lang),
+  reviewBtn: t('governance.docs.reviewBtn', lang),
+  submittedBy: t('governance.docs.submittedBy', lang),
+  openedSince: t('governance.docs.openedSince', lang),
+  daysToday: t('governance.docs.daysToday', lang),
+  daysSingular: t('governance.docs.daysSingular', lang),
+  daysPlural: t('governance.docs.daysPlural', lang),
+  allGatesSatisfied: t('governance.docs.allGatesSatisfied', lang),
+  ballInCourt: t('governance.docs.ballInCourt', lang),
+  awaiting: t('governance.docs.awaiting', lang),
+  eligibleSuffix: t('governance.docs.eligibleSuffix', lang),
+  eligibleParen: t('governance.docs.eligibleParen', lang),
+  awarenessSuffix: t('governance.docs.awarenessSuffix', lang),
+  tipActive: t('governance.docs.tipActive', lang),
+  tipLocked: t('governance.docs.tipLocked', lang),
+  tipAckDone: t('governance.docs.tipAckDone', lang),
+  tipAckPending: t('governance.docs.tipAckPending', lang),
+  tipDone: t('governance.docs.tipDone', lang),
+  newVersionBtn: t('governance.docs.newVersionBtn', lang),
+  newVersionEmpty: t('governance.docs.newVersionEmpty', lang),
+  newVersionLoadingErr: t('governance.docs.newVersionLoading', lang),
+  loading: t('governance.docs.loading', lang),
+  errorPrefix: t('governance.docs.errorPrefix', lang),
+  sbUnavailable: t('governance.docs.sbUnavailable', lang),
+  empty: t('governance.docs.empty', lang),
+  draftsContinueBtn: t('governance.docs.draftsContinueBtn', lang),
+  draftsUpdated: t('governance.docs.draftsUpdated', lang),
+  minePendingsCountLabel: t('governance.docs.minePendingsCountLabel', lang),
+  gateLabel: t('governance.docs.gateLabel', lang),
+  gatePluralLabel: t('governance.docs.gatePluralLabel', lang),
+  status: {
+    draft: t('governance.docs.statusDraft', lang),
+    review: t('governance.docs.statusReview', lang),
+    approved: t('governance.docs.statusApproved', lang),
+    active: t('governance.docs.statusActive', lang),
+    withdrawn: t('governance.docs.statusWithdrawn', lang),
+    superseded: t('governance.docs.statusSuperseded', lang),
+  },
+  // Gate labels per locale — hard-coded here (inline JS consumer); fewer round-trips.
+  gateLabels: lang === 'en-US' ? {
+    curator: 'Curator',
+    leader: 'Leader',
+    leader_awareness: 'Leader awareness',
+    submitter_acceptance: 'PM acceptance',
+    president_go: 'PMI-GO presidency',
+    president_others: 'Chapter presidencies',
+    chapter_witness: 'Witnesses',
+    member_ratification: 'Member ratification',
+    external_signer: 'External signer',
+    volunteers_in_role_active: 'Active volunteers',
+  } : lang === 'es-LATAM' ? {
+    curator: 'Curador',
+    leader: 'Liderazgo',
+    leader_awareness: 'Conocimiento de líderes',
+    submitter_acceptance: 'Aceptación del PM',
+    president_go: 'Presidencia PMI-GO',
+    president_others: 'Presidencias de capítulos',
+    chapter_witness: 'Testigos',
+    member_ratification: 'Ratificación de miembros',
+    external_signer: 'Firmante externo',
+    volunteers_in_role_active: 'Voluntarios activos',
+  } : {
+    curator: 'Curador',
+    leader: 'Liderança',
+    leader_awareness: 'Ciência das lideranças',
+    submitter_acceptance: 'Aceite do GP',
+    president_go: 'Presid. PMI-GO',
+    president_others: 'Presid. capítulos',
+    chapter_witness: 'Testemunhas',
+    member_ratification: 'Ratificação de membros',
+    external_signer: 'Signatário externo',
+    volunteers_in_role_active: 'Voluntários ativos',
+  },
+};
 ---
 <AdminLayout
-  title="Governança — Documentos"
+  title={t('governance.docs.pageTitle', lang)}
   breadcrumbs={[
-    { label: 'Operações' },
-    { label: 'Governança', href: '/admin/governance-v2' },
-    { label: 'Ratificação de documentos' },
+    { label: t('governance.docs.breadcrumbOps', lang) },
+    { label: t('governance.docs.breadcrumbGov', lang), href: `${langPrefix}/admin/governance-v2` },
+    { label: t('governance.docs.breadcrumbDocs', lang) },
   ]}
 >
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
@@ -25,77 +107,81 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
       <a href={`${langPrefix}/admin/governance-v2`}
         class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
-        Change Requests & Boards
+        {t('governance.docs.subtabCRs', lang)}
       </a>
       <span class="px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-bold">
-        Ratificação de documentos (IP)
+        {t('governance.docs.subtabDocs', lang)}
       </span>
     </nav>
 
     <header class="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <h1 class="text-2xl font-extrabold text-navy">Ratificação de documentos (IP)</h1>
+        <h1 class="text-2xl font-extrabold text-navy">{t('governance.docs.h1', lang)}</h1>
         <p class="text-sm text-[var(--text-muted)] mt-1 max-w-3xl">
-          Cadeias de aprovação ativas para documentos de governança (Política de PI, Termo de Voluntariado, Adendos).
-          Cada documento segue o workflow: curador → ciência dos líderes → aceite final do GP →
-          presidência PMI-GO → demais presidências → testemunhas → ratificação dos membros.
+          {t('governance.docs.intro', lang)}
         </p>
       </div>
       <div class="flex gap-2">
         <a href={`${langPrefix}/admin/governance/ip-ratification`} class="text-[11px] text-[var(--text-muted)] hover:text-navy no-underline px-3 py-1.5 rounded border border-[var(--border-default)] bg-white">
-          Admin lifecycle (legado)
+          {t('governance.docs.adminLifecycle', lang)}
         </a>
       </div>
     </header>
 
     <!-- Seus rascunhos (IP-3d, gp-leader FP-3) -->
     <section id="drafts-section" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
-      <h2 class="text-sm font-bold text-navy mb-2">Seus rascunhos</h2>
+      <h2 class="text-sm font-bold text-navy mb-2">{t('governance.docs.draftsTitle', lang)}</h2>
       <p class="text-[11px] text-[var(--text-muted)] mb-3">
-        Versões ainda não lacradas que você criou. Retome a edição a qualquer momento.
+        {t('governance.docs.draftsSubtitle', lang)}
       </p>
       <ul id="drafts-list" class="space-y-2"></ul>
     </section>
 
-    <div id="gov-loading" class="text-center py-16 text-sm text-[var(--text-muted)]">Carregando cadeias…</div>
+    <div id="gov-loading" class="text-center py-16 text-sm text-[var(--text-muted)]">{t('governance.docs.loading', lang)}</div>
     <div id="gov-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
     <div id="gov-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
-      Nenhuma cadeia em revisão no momento.
+      {t('governance.docs.empty', lang)}
     </div>
+
+    {/* p130: "Suas pendências" — chains where current user has eligibleGates.
+        Resolves Bug 1 reported by Fabricio Costa 09/may/2026: ao abrir o admin
+        governance, a listagem mostrava 6 cadeias sem destacar quais aguardavam
+        ação dele especificamente. Curadores e líderes precisavam ler "Bola em"
+        de cada card e cruzar com os próprios papéis para descobrir o que era
+        deles. Agora um bloco no topo lista o que é seu. */}
+    <section id="gov-mine" class="hidden rounded-xl border-2 border-navy bg-blue-50/30 p-4 space-y-2">
+      <h2 id="gov-mine-title" class="text-sm font-bold text-navy">{t('governance.docs.minePendingsTitle', lang)}</h2>
+      <p class="text-[11px] text-[var(--text-muted)]">{t('governance.docs.minePendingsSubtitle', lang)}</p>
+      <ul id="gov-mine-list" class="space-y-2"></ul>
+    </section>
 
     <section id="gov-list" class="hidden space-y-3"></section>
 
     <!-- New version picker (IP-3d) -->
     <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
-      <h2 class="text-sm font-bold text-navy mb-2">Iniciar nova versão</h2>
+      <h2 class="text-sm font-bold text-navy mb-2">{t('governance.docs.newVersionTitle', lang)}</h2>
       <p class="text-[11px] text-[var(--text-muted)] mb-3">
-        Selecione o documento de governança para criar uma nova versão em editor WYSIWYG.
+        {t('governance.docs.newVersionSubtitle', lang)}
       </p>
-      <div id="new-version-loading" class="text-[12px] text-[var(--text-muted)] italic">Carregando documentos…</div>
+      <div id="new-version-loading" class="text-[12px] text-[var(--text-muted)] italic">{t('governance.docs.newVersionLoading', lang)}</div>
       <ul id="new-version-list" class="hidden space-y-1.5"></ul>
     </section>
   </div>
 
-  <script is:inline>
-    const GATE_LABELS_JSON = JSON.stringify({
-      curator: 'Curador',
-      leader: 'Liderança',
-      leader_awareness: 'Ciência das lideranças',
-      submitter_acceptance: 'Aceite do GP',
-      president_go: 'Presid. PMI-GO',
-      president_others: 'Presid. capítulos',
-      chapter_witness: 'Testemunhas',
-      member_ratification: 'Ratificação de membros',
-      external_signer: 'Signatário externo',
-    });
+  <script is:inline define:vars={{ I18N: i18n, LANG_PREFIX: langPrefix }}>
+    // p130 T-14: i18n bundle injected from server. PT-BR remains the canonical
+    // copy in pt-BR.ts; EN-US/ES-LATAM resolved at render time and serialized.
+    window.__LANG_PREFIX = LANG_PREFIX;
+
+    const GATE_LABELS_JSON = JSON.stringify(I18N.gateLabels);
 
     const STATUS_LABELS = {
-      draft:      { label: 'Rascunho',    cls: 'bg-gray-100 text-gray-700 border-gray-300' },
-      review:     { label: 'Em revisão',  cls: 'bg-amber-100 text-amber-800 border-amber-300' },
-      approved:   { label: 'Aprovado',    cls: 'bg-blue-100 text-blue-800 border-blue-300' },
-      active:     { label: 'Vigente',     cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-      withdrawn:  { label: 'Retirado',    cls: 'bg-red-100 text-red-700 border-red-300' },
-      superseded: { label: 'Substituído', cls: 'bg-gray-200 text-gray-600 border-gray-400' },
+      draft:      { label: I18N.status.draft,      cls: 'bg-gray-100 text-gray-700 border-gray-300' },
+      review:     { label: I18N.status.review,     cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+      approved:   { label: I18N.status.approved,   cls: 'bg-blue-100 text-blue-800 border-blue-300' },
+      active:     { label: I18N.status.active,     cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      withdrawn:  { label: I18N.status.withdrawn,  cls: 'bg-red-100 text-red-700 border-red-300' },
+      superseded: { label: I18N.status.superseded, cls: 'bg-gray-200 text-gray-600 border-gray-400' },
     };
 
     function esc(s) {
@@ -149,17 +235,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         var icon = state === 'done' ? '✓' : state === 'ackDone' ? 'ℹ✓' : state === 'ackPending' || state === 'locked' && isInformational ? 'ℹ' : String(g.order);
         var count;
         if (isInformational) {
-          count = signedCount + ' / ' + eligibleCount + ' (ciência)';
+          count = signedCount + ' / ' + eligibleCount + ' ' + I18N.awarenessSuffix;
         } else if (isAll) {
-          count = signedCount + ' / ' + eligibleCount + ' elegíveis';
+          count = signedCount + ' / ' + eligibleCount + ' ' + I18N.eligibleSuffix;
         } else {
-          count = signedCount + ' / ' + tNum + (eligibleCount !== tNum ? ' (' + eligibleCount + ' elegíveis)' : '');
+          count = signedCount + ' / ' + tNum + (eligibleCount !== tNum ? ' ' + I18N.eligibleParen.replace('{n}', eligibleCount) : '');
         }
-        var tip = state === 'active' ? 'Aguardando ' + tNum + ' assinatura(s)'
-                : state === 'locked' ? 'Aguarda gates anteriores'
-                : state === 'ackDone' ? 'Ciência registrada (não bloqueia)'
-                : state === 'ackPending' ? 'Ciência pendente (não bloqueia avanço)'
-                : 'Satisfeito';
+        var tip = state === 'active' ? I18N.tipActive.replace('{n}', tNum)
+                : state === 'locked' ? I18N.tipLocked
+                : state === 'ackDone' ? I18N.tipAckDone
+                : state === 'ackPending' ? I18N.tipAckPending
+                : I18N.tipDone;
 
         html += '<li class="flex items-center flex-shrink-0">';
         html += '<div class="flex flex-col items-center gap-1 px-2 py-1" title="' + esc(tip) + '">';
@@ -214,7 +300,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     function daysLabel(days) {
       if (days == null) return '—';
       var d = Math.floor(days);
-      return d === 0 ? 'hoje' : d === 1 ? '1 dia' : d + ' dias';
+      return d === 0 ? I18N.daysToday : d === 1 ? I18N.daysSingular : d + ' ' + I18N.daysPlural;
     }
 
     function renderChainCard(detail) {
@@ -227,25 +313,75 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             '<div>' +
               '<h2 class="text-base font-bold text-[var(--text-primary)]">' + esc(detail.document_title) + '</h2>' +
               '<p class="text-[11px] text-[var(--text-muted)] mt-0.5">' +
-                esc(detail.version_label || '') + ' · Submetido por ' + esc(submitter.name || '—') +
-                ' · Aberto há ' + daysLabel(detail.days_open) +
+                esc(detail.version_label || '') + ' · ' + I18N.submittedBy + ' ' + esc(submitter.name || '—') +
+                ' · ' + I18N.openedSince + ' ' + daysLabel(detail.days_open) +
               '</p>' +
             '</div>' +
             '<div class="flex items-center gap-2">' +
               '<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + s.cls + '">' + s.label + '</span>' +
-              '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(detail.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">Revisar →</a>' +
+              '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(detail.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">' + I18N.reviewBtn + '</a>' +
             '</div>' +
           '</div>' +
           '<div class="mb-3">' + pipelineHtml(detail) + '</div>' +
           (bic
             ? '<div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[12px] text-amber-900">' +
-                '<strong>Bola em:</strong> ' + esc(bic.gate) +
-                (bic.names ? ' · aguardando ' + esc(bic.names) : '') +
-                (bic.count > 0 ? ' <span class="text-[10px] text-amber-800">(' + bic.count + ' elegíveis)</span>' : '') +
+                '<strong>' + I18N.ballInCourt + '</strong> ' + esc(bic.gate) +
+                (bic.names ? ' · ' + I18N.awaiting + ' ' + esc(bic.names) : '') +
+                (bic.count > 0 ? ' <span class="text-[10px] text-amber-800">' + I18N.eligibleParen.replace('{n}', bic.count) + '</span>' : '') +
               '</div>'
-            : '<div class="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] text-emerald-900"><strong>✓</strong> Todos os gates satisfeitos.</div>'
+            : '<div class="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] text-emerald-900"><strong>✓</strong> ' + I18N.allGatesSatisfied + '</div>'
           ) +
         '</article>'
+      );
+    }
+
+    // p130: detecta os gate_kinds onde o usuário corrente está em eligible_pending.
+    // Espelha a lógica de activeEligibleGates() em ReviewChainIsland.tsx (mesma
+    // semântica de prevOK propagation + isAll satisfied check do commit 1f2bc40).
+    function activeEligibleGatesFor(detail, memberId) {
+      if (!memberId) return [];
+      var gates = (detail.gates || []).slice().sort(function(a,b){return a.order - b.order;});
+      var out = [];
+      var prevOK = true;
+      for (var i = 0; i < gates.length; i++) {
+        var g = gates[i];
+        var tStr = String(g.threshold);
+        var isAll = tStr === 'all';
+        var isInformational = tStr === '0';
+        var tNum = isAll || isInformational ? 0 : Number(tStr);
+        var satisfied = isInformational ? false
+          : isAll ? (Number(g.signed_count) > 0 && (g.eligible_pending || []).length === 0)
+          : Number(g.signed_count) >= tNum;
+        var inEligible = (g.eligible_pending || []).some(function(p){ return p.id === memberId; });
+        if (isInformational) {
+          if (prevOK && inEligible) out.push(g.kind);
+          continue;
+        }
+        if (prevOK && !satisfied && inEligible) out.push(g.kind);
+        prevOK = satisfied;
+      }
+      return out;
+    }
+
+    function renderMineCard(detail, mineGates) {
+      var labels = JSON.parse(GATE_LABELS_JSON);
+      var s = STATUS_LABELS[detail.chain_status] || { label: detail.chain_status, cls: 'bg-gray-100' };
+      var gateWord = mineGates.length === 1 ? I18N.gateLabel : I18N.gatePluralLabel;
+      return (
+        '<li class="rounded-lg border border-[var(--border-default)] bg-white px-3 py-2.5">' +
+          '<div class="flex items-center justify-between gap-3 flex-wrap">' +
+            '<div class="flex-1 min-w-0">' +
+              '<div class="text-[13px] font-bold text-[var(--text-primary)] truncate">' + esc(detail.document_title) + '</div>' +
+              '<div class="text-[11px] text-[var(--text-muted)]">' + esc(detail.version_label || '') + ' · ' + gateWord + ': ' +
+                mineGates.map(function(g){ return '<strong class="text-navy">' + esc(labels[g] || g) + '</strong>'; }).join(', ') +
+              '</div>' +
+            '</div>' +
+            '<div class="flex items-center gap-2 flex-shrink-0">' +
+              '<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + s.cls + '">' + s.label + '</span>' +
+              '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(detail.chain_id) + '" class="rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">' + I18N.signNowBtn + '</a>' +
+            '</div>' +
+          '</div>' +
+        '</li>'
       );
     }
 
@@ -255,13 +391,19 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       var errBox = document.getElementById('gov-error');
       var empty = document.getElementById('gov-empty');
       var list = document.getElementById('gov-list');
+      var mineSec = document.getElementById('gov-mine');
+      var mineList = document.getElementById('gov-mine-list');
+      var mineTitle = document.getElementById('gov-mine-title');
 
       if (!sb) {
         loading.classList.add('hidden');
-        errBox.textContent = 'Cliente Supabase indisponível.';
+        errBox.textContent = I18N.sbUnavailable;
         errBox.classList.remove('hidden');
         return;
       }
+
+      var member = window.navGetMember && window.navGetMember();
+      var memberId = member && member.id;
 
       var chainsRes = await sb
         .from('approval_chains')
@@ -271,7 +413,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
       if (chainsRes.error) {
         loading.classList.add('hidden');
-        errBox.textContent = 'Erro: ' + chainsRes.error.message;
+        errBox.textContent = I18N.errorPrefix + ' ' + chainsRes.error.message;
         errBox.classList.remove('hidden');
         return;
       }
@@ -288,6 +430,19 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (!details.length) { empty.classList.remove('hidden'); return; }
 
       details.sort(function(a, b) { return String(a.document_title).localeCompare(String(b.document_title)); });
+
+      // p130: render "Suas pendências" no topo
+      if (memberId) {
+        var mine = details
+          .map(function(d){ return { detail: d, gates: activeEligibleGatesFor(d, memberId) }; })
+          .filter(function(r){ return r.gates.length > 0; });
+        if (mine.length > 0) {
+          mineTitle.textContent = I18N.minePendingsCountLabel + ' (' + mine.length + ')';
+          mineList.innerHTML = mine.map(function(r){ return renderMineCard(r.detail, r.gates); }).join('');
+          mineSec.classList.remove('hidden');
+        }
+      }
+
       list.innerHTML = details.map(renderChainCard).join('');
       list.classList.remove('hidden');
     }
@@ -295,7 +450,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     function fmtRelDate(iso) {
       if (!iso) return '—';
       var d = new Date(iso);
-      return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      var localeTag = LANG_PREFIX === '/en' ? 'en-US' : LANG_PREFIX === '/es' ? 'es' : 'pt-BR';
+      return d.toLocaleString(localeTag, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
     async function loadDrafts() {
@@ -313,9 +469,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           '<li class="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2">' +
             '<div class="flex-1 min-w-0">' +
               '<strong class="text-[13px] text-[var(--text-primary)]">' + esc(r.document_title) + '</strong>' +
-              '<span class="text-[10px] text-[var(--text-muted)] ml-2">' + esc(r.version_label || '') + ' · atualizado ' + fmtRelDate(r.updated_at) + '</span>' +
+              '<span class="text-[10px] text-[var(--text-muted)] ml-2">' + esc(r.version_label || '') + ' · ' + I18N.draftsUpdated + ' ' + fmtRelDate(r.updated_at) + '</span>' +
             '</div>' +
-            '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">Continuar editando</a>' +
+            '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">' + I18N.draftsContinueBtn + '</a>' +
           '</li>'
         );
       }).join('');
@@ -325,17 +481,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       var sb = await waitForSb();
       var loading = document.getElementById('new-version-loading');
       var ul = document.getElementById('new-version-list');
-      if (!sb) { loading.textContent = 'Cliente Supabase indisponível.'; return; }
+      if (!sb) { loading.textContent = I18N.sbUnavailable; return; }
       var res = await sb
         .from('governance_documents')
         .select('id, title, doc_type, status')
         .in('status', ['active','draft','under_review'])
         .order('title', { ascending: true });
-      if (res.error) { loading.textContent = 'Erro: ' + res.error.message; return; }
+      if (res.error) { loading.textContent = I18N.errorPrefix + ' ' + res.error.message; return; }
       var docs = res.data || [];
       loading.classList.add('hidden');
       if (!docs.length) {
-        ul.innerHTML = '<li class="text-[12px] text-[var(--text-muted)] italic">Nenhum documento cadastrado.</li>';
+        ul.innerHTML = '<li class="text-[12px] text-[var(--text-muted)] italic">' + I18N.newVersionEmpty + '</li>';
         ul.classList.remove('hidden');
         return;
       }
@@ -343,7 +499,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         return (
           '<li class="flex items-center justify-between gap-3 py-1">' +
             '<span class="text-[12px] text-[var(--text-primary)]"><strong>' + esc(d.title) + '</strong> <span class="text-[10px] text-[var(--text-muted)]">' + esc(d.doc_type || '') + '</span></span>' +
-            '<a href="' + ((window).__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(d.id) + '/versions/new" class="rounded bg-white border border-navy text-navy text-[11px] font-bold px-3 py-1 no-underline hover:bg-navy hover:text-white">+ Nova versão</a>' +
+            '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(d.id) + '/versions/new" class="rounded bg-white border border-navy text-navy text-[11px] font-bold px-3 py-1 no-underline hover:bg-navy hover:text-white">' + I18N.newVersionBtn + '</a>' +
           '</li>'
         );
       }).join('');
