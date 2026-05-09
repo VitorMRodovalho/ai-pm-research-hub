@@ -4306,6 +4306,9 @@ const enUS: Record<string, string> = {
   'admin.campaigns.funnelOpened': 'Opened',
   'admin.campaigns.funnelClicked': 'Clicked',
 
+  'tribe.contextSwitch': 'Switch',
+  'tribe.attendanceByMember': 'Attendance by Member',
+
   'initiative.catalog.title': 'Initiatives',
   'initiative.catalog.activeCount': '{count} active initiative(s)',
   'initiative.catalog.youParticipateBadge': ' · {count} with your participation',

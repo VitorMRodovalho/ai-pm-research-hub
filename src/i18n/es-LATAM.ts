@@ -4307,6 +4307,9 @@ const esLATAM: Record<string, string> = {
   'admin.campaigns.funnelOpened': 'Abrieron',
   'admin.campaigns.funnelClicked': 'Hicieron clic',
 
+  'tribe.contextSwitch': 'Cambiar',
+  'tribe.attendanceByMember': 'Asistencia por Miembro',
+
   'initiative.catalog.title': 'Iniciativas',
   'initiative.catalog.activeCount': '{count} iniciativa(s) activa(s)',
   'initiative.catalog.youParticipateBadge': ' · {count} con tu participación',
