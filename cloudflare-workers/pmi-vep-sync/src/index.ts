@@ -39,11 +39,19 @@ import {
   logRunComplete,
   getOpenSelectionCycle,
   getActiveOpportunities,
-  upsertSelectionApplication
+  upsertSelectionApplication,
+  findPersonIdByEmail,
+  upsertPmiChapterMemberships,
+  insertServiceHistory,
+  setEngagementEndDateSource
 } from './db';
 import { issueOnboardingToken } from './onboarding-token';
 import { dispatchWelcome } from './welcome';
-import { mapScriptToNucleo } from './script-mapper';
+import {
+  mapScriptToNucleo,
+  mapPmiChapterMemberships,
+  mapServiceHistory
+} from './script-mapper';
 
 const WORKER_NAME = 'pmi-vep-sync';
 const ALLOWED_ORIGIN = 'https://volunteer.pmi.org';
@@ -205,10 +213,16 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     applications_skipped_prior_cycle: 0,
     welcome_dispatched: 0,
     welcomes_skipped_non_submitted: 0,
-    errors: []
+    errors: [],
+    // p126 E2 Phase B metrics
+    phase_b_processed: 0,
+    phase_b_skipped_private: 0,
+    pmi_chapter_memberships_upserted: 0,
+    service_history_inserted: 0
   };
 
   const allQRs = body.questionResponses ?? [];
+  const allHistory = body.serviceHistory ?? [];  // p126 E2 — 1:N service history rows
 
   for (const app of body.applications) {
     try {
@@ -235,7 +249,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         continue;
       }
 
-      const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, env.ORG_ID);
+      const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, cycle.cycle_code, env.ORG_ID);
 
       if (!mapped.email || !mapped.applicant_name) {
         summary.applications_skipped++;
@@ -249,6 +263,77 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
 
       const result = await upsertSelectionApplication(db, mapped);
       summary.applications_processed++;
+
+      // ─── p126 E2: Phase B canonical UPSERT + service history INSERT ────────
+      // Skip canonical operations for prior cycle (history preserve) + private profiles.
+      if (!result.skipped_prior_cycle) {
+        // Wave 3 synth (D-CONV-3): track Phase B participation by ANY non-null Phase B
+        // signal, not just pmi_data_fetched_at presence. Older script versions might
+        // not emit pmiDataFetchedAt but still have Phase B fields populated.
+        if (mapped.community_profile_private === true) {
+          summary.phase_b_skipped_private = (summary.phase_b_skipped_private ?? 0) + 1;
+        } else if (
+          mapped.pmi_data_fetched_at ||
+          (mapped.pmi_memberships && Array.isArray(mapped.pmi_memberships) && mapped.pmi_memberships.length > 0) ||
+          mapped.profile_location ||
+          mapped.profile_about_me ||
+          mapped.service_history_count !== null
+        ) {
+          summary.phase_b_processed = (summary.phase_b_processed ?? 0) + 1;
+        }
+
+        // Resolve person_id via email (Strategy 1+2 in db.ts findPersonIdByEmail)
+        // Ghost member case (person_id NULL): canonical UPSERT skipped per security-engineer Wave 2 B1.
+        try {
+          const personId = await findPersonIdByEmail(db, mapped.email);
+
+          // pmi_chapter_memberships UPSERT (canonical multi-chapter — Decision 2 hybrid)
+          if (personId) {
+            const memberships = mapPmiChapterMemberships(app, personId);
+            if (memberships.length > 0) {
+              const upserted = await upsertPmiChapterMemberships(db, memberships);
+              summary.pmi_chapter_memberships_upserted =
+                (summary.pmi_chapter_memberships_upserted ?? 0) + upserted;
+            }
+
+            // Decision 8 — engagement end_date_source 'pmi_vep' fallback
+            // Only set if VEP serviceEndDateUTC present AND source not already 'agreement'
+            if (app.serviceEndDateUTC) {
+              try {
+                const endDate = app.serviceEndDateUTC.slice(0, 10);
+                await setEngagementEndDateSource(db, personId, 'pmi_vep', endDate);
+              } catch (e: any) {
+                summary.errors.push({
+                  scope: 'engagement_end_date_source',
+                  ref: String(app.applicationId),
+                  error: e.message
+                });
+              }
+            }
+          } else if (mapped.pmi_memberships && Array.isArray(mapped.pmi_memberships) && mapped.pmi_memberships.length > 0) {
+            // Wave 3 synth (D-CONV-2): observable logging instead of silent no-op.
+            // No person_id resolved (ghost or new applicant not yet member) — snapshot
+            // already in selection_applications.pmi_memberships JSONB; no canonical UPSERT.
+            // I_PMI_CHAPTER_MEMBERSHIPS_ORPHANS invariant detects post-hoc if needed.
+            console.warn(`[${WORKER_NAME}] Phase B membership snapshot persisted without canonical UPSERT (no person_id resolved for email): app=${app.applicationId}, memberships=${mapped.pmi_memberships.length}`);
+          }
+
+          // service_history INSERT (1:N append-only — applies regardless of person_id)
+          // Uses dbApplicationId from upsert result, not personId.
+          const historyRows = mapServiceHistory(app, result.id, allHistory);
+          if (historyRows.length > 0) {
+            const inserted = await insertServiceHistory(db, historyRows);
+            summary.service_history_inserted =
+              (summary.service_history_inserted ?? 0) + inserted;
+          }
+        } catch (e: any) {
+          summary.errors.push({
+            scope: 'phase_b_canonical',
+            ref: String(app.applicationId),
+            error: e.message
+          });
+        }
+      }
 
       if (result.skipped_prior_cycle) {
         summary.applications_skipped_prior_cycle++;

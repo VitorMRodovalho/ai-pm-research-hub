@@ -19,10 +19,16 @@
 import type {
   ScriptApplication,
   ScriptQuestionResponse,
+  ScriptServiceHistoryRow,
   VepOpportunityRow,
-  SelectionApplicationUpsert
+  SelectionApplicationUpsert,
+  PmiChapterMembershipUpsert,
+  ServiceHistoryInsert
 } from './types';
 
+// ORG_ID_DEFAULT is a fallback used ONLY when caller omits orgId argument
+// (test scenarios without env binding). Production caller (index.ts handleIngest)
+// always passes env.ORG_ID. Never edit this UUID without updating wrangler config.
 const ORG_ID_DEFAULT = '2b4f58ab-7c45-4170-8718-b77ee69ff906';
 
 export function mapScriptToNucleo(
@@ -30,6 +36,7 @@ export function mapScriptToNucleo(
   opp: VepOpportunityRow,
   allQuestionResponses: ScriptQuestionResponse[],
   cycleId: string,
+  cycleCode: string = '',
   orgId: string = ORG_ID_DEFAULT
 ): SelectionApplicationUpsert {
   const myResponses = allQuestionResponses.filter(qr =>
@@ -53,6 +60,54 @@ export function mapScriptToNucleo(
       ? app.coverLetterInfo
       : ((app.coverLetterInfo as any)?.coverLetter ?? null);
 
+  // ─── p126 E2: Phase B field handling per ADR-0076 + Decision 5 ────────────
+  const isPhaseBPrivate = app.profilePrivate === true;
+
+  // Decision 5 enforcement (defense-in-depth): if profilePrivate=true, NULL all profile_* fields
+  // RPC import_vep_applications also re-clears (atomicity Princípio 11), but mapper does it first.
+  const phaseBLocation = isPhaseBPrivate ? null : (app.profileLocation ?? null);
+  const phaseBState = isPhaseBPrivate ? null : (app.profileState ?? null);
+  const phaseBCity = isPhaseBPrivate ? null : (app.profileCity ?? null);
+  const phaseBCountry = isPhaseBPrivate ? null : (app.profileCountry ?? null);
+  const phaseBMemberships = isPhaseBPrivate ? null : (app.profileMembershipChapters ?? null);
+  const phaseBIndustry = isPhaseBPrivate ? null : (app.profileIndustry ?? null);
+  const phaseBCompany = isPhaseBPrivate ? null : (app.profileCompany ?? null);
+  const phaseBDesignation = isPhaseBPrivate ? null : (app.profileDesignation ?? null);
+  const phaseBCerts = isPhaseBPrivate ? null : (app.profileCertifications ?? null);
+  const phaseBVolInterest = isPhaseBPrivate ? null : (app.profileVolunteerInterest ?? null);
+  const phaseBSpecialties = isPhaseBPrivate ? null : (app.profileSpecialties ?? null);
+  const phaseBLinkedin = isPhaseBPrivate ? null : (app.profileLinkedinUrl ?? null);
+  const phaseBAboutMe = isPhaseBPrivate ? null : (app.profileAboutMe ?? null);
+  const phaseBSvcCount = isPhaseBPrivate ? null : (app.serviceHistoryCount ?? null);
+  const phaseBSvcChapters = isPhaseBPrivate ? null : (app.serviceHistoryChapters ?? null);
+  const phaseBSvcFirst = isPhaseBPrivate ? null : (app.serviceFirstStartDate ?? null);
+  const phaseBSvcLatest = isPhaseBPrivate ? null : (app.serviceLatestEndDate ?? null);
+  const phaseBOpenToVol = isPhaseBPrivate ? null : (app.isOpenToVolunteer ?? null);
+
+  // Wave 3 synth fix (3-agent convergent S-CONV-2): geo fallback when script
+  // sent only profileLocation raw without parsed profileState/City/Country.
+  // parseGeoFromLocation handles common patterns ("Cidade, Estado, País").
+  let phaseBStateResolved = isPhaseBPrivate ? null : (app.profileState ?? null);
+  let phaseBCityResolved = isPhaseBPrivate ? null : (app.profileCity ?? null);
+  let phaseBCountryResolved = isPhaseBPrivate ? null : (app.profileCountry ?? null);
+  if (!isPhaseBPrivate && app.profileLocation && !phaseBStateResolved && !phaseBCityResolved && !phaseBCountryResolved) {
+    const parsed = parseGeoFromLocation(app.profileLocation);
+    phaseBStateResolved = parsed.state;
+    phaseBCityResolved = parsed.city;
+    phaseBCountryResolved = parsed.country;
+  }
+
+  // Decision 4 — consent_version: prefer script-provided (Cycle 4+ termo-v3 dispatch),
+  // fallback to Cycle 3 default termo-v2-${cycle_code}.
+  // Wave 3 synth fix (3-agent convergent): backwards-compatible payload read
+  const consentVersion = app.consentVersion ?? `termo-v2-${cycleCode || 'unknown'}`;
+
+  // applicant_city: prefer resolved Phase B (parsed if needed), fallback Phase A applicantCity.
+  // Wave 3 synth fix (data-architect D5): NÃO usar applicantState como fallback (UF != city).
+  const applicantCity = isPhaseBPrivate
+    ? null
+    : (phaseBCityResolved ?? app.applicantCity ?? null);
+
   return {
     cycle_id: cycleId,
     vep_application_id: String(app.applicationId),
@@ -61,7 +116,7 @@ export function mapScriptToNucleo(
     applicant_name: app.applicantName ?? '',
     email: app.applicantEmail ?? '',
     phone: null,  // PMI doesn't surface phone via /api/applications/{id}
-    linkedin_url: extractLinkedinFromText(coverLetterText) ?? null,
+    linkedin_url: extractLinkedinFromText(coverLetterText) ?? phaseBLinkedin ?? null,
     resume_url: app.resumeUrl ?? null,
     chapter: parseChapterFromAffiliation(
       responses.chapter_affiliation ?? '',
@@ -69,7 +124,8 @@ export function mapScriptToNucleo(
       app.applicantCountry ?? ''
     ),
     membership_status: null,
-    certifications: '',
+    // Wave 3 synth fix (S-CONV-3 — 2 agents): null-semantic consistency vs empty string
+    certifications: phaseBCerts ?? null,
     role_applied: opp.role_default,
     motivation_letter: responses.motivation_letter ?? coverLetterText,
     proposed_theme: responses.proposed_theme ?? null,
@@ -86,8 +142,134 @@ export function mapScriptToNucleo(
     application_date: applicationDate ? applicationDate.slice(0, 10) : null,
     status,
     imported_at: new Date().toISOString(),
-    organization_id: orgId
+    organization_id: orgId,
+
+    // ─── Phase B fields (use resolved geo per Wave 3 fallback fix) ────────
+    applicant_city: applicantCity,
+    profile_location: phaseBLocation,
+    profile_state: phaseBStateResolved,
+    profile_city: phaseBCityResolved,
+    profile_country: phaseBCountryResolved,
+    pmi_memberships: phaseBMemberships,
+    profile_industry: phaseBIndustry,
+    profile_company: phaseBCompany,
+    profile_designation: phaseBDesignation,
+    profile_certifications: phaseBCerts,
+    profile_volunteer_interest: phaseBVolInterest,
+    profile_specialties: phaseBSpecialties,
+    profile_linkedin_url: phaseBLinkedin,
+    profile_about_me: phaseBAboutMe,
+    service_history_count: phaseBSvcCount,
+    service_history_chapters: phaseBSvcChapters,
+    service_first_start_date: phaseBSvcFirst,
+    service_latest_end_date: phaseBSvcLatest,
+    is_open_to_volunteer: phaseBOpenToVol,
+    community_profile_private: isPhaseBPrivate,
+    pmi_data_fetched_at: app.pmiDataFetchedAt ?? null,
+    consent_version: consentVersion
   };
+}
+
+/**
+ * p126 E2 — Map PMI Community profileMembershipChapters to canonical pmi_chapter_memberships
+ * rows for UPSERT into the canonical table.
+ *
+ * Decision 2 (hybrid storage): selection_applications.pmi_memberships JSONB is the
+ * snapshot at submission (immutable); pmi_chapter_memberships table is the canonical
+ * live registry queried by E3 cron compliance.
+ *
+ * Returns empty array if profilePrivate=true (Decision 5) or no memberships data.
+ *
+ * @param app ScriptApplication with optional profileMembershipChapters
+ * @param personId UUID of persons row (resolved by caller via email lookup)
+ */
+export function mapPmiChapterMemberships(
+  app: ScriptApplication,
+  personId: string
+): PmiChapterMembershipUpsert[] {
+  if (app.profilePrivate === true) return [];
+  const memberships = app.profileMembershipChapters;
+  if (!memberships || !Array.isArray(memberships) || memberships.length === 0) return [];
+
+  const capturedAt = app.pmiDataFetchedAt ?? new Date().toISOString();
+
+  return memberships
+    .filter(m => m && typeof m.chapterName === 'string' && typeof m.expiryDate === 'string')
+    .map(m => ({
+      person_id: personId,
+      chapter_name: m.chapterName.trim(),
+      expiry_date: m.expiryDate.slice(0, 10),  // ensure YYYY-MM-DD
+      source: 'pmi_community' as const,
+      captured_at: capturedAt
+    }));
+}
+
+/**
+ * p126 E2 — Map serviceHistory rows from script payload to ServiceHistoryInsert
+ * for INSERT into selection_application_service_history (1:N append-only).
+ *
+ * Filters by applicationId + skips empty/malformed rows. profilePrivate users get
+ * empty array per Decision 5 (defense-in-depth — script may not have sent rows
+ * for them anyway, but mapper enforces).
+ *
+ * @param app ScriptApplication (for profilePrivate check + applicationId match)
+ * @param dbApplicationId UUID from selection_applications row (post-upsert)
+ * @param allHistory Full payload.serviceHistory array
+ */
+export function mapServiceHistory(
+  app: ScriptApplication,
+  dbApplicationId: string,
+  allHistory: ScriptServiceHistoryRow[] | undefined
+): ServiceHistoryInsert[] {
+  if (app.profilePrivate === true) return [];
+  if (!allHistory || !Array.isArray(allHistory) || allHistory.length === 0) return [];
+
+  const myRows = allHistory.filter(h =>
+    String(h.applicationId) === String(app.applicationId)
+  );
+  if (myRows.length === 0) return [];
+
+  const capturedAt = app.pmiDataFetchedAt ?? new Date().toISOString();
+
+  return myRows
+    .filter(h => h && typeof h.chapterName === 'string' && h.chapterName.trim().length > 0)
+    .map(h => ({
+      application_id: dbApplicationId,
+      chapter_name: h.chapterName.trim(),
+      role_name: h.roleName?.trim() ?? null,
+      start_date: h.startDate ? h.startDate.slice(0, 10) : null,
+      end_date: h.endDate ? h.endDate.slice(0, 10) : null,
+      source: 'pmi_community' as const,
+      captured_at: capturedAt
+    }));
+}
+
+/**
+ * p126 E2 — Parse profileLocation free text "Cidade, Estado, País" into structured.
+ *
+ * Examples:
+ *   "Saquarema, RJ, Brazil" → { city: "Saquarema", state: "RJ", country: "Brazil" }
+ *   "São Paulo, SP, Brazil" → { city: "São Paulo", state: "SP", country: "Brazil" }
+ *   "Fortaleza, CE, Brazil" → { city: "Fortaleza", state: "CE", country: "Brazil" }
+ *   "Washington DC, United States" → { city: "Washington DC", state: null, country: "United States" }
+ *
+ * Returns nulls when parse fails. Worker mapper prefers script-parsed profileState/City/Country
+ * (already structured by browser script); this helper is for fallback when only profileLocation is present.
+ */
+export function parseGeoFromLocation(loc: string | null | undefined): {
+  city: string | null;
+  state: string | null;
+  country: string | null;
+} {
+  if (!loc || typeof loc !== 'string') {
+    return { city: null, state: null, country: null };
+  }
+  const parts = loc.split(',').map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return { city: null, state: null, country: null };
+  if (parts.length === 1) return { city: parts[0]!, state: null, country: null };
+  if (parts.length === 2) return { city: parts[0]!, state: null, country: parts[1]! };
+  // 3+ parts — assume city, state, country (extra ignored)
+  return { city: parts[0]!, state: parts[1]!, country: parts[2]! };
 }
 
 /**

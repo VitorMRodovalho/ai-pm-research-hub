@@ -90,7 +90,11 @@ export async function getActiveOpportunities(db: SupabaseClient): Promise<VepOpp
 // Application upsert
 // =====================================================================
 
-import type { SelectionApplicationUpsert } from './types';
+import type {
+  SelectionApplicationUpsert,
+  PmiChapterMembershipUpsert,
+  ServiceHistoryInsert
+} from './types';
 
 export interface UpsertResult {
   id: string;
@@ -164,8 +168,34 @@ export async function upsertSelectionApplication(
         chapter_affiliation: payload.chapter_affiliation,
         non_pmi_experience: payload.non_pmi_experience,
         reason_for_applying: payload.reason_for_applying,
+        // Wave 3 synth (S-DA-1): application_date refreshed on re-import
+        // (PMI may move app across lifecycle timestamps — submitted/expired/withdrawn)
+        application_date: payload.application_date,
         status: payload.status,
         imported_at: payload.imported_at,
+        // p126 E2 Phase B fields (per ADR-0076 Princípio 1 + Migration 1)
+        applicant_city: payload.applicant_city,
+        profile_location: payload.profile_location,
+        profile_state: payload.profile_state,
+        profile_city: payload.profile_city,
+        profile_country: payload.profile_country,
+        pmi_memberships: payload.pmi_memberships,
+        profile_industry: payload.profile_industry,
+        profile_company: payload.profile_company,
+        profile_designation: payload.profile_designation,
+        profile_certifications: payload.profile_certifications,
+        profile_volunteer_interest: payload.profile_volunteer_interest,
+        profile_specialties: payload.profile_specialties,
+        profile_linkedin_url: payload.profile_linkedin_url,
+        profile_about_me: payload.profile_about_me,
+        service_history_count: payload.service_history_count,
+        service_history_chapters: payload.service_history_chapters,
+        service_first_start_date: payload.service_first_start_date,
+        service_latest_end_date: payload.service_latest_end_date,
+        is_open_to_volunteer: payload.is_open_to_volunteer,
+        community_profile_private: payload.community_profile_private,
+        pmi_data_fetched_at: payload.pmi_data_fetched_at,
+        consent_version: payload.consent_version,
         updated_at: new Date().toISOString()
       })
       .eq('id', existing.id);
@@ -192,4 +222,169 @@ export async function upsertSelectionApplication(
       consent_active: false
     };
   }
+}
+
+// =====================================================================
+// p126 E2 — Phase B helpers: persons lookup + chapter_memberships UPSERT
+// + service_history INSERT
+// (ADR-0076 Princípio 1 + Decisions 2 + S5 + Risk 2 mitigation)
+// =====================================================================
+
+/**
+ * Resolve persons.id from email match. Used to link PMI Community canonical
+ * data (pmi_chapter_memberships) to identity model. Returns NULL if no person
+ * found (= ghost case; mapper skips canonical UPSERT to preserve invariant
+ * I_PMI_CHAPTER_MEMBERSHIPS_ORPHANS).
+ *
+ * Lookup priority:
+ *   1. members.email exact match → members.person_id
+ *   2. members.secondary_emails @> [email] → members.person_id
+ *
+ * Per security-engineer Wave 2 B1: ghost-member path (members.person_id NULL)
+ * returns NULL here; canonical UPSERT skipped intentionally. Snapshot in
+ * selection_applications.pmi_memberships JSONB still persists.
+ */
+export async function findPersonIdByEmail(
+  db: SupabaseClient,
+  email: string
+): Promise<string | null> {
+  if (!email) return null;
+  const lowerEmail = email.toLowerCase().trim();
+
+  // Strategy 1: primary email
+  const { data: byPrimary } = await db
+    .from('members')
+    .select('person_id')
+    .eq('email', lowerEmail)
+    .not('person_id', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (byPrimary?.person_id) return byPrimary.person_id as string;
+
+  // Strategy 2: secondary_emails (text[] array contains)
+  const { data: bySecondary } = await db
+    .from('members')
+    .select('person_id')
+    .contains('secondary_emails', [lowerEmail])
+    .not('person_id', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  return (bySecondary?.person_id as string) ?? null;
+}
+
+/**
+ * UPSERT pmi_chapter_memberships rows for a person. Per migration 2:
+ * UNIQUE (person_id, chapter_name) + ON CONFLICT updates expiry_date + captured_at.
+ *
+ * Returns count of rows touched (UPSERT inserted + updated combined).
+ */
+export async function upsertPmiChapterMemberships(
+  db: SupabaseClient,
+  rows: PmiChapterMembershipUpsert[]
+): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  const { error, count } = await db
+    .from('pmi_chapter_memberships')
+    .upsert(rows, {
+      onConflict: 'person_id,chapter_name',
+      count: 'exact'
+    });
+
+  if (error) {
+    throw new Error(`upsertPmiChapterMemberships: ${error.message}`);
+  }
+  return count ?? rows.length;
+}
+
+/**
+ * UPSERT service_history rows with idempotency guard.
+ * Wave 3 synth Wave 2 BLOCKER fix (3-agent convergent):
+ *   - Migration 7 (20260518070000) added UNIQUE INDEX on
+ *     (application_id, chapter_name, COALESCE(start_date, '1900-01-01'))
+ *   - Re-ingest produces no duplicates: ON CONFLICT IGNORE
+ * Append-only semantic preserved (no field updates), but row creation is idempotent.
+ */
+export async function insertServiceHistory(
+  db: SupabaseClient,
+  rows: ServiceHistoryInsert[]
+): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  const { error, count } = await db
+    .from('selection_application_service_history')
+    .upsert(rows, {
+      onConflict: 'application_id,chapter_name,start_date',
+      ignoreDuplicates: true,
+      count: 'exact'
+    });
+
+  if (error) {
+    throw new Error(`insertServiceHistory: ${error.message}`);
+  }
+  return count ?? rows.length;
+}
+
+/**
+ * Set engagements.metadata.end_date_source flag for a person's active engagements.
+ * Used by E2 worker for Decision 8 (Issue D fallback strategy):
+ *   - 'agreement' if agreement_certificate_id present (handled by Hotfix Wave 0)
+ *   - 'pmi_vep' if PMI VEP serviceEndDateUTC available
+ *   - 'estimated' last resort with current_date + 6 months
+ *
+ * Returns count of rows updated. Idempotent — only updates if source not already set.
+ */
+export async function setEngagementEndDateSource(
+  db: SupabaseClient,
+  personId: string,
+  source: 'agreement' | 'pmi_vep' | 'estimated' | 'manual',
+  endDate?: string | null
+): Promise<number> {
+  const { data: rows, error: queryErr } = await db
+    .from('engagements')
+    .select('id, metadata, end_date')
+    .eq('person_id', personId)
+    .eq('status', 'active');
+
+  if (queryErr) {
+    throw new Error(`setEngagementEndDateSource query: ${queryErr.message}`);
+  }
+  if (!rows || rows.length === 0) return 0;
+
+  let updated = 0;
+  for (const row of rows) {
+    const meta = (row.metadata ?? {}) as Record<string, any>;
+    // Skip if already set by Hotfix Wave 0 (agreement) — only update pending_e2_worker
+    if (meta.end_date_source === 'agreement') continue;
+    // Wave 3 synth (D-CONV-1): skip only if same source AND same endDate already stored
+    // (avoids redundant DB writes on re-import). Prior `!endDate` check was too narrow.
+    if (meta.end_date_source === source && row.end_date === endDate) continue;
+
+    const newMeta = {
+      ...meta,
+      end_date_source: source,
+      end_date_source_set_at: new Date().toISOString(),
+      end_date_source_set_by: 'pmi-vep-sync-e2'
+    };
+    if (meta.end_date_pending) delete (newMeta as any).end_date_pending;
+
+    const updatePayload: Record<string, any> = { metadata: newMeta };
+    if (endDate && source === 'pmi_vep') {
+      updatePayload.end_date = endDate;
+    }
+
+    const { error: updErr } = await db
+      .from('engagements')
+      .update(updatePayload)
+      .eq('id', row.id);
+
+    if (updErr) {
+      console.error(`setEngagementEndDateSource update failed for ${row.id}:`, updErr.message);
+      continue;
+    }
+    updated++;
+  }
+  return updated;
 }
