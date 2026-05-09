@@ -170,17 +170,15 @@ const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lan
 <body class="bg-[var(--surface-base)] text-[var(--text-primary)] transition-colors">
   <!-- Role labels for client-side i18n -->
   <script id="role-labels-data" type="application/json" set:html={roleLabels}></script>
-  <!-- Global i18n bundle for React islands (GlobalSearch, etc.) — merged with page-specific bundles -->
+  <!-- Global i18n bundle for React islands. usePageI18n() reads BOTH this tag
+       and any page-i18n tag the page emits inside <slot/>, then merges them.
+       The previous inline merge ran synchronously during HTML parse — before
+       the slot was parsed — and ended up creating a phantom page-i18n in
+       <head> with only the global keys. That phantom shadowed the real
+       page-i18n inside the slot for getElementById callers. Removing the
+       inline merge fixes the race; merging is now done client-side in the
+       hook. -->
   <script id="global-i18n" type="application/json" set:html={globalI18nBundle}></script>
-  <script is:inline>
-    // Merge global i18n into page-i18n so usePageI18n() picks it up
-    try {
-      const g = JSON.parse(document.getElementById('global-i18n')?.textContent || '{}');
-      const p = document.getElementById('page-i18n');
-      if (p) { const d = JSON.parse(p.textContent || '{}'); p.textContent = JSON.stringify({...g, ...d}); }
-      else { const s = document.createElement('script'); s.id = 'page-i18n'; s.type = 'application/json'; s.textContent = JSON.stringify(g); document.head.appendChild(s); }
-    } catch {}
-  </script>
   
   <Nav activePage={activePage} lang={lang} />
   <AnnouncementBanner />
