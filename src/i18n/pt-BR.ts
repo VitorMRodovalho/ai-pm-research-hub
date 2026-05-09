@@ -4320,6 +4320,32 @@ const ptBR: Record<string, string> = {
   'initiative.catalog.members': '{count} membro(s)',
   'initiative.catalog.youParticipateInline': 'Você participa',
 
+  'comp.gamification.totalXp': 'XP Total',
+  'comp.gamification.avgXp': 'XP Médio',
+  'comp.gamification.cycle': 'Ciclo',
+  'comp.gamification.cycleXp': 'Ciclo XP',
+  'comp.gamification.attendance': 'Presença',
+  'comp.gamification.attendanceCol': 'Presença',
+  'comp.gamification.certs': 'Certificações',
+  'comp.gamification.certsCol': 'Certs',
+  'comp.gamification.certCoverage': 'Cobertura Cert.',
+  'comp.gamification.badges': 'Badges',
+  'comp.gamification.badgesCol': 'Badges',
+  'comp.gamification.learning': 'Aprendizado',
+  'comp.gamification.learningCol': 'Aprendizado',
+  'comp.gamification.trail': 'Trilha',
+  'comp.gamification.trailCompletion': 'Trilha Completa',
+  'comp.gamification.tribeRank': 'Ranking',
+  'comp.gamification.tribeRanking': 'Ranking de Tribos',
+  'comp.gamification.xpDistribution': 'Distribuição de XP',
+  'comp.gamification.monthlyTrend': 'Tendência Mensal de XP',
+  'comp.gamification.membersTable': 'Membros',
+  'comp.gamification.name': 'Nome',
+  'comp.gamification.noMembers': 'Nenhum membro encontrado',
+  'comp.gamification.noData': 'Sem dados',
+  'comp.gamification.loading': 'Carregando gamificação...',
+  'comp.gamification.loadError': 'Falha ao carregar dados de gamificação',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──

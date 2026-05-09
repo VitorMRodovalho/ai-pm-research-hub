@@ -4315,6 +4315,32 @@ const esLATAM: Record<string, string> = {
   'initiative.catalog.members': '{count} miembro(s)',
   'initiative.catalog.youParticipateInline': 'Tú participas',
 
+  'comp.gamification.totalXp': 'XP Total',
+  'comp.gamification.avgXp': 'XP Promedio',
+  'comp.gamification.cycle': 'Ciclo',
+  'comp.gamification.cycleXp': 'Ciclo XP',
+  'comp.gamification.attendance': 'Asistencia',
+  'comp.gamification.attendanceCol': 'Asistencia',
+  'comp.gamification.certs': 'Certificaciones',
+  'comp.gamification.certsCol': 'Certs',
+  'comp.gamification.certCoverage': 'Cobertura Cert.',
+  'comp.gamification.badges': 'Insignias',
+  'comp.gamification.badgesCol': 'Insignias',
+  'comp.gamification.learning': 'Aprendizaje',
+  'comp.gamification.learningCol': 'Aprendizaje',
+  'comp.gamification.trail': 'Ruta',
+  'comp.gamification.trailCompletion': 'Ruta Completa',
+  'comp.gamification.tribeRank': 'Ranking',
+  'comp.gamification.tribeRanking': 'Ranking de Tribus',
+  'comp.gamification.xpDistribution': 'Distribución de XP',
+  'comp.gamification.monthlyTrend': 'Tendencia Mensual de XP',
+  'comp.gamification.membersTable': 'Miembros',
+  'comp.gamification.name': 'Nombre',
+  'comp.gamification.noMembers': 'No se encontraron miembros',
+  'comp.gamification.noData': 'Sin datos',
+  'comp.gamification.loading': 'Cargando gamificación...',
+  'comp.gamification.loadError': 'Error al cargar datos de gamificación',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
