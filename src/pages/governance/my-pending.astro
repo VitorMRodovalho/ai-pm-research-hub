@@ -1,0 +1,162 @@
+---
+/**
+ * /governance/my-pending — minhas pendências de assinatura em cadeias governance.
+ *
+ * Página non-admin para qualquer membro autenticado descobrir cadeias em revisão
+ * onde ele tem `eligible_gates` (curator, leader_awareness, volunteers_in_role_active,
+ * president_*, chapter_witness, member_ratification, etc).
+ *
+ * Resolve gap reportado por Vitor 09/may/2026 (Bug 4 p130): "página [admin
+ * /governance/documents] não ficar acessível a eles tmb é muito ruim do ponto
+ * de vista de UX. Todos que tem assinatura pendente ou ate para confirmar se ja
+ * assinou nao fica tendo acesso e perde a transparencia e jornada".
+ *
+ * Acesso: qualquer member autenticado (sem permission gate). Backed by RPC
+ * `get_pending_ratifications()` que já filtra por auth.uid() e retorna apenas
+ * chains com eligible_gates não-vazias.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const i18nBundle = buildPageI18n(['governance', 'common'], lang);
+---
+<BaseLayout title={t('governance.myPending.title', lang)} activePage="governance" lang={lang}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-5">
+    <header class="space-y-1">
+      <h1 class="text-2xl font-extrabold text-navy">{t('governance.myPending.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-muted)]">{t('governance.myPending.intro', lang)}</p>
+    </header>
+
+    <div id="mp-loading" class="text-center py-12 text-sm text-[var(--text-muted)]">
+      {t('governance.myPending.loading', lang)}
+    </div>
+    <div id="mp-anon" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+      {t('governance.myPending.anonNote', lang)}
+    </div>
+    <div id="mp-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
+      {t('governance.myPending.empty', lang)}
+    </div>
+    <div id="mp-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
+
+    <ul id="mp-list" class="hidden space-y-3"></ul>
+
+    <p class="text-[11px] text-[var(--text-muted)] pt-3 border-t border-[var(--border-subtle)]">
+      {t('governance.myPending.footer', lang)}
+    </p>
+  </main>
+
+  <script is:inline define:vars={{ langPrefix }}>
+    const GATE_LABELS = {
+      curator: 'Curador',
+      leader: 'Liderança',
+      leader_awareness: 'Ciência das lideranças',
+      submitter_acceptance: 'Aceite do GP',
+      president_go: 'Presid. PMI-GO',
+      president_others: 'Presid. capítulos',
+      chapter_witness: 'Testemunhas',
+      member_ratification: 'Ratificação de membros',
+      external_signer: 'Signatário externo',
+      volunteers_in_role_active: 'Voluntários ativos',
+    };
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtDays(n) {
+      if (n == null) return '—';
+      const d = Math.floor(n);
+      return d === 0 ? 'hoje' : d === 1 ? 'há 1 dia' : 'há ' + d + ' dias';
+    }
+
+    function waitForSb(maxTries) {
+      return new Promise(function(resolve) {
+        let tries = 0;
+        (function pick() {
+          const sb = window.navGetSb && window.navGetSb();
+          if (sb) return resolve(sb);
+          if (++tries > (maxTries || 30)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+
+    function statusPill(status) {
+      const cls = status === 'review' ? 'bg-amber-100 text-amber-900 border-amber-300'
+        : status === 'approved' ? 'bg-blue-100 text-blue-800 border-blue-300'
+        : 'bg-gray-100 text-gray-700 border-gray-300';
+      const label = status === 'review' ? 'Em revisão' : status === 'approved' ? 'Aprovado' : status;
+      return '<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + cls + '">' + esc(label) + '</span>';
+    }
+
+    function renderRow(r) {
+      const gates = (r.eligible_gates || []).map(function(g) {
+        return '<span class="inline-block rounded-full border border-navy/30 bg-navy/5 px-2 py-0.5 text-[10px] font-bold text-navy">' + esc(GATE_LABELS[g] || g) + '</span>';
+      }).join(' ');
+      return (
+        '<li class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">' +
+          '<div class="flex items-start justify-between gap-3 flex-wrap">' +
+            '<div class="flex-1 min-w-0">' +
+              '<div class="flex items-center gap-2 flex-wrap">' +
+                '<h2 class="text-base font-bold text-[var(--text-primary)]">' + esc(r.document_title) + '</h2>' +
+                statusPill(r.status) +
+              '</div>' +
+              '<p class="text-[11px] text-[var(--text-muted)] mt-1">' +
+                'Versão <strong>' + esc(r.version_label || '') + '</strong>' +
+                (r.opened_at ? ' · aberta ' + fmtDays((Date.now() - new Date(r.opened_at).getTime()) / 86400000) : '') +
+              '</p>' +
+              '<div class="flex gap-1 flex-wrap mt-2">' + gates + '</div>' +
+            '</div>' +
+            '<a href="' + langPrefix + '/admin/governance/documents/' + esc(r.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-2 no-underline hover:opacity-90 flex-shrink-0">Revisar e assinar →</a>' +
+          '</div>' +
+        '</li>'
+      );
+    }
+
+    async function load() {
+      const sb = await waitForSb();
+      const loading = document.getElementById('mp-loading');
+      const anon = document.getElementById('mp-anon');
+      const empty = document.getElementById('mp-empty');
+      const errBox = document.getElementById('mp-error');
+      const list = document.getElementById('mp-list');
+
+      if (!sb) {
+        loading.classList.add('hidden');
+        errBox.textContent = 'Cliente Supabase indisponível.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const member = (window).navGetMember && (window).navGetMember();
+      if (!member) {
+        loading.classList.add('hidden');
+        anon.classList.remove('hidden');
+        return;
+      }
+
+      const res = await sb.rpc('get_pending_ratifications');
+      loading.classList.add('hidden');
+      if (res.error) {
+        errBox.textContent = 'Erro: ' + res.error.message;
+        errBox.classList.remove('hidden');
+        return;
+      }
+      const rows = (res.data || []).filter(function(r){ return Array.isArray(r.eligible_gates) && r.eligible_gates.length > 0; });
+      if (!rows.length) { empty.classList.remove('hidden'); return; }
+      // Order: review chains first, then by opened_at desc
+      rows.sort(function(a, b){
+        if (a.status !== b.status) return a.status === 'review' ? -1 : 1;
+        return new Date(b.opened_at || 0) - new Date(a.opened_at || 0);
+      });
+      list.innerHTML = rows.map(renderRow).join('');
+      list.classList.remove('hidden');
+    }
+
+    load();
+  </script>
+</BaseLayout>
