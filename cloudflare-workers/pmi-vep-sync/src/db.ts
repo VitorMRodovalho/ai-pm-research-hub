@@ -356,8 +356,16 @@ export async function setEngagementEndDateSource(
   let updated = 0;
   for (const row of rows) {
     const meta = (row.metadata ?? {}) as Record<string, any>;
-    // Skip if already set by Hotfix Wave 0 (agreement) — only update pending_e2_worker
-    if (meta.end_date_source === 'agreement') continue;
+    // p131 T-3 C3 step 3: refinar guard. Era "skip se source='agreement'" mas
+    // Hotfix Wave 0 marcou agreement source SEM popular end_date — gap inicial.
+    // p131 backfill (C3 step 2) populou end_date com placeholder agreement_issued_at+365d.
+    // Permitimos PMI VEP sobrescrever quando:
+    //   (a) end_date IS NULL (Hotfix incompleto, ou nunca rodou)
+    //   (b) metadata.end_date_placeholder=true (placeholder C3 step 2 — VEP é mais preciso)
+    // Skip apenas quando há end_date REAL agreement-confirmed (não placeholder).
+    if (meta.end_date_source === 'agreement'
+        && row.end_date !== null
+        && meta.end_date_placeholder !== true) continue;
     // Wave 3 synth (D-CONV-1): skip only if same source AND same endDate already stored
     // (avoids redundant DB writes on re-import). Prior `!endDate` check was too narrow.
     if (meta.end_date_source === source && row.end_date === endDate) continue;
@@ -369,6 +377,13 @@ export async function setEngagementEndDateSource(
       end_date_source_set_by: 'pmi-vep-sync-e2'
     };
     if (meta.end_date_pending) delete (newMeta as any).end_date_pending;
+    // p131 T-3 C3 step 3: ao receber dado real (pmi_vep), remover flag placeholder
+    if (source === 'pmi_vep' && meta.end_date_placeholder) {
+      delete (newMeta as any).end_date_placeholder;
+      delete (newMeta as any).end_date_placeholder_set_at;
+      delete (newMeta as any).end_date_placeholder_source;
+      delete (newMeta as any).end_date_placeholder_basis_cert_id;
+    }
 
     const updatePayload: Record<string, any> = { metadata: newMeta };
     if (endDate && source === 'pmi_vep') {
