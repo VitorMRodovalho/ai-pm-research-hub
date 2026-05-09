@@ -122,24 +122,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div id="interaction-section" class="hidden mt-5 pt-4 border-t border-[var(--border-subtle)]">
           <!-- Log Interaction Form -->
           <details class="mb-4">
-            <summary class="text-xs font-bold text-[var(--text-secondary)] cursor-pointer mb-2">+ Registar interacao</summary>
+            <summary class="text-xs font-bold text-[var(--text-secondary)] cursor-pointer mb-2">{t('admin.partnerships.logInteraction', lang)}</summary>
             <div class="space-y-2 mt-2 p-3 rounded-lg bg-[var(--surface-section-cool)]">
               <div class="grid grid-cols-2 gap-2">
                 <select id="ix-type" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                   <option value="linkedin">LinkedIn</option>
-                  <option value="call">Ligacao</option>
-                  <option value="meeting">Reuniao</option>
-                  <option value="note">Nota</option>
+                  <option value="call">{t('admin.partnerships.callType', lang)}</option>
+                  <option value="meeting">{t('admin.partnerships.meetingType', lang)}</option>
+                  <option value="note">{t('admin.partnerships.noteType', lang)}</option>
                 </select>
                 <input id="ix-followup" type="date" placeholder="Follow-up" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
               </div>
-              <input id="ix-summary" type="text" placeholder="Resumo da interacao..." class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
-              <input id="ix-outcome" type="text" placeholder="Resultado (opcional)" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
-              <input id="ix-next" type="text" placeholder="Proximo passo (opcional)" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <input id="ix-summary" type="text" placeholder={t('admin.partnerships.summaryPlaceholder', lang)} class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <input id="ix-outcome" type="text" placeholder={t('admin.partnerships.outcomePlaceholder', lang)} class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <input id="ix-next" type="text" placeholder={t('admin.partnerships.nextActionPlaceholder', lang)} class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
               <button id="btn-add-interaction" class="px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">
-                + Registar
+                {t('admin.partnerships.logBtn', lang)}
               </button>
             </div>
           </details>
@@ -172,6 +172,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
   <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
   <span id="ai18n-lod" class="hidden">{t('common.loading', lang)}</span>
+  <span id="ai18n-p-edit" class="hidden">{t('admin.partnerships.editPartner', lang)}</span>
+  <span id="ai18n-p-new" class="hidden">{t('admin.partnerships.newPartner', lang)}</span>
+  <span id="ai18n-p-outcome" class="hidden">{t('admin.partnerships.outcomeLabel', lang)}</span>
+  <span id="ai18n-p-summary-req" class="hidden">{t('admin.partnerships.summaryRequired', lang)}</span>
+  <span id="ai18n-p-ix-logged" class="hidden">{t('admin.partnerships.interactionLogged', lang)}</span>
+  <span id="ai18n-p-load-fail" class="hidden">{t('admin.partnerships.loadFailed', lang)}</span>
+  <span id="ai18n-p-fill-req" class="hidden">{t('admin.partnerships.fillRequired', lang)}</span>
+  <span id="ai18n-p-saved" class="hidden">{t('admin.partnerships.saved', lang)}</span>
+  <span id="ai18n-p-del-confirm" class="hidden">{t('admin.partnerships.deleteConfirm', lang)}</span>
+  <span id="ai18n-p-deleted" class="hidden">{t('admin.partnerships.deleted', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -262,7 +272,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     (document.getElementById('modal-contact-name') as HTMLInputElement).value = partner?.contact_name || '';
     (document.getElementById('modal-contact-email') as HTMLInputElement).value = partner?.contact_email || '';
 
-    if (title) title.textContent = partner ? 'Editar Parceria' : 'Nova Parceria';
+    if (title) title.textContent = partner
+      ? (document.getElementById('ai18n-p-edit')?.textContent || 'Editar Parceria')
+      : (document.getElementById('ai18n-p-new')?.textContent || 'Nova Parceria');
     if (deleteBtn) {
       if (partner) deleteBtn.classList.remove('hidden');
       else deleteBtn.classList.add('hidden');
@@ -316,7 +328,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             ${ix.actor_name ? `<span class="text-[var(--text-secondary)] font-semibold text-[10px]">${ix.actor_name}</span>` : ''}
           </div>
           <p class="text-[var(--text-primary)] font-medium">${ix.summary}</p>
-          ${ix.outcome ? `<p class="text-[var(--text-secondary)] text-[10px] mt-0.5">Resultado: ${ix.outcome}</p>` : ''}
+          ${ix.outcome ? `<p class="text-[var(--text-secondary)] text-[10px] mt-0.5">${document.getElementById('ai18n-p-outcome')?.textContent || 'Resultado:'} ${ix.outcome}</p>` : ''}
           ${ix.next_action ? `<p class="text-blue-600 text-[10px] mt-0.5">→ ${ix.next_action}</p>` : ''}
           ${ix.follow_up_date ? `<p class="text-amber-600 text-[10px] mt-0.5">📅 Follow-up: ${new Date(ix.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>` : ''}
         </div>
@@ -335,7 +347,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const followUp = (document.getElementById('ix-followup') as HTMLInputElement)?.value || null;
 
     if (!summary) {
-      (window as any).toast?.('Resumo obrigatorio.', 'error');
+      (window as any).toast?.(document.getElementById('ai18n-p-summary-req')?.textContent || 'Resumo obrigatório.', 'error');
       return;
     }
 
@@ -354,7 +366,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return;
     }
 
-    (window as any).toast?.('Interacao registada!', 'success');
+    (window as any).toast?.(document.getElementById('ai18n-p-ix-logged')?.textContent || 'Interação registrada!', 'success');
     // Clear form
     (document.getElementById('ix-summary') as HTMLInputElement).value = '';
     (document.getElementById('ix-outcome') as HTMLInputElement).value = '';
@@ -371,7 +383,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   async function loadPartners(sb: any) {
     const { data, error } = await sb.from('partner_entities').select('*').order('partnership_date', { ascending: false });
     if (error) {
-      (window as any).toast?.('Falha ao carregar parcerias.', 'error');
+      (window as any).toast?.(document.getElementById('ai18n-p-load-fail')?.textContent || 'Falha ao carregar parcerias.', 'error');
       return;
     }
     allPartners = data || [];
@@ -389,7 +401,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const contactEmail = (document.getElementById('modal-contact-email') as HTMLInputElement)?.value?.trim() || null;
 
     if (!name || !entityType || !date) {
-      (window as any).toast?.('Preencha nome, tipo e data.', 'error');
+      (window as any).toast?.(document.getElementById('ai18n-p-fill-req')?.textContent || 'Preencha nome, tipo e data.', 'error');
       return;
     }
 
@@ -411,13 +423,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
 
     closeModal();
-    (window as any).toast?.('Parceria salva!', 'success');
+    (window as any).toast?.(document.getElementById('ai18n-p-saved')?.textContent || 'Parceria salva!', 'success');
     await loadPartners(sb);
   }
 
   async function deletePartner(sb: any) {
     const id = (document.getElementById('modal-partner-id') as HTMLInputElement)?.value;
-    if (!id || !confirm('Excluir esta parceria?')) return;
+    if (!id || !confirm(document.getElementById('ai18n-p-del-confirm')?.textContent || 'Excluir esta parceria?')) return;
 
     const { data, error } = await sb.rpc('admin_manage_partner_entity', {
       p_action: 'delete',
@@ -430,7 +442,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
 
     closeModal();
-    (window as any).toast?.('Parceria excluída.', 'success');
+    (window as any).toast?.(document.getElementById('ai18n-p-deleted')?.textContent || 'Parceria excluída.', 'success');
     await loadPartners(sb);
   }
 
