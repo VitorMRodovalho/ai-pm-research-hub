@@ -111,6 +111,8 @@ export interface VepQuestionResponse {
 
 // =====================================================================
 // Domain — Núcleo selection_applications shape (subset usado pelo mapper)
+// p126 E2: extended com 22 Phase B fields per ADR-0076 Princípio 1 + Migration 1
+// (20260518000000_p125_e1_selection_applications_pmi_3d_columns.sql)
 // =====================================================================
 
 export interface SelectionApplicationUpsert {
@@ -140,6 +142,78 @@ export interface SelectionApplicationUpsert {
   status: string;
   imported_at: string;
   organization_id: string;
+
+  // ─── p126 E2 Phase B fields (ADR-0076 Princípio 1) ─────────────────────────
+  // Geographic (Phase B Community)
+  applicant_city?: string | null;
+  profile_location?: string | null;     // raw "Cidade, Estado, País"
+  profile_state?: string | null;
+  profile_city?: string | null;
+  profile_country?: string | null;
+
+  // Multi-chapter snapshot (Decision 2 hybrid)
+  pmi_memberships?: Array<{ chapterName: string; expiryDate: string }> | null;
+
+  // Phase B professional fields
+  profile_industry?: string | null;
+  profile_company?: string | null;
+  profile_designation?: string | null;
+  profile_certifications?: string | null;
+  profile_volunteer_interest?: string | null;
+  profile_specialties?: string | null;
+  profile_linkedin_url?: string | null;
+
+  // Phase B free-text bio (Decision 3 — store only, NOT in LLM Cycle 3)
+  profile_about_me?: string | null;
+
+  // Service history denormalized (snapshot-only, NOT cache — Decision S5)
+  service_history_count?: number | null;
+  service_history_chapters?: string | null;
+  service_first_start_date?: string | null;
+  service_latest_end_date?: string | null;
+
+  // Ternary: true=open / false=not / NULL=unknown (Decision P3 — NUNCA em LLM)
+  is_open_to_volunteer?: boolean | null;
+
+  // Decision 5 — VEP-only treatment for profilePrivate users
+  community_profile_private?: boolean;
+
+  // Snapshot semantics
+  pmi_data_fetched_at?: string | null;
+
+  // Consent audit trail (Decision 4 — Cycle 3 freeze)
+  consent_version?: string | null;
+}
+
+// =====================================================================
+// p126 E2 — pmi_chapter_memberships (canonical 1:N) shape per ADR-0076
+// (Migration 2: 20260518010000_p125_e1_pmi_chapter_memberships.sql)
+// Source of truth for E3 cron compliance D-60/D-30/D-7 queries.
+// =====================================================================
+
+export interface PmiChapterMembershipUpsert {
+  person_id: string;             // FK to persons.id
+  chapter_name: string;          // NOT normalized to chapter_registry FK (per data-architect)
+  chapter_id_pmi?: number | null; // optional PMI numeric ID
+  expiry_date: string;           // YYYY-MM-DD; required
+  source: 'pmi_community' | 'pmi_vep' | 'manual';
+  captured_at: string;           // ISO timestamp
+}
+
+// =====================================================================
+// p126 E2 — selection_application_service_history (1:N HISTÓRICA) shape
+// (Migration 3: 20260518020000_p125_e1_service_history_table.sql)
+// Append-only at submission. AI triage signal V2 Cycle 4+.
+// =====================================================================
+
+export interface ServiceHistoryInsert {
+  application_id: string;
+  chapter_name: string;
+  role_name?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  source: 'pmi_community' | 'pmi_vep' | 'manual';
+  captured_at: string;
 }
 
 // =====================================================================
@@ -207,8 +281,51 @@ export interface ScriptApplication {
   serviceStartDateUTC?: string;
   serviceEndDateUTC?: string;
   specialInterest?: string;
+
+  // ─── p126 E2 Phase B fields (PMI Community profile scrape) ────────────────
+  // All optional. profilePrivate=true → all profile* fields NULL/absent (Decision 5).
+  // Camelcase here matches script output; mapper converts to snake_case for DB.
+  profileLocation?: string | null;       // raw "Cidade, Estado, País"
+  profileState?: string | null;
+  profileCity?: string | null;
+  profileCountry?: string | null;
+  profileMembershipChapters?: Array<{ chapterName: string; expiryDate: string }> | null;
+  profileIndustry?: string | null;
+  profileCompany?: string | null;
+  profileDesignation?: string | null;
+  profileCertifications?: string | null;
+  profileVolunteerInterest?: string | null;
+  profileSpecialties?: string | null;
+  profileLinkedinUrl?: string | null;
+  profileAboutMe?: string | null;        // free-text bio — Decision 3: store but EXCLUDED from LLM
+  serviceHistoryCount?: number | null;
+  serviceHistoryChapters?: string | null;
+  serviceFirstStartDate?: string | null;
+  serviceLatestEndDate?: string | null;
+  isOpenToVolunteer?: boolean | null;    // ternary — security-engineer R7
+  profilePrivate?: boolean;              // true if HTTP 400 from Community API (Decision 5)
+  pmiDataFetchedAt?: string | null;      // ISO timestamp Phase B fetch
+  // Wave 3 synth fix (3-agent convergent): allow script to override consent_version
+  // for Cycle 4+ payloads (`termo-v3-${cycle_code}`). Mapper falls back to default if absent.
+  consentVersion?: string | null;
+
   // Allow other fields from script
   [key: string]: any;
+}
+
+// =====================================================================
+// p126 E2 — Service history row from script payload
+// One row per historical PMI volunteer role. Sent by extract_pmi_volunteer.js
+// in the new payload.serviceHistory[] array.
+// =====================================================================
+
+export interface ScriptServiceHistoryRow {
+  applicationId: number | string;        // FK to current application
+  applicantId?: number | string;
+  chapterName: string;
+  roleName?: string | null;
+  startDate?: string | null;             // YYYY-MM-DD
+  endDate?: string | null;
 }
 
 export interface ScriptQuestionResponse {
@@ -236,6 +353,8 @@ export interface ScriptIngestPayload {
   opportunities?: ScriptOpportunity[];
   applications: ScriptApplication[];
   questionResponses?: ScriptQuestionResponse[];
+  // p126 E2: serviceHistory rows (1:N, separated for clarity)
+  serviceHistory?: ScriptServiceHistoryRow[];
 }
 
 export interface IngestSummary {
@@ -251,4 +370,10 @@ export interface IngestSummary {
   welcomes_skipped_non_submitted: number;    // _bucket != 'submitted' OR statusId != 2 (qualified leaders + rejected)
   errors: Array<{ scope: string; ref?: string; error: string }>;
   pmi_token_expiring_soon?: boolean;
+
+  // p126 E2 Phase B metrics
+  phase_b_processed?: number;                // applications with Phase B data
+  phase_b_skipped_private?: number;          // Decision 5 — profilePrivate=true
+  pmi_chapter_memberships_upserted?: number;
+  service_history_inserted?: number;
 }
