@@ -117,6 +117,36 @@ interface AppRow {
   resume_url: string | null;
   consent_ai_analysis_at: string | null;
   consent_ai_analysis_revoked_at: string | null;
+  // p126 E3: Decision 4 cycle freeze logic — read cycle_id for prompt selection
+  cycle_id: string;
+}
+
+// ─── p126 E3 Decision 4 cycle freeze: prompt template selection ─────────────
+// Cycle 3 + b2 use V1 (frozen). Cycle 4+ V2 deploy preconditions unmet today;
+// V2 will additionally include: profile_industry, profile_designation,
+// profile_chapter_list, profile_service_history_count.
+// Decision 3: profile_about_me NUNCA em prompt (Cycle 3 + Cycle 4 V2 initial)
+// Decision P3: is_open_to_volunteer NUNCA em prompt
+//
+// IMPORTANT — NEVER add to prompt without explicit gate (LGPD Art. 8 §6 audit):
+// - profile_about_me (free-text bio, Art. 11 risk)
+// - is_open_to_volunteer (78T/0F/19U ternary blacklist-by-silence vector)
+const CYCLES_FROZEN_V1 = new Set(['cycle3-2026', 'cycle3-2026-b2']);
+
+async function resolvePromptVersion(sb: any, cycleId: string): Promise<string> {
+  // Resolve cycle_code from cycle_id
+  const { data: cycle } = await sb
+    .from('selection_cycles')
+    .select('cycle_code')
+    .eq('id', cycleId)
+    .single();
+
+  const cycleCode = cycle?.cycle_code as string | undefined;
+  if (cycleCode && CYCLES_FROZEN_V1.has(cycleCode)) return 'v1-cycle3';
+  // Cycle 4+ V2 deploy gate: requires explicit launch memo (Decision S12).
+  // Until then, default to v1 even for unrecognized cycles (fail-safe).
+  // When V2 deploys, this branch + buildUserPrompt should be updated.
+  return 'v1-cycle3';
 }
 
 // p117 ADR-0075 lazy fallback: when triage runs and CV text is missing but
@@ -302,8 +332,10 @@ Deno.serve(async (req) => {
     : "admin_request";
 
   try {
+    // p126 E3 Decision 4: cycle_id added for cycle freeze logic.
+    // profile_about_me + is_open_to_volunteer intentionally OMITTED — Decision 3 + P3.
     const SELECT_COLS =
-      "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, resume_url, consent_ai_analysis_at, consent_ai_analysis_revoked_at";
+      "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, resume_url, consent_ai_analysis_at, consent_ai_analysis_revoked_at, cycle_id";
 
     let { data: app, error: appErr } = await sb
       .from("selection_applications")
@@ -339,6 +371,9 @@ Deno.serve(async (req) => {
     const promptCombined = TRIAGE_RUBRIC + "\n---USER---\n" + userPrompt;
     const promptHash = await sha256Hex(promptCombined);
 
+    // p126 E3 Decision 4: cycle freeze logic — V1 prompt for Cycle 3 + b2; V2 future
+    const promptVersion = await resolvePromptVersion(sb, app.cycle_id);
+
     const { data: logRow, error: logErr } = await sb
       .from("ai_processing_log")
       .insert({
@@ -349,6 +384,7 @@ Deno.serve(async (req) => {
         triggered_by: triggeredBy,
         caller_member_id: callerMemberId,
         prompt_hash: promptHash,
+        prompt_version: promptVersion,  // p126 E3 Decision 4 audit trail
         status: "running",
       })
       .select("id")
