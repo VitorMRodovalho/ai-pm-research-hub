@@ -8,6 +8,9 @@
  * Auth: manage_member (admin); pipeline é read-all authenticated.
  */
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getLangFromURL, type Lang } from '../../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 <AdminLayout
   title="Governança — Documentos"

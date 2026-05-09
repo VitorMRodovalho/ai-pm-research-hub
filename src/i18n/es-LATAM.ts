@@ -2647,6 +2647,10 @@ const esLATAM: Record<string, string> = {
   'nav.adminCrossTribes': 'Comparativo de Tribus',
   'nav.about': 'Acerca de',
   'wk.sectionAlerts': 'Alertas Operacionales',
+  'wk.alertsHigh': 'altos',
+  'wk.alertsMedium': 'medios',
+  'wk.alertsLow': 'bajos',
+  'wk.alertsViewAll': 'Ver todo',
 
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Dashboard de Tribu',

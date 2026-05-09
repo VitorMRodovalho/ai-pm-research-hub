@@ -2647,6 +2647,10 @@ const enUS: Record<string, string> = {
   'nav.adminCrossTribes': 'Tribe Comparison',
   'nav.about': 'About',
   'wk.sectionAlerts': 'Operational Alerts',
+  'wk.alertsHigh': 'high',
+  'wk.alertsMedium': 'medium',
+  'wk.alertsLow': 'low',
+  'wk.alertsViewAll': 'View all',
 
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Tribe Dashboard',
