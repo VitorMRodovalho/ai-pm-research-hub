@@ -10,7 +10,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lang);
 ---
 
-<AdminLayout title={t('selection.title', lang)} breadcrumbs={[{label:'Pessoas'},{label: t('selection.title', lang)}]}>
+<AdminLayout title={t('selection.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('selection.title', lang)}]}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1200px] mx-auto px-4 pb-8">
 

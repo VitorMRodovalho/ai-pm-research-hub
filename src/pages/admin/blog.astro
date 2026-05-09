@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
-<AdminLayout title={t('blog.adminTitle', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Blog'}]}>
+<AdminLayout title={t('blog.adminTitle', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.breadcrumb.blog', lang)}]}>
   <div class="max-w-[1200px] mx-auto px-4 py-8">
 
     <div id="blog-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
@@ -197,7 +197,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     document.getElementById('post-save')?.addEventListener('click', async () => {
       saveLangFields();
       const slug = (document.getElementById('post-slug') as HTMLInputElement).value.trim();
-      if (!slug) { (window as any).toast?.('Slug obrigatório', 'error'); return; }
+      if (!slug) { (window as any).toast?.(t('admin.blog.slugRequired', lang), 'error'); return; }
 
       const status = (document.getElementById('post-status') as HTMLSelectElement).value;
       const record: any = {
@@ -229,7 +229,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
       document.getElementById('post-modal')?.classList.add('hidden');
       await loadPosts(sb);
-      (window as any).toast?.('Post salvo', 'success');
+      (window as any).toast?.(t('admin.blog.postSaved', lang), 'success');
     });
   }
 
@@ -270,8 +270,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             </div>
           </div>
           <div class="flex gap-2">
-            <button data-edit-post="${p.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Editar</button>
-            ${p.status === 'published' ? `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/blog/${p.slug}" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Ver</a>` : ''}
+            <button data-edit-post="${p.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">${t('admin.blog.editAction', lang)}</button>
+            ${p.status === 'published' ? `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/blog/${p.slug}" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">${t('admin.blog.viewAction', lang)}</a>` : ''}
           </div>
         </div>
       </div>`;

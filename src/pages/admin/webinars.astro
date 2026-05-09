@@ -6,7 +6,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
 ---
 
-<AdminLayout title={t('nav.adminWebinars', lang)} activePage="webinars" breadcrumbs={[{label:'Conteúdo'},{label:'Webinars'}]}>
+<AdminLayout title={t('nav.adminWebinars', lang)} activePage="webinars" breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('nav.adminWebinars', lang)}]}>
   <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-[var(--text-muted)]">
     {t('admin.loadingPanel', lang)}
   </div>

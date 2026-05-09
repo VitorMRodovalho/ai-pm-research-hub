@@ -4,7 +4,7 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<AdminLayout title={t('cycleReport.meta', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Relatório do Ciclo'}]}>
+<AdminLayout title={t('cycleReport.meta', lang)} breadcrumbs={[{label: t('admin.breadcrumb.reports', lang)},{label: t('cycleReport.meta', lang)}]}>
 
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div id="cr-loading" class="text-center py-10 text-[var(--text-muted)]">{t('cycleReport.loading', lang)}</div>

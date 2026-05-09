@@ -9,7 +9,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
 ---
 
-<AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Comunicacao'}]}>
+<AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.breadcrumb.communication', lang)}]}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
     <div id="commsops-loading" class="text-[var(--text-muted)] text-sm">{t('admin.loadCommsOps', lang)}</div>

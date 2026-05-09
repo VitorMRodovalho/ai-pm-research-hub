@@ -5,7 +5,7 @@ import PartnerPipelineIsland from '../../components/islands/PartnerPipelineIslan
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<AdminLayout title={t('partnerships.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Parcerias'}]}>
+<AdminLayout title={t('partnerships.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('partnerships.title', lang)}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
     <div id="partnerships-loading" class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</div>
     <div id="partnerships-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
