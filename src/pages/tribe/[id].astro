@@ -402,6 +402,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // p124 phase 5: derive 2-letter lang code from window.__LANG_PREFIX so the
+  // inline script can read jsonb i18n fields (events.title_i18n,
+  // tribe_deliverables.title_i18n, etc.) populated server-side.
+  function _langCode(): 'pt' | 'en' | 'es' {
+    const p = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+    return p === '/en' ? 'en' : p === '/es' ? 'es' : 'pt';
+  }
+  function _localizedTitle(row: any): string {
+    const code = _langCode();
+    return row?.title_i18n?.[code] || row?.title || '';
+  }
+  function _localizedField(row: any, field: 'title' | 'description'): string {
+    const code = _langCode();
+    return row?.[`${field}_i18n`]?.[code] || row?.[field] || '';
+  }
+
   let sb: any = null;
   let currentMember: any = null;
   let membersMap: Map<string, any> = new Map();
@@ -692,7 +708,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           return `<div class="flex items-start gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-0">
             <span class="text-base mt-0.5">${typeIcon(e.type)}</span>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
+              <div class="text-sm font-semibold text-[var(--text-primary)]">${escapeHtml(_localizedTitle(e))}</div>
               <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
                 <span>📅 ${d}</span>
                 ${dur ? `<span>⏱️ ${dur}</span>` : ''}
@@ -737,13 +753,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           // Edit buttons (permission-gated)
           const showEditBtn = canEditMinutes(e.tribe_id);
           const editMinutesBtn = showEditBtn
-            ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(e.title)}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${e.minutes_text ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
+            ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(_localizedTitle(e))}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${e.minutes_text ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
             : '';
           return `<div class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
             <div class="flex items-start gap-3">
               <span class="text-base mt-0.5">${typeIcon(e.type)}</span>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
+                <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(_localizedTitle(e))}</div>
                 <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
                   <span>${d}</span>
                   ${recLabel}
@@ -1094,8 +1110,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           <span class="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">${I18N.dueDate}: ${escapeHtml(dueDateStr)}</span>
           <span class="${sc.bg} ${sc.text} px-2.5 py-0.5 rounded-full text-[11px] font-bold">${escapeHtml(statusLabel)}</span>
         </div>
-        <h3 class="text-[15px] font-bold text-navy leading-snug mb-1">${escapeHtml(d.title)}</h3>
-        ${d.description ? `<p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed mb-2">${escapeHtml(d.description.length > 140 ? d.description.slice(0, 137) + '…' : d.description)}</p>` : ''}
+        <h3 class="text-[15px] font-bold text-navy leading-snug mb-1">${escapeHtml(_localizedField(d, 'title'))}</h3>
+        ${(() => { const desc = _localizedField(d, 'description'); return desc ? `<p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed mb-2">${escapeHtml(desc.length > 140 ? desc.slice(0, 137) + '…' : desc)}</p>` : ''; })()}
         <div class="mt-auto pt-3 text-[12px] text-[var(--text-muted)]">
           <span class="font-semibold">${I18N.assignee}:</span> ${assignee}
         </div>
