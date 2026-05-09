@@ -166,7 +166,7 @@ async function run() {
     await page.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     const curDenied = page.locator('#cur-denied');
     await curDenied.waitFor({ state: 'visible' });
-    assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e lideres/);
+    assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e l[íi]deres/);
     assert.equal(await page.locator('#cur-board').isVisible(), false);
 
     await page.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
