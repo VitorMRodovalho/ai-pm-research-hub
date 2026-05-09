@@ -28,6 +28,11 @@ const WK = {
   checkinStartsSoon: t('wk.checkinStartsSoon', lang),
   checkinDone: t('wk.checkinDone', lang),
   sectionMyTribe: t('wk.sectionMyTribe', lang),
+  sectionAlerts: t('wk.sectionAlerts', lang),
+  alertsHigh: t('wk.alertsHigh', lang),
+  alertsMedium: t('wk.alertsMedium', lang),
+  alertsLow: t('wk.alertsLow', lang),
+  alertsViewAll: t('wk.alertsViewAll', lang),
   sectionSubprojects: t('wk.sectionSubprojects', lang),
   myPublications: t('wk.myPublications', lang),
   sectionProduction: t('wk.sectionProduction', lang),
@@ -506,11 +511,11 @@ const WK = {
               $alertsCard.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex gap-2">
-                    ${sev.high > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">🔴 ${sev.high} altos</span>` : ''}
-                    ${sev.medium > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠️ ${sev.medium} médios</span>` : ''}
-                    ${sev.low > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">ℹ️ ${sev.low} baixos</span>` : ''}
+                    ${sev.high > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">🔴 ${sev.high} ${i18n.alertsHigh}</span>` : ''}
+                    ${sev.medium > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠️ ${sev.medium} ${i18n.alertsMedium}</span>` : ''}
+                    ${sev.low > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">ℹ️ ${sev.low} ${i18n.alertsLow}</span>` : ''}
                   </div>
-                  <a href="${LP}/admin/tribes" class="text-xs font-bold text-teal no-underline hover:underline">Ver tudo &rarr;</a>
+                  <a href="${LP}/admin/tribes" class="text-xs font-bold text-teal no-underline hover:underline">${i18n.alertsViewAll} &rarr;</a>
                 </div>
                 <div class="space-y-1.5">
                   ${topAlerts.map((a: any) => `<div class="flex items-start gap-2 text-xs p-2 rounded-lg bg-[var(--surface-hover)]"><span>${sevIcons[a.severity] || ''}</span><span class="text-[var(--text-primary)]">${escHtml(a.message)}</span></div>`).join('')}

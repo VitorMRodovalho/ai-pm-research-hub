@@ -2652,6 +2652,10 @@ const ptBR: Record<string, string> = {
   'nav.adminCrossTribes': 'Comparativo de Tribos',
   'nav.about': 'Sobre',
   'wk.sectionAlerts': 'Alertas Operacionais',
+  'wk.alertsHigh': 'altos',
+  'wk.alertsMedium': 'médios',
+  'wk.alertsLow': 'baixos',
+  'wk.alertsViewAll': 'Ver tudo',
 
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Dashboard de Tribo',
