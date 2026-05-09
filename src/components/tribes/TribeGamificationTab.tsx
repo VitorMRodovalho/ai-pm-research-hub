@@ -116,7 +116,10 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
       { name: t('comp.gamification.badges', 'Badges'), value: totals.badges },
       { name: t('comp.gamification.learning', 'Aprendizado'), value: totals.learning },
     ].filter(d => d.value > 0);
-  }, [data?.members]);
+    // p124: include t in deps so the memo recomputes when usePageI18n's
+    // dict updates after the post-mount useEffect. Without this, the pie
+    // chart slice labels stay on the JS fallback (PT) for the whole session.
+  }, [data?.members, t]);
 
   if (loading) {
     return (
