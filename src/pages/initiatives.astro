@@ -46,6 +46,19 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const _i18nKind = (slug: string, fallback: string): string =>
     _i18n(`ai18n-i-k-${slug}`, fallback);
 
+  // Derive 2-letter lang code from the prefix the layout sets on window.
+  // '' → pt, '/en' → en, '/es' → es. Used to read jsonb i18n columns
+  // (initiatives.metadata.name_i18n / description_i18n etc.).
+  const _langCode = (): 'pt' | 'en' | 'es' => {
+    const p = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+    return p === '/en' ? 'en' : p === '/es' ? 'es' : 'pt';
+  };
+  const _localized = (i: any, field: 'name' | 'description', fallback: string): string => {
+    const code = _langCode();
+    const i18n = i?.metadata?.[`${field}_i18n`];
+    return i18n?.[code] || fallback;
+  };
+
   function escapeHtml(s: string): string {
     return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -144,17 +157,20 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             const statusBadge = i.status !== 'active'
               ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-semibold ml-1">${i.status}</span>`
               : '';
+            // Locale-aware title + description (jsonb i18n in metadata, falls back to canonical PT title)
+            const titleStr = _localized(i, 'name', i.title);
+            const descStr = _localized(i, 'description', i.description || '');
             return `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/initiative/${i.id}" class="block no-underline bg-[var(--surface-card)] border ${isMine ? 'border-teal-300 ring-1 ring-teal-200' : 'border-[var(--border-default)]'} rounded-xl p-4 hover:shadow-md transition-all group">
               <div class="flex items-start gap-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0" style="background:${color}">${icon}</div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-bold text-[var(--text-primary)] group-hover:text-navy truncate">
-                    ${escapeHtml(i.title)}${statusBadge}
+                    ${escapeHtml(titleStr)}${statusBadge}
                   </div>
                   <div class="text-xs text-[var(--text-muted)] mt-0.5">
                     👥 ${membersStr}${isMine ? ` · <span class="text-teal-600 font-semibold">${mineInlineStr}</span>` : ''}
                   </div>
-                  ${i.description ? `<p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(i.description)}</p>` : ''}
+                  ${descStr ? `<p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(descStr)}</p>` : ''}
                 </div>
               </div>
             </a>`;

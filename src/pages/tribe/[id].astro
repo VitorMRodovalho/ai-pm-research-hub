@@ -468,8 +468,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       ? ` <button data-action="open-meeting-schedule-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-navy transition-all cursor-pointer" title="${escapeHtml(I18N.editMeetingSchedule || 'Editar horário')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>`
       : '';
 
-    const tribeName = buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
-    const quadrantLabel = _tribe?.quadrant_name || I18N.quadrantLabel || '';
+    // p124: prefer trilingual labels stored in tribes.name_i18n / quadrant_name_i18n
+    // (jsonb {pt,en,es}) over the canonical PT-only `name` / `quadrant_name` columns.
+    // Falls back to the canonical label, then to buildTribeLabel default.
+    const _langCode: 'pt' | 'en' | 'es' = (() => {
+      const p = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+      return p === '/en' ? 'en' : p === '/es' ? 'es' : 'pt';
+    })();
+    const localizedName = _tribe?.name_i18n?.[_langCode] || _tribe?.name || null;
+    const tribeName = localizedName
+      ? String(localizedName).trim()
+      : buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
+    const quadrantLabel = _tribe?.quadrant_name_i18n?.[_langCode] || _tribe?.quadrant_name || I18N.quadrantLabel || '';
     const tribeDescription = _tribe?.notes || I18N.tribeDesc || '—';
     const memberCount = membersMap.size;
     const linkedIn = leader?.linkedin_url || '';
