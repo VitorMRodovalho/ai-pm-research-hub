@@ -4302,6 +4302,11 @@ const esLATAM: Record<string, string> = {
   'admin.partnerships.deleteConfirm': '¿Eliminar esta asociación?',
   'admin.partnerships.deleted': 'Asociación eliminada.',
 
+  'admin.campaigns.funnelSent': 'Enviados',
+  'admin.campaigns.funnelDelivered': 'Entregados',
+  'admin.campaigns.funnelOpened': 'Abrieron',
+  'admin.campaigns.funnelClicked': 'Hicieron clic',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──

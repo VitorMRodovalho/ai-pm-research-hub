@@ -4307,6 +4307,11 @@ const ptBR: Record<string, string> = {
   'admin.partnerships.deleteConfirm': 'Excluir esta parceria?',
   'admin.partnerships.deleted': 'Parceria excluída.',
 
+  'admin.campaigns.funnelSent': 'Enviados',
+  'admin.campaigns.funnelDelivered': 'Entregues',
+  'admin.campaigns.funnelOpened': 'Abriram',
+  'admin.campaigns.funnelClicked': 'Clicaram',
+
   // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
 
   // ── Member Detail (admin) ──
