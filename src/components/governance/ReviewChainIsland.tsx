@@ -291,6 +291,13 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
               ⬇ PDF oficial
             </a>
             <a
+              href={`/admin/governance/documents/${detail.chain_id}/export-docx`}
+              className="rounded-lg bg-white text-[var(--text-secondary)] text-[11px] font-semibold px-2.5 py-1 border border-[var(--border-default)] hover:bg-[var(--surface-hover)]"
+              title="Gerar DOCX (Word) do conteúdo para envio offline a curadores externos"
+            >
+              ⬇ DOCX (Word)
+            </a>
+            <a
               href={`/admin/governance/documents/${detail.chain_id}/audit-report`}
               className="rounded-lg bg-white text-amber-800 text-[11px] font-semibold px-2.5 py-1 border border-amber-300 hover:bg-amber-50"
               title="Relatório de auditoria para Conselho Fiscal (evidence trail completo)"
