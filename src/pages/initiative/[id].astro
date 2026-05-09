@@ -131,6 +131,17 @@ const INIT_I18N = {
       .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // p124 phase 5: locale-aware title/description helpers (events.title_i18n,
+  // tribe_deliverables.title_i18n, description_i18n).
+  function _langCode(): 'pt' | 'en' | 'es' {
+    const p = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+    return p === '/en' ? 'en' : p === '/es' ? 'es' : 'pt';
+  }
+  function _localizedField(row: any, field: 'title' | 'description'): string {
+    const code = _langCode();
+    return row?.[`${field}_i18n`]?.[code] || row?.[field] || '';
+  }
+
   const KIND_ICONS: Record<string, string> = {
     committee: '👥', workgroup: '💼', study_group: '📖', book_club: '📚',
     congress: '🎤', workshop: '🔧', research_tribe: '🔬',
@@ -382,7 +393,7 @@ const INIT_I18N = {
               return `<div class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
                 <div class="flex items-center gap-3">
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(_localizedField(e, 'title'))}</div>
                     <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
                       <span>${d}${timeStr ? ' ' + timeStr : ''}</span>
                       ${e.duration_minutes ? `<span>⏱️ ${e.duration_minutes}min</span>` : ''}
@@ -429,12 +440,12 @@ const INIT_I18N = {
                 : '';
               // Edit button (permission-gated)
               const editMinutesBtn = canManage
-                ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(e.title)}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${e.has_minutes ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
+                ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(_localizedField(e, 'title'))}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${e.has_minutes ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
                 : '';
               return `<div class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
                 <div class="flex items-start gap-3">
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(_localizedField(e, 'title'))}</div>
                     <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
                       <span>${d}</span>
                       ${recLabel}
@@ -575,8 +586,8 @@ const INIT_I18N = {
           return `<div class="flex items-center gap-3 px-4 py-3">
             <span class="w-2 h-2 rounded-full flex-shrink-0 ${sc.bg.replace('bg-', 'bg-').replace('-50', '-400').replace('-100', '-400')}"></span>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(d.title)}</div>
-              ${d.description ? `<div class="text-xs text-[var(--text-muted)] truncate">${escapeHtml(d.description)}</div>` : ''}
+              <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(_localizedField(d, 'title'))}</div>
+              ${(() => { const desc = _localizedField(d, 'description'); return desc ? `<div class="text-xs text-[var(--text-muted)] truncate">${escapeHtml(desc)}</div>` : ''; })()}
             </div>
             ${due ? `<span class="text-[10px] text-[var(--text-muted)]">📅 ${due}</span>` : ''}
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}">${sc.label}</span>
@@ -647,7 +658,7 @@ const INIT_I18N = {
     // Grid
     const headerCells = events.map((e: any) => {
       const d = new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      return `<th class="text-[10px] font-semibold text-[var(--text-muted)] px-2 py-1 text-center whitespace-nowrap" title="${escapeHtml(e.title)}">${d}</th>`;
+      return `<th class="text-[10px] font-semibold text-[var(--text-muted)] px-2 py-1 text-center whitespace-nowrap" title="${escapeHtml(_localizedField(e, 'title'))}">${d}</th>`;
     }).join('');
 
     const rows = members.map((m: any) => {

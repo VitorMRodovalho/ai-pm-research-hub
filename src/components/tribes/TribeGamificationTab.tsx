@@ -147,8 +147,15 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
     }
   };
 
-  const rankingData = (tribe_ranking || []).map(r => ({
+  // p124 phase 5: derive 2-letter lang code to pull localized tribe_name from
+  // tribe_name_i18n jsonb (added in phase 1). Falls back to canonical PT name.
+  const _langCode: 'pt' | 'en' | 'es' = (() => {
+    const p = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+    return p === '/en' ? 'en' : p === '/es' ? 'es' : 'pt';
+  })();
+  const rankingData = (tribe_ranking || []).map((r: any) => ({
     ...r,
+    tribe_name: r.tribe_name_i18n?.[_langCode] || r.tribe_name,
     fill: r.tribe_id === tribeId ? '#00799E' : '#94A3B8',
   }));
 
