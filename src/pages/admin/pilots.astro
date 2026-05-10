@@ -154,6 +154,16 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 <span id="i18n-pilots-baseline" class="hidden">{t('pilots.baseline', lang)}</span>
 <span id="i18n-pilots-target" class="hidden">{t('pilots.target', lang)}</span>
 <span id="i18n-pilots-current" class="hidden">{t('pilots.current', lang)}</span>
+<span id="i18n-pilots-timeoutMsg" class="hidden">{t('pilots.timeoutMsg', lang)}</span>
+<span id="i18n-pilots-tribePrefix" class="hidden">{t('pilots.tribePrefix', lang)}</span>
+<span id="i18n-pilots-errorSaving" class="hidden">{t('pilots.errorSaving', lang)}</span>
+<span id="i18n-pilots-errorDeleting" class="hidden">{t('pilots.errorDeleting', lang)}</span>
+<span id="i18n-pilots-errorLoading" class="hidden">{t('pilots.errorLoading', lang)}</span>
+<span id="i18n-pilots-noMetrics" class="hidden">{t('pilots.noMetrics', lang)}</span>
+<span id="i18n-pilots-viewBoard" class="hidden">{t('pilots.viewBoard', lang)}</span>
+<span id="i18n-pilots-colonHypothesis" class="hidden">{t('pilots.colonHypothesis', lang)}</span>
+<span id="i18n-pilots-colonProblem" class="hidden">{t('pilots.colonProblem', lang)}</span>
+<span id="i18n-pilots-colonScope" class="hidden">{t('pilots.colonScope', lang)}</span>
 
 <script>
   import { hasPermission } from '../../lib/permissions';
@@ -168,7 +178,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       pilotsBootRetries++;
       if (pilotsBootRetries >= 60) {
         const loading = document.getElementById('admin-pilots-loading');
-        if (loading) loading.textContent = 'Timeout — recarregue a página.';
+        if (loading) loading.textContent = document.getElementById('i18n-pilots-timeoutMsg')?.textContent || 'Timeout — recarregue a página.';
         return;
       }
       setTimeout(bootAdminPilots, 300);
@@ -206,7 +216,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       for (const t of tribes) {
         const opt = document.createElement('option');
         opt.value = String(t.id);
-        opt.textContent = t.name_i18n?.pt || t.name_i18n?.en || t.name || `Tribe ${t.id}`;
+        opt.textContent = t.name_i18n?.pt || t.name_i18n?.en || t.name || `${i('i18n-pilots-tribePrefix') || 'Tribe'} ${t.id}`;
         sel.appendChild(opt);
       }
     }
@@ -294,7 +304,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         closeModal();
         await reloadPilots();
       } catch (err: any) {
-        (window as any).toast?.(err.message || 'Error saving pilot', 'error');
+        (window as any).toast?.(err.message || i('i18n-pilots-errorSaving') || 'Error saving pilot', 'error');
       }
     });
 
@@ -314,7 +324,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         closeModal();
         await reloadPilots();
       } catch (err: any) {
-        (window as any).toast?.(err.message || 'Error deleting pilot', 'error');
+        (window as any).toast?.(err.message || i('i18n-pilots-errorDeleting') || 'Error deleting pilot', 'error');
       }
     });
 
@@ -379,7 +389,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             const currentClass = m.current != null ? 'font-bold text-emerald-700' : '';
             return `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center ${currentClass}">${current}</td></tr>`;
           }).join('')}</tbody></table>`
-          : '<p class="text-[.68rem] text-[var(--text-muted)]">Sem métricas definidas</p>';
+          : `<p class="text-[.68rem] text-[var(--text-muted)]">${i('i18n-pilots-noMetrics') || 'Sem métricas definidas'}</p>`;
 
         // Fix 3: team names
         const teamHtml = Array.isArray(p.team_names) && p.team_names.length > 0
@@ -404,12 +414,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             </div>
           </div>
           <div class="hidden border-t border-[var(--border-subtle)] px-4 py-3 space-y-3 text-[.78rem]">
-            ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">Hipótese:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
-            ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
-            ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
+            ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-colonHypothesis') || 'Hipótese'}:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
+            ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-colonProblem') || 'Problema'}:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
+            ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-colonScope') || 'Escopo'}:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
             ${teamHtml}
             <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
-            ${p.board_id ? `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
+            ${p.board_id ? `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">${i('i18n-pilots-viewBoard') || 'Ver Board →'}</a>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -485,7 +495,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       }
     } catch (err) {
       console.warn('Admin pilots error:', err);
-      loading.textContent = 'Error loading pilots';
+      loading.textContent = i('i18n-pilots-errorLoading') || 'Error loading pilots';
     }
   }
 

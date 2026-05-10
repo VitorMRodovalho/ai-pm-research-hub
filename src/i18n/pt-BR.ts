@@ -857,6 +857,17 @@ const ptBR: Record<string, string> = {
   'pilots.baseline': 'Baseline',
   'pilots.target': 'Meta',
   'pilots.current': 'Atual',
+  // ── Pilots — Ω-B+.7.b p144 (additions) ──
+  'pilots.timeoutMsg': 'Timeout — recarregue a página.',
+  'pilots.tribePrefix': 'Tribo',
+  'pilots.errorSaving': 'Erro ao salvar piloto',
+  'pilots.errorDeleting': 'Erro ao excluir piloto',
+  'pilots.errorLoading': 'Erro ao carregar pilotos',
+  'pilots.noMetrics': 'Sem métricas definidas',
+  'pilots.viewBoard': 'Ver Board →',
+  'pilots.colonHypothesis': 'Hipótese',
+  'pilots.colonProblem': 'Problema',
+  'pilots.colonScope': 'Escopo',
   // ── Governance (GC-117) ──
   'governance.title': 'Governança & Controle de Mudanças',
   'governance.manual_tab': 'Manual',
