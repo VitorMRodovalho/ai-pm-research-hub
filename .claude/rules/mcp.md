@@ -3,10 +3,10 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.64.0)
+# MCP Server Rules (nucleo-mcp v2.69.0)
 
 ## Current State
-- **283 tools + 4 prompts + 3 resources** (p117 +get_extraction_health for ADR-0075 observability; was 266 post p106 #97 W3 G4; was 217 = 141R + 76W at p77 marathon close — R/W split tracking dropped p106 since heuristic unreliable; total + canonical commit log replaces it)
+- **284 tools + 4 prompts + 3 resources** (p133 v2.69.0; was 283 post p117 +get_extraction_health for ADR-0075; was 266 post p106 #97 W3 G4; was 217 = 141R + 76W at p77 marathon close — R/W split tracking dropped p106 since heuristic unreliable; total + canonical commit log replaces it)
 - Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
