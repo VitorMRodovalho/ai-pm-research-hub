@@ -28,6 +28,10 @@ type Props = {
   chainStatus: string;
   documentHtml?: string;
   locale?: string;
+  // p148 T-13.b: notifica parent quando lista de comments muda. Permite que
+  // ReviewChainIsland derive `commentsByAnchor` para o VersionDiffViewer sem
+  // duplicar a chamada list_document_comments.
+  onCommentsChange?: (comments: Comment[]) => void;
 };
 
 type Anchor = { value: string; label: string };
@@ -82,7 +86,7 @@ function visibilityCls(v: Comment['visibility']): string {
     : 'bg-gray-100 text-gray-700 border-gray-300';
 }
 
-export default function ClauseCommentDrawer({ versionId, chainId, canComment, isSubmitter, isCurator, chainStatus, documentHtml }: Props) {
+export default function ClauseCommentDrawer({ versionId, chainId, canComment, isSubmitter, isCurator, chainStatus, documentHtml, onCommentsChange }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   // p130 fix: includeResolved default true. Bug 3 reportado por Roberto Macêdo
@@ -112,9 +116,12 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
       p_include_resolved: includeResolved,
       p_include_prior_versions: true,
     });
-    if (!error && Array.isArray(data)) setComments(data);
+    if (!error && Array.isArray(data)) {
+      setComments(data);
+      onCommentsChange?.(data);
+    }
     setLoading(false);
-  }, [getSb, versionId, includeResolved]);
+  }, [getSb, versionId, includeResolved, onCommentsChange]);
 
   useEffect(() => { load(); }, [load]);
 

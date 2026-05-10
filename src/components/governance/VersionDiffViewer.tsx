@@ -13,6 +13,14 @@
  *  - Hash cada bloco (djb2 xor). Paragrafos com hash diferente = alterados
  *    (nao marca adicoes/remocoes separadamente — UI clara com "sem match"
  *    highlighted em ambber na versao current).
+ *
+ * p148 T-13.b: comment overlay. Quando `commentsByAnchor` é fornecido (mapa
+ * normalizedAnchor → {open,resolved}), blocos contendo essas cláusulas
+ * recebem indicador roxo lateral (open) ou roxo desbotado (resolved), e o
+ * banner sumário ganha duas adições: (a) chips de "Cláusulas tocadas"
+ * passam a exibir contador 💬N quando há comments abertos; (b) nova linha
+ * "Cláusulas comentadas (não tocadas)" surfaces comentários em cláusulas
+ * que não estão no diff (lurking risks).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -23,9 +31,29 @@ type VersionPayload = {
   locked_at: string | null;
 };
 
+export type CommentCounts = { open: number; resolved: number };
+
 interface Props {
   previous: VersionPayload;
   current: VersionPayload;
+  // p148 T-13.b: keys são âncoras normalizadas (normalizeAnchor) — sem § / Art. /
+  // Cláusula prefix, lowercased, trimmed. Source of truth: ClauseCommentDrawer
+  // hoisted state via ReviewChainIsland.
+  commentsByAnchor?: Record<string, CommentCounts>;
+}
+
+// Normalize uma âncora p/ matching cross-source (extracted-from-html ↔ stored
+// em document_comments.clause_anchor). Strip prefixos comuns + lowercase + trim.
+// Mantém só o "núcleo" identificador (e.g., "§ 3.2" e "3.2" e "Art. 3.2" → "3.2").
+export function normalizeAnchor(s: string | null | undefined): string {
+  if (!s) return '';
+  return String(s)
+    .replace(/^§\s*/i, '')
+    .replace(/^(art\.?|cláusula)\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\.$/, '')
+    .trim()
+    .toLowerCase();
 }
 
 function djb2(s: string): number {
@@ -60,14 +88,34 @@ function buildHashSet(html: string): Set<number> {
   return new Set(splitBlocks(html).map(b => djb2(normalizeBlock(b))));
 }
 
-function markBlocks(html: string, otherHashes: Set<number>): string {
+// p148 T-13.b: extrai âncora (se houver) do início textual de um bloco. Espelha
+// CLAUSE_RE abaixo mas ancora em start-of-text para evitar false positives em
+// citações no meio do parágrafo.
+const BLOCK_ANCHOR_RE = /^\s*(§\s*\d+(?:\.\d+)*[a-z]?|\d+(?:\.\d+)+|\d+\.(?!\d)|Art\.?\s*\d+|Cláusula\s*[\d.]+)/i;
+
+function blockAnchor(block: string): string {
+  const text = block.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = text.match(BLOCK_ANCHOR_RE);
+  return m ? normalizeAnchor(m[1]) : '';
+}
+
+function markBlocks(
+  html: string,
+  otherHashes: Set<number>,
+  commentsByAnchor: Record<string, CommentCounts> = {},
+): string {
   const blocks = splitBlocks(html);
   return blocks.map(b => {
     const h = djb2(normalizeBlock(b));
-    if (!otherHashes.has(h) && normalizeBlock(b).length > 0) {
-      return `<div class="vdv-changed" data-hash="${h}">${b}</div>`;
-    }
-    return `<div class="vdv-unchanged" data-hash="${h}">${b}</div>`;
+    const changed = !otherHashes.has(h) && normalizeBlock(b).length > 0;
+    const anchor = blockAnchor(b);
+    const counts = anchor ? commentsByAnchor[anchor] : undefined;
+    const commentClass = counts
+      ? counts.open > 0 ? ' vdv-commented-open' : counts.resolved > 0 ? ' vdv-commented-resolved' : ''
+      : '';
+    const dataAttrs = anchor ? ` data-anchor="${anchor}"` : '';
+    const baseClass = changed ? 'vdv-changed' : 'vdv-unchanged';
+    return `<div class="${baseClass}${commentClass}" data-hash="${h}"${dataAttrs}>${b}</div>`;
   }).join('');
 }
 
@@ -89,13 +137,21 @@ function extractAnchorsFromChanged(html: string): string[] {
   return Array.from(anchors).slice(0, 12);
 }
 
-export default function VersionDiffViewer({ previous, current }: Props) {
+export default function VersionDiffViewer({ previous, current, commentsByAnchor = {} }: Props) {
   const prevHashes = useMemo(() => buildHashSet(previous.content_html), [previous.content_html]);
   const currHashes = useMemo(() => buildHashSet(current.content_html), [current.content_html]);
-  const prevMarked = useMemo(() => markBlocks(previous.content_html, currHashes), [previous.content_html, currHashes]);
-  const currMarked = useMemo(() => markBlocks(current.content_html, prevHashes), [current.content_html, prevHashes]);
+  const prevMarked = useMemo(
+    () => markBlocks(previous.content_html, currHashes, commentsByAnchor),
+    [previous.content_html, currHashes, commentsByAnchor],
+  );
+  const currMarked = useMemo(
+    () => markBlocks(current.content_html, prevHashes, commentsByAnchor),
+    [current.content_html, prevHashes, commentsByAnchor],
+  );
 
   // p130 T-13: counts + clause anchors do current marked HTML para summary banner.
+  // p148 T-13.b: também segrega anchors comentadas que NÃO aparecem em changed
+  // (lurking risks). `touchedNormalized` permite cruzar com commentsByAnchor.
   const summary = useMemo(() => {
     const prevBlocks = splitBlocks(previous.content_html);
     const currBlocks = splitBlocks(current.content_html);
@@ -110,13 +166,23 @@ export default function VersionDiffViewer({ previous, current }: Props) {
       const h = djb2(normalizeBlock(b));
       if (!currSet.has(h) && normalizeBlock(b).length > 0) removed++;
     }
+    const touched = extractAnchorsFromChanged(currMarked);
+    const touchedNormalized = new Set(touched.map(normalizeAnchor));
+    // Cláusulas com comments abertos que não estão no diff = comments lurking.
+    // (Resolved-only não vai pra essa lista — bem-known case já está endereçado.)
+    const lurkingCommented = Object.entries(commentsByAnchor)
+      .filter(([k, v]) => v.open > 0 && !touchedNormalized.has(k))
+      .map(([k, v]) => ({ anchor: k, ...v }))
+      .sort((a, b) => b.open - a.open)
+      .slice(0, 12);
     return {
       added,
       removed,
       total: prevBlocks.length,
-      anchors: extractAnchorsFromChanged(currMarked),
+      anchors: touched,
+      lurkingCommented,
     };
-  }, [previous.content_html, current.content_html, currMarked]);
+  }, [previous.content_html, current.content_html, currMarked, commentsByAnchor]);
 
   const prevRef = useRef<HTMLDivElement>(null);
   const currRef = useRef<HTMLDivElement>(null);
@@ -189,8 +255,45 @@ export default function VersionDiffViewer({ previous, current }: Props) {
       {summary.anchors.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
           <span className="text-amber-700">Cláusulas tocadas:</span>
-          {summary.anchors.map(a => (
-            <span key={a} className="px-1.5 py-0.5 rounded-full border border-amber-300 bg-white font-mono text-amber-900">{a}</span>
+          {summary.anchors.map(a => {
+            const c = commentsByAnchor[normalizeAnchor(a)];
+            return (
+              <span key={a} className="px-1.5 py-0.5 rounded-full border border-amber-300 bg-white font-mono text-amber-900">
+                {a}
+                {c && c.open > 0 && (
+                  <span
+                    className="ml-1 text-purple-700 font-semibold"
+                    title={`${c.open} comentário${c.open > 1 ? 's' : ''} aberto${c.open > 1 ? 's' : ''}`}
+                  >
+                    · 💬{c.open}
+                  </span>
+                )}
+                {c && c.open === 0 && c.resolved > 0 && (
+                  <span
+                    className="ml-1 text-emerald-700"
+                    title={`${c.resolved} comentário${c.resolved > 1 ? 's' : ''} resolvido${c.resolved > 1 ? 's' : ''}`}
+                  >
+                    · ✓{c.resolved}
+                  </span>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {summary.lurkingCommented.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap text-[10px] basis-full">
+          <span className="text-purple-700" title="Cláusulas com comentários abertos que não foram alteradas nesta versão — vale revisar se ainda aplicam">
+            Cláusulas comentadas (não tocadas):
+          </span>
+          {summary.lurkingCommented.map(c => (
+            <span
+              key={c.anchor}
+              className="px-1.5 py-0.5 rounded-full border border-purple-300 bg-purple-50 font-mono text-purple-900"
+              title={`${c.open} aberto(s)${c.resolved > 0 ? ` · ${c.resolved} resolvido(s)` : ''}`}
+            >
+              {c.anchor} <span className="text-purple-700 font-semibold">💬{c.open}</span>
+            </span>
           ))}
         </div>
       )}
@@ -288,6 +391,11 @@ function DiffStyles() {
       .vdv-changed { background: #fff8e1; border-left: 3px solid #ffc107; padding-left: 8px; margin-left: -11px; }
       .vdv-unchanged { opacity: 0.92; }
       .vdv-flash { background: #fde68a !important; transition: background 0.5s ease-out; }
+      /* p148 T-13.b: comment overlay — purple right-side stripe (open) ou faded (resolved-only).
+         Combina com .vdv-changed sem conflito porque amber é left-border, purple é right-border. */
+      .vdv-commented-open { border-right: 3px solid #a855f7; padding-right: 8px; margin-right: -11px; position: relative; }
+      .vdv-commented-open::after { content: "💬"; position: absolute; top: 4px; right: -22px; font-size: 11px; opacity: 0.85; }
+      .vdv-commented-resolved { border-right: 3px solid #d8b4fe; padding-right: 8px; margin-right: -11px; opacity: 0.95; }
     `}</style>
   );
 }
