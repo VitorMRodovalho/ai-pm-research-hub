@@ -8,6 +8,19 @@ import { buildPageI18n } from '../../i18n/pageI18n';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang);
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.7.a p144)
+const GOV2_I18N = {
+  noTitleFallback: t('admin.governanceV2.noTitleFallback', lang),
+  boardFallback: t('admin.governanceV2.boardFallback', lang),
+  scopeFallback: t('admin.governanceV2.scopeFallback', lang),
+  domainFallback: t('admin.governanceV2.domainFallback', lang),
+  restoreBtn: t('admin.governanceV2.restoreBtn', lang),
+  deniedRestricted: t('admin.governanceV2.deniedRestricted', lang),
+  toastRestored: t('admin.governanceV2.toastRestored', lang),
+  toastRestoreFailed: t('admin.governanceV2.toastRestoreFailed', lang),
+  curatorInactive: t('admin.governanceV2.curatorInactive', lang),
+};
 ---
 
 <AdminLayout title={t('nav.adminBoardGovernance', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('nav.adminBoardGovernance', lang)}]}>
@@ -18,16 +31,16 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
     <div class="flex justify-between items-center gap-2 flex-wrap">
       <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
         <span class="px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-bold">
-          Change Requests & Boards
+          {t('admin.governanceV2.subnavCRs', lang)}
         </span>
         <a href={`${langPrefix}/admin/governance/documents`}
           class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
-          Ratificação de documentos (IP)
+          {t('admin.governanceV2.subnavIp', lang)}
         </a>
       </nav>
       <a href="/governance?view=document" target="_blank"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-[var(--text-primary)] hover:border-navy transition-colors">
-        👁 Preview Stakeholder
+        {t('admin.governanceV2.previewStakeholder', lang)}
       </a>
     </div>
 
@@ -67,10 +80,10 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
     <!-- ═══ Board Governance (existing) ═══ -->
     <div id="boardgov-loading" class="text-[var(--text-muted)] text-sm">{t('admin.loadGovernance', lang)}</div>
     <div id="boardgov-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-      Acesso restrito a gestão de projeto.
+      {t('admin.governanceV2.deniedRestricted', lang)}
     </div>
     <section id="boardgov-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h2 class="text-lg font-extrabold text-navy mb-3">Governança de Boards Arquivados</h2>
+      <h2 class="text-lg font-extrabold text-navy mb-3">{t('admin.governanceV2.archivedBoardsTitle', lang)}</h2>
       <div id="boardgov-list" class="space-y-2"></div>
     </section>
   </div>
@@ -91,8 +104,21 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
 <span id="i18n-oc-stakeholderGap" class="hidden">{t('orgChart.stakeholderGap', lang)}</span>
 <span id="i18n-oc-people" class="hidden">{t('orgChart.people', lang)}</span>
 
+<script is:inline define:vars={{ GOV2_I18N }}>
+  window.__GOV2_I18N = GOV2_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__GOV2_I18N) || {
+    noTitleFallback: 'Sem título', boardFallback: 'Board',
+    scopeFallback: 'scope', domainFallback: 'domain',
+    restoreBtn: 'Restaurar', deniedRestricted: 'Acesso restrito a gestão de projeto.',
+    toastRestored: 'Card restaurado com sucesso.',
+    toastRestoreFailed: 'Falha ao restaurar card.',
+    curatorInactive: 'inativa',
+  };
 
   let boardGovBootRetries = 0;
 
@@ -105,10 +131,10 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
     return `
       <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 flex items-center gap-3">
         <div class="min-w-0 flex-1">
-          <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${row.title || 'Sem título'}</div>
-          <div class="text-xs text-[var(--text-secondary)]">${row.board_name || 'Board'} · ${row.board_scope || 'scope'} · ${row.domain_key || 'domain'}</div>
+          <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${row.title || T.noTitleFallback}</div>
+          <div class="text-xs text-[var(--text-secondary)]">${row.board_name || T.boardFallback} · ${row.board_scope || T.scopeFallback} · ${row.domain_key || T.domainFallback}</div>
         </div>
-        <button data-action="restore-archived-item" data-item-id="${row.id}" class="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">Restaurar</button>
+        <button data-action="restore-archived-item" data-item-id="${row.id}" class="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">${T.restoreBtn}</button>
       </article>
     `;
   }
@@ -141,7 +167,7 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
       if (boardGovBootRetries >= 20) {
         loading?.classList.add('hidden');
         denied?.classList.remove('hidden');
-        denied!.textContent = 'Acesso restrito a gestão de projeto.';
+        denied!.textContent = T.deniedRestricted;
         return;
       }
       setTimeout(() => bootBoardGovPage(), 150);
@@ -165,11 +191,11 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
     if (!itemId) return;
     try {
       await restoreItem(itemId);
-      (window as any).toast?.('Card restaurado com sucesso.', 'success');
+      (window as any).toast?.(T.toastRestored, 'success');
       await bootBoardGovPage();
     } catch (error) {
       console.error(error);
-      (window as any).toast?.('Falha ao restaurar card.', 'error');
+      (window as any).toast?.(T.toastRestoreFailed, 'error');
     }
   });
 
@@ -262,7 +288,7 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
 
       if (Array.isArray(d.curators) && d.curators.length > 0) {
         cards.push(tierCard(oc('i18n-oc-curators'), d.curators.length,
-          d.curators.map((p: any) => personBadge(p.name, p.is_active === false ? 'inativa' : '')).join(''), 'teal'));
+          d.curators.map((p: any) => personBadge(p.name, p.is_active === false ? T.curatorInactive : '')).join(''), 'teal'));
       }
       if (Array.isArray(d.comms) && d.comms.length > 0) {
         cards.push(tierCard(oc('i18n-oc-comms'), d.comms.length,
