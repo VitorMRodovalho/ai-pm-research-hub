@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import GovernancePipelineBar from './GovernancePipelineBar';
 import ClauseCommentDrawer from './ClauseCommentDrawer';
-import VersionDiffViewer from './VersionDiffViewer';
+import VersionDiffViewer, { normalizeAnchor, type CommentCounts } from './VersionDiffViewer';
 
 type Gate = {
   kind: string;
@@ -120,6 +120,22 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const [recirculatePreview, setRecirculatePreview] = useState<any>(null);
   const [recirculateError, setRecirculateError] = useState<string>('');
   const [recirculateExecuting, setRecirculateExecuting] = useState(false);
+  // p148 T-13.b: hoisted state — drawer publica lista atual via onCommentsChange,
+  // VersionDiffViewer recebe `commentsByAnchor` derivado abaixo. Single source of
+  // truth (drawer fetcha; nada duplicado).
+  const [diffComments, setDiffComments] = useState<Array<{ clause_anchor: string | null; resolved_at: string | null }>>([]);
+
+  const commentsByAnchor = useMemo<Record<string, CommentCounts>>(() => {
+    const map: Record<string, CommentCounts> = {};
+    for (const c of diffComments) {
+      const k = normalizeAnchor(c.clause_anchor);
+      if (!k) continue;
+      if (!map[k]) map[k] = { open: 0, resolved: 0 };
+      if (c.resolved_at) map[k].resolved++;
+      else map[k].open++;
+    }
+    return map;
+  }, [diffComments]);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -480,6 +496,7 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
               <VersionDiffViewer
                 previous={prevVersion}
                 current={{ version_id: detail.version_id, version_label: detail.version_label, content_html: contentHtml, locked_at: detail.locked_at }}
+                commentsByAnchor={commentsByAnchor}
               />
             </div>
           ) : viewMode === 'draft_diff' && nextDraft ? (
@@ -487,6 +504,7 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
               <VersionDiffViewer
                 previous={{ version_id: detail.version_id, version_label: detail.version_label, content_html: contentHtml, locked_at: detail.locked_at }}
                 current={{ version_id: nextDraft.version_id, version_label: nextDraft.version_label, content_html: nextDraft.content_html, locked_at: null }}
+                commentsByAnchor={commentsByAnchor}
               />
             </div>
           ) : viewMode === 'draft' && nextDraft ? (
@@ -506,6 +524,7 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
             isCurator={isCurator}
             chainStatus={detail.chain_status}
             documentHtml={contentHtml}
+            onCommentsChange={setDiffComments}
           />
         </div>
       </div>
