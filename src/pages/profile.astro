@@ -158,6 +158,30 @@ const PROFILE_I18N = {
   noSignature: t('profile.noSignature', lang),
   photoUploadError: t('profile.photoUploadError', lang),
   exportError: t('profile.exportError', lang),
+  // p134 Ω-A: LGPD section + delete confirm prompt + toasts
+  lgpdPrivacyTitle: t('profile.lgpdPrivacyTitle', lang),
+  shareWhatsappLabel: t('profile.shareWhatsappLabel', lang),
+  shareAddressLabel: t('profile.shareAddressLabel', lang),
+  shareAddressHint: t('profile.shareAddressHint', lang),
+  shareBirthDateLabel: t('profile.shareBirthDateLabel', lang),
+  privacyDisclaimer: t('profile.privacyDisclaimer', lang),
+  readPrivacyPolicy: t('profile.readPrivacyPolicy', lang),
+  gpManagedFields: t('profile.gpManagedFields', lang),
+  lgpdRightsTitle: t('profile.lgpdRightsTitle', lang),
+  lgpdRightsSubtitle: t('profile.lgpdRightsSubtitle', lang),
+  lgpdExportTitle: t('profile.lgpdExportTitle', lang),
+  lgpdExportDesc: t('profile.lgpdExportDesc', lang),
+  lgpdPolicyTitle: t('profile.lgpdPolicyTitle', lang),
+  lgpdPolicyDesc: t('profile.lgpdPolicyDesc', lang),
+  lgpdDeleteTitle: t('profile.lgpdDeleteTitle', lang),
+  lgpdDeleteDesc: t('profile.lgpdDeleteDesc', lang),
+  deleteConfirmPrompt: t('profile.deleteConfirmPrompt', lang),
+  deleteConfirmKeyword: t('profile.deleteConfirmKeyword', lang),
+  toastSupabaseDown: t('profile.toastSupabaseDown', lang),
+  toastConfirmInvalid: t('profile.toastConfirmInvalid', lang),
+  toastDataDeleted: t('profile.toastDataDeleted', lang),
+  toastDeleteError: t('profile.toastDeleteError', lang),
+  toastExportSuccess: t('profile.toastExportSuccess', lang),
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile" lang={lang}>
@@ -1106,24 +1130,24 @@ const PROFILE_I18N = {
 
         <!-- Privacy preferences (LGPD) -->
         <div class="mt-5 p-4 rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
-          <div class="text-[.7rem] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">🔒 Preferências de Privacidade (LGPD)</div>
+          <div class="text-[.7rem] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">${PROFILE_I18N.lgpdPrivacyTitle}</div>
           <div class="space-y-2">
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-share-whatsapp" class="mt-0.5" ${m.share_whatsapp ? 'checked' : ''}>
-              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar meu telefone/WhatsApp com outros membros do Núcleo</span>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.shareWhatsappLabel}</span>
             </label>
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-share-address" class="mt-0.5" ${m.share_address ? 'checked' : ''}>
-              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar meu endereço/cidade com outros membros <span class="text-[.65rem] text-[var(--text-muted)]">(não recomendado — padrão: privado)</span></span>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.shareAddressLabel} <span class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.shareAddressHint}</span></span>
             </label>
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-share-birth-date" class="mt-0.5" ${m.share_birth_date ? 'checked' : ''}>
-              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar minha data de aniversário (dd/mm) para felicitações institucionais</span>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.shareBirthDateLabel}</span>
             </label>
           </div>
           <p class="text-[.65rem] text-[var(--text-muted)] mt-3">
-            Endereço e telefone são sempre usados no Termo de Voluntariado. Essas opções controlam apenas se outros membros podem ver no seu perfil público.
-            <a href="${lp}/privacy" class="text-teal hover:underline no-underline">Ler Política de Privacidade</a>
+            ${PROFILE_I18N.privacyDisclaimer}
+            <a href="${lp}/privacy" class="text-teal hover:underline no-underline">${PROFILE_I18N.readPrivacyPolicy}</a>
           </p>
         </div>
 
@@ -1133,36 +1157,36 @@ const PROFILE_I18N = {
             ${PROFILE_I18N.saveChanges}
           </button>
         </div>
-        <p class="text-[.65rem] text-[var(--text-muted)] mt-2">🔒 Email, capítulo, papel e tribo são geridos pelo GP.</p>
+        <p class="text-[.65rem] text-[var(--text-muted)] mt-2">${PROFILE_I18N.gpManagedFields}</p>
       </div>
 
       <!-- Card: LGPD Rights -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
-        <h2 class="text-sm font-bold text-navy mb-1">🔒 Seus Direitos LGPD</h2>
-        <p class="text-[.7rem] text-[var(--text-muted)] mb-4">Exerça seus direitos garantidos pela Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
+        <h2 class="text-sm font-bold text-navy mb-1">${PROFILE_I18N.lgpdRightsTitle}</h2>
+        <p class="text-[.7rem] text-[var(--text-muted)] mb-4">${PROFILE_I18N.lgpdRightsSubtitle}</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button data-action="export-my-data"
             class="flex items-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-left cursor-pointer hover:border-navy transition-colors">
             <span class="text-xl">📥</span>
             <div class="flex-1 min-w-0">
-              <div class="text-[.78rem] font-bold text-navy">Exportar meus dados</div>
-              <div class="text-[.65rem] text-[var(--text-muted)]">Baixar JSON com todos os seus dados pessoais e contribuições (portabilidade)</div>
+              <div class="text-[.78rem] font-bold text-navy">${PROFILE_I18N.lgpdExportTitle}</div>
+              <div class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.lgpdExportDesc}</div>
             </div>
           </button>
           <a href="${lp}/privacy"
             class="flex items-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-left no-underline hover:border-navy transition-colors">
             <span class="text-xl">📄</span>
             <div class="flex-1 min-w-0">
-              <div class="text-[.78rem] font-bold text-navy">Política de Privacidade</div>
-              <div class="text-[.65rem] text-[var(--text-muted)]">Ler política completa, dados coletados e finalidades</div>
+              <div class="text-[.78rem] font-bold text-navy">${PROFILE_I18N.lgpdPolicyTitle}</div>
+              <div class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.lgpdPolicyDesc}</div>
             </div>
           </a>
           <button data-action="delete-my-data"
             class="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800 text-left cursor-pointer hover:border-red-500 transition-colors sm:col-span-2">
             <span class="text-xl">🗑️</span>
             <div class="flex-1 min-w-0">
-              <div class="text-[.78rem] font-bold text-red-700 dark:text-red-400">Apagar meus dados pessoais</div>
-              <div class="text-[.65rem] text-red-600 dark:text-red-400">Limpa endereço, telefone, aniversário. Preserva nome, email e histórico de contribuições (Direito ao Esquecimento — irreversível)</div>
+              <div class="text-[.78rem] font-bold text-red-700 dark:text-red-400">${PROFILE_I18N.lgpdDeleteTitle}</div>
+              <div class="text-[.65rem] text-red-600 dark:text-red-400">${PROFILE_I18N.lgpdDeleteDesc}</div>
             </div>
           </button>
         </div>
@@ -1513,35 +1537,28 @@ const PROFILE_I18N = {
   }
 
   async function deleteMyPersonalData() {
-    const confirmText = prompt(
-      'ATENÇÃO: Esta ação é IRREVERSÍVEL.\n\n' +
-      'Serão apagados:\n' +
-      '• Endereço\n• Cidade\n• Telefone\n• Data de Aniversário\n\n' +
-      'Serão preservados:\n' +
-      '• Nome, email, PMI ID\n• Histórico de contribuições, XP, certificados\n\n' +
-      'Para confirmar, digite abaixo exatamente:\nDELETAR MEUS DADOS PESSOAIS'
-    );
+    const confirmText = prompt(PROFILE_I18N.deleteConfirmPrompt || 'ATENÇÃO: Esta ação é IRREVERSÍVEL.');
     if (!confirmText) return;
     const sb = (window as any).navGetSb?.();
-    if (!sb) { (window as any).toast?.('Supabase indisponível', 'error'); return; }
+    if (!sb) { (window as any).toast?.(PROFILE_I18N.toastSupabaseDown || 'Supabase indisponível', 'error'); return; }
     try {
       const { data, error } = await sb.rpc('delete_my_personal_data', { p_confirm_text: confirmText });
       if (error) throw error;
       if (data?.error === 'confirmation_required') {
-        (window as any).toast?.('Confirmação inválida. Digite o texto exato.', 'error');
+        (window as any).toast?.(PROFILE_I18N.toastConfirmInvalid || 'Confirmação inválida. Digite o texto exato.', 'error');
         return;
       }
       if (data?.error) throw new Error(data.error);
-      (window as any).toast?.('Dados pessoais apagados. A página será recarregada.', 'success');
+      (window as any).toast?.(PROFILE_I18N.toastDataDeleted || 'Dados pessoais apagados. A página será recarregada.', 'success');
       setTimeout(() => location.reload(), 1500);
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao apagar dados', 'error');
+      (window as any).toast?.(err.message || PROFILE_I18N.toastDeleteError || 'Erro ao apagar dados', 'error');
     }
   }
 
   async function exportMyData() {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { (window as any).toast?.('Supabase indisponível', 'error'); return; }
+    if (!sb) { (window as any).toast?.(PROFILE_I18N.toastSupabaseDown || 'Supabase indisponível', 'error'); return; }
     try {
       const { data, error } = await sb.rpc('export_my_data');
       if (error) throw error;
@@ -1554,7 +1571,7 @@ const PROFILE_I18N = {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      (window as any).toast?.('Dados exportados com sucesso', 'success');
+      (window as any).toast?.(PROFILE_I18N.toastExportSuccess || 'Dados exportados com sucesso', 'success');
     } catch (err: any) {
       (window as any).toast?.(err.message || PROFILE_I18N.exportError || 'Error exporting data', 'error');
     }
