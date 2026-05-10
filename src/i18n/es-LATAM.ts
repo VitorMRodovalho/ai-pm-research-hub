@@ -5027,6 +5027,10 @@ const esLATAM: Record<string, string> = {
   'admin.dashboard.errorPrefix': 'Error',
   'admin.deniedAdmin': 'Acceso restringido a administradores.',
   'admin.tribeBreadcrumb': 'Tribu',
+  'admin.blog.tagsLabel': 'Tags (separados por coma)',
+  'admin.blog.featuredBadge': 'Destacado',
+  'admin.blog.slugLabel': 'Slug',
+  'admin.blog.statusLabel': 'Estado',
 
   'admin.campaigns.funnelSent': 'Enviados',
   'admin.campaigns.funnelDelivered': 'Entregados',

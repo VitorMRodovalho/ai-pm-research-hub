@@ -5026,6 +5026,10 @@ const enUS: Record<string, string> = {
   'admin.dashboard.errorPrefix': 'Error',
   'admin.deniedAdmin': 'Access restricted to administrators.',
   'admin.tribeBreadcrumb': 'Tribe',
+  'admin.blog.tagsLabel': 'Tags (comma separated)',
+  'admin.blog.featuredBadge': 'Featured',
+  'admin.blog.slugLabel': 'Slug',
+  'admin.blog.statusLabel': 'Status',
 
   'admin.campaigns.funnelSent': 'Sent',
   'admin.campaigns.funnelDelivered': 'Delivered',
