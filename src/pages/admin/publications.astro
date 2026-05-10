@@ -5,6 +5,46 @@ import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.9.c p145)
+const PUB_I18N = {
+  filterAllStatus: t('publications.filterAllStatus', lang),
+  filterAllTribes: t('publications.filterAllTribes', lang),
+  metricsTotal: t('publications.metricsTotal', lang),
+  metricsSubmittedPlus: t('publications.metricsSubmittedPlus', lang),
+  metricsEstimatedCost: t('publications.metricsEstimatedCost', lang),
+  metricsActualCost: t('publications.metricsActualCost', lang),
+  statusLabels: {
+    draft: t('publications.statusLabel.draft', lang),
+    submitted: t('publications.statusLabel.submitted', lang),
+    under_review: t('publications.statusLabel.under_review', lang),
+    revision_requested: t('publications.statusLabel.revision_requested', lang),
+    accepted: t('publications.statusLabel.accepted', lang),
+    rejected: t('publications.statusLabel.rejected', lang),
+    published: t('publications.statusLabel.published', lang),
+    presented: t('publications.statusLabel.presented', lang),
+  },
+  detailStatusLabel: t('publications.detailStatusLabel', lang),
+  detailTypeLabel: t('publications.detailTypeLabel', lang),
+  detailTargetLabel: t('publications.detailTargetLabel', lang),
+  detailAbstractLabel: t('publications.detailAbstractLabel', lang),
+  detailAuthorsLabel: t('publications.detailAuthorsLabel', lang),
+  detailCorresponding: t('publications.detailCorresponding', lang),
+  detailSubmissionLabel: t('publications.detailSubmissionLabel', lang),
+  detailReviewDeadlineLabel: t('publications.detailReviewDeadlineLabel', lang),
+  detailAcceptanceLabel: t('publications.detailAcceptanceLabel', lang),
+  detailPresentationLabel: t('publications.detailPresentationLabel', lang),
+  detailEstCostLabel: t('publications.detailEstCostLabel', lang),
+  detailActualCostLabel: t('publications.detailActualCostLabel', lang),
+  detailPaidByLabel: t('publications.detailPaidByLabel', lang),
+  detailFeedbackLabel: t('publications.detailFeedbackLabel', lang),
+  detailDoiLabel: t('publications.detailDoiLabel', lang),
+  detailTribeLabel: t('publications.detailTribeLabel', lang),
+  detailCreatedLabel: t('publications.detailCreatedLabel', lang),
+  statusChanged: t('publications.statusChanged', lang),
+  created: t('publications.created', lang),
+  fillRequired: t('publications.fillRequired', lang),
+};
 ---
 
 <AdminLayout title={t('publications.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('publications.title', lang)}]}>
@@ -43,9 +83,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <!-- Filters -->
       <div class="flex flex-wrap gap-3 items-end" id="pub-filters">
         <div>
-          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">Status</label>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">{t('publications.detailStatusLabel', lang)}</label>
           <select id="filter-status" class="mt-1 px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-            <option value="">Todos</option>
+            <option value="">{t('publications.filterAllStatus', lang)}</option>
             <option value="draft">{t('publications.status.draft', lang)}</option>
             <option value="submitted">{t('publications.status.submitted', lang)}</option>
             <option value="under_review">{t('publications.status.under_review', lang)}</option>
@@ -57,12 +97,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           </select>
         </div>
         <div>
-          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">Tribo</label>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">{t('publications.filterTribeLabel', lang)}</label>
           <select id="filter-tribe" class="mt-1 px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-            <option value="">Todas</option>
+            <option value="">{t('publications.filterAllTribes', lang)}</option>
           </select>
         </div>
-        <button id="btn-filter" class="px-3 py-1.5 bg-navy/10 text-navy rounded-lg text-sm font-semibold cursor-pointer hover:bg-navy/20">Filtrar</button>
+        <button id="btn-filter" class="px-3 py-1.5 bg-navy/10 text-navy rounded-lg text-sm font-semibold cursor-pointer hover:bg-navy/20">{t('publications.filterBtn', lang)}</button>
       </div>
 
       <!-- TAB: Pipeline -->
@@ -78,10 +118,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <table class="w-full text-sm">
             <thead class="bg-[var(--surface-section-cool)]">
               <tr>
-                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">Título</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.colTitle', lang)}</th>
                 <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.primaryAuthor', lang)}</th>
                 <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.targetName', lang)}</th>
-                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">Status</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.detailStatusLabel', lang)}</th>
                 <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.submissionDate', lang)}</th>
               </tr>
             </thead>
@@ -114,7 +154,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <h3 class="text-lg font-bold text-navy mb-4">{t('publications.new', lang)}</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">Título</label>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.modalTitleLabel', lang)}</label>
             <input id="new-title" type="text" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
           </div>
           <div>
@@ -139,7 +179,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <input id="new-target-name" type="text" placeholder="PMI Global Summit 2026" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
             </div>
             <div>
-              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">URL do CFP</label>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.modalCfpUrlLabel', lang)}</label>
               <input id="new-target-url" type="url" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
             </div>
           </div>
@@ -149,7 +189,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <select id="new-author" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"></select>
             </div>
             <div>
-              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">Tribo</label>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.modalTribeLabel', lang)}</label>
               <select id="new-tribe" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
                 <option value="">{t('admin.noSubmission', lang)}</option>
               </select>
@@ -187,8 +227,33 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ PUB_I18N }}>
+  window.__PUB_I18N = PUB_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__PUB_I18N) || {
+    filterAllStatus: 'Todos', filterAllTribes: 'Todas',
+    metricsTotal: 'Total', metricsSubmittedPlus: 'Submetidos+',
+    metricsEstimatedCost: 'Custo Estimado', metricsActualCost: 'Custo Realizado',
+    statusLabels: {
+      draft: 'Rascunho', submitted: 'Submetido', under_review: 'Em Revisão',
+      revision_requested: 'Revisão Solicitada', accepted: 'Aceito', rejected: 'Rejeitado',
+      published: 'Publicado', presented: 'Apresentado',
+    },
+    detailStatusLabel: 'Status', detailTypeLabel: 'Tipo', detailTargetLabel: 'Alvo',
+    detailAbstractLabel: 'Abstract', detailAuthorsLabel: 'Autores',
+    detailCorresponding: 'correspondente',
+    detailSubmissionLabel: 'Submissão', detailReviewDeadlineLabel: 'Prazo Revisão',
+    detailAcceptanceLabel: 'Aceite', detailPresentationLabel: 'Apresentação',
+    detailEstCostLabel: 'Custo Est.', detailActualCostLabel: 'Custo Real',
+    detailPaidByLabel: 'Pago por', detailFeedbackLabel: 'Feedback',
+    detailDoiLabel: 'DOI/URL', detailTribeLabel: 'Tribo', detailCreatedLabel: 'Criado',
+    statusChanged: 'Status atualizado!', created: 'Submissão criada!',
+    fillRequired: 'Preencha título, alvo e autor.',
+  };
 
   const STATUS_COLORS: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-700',
@@ -201,11 +266,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     presented: 'bg-teal-100 text-teal-700',
   };
 
-  const STATUS_LABELS: Record<string, string> = {
-    draft: 'Rascunho', submitted: 'Submetido', under_review: 'Em Revisão',
-    revision_requested: 'Revisão Solicitada', accepted: 'Aceito', rejected: 'Rejeitado',
-    published: 'Publicado', presented: 'Apresentado',
-  };
+  const STATUS_LABELS: Record<string, string> = T.statusLabels;
 
   const TARGET_ICONS: Record<string, string> = {
     pmi_global_conference: '&#x1F3DB;', pmi_chapter_event: '&#x1F4CB;',
@@ -311,7 +372,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     tribeSelectors.forEach(id => {
       const el = document.getElementById(id) as HTMLSelectElement;
       if (!el) return;
-      const prefix = id === 'filter-tribe' ? '<option value="">Todas</option>' : '<option value="">—</option>';
+      const prefix = id === 'filter-tribe' ? `<option value="">${T.filterAllTribes}</option>` : '<option value="">—</option>';
       const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       el.innerHTML = prefix + tribes.map((t: any) => `<option value="${t.id}">${escH(t.name_i18n?.[_sl] || t.name)}</option>`).join('');
     });
@@ -394,19 +455,19 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (cardsEl) {
       cardsEl.innerHTML = `
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${escH('Total')}</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${escH(T.metricsTotal)}</p>
           <p class="text-2xl font-extrabold text-navy mt-1">${d.total}</p>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Submetidos+</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${T.metricsSubmittedPlus}</p>
           <p class="text-2xl font-extrabold text-blue-600 mt-1">${(d.by_status?.submitted || 0) + (d.by_status?.under_review || 0) + (d.by_status?.accepted || 0) + (d.by_status?.published || 0) + (d.by_status?.presented || 0)}</p>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Custo Estimado</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${T.metricsEstimatedCost}</p>
           <p class="text-xl font-extrabold text-navy mt-1">${fmt(d.estimated_total_cost)}</p>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Custo Realizado</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${T.metricsActualCost}</p>
           <p class="text-xl font-extrabold text-navy mt-1">${fmt(d.actual_total_cost)}</p>
         </div>
       `;
@@ -458,56 +519,56 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     document.getElementById('detail-content')!.innerHTML = `
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Status</label>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailStatusLabel}</label>
           ${canWrite ? `<select id="detail-status" data-sub-id="${s.id}" class="w-full mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)]">${statusOptions}</select>` :
           `<p class="mt-0.5"><span class="px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status]} text-[.7rem] font-medium">${STATUS_LABELS[s.status]}</span></p>`}
         </div>
         <div>
-          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Tipo</label>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailTypeLabel}</label>
           <p class="text-sm mt-0.5">${TARGET_ICONS[s.target_type] || ''} ${escH(s.target_type?.replace(/_/g, ' ') || '')}</p>
         </div>
       </div>
 
       <div>
-        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Alvo</label>
+        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailTargetLabel}</label>
         <p class="text-sm">${escH(s.target_name || '—')} ${s.target_url ? `<a href="${escH(s.target_url)}" target="_blank" class="text-blue-600 underline text-[.7rem] ml-1">URL</a>` : ''}</p>
       </div>
 
-      ${s.abstract ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Abstract</label><p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5">${escH(s.abstract)}</p></div>` : ''}
+      ${s.abstract ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailAbstractLabel}</label><p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5">${escH(s.abstract)}</p></div>` : ''}
 
       <div>
-        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Autores</label>
+        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailAuthorsLabel}</label>
         <div class="space-y-1 mt-1">
           ${authors.map((a: any) => `
             <div class="flex items-center gap-2 text-sm">
               <span class="font-semibold">${a.author_order}.</span>
               <span>${escH(a.member_name)}</span>
-              ${a.is_corresponding ? '<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">correspondente</span>' : ''}
+              ${a.is_corresponding ? `<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">${T.detailCorresponding}</span>` : ''}
             </div>
           `).join('')}
         </div>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Submissão</label><p class="text-sm">${s.submission_date || '—'}</p></div>
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Prazo Revisão</label><p class="text-sm">${s.review_deadline || '—'}</p></div>
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Aceite</label><p class="text-sm">${s.acceptance_date || '—'}</p></div>
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Apresentação</label><p class="text-sm">${s.presentation_date || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailSubmissionLabel}</label><p class="text-sm">${s.submission_date || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailReviewDeadlineLabel}</label><p class="text-sm">${s.review_deadline || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailAcceptanceLabel}</label><p class="text-sm">${s.acceptance_date || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailPresentationLabel}</label><p class="text-sm">${s.presentation_date || '—'}</p></div>
       </div>
 
       <div class="grid grid-cols-3 gap-3">
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Custo Est.</label><p class="text-sm font-semibold">${fmt(s.estimated_cost_brl)}</p></div>
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Custo Real</label><p class="text-sm font-semibold">${fmt(s.actual_cost_brl)}</p></div>
-        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Pago por</label><p class="text-sm">${escH(s.cost_paid_by || '—')}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailEstCostLabel}</label><p class="text-sm font-semibold">${fmt(s.estimated_cost_brl)}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailActualCostLabel}</label><p class="text-sm font-semibold">${fmt(s.actual_cost_brl)}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailPaidByLabel}</label><p class="text-sm">${escH(s.cost_paid_by || '—')}</p></div>
       </div>
 
-      ${s.reviewer_feedback ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Feedback</label><p class="text-[.78rem] bg-[var(--surface-section-cool)] rounded-lg p-2 mt-0.5">${escH(s.reviewer_feedback)}</p></div>` : ''}
-      ${s.doi_or_url ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">DOI/URL</label><p class="text-sm"><a href="${escH(s.doi_or_url)}" target="_blank" class="text-blue-600 underline">${escH(s.doi_or_url)}</a></p></div>` : ''}
+      ${s.reviewer_feedback ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailFeedbackLabel}</label><p class="text-[.78rem] bg-[var(--surface-section-cool)] rounded-lg p-2 mt-0.5">${escH(s.reviewer_feedback)}</p></div>` : ''}
+      ${s.doi_or_url ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">${T.detailDoiLabel}</label><p class="text-sm"><a href="${escH(s.doi_or_url)}" target="_blank" class="text-blue-600 underline">${escH(s.doi_or_url)}</a></p></div>` : ''}
 
       <div class="flex items-center gap-2 text-[.65rem] text-[var(--text-muted)]">
-        <span>Tribo: ${escH(s.tribe_name || '—')}</span>
+        <span>${T.detailTribeLabel}: ${escH(s.tribe_name || '—')}</span>
         <span>·</span>
-        <span>Criado: ${s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '—'}</span>
+        <span>${T.detailCreatedLabel}: ${s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '—'}</span>
       </div>
     `;
 
@@ -519,7 +580,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           p_submission_id: s.id, p_new_status: statusSel.value
         });
         if (error) { (window as any).toast?.(error.message, 'error'); return; }
-        (window as any).toast?.('Status atualizado!', 'success');
+        (window as any).toast?.(T.statusChanged, 'success');
         await loadSubmissions();
         await loadPipelineSummary();
         renderPipeline();
@@ -568,7 +629,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const cost = parseFloat((document.getElementById('new-cost') as HTMLInputElement)?.value || '0');
 
     if (!title || !targetName || !authorId) {
-      (window as any).toast?.('Preencha título, alvo e autor.', 'error');
+      (window as any).toast?.(T.fillRequired, 'error');
       return;
     }
 
@@ -584,7 +645,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     });
 
     if (error) { (window as any).toast?.(error.message, 'error'); return; }
-    (window as any).toast?.('Submissão criada!', 'success');
+    (window as any).toast?.(T.created, 'success');
     try { if ((window as any).posthog) (window as any).posthog.capture('publication_submitted', { target_type: targetType || '' }); } catch {}
     document.getElementById('modal-new-sub')?.classList.add('hidden');
     await loadSubmissions();
