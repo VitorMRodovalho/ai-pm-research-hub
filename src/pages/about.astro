@@ -6,18 +6,8 @@ import ImpactPageIsland from '../components/islands/ImpactPageIsland';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
-const titles: Record<string, string> = {
-  'pt-BR': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
-  'en-US': 'About — AI & Project Management Research Hub',
-  'es-LATAM': 'Sobre el Núcleo — IA & Gestión de Proyectos',
-};
-const descriptions: Record<string, string> = {
-  'pt-BR': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
-  'en-US': 'Collaborative initiative across PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
-  'es-LATAM': 'Iniciativa colaborativa entre capítulos del PMI® en Brasil. 51+ investigadores, 8 tribus de investigación, plataforma digital propia.',
-};
-const pageTitle = titles[lang] || titles['pt-BR'];
-const pageDesc = descriptions[lang] || descriptions['pt-BR'];
+const pageTitle = t('about.meta.title', lang);
+const pageDesc = t('about.meta.description', lang);
 ---
 
 <BaseLayout title={pageTitle} description={pageDesc} activePage="about" lang={lang}>

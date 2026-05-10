@@ -4,6 +4,10 @@ const enUS: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
   'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, PMI Brazil chapters, 7 thematic tribes. Open-source trilingual platform.',
+  'about.meta.title': 'About — AI & Project Management Research Hub',
+  'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
+  'meetings.meta.title': 'Meeting Minutes — AI & PM Research Hub',
+  'meetings.meta.description': 'Searchable archive of all Hub meeting minutes. Full-text search, filters by tribe and type, cross-tribe view.',
 
   // ── Nav ──
   'nav.brand': 'AI & PM Research Hub — Cycle 03',
@@ -4762,6 +4766,21 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.profileFooterHint': 'You can update any time until the selection decision. Data is protected by LGPD; we only use it for the Núcleo process.',
   'pmi.onboarding.contactFooter': 'Questions?',
   'pmi.onboarding.errorTitle': 'Error',
+  'pmi.onboarding.meta.title': 'PMI Candidate Onboarding — Núcleo IA & GP',
+  'pmi.onboarding.meta.description': 'Complete your PMI volunteer application onboarding',
+  'pmi.onboarding.error.expiredTitle': 'Link expired or invalid',
+  'pmi.onboarding.error.expiredBody': 'The onboarding link is no longer valid. Please contact our team if you believe this is an error.',
+  // p135 Ω-B: Interview Booking page (was inline-dict)
+  'interview.booking.meta.title': 'Schedule your interview — Núcleo IA & GP',
+  'interview.booking.meta.description': 'Pick a time slot for your selection interview',
+  'interview.booking.error.expiredTitle': 'Link expired or invalid',
+  'interview.booking.error.expiredBody': 'This booking link is no longer valid. Please contact our team if you believe this is an error.',
+  'interview.booking.greeting': 'Hi',
+  'interview.booking.ready': 'Your interview is ready to be scheduled',
+  'interview.booking.instruction': 'Pick a time slot using the button below. The committee will be automatically added to the calendar event.',
+  'interview.booking.cta': 'Open Calendar booking',
+  'interview.booking.expiresAt': 'This link expires on',
+  'interview.booking.questions': 'Questions? Reply to the email or contact',
   // p86 Wave 5b-2: AI-augmented self-improvement (Cards B + A)
   'pmi.enrichment.topics.title': 'Want to see likely topics for your interview?',
   'pmi.enrichment.topics.body1': 'The AI flagged areas the committee will likely probe. You can review beforehand — no charge, no judgment.',

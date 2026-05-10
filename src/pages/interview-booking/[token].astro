@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getLangFromURL, type Lang } from '../../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
@@ -35,61 +35,8 @@ if (!token || token.length < 16) {
 
 const calendarBaseUrl = 'https://calendar.app.google/gh9WjefjcmisVLoh7';
 
-const pageTitle =
-  lang === 'en-US' ? 'Schedule your interview — Núcleo IA & GP'
-  : lang === 'es-LATAM' ? 'Agenda tu entrevista — Núcleo IA & GP'
-  : 'Agende sua entrevista — Núcleo IA & GP';
-
-const pageDesc =
-  lang === 'en-US' ? 'Pick a time slot for your selection interview'
-  : lang === 'es-LATAM' ? 'Elige un horario para tu entrevista de selección'
-  : 'Escolha um horário para sua entrevista de seleção';
-
-const t = (k: string) => {
-  const dict: Record<string, Record<Lang, string>> = {
-    'expired': {
-      'en-US': 'Link expired or invalid',
-      'es-LATAM': 'Enlace expirado o inválido',
-      'pt-BR': 'Link expirado ou inválido',
-    },
-    'expired_body': {
-      'en-US': 'This booking link is no longer valid. Please contact our team if you believe this is an error.',
-      'es-LATAM': 'Este enlace de reserva ya no es válido. Contáctenos si cree que es un error.',
-      'pt-BR': 'Este link de agendamento não é mais válido. Se acredita que é um erro, entre em contato.',
-    },
-    'hello': {
-      'en-US': 'Hi',
-      'es-LATAM': 'Hola',
-      'pt-BR': 'Olá',
-    },
-    'ready': {
-      'en-US': 'Your interview is ready to be scheduled',
-      'es-LATAM': 'Tu entrevista está lista para ser agendada',
-      'pt-BR': 'Sua entrevista está pronta para ser agendada',
-    },
-    'instruction': {
-      'en-US': 'Pick a time slot using the button below. The committee will be automatically added to the calendar event.',
-      'es-LATAM': 'Elige un horario con el botón abajo. La comisión será añadida automáticamente al evento del calendario.',
-      'pt-BR': 'Escolha um horário usando o botão abaixo. A comissão será adicionada automaticamente ao evento.',
-    },
-    'cta': {
-      'en-US': 'Open Calendar booking',
-      'es-LATAM': 'Abrir agendamiento Calendar',
-      'pt-BR': 'Abrir agendamento Calendar',
-    },
-    'expires_at': {
-      'en-US': 'This link expires on',
-      'es-LATAM': 'Este enlace expira el',
-      'pt-BR': 'Este link expira em',
-    },
-    'questions': {
-      'en-US': 'Questions? Reply to the email or contact',
-      'es-LATAM': '¿Dudas? Responde al email o contacta',
-      'pt-BR': 'Dúvidas? Responda ao email ou entre em contato',
-    },
-  };
-  return dict[k]?.[lang] ?? dict[k]?.['pt-BR'] ?? '';
-};
+const pageTitle = t('interview.booking.meta.title', lang);
+const pageDesc = t('interview.booking.meta.description', lang);
 
 const formattedExpiry = payload?.expires_at
   ? new Date(payload.expires_at).toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es' : 'pt-BR', {
@@ -102,8 +49,8 @@ const formattedExpiry = payload?.expires_at
   <main class="max-w-2xl mx-auto px-4 py-8 md:py-12">
     {errorMessage ? (
       <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-red-800">
-        <h1 class="text-2xl font-bold mb-3">{t('expired')}</h1>
-        <p class="mb-4">{t('expired_body')}</p>
+        <h1 class="text-2xl font-bold mb-3">{t('interview.booking.error.expiredTitle', lang)}</h1>
+        <p class="mb-4">{t('interview.booking.error.expiredBody', lang)}</p>
         <p class="text-sm font-mono text-red-700">code: {errorMessage}</p>
         <p class="mt-4">
           <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
@@ -113,32 +60,32 @@ const formattedExpiry = payload?.expires_at
       <div class="space-y-6">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h1 class="text-2xl font-bold mb-2 text-blue-900">
-            {t('hello')}, {payload?.first_name ?? ''}
+            {t('interview.booking.greeting', lang)}, {payload?.first_name ?? ''}
           </h1>
-          <p class="text-lg text-blue-800">{t('ready')}</p>
+          <p class="text-lg text-blue-800">{t('interview.booking.ready', lang)}</p>
         </div>
 
         <div class="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-          <p class="text-slate-700 mb-6">{t('instruction')}</p>
+          <p class="text-slate-700 mb-6">{t('interview.booking.instruction', lang)}</p>
           <a
             href={calendarBaseUrl}
             target="_blank"
             rel="noopener noreferrer"
             class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            {t('cta')} →
+            {t('interview.booking.cta', lang)} →
           </a>
 
           {formattedExpiry && (
             <p class="text-sm text-slate-500 mt-6">
-              {t('expires_at')} <strong>{formattedExpiry}</strong>
+              {t('interview.booking.expiresAt', lang)} <strong>{formattedExpiry}</strong>
             </p>
           )}
         </div>
 
         <div class="text-sm text-slate-600">
           <p>
-            {t('questions')}:{' '}
+            {t('interview.booking.questions', lang)}:{' '}
             <a href="mailto:nucleoia@pmigo.org.br" class="text-blue-600 underline">nucleoia@pmigo.org.br</a>
           </p>
         </div>
