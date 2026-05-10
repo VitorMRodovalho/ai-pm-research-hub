@@ -4453,6 +4453,38 @@ const ptBR: Record<string, string> = {
   'admin.breadcrumb.tags': 'Tags',
   'admin.breadcrumb.dataHealth': 'Saúde de Dados',
   'admin.breadcrumb.blog': 'Blog',
+  'admin.breadcrumb.detail': 'Detalhe',
+  'admin.breadcrumb.inactiveCandidates': 'Candidatos a Inativo',
+
+  // ── Admin Member Detail (wrapper page title) ──
+  'admin.memberDetail.pageTitle': 'Detalhe do Membro',
+
+  // ── Admin Member Edit form (Ω-B+.2 p139) ──
+  'admin.memberEdit.titleNew': '+ Novo Membro',
+  'admin.memberEdit.titleEdit': '✏️ Editar Membro',
+  'admin.memberEdit.label.fullName': 'Nome completo *',
+  'admin.memberEdit.placeholder.fullName': 'Nome completo',
+  'admin.memberEdit.label.email': 'Email principal *',
+  'admin.memberEdit.label.chapter': 'Capítulo',
+  'admin.memberEdit.option.selectChapter': '— Selecionar —',
+  'admin.memberEdit.label.primaryRole': 'Papel principal',
+  'admin.memberEdit.label.tribe': 'Tribo',
+  'admin.memberEdit.option.noTribe': '— Nenhuma —',
+  'admin.memberEdit.tribePrefix': 'Tribo',
+  'admin.memberEdit.label.pmiId': 'PMI ID',
+  'admin.memberEdit.label.uniqueBadge': 'único',
+  'admin.memberEdit.label.phone': 'Telefone',
+  'admin.memberEdit.label.linkedin': 'LinkedIn URL',
+  'admin.memberEdit.label.allRoles': 'Todos os papéis',
+  'admin.memberEdit.label.activeInCycle': 'Membro ativo no ciclo atual',
+  'admin.memberEdit.action.inactivate': '🔴 Inativar membro',
+  'admin.memberEdit.action.reactivate': '🟢 Reativar membro',
+  'admin.memberEdit.action.save': '💾 Salvar',
+  'admin.memberEdit.error.requiredNameEmail': 'Nome e email obrigatórios',
+  'admin.memberEdit.toast.saved': 'Salvo ✅',
+  'admin.memberEdit.toast.inactivated': 'Membro inativado 🔴',
+  'admin.memberEdit.toast.reactivated': 'Membro reativado 🟢',
+  'admin.memberEdit.prompt.inactivateReason': 'Motivo da inativação de {name} (opcional):',
 
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Visão consolidada de todas as tribos. Apenas GP/DM.',

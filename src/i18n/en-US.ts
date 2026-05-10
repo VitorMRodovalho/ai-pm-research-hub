@@ -4447,6 +4447,38 @@ const enUS: Record<string, string> = {
   'admin.breadcrumb.tags': 'Tags',
   'admin.breadcrumb.dataHealth': 'Data Health',
   'admin.breadcrumb.blog': 'Blog',
+  'admin.breadcrumb.detail': 'Detail',
+  'admin.breadcrumb.inactiveCandidates': 'Inactivity Candidates',
+
+  // ── Admin Member Detail (wrapper page title) ──
+  'admin.memberDetail.pageTitle': 'Member Detail',
+
+  // ── Admin Member Edit form (Ω-B+.2 p139) ──
+  'admin.memberEdit.titleNew': '+ New Member',
+  'admin.memberEdit.titleEdit': '✏️ Edit Member',
+  'admin.memberEdit.label.fullName': 'Full name *',
+  'admin.memberEdit.placeholder.fullName': 'Full name',
+  'admin.memberEdit.label.email': 'Primary email *',
+  'admin.memberEdit.label.chapter': 'Chapter',
+  'admin.memberEdit.option.selectChapter': '— Select —',
+  'admin.memberEdit.label.primaryRole': 'Primary role',
+  'admin.memberEdit.label.tribe': 'Tribe',
+  'admin.memberEdit.option.noTribe': '— None —',
+  'admin.memberEdit.tribePrefix': 'Tribe',
+  'admin.memberEdit.label.pmiId': 'PMI ID',
+  'admin.memberEdit.label.uniqueBadge': 'unique',
+  'admin.memberEdit.label.phone': 'Phone',
+  'admin.memberEdit.label.linkedin': 'LinkedIn URL',
+  'admin.memberEdit.label.allRoles': 'All roles',
+  'admin.memberEdit.label.activeInCycle': 'Member active in current cycle',
+  'admin.memberEdit.action.inactivate': '🔴 Deactivate member',
+  'admin.memberEdit.action.reactivate': '🟢 Reactivate member',
+  'admin.memberEdit.action.save': '💾 Save',
+  'admin.memberEdit.error.requiredNameEmail': 'Name and email are required',
+  'admin.memberEdit.toast.saved': 'Saved ✅',
+  'admin.memberEdit.toast.inactivated': 'Member deactivated 🔴',
+  'admin.memberEdit.toast.reactivated': 'Member reactivated 🟢',
+  'admin.memberEdit.prompt.inactivateReason': 'Reason to deactivate {name} (optional):',
 
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Consolidated view of all tribes. GP/DM only.',

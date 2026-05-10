@@ -4448,6 +4448,38 @@ const esLATAM: Record<string, string> = {
   'admin.breadcrumb.tags': 'Etiquetas',
   'admin.breadcrumb.dataHealth': 'Salud de Datos',
   'admin.breadcrumb.blog': 'Blog',
+  'admin.breadcrumb.detail': 'Detalle',
+  'admin.breadcrumb.inactiveCandidates': 'Candidatos a Inactivo',
+
+  // ── Admin Member Detail (wrapper page title) ──
+  'admin.memberDetail.pageTitle': 'Detalle del Miembro',
+
+  // ── Admin Member Edit form (Ω-B+.2 p139) ──
+  'admin.memberEdit.titleNew': '+ Nuevo Miembro',
+  'admin.memberEdit.titleEdit': '✏️ Editar Miembro',
+  'admin.memberEdit.label.fullName': 'Nombre completo *',
+  'admin.memberEdit.placeholder.fullName': 'Nombre completo',
+  'admin.memberEdit.label.email': 'Email principal *',
+  'admin.memberEdit.label.chapter': 'Capítulo',
+  'admin.memberEdit.option.selectChapter': '— Seleccionar —',
+  'admin.memberEdit.label.primaryRole': 'Rol principal',
+  'admin.memberEdit.label.tribe': 'Tribu',
+  'admin.memberEdit.option.noTribe': '— Ninguna —',
+  'admin.memberEdit.tribePrefix': 'Tribu',
+  'admin.memberEdit.label.pmiId': 'PMI ID',
+  'admin.memberEdit.label.uniqueBadge': 'único',
+  'admin.memberEdit.label.phone': 'Teléfono',
+  'admin.memberEdit.label.linkedin': 'LinkedIn URL',
+  'admin.memberEdit.label.allRoles': 'Todos los roles',
+  'admin.memberEdit.label.activeInCycle': 'Miembro activo en el ciclo actual',
+  'admin.memberEdit.action.inactivate': '🔴 Desactivar miembro',
+  'admin.memberEdit.action.reactivate': '🟢 Reactivar miembro',
+  'admin.memberEdit.action.save': '💾 Guardar',
+  'admin.memberEdit.error.requiredNameEmail': 'Nombre y email son obligatorios',
+  'admin.memberEdit.toast.saved': 'Guardado ✅',
+  'admin.memberEdit.toast.inactivated': 'Miembro desactivado 🔴',
+  'admin.memberEdit.toast.reactivated': 'Miembro reactivado 🟢',
+  'admin.memberEdit.prompt.inactivateReason': 'Motivo para desactivar a {name} (opcional):',
 
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Visión consolidada de todas las tribus. Solo GP/DM.',
