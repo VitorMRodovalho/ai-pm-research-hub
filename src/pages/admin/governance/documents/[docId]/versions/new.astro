@@ -10,17 +10,19 @@
  */
 import AdminLayout from '../../../../../../layouts/AdminLayout.astro';
 import DocumentVersionEditor from '../../../../../../components/governance/DocumentVersionEditor';
+import { t, getLangFromURL, type Lang } from '../../../../../../i18n/utils';
 
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const { docId } = Astro.params;
 const draftVersionId = Astro.url.searchParams.get('draft') || undefined;
 ---
 <AdminLayout
-  title="Nova versao de documento"
+  title={t('admin.governance.newVersion.title', lang)}
   breadcrumbs={[
-    { label: 'Operacoes' },
-    { label: 'Governanca' },
-    { label: 'Documentos', href: '/admin/governance/documents' },
-    { label: 'Nova versao' },
+    { label: t('admin.layout.breadcrumb.operations', lang) },
+    { label: t('admin.layout.breadcrumb.governance', lang) },
+    { label: t('admin.layout.breadcrumb.documents', lang), href: '/admin/governance/documents' },
+    { label: t('admin.governance.newVersion.breadcrumb', lang) },
   ]}
 >
   <div class="max-w-[1400px] mx-auto px-4 py-6">

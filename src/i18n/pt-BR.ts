@@ -2710,6 +2710,21 @@ const ptBR: Record<string, string> = {
   'admin.comms.broadcastEmpty': 'Nenhum broadcast enviado ainda.',
 
 
+  // ── Admin layout breadcrumbs (p135 Ω-B) ──
+  'admin.layout.breadcrumb.operations': 'Operações',
+  'admin.layout.breadcrumb.governance': 'Governança',
+  'admin.layout.breadcrumb.documents': 'Documentos',
+  'admin.layout.breadcrumb.review': 'Revisar',
+  'admin.governance.review.title': 'Revisar documento',
+  'admin.governance.exportPdf.title': 'Exportar PDF — cadeia de ratificação',
+  'admin.governance.exportPdf.breadcrumb': 'Exportar PDF',
+  'admin.governance.exportDocx.title': 'Exportar DOCX — conteúdo da versão',
+  'admin.governance.exportDocx.breadcrumb': 'Exportar DOCX',
+  'admin.governance.auditReport.title': 'Relatório de auditoria — Conselho Fiscal',
+  'admin.governance.auditReport.breadcrumb': 'Relatório auditoria',
+  'admin.governance.newVersion.title': 'Nova versão de documento',
+  'admin.governance.newVersion.breadcrumb': 'Nova versão',
+
   // ── Admin Governance Links ──
   'admin.links.title': 'Recursos Administrativos',
   'admin.links.subtitle': 'Links restritos para governança e gestão (Tier 4+)',
