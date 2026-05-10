@@ -5,17 +5,19 @@
  */
 import AdminLayout from '../../../../../layouts/AdminLayout.astro';
 import ChainPDFExportIsland from '../../../../../components/governance/ChainPDFExportIsland';
+import { t, getLangFromURL, type Lang } from '../../../../../i18n/utils';
 
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const { chainId } = Astro.params;
 ---
 <AdminLayout
-  title="Exportar PDF — cadeia de ratificação"
+  title={t('admin.governance.exportPdf.title', lang)}
   breadcrumbs={[
-    { label: 'Operações' },
-    { label: 'Governança' },
-    { label: 'Documentos', href: '/admin/governance/documents' },
-    { label: 'Revisar', href: `/admin/governance/documents/${chainId}` },
-    { label: 'Exportar PDF' },
+    { label: t('admin.layout.breadcrumb.operations', lang) },
+    { label: t('admin.layout.breadcrumb.governance', lang) },
+    { label: t('admin.layout.breadcrumb.documents', lang), href: '/admin/governance/documents' },
+    { label: t('admin.layout.breadcrumb.review', lang), href: `/admin/governance/documents/${chainId}` },
+    { label: t('admin.governance.exportPdf.breadcrumb', lang) },
   ]}
 >
   <div class="max-w-[900px] mx-auto px-4 py-6">

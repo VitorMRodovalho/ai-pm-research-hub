@@ -2705,6 +2705,21 @@ const enUS: Record<string, string> = {
   'admin.comms.broadcastEmpty': 'No broadcasts sent yet.',
 
 
+  // ── Admin layout breadcrumbs (p135 Ω-B) ──
+  'admin.layout.breadcrumb.operations': 'Operations',
+  'admin.layout.breadcrumb.governance': 'Governance',
+  'admin.layout.breadcrumb.documents': 'Documents',
+  'admin.layout.breadcrumb.review': 'Review',
+  'admin.governance.review.title': 'Review document',
+  'admin.governance.exportPdf.title': 'Export PDF — ratification chain',
+  'admin.governance.exportPdf.breadcrumb': 'Export PDF',
+  'admin.governance.exportDocx.title': 'Export DOCX — version content',
+  'admin.governance.exportDocx.breadcrumb': 'Export DOCX',
+  'admin.governance.auditReport.title': 'Audit Report — Fiscal Council',
+  'admin.governance.auditReport.breadcrumb': 'Audit report',
+  'admin.governance.newVersion.title': 'New document version',
+  'admin.governance.newVersion.breadcrumb': 'New version',
+
   // ── Admin Governance Links ──
   'admin.links.title': 'Administrative Resources',
   'admin.links.subtitle': 'Restricted links for governance and management (Tier 4+)',

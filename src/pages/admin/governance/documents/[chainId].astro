@@ -7,16 +7,18 @@
  */
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import ReviewChainIsland from '../../../../components/governance/ReviewChainIsland';
+import { t, getLangFromURL, type Lang } from '../../../../i18n/utils';
 
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const { chainId } = Astro.params;
 ---
 <AdminLayout
-  title="Revisar documento"
+  title={t('admin.governance.review.title', lang)}
   breadcrumbs={[
-    { label: 'Operações' },
-    { label: 'Governança' },
-    { label: 'Documentos', href: '/admin/governance/documents' },
-    { label: 'Revisar' },
+    { label: t('admin.layout.breadcrumb.operations', lang) },
+    { label: t('admin.layout.breadcrumb.governance', lang) },
+    { label: t('admin.layout.breadcrumb.documents', lang), href: '/admin/governance/documents' },
+    { label: t('admin.layout.breadcrumb.review', lang) },
   ]}
 >
   <div class="max-w-[1600px] mx-auto px-4 py-6">
