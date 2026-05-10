@@ -9,34 +9,73 @@ import { resolve } from 'node:path';
 
 const ROOT = process.cwd();
 
-function countKeys(filePath) {
+/**
+ * Extract top-level i18n keys from a TS dict file.
+ * Anchored to start-of-line; captures `'key.path':` patterns at column-N indent.
+ * Returns a Set<string> of key paths.
+ */
+function extractKeys(filePath) {
   const content = readFileSync(filePath, 'utf8');
-  const matches = content.match(/'[^']+'\s*:/g);
-  return matches ? matches.length : 0;
+  const keys = new Set();
+  const re = /^\s*'([^'\\]+)'\s*:/gm;
+  let m;
+  while ((m = re.exec(content)) !== null) keys.add(m[1]);
+  return keys;
+}
+
+function formatKeyList(keys, max = 10) {
+  const arr = Array.from(keys);
+  if (arr.length === 0) return '(none)';
+  if (arr.length <= max) return arr.join(', ');
+  return `${arr.slice(0, max).join(', ')} ... (+${arr.length - max} more)`;
 }
 
 // ═══════════════════════════════════════════════════
-// i18n Completeness
+// i18n Completeness — Set Equality (p135 Ω-B upgrade)
+// Replaces ±5% count tolerance with strict key-by-key parity.
+// Catches inline-dict regressions (Senior Eng feedback p134).
 // ═══════════════════════════════════════════════════
 
-test('EN-US key count matches PT-BR (±5% tolerance)', () => {
-  const ptCount = countKeys(resolve(ROOT, 'src/i18n/pt-BR.ts'));
-  const enCount = countKeys(resolve(ROOT, 'src/i18n/en-US.ts'));
-  const tolerance = Math.ceil(ptCount * 0.05);
-  assert.ok(
-    Math.abs(ptCount - enCount) <= tolerance,
-    `EN-US (${enCount}) must be within ±5% of PT-BR (${ptCount}), diff=${Math.abs(ptCount - enCount)}, tolerance=${tolerance}`
+test('EN-US has every PT-BR key (no missing, no extra)', () => {
+  const ptKeys = extractKeys(resolve(ROOT, 'src/i18n/pt-BR.ts'));
+  const enKeys = extractKeys(resolve(ROOT, 'src/i18n/en-US.ts'));
+  const missingInEn = new Set([...ptKeys].filter(k => !enKeys.has(k)));
+  const extraInEn = new Set([...enKeys].filter(k => !ptKeys.has(k)));
+  assert.equal(
+    missingInEn.size,
+    0,
+    `EN-US missing ${missingInEn.size} keys from PT-BR: ${formatKeyList(missingInEn)}`
+  );
+  assert.equal(
+    extraInEn.size,
+    0,
+    `EN-US has ${extraInEn.size} extra keys not in PT-BR: ${formatKeyList(extraInEn)}`
   );
 });
 
-test('ES-LATAM key count matches PT-BR (±5% tolerance)', () => {
-  const ptCount = countKeys(resolve(ROOT, 'src/i18n/pt-BR.ts'));
-  const esCount = countKeys(resolve(ROOT, 'src/i18n/es-LATAM.ts'));
-  const tolerance = Math.ceil(ptCount * 0.05);
-  assert.ok(
-    Math.abs(ptCount - esCount) <= tolerance,
-    `ES-LATAM (${esCount}) must be within ±5% of PT-BR (${ptCount}), diff=${Math.abs(ptCount - esCount)}, tolerance=${tolerance}`
+test('ES-LATAM has every PT-BR key (no missing, no extra)', () => {
+  const ptKeys = extractKeys(resolve(ROOT, 'src/i18n/pt-BR.ts'));
+  const esKeys = extractKeys(resolve(ROOT, 'src/i18n/es-LATAM.ts'));
+  const missingInEs = new Set([...ptKeys].filter(k => !esKeys.has(k)));
+  const extraInEs = new Set([...esKeys].filter(k => !ptKeys.has(k)));
+  assert.equal(
+    missingInEs.size,
+    0,
+    `ES-LATAM missing ${missingInEs.size} keys from PT-BR: ${formatKeyList(missingInEs)}`
   );
+  assert.equal(
+    extraInEs.size,
+    0,
+    `ES-LATAM has ${extraInEs.size} extra keys not in PT-BR: ${formatKeyList(extraInEs)}`
+  );
+});
+
+test('All 3 dicts have identical key sets', () => {
+  const ptKeys = extractKeys(resolve(ROOT, 'src/i18n/pt-BR.ts'));
+  const enKeys = extractKeys(resolve(ROOT, 'src/i18n/en-US.ts'));
+  const esKeys = extractKeys(resolve(ROOT, 'src/i18n/es-LATAM.ts'));
+  assert.equal(ptKeys.size, enKeys.size, `PT-BR has ${ptKeys.size} keys but EN-US has ${enKeys.size}`);
+  assert.equal(ptKeys.size, esKeys.size, `PT-BR has ${ptKeys.size} keys but ES-LATAM has ${esKeys.size}`);
 });
 
 test('No empty string values in PT-BR', () => {
