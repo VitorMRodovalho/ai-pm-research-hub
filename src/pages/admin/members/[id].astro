@@ -2,21 +2,25 @@
 /**
  * /admin/members/[id] — Member detail page with 7 sections.
  * React island: MemberDetailIsland.
+ * Trilingue p139 Ω-B+.2.
  */
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import MemberDetailIsland from '../../../components/admin/members/MemberDetailIsland';
 import Toast from '../../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 
 const { id } = Astro.params;
-if (!id) return Astro.redirect('/admin/members');
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+if (!id) return Astro.redirect(`${langPrefix}/admin/members`);
 ---
 
 <AdminLayout
-  title="Detalhe do Membro"
+  title={t('admin.memberDetail.pageTitle', lang)}
   breadcrumbs={[
-    { label: 'Pessoas', href: '/admin/members' },
-    { label: 'Membros', href: '/admin/members' },
-    { label: 'Detalhe' }
+    { label: t('admin.breadcrumb.people', lang), href: `${langPrefix}/admin/members` },
+    { label: t('admin.breadcrumb.members', lang), href: `${langPrefix}/admin/members` },
+    { label: t('admin.breadcrumb.detail', lang) }
   ]}
 >
   <MemberDetailIsland client:load memberId={id} />
