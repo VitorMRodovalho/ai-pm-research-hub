@@ -4,6 +4,62 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.5.a p142)
+const WEBINARS_I18N = {
+  statusPlanned: t('admin.webinars.statusPlanned', lang),
+  statusConfirmed: t('admin.webinars.statusConfirmed', lang),
+  statusCompleted: t('admin.webinars.statusCompleted', lang),
+  statusCancelled: t('admin.webinars.statusCancelled', lang),
+  chapterGeneral: t('admin.webinars.chapterGeneral', lang),
+  statPlanned: t('admin.webinars.statPlanned', lang),
+  statConfirmed: t('admin.webinars.statConfirmed', lang),
+  statCompleted: t('admin.webinars.statCompleted', lang),
+  statTotalAttendees: t('admin.webinars.statTotalAttendees', lang),
+  actionConfirm: t('admin.webinars.actionConfirm', lang),
+  actionCreateSession: t('admin.webinars.actionCreateSession', lang),
+  actionAddMeetingLink: t('admin.webinars.actionAddMeetingLink', lang),
+  actionPrepareCommunication: t('admin.webinars.actionPrepareCommunication', lang),
+  actionMarkCompleted: t('admin.webinars.actionMarkCompleted', lang),
+  actionPublishReplay: t('admin.webinars.actionPublishReplay', lang),
+  actionFollowupComms: t('admin.webinars.actionFollowupComms', lang),
+  actionComplete: t('admin.webinars.actionComplete', lang),
+  cardLinkedSession: t('admin.webinars.cardLinkedSession', lang),
+  cardNoSession: t('admin.webinars.cardNoSession', lang),
+  cardCoManagersLabel: t('admin.webinars.cardCoManagersLabel', lang),
+  cardOrganizerLabel: t('admin.webinars.cardOrganizerLabel', lang),
+  cardLinkedCardLabel: t('admin.webinars.cardLinkedCardLabel', lang),
+  cardAttendeesLabel: t('admin.webinars.cardAttendeesLabel', lang),
+  cardMinSuffix: t('admin.webinars.cardMinSuffix', lang),
+  cardReplayBtn: t('admin.webinars.cardReplayBtn', lang),
+  cardJoinBtn: t('admin.webinars.cardJoinBtn', lang),
+  cardEditBtn: t('admin.webinars.cardEditBtn', lang),
+  cardCommsBtn: t('admin.webinars.cardCommsBtn', lang),
+  cardOpenBtn: t('admin.webinars.cardOpenBtn', lang),
+  emptyFollowup: t('admin.webinars.emptyFollowup', lang),
+  emptyAllStart: t('admin.webinars.emptyAllStart', lang),
+  validateTitleAndDate: t('admin.webinars.validateTitleAndDate', lang),
+  linkSessionSuccess: t('admin.webinars.linkSessionSuccess', lang),
+  coManagersCountSuffix: t('admin.webinars.coManagersCountSuffix', lang),
+  lifecycleCreated: t('admin.webinars.lifecycleCreated', lang),
+  lifecycleStatusChange: t('admin.webinars.lifecycleStatusChange', lang),
+  lifecycleEventLinked: t('admin.webinars.lifecycleEventLinked', lang),
+  modalAddTitle: t('admin.webinars.modal.addTitle', lang),
+  modalEditTitle: t('admin.webinars.modal.editTitle', lang),
+  modalSelectTribe: t('admin.webinars.modal.selectTribe', lang),
+  saveError: t('admin.webinars.msg.saveError', lang),
+  roleShort: {
+    manager: t('admin.webinars.roleShortGP', lang),
+    deputy_manager: t('admin.webinars.roleShortViceGP', lang),
+    tribe_leader: t('admin.webinars.roleShortLeader', lang),
+    comms_leader: t('admin.webinars.roleShortCommsL', lang),
+    researcher: t('admin.webinars.roleShortResearcher', lang),
+    facilitator: t('admin.webinars.roleShortFacilitator', lang),
+    communicator: t('admin.webinars.roleShortComms', lang),
+    none: '—',
+    guest: t('admin.webinars.roleShortGuest', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('nav.adminWebinars', lang)} activePage="webinars" breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('nav.adminWebinars', lang)}]}>
@@ -22,18 +78,17 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
               <span class="text-emerald-400">•</span>
               <span>Multi-Entity</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
+            <h1 class="text-2xl font-extrabold text-navy mb-2">{t('nav.adminWebinars', lang)}</h1>
             <p class="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Gestao integrada de webinars com co-gerenciamento por capitulo, notificacoes automaticas
-              para Comms e lideres de tribo, e rastreabilidade completa do pipeline ao replay.
+              {t('admin.webinars.heroSubtitle', lang)}
             </p>
           </div>
           <div class="flex flex-col gap-2 min-w-[200px]">
             <button id="btn-new-webinar" type="button" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90 transition-all">
-              + Novo Webinar
+              {t('admin.webinars.addBtn', lang)}
             </button>
             <a href="/attendance?tab=events&type=webinar" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
-              Attendance
+              {t('admin.webinars.attendanceBtn', lang)}
             </a>
           </div>
         </div>
@@ -43,15 +98,15 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     <!-- Filters -->
     <section class="flex items-center gap-3 flex-wrap">
       <select id="filter-status" class="text-[.78rem] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] px-3 py-2">
-        <option value="">Todos os status</option>
-        <option value="planned">Planejado</option>
-        <option value="confirmed">Confirmado</option>
-        <option value="completed">Realizado</option>
-        <option value="cancelled">Cancelado</option>
+        <option value="">{t('admin.webinars.filterAllStatus', lang)}</option>
+        <option value="planned">{t('admin.webinars.statusPlanned', lang)}</option>
+        <option value="confirmed">{t('admin.webinars.statusConfirmed', lang)}</option>
+        <option value="completed">{t('admin.webinars.statusCompleted', lang)}</option>
+        <option value="cancelled">{t('admin.webinars.statusCancelled', lang)}</option>
       </select>
       <select id="filter-chapter" class="text-[.78rem] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] px-3 py-2">
-        <option value="">Todos os capitulos</option>
-        {CHAPTERS.map(ch => <option value={ch}>{ch === 'ALL' ? 'Geral (ALL)' : `PMI-${ch}`}</option>)}
+        <option value="">{t('admin.webinars.filterAllChapters', lang)}</option>
+        {CHAPTERS.map(ch => <option value={ch}>{ch === 'ALL' ? t('admin.webinars.chapterGeneralAll', lang) : `PMI-${ch}`}</option>)}
       </select>
     </section>
 
@@ -61,8 +116,8 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     <!-- Priority Actions -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Acoes prioritarias</h2>
-        <p class="text-[.72rem] text-[var(--text-muted)]">Proxima acao sugerida por webinar</p>
+        <h2 class="text-sm font-bold text-navy">{t('admin.webinars.priorityActionsTitle', lang)}</h2>
+        <p class="text-[.72rem] text-[var(--text-muted)]">{t('admin.webinars.priorityActionsSubtitle', lang)}</p>
       </div>
       <div id="webinars-actions" class="p-5"></div>
     </section>
@@ -71,13 +126,13 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
+          <h2 class="text-sm font-bold text-navy">{t('admin.webinars.upcomingTitle', lang)}</h2>
         </div>
         <div id="webinars-upcoming" class="p-5"></div>
       </div>
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
+          <h2 class="text-sm font-bold text-navy">{t('admin.webinars.followupTitle', lang)}</h2>
         </div>
         <div id="webinars-followup" class="p-5"></div>
       </div>
@@ -86,33 +141,33 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     <!-- Operational Flow -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Fluxo operacional</h2>
+        <h2 class="text-sm font-bold text-navy">{t('admin.webinars.flowTitle', lang)}</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 p-5">
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">1.</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Planejar</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie o webinar aqui com capitulo, tribo e organizador.</p>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">{t('admin.webinars.flow1Label', lang)}</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">{t('admin.webinars.flow1Desc', lang)}</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">2.</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Confirmar</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Mude para Confirmado — Comms e lider recebem notificacao.</p>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">{t('admin.webinars.flow2Label', lang)}</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">{t('admin.webinars.flow2Desc', lang)}</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">3.</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Sessao</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie o evento em Attendance para check-in e presenca.</p>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">{t('admin.webinars.flow3Label', lang)}</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">{t('admin.webinars.flow3Desc', lang)}</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">4.</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Realizar</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Marque como Realizado — follow-up e replay entram na fila.</p>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">{t('admin.webinars.flow4Label', lang)}</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">{t('admin.webinars.flow4Desc', lang)}</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">5.</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Publicar</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Replay em Presentations e Workspace fecha o ciclo.</p>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">{t('admin.webinars.flow5Label', lang)}</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">{t('admin.webinars.flow5Desc', lang)}</p>
         </div>
       </div>
     </section>
@@ -120,7 +175,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     <!-- Full List -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Todos os webinars</h2>
+        <h2 class="text-sm font-bold text-navy">{t('admin.webinars.allWebinarsTitle', lang)}</h2>
       </div>
       <div id="webinars-list" class="p-5"></div>
     </section>
@@ -129,39 +184,39 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   <!-- Denied -->
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
     <div class="text-4xl mb-3">🔒</div>
-    <p class="font-semibold text-[var(--text-secondary)]">Acesso restrito a liderancas, comms, curadoria e facilitadores convidados.</p>
-    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar</a>
+    <p class="font-semibold text-[var(--text-secondary)]">{t('admin.webinars.deniedDetail', lang)}</p>
+    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.webinars.backHome', lang)}</a>
   </div>
 
   <!-- CRUD Modal -->
   <div id="webinar-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
     <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-lg p-6 mx-4 max-h-[90vh] overflow-y-auto">
-      <h2 id="modal-title" class="text-lg font-extrabold text-navy mb-4">Novo Webinar</h2>
+      <h2 id="modal-title" class="text-lg font-extrabold text-navy mb-4">{t('admin.webinars.modal.addTitle', lang)}</h2>
       <input type="hidden" id="modal-id" />
       <div class="space-y-3">
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Titulo</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelTitle', lang)}</label>
           <input id="modal-wTitle" type="text" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Descricao</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelDesc', lang)}</label>
           <textarea id="modal-desc" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Data e hora</label>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelDate', lang)}</label>
             <input id="modal-date" type="datetime-local" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
           </div>
           <div>
-            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Duracao (min)</label>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelDuration', lang)}</label>
             <input id="modal-duration" type="number" value="60" min="15" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Capitulo PMI</label>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelChapter', lang)}</label>
             <select id="modal-chapter" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
-              <option value="ALL">Geral</option>
+              <option value="ALL">{t('admin.webinars.chapterGeneral', lang)}</option>
               <option value="CE">PMI-CE</option>
               <option value="DF">PMI-DF</option>
               <option value="GO">PMI-GO</option>
@@ -170,35 +225,35 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
             </select>
           </div>
           <div>
-            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Status</label>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelStatus', lang)}</label>
             <select id="modal-status" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
-              <option value="planned">Planejado</option>
-              <option value="confirmed">Confirmado</option>
-              <option value="completed">Realizado</option>
-              <option value="cancelled">Cancelado</option>
+              <option value="planned">{t('admin.webinars.statusPlanned', lang)}</option>
+              <option value="confirmed">{t('admin.webinars.statusConfirmed', lang)}</option>
+              <option value="completed">{t('admin.webinars.statusCompleted', lang)}</option>
+              <option value="cancelled">{t('admin.webinars.statusCancelled', lang)}</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Tribo responsavel</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelTribe', lang)}</label>
           <select id="modal-tribe" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
-            <option value="">— Opcional —</option>
+            <option value="">{t('admin.webinars.modal.selectTribe', lang)}</option>
           </select>
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Link da reuniao</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelLink', lang)}</label>
           <input id="modal-link" type="url" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" placeholder="https://..." />
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">URL do YouTube (replay)</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelYoutube', lang)}</label>
           <input id="modal-youtube" type="url" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" placeholder="https://youtube.com/..." />
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Observacoes</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelNotes', lang)}</label>
           <textarea id="modal-notes" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
         </div>
         <div>
-          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Co-gestores</label>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.webinars.modal.labelCoManagers', lang)}</label>
           <div id="modal-co-managers" class="max-h-48 overflow-y-auto rounded-lg border border-[var(--border-default)] p-2 space-y-1">
             <span class="text-[.72rem] text-[var(--text-muted)]">{t('admin.loadingMembers', lang)}</span>
           </div>
@@ -206,21 +261,21 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
         </div>
       </div>
       <div id="modal-lifecycle" class="hidden mt-4 pt-4 border-t border-[var(--border-default)]">
-        <h3 class="text-xs font-bold text-navy mb-2">Historico</h3>
+        <h3 class="text-xs font-bold text-navy mb-2">{t('admin.webinars.modal.lifecycleHeader', lang)}</h3>
         <div id="modal-lifecycle-body" class="space-y-1 text-[.72rem] text-[var(--text-secondary)] max-h-32 overflow-y-auto"></div>
       </div>
       <div class="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[var(--border-default)]">
         <div class="flex gap-2">
           <button id="btn-create-event" type="button" class="hidden px-3 py-2 rounded-lg bg-teal text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90">
-            Criar sessao Attendance
+            {t('admin.webinars.modal.createEventBtn', lang)}
           </button>
         </div>
         <div class="flex gap-2">
           <button id="btn-modal-cancel" type="button" class="px-4 py-2 rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]">
-            Cancelar
+            {t('admin.webinars.modal.cancel', lang)}
           </button>
           <button id="btn-modal-save" type="button" class="px-4 py-2 rounded-lg bg-navy text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90">
-            Salvar
+            {t('admin.webinars.modal.save', lang)}
           </button>
         </div>
       </div>
@@ -231,8 +286,35 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ WEBINARS_I18N }}>
+  window.__WEBINARS_I18N = WEBINARS_I18N;
+</script>
 <script>
   import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__WEBINARS_I18N) || {
+    statusPlanned: 'Planejado', statusConfirmed: 'Confirmado', statusCompleted: 'Realizado', statusCancelled: 'Cancelado',
+    chapterGeneral: 'Geral',
+    statPlanned: 'Planejados', statConfirmed: 'Confirmados', statCompleted: 'Realizados', statTotalAttendees: 'Total presentes',
+    actionConfirm: 'Confirmar webinar', actionCreateSession: 'Criar sessão Attendance',
+    actionAddMeetingLink: 'Adicionar link da reunião', actionPrepareCommunication: 'Preparar divulgação',
+    actionMarkCompleted: 'Marcar como realizado', actionPublishReplay: 'Publicar replay',
+    actionFollowupComms: 'Follow-up Comms', actionComplete: 'Completo',
+    cardLinkedSession: 'Sessão vinculada', cardNoSession: 'Sem sessão',
+    cardCoManagersLabel: 'Co-gestores', cardOrganizerLabel: 'Org', cardLinkedCardLabel: 'Card',
+    cardAttendeesLabel: 'presentes', cardMinSuffix: 'min',
+    cardReplayBtn: 'Replay', cardJoinBtn: 'Entrar', cardEditBtn: 'Editar', cardCommsBtn: 'Comms', cardOpenBtn: 'Abrir',
+    emptyFollowup: 'Sem fila de follow-up.', emptyAllStart: 'Clique em "+ Novo Webinar" para começar.',
+    validateTitleAndDate: 'Título e data são obrigatórios.',
+    linkSessionSuccess: 'Sessão de Attendance criada com sucesso!',
+    coManagersCountSuffix: 'selecionados',
+    lifecycleCreated: 'Criado', lifecycleStatusChange: 'Status alterado', lifecycleEventLinked: 'Sessão vinculada',
+    modalAddTitle: 'Agendar Webinar', modalEditTitle: 'Editar Webinar', modalSelectTribe: '— Opcional —',
+    saveError: 'Erro ao salvar webinar',
+    roleShort: { manager: 'GP', deputy_manager: 'Vice-GP', tribe_leader: 'Líder', comms_leader: 'Comms-L',
+      researcher: 'Pesq.', facilitator: 'Facil.', communicator: 'Comms', none: '—', guest: 'Guest' },
+  };
 
   const TRIBE_NAMES: Record<number, string> = {
     1: 'Radar Tecnologico', 2: 'Agentes Autonomos', 3: 'TMO & PMO do Futuro',
@@ -241,7 +323,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   };
 
   const STATUS_LABELS: Record<string, string> = {
-    planned: 'Planejado', confirmed: 'Confirmado', completed: 'Realizado', cancelled: 'Cancelado'
+    planned: T.statusPlanned, confirmed: T.statusConfirmed, completed: T.statusCompleted, cancelled: T.statusCancelled
   };
   const STATUS_TONES: Record<string, string> = {
     planned: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -294,27 +376,27 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   function nextAction(w: any): { label: string; href: string; tone: string; priority: number } {
     const future = isFuture(w.scheduled_at);
     if (w.status === 'planned') {
-      return { label: 'Confirmar webinar', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 1 };
+      return { label: T.actionConfirm, href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 1 };
     }
     if (w.status === 'confirmed' && future && !w.event_id) {
-      return { label: 'Criar sessao Attendance', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 2 };
+      return { label: T.actionCreateSession, href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 2 };
     }
     if (w.status === 'confirmed' && future && !w.meeting_link) {
-      return { label: 'Adicionar link da reuniao', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
+      return { label: T.actionAddMeetingLink, href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
     }
     if (w.status === 'confirmed' && future) {
-      return { label: 'Preparar divulgacao', href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=invite`, tone: 'bg-blue-50 text-blue-700 border-blue-200', priority: 5 };
+      return { label: T.actionPrepareCommunication, href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=invite`, tone: 'bg-blue-50 text-blue-700 border-blue-200', priority: 5 };
     }
     if (w.status === 'confirmed' && !future) {
-      return { label: 'Marcar como realizado', href: '#', tone: 'bg-purple-50 text-purple-700 border-purple-200', priority: 2 };
+      return { label: T.actionMarkCompleted, href: '#', tone: 'bg-purple-50 text-purple-700 border-purple-200', priority: 2 };
     }
     if (w.status === 'completed' && !w.youtube_url) {
-      return { label: 'Publicar replay', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
+      return { label: T.actionPublishReplay, href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
     }
     if (w.status === 'completed' && w.youtube_url) {
-      return { label: 'Follow-up Comms', href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=followup`, tone: 'bg-teal-50 text-teal-700 border-teal-200', priority: 6 };
+      return { label: T.actionFollowupComms, href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=followup`, tone: 'bg-teal-50 text-teal-700 border-teal-200', priority: 6 };
     }
-    return { label: 'Completo', href: '#', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', priority: 9 };
+    return { label: T.actionComplete, href: '#', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', priority: 9 };
   }
 
   // ── Rendering ──
@@ -327,10 +409,10 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     const completed = webinars.filter(w => w.status === 'completed').length;
     const totalAttendees = webinars.reduce((s: number, w: any) => s + Number(w.attendee_count || 0), 0);
     const cards = [
-      { label: 'Planejados', value: planned, tone: 'bg-gray-50 text-gray-700 border-gray-200' },
-      { label: 'Confirmados', value: confirmed, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-      { label: 'Realizados', value: completed, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-      { label: 'Total presentes', value: totalAttendees, tone: 'bg-purple-50 text-purple-700 border-purple-200' },
+      { label: T.statPlanned, value: planned, tone: 'bg-gray-50 text-gray-700 border-gray-200' },
+      { label: T.statConfirmed, value: confirmed, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+      { label: T.statCompleted, value: completed, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      { label: T.statTotalAttendees, value: totalAttendees, tone: 'bg-purple-50 text-purple-700 border-purple-200' },
     ];
     el.innerHTML = cards.map(c => `
       <div class="rounded-2xl border ${c.tone} p-4">
@@ -343,16 +425,16 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   function webinarCard(w: any): string {
     const action = nextAction(w);
     const statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${STATUS_TONES[w.status] || ''}">${STATUS_LABELS[w.status] || w.status}</span>`;
-    const chapterBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}</span>`;
+    const chapterBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">${w.chapter_code === 'ALL' ? T.chapterGeneral : 'PMI-' + w.chapter_code}</span>`;
     const tribeBadge = w.tribe_name ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700">${esc(w.tribe_name)}</span>` : '';
     const eventBadge = w.event_id
-      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700">Sessao vinculada</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">Sem sessao</span>`;
+      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700">${T.cardLinkedSession}</span>`
+      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">${T.cardNoSession}</span>`;
     const coManagers = (w.co_managers || []).length
-      ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">Co-gestores: ${(w.co_managers || []).map((cm: any) => esc(cm.name)).join(', ')}</div>`
+      ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">${T.cardCoManagersLabel}: ${(w.co_managers || []).map((cm: any) => esc(cm.name)).join(', ')}</div>`
       : '';
-    const replayLink = w.youtube_url ? `<a href="${esc(w.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100">Replay</a>` : '';
-    const meetLink = w.meeting_link && isFuture(w.scheduled_at) ? `<a href="${esc(w.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100">Entrar</a>` : '';
+    const replayLink = w.youtube_url ? `<a href="${esc(w.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100">${T.cardReplayBtn}</a>` : '';
+    const meetLink = w.meeting_link && isFuture(w.scheduled_at) ? `<a href="${esc(w.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100">${T.cardJoinBtn}</a>` : '';
 
     return `
       <article class="rounded-2xl border border-[var(--border-default)] p-4">
@@ -365,20 +447,20 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
             <div class="text-[.76rem] text-[var(--text-secondary)] flex items-center gap-2 flex-wrap">
               <span>${fmtDateTime(w.scheduled_at)}</span>
               <span>·</span>
-              <span>${w.duration_min} min</span>
-              ${w.attendee_count > 0 ? `<span>·</span><span>${w.attendee_count} presentes</span>` : ''}
-              ${w.organizer_name ? `<span>·</span><span>Org: ${esc(w.organizer_name)}</span>` : ''}
+              <span>${w.duration_min} ${T.cardMinSuffix}</span>
+              ${w.attendee_count > 0 ? `<span>·</span><span>${w.attendee_count} ${T.cardAttendeesLabel}</span>` : ''}
+              ${w.organizer_name ? `<span>·</span><span>${T.cardOrganizerLabel}: ${esc(w.organizer_name)}</span>` : ''}
             </div>
             ${coManagers}
-            ${w.board_item_title ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">Card: ${esc(w.board_item_title)} (${esc(w.board_item_status)})</div>` : ''}
+            ${w.board_item_title ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">${T.cardLinkedCardLabel}: ${esc(w.board_item_title)} (${esc(w.board_item_status)})</div>` : ''}
             <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${action.tone}">
               ${esc(action.label)}
             </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            ${canEdit() ? `<button type="button" data-edit="${w.id}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">Editar</button>` : ''}
+            ${canEdit() ? `<button type="button" data-edit="${w.id}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">${T.cardEditBtn}</button>` : ''}
             ${meetLink} ${replayLink}
-            <a href="/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.status === 'completed' ? 'followup' : 'invite'}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">Comms</a>
+            <a href="/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.status === 'completed' ? 'followup' : 'invite'}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">${T.cardCommsBtn}</a>
           </div>
         </div>
       </article>
@@ -400,7 +482,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     const items = webinars.filter(w => !isFuture(w.scheduled_at) && w.status === 'completed' && !w.youtube_url).slice(0, 5);
     el.innerHTML = items.length
       ? `<div class="space-y-3">${items.map(webinarCard).join('')}</div>`
-      : `<div class="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-center"><div class="text-3xl mb-2">✅</div><div class="text-sm font-semibold text-emerald-700">Sem fila de follow-up.</div></div>`;
+      : `<div class="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-center"><div class="text-3xl mb-2">✅</div><div class="text-sm font-semibold text-emerald-700">${T.emptyFollowup}</div></div>`;
   }
 
   function renderActions(webinars: any[]) {
@@ -419,10 +501,10 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <div class="text-sm font-bold text-navy">${esc(w.title)}</div>
-            <div class="text-[.72rem] text-[var(--text-muted)] mt-1">${fmtDate(w.scheduled_at)} · ${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}</div>
+            <div class="text-[.72rem] text-[var(--text-muted)] mt-1">${fmtDate(w.scheduled_at)} · ${w.chapter_code === 'ALL' ? T.chapterGeneral : 'PMI-' + w.chapter_code}</div>
             <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${w._action.tone}">${esc(w._action.label)}</div>
           </div>
-          ${canEdit() ? `<button type="button" data-edit="${w.id}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">Abrir</button>` : ''}
+          ${canEdit() ? `<button type="button" data-edit="${w.id}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">${T.cardOpenBtn}</button>` : ''}
         </div>
       </article>
     `).join('')}</div>`;
@@ -436,7 +518,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
         <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-10 text-center">
           <div class="text-4xl mb-3">🎥</div>
           <div class="text-sm font-semibold text-[var(--text-secondary)]">${document.getElementById('ai18n-nor')?.textContent || 'No webinar.'}</div>
-          <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">Clique em "+ Novo Webinar" para comecar.</p>
+          <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">${T.emptyAllStart}</p>
         </div>`;
       return;
     }
@@ -480,10 +562,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       container.innerHTML = `<span class="text-[.72rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No member found.'}</span>`;
       return;
     }
-    const ROLE_SHORT: Record<string, string> = {
-      manager: 'GP', deputy_manager: 'Vice-GP', tribe_leader: 'Lider', comms_leader: 'Comms-L', researcher: 'Pesq.',
-      facilitator: 'Facil.', communicator: 'Comms', none: '—', guest: 'Guest'
-    };
+    const ROLE_SHORT: Record<string, string> = T.roleShort;
     container.innerHTML = allActiveMembers.map(function(m) {
       var checked = coManagerIds.includes(m.id) ? 'checked' : '';
       return '<label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--surface-hover)] cursor-pointer text-sm">'
@@ -513,7 +592,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     var countEl = document.getElementById('modal-co-count');
     if (!countEl) return;
     if (coManagerIds.length > 0) {
-      countEl.textContent = coManagerIds.length + ' selecionados';
+      countEl.textContent = coManagerIds.length + ' ' + T.coManagersCountSuffix;
       countEl.classList.remove('hidden');
     } else {
       countEl.classList.add('hidden');
@@ -539,7 +618,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     const lifecycleSection = document.getElementById('modal-lifecycle')!;
 
     // Populate tribe select
-    tribeEl.innerHTML = '<option value="">— Opcional —</option>';
+    tribeEl.innerHTML = `<option value="">${T.modalSelectTribe}</option>`;
     Object.entries(TRIBE_NAMES).forEach(([id, name]) => {
       tribeEl.innerHTML += `<option value="${id}">${name}</option>`;
     });
@@ -549,7 +628,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     loadActiveMembers().then(renderCoManagerSelector);
 
     if (w) {
-      titleEl.textContent = 'Editar Webinar';
+      titleEl.textContent = T.modalEditTitle;
       idEl.value = w.id;
       wTitleEl.value = w.title || '';
       descEl.value = w.description || '';
@@ -574,7 +653,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       // Load lifecycle
       loadLifecycle(w.id);
     } else {
-      titleEl.textContent = 'Novo Webinar';
+      titleEl.textContent = T.modalAddTitle;
       idEl.value = '';
       wTitleEl.value = '';
       descEl.value = '';
@@ -610,7 +689,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       section.classList.remove('hidden');
       body.innerHTML = events.map((e: any) => {
         const actionLabel: Record<string, string> = {
-          created: 'Criado', status_change: 'Status alterado', event_linked: 'Sessao vinculada',
+          created: T.lifecycleCreated, status_change: T.lifecycleStatusChange, event_linked: T.lifecycleEventLinked,
         };
         return `<div class="flex items-center gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-teal shrink-0"></span>
@@ -636,7 +715,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     const notes = (document.getElementById('modal-notes') as HTMLTextAreaElement).value.trim() || undefined;
 
     if (!title || !scheduled_at) {
-      alert('Titulo e data sao obrigatorios.');
+      alert(T.validateTitleAndDate);
       return;
     }
 
@@ -672,7 +751,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       if (error) throw error;
       closeModal();
       await reload();
-      alert('Sessao de Attendance criada com sucesso!');
+      alert(T.linkSessionSuccess);
     } catch (err: any) {
       alert((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (err?.message || err));
     }
