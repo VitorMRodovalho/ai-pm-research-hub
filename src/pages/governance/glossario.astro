@@ -16,9 +16,10 @@
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createClient } from '@supabase/supabase-js';
-import { getLangFromURL, type Lang } from '../../i18n/utils';
+import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const dateLocale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es-419';
 
 const sbAnon = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -51,19 +52,19 @@ const displayDate = currentLocked?.locked_at || latest?.date;
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(dateLocale, { day: '2-digit', month: 'long', year: 'numeric' });
   } catch { return iso; }
 }
 ---
 
-<BaseLayout title="Glossário — Núcleo IA & GP" activePage="governance" lang="pt-BR">
+<BaseLayout title={t('glossario.metaTitle', lang)} activePage="governance" lang={lang}>
   <div class="max-w-[900px] mx-auto px-4 py-10 space-y-8">
     <header class="text-center space-y-2">
       <h1 class="text-2xl md:text-3xl font-extrabold text-navy">
-        Glossário Canônico
+        {t('glossario.title', lang)}
       </h1>
       <p class="text-sm text-[var(--text-muted)]">
-        Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gestão de Projetos
+        {t('glossario.subtitle', lang)}
       </p>
       <p class="text-xs text-[var(--text-muted)] italic">
         AI &amp; PM Study and Research Hub
@@ -71,17 +72,13 @@ function fmtDate(iso: string | null | undefined): string {
     </header>
 
     <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900">
-      <strong>📖 Espelho dinâmico da Cláusula 13 da Política de Publicação e Propriedade Intelectual.</strong>
-      Esta página atualiza-se automaticamente conforme nova versão da Política é lacrada.
-      Em caso de divergência interpretativa, prevalece o texto oficial da Política
-      (Cláusula 13.5).
+      {t('glossario.banner', lang)}
     </div>
 
     {!displayHtml && (
       <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-8 text-center">
         <p class="text-sm text-[var(--text-secondary)]">
-          O glossário será publicado a partir da próxima versão lacrada da Política.
-          Em revisão pelos curadores.
+          {t('glossario.notYetLocked', lang)}
         </p>
       </div>
     )}
@@ -90,16 +87,16 @@ function fmtDate(iso: string | null | undefined): string {
       <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-6">
         <div class="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-default)] flex-wrap gap-2">
           <div>
-            <h2 class="text-lg font-bold text-[var(--text-primary)]">Versão {displayLabel}</h2>
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">{t('glossario.versionLabel', lang)} {displayLabel}</h2>
             <p class="text-[11px] text-[var(--text-muted)] mt-0.5">
-              {displayIsLocked ? '✅ Vigente · Lacrada' : '⏳ Em revisão · Draft pendente curadoria'}
-              {' em '}{fmtDate(displayDate)}
+              {displayIsLocked ? t('glossario.statusLocked', lang) : t('glossario.statusDraft', lang)}
+              {t('glossario.lockedOn', lang)}{fmtDate(displayDate)}
             </p>
           </div>
           {showLatestAsDraft && currentLocked && (
             <span class="text-[10px] text-amber-800 italic max-w-[300px] text-right">
-              Versão lacrada vigente: {currentLocked.version_label}.
-              Existe draft em revisão pendente: {latest.version_label}.
+              {t('glossario.draftBannerCurrent', lang)} {currentLocked.version_label}.
+              {' '}{t('glossario.draftBannerPending', lang)} {latest.version_label}.
             </span>
           )}
         </div>
@@ -112,12 +109,11 @@ function fmtDate(iso: string | null | undefined): string {
         {showLatestAsDraft && latestGlossaryHtml && latestGlossaryHtml !== currentGlossaryHtml && (
           <details class="mt-6 pt-4 border-t border-[var(--border-default)]">
             <summary class="text-[12px] font-bold text-amber-800 cursor-pointer hover:text-amber-900">
-              ⏳ Visualizar próxima versão em revisão ({latest.version_label})
+              {t('glossario.viewDraftSummary', lang)} ({latest.version_label})
             </summary>
             <div class="mt-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
               <p class="text-[10px] text-amber-900 mb-3 italic">
-                Este conteúdo está em revisão pelos curadores e ainda não foi
-                ratificado. Em caso de divergência, prevalece a versão lacrada acima.
+                {t('glossario.draftWarning', lang)}
               </p>
               <article
                 class="prose prose-sm max-w-none text-[var(--text-primary)]"
@@ -131,14 +127,14 @@ function fmtDate(iso: string | null | undefined): string {
 
     {history.length > 1 && (
       <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] p-4">
-        <h3 class="text-[13px] font-bold text-[var(--text-primary)] mb-2">Histórico de versões da Política</h3>
+        <h3 class="text-[13px] font-bold text-[var(--text-primary)] mb-2">{t('glossario.history', lang)}</h3>
         <ul class="text-[11px] text-[var(--text-secondary)] space-y-1">
           {history.map((v: any) => (
             <li class="flex items-center gap-2">
               <span class="font-mono text-[10px]">{v.version_label}</span>
               <span>·</span>
-              <span>{v.is_locked ? '✅ Lacrada' : '⏳ Draft'}</span>
-              {v.is_current && <span class="text-green-700 font-semibold">(vigente)</span>}
+              <span>{v.is_locked ? t('glossario.lockedShort', lang) : t('glossario.draftShort', lang)}</span>
+              {v.is_current && <span class="text-green-700 font-semibold">{t('glossario.currentTag', lang)}</span>}
               <span>·</span>
               <span>{fmtDate(v.date)}</span>
             </li>
@@ -149,11 +145,11 @@ function fmtDate(iso: string | null | undefined): string {
 
     <footer class="text-center pt-6 border-t border-[var(--border-default)]">
       <p class="text-[11px] text-[var(--text-muted)]">
-        Política de Publicação e Propriedade Intelectual completa:{' '}
-        <a href={`${langPrefix}/admin/governance/documents`} class="underline hover:text-navy">acesso restrito a curadores via plataforma</a>
+        {t('glossario.fullPolicy', lang)}{' '}
+        <a href={`${langPrefix}/admin/governance/documents`} class="underline hover:text-navy">{t('glossario.restrictedAccess', lang)}</a>
       </p>
       <p class="text-[10px] text-[var(--text-muted)] italic mt-2">
-        Núcleo IA &amp; GP — projeto voluntário interinstitucional sediado em PMI Goiás (PMI-GO).
+        {t('glossario.footer', lang)}
       </p>
     </footer>
   </div>

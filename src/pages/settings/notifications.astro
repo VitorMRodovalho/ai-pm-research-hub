@@ -1,92 +1,126 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 
 // ADR-0022 W2: notification preferences page (4-mode + weekly digest opt-out).
 // Auth: client-side via getSupabase() factory.
 // RPC: set_my_notification_prefs(p_notify_weekly_digest, p_notify_delivery_mode_pref)
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+// i18n payload for client-side script (no module ESM coupling)
+const i18nClient = {
+  authRequired: t('settings.notifications.authRequired', lang),
+  memberNotFound: t('settings.notifications.memberNotFound', lang),
+  savingProgress: t('settings.notifications.savingProgress', lang),
+  savedOk: t('settings.notifications.savedOk', lang),
+  errorPrefix: t('settings.notifications.errorPrefix', lang),
+  mutedSavedOk: t('settings.notifications.mutedSavedOk', lang),
+  metricsLoading: t('settings.notifications.metricsLoading', lang),
+  metricsError: t('settings.notifications.metricsError', lang),
+  metricReceived: t('settings.notifications.metricReceived', lang),
+  metricEmailed: t('settings.notifications.metricEmailed', lang),
+  metricRead: t('settings.notifications.metricRead', lang),
+  metricUnread: t('settings.notifications.metricUnread', lang),
+  metricsFooter: t('settings.notifications.metricsFooter', lang),
+  notificationTypes: {
+    tribe_broadcast: t('notification.type.tribe_broadcast', lang),
+    attendance_reminder: t('notification.type.attendance_reminder', lang),
+    card_assigned: t('notification.type.card_assigned', lang),
+    card_status_changed: t('notification.type.card_status_changed', lang),
+    webinar_status_confirmed: t('notification.type.webinar_status_confirmed', lang),
+    publication: t('notification.type.publication', lang),
+    governance_vote_reminder: t('notification.type.governance_vote_reminder', lang),
+    engagement_welcome: t('notification.type.engagement_welcome', lang),
+    system: t('notification.type.system', lang),
+  },
+};
 ---
-<BaseLayout title="Preferências de Notificação — Núcleo IA">
+<BaseLayout title={t('settings.notifications.metaTitle', lang)} lang={lang}>
   <main style="max-width: 720px; margin: 32px auto; padding: 0 16px;">
-    <h1 style="font-size: 22px; color: #003B5C; margin-bottom: 8px;">Preferências de Notificação</h1>
+    <h1 style="font-size: 22px; color: #003B5C; margin-bottom: 8px;">{t('settings.notifications.heading', lang)}</h1>
     <p style="color: #6c757d; font-size: 14px; margin-bottom: 24px;">
-      Controle como você recebe comunicações da plataforma.
-      Por padrão, agrupamos tudo num resumo semanal aos sábados (12:00 UTC / 09:00 BRT).
+      {t('settings.notifications.intro', lang)}
     </p>
 
-    <div id="loading" style="padding: 40px; text-align: center; color: #6c757d;">Carregando preferências…</div>
+    <div id="loading" style="padding: 40px; text-align: center; color: #6c757d;">{t('settings.notifications.loading', lang)}</div>
 
     <div id="form" style="display: none;">
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Modo de entrega</h2>
-        <p style="color: #6c757d; font-size: 13px; margin: 0 0 16px 0;">Escolha como receber emails de notificação:</p>
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.deliveryMode', lang)}</h2>
+        <p style="color: #6c757d; font-size: 13px; margin: 0 0 16px 0;">{t('settings.notifications.deliveryDesc', lang)}</p>
 
         <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
           <input type="radio" name="delivery_mode" value="weekly_digest" />
-          <strong style="color: #003B5C;">Resumo semanal</strong>
+          <strong style="color: #003B5C;">{t('settings.notifications.modeWeekly', lang)}</strong>
           <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
-            (Padrão) Receba 1 email consolidado aos sábados com cards, eventos, publicações e governança da semana.
+            {t('settings.notifications.modeWeeklyDesc', lang)}
           </span>
         </label>
 
         <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
           <input type="radio" name="delivery_mode" value="immediate_all" />
-          <strong style="color: #003B5C;">Receber tudo imediato</strong>
+          <strong style="color: #003B5C;">{t('settings.notifications.modeImmediate', lang)}</strong>
           <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
-            Cada notificação vira um email separado (alta frequência — 5-10 emails/semana típico).
+            {t('settings.notifications.modeImmediateDesc', lang)}
           </span>
         </label>
 
         <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
           <input type="radio" name="delivery_mode" value="suppress_all" />
-          <strong style="color: #003B5C;">Apenas in-app (sem emails)</strong>
+          <strong style="color: #003B5C;">{t('settings.notifications.modeSuppress', lang)}</strong>
           <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
-            Não receba nenhum email. Notificações ficam só na plataforma.
+            {t('settings.notifications.modeSuppressDesc', lang)}
           </span>
         </label>
 
         <label style="display: block; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer; opacity: 0.6;">
           <input type="radio" name="delivery_mode" value="custom_per_type" disabled />
-          <strong style="color: #003B5C;">Personalizado por tipo</strong>
+          <strong style="color: #003B5C;">{t('settings.notifications.modeCustom', lang)}</strong>
           <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
-            (Em breve — W3) Configure cada tipo de notificação separadamente.
+            {t('settings.notifications.modeCustomDesc', lang)}
           </span>
         </label>
       </div>
 
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Resumo semanal</h2>
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.weeklyDigestSection', lang)}</h2>
         <label style="display: flex; align-items: center; cursor: pointer;">
           <input type="checkbox" id="notify_weekly_digest" style="margin-right: 10px; width: 18px; height: 18px;" />
-          <span style="color: #495057; font-size: 14px;">Receber resumo semanal aos sábados</span>
+          <span style="color: #495057; font-size: 14px;">{t('settings.notifications.weeklyDigestLabel', lang)}</span>
         </label>
         <p style="color: #6c757d; font-size: 12px; margin: 8px 0 0 28px;">
-          Desmarcar pula o resumo mesmo no modo "Resumo semanal". Útil se você não quer receber NADA por email mas mantém o modo padrão para quando reativar.
+          {t('settings.notifications.weeklyDigestHint', lang)}
         </p>
       </div>
 
-      <button id="save" style="background: #003B5C; color: white; padding: 12px 24px; border: 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Salvar preferências</button>
+      <button id="save" style="background: #003B5C; color: white; padding: 12px 24px; border: 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">{t('settings.notifications.saveBtn', lang)}</button>
       <span id="status" style="margin-left: 12px; color: #388e3c; font-size: 13px;"></span>
 
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 24px 0 16px 0;">
-        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Silenciar tipos específicos (W3)</h2>
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.muteSection', lang)}</h2>
         <p style="color: #6c757d; font-size: 12px; margin: 0 0 12px 0;">
-          Marque tipos de notificação que você NÃO quer receber por email.
-          Útil mesmo no modo "Resumo semanal" — esses tipos serão excluídos do digest.
+          {t('settings.notifications.muteHint', lang)}
         </p>
         <div id="muted-types-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
-        <button id="save-muted" style="margin-top: 12px; background: #003B5C; color: white; padding: 8px 16px; border: 0; border-radius: 6px; font-size: 13px; cursor: pointer;">Salvar tipos silenciados</button>
+        <button id="save-muted" style="margin-top: 12px; background: #003B5C; color: white; padding: 8px 16px; border: 0; border-radius: 6px; font-size: 13px; cursor: pointer;">{t('settings.notifications.saveMutedBtn', lang)}</button>
         <span id="muted-status" style="margin-left: 12px; color: #388e3c; font-size: 12px;"></span>
       </div>
 
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Suas métricas (últimos 30 dias)</h2>
-        <div id="metrics" style="color: #6c757d; font-size: 13px;">Carregando…</div>
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.metricsSection', lang)}</h2>
+        <div id="metrics" style="color: #6c757d; font-size: 13px;">{t('settings.notifications.metricsLoading', lang)}</div>
       </div>
     </div>
   </main>
 
+  <script type="application/json" id="i18n-settings-notifications" set:html={JSON.stringify(i18nClient)}></script>
+
   <script>
     import { getSupabase } from '../../lib/supabase';
+
+    const i18nNode = document.getElementById('i18n-settings-notifications');
+    const i18n = JSON.parse(i18nNode!.textContent || '{}');
 
     async function load() {
       const loading = document.getElementById('loading')!;
@@ -98,14 +132,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       const sb = getSupabase();
       const { data: { session } } = await sb.auth.getSession();
       if (!session?.user) {
-        loading.textContent = 'Você precisa estar autenticado para gerenciar preferências.';
+        loading.textContent = i18n.authRequired;
         return;
       }
       const { data: member, error: memberErr } = await sb.from('members')
         .select('id, notify_weekly_digest, notify_delivery_mode_pref')
         .eq('auth_id', session.user.id).single();
       if (memberErr || !member) {
-        loading.textContent = 'Membro não encontrado.';
+        loading.textContent = i18n.memberNotFound;
         return;
       }
       weeklyToggle.checked = (member as any).notify_weekly_digest ?? true;
@@ -116,7 +150,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       form.style.display = 'block';
 
       saveBtn.addEventListener('click', async () => {
-        status.textContent = 'Salvando…';
+        status.textContent = i18n.savingProgress;
         status.style.color = '#6c757d';
         const checked = document.querySelector('input[name="delivery_mode"]:checked') as HTMLInputElement;
         const newMode = checked?.value;
@@ -126,35 +160,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           p_notify_delivery_mode_pref: newMode,
         });
         if (error) {
-          status.textContent = `Erro: ${error.message}`;
+          status.textContent = `${i18n.errorPrefix} ${error.message}`;
           status.style.color = '#d32f2f';
         } else {
-          status.textContent = 'Preferências salvas ✓';
+          status.textContent = i18n.savedOk;
           status.style.color = '#388e3c';
         }
       });
 
       // ── W3: muted types list ──
-      const NOTIFICATION_TYPES = [
-        { key: 'tribe_broadcast', label: 'Comunicados da tribo' },
-        { key: 'attendance_reminder', label: 'Lembretes de presença' },
-        { key: 'card_assigned', label: 'Cards atribuídos' },
-        { key: 'card_status_changed', label: 'Mudanças de status de cards' },
-        { key: 'webinar_status_confirmed', label: 'Webinars confirmados' },
-        { key: 'publication', label: 'Novas publicações' },
-        { key: 'governance_vote_reminder', label: 'Lembretes de votação' },
-        { key: 'engagement_welcome', label: 'Boas-vindas a engajamentos' },
-        { key: 'system', label: 'Mensagens do sistema' },
+      const NOTIFICATION_TYPE_KEYS = [
+        'tribe_broadcast', 'attendance_reminder', 'card_assigned', 'card_status_changed',
+        'webinar_status_confirmed', 'publication', 'governance_vote_reminder',
+        'engagement_welcome', 'system',
       ];
       const { data: prefs } = await sb.from('notification_preferences')
         .select('muted_types').eq('member_id', (member as any).id).maybeSingle();
       const currentMuted = ((prefs as any)?.muted_types || []) as string[];
       const list = document.getElementById('muted-types-list')!;
-      list.innerHTML = NOTIFICATION_TYPES.map(t => `
+      list.innerHTML = NOTIFICATION_TYPE_KEYS.map(k => `
         <label style="display: flex; align-items: center; cursor: pointer;">
-          <input type="checkbox" data-type="${t.key}" ${currentMuted.includes(t.key) ? 'checked' : ''}
+          <input type="checkbox" data-type="${k}" ${currentMuted.includes(k) ? 'checked' : ''}
                  style="margin-right: 8px;" />
-          <span style="color: #495057; font-size: 13px;">${t.label}</span>
+          <span style="color: #495057; font-size: 13px;">${i18n.notificationTypes[k] || k}</span>
         </label>`).join('');
 
       const savemutedBtn = document.getElementById('save-muted')!;
@@ -164,13 +192,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         list.querySelectorAll('input[type="checkbox"]:checked').forEach(el => {
           muted.push((el as HTMLInputElement).dataset.type!);
         });
-        mutedStatus.textContent = 'Salvando…';
+        mutedStatus.textContent = i18n.savingProgress;
         const { error } = await sb.rpc('set_my_muted_notification_types', { p_muted_types: muted });
         if (error) {
-          mutedStatus.textContent = `Erro: ${error.message}`;
+          mutedStatus.textContent = `${i18n.errorPrefix} ${error.message}`;
           mutedStatus.style.color = '#d32f2f';
         } else {
-          mutedStatus.textContent = `${muted.length} tipo(s) silenciados ✓`;
+          mutedStatus.textContent = i18n.mutedSavedOk.replace('{n}', String(muted.length));
           mutedStatus.style.color = '#388e3c';
         }
       });
@@ -179,18 +207,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       const metricsEl = document.getElementById('metrics')!;
       const { data: metrics, error: metricsErr } = await sb.rpc('get_my_notification_metrics', { p_window_days: 30 });
       if (metricsErr || !metrics) {
-        metricsEl.textContent = 'Não foi possível carregar métricas.';
+        metricsEl.textContent = i18n.metricsError;
       } else {
         const m = metrics as any;
         metricsEl.innerHTML = `
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_received}</strong><div style="font-size: 11px; color: #868e96;">recebidas</div></div>
-            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_emailed}</strong><div style="font-size: 11px; color: #868e96;">por email</div></div>
-            <div><strong style="color: #388e3c; font-size: 18px;">${m.total_read}</strong><div style="font-size: 11px; color: #868e96;">lidas</div></div>
-            <div><strong style="color: #f57c00; font-size: 18px;">${m.total_unread}</strong><div style="font-size: 11px; color: #868e96;">não lidas</div></div>
+            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_received}</strong><div style="font-size: 11px; color: #868e96;">${i18n.metricReceived}</div></div>
+            <div><strong style="color: #003B5C; font-size: 18px;">${m.total_emailed}</strong><div style="font-size: 11px; color: #868e96;">${i18n.metricEmailed}</div></div>
+            <div><strong style="color: #388e3c; font-size: 18px;">${m.total_read}</strong><div style="font-size: 11px; color: #868e96;">${i18n.metricRead}</div></div>
+            <div><strong style="color: #f57c00; font-size: 18px;">${m.total_unread}</strong><div style="font-size: 11px; color: #868e96;">${i18n.metricUnread}</div></div>
           </div>
           <p style="margin: 12px 0 0 0; font-size: 11px; color: #adb5bd;">
-            Open rate / click rate via Resend webhook serão adicionados em W4.
+            ${i18n.metricsFooter}
           </p>`;
       }
     }
