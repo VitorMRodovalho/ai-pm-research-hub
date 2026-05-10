@@ -5,6 +5,40 @@ import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.3.b p140)
+const SETTINGS_I18N = {
+  statusActive: t('admin.settings.statusActive', lang),
+  rangeSeparator: t('admin.settings.rangeSeparator', lang),
+  endOpen: t('admin.settings.endOpen', lang),
+  activate: t('admin.settings.activate', lang),
+  confirmActivate: t('admin.settings.confirmActivate', lang),
+  activated: t('admin.settings.activated', lang),
+  edit: t('common.edit', lang),
+  delete: t('common.delete', lang),
+  confirmDelete: t('admin.settings.confirmDelete', lang),
+  deleted: t('admin.settings.deleted', lang),
+  errorPrefix: t('common.errorPrefix', lang),
+  editCycle: t('admin.settings.editCycle', lang),
+  newCycle: t('admin.settings.cycleNewTitle', lang),
+  fillRequired: t('admin.settings.fillRequiredCycle', lang),
+  cycleUpdated: t('admin.settings.cycleUpdated', lang),
+  cycleCreated: t('admin.settings.cycleCreated', lang),
+  save: t('common.save', lang),
+  saveError: t('admin.saveError', lang),
+  loadError: t('admin.loadError', lang),
+  noResults: t('admin.noResults', lang),
+  platformResearchersLabel: t('admin.settings.platformResearchersLabel', lang),
+  platformResearchersDesc: t('admin.settings.platformResearchersDesc', lang),
+  platformMaxTribesLabel: t('admin.settings.platformMaxTribesLabel', lang),
+  platformMaxTribesDesc: t('admin.settings.platformMaxTribesDesc', lang),
+  platformGracePeriodLabel: t('admin.settings.platformGracePeriodLabel', lang),
+  platformGracePeriodDesc: t('admin.settings.platformGracePeriodDesc', lang),
+  lastChangeLabel: t('admin.settings.lastChangeLabel', lang),
+  reasonPrompt: t('admin.settings.reasonPrompt', lang),
+  reasonRequired: t('admin.settings.reasonRequired', lang),
+  platformUpdated: t('admin.settings.platformUpdated', lang),
+};
 ---
 
 <AdminLayout title={t('nav.adminSettings', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('nav.adminSettings', lang)}]}>
@@ -24,7 +58,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">{t('admin.settings.parameters', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Altere e salve. Apenas Superadmin pode editar.</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.parametersHint', lang)}</p>
         </div>
         <div class="p-5 space-y-4">
           <div>
@@ -64,7 +98,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <div>
             <h2 class="text-sm font-bold text-navy">{t('admin.settings.cycleManagement', lang)}</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Criar, editar e definir ciclo ativo.</p>
+            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.cycleManagementHint', lang)}</p>
           </div>
           <button id="cycle-add-btn" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
             + {t('admin.settings.cycleAddBtn', lang)}
@@ -89,7 +123,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.cycleCodeHint', lang)}</p>
             </div>
             <div>
-              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Nome</label>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.modalNameLabel', lang)}</label>
               <input type="text" id="cyc-label" placeholder={t('admin.settings.cycleNamePlaceholder', lang)} class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -98,7 +132,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                 <input type="text" id="cyc-abbr" placeholder="C4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Cor</label>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.modalColorLabel', lang)}</label>
                 <input type="color" id="cyc-color" value="#94A3B8" class="w-full h-[38px] px-1 py-1 border border-[var(--border-default)] rounded-lg cursor-pointer">
               </div>
             </div>
@@ -118,7 +152,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <input type="number" id="cyc-sort" value="0" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
             </div>
             <button id="cycle-modal-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all mt-2">
-              Salvar
+              {t('common.save', lang)}
             </button>
           </div>
         </div>
@@ -133,8 +167,35 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ SETTINGS_I18N }}>
+  window.__SETTINGS_I18N = SETTINGS_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__SETTINGS_I18N) || {
+    statusActive: 'Ativo', rangeSeparator: 'a', endOpen: 'em andamento',
+    activate: 'Ativar', confirmActivate: 'Definir "{code}" como ciclo ativo?',
+    activated: 'Ciclo ativo atualizado', edit: 'Editar', delete: 'Excluir',
+    confirmDelete: 'Excluir ciclo "{code}"? Esta ação não pode ser desfeita.',
+    deleted: 'Ciclo excluído', errorPrefix: 'Erro',
+    editCycle: 'Editar Ciclo', newCycle: 'Novo Ciclo',
+    fillRequired: 'Preencha código, nome, abreviação e data início',
+    cycleUpdated: 'Ciclo atualizado', cycleCreated: 'Ciclo criado', save: 'Salvar',
+    saveError: 'Erro ao salvar.', loadError: 'Erro ao carregar.',
+    noResults: 'Nenhum resultado encontrado.',
+    platformResearchersLabel: 'Pesquisadores por tribo',
+    platformResearchersDesc: 'Limite máximo de pesquisadores por tribo',
+    platformMaxTribesLabel: 'Máximo de tribos ativas',
+    platformMaxTribesDesc: 'Limite de tribos ativas no sistema',
+    platformGracePeriodLabel: 'Grace period baseline (dias)',
+    platformGracePeriodDesc: 'Dias antes do lock automático de baseline',
+    lastChangeLabel: 'Último ajuste',
+    reasonPrompt: 'Razão da alteração (obrigatório):',
+    reasonRequired: 'Razão obrigatória.',
+    platformUpdated: 'Configuração atualizada!',
+  };
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -238,14 +299,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             <div class="flex items-center gap-2">
               <span class="text-[.78rem] font-bold text-[var(--text-primary)]">${escapeHtml(c.cycle_label)}</span>
               <span class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-muted)] font-mono">${escapeHtml(c.cycle_code)}</span>
-              ${c.is_current ? '<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Ativo</span>' : ''}
+              ${c.is_current ? `<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">${T.statusActive}</span>` : ''}
             </div>
-            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">${escapeHtml(c.cycle_abbr)} &middot; ${c.cycle_start || '—'} a ${c.cycle_end || 'em andamento'}</p>
+            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">${escapeHtml(c.cycle_abbr)} &middot; ${c.cycle_start || '—'} ${T.rangeSeparator} ${c.cycle_end || T.endOpen}</p>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            ${!c.is_current ? `<button data-cyc-current="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors">Ativar</button>` : ''}
-            <button data-cyc-edit="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">Editar</button>
-            ${!c.is_current ? `<button data-cyc-del="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 cursor-pointer transition-colors">Excluir</button>` : ''}
+            ${!c.is_current ? `<button data-cyc-current="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors">${T.activate}</button>` : ''}
+            <button data-cyc-edit="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">${T.edit}</button>
+            ${!c.is_current ? `<button data-cyc-del="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 cursor-pointer transition-colors">${T.delete}</button>` : ''}
           </div>
         </div>
       `).join('');
@@ -262,26 +323,26 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       container.querySelectorAll('[data-cyc-current]').forEach((btn: Element) => {
         btn.addEventListener('click', async () => {
           const code = (btn as HTMLElement).dataset.cycCurrent!;
-          if (!confirm(`Definir "${code}" como ciclo ativo?`)) return;
+          if (!confirm(T.confirmActivate.replace('{code}', code))) return;
           try {
             const { error } = await sb.rpc('admin_manage_cycle', { p_action: 'set_current', p_cycle_code: code });
             if (error) throw error;
-            (window as any).toast?.('Ciclo ativo atualizado', 'success');
+            (window as any).toast?.(T.activated, 'success');
             loadCycles();
-          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error'); }
+          } catch (e: any) { (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error'); }
         });
       });
       // Bind delete buttons
       container.querySelectorAll('[data-cyc-del]').forEach((btn: Element) => {
         btn.addEventListener('click', async () => {
           const code = (btn as HTMLElement).dataset.cycDel!;
-          if (!confirm(`Excluir ciclo "${code}"? Esta ação não pode ser desfeita.`)) return;
+          if (!confirm(T.confirmDelete.replace('{code}', code))) return;
           try {
             const { error } = await sb.rpc('admin_manage_cycle', { p_action: 'delete', p_cycle_code: code });
             if (error) throw error;
-            (window as any).toast?.('Ciclo excluído', 'success');
+            (window as any).toast?.(T.deleted, 'success');
             loadCycles();
-          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error'); }
+          } catch (e: any) { (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error'); }
         });
       });
     } catch (e: any) {
@@ -293,7 +354,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   function openCycleModal(cyc?: any) {
     editingCycleCode = cyc?.cycle_code || null;
     const title = document.getElementById('cycle-modal-title');
-    if (title) title.textContent = cyc ? 'Editar Ciclo' : 'Novo Ciclo';
+    if (title) title.textContent = cyc ? T.editCycle : T.newCycle;
     (document.getElementById('cyc-code') as HTMLInputElement).value = cyc?.cycle_code || '';
     (document.getElementById('cyc-code') as HTMLInputElement).disabled = !!cyc;
     (document.getElementById('cyc-label') as HTMLInputElement).value = cyc?.cycle_label || '';
@@ -321,7 +382,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const sort = parseInt((document.getElementById('cyc-sort') as HTMLInputElement).value) || 0;
 
     if (!code || !label || !abbr || !start) {
-      (window as any).toast?.('Preencha código, nome, abreviação e data início', 'error');
+      (window as any).toast?.(T.fillRequired, 'error');
       return;
     }
 
@@ -340,11 +401,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         p_sort: sort,
       });
       if (error) throw error;
-      (window as any).toast?.(editingCycleCode ? 'Ciclo atualizado' : 'Ciclo criado', 'success');
+      (window as any).toast?.(editingCycleCode ? T.cycleUpdated : T.cycleCreated, 'success');
       closeCycleModal();
       loadCycles();
     } catch (e: any) {
-      (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error');
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error');
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -359,9 +420,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── Platform Settings ──
   const SETTING_LABELS: Record<string, { label: string; desc: string; type: string }> = {
-    max_researchers_per_tribe: { label: 'Pesquisadores por tribo', desc: 'Limite máximo de pesquisadores por tribo', type: 'number' },
-    max_tribes: { label: 'Máximo de tribos ativas', desc: 'Limite de tribos activas no sistema', type: 'number' },
-    baseline_grace_period_days: { label: 'Grace period baseline (dias)', desc: 'Dias antes do lock automático de baseline', type: 'number' },
+    max_researchers_per_tribe: { label: T.platformResearchersLabel, desc: T.platformResearchersDesc, type: 'number' },
+    max_tribes: { label: T.platformMaxTribesLabel, desc: T.platformMaxTribesDesc, type: 'number' },
+    baseline_grace_period_days: { label: T.platformGracePeriodLabel, desc: T.platformGracePeriodDesc, type: 'number' },
   };
 
   async function loadPlatformSettings() {
@@ -380,11 +441,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <div class="flex-1">
             <div class="text-[.78rem] font-semibold text-[var(--text-primary)]">${meta.label}</div>
             <div class="text-[.6rem] text-[var(--text-muted)]">${meta.desc}</div>
-            ${s.change_reason ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Último ajuste: ${lastChanged} — "${escapeHtml(s.change_reason)}"</div>` : ''}
+            ${s.change_reason ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-0.5">${T.lastChangeLabel}: ${lastChanged} — "${escapeHtml(s.change_reason)}"</div>` : ''}
           </div>
           <input type="${meta.type}" value="${JSON.parse(JSON.stringify(s.value))}" data-setting-key="${s.key}"
             class="w-20 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] text-center" />
-          <button data-save-setting="${s.key}" class="px-3 py-1.5 text-[.65rem] font-semibold rounded-lg bg-navy text-white border-0 hover:opacity-90 cursor-pointer">Salvar</button>
+          <button data-save-setting="${s.key}" class="px-3 py-1.5 text-[.65rem] font-semibold rounded-lg bg-navy text-white border-0 hover:opacity-90 cursor-pointer">${T.save}</button>
         </div>`;
       }).join('');
 
@@ -393,13 +454,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           const key = (btn as HTMLElement).dataset.saveSetting!;
           const input = container.querySelector(`[data-setting-key="${key}"]`) as HTMLInputElement;
           if (!input) return;
-          const reason = prompt('Razão da alteração (obrigatório):');
-          if (!reason || !reason.trim()) { (window as any).toast?.('Razão obrigatória.', 'error'); return; }
+          const reason = prompt(T.reasonPrompt);
+          if (!reason || !reason.trim()) { (window as any).toast?.(T.reasonRequired, 'error'); return; }
           const { data: result, error } = await sb.rpc('admin_update_setting', {
             p_key: key, p_new_value: JSON.parse(input.value), p_reason: reason.trim(),
           });
-          if (error || result?.error) { (window as any).toast?.(result?.error || error?.message || 'Erro', 'error'); return; }
-          (window as any).toast?.('Configuração atualizada!', 'success');
+          if (error || result?.error) { (window as any).toast?.(result?.error || error?.message || T.errorPrefix, 'error'); return; }
+          (window as any).toast?.(T.platformUpdated, 'success');
           loadPlatformSettings();
         });
       });
