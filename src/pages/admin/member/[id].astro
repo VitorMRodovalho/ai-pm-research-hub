@@ -9,15 +9,59 @@ const isNew = id === 'new';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'common'], lang);
+
+// Pre-render strings for inline script via define:vars (Ω-B+.2 p139)
+const MEMBER_EDIT_I18N = {
+  titleNew: t('admin.memberEdit.titleNew', lang),
+  titleEdit: t('admin.memberEdit.titleEdit', lang),
+  back: t('common.back', lang),
+  label: {
+    fullName: t('admin.memberEdit.label.fullName', lang),
+    email: t('admin.memberEdit.label.email', lang),
+    chapter: t('admin.memberEdit.label.chapter', lang),
+    primaryRole: t('admin.memberEdit.label.primaryRole', lang),
+    tribe: t('admin.memberEdit.label.tribe', lang),
+    pmiId: t('admin.memberEdit.label.pmiId', lang),
+    uniqueBadge: t('admin.memberEdit.label.uniqueBadge', lang),
+    phone: t('admin.memberEdit.label.phone', lang),
+    linkedin: t('admin.memberEdit.label.linkedin', lang),
+    allRoles: t('admin.memberEdit.label.allRoles', lang),
+    activeInCycle: t('admin.memberEdit.label.activeInCycle', lang),
+  },
+  placeholder: {
+    fullName: t('admin.memberEdit.placeholder.fullName', lang),
+  },
+  option: {
+    selectChapter: t('admin.memberEdit.option.selectChapter', lang),
+    noTribe: t('admin.memberEdit.option.noTribe', lang),
+  },
+  tribePrefix: t('admin.memberEdit.tribePrefix', lang),
+  action: {
+    inactivate: t('admin.memberEdit.action.inactivate', lang),
+    reactivate: t('admin.memberEdit.action.reactivate', lang),
+    save: t('admin.memberEdit.action.save', lang),
+  },
+  error: {
+    requiredNameEmail: t('admin.memberEdit.error.requiredNameEmail', lang),
+  },
+  toast: {
+    saved: t('admin.memberEdit.toast.saved', lang),
+    inactivated: t('admin.memberEdit.toast.inactivated', lang),
+    reactivated: t('admin.memberEdit.toast.reactivated', lang),
+  },
+  prompt: {
+    inactivateReason: t('admin.memberEdit.prompt.inactivateReason', lang),
+  },
+};
 ---
-<AdminLayout title={isNew ? t('admin.members.title', lang) : t('comp.memberDetail.editTitle', lang)} breadcrumbs={[{label:t('common.back', lang)},{label:t('admin.members.title', lang)}]}>
+<AdminLayout title={isNew ? t('admin.memberEdit.titleNew', lang) : t('comp.memberDetail.editTitle', lang)} breadcrumbs={[{label:t('common.back', lang)},{label:t('admin.members.title', lang)}]}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="flex items-center gap-3 mb-6">
-      <a href={`${langPrefix}/admin`} class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← Voltar</a>
+      <a href={`${langPrefix}/admin`} class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← {t('common.back', lang)}</a>
       <h1 class="text-xl font-extrabold text-navy" id="page-title">
-        {isNew ? '+ Novo Membro' : '✏️ Editar Membro'}
+        {isNew ? t('admin.memberEdit.titleNew', lang) : t('admin.memberEdit.titleEdit', lang)}
       </h1>
     </div>
     <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6" id="member-form">
@@ -26,11 +70,23 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
   </div>
 </AdminLayout>
 
-<script is:inline define:vars={{ memberId: id, isNew }}>
-  window.__MEMBER_EDIT = { memberId, isNew };
+<script is:inline define:vars={{ memberId: id, isNew, MEMBER_EDIT_I18N, langPrefix }}>
+  window.__MEMBER_EDIT = { memberId, isNew, i18n: MEMBER_EDIT_I18N };
+  window.__LANG_PREFIX = langPrefix;
 </script>
 <script>
-  const { memberId, isNew } = (typeof window !== 'undefined' && (window as any).__MEMBER_EDIT) || { memberId: '', isNew: false };
+  const { memberId, isNew, i18n: I18N } = (typeof window !== 'undefined' && (window as any).__MEMBER_EDIT) || { memberId: '', isNew: false, i18n: null };
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = I18N || {
+    label: { fullName: 'Nome completo *', email: 'Email principal *', chapter: 'Capítulo', primaryRole: 'Papel principal', tribe: 'Tribo', pmiId: 'PMI ID', uniqueBadge: 'único', phone: 'Telefone', linkedin: 'LinkedIn URL', allRoles: 'Todos os papéis', activeInCycle: 'Membro ativo no ciclo atual' },
+    placeholder: { fullName: 'Nome completo' },
+    option: { selectChapter: '— Selecionar —', noTribe: '— Nenhuma —' },
+    tribePrefix: 'Tribo',
+    action: { inactivate: '🔴 Inativar membro', reactivate: '🟢 Reativar membro', save: '💾 Salvar' },
+    error: { requiredNameEmail: 'Nome e email obrigatórios' },
+    toast: { saved: 'Salvo ✅', inactivated: 'Membro inativado 🔴', reactivated: 'Membro reativado 🟢' },
+    prompt: { inactivateReason: 'Motivo da inativação de {name} (opcional):' },
+  };
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
   import { canAccessAdminRoute } from '../../../lib/admin/constants';
   import { loadChapters, type Chapter } from '../../../lib/chapters';
@@ -47,7 +103,7 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
   }
 
   function denyAccess() {
-    location.href = '/admin';
+    location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin';
   }
 
   async function bootAcl() {
@@ -107,25 +163,25 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
     el.innerHTML = `
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Nome completo *</label>
-          <input id="f-name" type="text" value="${m?.name||''}" placeholder="Nome completo"
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.fullName}</label>
+          <input id="f-name" type="text" value="${m?.name||''}" placeholder="${T.placeholder.fullName}"
             class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Email principal *</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.email}</label>
           <input id="f-email" type="email" value="${m?.email||''}"
             class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-email" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Capítulo</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.chapter}</label>
           <select id="f-chapter" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
-            <option value="">— Selecionar —</option>
+            <option value="">${T.option.selectChapter}</option>
             ${CHAPTERS.map(c=>`<option ${m?.chapter===c?'selected':''}>${c}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Papel principal</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.primaryRole}</label>
           <select id="f-role" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
             ${Object.entries(ROLE_LABELS).filter(([k])=>k!=='guest').map(([k,v])=>
               `<option value="${k}" ${m?.operational_role===k?'selected':''}>${v}</option>`
@@ -133,31 +189,31 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Tribo</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.tribe}</label>
           <select id="f-tribe" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
-            <option value="">— Nenhuma —</option>
-            ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${m?.tribe_id===n?'selected':''}>Tribo ${n}</option>`).join('')}
+            <option value="">${T.option.noTribe}</option>
+            ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${m?.tribe_id===n?'selected':''}>${T.tribePrefix} ${n}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">PMI ID <span class="text-amber-500">único</span></label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.pmiId} <span class="text-amber-500">${T.label.uniqueBadge}</span></label>
           <input id="f-pmi" type="password" value="${m?.pmi_id||''}"
             class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-pmi" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Telefone <span class="text-amber-500">único</span></label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.phone} <span class="text-amber-500">${T.label.uniqueBadge}</span></label>
           <input id="f-phone" type="password" value="${m?.phone||''}"
             class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-phone" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">LinkedIn URL</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.linkedin}</label>
           <input id="f-li" type="url" value="${m?.linkedin_url||''}" placeholder="https://linkedin.com/in/…"
             class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
         </div>
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">Todos os papéis</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">${T.label.allRoles}</label>
           <div class="flex flex-wrap gap-2" id="roles-grid">
             ${ROLES_ALL.map(r => {
               const on = selectedRoles.includes(r);
@@ -173,16 +229,16 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
         ${!isNew ? `<div class="col-span-2">
           <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold">
             <input type="checkbox" id="f-active" ${m?.current_cycle_active?'checked':''} class="w-4 h-4">
-            Membro ativo no ciclo atual
+            ${T.label.activeInCycle}
           </label>
         </div>` : ''}
       </div>
       <div class="flex justify-between items-center mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <div>
-          ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">🔴 Inativar membro</button>` : ''}
-          ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">🟢 Reativar membro</button>` : ''}
+          ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">${T.action.inactivate}</button>` : ''}
+          ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">${T.action.reactivate}</button>` : ''}
         </div>
-        <button type="button" data-action="save-member" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
+        <button type="button" data-action="save-member" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">${T.action.save}</button>
       </div>`;
   }
 
@@ -228,7 +284,7 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
     const sb = navGetSb?.();
     const name  = (document.getElementById('f-name') )?.value.trim();
     const email = (document.getElementById('f-email') )?.value.trim();
-    if (!name || !email) { toast?.('Nome e email obrigatórios','error'); return; }
+    if (!name || !email) { toast?.(T.error.requiredNameEmail,'error'); return; }
     const roles = Object.keys(ROLE_COLORS).filter(r => document.getElementById('rc-'+r)?.dataset.on === 'true');
     const opRole = (document.getElementById('f-role') )?.value;
     const params = {
@@ -258,24 +314,24 @@ const i18nBundle = buildPageI18n(['comp.memberDetail', 'comp.memberList', 'commo
       result = compat.data;
     }
     if (result?.error) { toast?.(result.error, 'error'); return; }
-    toast?.('Salvo ✅','success');
-    setTimeout(() => location.href = '/admin', 1200);
+    toast?.(T.toast.saved,'success');
+    setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
   inactivateMember = async (id, name) => {
-    const reason = prompt(`Motivo da inativação de ${name} (opcional):`);
+    const reason = prompt(T.prompt.inactivateReason.replace('{name}', name));
     if (reason === null) return;
     const sb = navGetSb?.();
     await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
-    toast?.('Membro inativado 🔴','info');
-    setTimeout(() => location.href = '/admin', 1200);
+    toast?.(T.toast.inactivated,'info');
+    setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
   reactivateMember = async (id) => {
     const sb = navGetSb?.();
     await sb.rpc('admin_reactivate_member', { p_member_id: id });
-    toast?.('Membro reativado 🟢','success');
-    setTimeout(() => location.href = '/admin', 1200);
+    toast?.(T.toast.reactivated,'success');
+    setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
   if (!(window as any).__adminMemberDelegationBound) {
