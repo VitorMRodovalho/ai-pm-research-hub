@@ -8,6 +8,50 @@ import Toast from '../../components/ui/Toast.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lang);
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.8 p146 — final lift)
+const SEL_I18N = {
+  qsTotal: t('admin.selection.qsTotal', lang),
+  qsApproved: t('admin.selection.qsApproved', lang),
+  qsRejected: t('admin.selection.qsRejected', lang),
+  qsPending: t('admin.selection.qsPending', lang),
+  resultSuffixOne: t('admin.selection.resultSuffixOne', lang),
+  resultSuffixMany: t('admin.selection.resultSuffixMany', lang),
+  noCandidates: t('admin.selection.noCandidates', lang),
+  errorPrefix: t('admin.selection.errorPrefix', lang),
+  detailsBtn: t('admin.selection.detailsBtn', lang),
+  bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
+  allChaptersOption: t('admin.selection.allChapters', lang),
+  statusGroups: {
+    submitted: t('admin.selection.statusGroupSubmitted', lang),
+    evaluation: t('admin.selection.statusGroupEvaluation', lang),
+    interview: t('admin.selection.statusGroupInterview', lang),
+    approved: t('admin.selection.statusGroupApproved', lang),
+    rejected: t('admin.selection.statusGroupRejected', lang),
+  },
+  statusLabels: {
+    submitted: t('admin.selection.statusSubmitted', lang),
+    screening: t('admin.selection.statusScreening', lang),
+    objective_eval: t('admin.selection.statusObjectiveEval', lang),
+    objective_cutoff: t('admin.selection.statusObjectiveCutoff', lang),
+    interview_pending: t('admin.selection.statusInterviewPending', lang),
+    interview_scheduled: t('admin.selection.statusInterviewScheduled', lang),
+    interview_done: t('admin.selection.statusInterviewDone', lang),
+    interview_noshow: t('admin.selection.statusNoshow', lang),
+    final_eval: t('admin.selection.statusFinalEval', lang),
+    approved: t('admin.selection.statusApproved', lang),
+    rejected: t('admin.selection.statusRejected', lang),
+    waitlist: t('admin.selection.statusWaitlist', lang),
+    converted: t('admin.selection.statusConverted', lang),
+    withdrawn: t('admin.selection.statusWithdrawn', lang),
+    cancelled: t('admin.selection.statusCancelled', lang),
+  },
+  roleLabels: {
+    researcher: t('admin.selection.researcher', lang),
+    leader: t('admin.selection.leader', lang),
+    both: t('admin.selection.statusBoth', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('selection.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('selection.title', lang)}]}>
@@ -36,10 +80,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
       <!-- TABS -->
       <div class="flex gap-1 border-b border-[var(--border-default)]">
-        <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Pipeline</button>
-        <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Import CSV</button>
+        <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">{t('admin.selection.tabPipeline', lang)}</button>
+        <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
         <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.committee', lang)}</button>
-        <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Diversidade</button>
+        <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabDiversity', lang)}</button>
       </div>
 
       <!-- TAB: PIPELINE -->
@@ -49,17 +93,17 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
         <!-- Action buttons -->
         <div class="flex flex-wrap gap-3 mb-4">
-          <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Recalcular Rankings</button>
-          <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Iniciar Triagem</button>
+          <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.recalcRankings', lang)}</button>
+          <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
         </div>
 
         <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) -->
         <div class="flex flex-wrap gap-2 items-center mb-2 text-[12px]">
           <span class="text-[var(--text-muted)] font-semibold">{t('admin.selection.quickFilters', lang)}</span>
-          <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>👁 Ocultar decididos</button>
+          <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
-            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">Todos</button>
-            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>⏳ Minhas pendentes</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
+            <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="evaluated_mine" title={t('admin.selection.alreadyReviewedHint', lang)}>{t('admin.selection.iAlreadyEvaluated', lang)}</button>
           </div>
         </div>
@@ -67,15 +111,15 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <!-- Filters -->
         <div class="flex flex-wrap gap-3 items-center mb-4">
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
-            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">Todos</button>
-            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">Pesquisador</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">{t('admin.selection.allOption', lang)}</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">{t('admin.selection.researcher', lang)}</button>
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">{t('admin.selection.leader', lang)}</button>
           </div>
           <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
             <option value="all">{t('admin.selection.allChapters', lang)}</option>
           </select>
           <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
-            <option value="all">Todos os Status</option>
+            <option value="all">{t('admin.selection.allStatusOption', lang)}</option>
             <option value="submitted">Submitted</option><option value="screening">Screening</option>
             <option value="objective_eval">Objective Eval</option><option value="objective_cutoff">Objective Cutoff</option>
             <option value="interview_pending">Interview Pending</option><option value="interview_scheduled">Interview Scheduled</option>
@@ -99,17 +143,17 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
               <thead>
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Track</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colTrack', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">Pesquisa</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
-                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>Minha aval.</th>
-                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>Pipeline</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">Data</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">{t('admin.selection.colResearch', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>{t('admin.selection.colPipeline', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colOnboarding', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.actions', lang)}</th>
                 </tr>
               </thead>
@@ -121,10 +165,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <!-- Bulk actions bar -->
         <div id="bulk-actions" class="hidden bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3 space-y-2">
           <div class="flex gap-3 items-center flex-wrap">
-            <span id="bulk-count" class="text-sm font-bold text-navy">0 selecionados</span>
-            <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">Aprovar</button>
-            <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">Rejeitar</button>
-            <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">Lista Espera</button>
+            <span id="bulk-count" class="text-sm font-bold text-navy">0 {t('admin.selection.bulkSelectedSuffix', lang)}</span>
+            <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">{t('admin.selection.bulkApprove', lang)}</button>
+            <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">{t('admin.selection.bulkReject', lang)}</button>
+            <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">{t('admin.selection.bulkWaitlist', lang)}</button>
           </div>
           <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.bulkFeedback', lang)} />
         </div>
@@ -175,8 +219,8 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
         <!-- Import CSV Section -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
-          <h2 class="text-lg font-bold text-navy">Importar CSV do PMI VEP</h2>
-          <p class="text-sm text-[var(--text-secondary)]">Faça upload do CSV exportado do PMI Volunteer Engagement Platform. O sistema detecta candidatos duplicados, membros retornantes e capítulos parceiros automaticamente.</p>
+          <h2 class="text-lg font-bold text-navy">{t('admin.selection.importCsvTitle', lang)}</h2>
+          <p class="text-sm text-[var(--text-secondary)]">{t('admin.selection.importCsvDesc', lang)}</p>
 
           <div class="flex flex-wrap gap-4 items-end">
             <div>
@@ -202,8 +246,8 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
           <!-- Drop zone -->
           <div id="csv-dropzone" class="border-2 border-dashed border-[var(--border-default)] rounded-xl p-8 text-center cursor-pointer hover:border-navy hover:bg-[var(--surface-hover)] transition-all">
             <div class="text-3xl mb-2">&#x1F4C4;</div>
-            <p class="text-sm font-semibold text-[var(--text-secondary)]">Arraste o CSV aqui ou clique para selecionar</p>
-            <p class="text-[11px] text-[var(--text-muted)] mt-1">Formato: CSV exportado do PMI VEP (Opportunity Applications)</p>
+            <p class="text-sm font-semibold text-[var(--text-secondary)]">{t('admin.selection.dropZoneText', lang)}</p>
+            <p class="text-[11px] text-[var(--text-muted)] mt-1">{t('admin.selection.dropZoneFormat', lang)}</p>
             <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
           </div>
 
@@ -225,8 +269,8 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
               </table>
             </div>
             <div class="flex gap-3">
-              <button id="csv-import-btn" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Importar candidatos</button>
-              <button id="csv-cancel-btn" class="px-5 py-2.5 bg-[var(--surface-hover)] text-[var(--text-secondary)] rounded-xl text-sm font-semibold cursor-pointer border-0">Cancelar</button>
+              <button id="csv-import-btn" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.csvImportBtn', lang)}</button>
+              <button id="csv-cancel-btn" class="px-5 py-2.5 bg-[var(--surface-hover)] text-[var(--text-secondary)] rounded-xl text-sm font-semibold cursor-pointer border-0">{t('admin.selection.csvCancelBtn', lang)}</button>
             </div>
           </div>
 
@@ -297,8 +341,33 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ SEL_I18N }}>
+  window.__SEL_I18N = SEL_I18N;
+</script>
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__SEL_I18N) || {
+    qsTotal: 'Total', qsApproved: 'Aprovados', qsRejected: 'Rejeitados', qsPending: 'Pendentes',
+    resultSuffixOne: 'resultado', resultSuffixMany: 'resultados',
+    noCandidates: 'Nenhum candidato', errorPrefix: 'Erro',
+    detailsBtn: 'Detalhes', bulkSelectedSuffix: 'selecionados',
+    allChaptersOption: 'Todos os Capítulos',
+    statusGroups: {
+      submitted: 'Submetidos', evaluation: 'Avaliação', interview: 'Entrevista',
+      approved: 'Aprovados', rejected: 'Rejeitados',
+    },
+    statusLabels: {
+      submitted: 'Submetido', screening: 'Triagem', objective_eval: 'Avaliação Objetiva',
+      objective_cutoff: 'Abaixo do Corte', interview_pending: 'Aguardando Entrevista',
+      interview_scheduled: 'Entrevista Agendada', interview_done: 'Entrevistado',
+      interview_noshow: 'No-Show', final_eval: 'Avaliação Final',
+      approved: 'Aprovado', rejected: 'Rejeitado', waitlist: 'Lista de Espera',
+      converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
+    },
+    roleLabels: { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' },
+  };
 
   /* ── state ────────────────────────────────────────── */
   let sb: any = null;
@@ -362,11 +431,11 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
   /* ── status helpers ───────────────────────────────── */
   const STATUS_GROUPS: Record<string, { label: string; color: string; bg: string; statuses: string[] }> = {
-    submitted:  { label: 'Submetidos',  color: 'text-gray-700',    bg: 'bg-gray-100',    statuses: ['submitted'] },
-    evaluation: { label: 'Avaliação',   color: 'text-blue-700',    bg: 'bg-blue-50',     statuses: ['screening', 'objective_eval', 'objective_cutoff'] },
-    interview:  { label: 'Entrevista',  color: 'text-yellow-700',  bg: 'bg-yellow-50',   statuses: ['interview_pending', 'interview_scheduled', 'interview_done', 'interview_noshow'] },
-    approved:   { label: 'Aprovados',   color: 'text-emerald-700', bg: 'bg-emerald-50',  statuses: ['approved', 'converted'] },
-    rejected:   { label: 'Rejeitados',  color: 'text-red-700',     bg: 'bg-red-50',      statuses: ['rejected', 'cancelled', 'withdrawn'] },
+    submitted:  { label: T.statusGroups.submitted,  color: 'text-gray-700',    bg: 'bg-gray-100',    statuses: ['submitted'] },
+    evaluation: { label: T.statusGroups.evaluation, color: 'text-blue-700',    bg: 'bg-blue-50',     statuses: ['screening', 'objective_eval', 'objective_cutoff'] },
+    interview:  { label: T.statusGroups.interview,  color: 'text-yellow-700',  bg: 'bg-yellow-50',   statuses: ['interview_pending', 'interview_scheduled', 'interview_done', 'interview_noshow'] },
+    approved:   { label: T.statusGroups.approved,   color: 'text-emerald-700', bg: 'bg-emerald-50',  statuses: ['approved', 'converted'] },
+    rejected:   { label: T.statusGroups.rejected,   color: 'text-red-700',     bg: 'bg-red-50',      statuses: ['rejected', 'cancelled', 'withdrawn'] },
   };
 
   function statusGroup(status: string): string {
@@ -394,7 +463,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     waitlist: { color: 'text-amber-700', bg: 'bg-amber-50' },
   };
 
-  const ROLE_LABELS: Record<string, string> = { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' };
+  const ROLE_LABELS: Record<string, string> = T.roleLabels;
 
   const CYCLE_STATUS_COLORS: Record<string, { color: string; bg: string }> = {
     draft: { color: 'text-gray-600', bg: 'bg-gray-100' },
@@ -405,14 +474,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     closed: { color: 'text-red-700', bg: 'bg-red-50' },
   };
 
-  const STATUS_LABELS: Record<string, string> = {
-    submitted: 'Submetido', screening: 'Triagem', objective_eval: 'Avaliação Objetiva',
-    objective_cutoff: 'Abaixo do Corte', interview_pending: 'Aguardando Entrevista',
-    interview_scheduled: 'Entrevista Agendada', interview_done: 'Entrevistado',
-    interview_noshow: 'No-Show', final_eval: 'Avaliação Final',
-    approved: 'Aprovado', rejected: 'Rejeitado', waitlist: 'Lista de Espera',
-    converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
-  };
+  const STATUS_LABELS: Record<string, string> = T.statusLabels;
 
   /* p109 Onda 4 Fase 1.2 — "Minha avaliação" badge na lista (FP-4).
      Resolve PM pain "já avaliei?" sem precisar abrir o modal.
@@ -575,7 +637,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -584,7 +646,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     if (!sel) return;
     const chapters = [...new Set(allRows.map(r => r.chapter).filter(Boolean))].sort();
     const current = sel.value;
-    sel.innerHTML = '<option value="all">Todos os Capítulos</option>' +
+    sel.innerHTML = `<option value="all">${T.allChaptersOption}</option>` +
       chapters.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
     sel.value = current;
   }
@@ -648,10 +710,10 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     const rejected = filteredRows.filter(r => ['rejected', 'cancelled', 'withdrawn'].includes(r.status)).length;
     const pending = total - approved - rejected;
     const stats = [
-      { label: 'Total', value: total, color: 'text-navy' },
-      { label: 'Aprovados', value: approved, color: 'text-emerald-600' },
-      { label: 'Rejeitados', value: rejected, color: 'text-red-600' },
-      { label: 'Pendentes', value: pending, color: 'text-amber-600' },
+      { label: T.qsTotal, value: total, color: 'text-navy' },
+      { label: T.qsApproved, value: approved, color: 'text-emerald-600' },
+      { label: T.qsRejected, value: rejected, color: 'text-red-600' },
+      { label: T.qsPending, value: pending, color: 'text-amber-600' },
     ];
     el.innerHTML = stats.map(s =>
       `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3 text-center">
@@ -679,9 +741,9 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     const tbody = document.getElementById('sel-tbody');
     const countEl = document.getElementById('sel-count');
     if (!tbody) return;
-    if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
+    if (countEl) countEl.textContent = `${filteredRows.length} ${filteredRows.length !== 1 ? T.resultSuffixMany : T.resultSuffixOne}`;
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -740,7 +802,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
-          <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">Detalhes</button>
+          <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">${T.detailsBtn}</button>
         </td>
       </tr>`;
     }).join('');
