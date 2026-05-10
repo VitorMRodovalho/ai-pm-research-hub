@@ -6,6 +6,11 @@ const ARTIA_GQL = 'https://api.artia.com/graphql'
 const ARTIA_ACCOUNT_ID = 6345833
 const ARTIA_PROJECT_ID = 6391775
 
+// PMI-GO organization (V4 multi-tenant scope; sync-artia is single-tenant today)
+// EF runs as service_role → auth.uid()=NULL → DEFAULT auth_org()=NULL.
+// Explicit org_id makes mcp_usage_log rows org-attributable instead of admin-NULL-only.
+const PMI_GO_ORG_ID = '2b4f58ab-7c45-4170-8718-b77ee69ff906'
+
 // Artia activity IDs + folder per KPI
 // Pre-Phase C.2.5: 9 KPIs in folder 6399649 (04 - Monitoramento e Controle root)
 // Phase C.2.5 added 4 new KPIs in folder 6516663 (04.01 - KPIs Anuais 2026 sub-folder)
@@ -893,6 +898,7 @@ Deno.serve(async (req) => {
         success: created.errors.length === 0,
         execution_ms: 0,
         response_summary: JSON.stringify({ folders_created: created.folders.length, activities_created: created.activities.length, errors: created.errors.length }),
+        organization_id: PMI_GO_ORG_ID,
       })
 
       return new Response(JSON.stringify({
@@ -1155,6 +1161,7 @@ Deno.serve(async (req) => {
         success: summary.queries_succeeded > 0,
         execution_ms: 0,
         response_summary: JSON.stringify(summary),
+        organization_id: PMI_GO_ORG_ID,
       })
 
       return new Response(JSON.stringify({ mode: 'discover', ...summary }), {
@@ -1320,6 +1327,7 @@ Deno.serve(async (req) => {
         synced_at: now,
         kpis: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, { current: v.current, pct: v.pct, artia: v.synced }])),
       }),
+      organization_id: PMI_GO_ORG_ID,
     })
 
     return new Response(JSON.stringify({
