@@ -7,6 +7,25 @@ import BoardEngine from '../../components/islands/BoardEngine';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.4 p141)
+const COMMSOPS_I18N = {
+  prepararBtn: t('admin.commsOps.prepararBtn', lang),
+  copySubject: t('admin.commsOps.copySubject', lang),
+  copyMessage: t('admin.commsOps.copyMessage', lang),
+  subjectSuggested: t('admin.commsOps.subjectSuggested', lang),
+  baseMessage: t('admin.commsOps.baseMessage', lang),
+  copied: t('admin.commsOps.copied', lang),
+  errorCopy: t('admin.commsOps.errorCopy', lang),
+  stageInvite: t('admin.commsOps.stageInvite', lang),
+  stageReminder: t('admin.commsOps.stageReminder', lang),
+  stageFollowup: t('admin.commsOps.stageFollowup', lang),
+  stageDefault: t('admin.commsOps.stageDefault', lang),
+  contextSelected: t('admin.commsOps.contextSelected', lang),
+  contextDateReferenceLabel: t('admin.commsOps.contextDateReferenceLabel', lang),
+  broadcastEmptyForSearch: t('admin.commsOps.broadcastEmptyForSearch', lang),
+  broadcastEmptyDefault: t('admin.commsOps.broadcastEmptyDefault', lang),
+};
 ---
 
 <AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.breadcrumb.communication', lang)}]}>
@@ -14,18 +33,18 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
     <div id="commsops-loading" class="text-[var(--text-muted)] text-sm">{t('admin.loadCommsOps', lang)}</div>
     <div id="commsops-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-      Acesso restrito a gestao/comunicacao.
+      {t('admin.commsOps.deniedRestricted', lang)}
     </div>
 
     <section id="commsops-panel" class="hidden space-y-6">
       <!-- Header with nav to Midia Social -->
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-xl font-extrabold text-navy">Comunicacao</h1>
-          <p class="text-sm text-[var(--text-secondary)]">Operacional: tarefas, webinars pendentes e historico de disparos</p>
+          <h1 class="text-xl font-extrabold text-navy">{t('admin.commsOps.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)]">{t('admin.commsOps.subtitle', lang)}</p>
         </div>
         <a href={`${langPrefix}/admin/comms`} class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
-          Midia Social &rarr;
+          {t('admin.commsOps.midiaSocialLink', lang)}
         </a>
       </div>
 
@@ -33,11 +52,11 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
       <section id="ops-context" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-5">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
-            <h2 class="text-sm font-bold text-navy">Handoff contextual</h2>
+            <h2 class="text-sm font-bold text-navy">{t('admin.commsOps.handoffTitle', lang)}</h2>
             <p id="ops-context-copy" class="text-[.76rem] text-[var(--text-secondary)] mt-1"></p>
           </div>
           <a href={`${langPrefix}/admin/webinars`} class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
-            Voltar para Webinars
+            {t('admin.commsOps.voltarWebinars', lang)}
           </a>
         </div>
       </section>
@@ -45,15 +64,15 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
       <!-- Webinar Playbook (activated via ?context=webinar) -->
       <section id="ops-playbook" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Playbook rapido do webinar</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">Assunto e copy-base para acelerar a comunicacao.</p>
+          <h2 class="text-sm font-bold text-navy">{t('admin.commsOps.playbookTitle', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.commsOps.playbookSubtitle', lang)}</p>
         </div>
         <div id="ops-playbook-body" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
       </section>
 
       <!-- Dashboard KPIs + Charts -->
       <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-        <h2 class="text-sm font-bold text-navy mb-4">Pipeline de Conteudo</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">{t('admin.commsOps.pipelineConteudo', lang)}</h2>
         <CommsDashboard client:load />
       </div>
 
@@ -61,10 +80,10 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
       <section id="ops-webinars" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 class="text-sm font-bold text-navy">Webinars pendentes de campanha</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)]">Webinars confirmados ou realizados que precisam de acao de comunicacao</p>
+            <h2 class="text-sm font-bold text-navy">{t('admin.commsOps.webinarsPendingTitle', lang)}</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.commsOps.webinarsPendingSubtitle', lang)}</p>
           </div>
-          <a href={`${langPrefix}/admin/webinars`} class="text-[.78rem] font-semibold text-teal no-underline hover:underline">Ver todos</a>
+          <a href={`${langPrefix}/admin/webinars`} class="text-[.78rem] font-semibold text-teal no-underline hover:underline">{t('admin.commsOps.verTodos', lang)}</a>
         </div>
         <div id="ops-webinars-body" class="p-4"></div>
       </section>
@@ -72,8 +91,8 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
       <!-- Publication Calendar -->
       <section id="ops-calendar" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Calendario de Publicacoes</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">Itens do board com data planejada (proximos 30 dias)</p>
+          <h2 class="text-sm font-bold text-navy">{t('admin.commsOps.calendarTitle', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.commsOps.calendarSubtitle', lang)}</p>
         </div>
         <div id="ops-calendar-body" class="p-4"></div>
       </section>
@@ -87,24 +106,24 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
       <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 class="text-sm font-bold text-navy">Historico de Disparos</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)]">Notificacoes enviadas por tribo</p>
+            <h2 class="text-sm font-bold text-navy">{t('admin.commsOps.broadcastTitle', lang)}</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.commsOps.broadcastSubtitle', lang)}</p>
           </div>
           <input id="ops-broadcast-search" type="text"
                  class="w-full sm:w-[280px] px-3 py-2 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-card)] focus:outline-none focus:border-navy transition-colors"
-                 placeholder="Buscar assunto, tribo ou remetente" />
+                 placeholder={t('admin.commsOps.broadcastSearchPlaceholder', lang)} />
         </div>
         <div id="ops-broadcast-container" class="p-4 overflow-x-auto">
-          <div id="ops-broadcast-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">Carregando...</div>
-          <div id="ops-broadcast-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">Nenhum disparo encontrado.</div>
+          <div id="ops-broadcast-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</div>
+          <div id="ops-broadcast-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">{t('admin.commsOps.broadcastEmpty', lang)}</div>
           <table id="ops-broadcast-table" class="hidden w-full text-[.72rem] border-collapse">
             <thead>
               <tr class="border-b border-[var(--border-default)] text-left">
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Assunto</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">Destinatarios</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Enviado em</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Enviado por</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.commsOps.colSubject', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.commsOps.colTribe', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">{t('admin.commsOps.colRecipients', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.commsOps.colSentAt', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.commsOps.colSentBy', lang)}</th>
               </tr>
             </thead>
             <tbody id="ops-broadcast-body"></tbody>
@@ -115,8 +134,26 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
   </div>
 </AdminLayout>
 
+<script is:inline define:vars={{ COMMSOPS_I18N }}>
+  window.__COMMSOPS_I18N = COMMSOPS_I18N;
+</script>
 <script>
   import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__COMMSOPS_I18N) || {
+    prepararBtn: 'Preparar', copySubject: 'Copiar assunto', copyMessage: 'Copiar mensagem',
+    subjectSuggested: 'Assunto sugerido', baseMessage: 'Mensagem base',
+    copied: 'Copiado!', errorCopy: 'Erro ao copiar.',
+    stageInvite: 'preparar convite e lembrete',
+    stageReminder: 'revisar lembrete operacional',
+    stageFollowup: 'organizar follow-up e divulgação posterior',
+    stageDefault: 'revisar a comunicação',
+    contextSelected: 'selecionado',
+    contextDateReferenceLabel: 'Data de referência',
+    broadcastEmptyForSearch: 'Nenhum resultado para essa busca.',
+    broadcastEmptyDefault: 'Nenhum disparo registrado.',
+  };
 
   let sb: any = null;
   let allBroadcasts: any[] = [];
@@ -165,12 +202,12 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
     if (!box || !copy) return;
     if (!ROUTE.context) { box.classList.add('hidden'); return; }
     const stageLabel: Record<string, string> = {
-      invite: 'preparar convite e lembrete',
-      reminder: 'revisar lembrete operacional',
-      followup: 'organizar follow-up e divulgacao posterior',
+      invite: T.stageInvite,
+      reminder: T.stageReminder,
+      followup: T.stageFollowup,
     };
-    copy.innerHTML = `Contexto atual: ${stageLabel[ROUTE.stage] || 'revisar a comunicacao'} do webinar <strong>${escapeHtml(ROUTE.title || 'selecionado')}</strong>.`
-      + (ROUTE.date ? ` Data de referencia: ${escapeHtml(formatDate(ROUTE.date))}.` : '');
+    copy.innerHTML = `${stageLabel[ROUTE.stage] || T.stageDefault} — webinar <strong>${escapeHtml(ROUTE.title || T.contextSelected)}</strong>.`
+      + (ROUTE.date ? ` ${T.contextDateReferenceLabel}: ${escapeHtml(formatDate(ROUTE.date))}.` : '');
     box.classList.remove('hidden');
   }
 
@@ -187,13 +224,13 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
         <div class="flex items-start justify-between gap-3">
           <h3 class="text-sm font-bold text-navy">${escapeHtml(tpl.title)}</h3>
           <div class="flex gap-2 flex-wrap justify-end">
-            <button type="button" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-copy="${escapeHtml(tpl.subject)}">Copiar assunto</button>
-            <button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-copy="${escapeHtml(tpl.body)}">Copiar mensagem</button>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-copy="${escapeHtml(tpl.subject)}">${T.copySubject}</button>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-copy="${escapeHtml(tpl.body)}">${T.copyMessage}</button>
           </div>
         </div>
         <div class="mt-3 space-y-2">
-          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Assunto sugerido</div><div class="mt-1 text-[.8rem]">${escapeHtml(tpl.subject)}</div></div>
-          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Mensagem base</div><pre class="mt-1 whitespace-pre-wrap text-[.76rem] font-sans">${escapeHtml(tpl.body)}</pre></div>
+          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">${T.subjectSuggested}</div><div class="mt-1 text-[.8rem]">${escapeHtml(tpl.subject)}</div></div>
+          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">${T.baseMessage}</div><pre class="mt-1 whitespace-pre-wrap text-[.76rem] font-sans">${escapeHtml(tpl.body)}</pre></div>
         </div>
       </article>`).join('');
     section.classList.remove('hidden');
@@ -201,8 +238,8 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
     body.querySelectorAll('[data-copy]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const text = (btn as HTMLElement).dataset.copy || '';
-        try { await navigator.clipboard.writeText(text); (window as any).toast?.('Copiado!', 'success'); }
-        catch { (window as any).toast?.('Erro ao copiar.', 'error'); }
+        try { await navigator.clipboard.writeText(text); (window as any).toast?.(T.copied, 'success'); }
+        catch { (window as any).toast?.(T.errorCopy, 'error'); }
       });
     });
   }
@@ -238,7 +275,7 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
               <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5">${fmtDt}${w.tribe_name ? ' · ' + escapeHtml(w.tribe_name) : ''}</div>
               <div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full border text-[.68rem] font-bold ${tone}">${escapeHtml(w.comms_label || '')}</div>
             </div>
-            <a href="${href}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90">Preparar</a>
+            <a href="${href}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90">${T.prepararBtn}</a>
           </div>
         </article>`;
       }).join('')}</div>`;
@@ -275,7 +312,7 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
         || (r.sent_by_name || '').toLowerCase().includes(query);
     });
     if (!filtered.length) {
-      empty.textContent = query ? 'Nenhum resultado para essa busca.' : 'Nenhum disparo registrado.';
+      empty.textContent = query ? T.broadcastEmptyForSearch : T.broadcastEmptyDefault;
       empty.classList.remove('hidden'); table.classList.add('hidden'); return;
     }
     empty.classList.add('hidden');
