@@ -1,0 +1,34 @@
+-- ============================================================================
+-- p134 Ω-A.3: events composite index (type, date DESC)
+-- ============================================================================
+-- Source: docs/strategy/p134_omega_a_tools_opportunities.md (Track 2 Agent E)
+-- Validated by: senior-software-engineer council review (highest ROI per hour)
+--
+-- Problem:
+--   - HomepageHero.astro filters `WHERE type='geral' ORDER BY date DESC LIMIT N`
+--   - Existing idx_events_date is non-composite (date only) → seq scan + sort
+--   - pg_stat showed ~1.16M tuples / 10K scans (ratio ~110, full table scan
+--     for type filter then in-memory sort by date)
+--
+-- Decision (Agent E + senior-eng):
+--   Composite (type, date DESC) reduces hero homepage I/O ~10x.
+--   ~60 rows match type='geral'. Index scan returns sorted, no in-memory sort.
+--
+-- Rollback:
+--   DROP INDEX CONCURRENTLY public.idx_events_type_date_desc;
+--   No data risk — additive index only.
+--
+-- Note on CONCURRENTLY:
+--   Applied via execute_sql (NOT apply_migration) because CREATE INDEX
+--   CONCURRENTLY cannot run inside a transaction. apply_migration wraps in tx.
+--   This file is the canonical record of the DDL; supabase_migrations
+--   tracking registered via `supabase migration repair --status applied 20260519000000`.
+--
+-- Verification (post-apply):
+--   EXPLAIN SELECT id, title, date, type FROM events WHERE type='geral'
+--     ORDER BY date DESC LIMIT 5;
+--   Expected: Index Scan using idx_events_type_date_desc, cost ~0.15-2.34
+-- ============================================================================
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_type_date_desc
+  ON public.events (type, date DESC);
