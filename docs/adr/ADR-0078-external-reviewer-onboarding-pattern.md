@@ -1,8 +1,8 @@
 # ADR-0078 — External Reviewer Onboarding & Access Pattern
 
-**Status:** PROPOSED
-**Date:** 2026-05-10 (p148)
-**Author:** Claude (drafted) · PM/Council review pending
+**Status:** PROPOSED — Round 2 (PM sign-off em 5/5 decisions; pending legal-counsel + Ivan DPO)
+**Date:** 2026-05-10 (p148, Round 1 → Round 2 same session)
+**Author:** Claude (drafted) · PM aprovou waves + 5 decisions (Round 1 close); legal-counsel + DPO review pendente
 **Supersedes:** none
 **Related:** ADR-0006 (Person + Engagement Identity Model) · ADR-0007 (Authority as Engagement Grant) · ADR-0008 (Engagement Lifecycle Config) · ADR-0070 (External Speaker Artifact Conventions) · ADR-0076 (PMI 3-d Volunteer Model + Phase B Base Legal) · `feedback_lawyer_pathway_angelina_pmi_go.md`
 
@@ -49,7 +49,11 @@ Mirror semântico de `create_external_signer_invite`. Mesmo gate (`manage_member
 - `start_date=CURRENT_DATE`, `end_date=CURRENT_DATE + interval '90 days'` (default; admin pode override até `max_duration_days=365`)
 - `legal_basis='consent'`, `is_authoritative=true`
 - `consent_status='pending_magic_link'`, `consent_version='v1-external-reviewer'`
-- `operational_role='external_reviewer'` (novo valor — adicionar à enum `members.operational_role` SE ainda não existir; verificar em V4 cache)
+- `operational_role='external_reviewer'` — **novo valor (PM-confirmed Round 2)**. Adicionar via migration:
+  - Se `operational_role` for enum: `ALTER TYPE operational_role_enum ADD VALUE 'external_reviewer'`
+  - Se for text + CHECK: alterar CHECK constraint para incluir `'external_reviewer'`
+  - Atualizar `sync_operational_role_cache` trigger para mapear engagement_kind='external_reviewer' → operational_role='external_reviewer' (V4 cache, ADR-0007)
+  - Test obrigatório pré-prod: criar engagement → trigger fire → cache atualizado corretamente
 - `member_status='active'`, `is_active=true`, `chapter='EXTERNAL'`
 - `metadata.review_scope` (per JSONB schema seedado): `'legal' | 'technical' | 'editorial' | 'peer'` (required)
 - `metadata.review_target_doc_type`: opcional, FK lógica para `governance_documents.doc_type`
@@ -93,10 +97,21 @@ Adicionar prop `variant?: 'admin' | 'external'` (default `'admin'`):
 
 - `variant='external'`:
   - **Hide:** painel de gates (assinatura), botões "Assinar como X", auditoria por gate, recirculation control
-  - **Show:** documento (current version), VersionDiffViewer (se houver prevVersion), ClauseCommentDrawer (full)
+  - **Show:** documento (current version), VersionDiffViewer (se houver prevVersion), ClauseCommentDrawer (filtrado — ver visibility scope abaixo)
   - `canComment=true` (sempre — é o ponto)
-  - `isCurator=false`, `isSubmitter=false` (reviewer externo é uma terceira persona; visibility de comments fica `public` por default)
-  - Banner topo: "Você está revisando como `{{role}} ({{review_scope}})`. Comentários ficam públicos para a equipe Núcleo. Sessão expira em `{{end_date}}`."
+  - `isCurator=false`, `isSubmitter=false` (reviewer externo é uma terceira persona)
+  - Banner topo: "Você está revisando como `{{role}} ({{review_scope}})`. Comentários ficam visíveis para a equipe Núcleo + outros revisores. Sessão expira em `{{end_date}}`."
+
+**Visibility scope para external_reviewer (PM-confirmed Round 2):**
+
+| Visibility | Externo lê? | Externo escreve? |
+|---|---|---|
+| `public` | ✅ sim | ✅ sim (default ao publicar) |
+| `curator_only` | ❌ **NÃO** — fail-closed | ❌ não |
+| `submitter_only` | ❌ não | ❌ não |
+| `change_notes` | ❌ não (notas internas do GP) | ❌ não |
+
+Implementação: `list_document_comments` RPC ganha branch — se caller é `external_reviewer` (`person_id` linkado a engagement_kind=external_reviewer ativo), filtra `WHERE visibility = 'public'`. Default visibility no comment form do externo é `public` (não há outras opções no dropdown). Migrações de RLS em `document_comments` precisam refletir esse fail-closed (não delegar só ao RPC — defense-in-depth).
 
 Implementação: branch nas 3 seções condicionais por `variant === 'admin'`. Diff esperado: ~80-120L em `ReviewChainIsland.tsx`. Zero regressão admin (default preservado).
 
@@ -111,23 +126,57 @@ Novo `governance_documents` row (não `approval_chain` — é template estático
   - Cláusula 3: Propriedade Intelectual — comentários submetidos integram o histórico do documento (`document_comments` provenance) sem cessão de direitos do revisor sobre suas próprias contribuições. Revisor concede licença não-exclusiva à Núcleo para uso interno dos comentários no ciclo de revisão.
   - Cláusula 4: Vigência — alinhado com `engagement.end_date` (90d default, renovável). Revogação imediata por qualquer parte via comunicação por escrito.
   - Cláusula 5: LGPD — base legal `consent` (Art. 7º I); dados pessoais (nome, email, comentários) retidos por 2 anos pós-engagement (`retention_days_after_end=730`); anonimização automática após. Revisor pode solicitar export ou deleção a qualquer tempo (canal institucional do controlador ou portal LGPD).
-  - Cláusula 6: Não-vínculo — termo NÃO cria relação trabalhista, voluntariado formal (sem VEP), nem direito a credly badge. Revisor externo é uma figura específica para o ciclo de revisão.
+  - Cláusula 6: Não-vínculo + escopo restrito — termo NÃO cria relação trabalhista, voluntariado formal (sem VEP), nem direito a credly badge. **Round 2 reforço:** este termo destina-se exclusivamente a revisores externos voluntários ou peer-reviewers em vínculo recíproco (cenários A/B/C abaixo). Engajamentos comerciais (consultoria remunerada), parcerias institucionais (sponsors), ou instrumentos com órgãos públicos requerem instrumento jurídico próprio (MSA, MOU, convênio) — não esse template.
+
+**Cenários cobertos vs excluídos (PM-confirmed Round 2):**
+
+| # | Cenário | NDA-lite cabe? | Razão |
+|---|---|---|---|
+| **A** | Curador externo voluntário PMI (ex: Ângelina advogada PMI-GO) | ✅ default | Vínculo voluntário PMI culture; pre-publication; IP review |
+| **B** | Peer-reviewer técnico inter-chapter (ex: Roberto PMI-CE) | ✅ sim | Reciprocidade volunteer + interesse mutuo |
+| **C** | Academic peer-reviewer (orientador acadêmico) | ✅ sim | Pode requerer tweak Cláusula 3 se academic norms exigem co-authorship |
+| **D** | Consultor remunerado (advogado externo contratado) | ❌ não — usar MSA + NDA comercial | Commercial relationship requires commercial instrument |
+| **E** | Sponsor/partner (Microsoft, etc.) reviewing co-branded draft | ❌ não — usar partnership MOU | Partnership tem instrumento próprio (cooperation agreement) |
+| **F** | Reviewer de instituição pública/governamental | ⚠️ case-by-case — escalar legal-counsel | LAI + transparência podem exigir convênio formal |
+| **G** | Diretoria capítulo PMI federado (presidente assinando) | ❌ não — usar `external_signer` existente | Outro trilho legal (legitimate_interest, sign authority) |
+
+**Gating no invite RPC (D1) reforçado:** UI do invite oferece dropdown:
+
+```
+Cenário do convite:
+  ( ) Voluntário/peer-reviewer (default — usa NDA-lite v1)
+  ( ) Outro caso (consultor remunerado, partner, gov) — escalar pra GP/legal antes
+```
+
+Se "Outro caso" selecionado, o RPC retorna `{error: 'requires_escalation', message: 'Use commercial NDA / MOU / convênio. Não criar engagement por este RPC.'}`. Sistema não permite NDA-lite ser usado fora dos cenários A/B/C.
 
 Ratificação: nova RPC `sign_external_reviewer_agreement(engagement_id, version_label)` — insere row em `external_reviewer_agreements` (nova tabela mínima: `id, engagement_id FK, agreement_version, signed_at, ip_address, user_agent`). Required ANTES do primeiro `create_document_comment` chamado por external_reviewer (gate na RPC: `_can_comment_as_external(member_id, version_id)` checks ratification).
 
-**Legal-counsel review obrigatório antes do template ir para active.** Ângelina pode ser a curadora desse termo (validação cruzada: ela é a primeira usuária E a primeira reviewer juridica).
+**Legal-counsel review obrigatório antes do template ir para active.** Ângelina é a curadora primária (PM-confirmed Round 2): conflict of interest pequeno e natural — ela é a primeira usuária E primeira reviewer jurídica, template trabalha A FAVOR dela (proteção mútua). Pattern "primeiro usuário valida o instrumento que o regula", comum em legal drafting comunitário. Backup: external advisor (~R$ 5-10K) só se Ângelina declinar OU council levantar issue de governance no Round 3 sign-off.
 
-### D6 — `revoke_external_reviewer` RPC + admin UI
+### D6 — `revoke_external_reviewer` RPC + admin UI + **self-revoke (PM-confirmed Round 2)**
 
-RPC: `revoke_external_reviewer(p_engagement_id uuid, p_reason text)`:
+**Admin-revoke RPC:** `revoke_external_reviewer(p_engagement_id uuid, p_reason text)`:
 
 - Gate: `manage_member`
 - Sets `engagements.status='offboarded'`, `engagements.end_date=CURRENT_DATE`
 - Sets `members.is_active=false` (se NÃO houver outros engagements ativos para o mesmo `person_id`)
 - Invalida sessões Supabase Auth do auth_user vinculado (via admin API `auth.admin.signOut`)
-- Audit: `action='external_reviewer_revoked'`, `metadata.reason`
+- Audit: `action='external_reviewer_revoked'`, `target_type='engagement'`, `metadata={reason, revoked_by_actor_type:'admin'}`
 
-UI: card no admin/governance ou novo `/admin/external-reviewers` listando todos external_reviewer engagements ativos com botão "Revogar" + campo razão obrigatório.
+**Self-revoke RPC (Round 2 add):** `self_revoke_my_external_reviewer_engagement(p_reason text DEFAULT NULL)`:
+
+- Gate: caller `auth.uid()` deve ter active engagement_kind=external_reviewer (sem `manage_member` requirement)
+- Mesmas mutations: status='offboarded', end_date=CURRENT_DATE, is_active=false (se único engagement)
+- Sessão Supabase invalidada imediatamente (caller é forçado a logout no próximo request)
+- Audit: `action='external_reviewer_self_revoked'`, `metadata={reason, revoked_by_actor_type:'self'}`
+- Sem confirmação pesada — single button (no double-confirm modal). LGPD pattern: revogação de consentimento deve ser tão simples quanto a concessão.
+
+**UI Locations:**
+- **Admin:** card no admin/governance ou novo `/admin/external-reviewers` listando engagements ativos + botão "Revogar" + razão obrigatória.
+- **External (variant):** botão discreto no header da landing `/external/governance/[chainId]`: "Encerrar minha revisão". Clica → modal leve com textarea opcional (não bloqueante) + "Confirmar encerramento". Nenhum admin-approval intermediário.
+
+**Por que self-revoke importa (LGPD):** revogação de consentimento (Art. 8º §5º) deve ser facilitada pelo controlador. Se externo só pode pedir revogação por email manual ao admin, ANPD audit pode flagear como fricção indevida. Botão direto = compliance-clean.
 
 ### D7 — Audit + observability
 
@@ -173,8 +222,10 @@ Operational dashboard adendum: nova section em `/admin/governance/documents` (T-
 
 ### Quebras de invariantes potenciais
 
-- `members.operational_role` enum precisa de novo valor `external_reviewer` — verificar se existe; se não, ALTER TYPE (migration). Risk: V4 cache trigger pode ignorar valor não-mapeado. Test obrigatório pré-prod.
+- `members.operational_role` enum precisa de novo valor `external_reviewer` (D1 Round 2). ALTER TYPE migration + sync_operational_role_cache trigger update obrigatório. Test pré-prod: criar engagement → cache espelhado.
 - `actor_type` em `admin_audit_log` precisa aceitar novo valor — verificar CHECK constraint atual.
+- `document_comments` RLS policy precisa fail-closed para external_reviewer × non-public visibilities (D4 Round 2 defense-in-depth — não delegar só ao RPC).
+- `list_document_comments` RPC ganha branch para external_reviewer (filtra `WHERE visibility='public'`). Test contractual: external_reviewer + curator_only comment → 0 rows.
 
 ---
 
@@ -258,4 +309,11 @@ Reversibilidade: ~2h para rollback completo. Engagements existentes sobrevivem c
 ## Ledger histórico
 
 - 2026-05-09 (p130): Schema layer shipped — migration `20260518130000_p130_t15_external_reviewer_engagement_kind.sql` aplicada. engagement_kind + permission seedados. Plumbing user-facing deferida.
-- 2026-05-10 (p148): ADR drafted após T-15 partial-ship descoberto via verify-before-pick rule. Status PROPOSED, awaiting PM + legal-counsel + DPO review (Ivan).
+- 2026-05-10 (p148, Round 1): ADR drafted após T-15 partial-ship descoberto via verify-before-pick rule. Commit `7f3b9be`. PROPOSED.
+- 2026-05-10 (p148, Round 2 — same session): PM aprovou 5/5 decisions:
+  - (1) Wave count: 6 OK
+  - (2) NDA: scope explícito A/B/C cobertos, D-G excluídos; Ângelina cura
+  - (3) `operational_role` enum: adicionar `external_reviewer`; trigger sync_operational_role_cache cobre
+  - (4) Self-revoke: incluído (LGPD Art. 8 §5)
+  - (5) Visibility: externos NÃO veem curator_only/submitter_only/change_notes; só `public`; default no comment form é `public`-único
+- Pending: legal-counsel review NDA template + Ivan DPO sign-off no consent flow → Round 3 (sign-off final).
