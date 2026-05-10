@@ -5,6 +5,35 @@ import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.6.a p143)
+const CHR_I18N = {
+  kpiActiveMembers: t('chapterReport.kpiActiveMembers', lang),
+  kpiArticlesPipeline: t('chapterReport.kpiArticlesPipeline', lang),
+  kpiHoursParticipation: t('chapterReport.kpiHoursParticipation', lang),
+  kpiCpmaiCertified: t('chapterReport.kpiCpmaiCertified', lang),
+  kpiOfTotalPrefix: t('chapterReport.kpiOfTotalPrefix', lang),
+  kpiApprovedSuffix: t('chapterReport.kpiApprovedSuffix', lang),
+  kpiEventsSuffix: t('chapterReport.kpiEventsSuffix', lang),
+  emptyData: t('chapterReport.emptyData', lang),
+  selFunnelApplications: t('chapterReport.selFunnelApplications', lang),
+  selFunnelApproved: t('chapterReport.selFunnelApproved', lang),
+  selFunnelRejected: t('chapterReport.selFunnelRejected', lang),
+  selFunnelInterviews: t('chapterReport.selFunnelInterviews', lang),
+  approvalRatePrefix: t('chapterReport.approvalRatePrefix', lang),
+  errorPrefix: t('common.errorPrefix', lang),
+  roleLabels: {
+    researcher: t('role.researcher', lang),
+    tribe_leader: t('role.tribe_leader', lang),
+    comms_leader: t('role.comms_leader', lang),
+    manager: t('role.manager', lang),
+    deputy_manager: t('role.deputy_manager', lang),
+    communicator: t('role.communicator', lang),
+    facilitator: t('role.facilitator', lang),
+    guest: t('role.guest', lang),
+    none: t('chapterReport.roleNone', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('chapterReport.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.reports', lang)},{label: t('chapterReport.title', lang)}]}>
@@ -88,8 +117,27 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ CHR_I18N }}>
+  window.__CHR_I18N = CHR_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__CHR_I18N) || {
+    kpiActiveMembers: 'Membros Ativos', kpiArticlesPipeline: 'Artigos em Pipeline',
+    kpiHoursParticipation: 'Horas de Participação', kpiCpmaiCertified: 'CPMAI Certificados',
+    kpiOfTotalPrefix: 'de', kpiApprovedSuffix: 'aprovados', kpiEventsSuffix: 'eventos',
+    emptyData: 'Sem dados',
+    selFunnelApplications: 'Candidaturas', selFunnelApproved: 'Aprovados',
+    selFunnelRejected: 'Rejeitados', selFunnelInterviews: 'Entrevistas',
+    approvalRatePrefix: 'Taxa de aprovação', errorPrefix: 'Erro',
+    roleLabels: {
+      researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação',
+      manager: 'Gerente', deputy_manager: 'Vice-Gerente', communicator: 'Comunicador',
+      facilitator: 'Facilitador', guest: 'Convidado', none: 'Sem papel',
+    },
+  };
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -97,11 +145,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  const ROLE_LABELS: Record<string, string> = {
-    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', manager: 'Gerente',
-    deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
-    guest: 'Convidado', none: 'Sem papel',
-  };
+  const ROLE_LABELS: Record<string, string> = T.roleLabels;
 
   function showDenied() {
     document.getElementById('chr-loading')?.classList.add('hidden');
@@ -124,7 +168,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       renderDashboard(data);
     } catch (e: any) {
       console.error('Chapter load:', e);
-      (window as any).toast?.('Erro: ' + (e.message || ''), 'error');
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || ''), 'error');
     }
   }
 
@@ -136,10 +180,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const e = d.engagement || {};
       const c = d.certification || {};
       kpis.innerHTML = [
-        kpiCard('Membros Ativos', m.active || 0, `de ${m.total || 0}`, 'bg-blue-50 text-blue-700'),
-        kpiCard('Artigos em Pipeline', p.articles_in_pipeline || 0, `${p.articles_published || 0} aprovados`, 'bg-indigo-50 text-indigo-700'),
-        kpiCard('Horas de Participação', e.total_hours || 0, `${e.attendance_events || 0} eventos`, 'bg-emerald-50 text-emerald-700'),
-        kpiCard('CPMAI Certificados', c.cpmai_certified || 0, `de ${c.total_active || 0}`, 'bg-amber-50 text-amber-700'),
+        kpiCard(T.kpiActiveMembers, m.active || 0, `${T.kpiOfTotalPrefix} ${m.total || 0}`, 'bg-blue-50 text-blue-700'),
+        kpiCard(T.kpiArticlesPipeline, p.articles_in_pipeline || 0, `${p.articles_published || 0} ${T.kpiApprovedSuffix}`, 'bg-indigo-50 text-indigo-700'),
+        kpiCard(T.kpiHoursParticipation, e.total_hours || 0, `${e.attendance_events || 0} ${T.kpiEventsSuffix}`, 'bg-emerald-50 text-emerald-700'),
+        kpiCard(T.kpiCpmaiCertified, c.cpmai_certified || 0, `${T.kpiOfTotalPrefix} ${c.total_active || 0}`, 'bg-amber-50 text-amber-700'),
       ].join('');
     }
 
@@ -149,7 +193,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const byRole = d.members?.by_role || {};
       const entries = Object.entries(byRole).sort((a: any, b: any) => b[1] - a[1]);
       if (entries.length === 0) {
-        roles.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Sem dados</p>';
+        roles.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.emptyData}</p>`;
       } else {
         const max = Math.max(...entries.map((e: any) => e[1] as number));
         roles.innerHTML = entries.map(([role, count]: any) => `
@@ -200,14 +244,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
       if (selSection && funnel) {
         funnel.innerHTML = [
-          selKpiCard('Candidaturas', f.total_applications || 0, 'bg-blue-50 text-blue-700'),
-          selKpiCard('Aprovados', f.approved || 0, 'bg-green-50 text-green-700'),
-          selKpiCard('Rejeitados', f.rejected || 0, 'bg-red-50 text-red-700'),
-          selKpiCard('Entrevistas', (f.interview_scheduled || 0) + (f.interview_done || 0), 'bg-indigo-50 text-indigo-700'),
+          selKpiCard(T.selFunnelApplications, f.total_applications || 0, 'bg-blue-50 text-blue-700'),
+          selKpiCard(T.selFunnelApproved, f.approved || 0, 'bg-green-50 text-green-700'),
+          selKpiCard(T.selFunnelRejected, f.rejected || 0, 'bg-red-50 text-red-700'),
+          selKpiCard(T.selFunnelInterviews, (f.interview_scheduled || 0) + (f.interview_done || 0), 'bg-indigo-50 text-indigo-700'),
         ].join('');
 
         if (rate) {
-          rate.textContent = `Taxa de aprovação: ${data.conversion_rate || 0}%`;
+          rate.textContent = `${T.approvalRatePrefix}: ${data.conversion_rate || 0}%`;
         }
 
         selSection.classList.remove('hidden');
