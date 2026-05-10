@@ -5003,6 +5003,18 @@ const enUS: Record<string, string> = {
   'admin.partnerships.saved': 'Partnership saved!',
   'admin.partnerships.deleteConfirm': 'Delete this partnership?',
   'admin.partnerships.deleted': 'Partnership deleted.',
+  // ── Partnerships — Ω-B+.7.c p144 (additions) ──
+  'admin.partnerships.typePmiChapter': 'PMI Chapter',
+  'admin.partnerships.typeAcademia': 'Academia',
+  'admin.partnerships.typeGoverno': 'Government',
+  'admin.partnerships.typeEmpresa': 'Company',
+  'admin.partnerships.typeOutro': 'Other',
+  'admin.partnerships.statusActive': 'Active',
+  'admin.partnerships.statusProspect': 'Prospect',
+  'admin.partnerships.statusContact': 'Contact',
+  'admin.partnerships.statusNegotiation': 'Negotiation',
+  'admin.partnerships.statusInactive': 'Inactive',
+  'admin.partnerships.statusChurned': 'Churned',
 
   'admin.campaigns.funnelSent': 'Sent',
   'admin.campaigns.funnelDelivered': 'Delivered',
