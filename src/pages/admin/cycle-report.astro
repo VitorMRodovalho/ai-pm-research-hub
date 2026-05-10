@@ -2,6 +2,69 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.6.b p143)
+const CR_I18N = {
+  errorLoadingCycle: t('cycleReport.errorLoadingCycle', lang),
+  colCycle: t('cycleReport.colCycle', lang),
+  colMembers: t('cycleReport.colMembers', lang),
+  colChapters: t('cycleReport.colChapters', lang),
+  colTribes: t('cycleReport.colTribes', lang),
+  colEvents: t('cycleReport.colEvents', lang),
+  colGrowth: t('cycleReport.colGrowth', lang),
+  milestonesTitle: t('cycleReport.milestonesTitle', lang),
+  milestoneNewChapters: t('cycleReport.milestoneNewChapters', lang),
+  milestonePlatform: t('cycleReport.milestonePlatform', lang),
+  milestoneGovernance: t('cycleReport.milestoneGovernance', lang),
+  milestoneMcpServer: t('cycleReport.milestoneMcpServer', lang),
+  milestoneArticles: t('cycleReport.milestoneArticles', lang),
+  milestoneEvents: t('cycleReport.milestoneEvents', lang),
+  subtitleGeneratedOn: t('cycleReport.subtitleGeneratedOn', lang),
+  metaPrefix: t('cycleReport.metaPrefix', lang),
+  statTotal: t('cycleReport.statTotal', lang),
+  statActive: t('cycleReport.statActive', lang),
+  statRetention: t('cycleReport.statRetention', lang),
+  statNewInCycle: t('cycleReport.statNewInCycle', lang),
+  roleOther: t('cycleReport.roleOther', lang),
+  tribeLeaderLabel: t('cycleReport.tribeLeaderLabel', lang),
+  tribeMembersLabel: t('cycleReport.tribeMembersLabel', lang),
+  tribeCardsLabel: t('cycleReport.tribeCardsLabel', lang),
+  tribeCompletionLabel: t('cycleReport.tribeCompletionLabel', lang),
+  tribeArticlesLabel: t('cycleReport.tribeArticlesLabel', lang),
+  prodSubmitted: t('cycleReport.prodSubmitted', lang),
+  prodInReview: t('cycleReport.prodInReview', lang),
+  prodPublished: t('cycleReport.prodPublished', lang),
+  prodWebinarsDone: t('cycleReport.prodWebinarsDone', lang),
+  prodWebinarsPlanned: t('cycleReport.prodWebinarsPlanned', lang),
+  engEvents: t('cycleReport.engEvents', lang),
+  engHoursImpact: t('cycleReport.engHoursImpact', lang),
+  engAvgAttendance: t('cycleReport.engAvgAttendance', lang),
+  engCertification: t('cycleReport.engCertification', lang),
+  curReviewed: t('cycleReport.curReviewed', lang),
+  curApproved: t('cycleReport.curApproved', lang),
+  curInReview: t('cycleReport.curInReview', lang),
+  curAvgTime: t('cycleReport.curAvgTime', lang),
+  curSlaOk: t('cycleReport.curSlaOk', lang),
+  attColTribe: t('cycleReport.attColTribe', lang),
+  attColMembers: t('cycleReport.attColMembers', lang),
+  attColGeneralPct: t('cycleReport.attColGeneralPct', lang),
+  attColTribePct: t('cycleReport.attColTribePct', lang),
+  attColCombinedPct: t('cycleReport.attColCombinedPct', lang),
+  attColAtRisk: t('cycleReport.attColAtRisk', lang),
+  footerTemplate: t('cycleReport.footerTemplate', lang),
+  roleLabels: {
+    researcher: t('role.researcher', lang),
+    tribe_leader: t('role.tribe_leader', lang),
+    comms_leader: t('role.comms_leader', lang),
+    sponsor: t('role.sponsor', lang),
+    chapter_liaison: t('role.chapter_liaison', lang),
+    manager: t('role.manager', lang),
+    deputy_manager: t('role.deputy_manager', lang),
+    observer: 'Observador',
+    communicator: t('role.communicator', lang),
+    none: t('cycleReport.roleNone', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('cycleReport.meta', lang)} breadcrumbs={[{label: t('admin.breadcrumb.reports', lang)},{label: t('cycleReport.meta', lang)}]}>
@@ -15,12 +78,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="cr-report" class="hidden space-y-8">
       <!-- Print-only institutional header -->
       <div id="cr-print-header" class="hidden print:block text-center mb-6 pb-4 border-b-2 border-navy">
-        <div class="text-[10px] font-bold uppercase tracking-[.2em] text-gray-500 mb-1">Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos</div>
-        <h1 class="text-xl font-extrabold text-navy">Relatório de Evolução — Ciclo 3 (2026/1)</h1>
+        <div class="text-[10px] font-bold uppercase tracking-[.2em] text-gray-500 mb-1">{t('cycleReport.printOrgName', lang)}</div>
+        <h1 class="text-xl font-extrabold text-navy">{t('cycleReport.printDocTitle', lang)}</h1>
         <div class="text-xs text-gray-600 mt-2 space-y-0.5">
-          <div>Emitido por: <strong>Vitor Maia Rodovalho</strong> (Gerente de Projeto)</div>
-          <div>Data de geração: <strong id="cr-print-date"></strong></div>
-          <div>Código: <strong id="cr-print-code"></strong></div>
+          <div>{t('cycleReport.printIssuedBy', lang)}: <strong>Vitor Maia Rodovalho</strong> ({t('cycleReport.printIssuedRole', lang)})</div>
+          <div>{t('cycleReport.printIssuedDate', lang)}: <strong id="cr-print-date"></strong></div>
+          <div>{t('cycleReport.printCode', lang)}: <strong id="cr-print-code"></strong></div>
         </div>
       </div>
 
@@ -37,7 +100,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       <!-- Evolution C2→C3 -->
       <section class="cr-section" id="cr-evolution-section">
-        <h2 class="text-lg font-extrabold text-navy mb-3">Evolução C2 → C3</h2>
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.evolutionTitle', lang)}</h2>
         <div id="cr-evolution" class="space-y-4"></div>
       </section>
 
@@ -93,7 +156,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       <!-- Attendance by Tribe -->
       <section class="cr-section">
-        <h2 class="text-lg font-extrabold text-navy mb-3">Presença por Tribo</h2>
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.attendanceByTribe', lang)}</h2>
         <div id="cr-attendance" class="overflow-x-auto"></div>
       </section>
 
@@ -103,17 +166,62 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </footer>
       <!-- Footer (print-only) -->
       <footer class="hidden print:block text-center text-[8px] text-gray-400 pt-4 mt-8 border-t border-gray-300">
-        <div>Documento gerado automaticamente pela plataforma digital do Núcleo de Estudos e Pesquisa em IA & GP</div>
-        <div>nucleoia.vitormr.dev · Verificável via código do relatório</div>
-        <div class="mt-1">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</div>
+        <div>{t('cycleReport.printFooterAuto', lang)}</div>
+        <div>{t('cycleReport.printFooterUrl', lang)}</div>
+        <div class="mt-1">{t('cycleReport.printFooterMarks', lang)}</div>
       </footer>
     </div>
   </div>
 </AdminLayout>
 
+<script is:inline define:vars={{ CR_I18N }}>
+  window.__CR_I18N = CR_I18N;
+</script>
 <script>
   import Chart from 'chart.js/auto';
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__CR_I18N) || {
+    errorLoadingCycle: 'Falha ao gerar relatório do ciclo.',
+    colCycle: 'Ciclo', colMembers: 'Membros', colChapters: 'Capítulos',
+    colTribes: 'Tribos', colEvents: 'Eventos', colGrowth: 'Crescimento',
+    milestonesTitle: 'Marcos do Ciclo 3',
+    milestoneNewChapters: '🏛 {n} novos capítulos integrados ({names})',
+    milestonePlatform: '🚀 Plataforma {version} em produção',
+    milestoneGovernance: '📋 Governança digital: manual versionável, CRs com aprovação por quorum SHA-256',
+    milestoneMcpServer: '🤖 Servidor MCP: 15 ferramentas para assistentes IA',
+    milestoneArticles: '📄 {n} artigos submetidos a plataformas internacionais',
+    milestoneEvents: '📅 {n} eventos realizados no C3',
+    subtitleGeneratedOn: 'Gerado em', metaPrefix: 'meta',
+    statTotal: 'Total', statActive: 'Ativos', statRetention: 'Retenção',
+    statNewInCycle: 'Novos no Ciclo', roleOther: 'Outro',
+    tribeLeaderLabel: 'Líder', tribeMembersLabel: 'Membros',
+    tribeCardsLabel: 'Cards', tribeCompletionLabel: 'Conclusão',
+    tribeArticlesLabel: 'Artigos',
+    prodSubmitted: 'Submetidos', prodInReview: 'Em Revisão',
+    prodPublished: 'Publicados', prodWebinarsDone: 'Webinars OK',
+    prodWebinarsPlanned: 'Webinars Plan.',
+    engEvents: 'Eventos', engHoursImpact: 'Horas Impacto',
+    engAvgAttendance: 'Presença Média', engCertification: 'Certificação',
+    curReviewed: 'Revisados', curApproved: 'Aprovados', curInReview: 'Em Revisão',
+    curAvgTime: 'Tempo Médio', curSlaOk: 'SLA OK',
+    attColTribe: 'Tribo', attColMembers: 'Membros',
+    attColGeneralPct: 'Geral %', attColTribePct: 'Tribo %',
+    attColCombinedPct: 'Combinado %', attColAtRisk: 'Em Risco',
+    footerTemplate: 'Gerado em {date} · Núcleo IA & GP · nucleoia.vitormr.dev',
+    roleLabels: {
+      researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo',
+      comms_leader: 'Líder de Comunicação', sponsor: 'Patrocinador',
+      chapter_liaison: 'Ponto Focal', manager: 'Gerente',
+      deputy_manager: 'Deputy', observer: 'Observador',
+      communicator: 'Comunicação', none: 'Sem papel',
+    },
+  };
+
+  function _interp(s: string, vars: Record<string, string | number>): string {
+    return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s);
+  }
 
   let crBootRetries = 0;
   let crChapterChart: Chart | null = null;
@@ -169,7 +277,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const { data, error } = await sb.rpc('exec_cycle_report');
     if (error || !data) {
       denied?.classList.remove('hidden');
-      denied!.textContent = 'Falha ao gerar relatório do ciclo.';
+      denied!.textContent = T.errorLoadingCycle;
       return;
     }
 
@@ -204,12 +312,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Key milestones
     const milestones = [
-      highlights.new_chapters ? `🏛 ${highlights.new_chapters} novos capítulos integrados (${highlights.chapter_names || ''})` : null,
-      highlights.platform_version ? `🚀 Plataforma ${highlights.platform_version} em produção` : null,
-      highlights.governance_digital ? '📋 Governança digital: manual versionável, CRs com aprovação por quorum SHA-256' : null,
-      highlights.mcp_server ? '🤖 Servidor MCP: 15 ferramentas para assistentes IA' : null,
-      highlights.total_articles ? `📄 ${highlights.total_articles} artigos submetidos a plataformas internacionais` : null,
-      highlights.total_events_c3 ? `📅 ${highlights.total_events_c3} eventos realizados no C3` : null,
+      highlights.new_chapters ? _interp(T.milestoneNewChapters, { n: highlights.new_chapters, names: highlights.chapter_names || '' }) : null,
+      highlights.platform_version ? _interp(T.milestonePlatform, { version: highlights.platform_version }) : null,
+      highlights.governance_digital ? T.milestoneGovernance : null,
+      highlights.mcp_server ? T.milestoneMcpServer : null,
+      highlights.total_articles ? _interp(T.milestoneArticles, { n: highlights.total_articles }) : null,
+      highlights.total_events_c3 ? _interp(T.milestoneEvents, { n: highlights.total_events_c3 }) : null,
     ].filter(Boolean);
 
     el.innerHTML = `
@@ -217,12 +325,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <table class="w-full text-xs">
           <thead>
             <tr class="bg-[var(--surface-base)]">
-              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">Ciclo</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Membros</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Capítulos</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribos</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Eventos</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Crescimento</th>
+              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colCycle}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colMembers}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colChapters}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colTribes}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colEvents}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.colGrowth}</th>
             </tr>
           </thead>
           <tbody>${timelineRows}</tbody>
@@ -230,7 +338,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
       ${milestones.length ? `
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
-          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">Marcos do Ciclo 3</h3>
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">${T.milestonesTitle}</h3>
           <ul class="space-y-1.5 text-sm text-[var(--text-primary)]">
             ${milestones.map(m => `<li>${m}</li>`).join('')}
           </ul>
@@ -244,7 +352,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Header
     const subtitle = document.getElementById('cr-subtitle');
-    if (subtitle) subtitle.textContent = `${r.cycle?.name || ''} — Gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+    if (subtitle) subtitle.textContent = `${r.cycle?.name || ''} — ${T.subtitleGeneratedOn} ${new Date().toLocaleDateString('pt-BR')}`;
 
     // KPIs
     const kpisEl = document.getElementById('cr-kpis');
@@ -260,7 +368,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <div class="w-full h-1.5 rounded-full mt-2" style="background:${s.border}40">
             <div class="h-full rounded-full" style="width:${pct}%;background:${s.text}"></div>
           </div>
-          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — meta: ${k.target}${unitSuffix}</div>
+          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — ${T.metaPrefix}: ${k.target}${unitSuffix}</div>
         </div>`;
       }).join('');
     }
@@ -270,20 +378,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const membersStatsEl = document.getElementById('cr-members-stats');
     if (membersStatsEl) {
       membersStatsEl.innerHTML = [
-        statCard('Total', ms.total || 0),
-        statCard('Ativos', ms.active || 0, 'text-emerald-600'),
-        statCard('Retenção', `${ms.retention_rate || 0}%`, 'text-blue-600'),
-        statCard('Novos no Ciclo', ms.new_this_cycle || 0, 'text-purple'),
+        statCard(T.statTotal, ms.total || 0),
+        statCard(T.statActive, ms.active || 0, 'text-emerald-600'),
+        statCard(T.statRetention, `${ms.retention_rate || 0}%`, 'text-blue-600'),
+        statCard(T.statNewInCycle, ms.new_this_cycle || 0, 'text-purple'),
       ].join('');
     }
 
-    // Role label map (i18n)
-    const roleLabels: Record<string, Record<string, string>> = {
-      'pt-BR': { researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', manager: 'Gerente', deputy_manager: 'Deputy', observer: 'Observador', communicator: 'Comunicação', none: 'Sem papel' },
-      'en-US': { researcher: 'Researcher', tribe_leader: 'Tribe Leader', comms_leader: 'Comms Leader', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison', manager: 'Manager', deputy_manager: 'Deputy Manager', observer: 'Observer', communicator: 'Communications', none: 'No role' },
-      'es': { researcher: 'Investigador', tribe_leader: 'Líder de Línea', comms_leader: 'Líder de Comunicación', sponsor: 'Patrocinador', chapter_liaison: 'Enlace', manager: 'Gerente', deputy_manager: 'Subgerente', observer: 'Observador', communicator: 'Comunicación', none: 'Sin rol' },
-    };
-    const rl = roleLabels[lang] || roleLabels['pt-BR'];
+    // Role label map (i18n) — single source via T.roleLabels
+    const rl = T.roleLabels;
 
     // Founding chapters keep established branding colors; new chapters get
     // deterministic HSL via code hash so charts stay readable as registry expands.
@@ -339,7 +442,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       crRoleChart = new Chart(rolesCanvas, {
         type: 'doughnut',
         data: {
-          labels: ms.by_role.map((r: any) => rl[r.role] || r.role || 'Outro'),
+          labels: ms.by_role.map((r: any) => rl[r.role] || r.role || T.roleOther),
           datasets: [{
             data: ms.by_role.map((r: any) => r.count),
             backgroundColor: ms.by_role.map((r: any) => rolePalette[r.role] || '#B4B2A9'),
@@ -361,12 +464,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       tribesEl.innerHTML = r.tribes.map((t: any) => `
         <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
           <div class="text-sm font-bold text-navy">${t.name}</div>
-          <div class="text-[10px] text-[var(--text-muted)] mb-2">Líder: ${t.leader}</div>
+          <div class="text-[10px] text-[var(--text-muted)] mb-2">${T.tribeLeaderLabel}: ${t.leader}</div>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>Membros: <strong>${t.member_count}</strong></div>
-            <div>Cards: <strong>${t.board_items_completed}/${t.board_items_total}</strong></div>
-            <div>Conclusão: <strong>${t.completion_pct}%</strong></div>
-            <div>Artigos: <strong>${t.articles_produced}</strong></div>
+            <div>${T.tribeMembersLabel}: <strong>${t.member_count}</strong></div>
+            <div>${T.tribeCardsLabel}: <strong>${t.board_items_completed}/${t.board_items_total}</strong></div>
+            <div>${T.tribeCompletionLabel}: <strong>${t.completion_pct}%</strong></div>
+            <div>${T.tribeArticlesLabel}: <strong>${t.articles_produced}</strong></div>
           </div>
           <div class="w-full h-1.5 rounded-full bg-[var(--border-default)] mt-2 overflow-hidden">
             <div class="h-full rounded-full bg-emerald-500" style="width:${Math.min(t.completion_pct, 100)}%"></div>
@@ -380,11 +483,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const prodEl = document.getElementById('cr-production');
     if (prodEl) {
       prodEl.innerHTML = [
-        statCard('Submetidos', prod.articles_submitted || 0),
-        statCard('Em Revisão', prod.articles_in_review || 0, 'text-amber-600'),
-        statCard('Publicados', prod.articles_published || 0, 'text-emerald-600'),
-        statCard('Webinars OK', prod.webinars_completed || 0, 'text-blue-600'),
-        statCard('Webinars Plan.', prod.webinars_planned || 0),
+        statCard(T.prodSubmitted, prod.articles_submitted || 0),
+        statCard(T.prodInReview, prod.articles_in_review || 0, 'text-amber-600'),
+        statCard(T.prodPublished, prod.articles_published || 0, 'text-emerald-600'),
+        statCard(T.prodWebinarsDone, prod.webinars_completed || 0, 'text-blue-600'),
+        statCard(T.prodWebinarsPlanned, prod.webinars_planned || 0),
       ].join('');
     }
 
@@ -393,10 +496,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const engEl = document.getElementById('cr-engagement');
     if (engEl) {
       engEl.innerHTML = [
-        statCard('Eventos', eng.total_events || 0),
-        statCard('Horas Impacto', `${Number(eng.total_attendance_hours || 0).toLocaleString('pt-BR')}h`, 'text-teal'),
-        statCard('Presença Média', eng.avg_attendance_per_event || 0),
-        statCard('Certificação', `${eng.certification_completion_rate || 0}%`, 'text-purple'),
+        statCard(T.engEvents, eng.total_events || 0),
+        statCard(T.engHoursImpact, `${Number(eng.total_attendance_hours || 0).toLocaleString('pt-BR')}h`, 'text-teal'),
+        statCard(T.engAvgAttendance, eng.avg_attendance_per_event || 0),
+        statCard(T.engCertification, `${eng.certification_completion_rate || 0}%`, 'text-purple'),
       ].join('');
     }
 
@@ -405,11 +508,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const curEl = document.getElementById('cr-curation');
     if (curEl) {
       curEl.innerHTML = [
-        statCard('Revisados', cur.items_submitted || 0),
-        statCard('Aprovados', cur.items_approved || 0, 'text-emerald-600'),
-        statCard('Em Revisão', cur.items_in_review || 0, 'text-amber-600'),
-        statCard('Tempo Médio', `${cur.avg_review_days || 0}d`),
-        statCard('SLA OK', `${cur.sla_compliance_rate || 0}%`, 'text-blue-600'),
+        statCard(T.curReviewed, cur.items_submitted || 0),
+        statCard(T.curApproved, cur.items_approved || 0, 'text-emerald-600'),
+        statCard(T.curInReview, cur.items_in_review || 0, 'text-amber-600'),
+        statCard(T.curAvgTime, `${cur.avg_review_days || 0}d`),
+        statCard(T.curSlaOk, `${cur.sla_compliance_rate || 0}%`, 'text-blue-600'),
       ].join('');
     }
 
@@ -420,12 +523,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <table class="w-full text-xs">
           <thead>
             <tr class="bg-[var(--surface-base)]">
-              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Membros</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Geral %</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo %</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Combinado %</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Em Risco</th>
+              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColTribe}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColMembers}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColGeneralPct}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColTribePct}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColCombinedPct}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColAtRisk}</th>
             </tr>
           </thead>
           <tbody>
@@ -461,7 +564,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <div class="w-full h-1.5 rounded-full mt-2" style="background:${s.border}40">
             <div class="h-full rounded-full" style="width:${Math.min(pct, 100)}%;background:${s.text}"></div>
           </div>
-          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — meta: ${k.target}${k.unit ? k.unit : ''}</div>
+          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — ${T.metaPrefix}: ${k.target}${k.unit ? k.unit : ''}</div>
         </div>`;
       }).join('');
     }
@@ -469,7 +572,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     // Footer
     const footer = document.getElementById('cr-footer');
     if (footer) {
-      footer.textContent = `Gerado em ${new Date().toLocaleDateString('pt-BR')} · Núcleo IA & GP · nucleoia.vitormr.dev`;
+      footer.textContent = _interp(T.footerTemplate, { date: new Date().toLocaleDateString('pt-BR') });
     }
   }
 
