@@ -5021,6 +5021,17 @@ const ptBR: Record<string, string> = {
   'admin.partnerships.statusNegotiation': 'Negociação',
   'admin.partnerships.statusInactive': 'Inativo',
   'admin.partnerships.statusChurned': 'Churned',
+  // ── Admin Dashboard (index) — Ω-B+.9 p145 (additions) ──
+  'admin.dashboard.nextMeetingTitle': 'Próxima Reunião Geral',
+  'admin.dashboard.nextMeetingDesc': 'Cria evento <code>type=geral</code> em <strong>last+14 dias</strong>. Reusa Meet recorrente; YouTube live opcional.',
+  'admin.dashboard.createNextBiweekly': 'Criar próxima quinzenal',
+  'admin.dashboard.meetUrlPrompt': 'Meet URL (obrigatório, ex: https://meet.google.com/xxx-yyyy-zzz):',
+  'admin.dashboard.youtubeUrlPrompt': 'YouTube live URL (opcional, deixe em branco se ainda não existir):',
+  'admin.dashboard.creating': 'Criando...',
+  'admin.dashboard.successCreatedTemplate': 'Criado: <strong>{title}</strong> em <strong>{date}</strong>',
+  'admin.dashboard.errorPrefix': 'Erro',
+  'admin.deniedAdmin': 'Acesso restrito a administradores.',
+  'admin.tribeBreadcrumb': 'Tribo',
 
   'admin.campaigns.funnelSent': 'Enviados',
   'admin.campaigns.funnelDelivered': 'Entregues',
