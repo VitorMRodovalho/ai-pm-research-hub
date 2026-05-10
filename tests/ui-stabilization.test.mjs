@@ -759,11 +759,17 @@ test('portfolio executive dashboard and taxonomy guard contracts exist', () => {
 test('tribe taxonomy includes workstream classification for navigation grouping', () => {
   const migration = read('supabase/migrations/20260314152000_tribes_workstream_type_taxonomy.sql');
   const teams = read('src/pages/teams.astro');
+  const ptBR = read('src/i18n/pt-BR.ts');
   assert.equal(migration.includes('add column if not exists workstream_type text not null default'), true);
   assert.equal(migration.includes("check (workstream_type in ('research', 'operational', 'legacy'))"), true);
-  assert.equal(teams.includes('Ativas (Pesquisa)'), true);
-  assert.equal(teams.includes('Subprojetos (Operação)'), true);
-  assert.equal(teams.includes('Legado (Read-only)'), true);
+  // p134 Ω-A: teams.astro migrated to i18n keys (sediment feedback_test_codifying_bug.md).
+  // Test now validates i18n keys are referenced AND PT-BR canonical strings exist in dict.
+  assert.equal(teams.includes("t('teams.activeSection'"), true);
+  assert.equal(teams.includes("t('teams.operationalSection'"), true);
+  assert.equal(teams.includes("t('teams.legacySection'"), true);
+  assert.equal(ptBR.includes("'teams.activeSection': '🟢 Ativas (Pesquisa)'"), true);
+  assert.equal(ptBR.includes("'teams.operationalSection': '⚙️ Subprojetos (Operação)'"), true);
+  assert.equal(ptBR.includes("'teams.legacySection': '🏛️ Legado (Read-only)'"), true);
   assert.equal(teams.includes('cycle_tribe_dim'), true);
 });
 

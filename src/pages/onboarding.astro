@@ -7,7 +7,7 @@ const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const phases = [
   {
     id: 'welcome',
-    title: 'Boas-vindas',
+    title: t('onboarding.phase.welcome', lang),
     icon: '👋',
     color: 'from-blue-500 to-indigo-500',
     steps: [
@@ -19,23 +19,23 @@ const phases = [
         link: t('onboarding.step1.link', lang),
         linkText: t('onboarding.step1.linkText', lang),
         external: true,
-        tip: 'Dica: Reserve 15 minutos para preencher com calma. As respostas ajudam na sua alocação.',
+        tip: t('onboarding.step1.tip', lang),
       },
       {
         id: 'step2',
         icon: '✉️',
         title: t('onboarding.step2.title', lang),
         desc: t('onboarding.step2.desc', lang),
-        link: 'mailto:nucleoia@pmigo.org.br',
+        link: t('onboarding.step2.contactEmail', lang),
         linkText: t('onboarding.step2.linkText', lang),
         external: true,
-        tip: 'Aguarde até 48h para confirmação. Verifique sua pasta de spam.',
+        tip: t('onboarding.step2.tip', lang),
       },
     ],
   },
   {
     id: 'setup',
-    title: 'Configuração',
+    title: t('onboarding.phase.setup', lang),
     icon: '⚙️',
     color: 'from-teal-500 to-emerald-500',
     steps: [
@@ -44,7 +44,7 @@ const phases = [
         icon: '🔑',
         title: t('onboarding.step3.title', lang),
         desc: t('onboarding.step3.desc', lang),
-        tip: 'Dica: Use o mesmo email do cadastro. Se tiver problemas, entre em contato no grupo do WhatsApp.',
+        tip: t('onboarding.step3.tip', lang),
       },
       {
         id: 'step4',
@@ -53,13 +53,13 @@ const phases = [
         desc: t('onboarding.step4.desc', lang),
         link: base + '/profile',
         linkText: t('onboarding.step4.linkText', lang),
-        tip: 'Adicione foto profissional e LinkedIn. Esses dados ajudam na visibilidade do seu perfil.',
+        tip: t('onboarding.step4.tip', lang),
       },
     ],
   },
   {
     id: 'engage',
-    title: 'Integração',
+    title: t('onboarding.phase.engage', lang),
     icon: '🤝',
     color: 'from-purple-500 to-pink-500',
     steps: [
@@ -71,7 +71,7 @@ const phases = [
         link: base + '/#tribes',
         linkText: t('onboarding.step5.linkText', lang),
         hasDeadline: true,
-        tip: 'Dica: Veja a descrição de cada tribo e escolha com base no seu interesse de pesquisa principal.',
+        tip: t('onboarding.step5.tip', lang),
       },
       {
         id: 'step6',
@@ -81,13 +81,13 @@ const phases = [
         link: t('onboarding.step6.link', lang),
         linkText: t('onboarding.step6.linkText', lang),
         external: true,
-        tip: 'Configure seu perfil Credly para sincronizar badges automaticamente com a gamificação.',
+        tip: t('onboarding.step6.tip', lang),
       },
     ],
   },
   {
     id: 'produce',
-    title: 'Produção',
+    title: t('onboarding.phase.produce', lang),
     icon: '🚀',
     color: 'from-amber-500 to-orange-500',
     steps: [
@@ -96,7 +96,7 @@ const phases = [
         icon: '📅',
         title: t('onboarding.step7.title', lang),
         desc: t('onboarding.step7.desc', lang),
-        tip: 'As reuniões de tribo acontecem semanalmente. Sua presença conta pontos na gamificação!',
+        tip: t('onboarding.step7.tip', lang),
       },
       {
         id: 'step8',
@@ -105,7 +105,7 @@ const phases = [
         desc: t('onboarding.step8.desc', lang),
         link: base + '/publications',
         linkText: t('onboarding.step8.linkText', lang),
-        tip: 'Comece com um resumo de artigo ou framework. Publicações aprovadas geram pontos XP.',
+        tip: t('onboarding.step8.tip', lang),
       },
     ],
   },
@@ -124,8 +124,8 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
       <!-- Progress Bar -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[12px] font-bold text-[var(--text-secondary)]">Seu Progresso</span>
-          <span id="progress-label" class="text-[12px] font-bold text-navy">0 / {totalSteps} etapas</span>
+          <span class="text-[12px] font-bold text-[var(--text-secondary)]">{t('onboarding.progressLabel', lang)}</span>
+          <span id="progress-label" class="text-[12px] font-bold text-navy">{t('onboarding.progressTemplate', lang).replace('{done}', '0').replace('{total}', String(totalSteps))}</span>
         </div>
         <div class="w-full h-3 bg-[var(--surface-base)] rounded-full overflow-hidden">
           <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-teal to-emerald-500 transition-all duration-500" style="width:0%"></div>
@@ -162,7 +162,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
             </div>
             <div>
               <h2 class="text-[15px] font-bold text-navy">{phase.title}</h2>
-              <p class="text-[11px] text-[var(--text-muted)]">Fase {pi + 1} de {phases.length}</p>
+              <p class="text-[11px] text-[var(--text-muted)]">{t('onboarding.phaseOf', lang).replace('{n}', String(pi + 1)).replace('{total}', String(phases.length))}</p>
             </div>
           </div>
 
@@ -212,11 +212,11 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
                     <div class="mt-3 flex items-center gap-2">
                       <button class="mark-done-btn px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-0 bg-emerald-600 text-white hover:opacity-90 transition-all"
                               data-step-idx={String(globalIndex)}>
-                        ✓ Marcar como concluído
+                        {t('onboarding.markDone', lang)}
                       </button>
                       <button class="mark-undone-btn hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-all"
                               data-step-idx={String(globalIndex)}>
-                        Desfazer
+                        {t('onboarding.undo', lang)}
                       </button>
                     </div>
                   </div>
@@ -231,17 +231,21 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
     <!-- Completion Banner -->
     <div id="completion-banner" class="hidden mt-8 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 text-center">
       <div class="text-4xl mb-2">🎉</div>
-      <h3 class="text-lg font-extrabold text-emerald-800 mb-1">Parabéns! Onboarding Completo!</h3>
-      <p class="text-[.78rem] text-emerald-600">Você completou todas as etapas. Agora é hora de contribuir com sua tribo!</p>
+      <h3 class="text-lg font-extrabold text-emerald-800 mb-1">{t('onboarding.completionTitle', lang)}</h3>
+      <p class="text-[.78rem] text-emerald-600">{t('onboarding.completionDesc', lang)}</p>
       <a href={base + '/gamification'} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
-        Ver Gamificação
+        {t('onboarding.viewGamification', lang)}
       </a>
     </div>
   </div>
 </BaseLayout>
 
-<script define:vars={{ totalSteps }}>
+<script define:vars={{ totalSteps, _i18n: {
+  progressTemplate: t('onboarding.progressTemplate', lang),
+  daysLeft: t('onboarding.daysLeft', lang),
+} }}>
   window.__ONBOARDING_TOTAL = totalSteps;
+  window.__ONBOARDING_I18N = _i18n;
 </script>
 <script>
   import { getSupabase } from '../lib/supabase';
@@ -314,7 +318,8 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
     const bar = document.getElementById('progress-bar');
     const label = document.getElementById('progress-label');
     if (bar) bar.style.width = pct + '%';
-    if (label) label.textContent = completed.size + ' / ' + TOTAL + ' etapas';
+    const tpl = (window as any).__ONBOARDING_I18N?.progressTemplate || '{done} / {total} etapas';
+    if (label) label.textContent = tpl.replace('{done}', String(completed.size)).replace('{total}', String(TOTAL));
 
     document.querySelectorAll('.step-check').forEach(el => {
       const idx = parseInt((el as HTMLElement).dataset.stepIdx || '-1');
@@ -394,7 +399,8 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
         if (el) el.textContent = d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
         const daysLeft = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         if (daysLeft > 0 && daysLeft < 60 && banner && countdown) {
-          countdown.textContent = daysLeft + ' dias restantes';
+          const daysLeftTpl = (window as any).__ONBOARDING_I18N?.daysLeft || '{n} dias restantes';
+          countdown.textContent = daysLeftTpl.replace('{n}', String(daysLeft));
           banner.classList.remove('hidden');
         }
       } else if (data?.cycle_label && el) {
