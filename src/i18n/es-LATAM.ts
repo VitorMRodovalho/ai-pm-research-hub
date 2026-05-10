@@ -2518,6 +2518,20 @@ const esLATAM: Record<string, string> = {
   'admin.loadGovernance': 'Cargando gobernanza...',
   'admin.loadCommsOps': 'Cargando operaciones de comunicación...',
   'admin.presidentWarning': 'Ningún presidente ha iniciado sesión. El workflow de aprobación de CRs requiere auth.',
+  // ── Admin Governance V2 — Ω-B+.7.a p144 (additions) ──
+  'admin.governanceV2.subnavCRs': 'Change Requests & Boards',
+  'admin.governanceV2.subnavIp': 'Ratificación de documentos (IP)',
+  'admin.governanceV2.previewStakeholder': '👁 Preview Stakeholder',
+  'admin.governanceV2.deniedRestricted': 'Acceso restringido a gestión de proyecto.',
+  'admin.governanceV2.archivedBoardsTitle': 'Gobernanza de Boards Archivados',
+  'admin.governanceV2.noTitleFallback': 'Sin título',
+  'admin.governanceV2.boardFallback': 'Board',
+  'admin.governanceV2.scopeFallback': 'scope',
+  'admin.governanceV2.domainFallback': 'domain',
+  'admin.governanceV2.restoreBtn': 'Restaurar',
+  'admin.governanceV2.toastRestored': 'Card restaurado con éxito.',
+  'admin.governanceV2.toastRestoreFailed': 'Falla al restaurar card.',
+  'admin.governanceV2.curatorInactive': 'inactiva',
 
   // ── Admin: Initiative Kinds (V4 Phase 6) ──
   'admin.initiativeKinds': 'Tipos de Iniciativa',
