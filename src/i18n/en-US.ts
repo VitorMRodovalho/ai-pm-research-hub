@@ -5015,6 +5015,17 @@ const enUS: Record<string, string> = {
   'admin.partnerships.statusNegotiation': 'Negotiation',
   'admin.partnerships.statusInactive': 'Inactive',
   'admin.partnerships.statusChurned': 'Churned',
+  // ── Admin Dashboard (index) — Ω-B+.9 p145 (additions) ──
+  'admin.dashboard.nextMeetingTitle': 'Next General Meeting',
+  'admin.dashboard.nextMeetingDesc': 'Creates event <code>type=geral</code> at <strong>last+14 days</strong>. Reuses recurring Meet; YouTube live optional.',
+  'admin.dashboard.createNextBiweekly': 'Create next biweekly',
+  'admin.dashboard.meetUrlPrompt': 'Meet URL (required, e.g., https://meet.google.com/xxx-yyyy-zzz):',
+  'admin.dashboard.youtubeUrlPrompt': 'YouTube live URL (optional, leave blank if not yet available):',
+  'admin.dashboard.creating': 'Creating...',
+  'admin.dashboard.successCreatedTemplate': 'Created: <strong>{title}</strong> on <strong>{date}</strong>',
+  'admin.dashboard.errorPrefix': 'Error',
+  'admin.deniedAdmin': 'Access restricted to administrators.',
+  'admin.tribeBreadcrumb': 'Tribe',
 
   'admin.campaigns.funnelSent': 'Sent',
   'admin.campaigns.funnelDelivered': 'Delivered',

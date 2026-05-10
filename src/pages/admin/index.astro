@@ -10,6 +10,17 @@ import CrossTribeWidget from '../../components/admin/CrossTribeWidget';
 import ResearchPipelineWidget from '../../components/admin/ResearchPipelineWidget';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
+
+// Pre-render strings for inline TS scripts via define:vars (Ω-B+.9 p145)
+const DASH_I18N = {
+  createNextBiweekly: t('admin.dashboard.createNextBiweekly', lang),
+  meetUrlPrompt: t('admin.dashboard.meetUrlPrompt', lang),
+  youtubeUrlPrompt: t('admin.dashboard.youtubeUrlPrompt', lang),
+  creating: t('admin.dashboard.creating', lang),
+  successCreatedTemplate: t('admin.dashboard.successCreatedTemplate', lang),
+  errorPrefix: t('admin.dashboard.errorPrefix', lang),
+  deniedAdmin: t('admin.deniedAdmin', lang),
+};
 ---
 
 <AdminLayout title={t('admin.breadcrumb.dashboard', lang)} breadcrumbs={[{label: t('admin.breadcrumb.dashboard', lang)}]}>
@@ -33,12 +44,12 @@ const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
     <div class="mt-6 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 class="text-base font-bold text-[var(--text-primary)]">Próxima Reunião Geral</h3>
-          <p class="text-xs text-[var(--text-secondary)] mt-1">Cria evento <code>type=geral</code> em <strong>last+14 dias</strong>. Reusa Meet recorrente; YouTube live opcional.</p>
+          <h3 class="text-base font-bold text-[var(--text-primary)]">{t('admin.dashboard.nextMeetingTitle', lang)}</h3>
+          <p class="text-xs text-[var(--text-secondary)] mt-1" set:html={t('admin.dashboard.nextMeetingDesc', lang)}></p>
         </div>
         <button id="btn-create-next-geral"
           class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all">
-          Criar próxima quinzenal
+          {t('admin.dashboard.createNextBiweekly', lang)}
         </button>
       </div>
       <div id="next-geral-status" class="mt-3 hidden text-sm"></div>
@@ -46,17 +57,35 @@ const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
   </div>
 </AdminLayout>
 
+<script is:inline define:vars={{ DASH_I18N }}>
+  window.__DASH_I18N = DASH_I18N;
+</script>
 <script>
   import { getSupabase } from '../../lib/supabase';
+
+  const T = (typeof window !== 'undefined' && (window as any).__DASH_I18N) || {
+    createNextBiweekly: 'Criar próxima quinzenal',
+    meetUrlPrompt: 'Meet URL (obrigatório, ex: https://meet.google.com/xxx-yyyy-zzz):',
+    youtubeUrlPrompt: 'YouTube live URL (opcional, deixe em branco se ainda não existir):',
+    creating: 'Criando...',
+    successCreatedTemplate: 'Criado: <strong>{title}</strong> em <strong>{date}</strong>',
+    errorPrefix: 'Erro',
+    deniedAdmin: 'Acesso restrito a administradores.',
+  };
+
+  function _interp(s: string, vars: Record<string, string | number>): string {
+    return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s);
+  }
+
   const btn = document.getElementById('btn-create-next-geral') as HTMLButtonElement | null;
   const statusEl = document.getElementById('next-geral-status') as HTMLDivElement | null;
   if (btn) {
     btn.addEventListener('click', async () => {
-      const meet = prompt('Meet URL (obrigatório, ex: https://meet.google.com/xxx-yyyy-zzz):', 'https://meet.google.com/jgu-ibro-tiq');
+      const meet = prompt(T.meetUrlPrompt, 'https://meet.google.com/jgu-ibro-tiq');
       if (!meet || !meet.trim()) return;
-      const yt = prompt('YouTube live URL (opcional, deixe em branco se ainda não existir):', '');
+      const yt = prompt(T.youtubeUrlPrompt, '');
       btn.disabled = true;
-      btn.textContent = 'Criando...';
+      btn.textContent = T.creating;
       try {
         const sb = getSupabase();
         const { data, error } = await sb.rpc('create_next_geral_meeting', {
@@ -67,30 +96,30 @@ const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
         if (statusEl) {
           statusEl.classList.remove('hidden');
           statusEl.classList.add('text-green-600');
-          statusEl.innerHTML = `Criado: <strong>${(data as any)?.title}</strong> em <strong>${(data as any)?.date}</strong>`;
+          statusEl.innerHTML = _interp(T.successCreatedTemplate, { title: (data as any)?.title || '', date: (data as any)?.date || '' });
         }
       } catch (e: any) {
         if (statusEl) {
           statusEl.classList.remove('hidden');
           statusEl.classList.add('text-red-600');
-          statusEl.textContent = 'Erro: ' + (e?.message || String(e));
+          statusEl.textContent = T.errorPrefix + ': ' + (e?.message || String(e));
         }
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Criar próxima quinzenal';
+        btn.textContent = T.createNextBiweekly;
       }
     });
   }
 </script>
 
-<script is:inline>
+<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
   document.addEventListener('DOMContentLoaded', () => {
     const check = () => {
       const member = window.navGetMember?.();
       if (!member) { setTimeout(check, 300); return; }
       const isAdmin = member.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role) || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator' || d === 'chapter_board'; });
       if (!isAdmin) {
-        document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">Acesso restrito a administradores.</div>';
+        document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
       }
     };
     check();

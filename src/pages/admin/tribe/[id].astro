@@ -10,7 +10,7 @@ const tribeId = Astro.params.id!;
 const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
 ---
 
-<AdminLayout title={`${t('tribeDashboard.title', lang)} ${tribeId}`} breadcrumbs={[{label:'Pessoas'},{label:'Tribo'}]}>
+<AdminLayout title={`${t('tribeDashboard.title', lang)} ${tribeId}`} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('admin.tribeBreadcrumb', lang)}]}>
 
   <div id="td-denied" class="hidden max-w-[1100px] mx-auto px-4">
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
@@ -28,7 +28,7 @@ const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
   </div>
 
   <div id="td-loading" class="max-w-[1200px] mx-auto px-4 text-center py-16 text-[var(--text-muted)]">
-    Carregando...
+    {t('common.loading', lang)}
   </div>
 </AdminLayout>
 
