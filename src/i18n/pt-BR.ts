@@ -5009,6 +5009,18 @@ const ptBR: Record<string, string> = {
   'admin.partnerships.saved': 'Parceria salva!',
   'admin.partnerships.deleteConfirm': 'Excluir esta parceria?',
   'admin.partnerships.deleted': 'Parceria excluída.',
+  // ── Partnerships — Ω-B+.7.c p144 (additions) ──
+  'admin.partnerships.typePmiChapter': 'Capítulo PMI',
+  'admin.partnerships.typeAcademia': 'Academia',
+  'admin.partnerships.typeGoverno': 'Governo',
+  'admin.partnerships.typeEmpresa': 'Empresa',
+  'admin.partnerships.typeOutro': 'Outro',
+  'admin.partnerships.statusActive': 'Ativo',
+  'admin.partnerships.statusProspect': 'Prospect',
+  'admin.partnerships.statusContact': 'Contato',
+  'admin.partnerships.statusNegotiation': 'Negociação',
+  'admin.partnerships.statusInactive': 'Inativo',
+  'admin.partnerships.statusChurned': 'Churned',
 
   'admin.campaigns.funnelSent': 'Enviados',
   'admin.campaigns.funnelDelivered': 'Entregues',

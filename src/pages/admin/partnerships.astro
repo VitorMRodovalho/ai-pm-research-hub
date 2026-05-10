@@ -3,6 +3,25 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PartnerPipelineIsland from '../../components/islands/PartnerPipelineIsland';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.7.c p144)
+const PART_I18N = {
+  typeLabels: {
+    pmi_chapter: t('admin.partnerships.typePmiChapter', lang),
+    academia: t('admin.partnerships.typeAcademia', lang),
+    governo: t('admin.partnerships.typeGoverno', lang),
+    empresa: t('admin.partnerships.typeEmpresa', lang),
+    outro: t('admin.partnerships.typeOutro', lang),
+  },
+  statusLabels: {
+    active: t('admin.partnerships.statusActive', lang),
+    prospect: t('admin.partnerships.statusProspect', lang),
+    contact: t('admin.partnerships.statusContact', lang),
+    negotiation: t('admin.partnerships.statusNegotiation', lang),
+    inactive: t('admin.partnerships.statusInactive', lang),
+    churned: t('admin.partnerships.statusChurned', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('partnerships.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('partnerships.title', lang)}]}>
@@ -184,16 +203,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   <span id="ai18n-p-deleted" class="hidden">{t('admin.partnerships.deleted', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ PART_I18N }}>
+  window.__PART_I18N = PART_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
 
-  const TYPE_LABELS: Record<string, string> = {
-    pmi_chapter: 'PMI Chapter',
-    academia: 'Academia',
-    governo: 'Governo',
-    empresa: 'Empresa',
-    outro: 'Outro',
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__PART_I18N) || {
+    typeLabels: {
+      pmi_chapter: 'Capítulo PMI', academia: 'Academia', governo: 'Governo',
+      empresa: 'Empresa', outro: 'Outro',
+    },
+    statusLabels: {
+      active: 'Ativo', prospect: 'Prospect', contact: 'Contato',
+      negotiation: 'Negociação', inactive: 'Inativo', churned: 'Churned',
+    },
   };
+
+  const TYPE_LABELS: Record<string, string> = T.typeLabels;
+  const STATUS_LABELS: Record<string, string> = T.statusLabels;
 
   const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
     active:      { badge: 'bg-emerald-100 text-emerald-700', dot: '🟢' },
@@ -237,7 +266,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return `<article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4 cursor-pointer hover:border-teal/40 transition-colors" data-partner-id="${p.id}">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm font-bold text-[var(--text-primary)]">${p.name}</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.badge}">${s.dot} ${p.status}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.badge}">${s.dot} ${STATUS_LABELS[p.status] || p.status}</span>
         </div>
         <div class="text-xs text-[var(--text-secondary)] mb-1">${typeLabel}</div>
         ${p.description ? `<div class="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">${p.description}</div>` : ''}
