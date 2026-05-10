@@ -4,6 +4,10 @@ const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
   'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, 7 tribos temáticas. Plataforma open-source trilingue.',
+  'about.meta.title': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
+  'about.meta.description': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
+  'meetings.meta.title': 'Atas de Reunião — Núcleo IA & GP',
+  'meetings.meta.description': 'Arquivo pesquisável de todas as atas de reunião do Núcleo. Busca full-text, filtros por tribo e tipo, visão cross-tribo.',
 
   // ── Nav ──
   'nav.brand': 'Núcleo IA & GP — Ciclo 03',
@@ -4768,6 +4772,21 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.profileFooterHint': 'Você pode atualizar a qualquer momento até a decisão de seleção. Dados protegidos por LGPD; só usamos para o processo do Núcleo.',
   'pmi.onboarding.contactFooter': 'Dúvidas?',
   'pmi.onboarding.errorTitle': 'Erro',
+  'pmi.onboarding.meta.title': 'Onboarding de Candidato PMI — Núcleo IA & GP',
+  'pmi.onboarding.meta.description': 'Complete seu onboarding de candidatura voluntária PMI',
+  'pmi.onboarding.error.expiredTitle': 'Link expirado ou inválido',
+  'pmi.onboarding.error.expiredBody': 'O link de onboarding não é mais válido. Se acredita que é um erro, entre em contato.',
+  // p135 Ω-B: Interview Booking page (was inline-dict)
+  'interview.booking.meta.title': 'Agende sua entrevista — Núcleo IA & GP',
+  'interview.booking.meta.description': 'Escolha um horário para sua entrevista de seleção',
+  'interview.booking.error.expiredTitle': 'Link expirado ou inválido',
+  'interview.booking.error.expiredBody': 'Este link de agendamento não é mais válido. Se acredita que é um erro, entre em contato.',
+  'interview.booking.greeting': 'Olá',
+  'interview.booking.ready': 'Sua entrevista está pronta para ser agendada',
+  'interview.booking.instruction': 'Escolha um horário usando o botão abaixo. A comissão será adicionada automaticamente ao evento.',
+  'interview.booking.cta': 'Abrir agendamento Calendar',
+  'interview.booking.expiresAt': 'Este link expira em',
+  'interview.booking.questions': 'Dúvidas? Responda ao email ou entre em contato',
   // p86 Wave 5b-2: AI-augmented self-improvement (Cards B + A)
   'pmi.enrichment.topics.title': 'Quer ver tópicos prováveis na sua entrevista?',
   'pmi.enrichment.topics.body1': 'A IA destacou áreas que o comitê provavelmente vai explorar. Você pode revisar antes — sem cobrança, sem julgamento.',
