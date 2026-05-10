@@ -3063,6 +3063,21 @@ const esLATAM: Record<string, string> = {
   // ── Chapter Report — Selection Pipeline ──
   'chapterReport.selectionTitle': 'Pipeline del Proceso Selectivo',
   'chapterReport.selectionDesc': 'Métricas del embudo de selección para este capítulo.',
+  // ── Chapter Report — Ω-B+.6.a p143 (additions) ──
+  'chapterReport.kpiActiveMembers': 'Miembros Activos',
+  'chapterReport.kpiArticlesPipeline': 'Artículos en Pipeline',
+  'chapterReport.kpiHoursParticipation': 'Horas de Participación',
+  'chapterReport.kpiCpmaiCertified': 'CPMAI Certificados',
+  'chapterReport.kpiOfTotalPrefix': 'de',
+  'chapterReport.kpiApprovedSuffix': 'aprobados',
+  'chapterReport.kpiEventsSuffix': 'eventos',
+  'chapterReport.emptyData': 'Sin datos',
+  'chapterReport.selFunnelApplications': 'Candidaturas',
+  'chapterReport.selFunnelApproved': 'Aprobados',
+  'chapterReport.selFunnelRejected': 'Rechazados',
+  'chapterReport.selFunnelInterviews': 'Entrevistas',
+  'chapterReport.approvalRatePrefix': 'Tasa de aprobación',
+  'chapterReport.roleNone': 'Sin rol',
 
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Política de Privacidad — Núcleo IA & GP',
