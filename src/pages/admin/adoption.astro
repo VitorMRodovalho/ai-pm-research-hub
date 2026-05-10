@@ -5,6 +5,79 @@ import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.6.c p143)
+const ADP_I18N = {
+  noResults: t('admin.noResults', lang),
+  presidentWarning: t('admin.presidentWarning', lang),
+  // KPI cards
+  kpiActiveMembers: t('admin.adoption.kpiActiveMembers', lang),
+  kpiWithLoginSuffix: t('admin.adoption.kpiWithLoginSuffix', lang),
+  kpiActive7d: t('admin.adoption.kpiActive7d', lang),
+  kpiActive30d: t('admin.adoption.kpiActive30d', lang),
+  kpiNeverSeen: t('admin.adoption.kpiNeverSeen', lang),
+  kpiSessionsPerMember: t('admin.adoption.kpiSessionsPerMember', lang),
+  // Lifecycle
+  lifecycleTotalEver: t('admin.adoption.lifecycleTotalEver', lang),
+  lifecycleActiveC3: t('admin.adoption.lifecycleActiveC3', lang),
+  lifecycleAlumni: t('admin.adoption.lifecycleAlumni', lang),
+  lifecycleObservers: t('admin.adoption.lifecycleObservers', lang),
+  lifecycleRetention: t('admin.adoption.lifecycleRetention', lang),
+  lifecycleFounders: t('admin.adoption.lifecycleFounders', lang),
+  // Stakeholders
+  stakeholderSponsors: t('admin.adoption.stakeholderSponsors', lang),
+  stakeholderLiaisons: t('admin.adoption.stakeholderLiaisons', lang),
+  stakeholderFounders: t('admin.adoption.stakeholderFounders', lang),
+  withAuthSuffix: t('admin.adoption.withAuthSuffix', lang),
+  // MCP card
+  mcpCardTitle: t('admin.adoption.mcpCardTitle', lang),
+  mcpCalls: t('admin.adoption.mcpCalls', lang),
+  mcpUsers: t('admin.adoption.mcpUsers', lang),
+  mcp7Days: t('admin.adoption.mcp7Days', lang),
+  mcpTopPrefix: t('admin.adoption.mcpTopPrefix', lang),
+  mcpErrorRatePrefix: t('admin.adoption.mcpErrorRatePrefix', lang),
+  mcpEmptyDescSuffix: t('admin.adoption.mcpEmptyDescSuffix', lang),
+  // Auth card
+  authProvidersTitle: t('admin.adoption.authProvidersTitle', lang),
+  authLoginsSuffix: t('admin.adoption.authLoginsSuffix', lang),
+  authGhostSuffix: t('admin.adoption.authGhostSuffix', lang),
+  authGhostSuffixPlural: t('admin.adoption.authGhostSuffixPlural', lang),
+  authSecondarySuffix: t('admin.adoption.authSecondarySuffix', lang),
+  // Misc
+  relTimeNow: t('admin.adoption.relTimeNow', lang),
+  errorPrefix: t('admin.adoption.errorPrefix', lang),
+  rageClicksFrustration: t('admin.adoption.rageClicksFrustration', lang),
+  rageClicksDaysSuffix: t('admin.adoption.rageClicksDaysSuffix', lang),
+  // Visitor KPIs
+  kpiTotalGhosts: t('admin.adoption.kpiTotalGhosts', lang),
+  kpiLast30d: t('admin.adoption.kpiLast30d', lang),
+  kpiMatchMember: t('admin.adoption.kpiMatchMember', lang),
+  kpiMatchSubtitle: t('admin.adoption.kpiMatchSubtitle', lang),
+  kpiTopProvider: t('admin.adoption.kpiTopProvider', lang),
+  visitorEmptyExternal: t('admin.adoption.visitorEmptyExternal', lang),
+  visitorMatchTooltip: t('admin.adoption.visitorMatchTooltip', lang),
+  visitorActionLink: t('admin.adoption.visitorActionLink', lang),
+  visitorActionCandidate: t('admin.adoption.visitorActionCandidate', lang),
+  visitorErrorPrefix: t('admin.adoption.visitorErrorPrefix', lang),
+  posthogOpen: t('admin.adoption.posthogOpen', lang),
+  retentionInsufficient: t('admin.adoption.retentionInsufficient', lang),
+  retentionInsufficientDetail: t('admin.adoption.retentionInsufficientDetail', lang),
+  retentionColCohort: t('admin.adoption.retentionColCohort', lang),
+  retentionColSize: t('admin.adoption.retentionColSize', lang),
+  roleLabels: {
+    researcher: t('role.researcher', lang),
+    tribe_leader: t('role.tribe_leader', lang),
+    comms_leader: t('role.comms_leader', lang),
+    manager: t('role.manager', lang),
+    deputy_manager: t('role.deputy_manager', lang),
+    communicator: t('role.communicator', lang),
+    facilitator: t('role.facilitator', lang),
+    guest: t('role.guest', lang),
+    sponsor: t('role.sponsor', lang),
+    chapter_liaison: t('role.chapter_liaison', lang),
+    none: t('admin.adoption.roleNone', lang),
+  },
+};
 ---
 
 <AdminLayout title={t('adoption.title', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('adoption.title', lang)}]}>
@@ -23,15 +96,15 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <p class="text-sm text-[var(--text-secondary)] mt-1">{t('adoption.subtitle', lang)}</p>
         </div>
         <button onclick="window.print()" class="print:hidden px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
-          Exportar Relatório
+          {t('admin.adoption.exportReport', lang)}
         </button>
       </div>
 
       <!-- Tabs -->
       <div class="flex gap-1 border-b border-[var(--border-default)]">
-        <button id="tab-members" class="px-4 py-2 text-sm font-semibold border-b-2 border-navy text-navy cursor-pointer bg-transparent" data-tab-switch="members">Membros</button>
-        <button id="tab-visitors" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="visitors">👻 Visitantes</button>
-        <button id="tab-analytics" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="analytics">Analytics</button>
+        <button id="tab-members" class="px-4 py-2 text-sm font-semibold border-b-2 border-navy text-navy cursor-pointer bg-transparent" data-tab-switch="members">{t('admin.adoption.tabMembers', lang)}</button>
+        <button id="tab-visitors" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="visitors">{t('admin.adoption.tabVisitors', lang)}</button>
+        <button id="tab-analytics" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="analytics">{t('admin.adoption.tabAnalytics', lang)}</button>
       </div>
 
       <!-- Members Tab Content -->
@@ -51,21 +124,21 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold text-navy">{t('adoption.mcpHealth', lang)}</h3>
-            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Status por rota — auto-descoberta via mcp_usage_log</p>
+            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.adoption.mcpHealthSubtitle', lang)}</p>
           </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-[.75rem]">
             <thead>
               <tr class="bg-[var(--surface-section-cool)]">
-                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">Rota</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Calls</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">OK</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Fail</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Erro%</th>
+                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColRoute', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColCalls', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColOk', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColFail', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColErrorPct', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colLatency', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colLast', lang)}</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.mcpColStatus', lang)}</th>
               </tr>
             </thead>
             <tbody id="adp-mcp-health-body"></tbody>
@@ -97,7 +170,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <thead>
                 <tr class="bg-[var(--surface-section-cool)]">
                   <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.tribe', lang)}</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Total</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colTotal', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.seen7d', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.neverSeen', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.avgSessions', lang)}</th>
@@ -118,7 +191,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <thead>
                 <tr class="bg-[var(--surface-section-cool)]">
                   <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.role', lang)}</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Total</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colTotal', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.seen7d', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.neverSeen', lang)}</th>
                   <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.avgSessions', lang)}</th>
@@ -133,11 +206,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <!-- Lifecycle & Founders (LGPD-safe aggregates) -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <h3 class="text-sm font-bold text-navy mb-3">Ciclo de Vida dos Membros</h3>
+          <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.lifecycleTitle', lang)}</h3>
           <div id="adp-lifecycle" class="grid grid-cols-2 gap-2"></div>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <h3 class="text-sm font-bold text-navy mb-3">Stakeholders & Founders</h3>
+          <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.stakeholdersTitle', lang)}</h3>
           <div id="adp-stakeholders" class="space-y-2"></div>
         </div>
       </div>
@@ -150,7 +223,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           </div>
           <div class="flex items-center gap-2">
             <select id="adp-filter-status" class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)]">
-              <option value="">Todos</option>
+              <option value="">{t('admin.adoption.filterAll', lang)}</option>
               <option value="active">{t('adoption.status.active', lang)}</option>
               <option value="inactive">{t('adoption.status.inactive', lang)}</option>
               <option value="dormant">{t('adoption.status.dormant', lang)}</option>
@@ -165,12 +238,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               <option value="role:facilitator">{t('role.facilitator', lang)}</option>
               <option value="role:communicator">{t('role.communicator', lang)}</option>
               <option disabled>── {t('admin.adoption.filterDesigHeader', lang)} ──</option>
-              <option value="desig:ambassador">Ambassador</option>
-              <option value="desig:founder">Founder</option>
-              <option value="desig:curator">Curator</option>
-              <option value="desig:comms_leader">Comms Leader</option>
-              <option value="desig:comms_member">Comms Member</option>
-              <option value="desig:co_gp">Co-GP</option>
+              <option value="desig:ambassador">{t('admin.adoption.desig.ambassador', lang)}</option>
+              <option value="desig:founder">{t('admin.adoption.desig.founder', lang)}</option>
+              <option value="desig:curator">{t('admin.adoption.desig.curator', lang)}</option>
+              <option value="desig:comms_leader">{t('admin.adoption.desig.commsLeader', lang)}</option>
+              <option value="desig:comms_member">{t('admin.adoption.desig.commsMember', lang)}</option>
+              <option value="desig:co_gp">{t('admin.adoption.desig.coGp', lang)}</option>
               <option value="desig:none">{t('admin.adoption.noDesignation', lang)}</option>
             </select>
             <input id="adp-search" type="text" placeholder={t('common.search', lang)} class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)] w-36" />
@@ -180,13 +253,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <table class="w-full text-[.75rem]">
             <thead>
               <tr class="bg-[var(--surface-section-cool)]">
-                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="name">Nome</th>
+                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="name">{t('admin.adoption.colName', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.role', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.tribe', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="last_seen">{t('adoption.lastSeen', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="sessions">{t('adoption.sessions', lang)}</th>
-                <th id="adp-mcp-col" class="hidden text-center px-3 py-2 font-bold text-[var(--text-secondary)]">MCP</th>
-                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
+                <th id="adp-mcp-col" class="hidden text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colMcp', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.colStatus', lang)}</th>
               </tr>
             </thead>
             <tbody id="adp-member-body"></tbody>
@@ -199,7 +272,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <!-- Visitors Tab Content -->
       <div id="panel-visitors" class="hidden space-y-6">
         <div>
-          <h2 class="text-lg font-extrabold text-navy">👻 Visitantes Externos</h2>
+          <h2 class="text-lg font-extrabold text-navy">{t('admin.adoption.visitorsTitle', lang)}</h2>
           <p class="text-[.72rem] text-[var(--text-muted)] mt-1">{t('admin.adoption.visitorsDescription', lang)}</p>
         </div>
 
@@ -210,18 +283,18 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
           <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
             <h3 class="text-sm font-bold text-navy">{t('admin.adoption.visitorsListTitle', lang)}</h3>
-            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">LGPD: dados de auth.users — consentidos via login OAuth</p>
+            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">{t('admin.adoption.visitorsLgpdNote', lang)}</p>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-[.75rem]">
               <thead>
                 <tr class="bg-[var(--surface-section-cool)]">
-                  <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">Email</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Provider</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Primeiro Acesso</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Último Login</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Match</th>
-                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Ação</th>
+                  <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColEmail', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColProvider', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColFirstAccess', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColLastLogin', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColMatch', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('admin.adoption.visitorColAction', lang)}</th>
                 </tr>
               </thead>
               <tbody id="visitors-body"></tbody>
@@ -231,7 +304,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
         <!-- Info box -->
         <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-[.75rem] text-blue-800">
-          <strong>ℹ️ Sobre visitantes não-logados:</strong> dados agregados de visitantes anônimos estão na aba Analytics (via PostHog). Apenas pageviews e país são rastreados, sem identificação pessoal (LGPD-safe).
+          {t('admin.adoption.visitorsInfoBox', lang)}
         </div>
       </div><!-- /panel-visitors -->
 
@@ -239,8 +312,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div id="panel-analytics" class="hidden space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 class="text-lg font-extrabold text-navy">Analytics</h2>
-            <p class="text-[.72rem] text-[var(--text-muted)]">Dados de uso da plataforma via PostHog</p>
+            <h2 class="text-lg font-extrabold text-navy">{t('admin.adoption.tabAnalytics', lang)}</h2>
+            <p class="text-[.72rem] text-[var(--text-muted)]">{t('admin.adoption.analyticsSubtitle', lang)}</p>
           </div>
           <div class="flex items-center gap-2">
             <div id="period-selector" class="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
@@ -258,12 +331,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <!-- Row 1: DAU/WAU + Rage Clicks -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div class="lg:col-span-2 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-            <h3 class="text-sm font-bold text-navy mb-3">Visitantes Ativos</h3>
+            <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.activeVisitors', lang)}</h3>
             <div id="chart-dau-wau" class="h-[220px]"><canvas id="canvas-dau-wau"></canvas></div>
-            <div id="chart-dau-wau-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de visitantes</div>
+            <div id="chart-dau-wau-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">{t('admin.adoption.noVisitorsData', lang)}</div>
           </div>
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-            <h3 class="text-sm font-bold text-navy mb-3">Cliques de Frustracao</h3>
+            <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.rageClicks', lang)}</h3>
             <div id="chart-rage" class="h-[220px] flex items-center justify-center"></div>
           </div>
         </div>
@@ -271,26 +344,26 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <!-- Row 2: Top Pages + Traffic Sources -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-            <h3 class="text-sm font-bold text-navy mb-3">Paginas Mais Visitadas</h3>
+            <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.topPages', lang)}</h3>
             <div id="chart-pages" class="h-[280px]"><canvas id="canvas-pages"></canvas></div>
-            <div id="chart-pages-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de navegacao</div>
+            <div id="chart-pages-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">{t('admin.adoption.noPageData', lang)}</div>
           </div>
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-            <h3 class="text-sm font-bold text-navy mb-3">Fontes de Trafego</h3>
+            <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.trafficSources', lang)}</h3>
             <div id="chart-traffic" class="h-[280px]"><canvas id="canvas-traffic"></canvas></div>
-            <div id="chart-traffic-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de referencia</div>
+            <div id="chart-traffic-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">{t('admin.adoption.noTrafficData', lang)}</div>
           </div>
         </div>
 
         <!-- Row 3: Retention -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <h3 class="text-sm font-bold text-navy mb-3">Retencao Semanal</h3>
+          <h3 class="text-sm font-bold text-navy mb-3">{t('admin.adoption.retentionWeekly', lang)}</h3>
           <div id="chart-retention" class="overflow-x-auto"></div>
         </div>
 
         <!-- Collapsed Phase 1 details -->
         <details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-          <summary class="px-5 py-3.5 cursor-pointer text-sm font-bold text-navy hover:bg-[var(--surface-hover)]">Detalhes dos insights PostHog</summary>
+          <summary class="px-5 py-3.5 cursor-pointer text-sm font-bold text-navy hover:bg-[var(--surface-hover)]">{t('admin.adoption.posthogDetails', lang)}</summary>
           <div id="analytics-insights-detail" class="p-5"></div>
         </details>
       </div><!-- /panel-analytics -->
@@ -304,8 +377,54 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <span id="ai18n-pres" class="hidden">{t('admin.presidentWarning', lang)}</span>
 </AdminLayout>
 
+<script is:inline define:vars={{ ADP_I18N }}>
+  window.__ADP_I18N = ADP_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__ADP_I18N) || {
+    noResults: 'Nenhum resultado encontrado.', presidentWarning: '',
+    kpiActiveMembers: 'Membros ativos', kpiWithLoginSuffix: 'com login',
+    kpiActive7d: 'Ativos 7d', kpiActive30d: 'Ativos 30d',
+    kpiNeverSeen: 'Nunca acessou', kpiSessionsPerMember: 'Sessões/membro',
+    lifecycleTotalEver: 'Total histórico', lifecycleActiveC3: 'Ativos C3',
+    lifecycleAlumni: 'Alumni/Inativos', lifecycleObservers: 'Observers ativos',
+    lifecycleRetention: 'Retenção C2→C3', lifecycleFounders: 'Founders ativos',
+    stakeholderSponsors: 'Sponsors (Presidentes)', stakeholderLiaisons: 'Pontos Focais',
+    stakeholderFounders: 'Founders', withAuthSuffix: 'com auth',
+    mcpCardTitle: 'MCP (IA Assistente)', mcpCalls: 'Chamadas',
+    mcpUsers: 'Usuários', mcp7Days: '7 dias', mcpTopPrefix: 'Top',
+    mcpErrorRatePrefix: 'Taxa de erro', mcpEmptyDescSuffix: 'MCP server: 64 tools.',
+    authProvidersTitle: 'Provedores de Auth', authLoginsSuffix: 'sessões de login',
+    authGhostSuffix: 'visitante externo', authGhostSuffixPlural: 'visitantes externos',
+    authSecondarySuffix: 'com login secundário',
+    relTimeNow: 'agora', errorPrefix: 'Erro',
+    rageClicksFrustration: 'cliques de frustração',
+    rageClicksDaysSuffix: 'nos últimos {days} dias',
+    kpiTotalGhosts: '👻 Total Ghosts', kpiLast30d: '🕐 Últimos 30d',
+    kpiMatchMember: '🔗 Match c/ Membro', kpiMatchSubtitle: 'login duplicado?',
+    kpiTopProvider: '🔑 Top Provider',
+    visitorEmptyExternal: 'Nenhum visitante externo encontrado',
+    visitorMatchTooltip: 'Membro existente com mesmo email',
+    visitorActionLink: 'Vincular auth', visitorActionCandidate: 'Candidato',
+    visitorErrorPrefix: 'Erro', posthogOpen: 'Abrir',
+    retentionInsufficient: 'Dados insuficientes para retenção (mín. 2 semanas)',
+    retentionInsufficientDetail: 'Dados insuficientes para retenção (nenhum cohort com usuários ativos)',
+    retentionColCohort: 'Cohort', retentionColSize: 'Tamanho',
+    roleLabels: {
+      researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo',
+      comms_leader: 'Líder de Comunicação', manager: 'Gerente',
+      deputy_manager: 'Vice-Gerente', communicator: 'Comunicador',
+      facilitator: 'Facilitador', guest: 'Convidado',
+      sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison', none: 'Sem papel',
+    },
+  };
+
+  function _interp(s: string, vars: Record<string, string | number>): string {
+    return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s);
+  }
 
   let sb: any = null;
   let allMembers: any[] = [];
@@ -316,11 +435,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   function esc(s: string) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-  const ROLE_LABELS: Record<string, string> = {
-    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', manager: 'Gerente',
-    deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
-    guest: 'Convidado', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison',
-  };
+  const ROLE_LABELS: Record<string, string> = T.roleLabels;
   const STATUS_ICONS: Record<string, string> = {
     active: '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>',
     inactive: '<span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>',
@@ -351,7 +466,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (!ts) return '—';
     const diff = Date.now() - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'agora';
+    if (mins < 1) return T.relTimeNow;
     if (mins < 60) return `${mins}min`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h`;
@@ -364,11 +479,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const el = document.getElementById('adp-kpis');
     if (!el) return;
     el.innerHTML = [
-      kpiCard('Membros ativos', s.total_active || 0, `${s.ever_logged_in || 0} com login`, 'bg-blue-50 text-blue-700'),
-      kpiCard('Ativos 7d', s.seen_last_7d || 0, `${s.adoption_pct_7d || 0}%`, 'bg-emerald-50 text-emerald-700'),
-      kpiCard('Ativos 30d', s.seen_last_30d || 0, `${s.adoption_pct_30d || 0}%`, 'bg-indigo-50 text-indigo-700'),
-      kpiCard('Nunca acessou', s.never_seen || 0, '', 'bg-red-50 text-red-600'),
-      kpiCard('Sessões/membro', s.avg_sessions_per_member || 0, '', 'bg-amber-50 text-amber-700'),
+      kpiCard(T.kpiActiveMembers, s.total_active || 0, `${s.ever_logged_in || 0} ${T.kpiWithLoginSuffix}`, 'bg-blue-50 text-blue-700'),
+      kpiCard(T.kpiActive7d, s.seen_last_7d || 0, `${s.adoption_pct_7d || 0}%`, 'bg-emerald-50 text-emerald-700'),
+      kpiCard(T.kpiActive30d, s.seen_last_30d || 0, `${s.adoption_pct_30d || 0}%`, 'bg-indigo-50 text-indigo-700'),
+      kpiCard(T.kpiNeverSeen, s.never_seen || 0, '', 'bg-red-50 text-red-600'),
+      kpiCard(T.kpiSessionsPerMember, s.avg_sessions_per_member || 0, '', 'bg-amber-50 text-amber-700'),
     ].join('');
   }
 
@@ -382,12 +497,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <div class="text-lg font-extrabold ${accent || 'text-[var(--text-primary)]'}">${value}</div>
         </div>`;
       lcEl.innerHTML = [
-        miniCard('Total histórico', lc.total_ever || 0, 'text-navy'),
-        miniCard('Ativos C3', lc.active_c3 || 0, 'text-emerald-600'),
-        miniCard('Alumni/Inativos', lc.alumni || 0, 'text-gray-500'),
-        miniCard('Observers ativos', lc.observers_active || 0),
-        miniCard('Retenção C2→C3', `${lc.retention_c2_c3 || 0}%`, 'text-blue-600'),
-        miniCard('Founders ativos', `${lc.founders_active || 0}/${lc.founders_total || 0}`, lc.founders_active >= lc.founders_total ? 'text-emerald-600' : 'text-amber-600'),
+        miniCard(T.lifecycleTotalEver, lc.total_ever || 0, 'text-navy'),
+        miniCard(T.lifecycleActiveC3, lc.active_c3 || 0, 'text-emerald-600'),
+        miniCard(T.lifecycleAlumni, lc.alumni || 0, 'text-gray-500'),
+        miniCard(T.lifecycleObservers, lc.observers_active || 0),
+        miniCard(T.lifecycleRetention, `${lc.retention_c2_c3 || 0}%`, 'text-blue-600'),
+        miniCard(T.lifecycleFounders, `${lc.founders_active || 0}/${lc.founders_total || 0}`, lc.founders_active >= lc.founders_total ? 'text-emerald-600' : 'text-amber-600'),
       ].join('');
     }
 
@@ -399,7 +514,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         return `<div>
           <div class="flex justify-between text-[11px] mb-1">
             <span class="font-semibold text-[var(--text-primary)]">${label}</span>
-            <span class="text-[var(--text-muted)]">${current}/${total} com auth</span>
+            <span class="text-[var(--text-muted)]">${current}/${total} ${T.withAuthSuffix}</span>
           </div>
           <div class="w-full h-2 rounded-full bg-[var(--border-subtle)] overflow-hidden">
             <div class="h-full rounded-full ${color}" style="width:${pct}%"></div>
@@ -407,9 +522,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         </div>`;
       };
       stEl.innerHTML = [
-        bar('Sponsors (Presidentes)', lc.sponsors_with_auth || 0, lc.sponsors_total || 5, 'bg-red-500'),
-        bar('Pontos Focais', lc.liaisons_with_auth || 0, lc.liaisons_total || 3, 'bg-amber-500'),
-        bar('Founders', lc.founders_with_auth || 0, lc.founders_total || 9, 'bg-blue-500'),
+        bar(T.stakeholderSponsors, lc.sponsors_with_auth || 0, lc.sponsors_total || 5, 'bg-red-500'),
+        bar(T.stakeholderLiaisons, lc.liaisons_with_auth || 0, lc.liaisons_total || 3, 'bg-amber-500'),
+        bar(T.stakeholderFounders, lc.founders_with_auth || 0, lc.founders_total || 9, 'bg-blue-500'),
       ].join('');
 
       // Alert if sponsors have 0 auth
@@ -480,28 +595,28 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
     if (!hasMcpData) {
       el.innerHTML = `
-        <h3 class="text-sm font-bold text-navy mb-3">MCP (IA Assistente)</h3>
+        <h3 class="text-sm font-bold text-navy mb-3">${T.mcpCardTitle}</h3>
         <div class="grid grid-cols-3 gap-3 mb-3">
-          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">Chamadas</div></div>
-          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">Usuarios</div></div>
-          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">—</div><div class="text-[.6rem] text-[var(--text-muted)]">Top Tool</div></div>
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcpCalls}</div></div>
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcpUsers}</div></div>
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">—</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcpTopPrefix}</div></div>
         </div>
         <div class="text-[.72rem] text-[var(--text-muted)] bg-[var(--surface-base)] rounded-lg p-3">
-          ${document.getElementById('ai18n-nor')?.textContent || 'No leader connected yet.'} MCP server: 64 tools.
+          ${T.noResults} ${T.mcpEmptyDescSuffix}
         </div>`;
       return;
     }
 
     const topTool = topTools[0];
     el.innerHTML = `
-      <h3 class="text-sm font-bold text-navy mb-3">MCP (IA Assistente)</h3>
+      <h3 class="text-sm font-bold text-navy mb-3">${T.mcpCardTitle}</h3>
       <div class="grid grid-cols-3 gap-3 mb-3">
-        <div class="text-center"><div class="text-xl font-extrabold text-navy">${calls}</div><div class="text-[.6rem] text-[var(--text-muted)]">Chamadas</div></div>
-        <div class="text-center"><div class="text-xl font-extrabold text-teal">${users}</div><div class="text-[.6rem] text-[var(--text-muted)]">Usuarios</div></div>
-        <div class="text-center"><div class="text-xl font-extrabold text-purple-600">${calls7d}</div><div class="text-[.6rem] text-[var(--text-muted)]">7 dias</div></div>
+        <div class="text-center"><div class="text-xl font-extrabold text-navy">${calls}</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcpCalls}</div></div>
+        <div class="text-center"><div class="text-xl font-extrabold text-teal">${users}</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcpUsers}</div></div>
+        <div class="text-center"><div class="text-xl font-extrabold text-purple-600">${calls7d}</div><div class="text-[.6rem] text-[var(--text-muted)]">${T.mcp7Days}</div></div>
       </div>
-      ${topTool ? `<div class="text-[.72rem] text-[var(--text-secondary)]">Top: <strong>${esc(topTool.tool_name)}</strong> (${topTool.calls}x, ${topTool.users} user${topTool.users > 1 ? 's' : ''})</div>` : ''}
-      ${errRate > 0 ? `<div class="text-[.68rem] text-amber-600 mt-1">Taxa de erro: ${errRate}%</div>` : ''}`;
+      ${topTool ? `<div class="text-[.72rem] text-[var(--text-secondary)]">${T.mcpTopPrefix}: <strong>${esc(topTool.tool_name)}</strong> (${topTool.calls}x, ${topTool.users} user${topTool.users > 1 ? 's' : ''})</div>` : ''}
+      ${errRate > 0 ? `<div class="text-[.68rem] text-amber-600 mt-1">${T.mcpErrorRatePrefix}: ${errRate}%</div>` : ''}`;
 
     // Build MCP user set for member table column
     const userIds = mcp?.unique_user_ids || [];
@@ -571,12 +686,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     }).join('');
 
     el.innerHTML = `
-      <h3 class="text-sm font-bold text-navy mb-3">Provedores de Auth</h3>
-      <p class="text-[.68rem] text-[var(--text-muted)] mb-2">${totalLogins} sessões de login</p>
+      <h3 class="text-sm font-bold text-navy mb-3">${T.authProvidersTitle}</h3>
+      <p class="text-[.68rem] text-[var(--text-muted)] mb-2">${totalLogins} ${T.authLoginsSuffix}</p>
       <div class="space-y-1.5 mb-3">${provBars}</div>
       <div class="flex gap-4 text-[.68rem] text-[var(--text-muted)]">
-        ${ghosts > 0 ? `<span>👻 ${ghosts} visitante${ghosts > 1 ? 's' : ''} externo${ghosts > 1 ? 's' : ''}</span>` : ''}
-        ${secondary > 0 ? `<span>🔗 ${secondary} com login secundario</span>` : ''}
+        ${ghosts > 0 ? `<span>👻 ${ghosts} ${ghosts > 1 ? T.authGhostSuffixPlural : T.authGhostSuffix}</span>` : ''}
+        ${secondary > 0 ? `<span>🔗 ${secondary} ${T.authSecondarySuffix}</span>` : ''}
       </div>`;
   }
 
@@ -654,7 +769,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       renderMemberTable();
     } catch (e: any) {
       console.error('Adoption dashboard:', e);
-      (window as any).toast?.('Erro: ' + (e.message || ''), 'error');
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || ''), 'error');
     }
   }
 
@@ -745,10 +860,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const rageEl = document.getElementById('chart-rage')!;
     const rageTotal = rage?.series?.[0]?.count || 0;
     if (rageTotal === 0) {
-      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold text-emerald-600">0</div><div class="text-sm text-emerald-600 mt-1">${document.getElementById('ai18n-nor')?.textContent || 'No rage clicks'}</div></div>`;
+      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold text-emerald-600">0</div><div class="text-sm text-emerald-600 mt-1">${T.noResults}</div></div>`;
     } else {
       const color = rageTotal > 50 ? 'text-red-600' : rageTotal > 10 ? 'text-amber-600' : 'text-[var(--text-primary)]';
-      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold ${color}">${rageTotal}</div><div class="text-sm ${color} mt-1">cliques de frustracao</div><div class="text-[.68rem] text-[var(--text-muted)] mt-2">nos ultimos ${analyticsPeriod} dias</div></div>`;
+      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold ${color}">${rageTotal}</div><div class="text-sm ${color} mt-1">${T.rageClicksFrustration}</div><div class="text-[.68rem] text-[var(--text-muted)] mt-2">${_interp(T.rageClicksDaysSuffix, { days: analyticsPeriod })}</div></div>`;
     }
 
     // 3. Top Pages Bar Chart
@@ -797,7 +912,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (retention?.retention?.length) {
       const cohorts = retention.retention;
       const maxWeeks = Math.max(...cohorts.map((c: any) => c.values?.length || 0));
-      let html = '<table class="w-full text-[.68rem] border-collapse"><thead><tr><th class="text-left px-2 py-1 text-[var(--text-muted)]">Cohort</th><th class="text-center px-2 py-1 text-[var(--text-muted)]">Tamanho</th>';
+      let html = `<table class="w-full text-[.68rem] border-collapse"><thead><tr><th class="text-left px-2 py-1 text-[var(--text-muted)]">${T.retentionColCohort}</th><th class="text-center px-2 py-1 text-[var(--text-muted)]">${T.retentionColSize}</th>`;
       for (let w = 0; w < maxWeeks; w++) html += `<th class="text-center px-2 py-1 text-[var(--text-muted)]">S${w}</th>`;
       html += '</tr></thead><tbody>';
       // Filter out empty cohorts (no date AND size 0) to avoid "Invalid Date" noise
@@ -823,9 +938,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         html += '</tr>';
       });
       html += '</tbody></table>';
-      retEl.innerHTML = validCohorts.length > 0 ? html : '<div class="text-sm text-[var(--text-muted)] text-center py-6">Dados insuficientes para retenção (nenhum cohort com usuários ativos)</div>';
+      retEl.innerHTML = validCohorts.length > 0 ? html : `<div class="text-sm text-[var(--text-muted)] text-center py-6">${T.retentionInsufficientDetail}</div>`;
     } else {
-      retEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-6">Dados insuficientes para retencao (min. 2 semanas)</div>';
+      retEl.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-6">${T.retentionInsufficient}</div>`;
     }
 
     // Phase 1 details (collapsed)
@@ -837,7 +952,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         const name = insight.name || tile.name || 'Insight';
         const shortId = insight.short_id || '';
         const href = shortId ? `https://us.posthog.com/project/334261/insights/${shortId}` : '#';
-        return `<article class="rounded-xl border border-[var(--border-default)] p-3"><div class="flex items-center justify-between gap-2"><span class="text-[.78rem] font-semibold text-navy truncate">${esc(name)}</span><a href="${esc(href)}" target="_blank" rel="noopener" class="text-[.68rem] text-teal no-underline hover:underline shrink-0">Abrir</a></div></article>`;
+        return `<article class="rounded-xl border border-[var(--border-default)] p-3"><div class="flex items-center justify-between gap-2"><span class="text-[.78rem] font-semibold text-navy truncate">${esc(name)}</span><a href="${esc(href)}" target="_blank" rel="noopener" class="text-[.68rem] text-teal no-underline hover:underline shrink-0">${T.posthogOpen}</a></div></article>`;
       }).join('')}</div>` : `<div class="text-sm text-[var(--text-muted)] text-center py-4">${document.getElementById('ai18n-nor')?.textContent || 'No insights found.'}</div>`;
     }
 
@@ -863,10 +978,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const kpiEl = document.getElementById('visitors-kpis');
       if (kpiEl) {
         kpiEl.innerHTML = [
-          kpiCard('👻 Total Ghosts', String(ghosts.length), '', ''),
-          kpiCard('🕐 Últimos 30d', String(recentCount), '', ''),
-          kpiCard('🔗 Match c/ Membro', String(matchCount), 'login duplicado?', 'text-amber-600'),
-          kpiCard('🔑 Top Provider', topProvider ? `${topProvider[0]} (${topProvider[1]})` : '—', '', ''),
+          kpiCard(T.kpiTotalGhosts, String(ghosts.length), '', ''),
+          kpiCard(T.kpiLast30d, String(recentCount), '', ''),
+          kpiCard(T.kpiMatchMember, String(matchCount), T.kpiMatchSubtitle, 'text-amber-600'),
+          kpiCard(T.kpiTopProvider, topProvider ? `${topProvider[0]} (${topProvider[1]})` : '—', '', ''),
         ].join('');
       }
 
@@ -875,7 +990,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (!body) return;
 
       if (!ghosts.length) {
-        body.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)]">Nenhum visitante externo encontrado</td></tr>';
+        body.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)]">${T.visitorEmptyExternal}</td></tr>`;
         visitorsLoaded = true;
         return;
       }
@@ -886,11 +1001,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         const lastLogin = g.last_sign_in_at ? new Date(g.last_sign_in_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
         const provIcon = providerIcons[g.provider] || '🔑';
         const match = g.possible_member_name
-          ? `<span class="text-amber-600 font-semibold" title="Membro existente com mesmo email">⚠️ ${esc(g.possible_member_name)}</span>`
+          ? `<span class="text-amber-600 font-semibold" title="${T.visitorMatchTooltip}">⚠️ ${esc(g.possible_member_name)}</span>`
           : '<span class="text-[var(--text-muted)]">—</span>';
         const action = g.possible_member_name
-          ? `<span class="text-[.65rem] text-amber-600">Vincular auth</span>`
-          : `<span class="text-[.65rem] text-teal">Candidato</span>`;
+          ? `<span class="text-[.65rem] text-amber-600">${T.visitorActionLink}</span>`
+          : `<span class="text-[.65rem] text-teal">${T.visitorActionCandidate}</span>`;
 
         return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
           <td class="px-4 py-2.5 font-medium">${esc(g.email)}</td>
@@ -904,7 +1019,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     } catch (e: any) {
       console.error('loadVisitors failed', e);
       const body = document.getElementById('visitors-body');
-      if (body) body.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Erro: ${esc(e?.message || 'unknown')}</td></tr>`;
+      if (body) body.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">${T.visitorErrorPrefix}: ${esc(e?.message || 'unknown')}</td></tr>`;
     }
     visitorsLoaded = true;
   }
