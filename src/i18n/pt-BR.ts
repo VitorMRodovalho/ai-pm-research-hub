@@ -5032,6 +5032,10 @@ const ptBR: Record<string, string> = {
   'admin.dashboard.errorPrefix': 'Erro',
   'admin.deniedAdmin': 'Acesso restrito a administradores.',
   'admin.tribeBreadcrumb': 'Tribo',
+  'admin.blog.tagsLabel': 'Tags (separadas por vírgula)',
+  'admin.blog.featuredBadge': 'Destacado',
+  'admin.blog.slugLabel': 'Slug',
+  'admin.blog.statusLabel': 'Status',
 
   'admin.campaigns.funnelSent': 'Enviados',
   'admin.campaigns.funnelDelivered': 'Entregues',
