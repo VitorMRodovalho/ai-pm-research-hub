@@ -107,7 +107,7 @@ test('admin webinars uses webinar governance with CRUD modal and list_webinars_v
   assert.equal(content.includes('btn-new-webinar'), true);
   assert.equal(content.includes('modal-chapter'), true);
   assert.equal(content.includes('co_managers'), true);
-  assert.equal(content.includes('Acoes prioritarias'), true);
+  assert.equal(content.includes("'admin.webinars.priorityActionsTitle'"), true);
   assert.equal(content.includes('function nextAction(w: any)'), true);
   assert.equal(content.includes('renderAll(ALL_WEBINARS)'), true);
   assert.equal(content.includes('filter-status'), true);
