@@ -3,43 +3,59 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+const i18nClient = {
+  tribeFallback: t('teams.tribeFallback', lang),
+  tribeTypeOperational: t('teams.tribeTypeOperational', lang),
+  tribeTypeResearch: t('teams.tribeTypeResearch', lang),
+  tribeTypeSubproject: t('teams.tribeTypeSubproject', lang),
+  activeResearchFallback: t('teams.activeResearchFallback', lang),
+  emptyActive: t('teams.emptyActive', lang),
+  emptyOperational: t('teams.emptyOperational', lang),
+  emptyLegacy: t('teams.emptyLegacy', lang),
+};
 ---
 
 <BaseLayout title={t('nav.exploreTribes', lang)} activePage="projects" lang={lang}>
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <header class="mb-6">
-      <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">Projetos e Frentes</h1>
-      <p class="text-sm text-[var(--text-secondary)] mt-1">Navegação única de Ativas, Subprojetos operacionais e Legado para consulta histórica.</p>
+      <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">{t('teams.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{t('teams.subtitle', lang)}</p>
     </header>
 
     <div id="teams-loading" class="text-center py-10 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
     <div id="teams-denied" class="hidden rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/30 p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
-      <p class="font-semibold text-amber-800">Acesso restrito a membros ativos da plataforma.</p>
+      <p class="font-semibold text-amber-800">{t('teams.accessDenied', lang)}</p>
     </div>
 
     <div id="teams-shell" class="hidden space-y-6">
       <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
-        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">🟢 Ativas (Pesquisa)</h2>
+        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">{t('teams.activeSection', lang)}</h2>
         <div id="teams-active" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </section>
 
       <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
-        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">⚙️ Subprojetos (Operação)</h2>
+        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">{t('teams.operationalSection', lang)}</h2>
         <div id="teams-operational" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </section>
 
       <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
-        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">🏛️ Legado (Read-only)</h2>
+        <h2 class="text-sm font-bold text-[var(--text-primary)] mb-3">{t('teams.legacySection', lang)}</h2>
         <div id="teams-legacy" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </section>
     </div>
   </div>
 </BaseLayout>
 
+<script type="application/json" id="i18n-teams" set:html={JSON.stringify(i18nClient)}></script>
+
 <script>
   import { canExploreTribes } from '../lib/tribes/access';
   import { buildTribeLabel } from '../lib/tribes/catalog';
+
+  const i18nNode = document.getElementById('i18n-teams');
+  const i18n = JSON.parse(i18nNode!.textContent || '{}');
 
   let sb: any = null;
   let member: any = null;
@@ -83,9 +99,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const cards = rows.map((r: any) => {
       const leader = r.leader_name ? `👤 ${escapeHtml(r.leader_name)}` : '';
       const members = r.member_count > 0 ? ` · 👥 ${r.member_count}` : '';
+      const typeLabel = r.tribe_type === 'operational' ? i18n.tribeTypeOperational : i18n.tribeTypeResearch;
       return cardHtml(
-        escapeHtml(r.tribe_name || 'Tribo'),
-        `${escapeHtml(r.tribe_type === 'operational' ? 'Operacional' : 'Pesquisa')} · ${leader}${members}`,
+        escapeHtml(r.tribe_name || i18n.tribeFallback),
+        `${escapeHtml(typeLabel)} · ${leader}${members}`,
         '#',
         true
       );
@@ -118,7 +135,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const c3Research = rows.filter((r: any) => r.cycle_code === 'cycle_3' && r.tribe_type === 'research' && r.is_active);
     const active = c3Research.map((r: any) => cardHtml(
       `T${r.tribe_number}: ${r.tribe_name}`,
-      r.quadrant_name || 'Pesquisa ativa do ciclo',
+      r.quadrant_name || i18n.activeResearchFallback,
       `/tribe/${r.tribe_number}`
     ));
 
@@ -128,7 +145,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         : r.tribe_name === 'Comitê de Curadoria' ? '/admin/curatorship'
         : r.tribe_name === 'Hub de Comunicação' ? '/admin/comms-ops'
         : '#';
-      return cardHtml(r.tribe_name, `${r.leader_name || '—'} · ${r.tribe_type === 'subproject' ? 'Subprojeto' : 'Operacional'}`, href);
+      const typeLabel = r.tribe_type === 'subproject' ? i18n.tribeTypeSubproject : i18n.tribeTypeOperational;
+      return cardHtml(r.tribe_name, `${r.leader_name || '—'} · ${typeLabel}`, href);
     });
 
     const CYCLE_LABELS: Record<string, string> = {
@@ -142,12 +160,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return cycleRows.length ? legacyCycleHtml(cc, CYCLE_LABELS[cc] || cc, cycleRows) : '';
     }).filter(Boolean).join('');
 
-    renderBlock('teams-active', active, 'Sem tribos ativas cadastradas.');
-    renderBlock('teams-operational', operational, 'Sem subprojetos operacionais cadastrados.');
+    renderBlock('teams-active', active, i18n.emptyActive);
+    renderBlock('teams-operational', operational, i18n.emptyOperational);
 
     const legacyEl = document.getElementById('teams-legacy');
     if (legacyEl) {
-      legacyEl.innerHTML = legacyHtml || '<div class="rounded-xl border border-dashed border-[var(--border-default)] p-5 text-sm text-[var(--text-muted)]">Sem tribos legadas registradas.</div>';
+      legacyEl.innerHTML = legacyHtml || `<div class="rounded-xl border border-dashed border-[var(--border-default)] p-5 text-sm text-[var(--text-muted)]">${i18n.emptyLegacy}</div>`;
     }
   }
 
