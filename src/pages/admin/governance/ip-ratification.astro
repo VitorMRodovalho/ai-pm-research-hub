@@ -4,86 +4,131 @@
  * Client-side fetch via window.navGetSb() (user JWT context, RPCs passam auth.uid()).
  * Ações: advance_approval_gate (abrir review, ativar, retirar, superseder).
  *
- * Escopo: Phase IP-2 Chunk 4. ADR-0016.
+ * Escopo: Phase IP-2 Chunk 4. ADR-0016. Trilingue p137 Ω-B+.1.
  * Auth: manage_member (RPC gate; AdminLayout role check is visual only, real gate is no DB).
  */
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { getLangFromURL, type Lang } from '../../../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline script via define:vars
+const IP_RATIF_I18N = {
+  status: {
+    draft: t('admin.governance.ipRatif.status.draft', lang),
+    review: t('admin.governance.ipRatif.status.review', lang),
+    approved: t('admin.governance.ipRatif.status.approved', lang),
+    active: t('admin.governance.ipRatif.status.active', lang),
+    withdrawn: t('admin.governance.ipRatif.status.withdrawn', lang),
+    superseded: t('admin.governance.ipRatif.status.superseded', lang),
+  },
+  gate: {
+    curator: t('admin.governance.ipRatif.gate.curator', lang),
+    leader: t('admin.governance.ipRatif.gate.leader', lang),
+    president_go: t('admin.governance.ipRatif.gate.president_go', lang),
+    president_others: t('admin.governance.ipRatif.gate.president_others', lang),
+    member_ratification: t('admin.governance.ipRatif.gate.member_ratification', lang),
+    external_signer: t('admin.governance.ipRatif.gate.external_signer', lang),
+  },
+  action: {
+    openReview: t('admin.governance.ipRatif.action.openReview', lang),
+    activate: t('admin.governance.ipRatif.action.activate', lang),
+    withdraw: t('admin.governance.ipRatif.action.withdraw', lang),
+    supersede: t('admin.governance.ipRatif.action.supersede', lang),
+    signPrefix: t('admin.governance.ipRatif.action.signPrefix', lang),
+  },
+  error: {
+    sbUnavailable: t('admin.governance.ipRatif.error.sbUnavailable', lang),
+    prefix: t('admin.governance.ipRatif.error.prefix', lang),
+    defaultDocTitle: t('admin.governance.ipRatif.error.defaultDocTitle', lang),
+  },
+  prompt: {
+    reason: t('admin.governance.ipRatif.prompt.reason', lang),
+  },
+  alert: {
+    sbUnavailableShort: t('admin.governance.ipRatif.alert.sbUnavailableShort', lang),
+  },
+};
 ---
 
 <AdminLayout
-  title="Ratificação de Propriedade Intelectual"
+  title={t('admin.governance.ipRatif.title', lang)}
   breadcrumbs={[
-    { label: 'Operações' },
-    { label: 'Governança' },
-    { label: 'Ratificação IP' },
+    { label: t('admin.layout.breadcrumb.operations', lang) },
+    { label: t('admin.layout.breadcrumb.governance', lang) },
+    { label: t('admin.layout.breadcrumb.ipRatification', lang) },
   ]}
 >
   <div class="max-w-[1200px] mx-auto px-4 py-8 space-y-6">
     <header class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-extrabold text-navy">Ratificação de PI</h1>
-        <p class="text-sm text-[var(--text-muted)] mt-1">
-          Painel admin para gestão das cadeias de aprovação dos documentos de governança (CR-050 / IP Policy).
-          Cada chain passa por gates configurados; review → approved é automático quando thresholds são satisfeitos
-          via <code class="text-xs bg-gray-100 px-1 rounded">sign_ip_ratification</code>. Botões abaixo cobrem apenas
-          transições manuais (abrir review, ativar, retirar, substituir). ADR-0016 referência.
-        </p>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.governance.ipRatif.h1', lang)}</h1>
+        <p class="text-sm text-[var(--text-muted)] mt-1" set:html={
+          t('admin.governance.ipRatif.desc', lang).replace(
+            '{sign_ip_ratification}',
+            '<code class="text-xs bg-gray-100 px-1 rounded">sign_ip_ratification</code>'
+          )
+        } />
       </div>
       <div class="flex gap-2 items-center">
         <a href={`${langPrefix}/admin/governance/documents`} class="text-xs font-semibold text-white bg-navy px-3 py-1.5 rounded-lg no-underline hover:opacity-90">
-          Usar versão nova →
+          {t('admin.governance.ipRatif.linkUseNew', lang)}
         </a>
         <a href={`${langPrefix}/admin/governance-v2`} class="text-sm text-[var(--text-muted)] hover:text-navy no-underline">
-          ← Governança (geral)
+          {t('admin.governance.ipRatif.linkBackGov', lang)}
         </a>
       </div>
     </header>
 
     <div id="ip-loading" class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
-      Carregando chains…
+      {t('admin.governance.ipRatif.loading', lang)}
     </div>
 
     <div id="ip-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
 
     <div id="ip-empty" class="hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
-      Nenhuma approval_chain ativa.
+      {t('admin.governance.ipRatif.emptyState', lang)}
     </div>
 
     <section id="ip-table-wrap" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-[var(--surface-hover)] text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
           <tr>
-            <th class="px-4 py-3 text-left">Documento</th>
-            <th class="px-4 py-3 text-left">Versão</th>
-            <th class="px-4 py-3 text-left">Status</th>
-            <th class="px-4 py-3 text-right">Gates</th>
-            <th class="px-4 py-3 text-right">Signoffs</th>
-            <th class="px-4 py-3 text-right">Pendentes</th>
-            <th class="px-4 py-3 text-right">Assinar</th>
-            <th class="px-4 py-3 text-right">Ações</th>
+            <th class="px-4 py-3 text-left">{t('admin.governance.ipRatif.col.document', lang)}</th>
+            <th class="px-4 py-3 text-left">{t('admin.governance.ipRatif.col.version', lang)}</th>
+            <th class="px-4 py-3 text-left">{t('admin.governance.ipRatif.col.status', lang)}</th>
+            <th class="px-4 py-3 text-right">{t('admin.governance.ipRatif.col.gates', lang)}</th>
+            <th class="px-4 py-3 text-right">{t('admin.governance.ipRatif.col.signoffs', lang)}</th>
+            <th class="px-4 py-3 text-right">{t('admin.governance.ipRatif.col.pending', lang)}</th>
+            <th class="px-4 py-3 text-right">{t('admin.governance.ipRatif.col.sign', lang)}</th>
+            <th class="px-4 py-3 text-right">{t('admin.governance.ipRatif.col.actions', lang)}</th>
           </tr>
         </thead>
         <tbody id="ip-tbody"></tbody>
       </table>
     </section>
 
-    <p class="text-xs text-[var(--text-muted)]">
-      Reminder cron (Phase IP-2b — next session): vai usar <code class="bg-gray-100 px-1 rounded">get_ratification_reminder_targets</code>
-      para notificar pendentes via email D-14/-7/-3/-1.
-    </p>
+    <p class="text-xs text-[var(--text-muted)]" set:html={
+      t('admin.governance.ipRatif.reminderNote', lang).replace(
+        '{get_ratification_reminder_targets}',
+        '<code class="bg-gray-100 px-1 rounded">get_ratification_reminder_targets</code>'
+      )
+    } />
   </div>
 
+  <script is:inline define:vars={{ IP_RATIF_I18N }}>
+    window.__IP_RATIF_I18N = typeof IP_RATIF_I18N !== 'undefined' ? IP_RATIF_I18N : {};
+  </script>
   <script is:inline>
+    const I18N = window.__IP_RATIF_I18N || {};
     const STATUS_LABELS = {
-      draft:      { label: 'Rascunho',    cls: 'bg-gray-100 text-gray-700 border-gray-300' },
-      review:     { label: 'Em revisão',  cls: 'bg-amber-100 text-amber-800 border-amber-300' },
-      approved:   { label: 'Aprovado',    cls: 'bg-blue-100 text-blue-800 border-blue-300' },
-      active:     { label: 'Vigente',     cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-      withdrawn:  { label: 'Retirado',    cls: 'bg-red-100 text-red-700 border-red-300' },
-      superseded: { label: 'Substituído', cls: 'bg-gray-200 text-gray-600 border-gray-400' },
+      draft:      { label: I18N.status?.draft || 'Rascunho',      cls: 'bg-gray-100 text-gray-700 border-gray-300' },
+      review:     { label: I18N.status?.review || 'Em revisão',   cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+      approved:   { label: I18N.status?.approved || 'Aprovado',   cls: 'bg-blue-100 text-blue-800 border-blue-300' },
+      active:     { label: I18N.status?.active || 'Vigente',      cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      withdrawn:  { label: I18N.status?.withdrawn || 'Retirado',  cls: 'bg-red-100 text-red-700 border-red-300' },
+      superseded: { label: I18N.status?.superseded || 'Substituído', cls: 'bg-gray-200 text-gray-600 border-gray-400' },
     };
 
     async function waitForSb(maxRetries) {
@@ -107,36 +152,37 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     function actionButtons(row) {
       var btns = [];
       if (row.status === 'draft') {
-        btns.push('<button class="ip-advance-btn rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700" data-chain-id="' + row.chain_id + '" data-target="review">Abrir review</button>');
+        btns.push('<button class="ip-advance-btn rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700" data-chain-id="' + row.chain_id + '" data-target="review">' + (I18N.action?.openReview || 'Abrir review') + '</button>');
       }
       if (row.status === 'approved') {
-        btns.push('<button class="ip-advance-btn rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700" data-chain-id="' + row.chain_id + '" data-target="active">Ativar</button>');
+        btns.push('<button class="ip-advance-btn rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700" data-chain-id="' + row.chain_id + '" data-target="active">' + (I18N.action?.activate || 'Ativar') + '</button>');
       }
       if (row.status === 'review' || row.status === 'approved') {
-        btns.push('<button class="ip-advance-btn rounded border border-red-300 bg-white px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50" data-chain-id="' + row.chain_id + '" data-target="withdrawn">Retirar</button>');
+        btns.push('<button class="ip-advance-btn rounded border border-red-300 bg-white px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50" data-chain-id="' + row.chain_id + '" data-target="withdrawn">' + (I18N.action?.withdraw || 'Retirar') + '</button>');
       }
       if (row.status === 'active') {
-        btns.push('<button class="ip-advance-btn rounded border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50" data-chain-id="' + row.chain_id + '" data-target="superseded">Substituir</button>');
+        btns.push('<button class="ip-advance-btn rounded border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50" data-chain-id="' + row.chain_id + '" data-target="superseded">' + (I18N.action?.supersede || 'Substituir') + '</button>');
       }
       return '<div class="flex justify-end gap-1 flex-wrap">' + btns.join('') + '</div>';
     }
 
     var GATE_LABELS = {
-      curator: 'curador',
-      leader: 'liderança',
-      president_go: 'pres. GO',
-      president_others: 'pres. capítulo',
-      member_ratification: 'membro',
-      external_signer: 'signatário ext.',
+      curator: I18N.gate?.curator || 'curador',
+      leader: I18N.gate?.leader || 'liderança',
+      president_go: I18N.gate?.president_go || 'pres. GO',
+      president_others: I18N.gate?.president_others || 'pres. capítulo',
+      member_ratification: I18N.gate?.member_ratification || 'membro',
+      external_signer: I18N.gate?.external_signer || 'signatário ext.',
     };
 
     function signButtons(row) {
       var eligible = Array.isArray(row.eligible_gates) ? row.eligible_gates : [];
       if (!eligible.length) return '<span class="text-[11px] text-[var(--text-muted)]">—</span>';
+      var signPrefix = I18N.action?.signPrefix || 'Assinar';
       return '<div class="flex justify-end gap-1 flex-wrap">' + eligible.map(function (g) {
         var label = GATE_LABELS[g] || g;
         var href = '/governance/ip-agreement?chain_id=' + encodeURIComponent(row.chain_id) + '&gate_kind=' + encodeURIComponent(g);
-        return '<a href="' + href + '" class="rounded border border-navy bg-white px-2 py-1 text-[10px] font-semibold text-navy hover:bg-navy hover:text-white transition-colors no-underline">Assinar ' + label + '</a>';
+        return '<a href="' + href + '" class="rounded border border-navy bg-white px-2 py-1 text-[10px] font-semibold text-navy hover:bg-navy hover:text-white transition-colors no-underline">' + signPrefix + ' ' + label + '</a>';
       }).join('') + '</div>';
     }
 
@@ -164,7 +210,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (!sb) {
         document.getElementById('ip-loading').classList.add('hidden');
         const err = document.getElementById('ip-error');
-        err.textContent = 'Cliente Supabase indisponível. Recarregue a página.';
+        err.textContent = I18N.error?.sbUnavailable || 'Cliente Supabase indisponível. Recarregue a página.';
         err.classList.remove('hidden');
         return;
       }
@@ -177,7 +223,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (chainsRes.error) {
         document.getElementById('ip-loading').classList.add('hidden');
         const err = document.getElementById('ip-error');
-        err.textContent = 'Erro: ' + chainsRes.error.message;
+        err.textContent = (I18N.error?.prefix || 'Erro:') + ' ' + chainsRes.error.message;
         err.classList.remove('hidden');
         return;
       }
@@ -215,7 +261,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         overview.push({
           chain_id: c.id,
           document_id: c.document_id,
-          document_title: (c.governance_documents && c.governance_documents.title) || '(sem título)',
+          document_title: (c.governance_documents && c.governance_documents.title) || (I18N.error?.defaultDocTitle || '(sem título)'),
           status: c.status,
           gate_count: gates.length,
           signoff_count: signoff_count,
@@ -245,7 +291,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           const chainId = b.dataset.chainId;
           const target = b.dataset.target;
           const reason = target === 'withdrawn' || target === 'superseded'
-            ? window.prompt('Motivo (obrigatório para retirada/substituição):')
+            ? window.prompt(I18N.prompt?.reason || 'Motivo (obrigatório para retirada/substituição):')
             : null;
           if ((target === 'withdrawn' || target === 'superseded') && !reason) return;
 
@@ -255,7 +301,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
           const sb = await waitForSb();
           if (!sb) {
-            alert('Erro: cliente Supabase indisponível.');
+            alert(I18N.alert?.sbUnavailableShort || 'Erro: cliente Supabase indisponível.');
             b.disabled = false; b.textContent = orig;
             return;
           }
@@ -265,7 +311,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             p_reason: reason,
           });
           if (res.error) {
-            alert('Erro: ' + res.error.message);
+            alert((I18N.error?.prefix || 'Erro:') + ' ' + res.error.message);
             b.disabled = false; b.textContent = orig;
             return;
           }
