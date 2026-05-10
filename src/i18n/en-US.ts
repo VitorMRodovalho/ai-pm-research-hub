@@ -3063,6 +3063,21 @@ const enUS: Record<string, string> = {
   // ── Chapter Report — Selection Pipeline ──
   'chapterReport.selectionTitle': 'Selection Pipeline',
   'chapterReport.selectionDesc': 'Selection funnel metrics for this chapter.',
+  // ── Chapter Report — Ω-B+.6.a p143 (additions) ──
+  'chapterReport.kpiActiveMembers': 'Active Members',
+  'chapterReport.kpiArticlesPipeline': 'Articles in Pipeline',
+  'chapterReport.kpiHoursParticipation': 'Participation Hours',
+  'chapterReport.kpiCpmaiCertified': 'CPMAI Certified',
+  'chapterReport.kpiOfTotalPrefix': 'of',
+  'chapterReport.kpiApprovedSuffix': 'approved',
+  'chapterReport.kpiEventsSuffix': 'events',
+  'chapterReport.emptyData': 'No data',
+  'chapterReport.selFunnelApplications': 'Applications',
+  'chapterReport.selFunnelApproved': 'Approved',
+  'chapterReport.selFunnelRejected': 'Rejected',
+  'chapterReport.selFunnelInterviews': 'Interviews',
+  'chapterReport.approvalRatePrefix': 'Approval rate',
+  'chapterReport.roleNone': 'No role',
 
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Privacy Policy — AI & PM Research Hub',
