@@ -1,8 +1,8 @@
 # ADR-0078 — External Reviewer Onboarding & Access Pattern
 
-**Status:** PROPOSED — Round 2 (PM sign-off em 5/5 decisions; pending legal-counsel + Ivan DPO)
-**Date:** 2026-05-10 (p148, Round 1 → Round 2 same session)
-**Author:** Claude (drafted) · PM aprovou waves + 5 decisions (Round 1 close); legal-counsel + DPO review pendente
+**Status:** PROPOSED — Round 2.5 (legal-counsel parecer incorporado; pending Ângelina curation + Ivan DPO sign-off)
+**Date:** 2026-05-10 (p148, Round 1 → Round 2 → Round 2.5 same session)
+**Author:** Claude (drafted) · PM aprovou 5/5 decisions Round 2; legal-counsel parecer (`docs/council/decisions/2026-05-10-p148-legal-counsel-adr0078-external-reviewer-nda.md`) incorporado Round 2.5; Ângelina curation + Ivan DPO sign-off pendentes para Round 3
 **Supersedes:** none
 **Related:** ADR-0006 (Person + Engagement Identity Model) · ADR-0007 (Authority as Engagement Grant) · ADR-0008 (Engagement Lifecycle Config) · ADR-0070 (External Speaker Artifact Conventions) · ADR-0076 (PMI 3-d Volunteer Model + Phase B Base Legal) · `feedback_lawyer_pathway_angelina_pmi_go.md`
 
@@ -120,13 +120,28 @@ Implementação: branch nas 3 seções condicionais por `variant === 'admin'`. D
 Novo `governance_documents` row (não `approval_chain` — é template estático, não revisado):
 
 - `slug='external_reviewer_agreement_v1'`, `title='Termo de Revisão Externa — Núcleo IA & Project Management'`, `doc_type='agreement_template'`
-- Conteúdo (PT-BR canonical, EN/ES traduzidos posteriormente):
-  - Cláusula 1: Objeto — direito não-exclusivo de visualização e comentário em documentos específicos atribuídos pela coordenação
-  - Cláusula 2: Confidencialidade — não divulgar conteúdo pre-publication a terceiros sem autorização escrita
-  - Cláusula 3: Propriedade Intelectual — comentários submetidos integram o histórico do documento (`document_comments` provenance) sem cessão de direitos do revisor sobre suas próprias contribuições. Revisor concede licença não-exclusiva à Núcleo para uso interno dos comentários no ciclo de revisão.
-  - Cláusula 4: Vigência — alinhado com `engagement.end_date` (90d default, renovável). Revogação imediata por qualquer parte via comunicação por escrito.
-  - Cláusula 5: LGPD — base legal `consent` (Art. 7º I); dados pessoais (nome, email, comentários) retidos por 2 anos pós-engagement (`retention_days_after_end=730`); anonimização automática após. Revisor pode solicitar export ou deleção a qualquer tempo (canal institucional do controlador ou portal LGPD).
-  - Cláusula 6: Não-vínculo + escopo restrito — termo NÃO cria relação trabalhista, voluntariado formal (sem VEP), nem direito a credly badge. **Round 2 reforço:** este termo destina-se exclusivamente a revisores externos voluntários ou peer-reviewers em vínculo recíproco (cenários A/B/C abaixo). Engajamentos comerciais (consultoria remunerada), parcerias institucionais (sponsors), ou instrumentos com órgãos públicos requerem instrumento jurídico próprio (MSA, MOU, convênio) — não esse template.
+- Conteúdo (PT-BR canonical, EN/ES traduzidos posteriormente; **versão Round 2.5 pós-legal-counsel parecer**):
+  - **Cláusula 1: Objeto** — direito não-exclusivo de visualização e comentário em documentos específicos atribuídos pela coordenação.
+  - **Cláusula 2: Confidencialidade** — não divulgar conteúdo pre-publication a terceiros sem autorização escrita. *[Round 2.5 IS-1 nota inline para Ângelina considerar]:* avaliar se cláusula deve adicionar "exceto colaboradores diretos sob mesmo dever profissional de sigilo" para cobrir orientadores acadêmicos, sócios de escritório, ou co-autores legítimos.
+  - **Cláusula 3: Propriedade Intelectual (IC-2 incorporado Round 2.5):**
+
+    "Os comentários submetidos pelo Revisor integram o histórico do documento na plataforma (provenance de auditoria), sem cessão de direitos autorais do Revisor sobre o conteúdo de seus comentários. O Revisor concede à Núcleo IA & GP licença não-exclusiva, gratuita, de uso interno e irrevogável exclusivamente para fins de revisão do documento objeto deste Termo, pelo prazo do Engajamento acrescido do período de retenção (2 anos). A Núcleo não citará comentários nominalmente em publicações externas sem autorização escrita prévia do Revisor. Para revisores em vínculo acadêmico (Cenário C), reserva-se o direito de negociar cláusula adicional de co-autoria ou acknowledgment antes da ratificação deste Termo."
+
+    *Justificativa Round 2.5:* Lei 9.610/98 Art. 49 exige interpretação restritiva — escopo de uso prévio + ressalva acadêmica + vedação de citação nominal sem autorização eliminam ambiguidade. Mitiga risco deontológico OAB para Cenário A (Ângelina advogada) e tensão Princípio 7 ADR-0076 (Trentim firewall — comentários jurídicos não viram "assessoria pública" sem opt-in).
+  - **Cláusula 4: Vigência** — alinhado com `engagement.end_date` (90d default, renovável). Revogação imediata por qualquer parte via comunicação por escrito. *[Round 2.5 IS-2 nota inline]:* avaliar com Ângelina se inserir "salvo por justa causa, a revogação administrativa notificará o Revisor com antecedência mínima de 48 horas" para proteção do revisor em fim de revisão em andamento.
+  - **Cláusula 5: LGPD (IC-1 + 3 gaps incorporados Round 2.5):**
+
+    "O tratamento de dados pessoais do Revisor (nome, email, conteúdo de comentários, metadados de acesso) tem como base legal o consentimento expresso (Art. 7º, I, Lei 13.709/2018 — LGPD). Os dados são retidos por 2 (dois) anos após o término do Engajamento (`retention_days_after_end=730`), prazo necessário para fins de auditoria de governança documental, sendo anonimizados automaticamente após esse período (`anonymization_policy='anonymize'`).
+
+    **Identidade do Controlador:** Núcleo IA & GP, núcleo de pesquisa institucional vinculado ao **PMI Goiás (PMI-GO Chapter)**. Encarregado de Proteção de Dados (DPO) institucional: **Ivan** (contato via canal institucional indicado na plataforma e portal LGPD do PMI-GO).
+
+    **Direitos do titular (Art. 18 LGPD):** O Revisor tem os direitos de (i) confirmação da existência de tratamento, (ii) acesso aos dados, (iii) correção de dados incompletos, inexatos ou desatualizados, (iv) anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade, (v) portabilidade dos dados, (vi) eliminação dos dados tratados com base no consentimento, (vii) informação sobre entidades públicas e privadas com as quais o Controlador realizou uso compartilhado de dados, (viii) informação sobre a possibilidade de não fornecer consentimento e sobre as consequências da negativa, (ix) revogação do consentimento, todos exercíveis pelo canal institucional indicado acima.
+
+    **Revogação a qualquer tempo (Art. 8º, §5º LGPD):** O Revisor pode revogar este consentimento a qualquer momento, sem ônus, mediante uso da função 'Encerrar minha revisão' disponível na plataforma ou por comunicação escrita ao endereço institucional do Controlador. A revogação encerra imediatamente o acesso à plataforma. Dados já registrados permanecem sujeitos ao prazo de retenção de 2 (dois) anos para fins de auditoria, após os quais são anonimizados automaticamente."
+
+    *Justificativa Round 2.5:* IC-1 (Art. 8º §5 nomeado expressamente — alinha template com self-revoke implementado em D6); 3 LGPD audit-gaps fechados (Controlador nomeado com chapter PMI-GO, DPO Ivan referenciado, Art. 18 completo com 9 direitos enumerados). Pendente Ivan DPO sign-off para confirmar (a) identificador institucional preciso (CNPJ se aplicável), (b) URL canônica do canal institucional/portal LGPD, (c) prazo de resposta a solicitações (Resolução CD/ANPD 2/2022 orienta 15 dias — opcional mas defensável).
+  - **Cláusula 6: Não-vínculo + escopo restrito** — termo NÃO cria relação trabalhista, voluntariado formal (sem VEP), nem direito a credly badge. Este termo destina-se exclusivamente a revisores externos voluntários ou peer-reviewers em vínculo recíproco (cenários A/B/C abaixo). Engajamentos comerciais (consultoria remunerada), parcerias institucionais (sponsors), ou instrumentos com órgãos públicos requerem instrumento jurídico próprio (MSA, MOU, convênio) — não esse template. *[Round 2.5 IS-4 nota inline]:* avaliar com Ângelina se incluir "A Núcleo poderá mencionar o Revisor em agradecimentos públicos de documentos revisados, salvo manifestação em contrário do Revisor no ato da ratificação" — positivo para revisores que valorizam acknowledgment de portfolio.
+  - **Cláusula 7 (opcional, IS-3 nota inline):** se Ângelina entender necessário para clareza geográfica, adicionar "As eventuais controvérsias decorrentes deste Termo seguem a legislação brasileira aplicável." Foro de eleição pode ser omitido em template volunteer-grade.
 
 **Cenários cobertos vs excluídos (PM-confirmed Round 2):**
 
@@ -152,7 +167,16 @@ Se "Outro caso" selecionado, o RPC retorna `{error: 'requires_escalation', messa
 
 Ratificação: nova RPC `sign_external_reviewer_agreement(engagement_id, version_label)` — insere row em `external_reviewer_agreements` (nova tabela mínima: `id, engagement_id FK, agreement_version, signed_at, ip_address, user_agent`). Required ANTES do primeiro `create_document_comment` chamado por external_reviewer (gate na RPC: `_can_comment_as_external(member_id, version_id)` checks ratification).
 
-**Legal-counsel review obrigatório antes do template ir para active.** Ângelina é a curadora primária (PM-confirmed Round 2): conflict of interest pequeno e natural — ela é a primeira usuária E primeira reviewer jurídica, template trabalha A FAVOR dela (proteção mútua). Pattern "primeiro usuário valida o instrumento que o regula", comum em legal drafting comunitário. Backup: external advisor (~R$ 5-10K) só se Ângelina declinar OU council levantar issue de governance no Round 3 sign-off.
+**Legal-counsel pré-revisão concluída Round 2.5** (`docs/council/decisions/2026-05-10-p148-legal-counsel-adr0078-external-reviewer-nda.md`): APROVADO COM AJUSTES. Issues críticos IC-1 (Cláusula 5 Art. 8 §5) + IC-2 (Cláusula 3 escopo licença + ressalva acadêmica) + 3 gaps LGPD (Controlador, DPO, Art. 18 completo) já incorporados na redação acima. Issues secundários IS-1, IS-2, IS-3, IS-4 marcados como notas inline para Ângelina avaliar na curadoria.
+
+**Sequência de curadoria pós-Round 2.5:**
+
+1. **Ângelina** recebe template v1.1 (versão atualmente neste ADR) com contexto explícito sobre conflict of interest natural (transparência = proteção mútua). Pedido especial: confirmar Cláusula 3 à luz de obrigações deontológicas OAB.
+2. Consolidar **v1.2** com retorno dela; encaminhar a **Ivan DPO** focado exclusivamente nos 3 elementos LGPD pendentes de detalhe operacional: (a) CNPJ/identificador institucional preciso PMI-GO, (b) URL canônica do canal institucional/portal LGPD, (c) prazo de resposta a solicitações (15 dias Res. ANPD 2/2022 — opcional).
+3. **Wave 1 (D5) só após etapas 1 + 2.**
+4. IS-1 a IS-4: Ângelina absorve na curadoria ou ficam para v1.2 (não-bloqueantes).
+
+Backup curator: external advisor (~R$ 5-10K) só se Ângelina declinar OU council/Ivan levantarem issue de governance no Round 3 sign-off.
 
 ### D6 — `revoke_external_reviewer` RPC + admin UI + **self-revoke (PM-confirmed Round 2)**
 
@@ -316,4 +340,9 @@ Reversibilidade: ~2h para rollback completo. Engagements existentes sobrevivem c
   - (3) `operational_role` enum: adicionar `external_reviewer`; trigger sync_operational_role_cache cobre
   - (4) Self-revoke: incluído (LGPD Art. 8 §5)
   - (5) Visibility: externos NÃO veem curator_only/submitter_only/change_notes; só `public`; default no comment form é `public`-único
-- Pending: legal-counsel review NDA template + Ivan DPO sign-off no consent flow → Round 3 (sign-off final).
+- 2026-05-10 (p148, Round 2.5 — same session): legal-counsel parecer (council artifact `docs/council/decisions/2026-05-10-p148-legal-counsel-adr0078-external-reviewer-nda.md`). Veredito: APROVADO COM AJUSTES. PM aprovou caminho A. Incorporados:
+  - IC-1 (Cláusula 5 Art. 8 §5 nomeado expressamente)
+  - IC-2 (Cláusula 3 escopo de uso + ressalva acadêmica + vedação citação nominal)
+  - 3 LGPD gaps (Controlador PMI-GO nomeado, DPO Ivan referenciado, Art. 18 com 9 direitos enumerados)
+  - IS-1 a IS-4 marcados como notas inline para Ângelina avaliar
+- Pending: Ângelina curation v1.1 → v1.2 + Ivan DPO sign-off (CNPJ/URL/prazo de resposta) → Round 3 (sign-off final + status ACCEPTED).
