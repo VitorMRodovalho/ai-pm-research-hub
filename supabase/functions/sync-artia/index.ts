@@ -463,6 +463,14 @@ Deno.serve(async (req) => {
         result.errors.push({ step: 'atas_tribos', error: (e as Error).message })
       }
 
+      await sb.from('mcp_usage_log').insert({
+        tool_name: 'sync-artia-cron-daily',
+        success: result.errors.length === 0,
+        execution_ms: 0,
+        response_summary: result,
+        organization_id: PMI_GO_ORG_ID,
+      })
+
       return new Response(JSON.stringify({ mode: 'cron-daily', result }, null, 2), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -548,6 +556,14 @@ Deno.serve(async (req) => {
         }
         await new Promise(r => setTimeout(r, 300))
       }
+
+      await sb.from('mcp_usage_log').insert({
+        tool_name: 'sync-artia-cron-monthly',
+        success: result.errors.length === 0,
+        execution_ms: 0,
+        response_summary: result,
+        organization_id: PMI_GO_ORG_ID,
+      })
 
       return new Response(JSON.stringify({ mode: 'cron-monthly', result }, null, 2), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -897,7 +913,7 @@ Deno.serve(async (req) => {
         tool_name: 'sync-artia-create-structure',
         success: created.errors.length === 0,
         execution_ms: 0,
-        response_summary: JSON.stringify({ folders_created: created.folders.length, activities_created: created.activities.length, errors: created.errors.length }),
+        response_summary: { folders_created: created.folders.length, activities_created: created.activities.length, errors: created.errors.length },
         organization_id: PMI_GO_ORG_ID,
       })
 
@@ -1160,7 +1176,7 @@ Deno.serve(async (req) => {
         tool_name: 'sync-artia-discover',
         success: summary.queries_succeeded > 0,
         execution_ms: 0,
-        response_summary: JSON.stringify(summary),
+        response_summary: summary,
         organization_id: PMI_GO_ORG_ID,
       })
 
@@ -1323,10 +1339,10 @@ Deno.serve(async (req) => {
       tool_name: 'sync-artia',
       success: true,
       execution_ms: 0,
-      response_summary: JSON.stringify({
+      response_summary: {
         synced_at: now,
         kpis: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, { current: v.current, pct: v.pct, artia: v.synced }])),
-      }),
+      },
       organization_id: PMI_GO_ORG_ID,
     })
 
