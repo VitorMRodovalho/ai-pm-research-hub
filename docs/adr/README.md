@@ -79,6 +79,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0073-issue116-calendar-booking-sync-apps-script.md` — #116 calendar booking sync via Apps Script.
 - `ADR-0074-onda3-arm-dual-model-ai-architecture.md` — ARM Onda 3 dual-model AI architecture (Sonnet 4.6 triage + Haiku 4.5 briefing + Gemini qualitative legacy).
 - `ADR-0075-cv-extraction-pipeline.md` — CV extraction pipeline: Deno + unpdf EF + cron 15min + lazy fallback in pmi-ai-triage. Audit revelou backlog actionable = 0 hoje (todos "órfãos" sem consent); pipeline forward-looking. **Status: Accepted (2026-05-07 — smoke 3 paths PASS, Amendment A documenta evidence).**
+- `ADR-0076-pmi-3d-volunteer-model-and-phase-b-base-legal.md` — PMI 3-d volunteer model (gatekeeper · operador · controlador) + Phase B base legal Art. 7 IX (legítimo interesse + execução de contrato) + retention bifurcated 5y/12m/90d + Trentim Path B firewall + 11 princípios. **Status: PROPOSED (2026-05-09 p125), pending Ivan DPO sign-off Wave 4.**
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
