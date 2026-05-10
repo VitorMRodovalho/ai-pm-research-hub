@@ -5004,6 +5004,18 @@ const esLATAM: Record<string, string> = {
   'admin.partnerships.saved': '¡Asociación guardada!',
   'admin.partnerships.deleteConfirm': '¿Eliminar esta asociación?',
   'admin.partnerships.deleted': 'Asociación eliminada.',
+  // ── Partnerships — Ω-B+.7.c p144 (additions) ──
+  'admin.partnerships.typePmiChapter': 'Capítulo PMI',
+  'admin.partnerships.typeAcademia': 'Academia',
+  'admin.partnerships.typeGoverno': 'Gobierno',
+  'admin.partnerships.typeEmpresa': 'Empresa',
+  'admin.partnerships.typeOutro': 'Otro',
+  'admin.partnerships.statusActive': 'Activo',
+  'admin.partnerships.statusProspect': 'Prospect',
+  'admin.partnerships.statusContact': 'Contacto',
+  'admin.partnerships.statusNegotiation': 'Negociación',
+  'admin.partnerships.statusInactive': 'Inactivo',
+  'admin.partnerships.statusChurned': 'Churned',
 
   'admin.campaigns.funnelSent': 'Enviados',
   'admin.campaigns.funnelDelivered': 'Entregados',
