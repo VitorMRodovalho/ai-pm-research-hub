@@ -61,7 +61,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         </button>
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-tab="grid" data-action="switch-tab">
-          📊 Quadro de Presença
+          📊 {t('attendance.tab.grid', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 id="tab-new-event" data-action="open-new-event">
@@ -88,14 +88,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             <div class="flex gap-3 flex-wrap items-center">
               <select id="events-type-filter"
                 class="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
-                <option value="todos">Todos os tipos</option>
+                <option value="todos">{t('attendance.section.allTypes', lang)}</option>
               </select>
               <select id="events-tribe-filter" class="hidden px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
-                <option value="">Todas as Tribos</option>
+                <option value="">{t('attendance.section.allTribes', lang)}</option>
               </select>
               <input id="attendance-search" type="text"
                      class="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy transition-colors"
-                     placeholder="🔍 Buscar evento..." />
+                     placeholder={t('attendance.section.searchPlaceholder', lang)} />
             </div>
           </div>
           <div id="attendance-tag-filter" class="hidden px-5 py-2 border-b border-[var(--border-subtle)] flex gap-2 flex-wrap"></div>
@@ -236,6 +236,26 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   recurrenceThisFuture: t('attendance.recurrence.thisFuture', lang),
   recurrencePrompt: t('attendance.recurrence.prompt', lang),
   recurrenceFutureUpdated: t('attendance.recurrence.futureUpdated', lang),
+  sectionRealized: t('attendance.section.realized', lang),
+  sectionScheduled: t('attendance.section.scheduled', lang),
+  sectionViewAllRealized: t('attendance.section.viewAllRealized', lang),
+  sectionViewAllScheduled: t('attendance.section.viewAllScheduled', lang),
+  sectionLabelGeral: t('attendance.section.label.geral', lang),
+  sectionLabelTribo: t('attendance.section.label.tribo', lang),
+  sectionLabelKickoff: t('attendance.section.label.kickoff', lang),
+  sectionLabelLideranca: t('attendance.section.label.lideranca', lang),
+  sectionLabelWebinar: t('attendance.section.label.webinar', lang),
+  sectionLabelEventoExterno: t('attendance.section.label.evento_externo', lang),
+  sectionLabelComms: t('attendance.section.label.comms', lang),
+  sectionLabelParceria: t('attendance.section.label.parceria', lang),
+  sectionLabelEntrevista: t('attendance.section.label.entrevista', lang),
+  sectionLabel1on1: t('attendance.section.label.1on1', lang),
+  filterNoMatch: t('attendance.filter.noMatch', lang),
+  filterClear: t('attendance.filter.clear', lang),
+  tagPlaceholder: t('attendance.tag.placeholder', lang),
+  showcaseEmpty: t('attendance.showcase.empty', lang),
+  showcaseRegistered: t('attendance.showcase.registered', lang),
+  showcaseRemoved: t('attendance.showcase.removed', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -308,6 +328,26 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     recurrenceThisFuture: 'Este e futuros',
     recurrencePrompt: 'Este evento faz parte de uma série recorrente. Aplicar alterações em:',
     recurrenceFutureUpdated: 'eventos atualizados na série.',
+    sectionRealized: '📌 Realizados',
+    sectionScheduled: '📅 Agendados',
+    sectionViewAllRealized: 'Ver todos os {n} realizados ▾',
+    sectionViewAllScheduled: 'Ver todos os {n} agendados ▾',
+    sectionLabelGeral: 'Gerais',
+    sectionLabelTribo: 'Tribos',
+    sectionLabelKickoff: 'Kickoff',
+    sectionLabelLideranca: 'Liderança',
+    sectionLabelWebinar: 'Webinar',
+    sectionLabelEventoExterno: 'Evento Externo',
+    sectionLabelComms: 'Comunicação',
+    sectionLabelParceria: 'Parcerias',
+    sectionLabelEntrevista: 'Entrevistas',
+    sectionLabel1on1: '1-on-1',
+    filterNoMatch: 'Nenhum evento corresponde ao filtro atual.',
+    filterClear: 'Limpar filtros',
+    tagPlaceholder: 'Clique para selecionar tags...',
+    showcaseEmpty: 'Nenhum showcase registrado.',
+    showcaseRegistered: '🎤 Showcase registrado! +{xp} XP',
+    showcaseRemoved: 'Showcase removido',
   };
 
   let sb: any = null;
@@ -780,16 +820,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   const SECTION_ORDER = [
-    { type: 'geral',          icon: '🌐', label: 'Gerais',          gpOnly: false },
-    { type: 'tribo',          icon: '🔬', label: 'Tribos',          gpOnly: false },
-    { type: 'kickoff',        icon: '🚀', label: 'Kickoff',         gpOnly: false },
-    { type: 'lideranca',      icon: '👥', label: 'Liderança',       gpOnly: false },
-    { type: 'webinar',        icon: '🎙️', label: 'Webinar',         gpOnly: false },
-    { type: 'evento_externo', icon: '🌍', label: 'Evento Externo',  gpOnly: false },
-    { type: 'comms',          icon: '📢', label: 'Comunicação',      gpOnly: false },
-    { type: '1on1',           icon: '🔒', label: '1-on-1',          gpOnly: true  },
-    { type: 'parceria',       icon: '🤝', label: 'Parcerias',       gpOnly: true  },
-    { type: 'entrevista',     icon: '📌', label: 'Entrevistas',     gpOnly: true  },
+    { type: 'geral',          icon: '🌐', label: I18N.sectionLabelGeral || 'Gerais',                 gpOnly: false },
+    { type: 'tribo',          icon: '🔬', label: I18N.sectionLabelTribo || 'Tribos',                 gpOnly: false },
+    { type: 'kickoff',        icon: '🚀', label: I18N.sectionLabelKickoff || 'Kickoff',              gpOnly: false },
+    { type: 'lideranca',      icon: '👥', label: I18N.sectionLabelLideranca || 'Liderança',          gpOnly: false },
+    { type: 'webinar',        icon: '🎙️', label: I18N.sectionLabelWebinar || 'Webinar',              gpOnly: false },
+    { type: 'evento_externo', icon: '🌍', label: I18N.sectionLabelEventoExterno || 'Evento Externo', gpOnly: false },
+    { type: 'comms',          icon: '📢', label: I18N.sectionLabelComms || 'Comunicação',            gpOnly: false },
+    { type: '1on1',           icon: '🔒', label: I18N.sectionLabel1on1 || '1-on-1',                  gpOnly: true  },
+    { type: 'parceria',       icon: '🤝', label: I18N.sectionLabelParceria || 'Parcerias',           gpOnly: true  },
+    { type: 'entrevista',     icon: '📌', label: I18N.sectionLabelEntrevista || 'Entrevistas',       gpOnly: true  },
   ];
 
   function renderEvents() {
@@ -804,7 +844,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       return;
     }
     if (!filtered.length) {
-      el.innerHTML = `<div class="text-center py-8"><div class="text-3xl mb-2">🔎</div><div class="font-semibold text-[var(--text-secondary)] text-sm">Nenhum evento corresponde ao filtro atual.</div><button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">Limpar filtros</button></div>`;
+      el.innerHTML = `<div class="text-center py-8"><div class="text-3xl mb-2">🔎</div><div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.filterNoMatch}</div><button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">${I18N.filterClear}</button></div>`;
       return;
     }
 
@@ -876,12 +916,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const PAST_LIMIT = 10;
       const visiblePast = s.past.slice(0, PAST_LIMIT);
       const hiddenPast = s.past.slice(PAST_LIMIT);
-      const pastHtml = s.past.length ? `<div class="mb-2"><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📌 Realizados</div>${visiblePast.map((ev: any) => renderEventCard(ev)).join('')}${hiddenPast.length ? `<div id="more-past-${s.type}" class="hidden">${hiddenPast.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-past-${s.type}">Ver todos os ${s.pastCount} realizados ▾</button>` : ''}</div>` : '';
+      const pastHtml = s.past.length ? `<div class="mb-2"><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">${I18N.sectionRealized}</div>${visiblePast.map((ev: any) => renderEventCard(ev)).join('')}${hiddenPast.length ? `<div id="more-past-${s.type}" class="hidden">${hiddenPast.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-past-${s.type}">${(I18N.sectionViewAllRealized || 'Ver todos os {n} realizados ▾').replace('{n}', String(s.pastCount))}</button>` : ''}</div>` : '';
 
       const FUTURE_LIMIT = 3;
       const visibleFuture = s.future.slice(0, FUTURE_LIMIT);
       const hiddenFuture = s.future.slice(FUTURE_LIMIT);
-      const futureHtml = s.future.length ? `<div><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📅 Agendados</div>${visibleFuture.map((ev: any) => renderEventCard(ev)).join('')}${hiddenFuture.length ? `<div id="more-${s.type}" class="hidden">${hiddenFuture.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-${s.type}">Ver todos os ${s.futureCount} agendados ▾</button>` : ''}</div>` : '';
+      const futureHtml = s.future.length ? `<div><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">${I18N.sectionScheduled}</div>${visibleFuture.map((ev: any) => renderEventCard(ev)).join('')}${hiddenFuture.length ? `<div id="more-${s.type}" class="hidden">${hiddenFuture.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-${s.type}">${(I18N.sectionViewAllScheduled || 'Ver todos os {n} agendados ▾').replace('{n}', String(s.futureCount))}</button>` : ''}</div>` : '';
 
       const autoExpand = (getTypeFilter() !== 'todos' || ATTENDANCE_ROUTE.query) ? ' open' : '';
       return `<details class="border-b border-[var(--border-subtle)] last:border-b-0"${autoExpand}><summary class="flex items-center justify-between px-1 py-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors select-none"><span class="text-sm font-semibold text-[var(--text-primary)]">${s.icon} ${s.label}${gpBadge}</span><span class="text-[11px] text-[var(--text-muted)]">${countLabel}</span></summary><div class="pl-2 pr-1 pb-3 space-y-2">${pastHtml}${futureHtml}</div></details>`;
@@ -1354,7 +1394,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const container = document.getElementById(containerId);
     if (!container) return;
     if (!selectedIds.length) {
-      container.innerHTML = '<span class="text-[12px] text-[var(--text-muted)]">Clique para selecionar tags...</span>';
+      container.innerHTML = `<span class="text-[12px] text-[var(--text-muted)]">${I18N.tagPlaceholder}</span>`;
     } else {
       container.innerHTML = selectedIds.map(id => {
         const tag = ALL_TAGS.find(t => t.id === id);
@@ -1896,7 +1936,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     // Render showcase list
     if (!showcases?.length) {
-      listEl.innerHTML = '<p class="text-[11px] text-[var(--text-muted)] italic">Nenhum showcase registrado.</p>';
+      listEl.innerHTML = `<p class="text-[11px] text-[var(--text-muted)] italic">${I18N.showcaseEmpty}</p>`;
     } else {
       listEl.innerHTML = (showcases as any[]).map((s: any) => {
         const emoji = SHOWCASE_EMOJI[s.showcase_type] || '🎤';
@@ -1949,7 +1989,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast('🎤 Showcase registrado! +' + (SHOWCASE_XP[typeSelect?.value] || 15) + ' XP', 'success');
+      const xp = SHOWCASE_XP[typeSelect?.value] || 15;
+      toast((I18N.showcaseRegistered || '🎤 Showcase registrado! +{xp} XP').replace('{xp}', String(xp)), 'success');
       titleInput.value = ''; durationInput.value = '';
       document.getElementById('roster-showcase-form')?.classList.add('hidden');
       await loadShowcases(CURRENT_EVENT_ID);
@@ -1961,7 +2002,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const { data, error } = await sb.rpc('remove_event_showcase', { p_showcase_id: showcaseId });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast('Showcase removido', 'success');
+      toast(I18N.showcaseRemoved || 'Showcase removido', 'success');
       if (CURRENT_EVENT_ID) await loadShowcases(CURRENT_EVENT_ID);
     } catch (e: any) { toast(e?.message || 'Erro', 'error'); }
   }
