@@ -7,7 +7,7 @@ globs: wrangler.toml, astro.config.mjs
 
 ## Pre-Deploy Checklist
 1. `npx astro build` — must pass with 0 errors
-2. `npm test` — 1431 pass, 0 fail, 38 skip (with DB env: 1469 total)
+2. `npm test` — 1434 pass, 0 fail, 38 skip (with DB env: 1472 total)
 3. No legacy URLs in code (grep for platform.ai-pm-research-hub.workers.dev)
 
 ## Deploy Commands
