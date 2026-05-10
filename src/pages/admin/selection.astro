@@ -51,6 +51,52 @@ const SEL_I18N = {
     leader: t('admin.selection.leader', lang),
     both: t('admin.selection.statusBoth', lang),
   },
+  modal: {
+    tabInfo: t('admin.selection.modal.tabInfo', lang),
+    tabEvaluate: t('admin.selection.modal.tabEvaluate', lang),
+    tabInterview: t('admin.selection.modal.tabInterview', lang),
+    tabComms: t('admin.selection.modal.tabComms', lang),
+    tabAiRuns: t('admin.selection.modal.tabAiRuns', lang),
+    tabAudit: t('admin.selection.modal.tabAudit', lang),
+    returningBadge: t('admin.selection.modal.returningBadge', lang),
+    email: t('admin.selection.modal.email', lang),
+    chapter: t('admin.selection.chapter', lang),
+    role: t('admin.selection.modal.role', lang),
+    applicationDate: t('admin.selection.modal.applicationDate', lang),
+    certifications: t('admin.selection.modal.certifications', lang),
+    experience: t('admin.selection.modal.experience', lang),
+    experienceYearsSuffix: t('admin.selection.modal.experienceYearsSuffix', lang),
+    phoneLabel: t('admin.selection.modal.phoneLabel', lang),
+    linkedinLabel: t('admin.selection.modal.linkedinLabel', lang),
+    saveBtn: t('admin.selection.modal.saveBtn', lang),
+    academicBackground: t('admin.selection.modal.academicBackground', lang),
+    motivation: t('admin.selection.modal.motivation', lang),
+    areasOfInterest: t('admin.selection.modal.areasOfInterest', lang),
+    nonPmiExperience: t('admin.selection.modal.nonPmiExperience', lang),
+    objScore: t('admin.selection.modal.objScore', lang),
+    finalScore: t('admin.selection.modal.finalScore', lang),
+    rankChapter: t('admin.selection.modal.rankChapter', lang),
+    rankOverall: t('admin.selection.modal.rankOverall', lang),
+    changeStatus: t('admin.selection.modal.changeStatus', lang),
+    feedbackPlaceholder: t('admin.selection.modal.feedbackPlaceholder', lang),
+    saveChanges: t('admin.selection.modal.saveChanges', lang),
+    loadingEvaluation: t('admin.selection.modal.loadingEvaluation', lang),
+    loadingComms: t('admin.selection.modal.loadingComms', lang),
+    loadingAi: t('admin.selection.modal.loadingAi', lang),
+    loadingAudit: t('admin.selection.modal.loadingAudit', lang),
+    loadingReturningContext: t('admin.selection.modal.loadingReturningContext', lang),
+    scheduleInterviewTitle: t('admin.selection.modal.scheduleInterviewTitle', lang),
+    dateTimeLabel: t('admin.selection.modal.dateTimeLabel', lang),
+    durationLabel: t('admin.selection.modal.durationLabel', lang),
+    scheduleBtn: t('admin.selection.modal.scheduleBtn', lang),
+    scheduleViaExternal: t('admin.selection.modal.scheduleViaExternal', lang),
+    toastInterviewScheduled: t('admin.selection.modal.toastInterviewScheduled', lang),
+    toastSelectDateTime: t('admin.selection.modal.toastSelectDateTime', lang),
+    toastErrorScheduling: t('admin.selection.modal.toastErrorScheduling', lang),
+    toastReasonRequired: t('admin.selection.modal.toastReasonRequired', lang),
+    toastRescheduleSent: t('admin.selection.modal.toastRescheduleSent', lang),
+    toastErrorReschedule: t('admin.selection.modal.toastErrorReschedule', lang),
+  },
 };
 ---
 
@@ -367,6 +413,35 @@ const SEL_I18N = {
       converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
     },
     roleLabels: { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' },
+    modal: {
+      tabInfo: 'Informações', tabEvaluate: 'Avaliar', tabInterview: 'Entrevista',
+      tabComms: 'Comunicação', tabAiRuns: 'Análises IA', tabAudit: 'Auditoria',
+      returningBadge: 'Retornante',
+      email: 'Email', chapter: 'Capítulo', role: 'Papel',
+      applicationDate: 'Data Aplicação', certifications: 'Certificações',
+      experience: 'Experiência', experienceYearsSuffix: 'anos',
+      phoneLabel: 'Telefone', linkedinLabel: 'LinkedIn URL', saveBtn: 'Salvar',
+      academicBackground: 'Formação Acadêmica', motivation: 'Motivação',
+      areasOfInterest: 'Áreas de Interesse', nonPmiExperience: 'Experiência Extra-PMI',
+      objScore: 'Obj. Score', finalScore: 'Final Score',
+      rankChapter: 'Rank (Cap.)', rankOverall: 'Rank (Geral)',
+      changeStatus: 'Alterar Status', feedbackPlaceholder: 'Feedback / observações...',
+      saveChanges: 'Salvar alterações',
+      loadingEvaluation: 'Carregando formulário de avaliação...',
+      loadingComms: 'Carregando comunicações...',
+      loadingAi: 'Carregando análises IA...',
+      loadingAudit: 'Carregando auditoria...',
+      loadingReturningContext: 'Carregando histórico de saída anterior...',
+      scheduleInterviewTitle: 'Agendar Entrevista',
+      dateTimeLabel: 'Data/Hora', durationLabel: 'Duração (min)',
+      scheduleBtn: 'Agendar', scheduleViaExternal: 'Agendar via link externo →',
+      toastInterviewScheduled: 'Entrevista agendada',
+      toastSelectDateTime: 'Selecione data e hora',
+      toastErrorScheduling: 'Erro ao agendar',
+      toastReasonRequired: 'Informe o motivo do reagendamento',
+      toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
+      toastErrorReschedule: 'Erro ao solicitar reagendamento',
+    },
   };
 
   /* ── state ────────────────────────────────────────── */
@@ -827,18 +902,18 @@ const SEL_I18N = {
       ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${row.membership_status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${esc(row.membership_status)}</span>`
       : '';
     const returningBadge = row.is_returning_member
-      ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">Retornante</span>'
+      ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${T.modal.returningBadge}</span>`
       : '';
 
     body.innerHTML = `
       <!-- Modal tabs -->
       <div class="flex gap-1 border-b border-[var(--border-default)] mb-4">
-        <button data-modal-tab="info" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Informações</button>
-        <button data-modal-tab="evaluate" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Avaliar</button>
-        <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Entrevista</button>
-        <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Comunicação</button>
-        <button data-modal-tab="ai-runs" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Análises IA</button>
-        <button data-modal-tab="audit-log" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Auditoria</button>
+        <button data-modal-tab="info" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">${T.modal.tabInfo}</button>
+        <button data-modal-tab="evaluate" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabEvaluate}</button>
+        <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabInterview}</button>
+        <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabComms}</button>
+        <button data-modal-tab="ai-runs" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAiRuns}</button>
+        <button data-modal-tab="audit-log" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAudit}</button>
       </div>
 
       <!-- TAB: Info -->
@@ -856,12 +931,12 @@ const SEL_I18N = {
               ${returningBadge}
             </div>
             <div class="grid grid-cols-2 gap-3 text-[13px]">
-              <div><span class="text-[var(--text-muted)] text-[11px]">Email</span><br><strong>${esc(row.email)}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Capítulo</span><br><strong>${esc(row.chapter || '—')}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Papel</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Data Aplicação</span><br><strong>${row.application_date || row.created_at ? new Date(row.application_date || row.created_at).toLocaleDateString('pt-BR') : '—'}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Certificações</span><br><strong>${esc(row.certifications || '—')}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Experiência</span><br><strong>${row.experience_years ? row.experience_years + ' anos' : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.email}</span><br><strong>${esc(row.email)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.chapter}</span><br><strong>${esc(row.chapter || '—')}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.role}</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.applicationDate}</span><br><strong>${row.application_date || row.created_at ? new Date(row.application_date || row.created_at).toLocaleDateString('pt-BR') : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.certifications}</span><br><strong>${esc(row.certifications || '—')}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.experience}</span><br><strong>${row.experience_years ? row.experience_years + ' ' + T.modal.experienceYearsSuffix : '—'}</strong></div>
             </div>
             <!-- Contact: Phone + WhatsApp + LinkedIn + CV + Credly -->
             <div class="flex flex-wrap gap-2 items-center text-[13px]">
@@ -873,30 +948,30 @@ const SEL_I18N = {
             <!-- Inline edit: add phone/linkedin if missing -->
             ${!row.phone || !row.linkedin_url ? `
             <div class="flex gap-2 items-end">
-              ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">Telefone</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
-              ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">LinkedIn URL</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
-              <button id="save-contact-btn" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">Salvar</button>
+              ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.phoneLabel}</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
+              ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.linkedinLabel}</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
+              <button id="save-contact-btn" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
             </div>` : ''}
-            ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Formação Acadêmica</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
-            ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
-            ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Áreas de Interesse</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
-            ${row.non_pmi_experience ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Experiência Extra-PMI</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.non_pmi_experience)}</p></div>` : ''}
+            ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.academicBackground}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
+            ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.motivation}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
+            ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.areasOfInterest}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
+            ${row.non_pmi_experience ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.nonPmiExperience}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.non_pmi_experience)}</p></div>` : ''}
             <div class="grid grid-cols-2 gap-3 text-[13px]">
-              <div><span class="text-[var(--text-muted)] text-[11px]">Obj. Score</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Final Score</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Cap.)</span><br><strong>${row.rank_chapter != null ? '#' + row.rank_chapter : '—'}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Geral)</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.objScore}</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.finalScore}</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.rankChapter}</span><br><strong>${row.rank_chapter != null ? '#' + row.rank_chapter : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.rankOverall}</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
             </div>
             ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
-            ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">Carregando histórico de saída anterior...</p></div>` : ''}
+            ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>` : ''}
           </div>
           <div class="space-y-4">
-            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Alterar Status</h4>
+            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.changeStatus}</h4>
             <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
               ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
             </select>
-            <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="Feedback / observações...">${esc(row.feedback || '')}</textarea>
-            <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Salvar alterações</button>
+            <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
+            <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveChanges}</button>
           </div>
         </div>
       </div>
@@ -904,26 +979,26 @@ const SEL_I18N = {
       <!-- TAB: Evaluate (blind review) -->
       <div id="modal-tab-evaluate" class="hidden">
         <div id="eval-form-container" class="space-y-4">
-          <p class="text-sm text-[var(--text-muted)]">Carregando formulário de avaliação...</p>
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingEvaluation}</p>
         </div>
       </div>
 
       <!-- TAB: Interview (p109 Onda 4 Fase 1.4: scoringDiv prepended renders briefing + contextual + unified scoring; Roteiro estático removido — fundido com sliders por pilar) -->
       <div id="modal-tab-interview" class="hidden">
-        ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">Agendar via link externo &rarr;</a>` : ''}
+        ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">${T.modal.scheduleViaExternal}</a>` : ''}
         <div class="space-y-4">
-          <h4 class="text-sm font-bold text-navy">Agendar Entrevista</h4>
+          <h4 class="text-sm font-bold text-navy">${T.modal.scheduleInterviewTitle}</h4>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Data/Hora</label>
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">${T.modal.dateTimeLabel}</label>
               <input type="datetime-local" id="interview-datetime" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" />
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Duração (min)</label>
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">${T.modal.durationLabel}</label>
               <input type="number" id="interview-duration" value="30" min="15" max="120" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" />
             </div>
           </div>
-          <button id="schedule-interview-btn" data-app-id="${esc(row.id)}" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Agendar</button>
+          <button id="schedule-interview-btn" data-app-id="${esc(row.id)}" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.scheduleBtn}</button>
         </div>
         ${(row.status === 'interview_pending' || row.status === 'interview_scheduled' || row.status === 'interview_noshow') ? `
         <div class="space-y-3 mt-6 pt-4 border-t border-[var(--border-default)]">
@@ -942,21 +1017,21 @@ const SEL_I18N = {
       <!-- TAB: Comunicação (p86 #5) -->
       <div id="modal-tab-comms" class="hidden">
         <div id="comms-container" class="space-y-3">
-          <p class="text-sm text-[var(--text-muted)]">Carregando comunicações...</p>
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingComms}</p>
         </div>
       </div>
 
       <!-- TAB: Análises IA (p86 Wave 5b-3) -->
       <div id="modal-tab-ai-runs" class="hidden">
         <div id="ai-runs-container" class="space-y-3">
-          <p class="text-sm text-[var(--text-muted)]">Carregando análises IA...</p>
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingAi}</p>
         </div>
       </div>
 
       <!-- TAB: Auditoria — gate_attempts timeline (p87 Sprint A.3.b / Issue #117) -->
       <div id="modal-tab-audit-log" class="hidden">
         <div id="audit-log-container" class="space-y-3">
-          <p class="text-sm text-[var(--text-muted)]">Carregando auditoria...</p>
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingAudit}</p>
         </div>
       </div>
     `;
@@ -992,7 +1067,7 @@ const SEL_I18N = {
     body.querySelector('#schedule-interview-btn')?.addEventListener('click', async () => {
       const dt = (body.querySelector('#interview-datetime') as HTMLInputElement)?.value;
       const dur = parseInt((body.querySelector('#interview-duration') as HTMLInputElement)?.value || '30', 10);
-      if (!dt) { toast('Selecione data e hora', 'error'); return; }
+      if (!dt) { toast(T.modal.toastSelectDateTime, 'error'); return; }
       try {
         const { data, error } = await sb.rpc('schedule_interview', {
           p_application_id: row.id,
@@ -1001,16 +1076,16 @@ const SEL_I18N = {
           p_duration_minutes: dur,
         });
         if (error) throw error;
-        toast('Entrevista agendada');
+        toast(T.modal.toastInterviewScheduled);
         modal.classList.add('hidden');
         loadDashboard();
-      } catch (e: any) { toast(e.message || 'Erro ao agendar', 'error'); }
+      } catch (e: any) { toast(e.message || T.modal.toastErrorScheduling, 'error'); }
     });
 
     // p86 Wave 5d: request reschedule
     body.querySelector('#reschedule-btn')?.addEventListener('click', async () => {
       const reason = (body.querySelector('#reschedule-reason') as HTMLTextAreaElement)?.value?.trim();
-      if (!reason) { toast('Informe o motivo do reagendamento', 'error'); return; }
+      if (!reason) { toast(T.modal.toastReasonRequired, 'error'); return; }
       const btn = body.querySelector('#reschedule-btn') as HTMLButtonElement;
       if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
       try {
@@ -1020,11 +1095,11 @@ const SEL_I18N = {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        toast('Reagendamento solicitado — email a caminho');
+        toast(T.modal.toastRescheduleSent);
         modal.classList.add('hidden');
         loadDashboard();
       } catch (e: any) {
-        toast(e.message || 'Erro ao solicitar reagendamento', 'error');
+        toast(e.message || T.modal.toastErrorReschedule, 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Pedir Reagendamento'; }
       }
