@@ -2705,6 +2705,21 @@ const esLATAM: Record<string, string> = {
   'admin.comms.broadcastEmpty': 'Ningún broadcast enviado aún.',
 
 
+  // ── Admin layout breadcrumbs (p135 Ω-B) ──
+  'admin.layout.breadcrumb.operations': 'Operaciones',
+  'admin.layout.breadcrumb.governance': 'Gobernanza',
+  'admin.layout.breadcrumb.documents': 'Documentos',
+  'admin.layout.breadcrumb.review': 'Revisar',
+  'admin.governance.review.title': 'Revisar documento',
+  'admin.governance.exportPdf.title': 'Exportar PDF — cadena de ratificación',
+  'admin.governance.exportPdf.breadcrumb': 'Exportar PDF',
+  'admin.governance.exportDocx.title': 'Exportar DOCX — contenido de la versión',
+  'admin.governance.exportDocx.breadcrumb': 'Exportar DOCX',
+  'admin.governance.auditReport.title': 'Reporte de auditoría — Consejo Fiscal',
+  'admin.governance.auditReport.breadcrumb': 'Reporte auditoría',
+  'admin.governance.newVersion.title': 'Nueva versión de documento',
+  'admin.governance.newVersion.breadcrumb': 'Nueva versión',
+
   // ── Admin Governance Links ──
   'admin.links.title': 'Recursos Administrativos',
   'admin.links.subtitle': 'Links restringidos para gobernanza y gestión (Tier 4+)',
