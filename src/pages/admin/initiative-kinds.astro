@@ -5,9 +5,30 @@ import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// Pre-render strings for inline TS script via define:vars (Ω-B+.3.c p140)
+const IK_I18N = {
+  featureBoard: t('admin.initiativeKinds.featureBoard', lang),
+  meetingNotes: t('admin.meetingNotes', lang),
+  deliverables: t('admin.deliverables', lang),
+  attendance: t('admin.attendance', lang),
+  certificate: t('admin.certificate', lang),
+  flagOff: t('admin.initiativeKinds.flagOff', lang),
+  empty: t('admin.initiativeKinds.empty', lang),
+  loadError: t('admin.loadError', lang),
+  edit: t('common.edit', lang),
+  newKind: t('admin.newKind', lang),
+  editTitle: t('admin.initiativeKinds.editTitle', lang),
+  fillRequired: t('admin.initiativeKinds.fillRequired', lang),
+  slugFormat: t('admin.initiativeKinds.slugFormat', lang),
+  invalidJson: t('admin.initiativeKinds.invalidJson', lang),
+  created: t('admin.initiativeKinds.created', lang),
+  updated: t('admin.initiativeKinds.updated', lang),
+  errorPrefix: t('common.errorPrefix', lang),
+};
 ---
 
-<AdminLayout title={t('admin.initiativeKinds', lang)} breadcrumbs={[{label:'Operações'},{label: t('admin.initiativeKinds', lang)}]}>
+<AdminLayout title={t('admin.initiativeKinds', lang)} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: t('admin.initiativeKinds', lang)}]}>
   <div class="max-w-[900px] mx-auto px-4 pb-12">
     <div id="ik-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
@@ -73,7 +94,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             <p class="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">{t('admin.features', lang)}</p>
             <div class="grid grid-cols-2 gap-2">
               <label class="flex items-center gap-2 text-[.75rem]">
-                <input type="checkbox" id="ik-has-board"> Board
+                <input type="checkbox" id="ik-has-board"> {t('admin.initiativeKinds.featureBoard', lang)}
               </label>
               <label class="flex items-center gap-2 text-[.75rem]">
                 <input type="checkbox" id="ik-has-meeting-notes"> {t('admin.meetingNotes', lang)}
@@ -106,8 +127,23 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <Toast />
 </AdminLayout>
 
+<script is:inline define:vars={{ IK_I18N }}>
+  window.__IK_I18N = IK_I18N;
+</script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+
+  // PT-BR fallbacks (graceful degradation if define:vars injection fails)
+  const T = (typeof window !== 'undefined' && (window as any).__IK_I18N) || {
+    featureBoard: 'Board', meetingNotes: 'Atas', deliverables: 'Entregas',
+    attendance: 'Presença', certificate: 'Certificado', flagOff: '(off)',
+    empty: 'Nenhum tipo cadastrado.', loadError: 'Erro ao carregar.',
+    edit: 'Editar', newKind: 'Novo Tipo', editTitle: 'Editar Tipo',
+    fillRequired: 'Slug e nome são obrigatórios',
+    slugFormat: 'Slug deve ser snake_case (ex: book_club)',
+    invalidJson: 'JSON inválido em campos customizados',
+    created: 'Tipo criado', updated: 'Tipo atualizado', errorPrefix: 'Erro',
+  };
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -118,7 +154,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     has_board: 'B', has_meeting_notes: 'A', has_deliverables: 'D', has_attendance: 'P', has_certificate: 'C'
   };
   const FLAG_LABELS: Record<string, string> = {
-    has_board: 'Board', has_meeting_notes: 'Atas', has_deliverables: 'Entregas', has_attendance: 'Presença', has_certificate: 'Certificado'
+    has_board: T.featureBoard, has_meeting_notes: T.meetingNotes, has_deliverables: T.deliverables,
+    has_attendance: T.attendance, has_certificate: T.certificate
   };
 
   function escapeHtml(s: string): string {
@@ -147,7 +184,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (error) throw error;
       const kinds = data || [];
       if (kinds.length === 0) {
-        container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhum tipo cadastrado.</p>';
+        container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.empty}</p>`;
         return;
       }
       container.innerHTML = kinds.map((k: any) => {
@@ -155,7 +192,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           `<span class="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-700 text-[.6rem] font-bold" title="${FLAG_LABELS[f]}">${FLAG_ICONS[f]}</span>`
         ).join('');
         const inactiveFlags = FEATURE_FLAGS.filter(f => !k[f]).map(f =>
-          `<span class="inline-flex items-center justify-center w-6 h-6 rounded bg-gray-50 text-gray-300 text-[.6rem] font-bold" title="${FLAG_LABELS[f]} (off)">${FLAG_ICONS[f]}</span>`
+          `<span class="inline-flex items-center justify-center w-6 h-6 rounded bg-gray-50 text-gray-300 text-[.6rem] font-bold" title="${FLAG_LABELS[f]} ${T.flagOff}">${FLAG_ICONS[f]}</span>`
         ).join('');
         return `
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 hover:border-[var(--border-focus)] transition-all">
@@ -173,7 +210,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                   ${(k.allowed_engagement_kinds || []).length > 0 ? `<span>${(k.allowed_engagement_kinds || []).join(', ')}</span>` : ''}
                 </div>
               </div>
-              <button data-ik-edit="${escapeHtml(k.slug)}" class="shrink-0 px-3 py-1.5 text-[.7rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">Editar</button>
+              <button data-ik-edit="${escapeHtml(k.slug)}" class="shrink-0 px-3 py-1.5 text-[.7rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">${T.edit}</button>
             </div>
           </div>
         `;
@@ -188,14 +225,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       });
     } catch (e: any) {
       console.error('Load kinds:', e);
-      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar.</p>';
+      if (container) container.innerHTML = `<p class="text-[.7rem] text-red-600">${T.loadError}</p>`;
     }
   }
 
   function openModal(kind?: any) {
     editingSlug = kind?.slug || null;
     const title = document.getElementById('ik-modal-title');
-    if (title) title.textContent = kind ? 'Editar Tipo' : 'Novo Tipo';
+    if (title) title.textContent = kind ? T.editTitle : T.newKind;
 
     const slugInput = document.getElementById('ik-slug') as HTMLInputElement;
     slugInput.value = kind?.slug || '';
@@ -228,13 +265,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const slug = (document.getElementById('ik-slug') as HTMLInputElement).value.trim();
     const displayName = (document.getElementById('ik-display-name') as HTMLInputElement).value.trim();
     if (!slug || !displayName) {
-      (window as any).toast?.('Slug e nome são obrigatórios', 'error');
+      (window as any).toast?.(T.fillRequired, 'error');
       return;
     }
 
     // Validate slug format
     if (!editingSlug && !/^[a-z][a-z0-9_]*$/.test(slug)) {
-      (window as any).toast?.('Slug deve ser snake_case (ex: book_club)', 'error');
+      (window as any).toast?.(T.slugFormat, 'error');
       return;
     }
 
@@ -242,7 +279,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     let customFields: any = {};
     if (customFieldsRaw) {
       try { customFields = JSON.parse(customFieldsRaw); }
-      catch { (window as any).toast?.('JSON inválido em campos customizados', 'error'); return; }
+      catch { (window as any).toast?.(T.invalidJson, 'error'); return; }
     }
 
     const record: any = {
@@ -265,16 +302,16 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (editingSlug) {
         const { error } = await sb.from('initiative_kinds').update(record).eq('slug', editingSlug);
         if (error) throw error;
-        (window as any).toast?.('Tipo atualizado', 'success');
+        (window as any).toast?.(T.updated, 'success');
       } else {
         const { error } = await sb.from('initiative_kinds').insert(record);
         if (error) throw error;
-        (window as any).toast?.('Tipo criado', 'success');
+        (window as any).toast?.(T.created, 'success');
       }
       closeModal();
       loadKinds();
     } catch (e: any) {
-      (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error');
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error');
     } finally {
       if (btn) btn.disabled = false;
     }
