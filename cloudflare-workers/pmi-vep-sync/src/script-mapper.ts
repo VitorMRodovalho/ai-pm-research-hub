@@ -80,7 +80,16 @@ export function mapScriptToNucleo(
   const phaseBIndustry = isPhaseBPrivate ? null : (app.profileIndustry ?? null);
   const phaseBCompany = isPhaseBPrivate ? null : (app.profileCompany ?? null);
   const phaseBDesignation = isPhaseBPrivate ? null : (app.profileDesignation ?? null);
-  const phaseBCerts = isPhaseBPrivate ? null : (app.profileCertifications ?? null);
+  // p150 worker patch (2026-05-12 hotfix5) — profileCertifications arrives from
+  // PMI Community as a comma-separated STRING ("PMP" / "" / "PMP,PMI-RMP,PMO-CP").
+  // Two DB columns receive this:
+  //   - certifications (text)        → keep the raw CSV string (text column)
+  //   - profile_certifications (text[]) → parse into array (text[] column)
+  // The direct assignment to profile_certifications caused 25/32 cycle 4 UPDATE
+  // errors with "malformed array literal". Sediment: profileMembershipChapters
+  // has the same class of issue (see parseMaybeJsonArray double-encoded fix).
+  const phaseBCertsString = isPhaseBPrivate ? null : (app.profileCertifications ?? null);
+  const phaseBCertsArray = isPhaseBPrivate ? null : parseMaybeCsvArray(app.profileCertifications);
   const phaseBVolInterest = isPhaseBPrivate ? null : (app.profileVolunteerInterest ?? null);
   const phaseBSpecialties = isPhaseBPrivate ? null : (app.profileSpecialties ?? null);
   const phaseBLinkedin = isPhaseBPrivate ? null : (app.profileLinkedinUrl ?? null);
@@ -132,7 +141,7 @@ export function mapScriptToNucleo(
     ),
     membership_status: null,
     // Wave 3 synth fix (S-CONV-3 — 2 agents): null-semantic consistency vs empty string
-    certifications: phaseBCerts ?? null,
+    certifications: phaseBCertsString ?? null,
     role_applied: opp.role_default,
     motivation_letter: responses.motivation_letter ?? coverLetterText,
     proposed_theme: responses.proposed_theme ?? null,
@@ -161,7 +170,7 @@ export function mapScriptToNucleo(
     profile_industry: phaseBIndustry,
     profile_company: phaseBCompany,
     profile_designation: phaseBDesignation,
-    profile_certifications: phaseBCerts,
+    profile_certifications: phaseBCertsArray,
     profile_volunteer_interest: phaseBVolInterest,
     profile_specialties: phaseBSpecialties,
     profile_linkedin_url: phaseBLinkedin,
@@ -272,6 +281,29 @@ export function mapServiceHistory(
  * - String → JSON.parse; if parse OK and result is an array, return it; else null.
  * - Anything else → null.
  */
+/**
+ * p150 worker patch (hotfix5) — parse a comma-separated string into a real
+ * string array, suitable for text[] DB columns. PMI Community returns fields
+ * like profileCertifications as "PMP,PMI-RMP,PMO-CP" (CSV) or "" (empty).
+ * Empty string → null (so the column stays NULL instead of [""]).
+ * Already an array → return as-is (filtered for empty entries).
+ * Anything else → null.
+ */
+export function parseMaybeCsvArray(value: unknown): string[] | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) {
+    const cleaned = value.map(v => typeof v === 'string' ? v.trim() : String(v).trim()).filter(s => s !== '');
+    return cleaned.length > 0 ? cleaned : null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') return null;
+    const parts = trimmed.split(',').map(s => s.trim()).filter(s => s !== '');
+    return parts.length > 0 ? parts : null;
+  }
+  return null;
+}
+
 export function parseMaybeJsonArray(value: unknown): unknown[] | null {
   if (value == null) return null;
   if (Array.isArray(value)) return value;
