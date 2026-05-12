@@ -3574,6 +3574,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_vep_divergence_report — admin VEP↔Núcleo reconciliation (p152 W4 OPP-152.4)
+  mcp.tool("get_vep_divergence_report", "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_vep_divergence_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_vep_divergence_report");
+    if (error) { await logUsage(sb, member.id, "get_vep_divergence_report", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_vep_divergence_report", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_vep_divergence_report", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_extraction_health — admin observability for cv extraction pipeline (ADR-0075 Amendment A — p117)
   mcp.tool("get_extraction_health", "Returns CV extraction pipeline health: backlog_eligible (apps with consent + resume_url + missing cv_extracted_text), 24h activity (completed_24h/failed_24h counts + last_success_at/last_failure_at), failure_samples_24h (top 3 errors for triage), cron stats (extract-cv-text-15min schedule + last_run_at + last_5_runs), and a green/yellow/red health_signal. Authority: view_internal_analytics. Use when triaging 'is CV extraction working?' or 'why are recent triages running without CV input?'.", {}, async () => {
     const start = Date.now();
