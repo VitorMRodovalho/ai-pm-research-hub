@@ -196,6 +196,11 @@ export async function upsertSelectionApplication(
         community_profile_private: payload.community_profile_private,
         pmi_data_fetched_at: payload.pmi_data_fetched_at,
         consent_version: payload.consent_version,
+        // p152 W1.2 hotfix6: vep_status_raw + vep_last_seen_at added to mapper p151
+        // but never reached UPDATE SET clause — silently dropped on every ingest.
+        // Worker reported success but vep_status_raw stayed NULL in all 97 apps.
+        vep_status_raw: payload.vep_status_raw,
+        vep_last_seen_at: payload.vep_last_seen_at,
         updated_at: new Date().toISOString()
       })
       .eq('id', existing.id);
