@@ -5110,6 +5110,8 @@ const enUS: Record<string, string> = {
   'admin.selection.modal.pmiProfileFunnelSource': 'Source (referral_source)',
   'admin.selection.modal.pmiProfileFunnelReferrer': 'Referred by',
   'admin.selection.modal.pmiProfileImportedAt': 'Imported at',
+  'admin.selection.modal.pmiProfileSiblings': 'Other applications in SAME cycle',
+  'admin.selection.modal.pmiProfileSiblingsHint': 'Same candidate applied to different roles this cycle. Scoring is INDEPENDENT per application — open each to register evaluation.',
   'admin.selection.modal.chapterDiscrepancyTitle': 'Chapter discrepancy',
   'admin.selection.modal.chapterDiscrepancyForm': 'Form (applicant):',
   'admin.selection.modal.chapterDiscrepancyCanonical': 'PMI canonical:',
