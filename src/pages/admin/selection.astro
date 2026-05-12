@@ -142,6 +142,8 @@ const SEL_I18N = {
     pmiProfileFunnelSource: t('admin.selection.modal.pmiProfileFunnelSource', lang),
     pmiProfileFunnelReferrer: t('admin.selection.modal.pmiProfileFunnelReferrer', lang),
     pmiProfileImportedAt: t('admin.selection.modal.pmiProfileImportedAt', lang),
+    pmiProfileSiblings: t('admin.selection.modal.pmiProfileSiblings', lang),
+    pmiProfileSiblingsHint: t('admin.selection.modal.pmiProfileSiblingsHint', lang),
     // p152 W2.5: chapter discrepancy + Phase B summary inline panel
     chapterDiscrepancyTitle: t('admin.selection.modal.chapterDiscrepancyTitle', lang),
     chapterDiscrepancyForm: t('admin.selection.modal.chapterDiscrepancyForm', lang),
@@ -583,6 +585,8 @@ const SEL_I18N = {
       pmiProfileFunnelSource: 'Fonte (referral_source)',
       pmiProfileFunnelReferrer: 'Indicado por',
       pmiProfileImportedAt: 'Importado em',
+      pmiProfileSiblings: 'Outras aplicações no MESMO ciclo',
+      pmiProfileSiblingsHint: 'Mesmo candidato aplicou para roles diferentes neste ciclo. Score INDEPENDENTE por aplicação — abra cada uma para registrar avaliação.',
       chapterDiscrepancyTitle: 'Divergência de capítulo',
       chapterDiscrepancyForm: 'Form do candidato:',
       chapterDiscrepancyCanonical: 'PMI canonical:',
@@ -1851,6 +1855,29 @@ const SEL_I18N = {
           </div>
         </div>` : '';
 
+      // p152 W4 OPP-152.7-lite: sibling applications (same email + same cycle)
+      const siblings = Array.isArray(data.sibling_applications) ? data.sibling_applications : [];
+      const siblingSection = siblings.length ? `
+        <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r p-3">
+          <h4 class="text-[12px] font-bold text-amber-800 mb-1">⚠ ${esc(T.modal.pmiProfileSiblings)} (${siblings.length})</h4>
+          <p class="text-[11px] text-amber-700 mb-2">${esc(T.modal.pmiProfileSiblingsHint)}</p>
+          <div class="space-y-1.5">
+            ${siblings.map((s: any) => `
+              <div class="text-[12px] border border-amber-200 bg-white rounded p-2 flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <strong class="text-amber-900">${esc(s.role_applied || '?')}</strong>
+                  <span class="text-[10px] text-[var(--text-muted)] ml-1 font-mono">${esc(String(s.application_id).slice(0,8))}…</span>
+                </div>
+                <div class="flex items-center gap-2 text-[10px]">
+                  <span class="font-bold px-1.5 py-0.5 rounded ${(STATUS_BADGE[s.status]?.bg ?? 'bg-gray-100')} ${(STATUS_BADGE[s.status]?.color ?? 'text-gray-700')}">${esc(STATUS_LABELS[s.status] || s.status)}</span>
+                  ${s.objective_score_avg != null ? `<span class="text-[var(--text-muted)]">Obj ${Number(s.objective_score_avg).toFixed(1)}</span>` : ''}
+                  ${s.final_score != null ? `<span class="text-[var(--text-muted)]">Final ${Number(s.final_score).toFixed(1)}</span>` : ''}
+                  <span class="text-[var(--text-muted)]" title="Interviews vinculadas a esta aplicação">🎯 ${s.interview_count}</span>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+
       // p152 W4 GAP-152.1: funnel attribution
       const funnel = data.funnel || {};
       const utm = funnel.utm_data;
@@ -1877,13 +1904,14 @@ const SEL_I18N = {
         </div>` : '';
 
       // Empty state
-      const hasAny = identitySection || chaptersSection || certsSection || profileSection || historySection || prevSection || funnelSection || nonPmiSection;
-      if (!hasAny || (!verifiedCerts.length && !memberships.length && !profileHasContent && !serviceHistory.length && !previousCycles.length && !nonPmi && !identity.pmi_id && !hasFunnelSignal)) {
+      const hasAny = identitySection || chaptersSection || certsSection || profileSection || historySection || prevSection || siblingSection || funnelSection || nonPmiSection;
+      if (!hasAny || (!verifiedCerts.length && !memberships.length && !profileHasContent && !serviceHistory.length && !previousCycles.length && !nonPmi && !identity.pmi_id && !hasFunnelSignal && !siblings.length)) {
         container.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-[12px] text-amber-800">⚠ ${esc(T.modal.pmiProfileEmpty)}</div>`;
         return;
       }
 
-      container.innerHTML = `<div class="space-y-3">${identitySection}${chaptersSection}${certsSection}${profileSection}${historySection}${prevSection}${funnelSection}${nonPmiSection}</div>`;
+      // Siblings goes first (alert pattern), then identity, then others
+      container.innerHTML = `<div class="space-y-3">${siblingSection}${identitySection}${chaptersSection}${certsSection}${profileSection}${historySection}${prevSection}${funnelSection}${nonPmiSection}</div>`;
     } catch (e: any) {
       container.innerHTML = `<p class="text-sm text-red-700">${esc(T.modal.pmiProfileError)}: ${esc(e.message || 'desconhecido')}</p>`;
     }

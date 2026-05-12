@@ -5111,6 +5111,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.modal.pmiProfileFunnelSource': 'Fuente (referral_source)',
   'admin.selection.modal.pmiProfileFunnelReferrer': 'Referido por',
   'admin.selection.modal.pmiProfileImportedAt': 'Importado en',
+  'admin.selection.modal.pmiProfileSiblings': 'Otras postulaciones en el MISMO ciclo',
+  'admin.selection.modal.pmiProfileSiblingsHint': 'Mismo candidato postuló a roles diferentes en este ciclo. Score INDEPENDIENTE por postulación — abre cada una para registrar evaluación.',
   'admin.selection.modal.chapterDiscrepancyTitle': 'Divergencia de capítulo',
   'admin.selection.modal.chapterDiscrepancyForm': 'Form del candidato:',
   'admin.selection.modal.chapterDiscrepancyCanonical': 'PMI canonical:',
