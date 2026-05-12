@@ -159,6 +159,10 @@ export interface SelectionApplicationUpsert {
   profile_company?: string | null;
   profile_designation?: string | null;
   profile_certifications?: string[] | null;
+
+  // p150 P0 (2026-05-12) — VEP raw status capture for reconciliation report.
+  vep_status_raw?: string | null;
+  vep_last_seen_at?: string | null;
   profile_volunteer_interest?: string | null;
   profile_specialties?: string | null;
   profile_linkedin_url?: string | null;
