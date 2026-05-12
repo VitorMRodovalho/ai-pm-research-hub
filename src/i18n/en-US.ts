@@ -1296,6 +1296,8 @@ const enUS: Record<string, string> = {
   'attendance.modal.duration': 'Duration (minutes)',
   'attendance.modal.durationMin': 'Duration (min)',
   'attendance.modal.meetingLink': 'Meeting link',
+  'attendance.modal.timeStart': 'Start time',
+  'attendance.modal.timeStartHint': 'Empty = tribe slot default',
   'attendance.modal.recordedMeeting': '🔴 Recorded meeting',
   'attendance.modal.recordedMeetings': '🔴 Recorded meetings',
   'attendance.modal.createEvent': 'Create Event',

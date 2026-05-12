@@ -1296,6 +1296,8 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.duration': 'Duración (minutos)',
   'attendance.modal.durationMin': 'Duración (min)',
   'attendance.modal.meetingLink': 'Enlace de la reunión',
+  'attendance.modal.timeStart': 'Hora de inicio',
+  'attendance.modal.timeStartHint': 'Vacío = horario por defecto de la tribu',
   'attendance.modal.recordedMeeting': '🔴 Reunión grabada',
   'attendance.modal.recordedMeetings': '🔴 Reuniones grabadas',
   'attendance.modal.createEvent': 'Crear Evento',
