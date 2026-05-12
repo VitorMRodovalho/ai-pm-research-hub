@@ -672,8 +672,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   function isInCheckinWindow(ev: any): boolean {
     if (!ev?.date) return false;
     const now = Date.now();
-    // Compute scheduled END = date + time_start + duration (fallback: end-of-day 23:59)
-    const [h, m] = String(ev.time_start || '23:59').split(':').map(Number);
+    // When time_start is missing (legacy events / loosely scheduled), treat as all-day:
+    // window opens at start of day, closes 48h after end of day. Prior fallback to '23:59'
+    // delayed self-checkin until 21:59 local — locked researchers out of meetings happening
+    // earlier in the day (T2 live bug 2026-05-11).
+    if (!ev.time_start) {
+      const dayStart = new Date(ev.date + 'T00:00:00').getTime();
+      const dayEnd = new Date(ev.date + 'T23:59:59').getTime();
+      return now >= dayStart && now <= dayEnd + 48 * 60 * 60 * 1000;
+    }
+    // Compute scheduled END = date + time_start + duration
+    const [h, m] = String(ev.time_start).split(':').map(Number);
     const evEnd = new Date(ev.date + 'T00:00:00');
     evEnd.setHours(h, m + (ev.duration_minutes || 60), 0);
     // Scheduled START = end - duration
@@ -1484,6 +1493,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   async function openNewEventModal() {
     (document.getElementById('ev-title') as HTMLInputElement).value = '';
     (document.getElementById('ev-date') as HTMLInputElement).value = today();
+    (document.getElementById('ev-time-start') as HTMLInputElement).value = '';
     (document.getElementById('ev-duration') as HTMLInputElement).value = '90';
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
     (document.getElementById('ev-type') as HTMLSelectElement).value = 'geral';
@@ -1539,6 +1549,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
+    const timeStart = (document.getElementById('ev-time-start') as HTMLInputElement).value || null;
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
     const tribeId = type === 'tribo' ? parseInt((document.getElementById('ev-tribe-select') as HTMLSelectElement).value) : null;
@@ -1553,6 +1564,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     try {
       const { data, error } = await sb.rpc('create_event', {
         p_type: type, p_title: title, p_date: date,
+        p_time_start: timeStart,
         p_duration_minutes: duration,
         p_tribe_id: tribeId,
         p_meeting_link: link,
@@ -1581,6 +1593,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   // ── RECURRING ──
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
+    (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
     openModal('modal-recurring');
   }
 
@@ -1588,6 +1601,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const titleTpl = (document.getElementById('rec-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('rec-type') as HTMLInputElement).value;
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
+    const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
     const weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
@@ -1599,6 +1613,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     try {
       const { data, error } = await sb.rpc('create_recurring_weekly_events', {
         p_type: type, p_title_template: titleTpl, p_start_date: start,
+        p_time_start: timeStart,
         p_duration_minutes: duration, p_n_weeks: weeks,
         p_meeting_link: link,
         p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
