@@ -3297,6 +3297,23 @@ const SEL_I18N = {
         // Reload with specific cycle — need to use cycle_code
         const cycle = allCycles.find((c: any) => c.id === newId);
         if (cycle) {
+          // p150 UX (PM sediment 2026-05-12): when user picks a closed cycle,
+          // default hideDecided=true filters out the ENTIRE cycle (all candidates
+          // are terminal). Auto-toggle hideDecided OFF for closed cycles so the
+          // dashboard shows the 63 historical candidates instead of empty state.
+          // For open cycles, keep hideDecided as it was (default ON).
+          if (cycle.status === 'closed' && filterHideDecided) {
+            filterHideDecided = false;
+            const btn = document.getElementById('filter-hide-decided') as HTMLButtonElement | null;
+            if (btn) {
+              btn.dataset.active = 'false';
+              btn.classList.remove('bg-navy/10');
+              btn.classList.add('bg-[var(--surface-card)]');
+              btn.classList.remove('text-navy');
+              btn.classList.add('text-[var(--text-secondary)]');
+              btn.textContent = '👁‍🗨 Mostrar decididos';
+            }
+          }
           // Notify React islands (DiversityDashboard) about cycle change
           window.dispatchEvent(new CustomEvent('selection:cycle-changed', { detail: { cycleId: newId } }));
           sb.rpc('get_selection_dashboard', { p_cycle_code: cycle.cycle_code }).then(({ data }: any) => {
