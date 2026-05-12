@@ -614,6 +614,38 @@ const SEL_I18N = {
 
   const STATUS_LABELS: Record<string, string> = T.statusLabels;
 
+  /* p150 b2-light — extra_flags inline badges in name column.
+     Surfaces application_count, last_briefing_at, ai_triage_score from the
+     extra_flags subgroup added in migration 20260529000000. Each badge
+     returns '' when the underlying signal is absent, so the row stays clean
+     for candidates without these flags. */
+  function reApplicantBadge(r: any): string {
+    const n = Number(r.extra_flags?.application_count ?? 1);
+    if (n <= 1) return '';
+    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700" title="${n}ª aplicação deste candidato no Núcleo (re-applicant)">🔄${n}</span>`;
+  }
+
+  function briefingBadge(r: any): string {
+    if (!r.extra_flags?.has_briefing) return '';
+    const model = r.extra_flags?.briefing_model || 'IA';
+    const at = r.extra_flags?.briefing_at ? new Date(r.extra_flags.briefing_at).toLocaleDateString('pt-BR') : '';
+    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700" title="Briefing de entrevista gerado por ${esc(model)} em ${esc(at)}">📋</span>`;
+  }
+
+  function aiTriageBadge(r: any): string {
+    const score = r.extra_flags?.ai_triage_score;
+    if (score == null) return '';
+    const confidence = r.extra_flags?.ai_triage_confidence || 'medium';
+    // Color band by score (0-10): green ≥7, amber 4-6.9, gray <4
+    const numScore = Number(score);
+    const color = numScore >= 7
+      ? 'bg-emerald-50 text-emerald-700'
+      : numScore >= 4
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-gray-100 text-gray-600';
+    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${color}" title="AI Triage score (Sonnet 4.6) ${numScore.toFixed(1)}/10 · confidence ${esc(confidence)} · NÃO entra na decisão final (LGPD Art. 20 §1)">IA:${numScore.toFixed(1)}</span>`;
+  }
+
   /* p150 PM feedback — PMI canonical chapter name → curto code mapping.
      Fonte: PMI Community Member History strings (formato "X, Brazil Chapter").
      Quando não tem mapping conhecido, retorna o raw input (display fica
@@ -1019,7 +1051,7 @@ const SEL_I18N = {
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante">R</span>' : ''}</td>
+        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-navy' : 'text-[var(--text-muted)]'}">${researchScore}</td>
