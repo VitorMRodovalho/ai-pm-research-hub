@@ -14,9 +14,10 @@ binding = "SESSION"
 id = "6ffb04524d664228b19ce1595d08cbc5"
 
 # p151 C — VEP JSON import endpoint (/api/admin/import-pmi-vep-json)
-# Public worker URL (non-sensitive).
+# Public worker URL (non-sensitive). p150 hotfix3: pmi-vep-sync does NOT have
+# a custom domain on vitormr.dev — only workers.dev. Using workers.dev domain.
 [vars]
-PMI_VEP_SYNC_URL = "https://pmi-vep-sync.vitormr.dev"
+PMI_VEP_SYNC_URL = "https://pmi-vep-sync.ai-pm-research-hub.workers.dev"
 
 # Secret required (not in this file — bind via CLI):
 #   wrangler secret put INGEST_SHARED_SECRET
