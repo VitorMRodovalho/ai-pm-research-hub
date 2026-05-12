@@ -69,7 +69,14 @@ export function mapScriptToNucleo(
   const phaseBState = isPhaseBPrivate ? null : (app.profileState ?? null);
   const phaseBCity = isPhaseBPrivate ? null : (app.profileCity ?? null);
   const phaseBCountry = isPhaseBPrivate ? null : (app.profileCountry ?? null);
-  const phaseBMemberships = isPhaseBPrivate ? null : (app.profileMembershipChapters ?? null);
+  // p150 worker patch — PMI Community API often returns profileMembershipChapters
+  // as a double-encoded JSON STRING (e.g. "[\"PMI Global\",\"Ceará, Brazil Chapter\"]")
+  // instead of a real array. Sediment: feedback_pmi_community_double_encoded_json.md (p125).
+  // Prior code did `?? null` only — when value was a string, it landed in jsonb
+  // as a JSON string scalar (jsonb_typeof='string'), not an array. The DB ended up
+  // with NULL/string but never the array, so pmi_canonical chapter derivation failed.
+  // Now we parse: array → use as-is; string → JSON.parse; anything else → null.
+  const phaseBMemberships = isPhaseBPrivate ? null : parseMaybeJsonArray(app.profileMembershipChapters) as Array<{ chapterName: string; expiryDate: string }> | null;
   const phaseBIndustry = isPhaseBPrivate ? null : (app.profileIndustry ?? null);
   const phaseBCompany = isPhaseBPrivate ? null : (app.profileCompany ?? null);
   const phaseBDesignation = isPhaseBPrivate ? null : (app.profileDesignation ?? null);
@@ -256,6 +263,31 @@ export function mapServiceHistory(
  * Returns nulls when parse fails. Worker mapper prefers script-parsed profileState/City/Country
  * (already structured by browser script); this helper is for fallback when only profileLocation is present.
  */
+/**
+ * p150 worker patch — parse PMI Community API double-encoded JSON values.
+ * PMI Community returns array-typed fields as JSON-encoded strings, not real arrays
+ * (e.g. profileMembershipChapters: "[\"PMI Global\",\"Ceará, Brazil Chapter\"]").
+ * Sediment: feedback_pmi_community_double_encoded_json.md (p125).
+ * - Already an array → return as-is.
+ * - String → JSON.parse; if parse OK and result is an array, return it; else null.
+ * - Anything else → null.
+ */
+export function parseMaybeJsonArray(value: unknown): unknown[] | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '' || trimmed === '[]') return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export function parseGeoFromLocation(loc: string | null | undefined): {
   city: string | null;
   state: string | null;
