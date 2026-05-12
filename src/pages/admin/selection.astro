@@ -111,6 +111,33 @@ const SEL_I18N = {
     toastReasonRequired: t('admin.selection.modal.toastReasonRequired', lang),
     toastRescheduleSent: t('admin.selection.modal.toastRescheduleSent', lang),
     toastErrorReschedule: t('admin.selection.modal.toastErrorReschedule', lang),
+    // p152 W4 P2: PMI Profile tab
+    tabPmiProfile: t('admin.selection.modal.tabPmiProfile', lang),
+    loadingPmiProfile: t('admin.selection.modal.loadingPmiProfile', lang),
+    pmiProfileEmpty: t('admin.selection.modal.pmiProfileEmpty', lang),
+    pmiProfileError: t('admin.selection.modal.pmiProfileError', lang),
+    pmiProfileIdentity: t('admin.selection.modal.pmiProfileIdentity', lang),
+    pmiProfileServiceCount: t('admin.selection.modal.pmiProfileServiceCount', lang),
+    pmiProfileMemberSince: t('admin.selection.modal.pmiProfileMemberSince', lang),
+    pmiProfileMemberUntil: t('admin.selection.modal.pmiProfileMemberUntil', lang),
+    pmiProfilePrivate: t('admin.selection.modal.pmiProfilePrivate', lang),
+    pmiProfileFetched: t('admin.selection.modal.pmiProfileFetched', lang),
+    pmiProfileChapters: t('admin.selection.modal.pmiProfileChapters', lang),
+    pmiProfileFormChapter: t('admin.selection.modal.pmiProfileFormChapter', lang),
+    pmiProfileChapterAffiliation: t('admin.selection.modal.pmiProfileChapterAffiliation', lang),
+    pmiProfileCertifications: t('admin.selection.modal.pmiProfileCertifications', lang),
+    pmiProfileFormDeclared: t('admin.selection.modal.pmiProfileFormDeclared', lang),
+    pmiProfileProfile: t('admin.selection.modal.pmiProfileProfile', lang),
+    pmiProfileCompany: t('admin.selection.modal.pmiProfileCompany', lang),
+    pmiProfileDesignation: t('admin.selection.modal.pmiProfileDesignation', lang),
+    pmiProfileIndustry: t('admin.selection.modal.pmiProfileIndustry', lang),
+    pmiProfileLocation: t('admin.selection.modal.pmiProfileLocation', lang),
+    pmiProfileAboutMe: t('admin.selection.modal.pmiProfileAboutMe', lang),
+    pmiProfileSpecialties: t('admin.selection.modal.pmiProfileSpecialties', lang),
+    pmiProfileVolInterest: t('admin.selection.modal.pmiProfileVolInterest', lang),
+    pmiProfileServiceHistory: t('admin.selection.modal.pmiProfileServiceHistory', lang),
+    pmiProfilePreviousCycles: t('admin.selection.modal.pmiProfilePreviousCycles', lang),
+    pmiProfileNonPmi: t('admin.selection.modal.pmiProfileNonPmi', lang),
     // p152 W2.5: chapter discrepancy + Phase B summary inline panel
     chapterDiscrepancyTitle: t('admin.selection.modal.chapterDiscrepancyTitle', lang),
     chapterDiscrepancyForm: t('admin.selection.modal.chapterDiscrepancyForm', lang),
@@ -522,6 +549,32 @@ const SEL_I18N = {
       toastReasonRequired: 'Informe o motivo do reagendamento',
       toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
       toastErrorReschedule: 'Erro ao solicitar reagendamento',
+      tabPmiProfile: '📊 PMI',
+      loadingPmiProfile: 'Carregando perfil PMI…',
+      pmiProfileEmpty: 'Sem dados PMI enriquecidos. Phase B ainda não rodou, candidato não-membro PMI, ou perfil community privado.',
+      pmiProfileError: 'Erro ao carregar perfil PMI',
+      pmiProfileIdentity: 'Identidade PMI',
+      pmiProfileServiceCount: 'Voluntariados PMI',
+      pmiProfileMemberSince: 'Membro desde',
+      pmiProfileMemberUntil: 'Até',
+      pmiProfilePrivate: 'Perfil community marcado privado pelo candidato — Phase B limitada',
+      pmiProfileFetched: 'Última sync',
+      pmiProfileChapters: 'Capítulos PMI',
+      pmiProfileFormChapter: 'Form (declarado)',
+      pmiProfileChapterAffiliation: 'Filiação capítulo (form)',
+      pmiProfileCertifications: 'Certificações',
+      pmiProfileFormDeclared: 'Declaradas no form',
+      pmiProfileProfile: 'Profile (PMI Community)',
+      pmiProfileCompany: 'Empresa atual',
+      pmiProfileDesignation: 'Cargo',
+      pmiProfileIndustry: 'Indústria',
+      pmiProfileLocation: 'Localização',
+      pmiProfileAboutMe: 'About me',
+      pmiProfileSpecialties: 'Especialidades',
+      pmiProfileVolInterest: 'Interesse voluntariado',
+      pmiProfileServiceHistory: 'Histórico de voluntariado PMI',
+      pmiProfilePreviousCycles: 'Aplicações em ciclos anteriores',
+      pmiProfileNonPmi: 'Voluntariado fora do PMI (declarado no form)',
       chapterDiscrepancyTitle: 'Divergência de capítulo',
       chapterDiscrepancyForm: 'Form do candidato:',
       chapterDiscrepancyCanonical: 'PMI canonical:',
@@ -1190,6 +1243,7 @@ const SEL_I18N = {
         <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabComms}</button>
         <button data-modal-tab="ai-runs" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAiRuns}</button>
         <button data-modal-tab="videos" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabVideos}</button>
+        <button data-modal-tab="pmi-profile" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabPmiProfile}</button>
         <button data-modal-tab="audit-log" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAudit}</button>
       </div>
 
@@ -1317,6 +1371,13 @@ const SEL_I18N = {
         </div>
       </div>
 
+      <!-- p152 W4 P2: TAB PMI Profile — Phase B enriched data + service history + previous cycles -->
+      <div id="modal-tab-pmi-profile" class="hidden">
+        <div id="pmi-profile-container" class="space-y-3">
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingPmiProfile}</p>
+        </div>
+      </div>
+
       <!-- TAB: Auditoria — gate_attempts timeline (p87 Sprint A.3.b / Issue #117) -->
       <div id="modal-tab-audit-log" class="hidden">
         <div id="audit-log-container" class="space-y-3">
@@ -1341,7 +1402,7 @@ const SEL_I18N = {
           b.classList.toggle('border-transparent', !isActive);
           b.classList.toggle('text-[var(--text-secondary)]', !isActive);
         });
-        ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'videos', 'audit-log'].forEach(t => {
+        ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'videos', 'pmi-profile', 'audit-log'].forEach(t => {
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
         if (tab === 'evaluate') loadEvaluationForm(row.id);
@@ -1349,6 +1410,7 @@ const SEL_I18N = {
         if (tab === 'comms') loadCommunications(row.id);
         if (tab === 'ai-runs') loadAiAnalysisRuns(row.id);
         if (tab === 'videos') loadVideoScreenings(row.id);
+        if (tab === 'pmi-profile') loadPmiProfile(row.id);
         if (tab === 'audit-log') loadGateAuditLog(row.id);
       });
     });
@@ -1662,6 +1724,143 @@ const SEL_I18N = {
       container.innerHTML = headerHtml + '<div class="space-y-2 mt-3">' + rowsHtml + '</div>';
     } catch (e: any) {
       container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar vídeos: ${esc(e.message || 'desconhecido')}</p>`;
+    }
+  }
+
+  /* ── p152 W4 P2: PMI Profile tab — Phase B enriched + service history + previous cycles ─── */
+  async function loadPmiProfile(applicationId: string) {
+    const container = document.getElementById('pmi-profile-container');
+    if (!container) return;
+    container.innerHTML = `<p class="text-sm text-[var(--text-muted)]">${esc(T.modal.loadingPmiProfile)}</p>`;
+    try {
+      const { data, error } = await sb.rpc('get_application_pmi_profile', { p_application_id: applicationId });
+      if (error) throw error;
+      if (!data) { container.innerHTML = `<p class="text-sm text-[var(--text-muted)]">${esc(T.modal.pmiProfileEmpty)}</p>`; return; }
+
+      const identity = data.identity || {};
+      const chapters = data.chapters || {};
+      const certs = data.certifications || {};
+      const profile = data.profile || {};
+      const serviceHistory = Array.isArray(data.service_history) ? data.service_history : [];
+      const previousCycles = Array.isArray(data.previous_cycles) ? data.previous_cycles : [];
+
+      const memberStatusBadge = (() => {
+        const s = identity.member_status;
+        if (s === 'active') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ Membro PMI ativo</span>';
+        if (s === 'past') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">⚪ Membro PMI passado</span>';
+        if (s === 'unknown' && identity.is_pmi_member) return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">? PMI sem history</span>';
+        return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700">— Sem pmi_id</span>';
+      })();
+
+      const identitySection = `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <h4 class="text-[12px] font-bold text-navy">${esc(T.modal.pmiProfileIdentity)}</h4>
+            ${memberStatusBadge}
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+            ${identity.pmi_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">PMI ID</span><br><strong>${esc(identity.pmi_id)}</strong></div>` : ''}
+            <div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileServiceCount)}</span><br><strong>${identity.service_history_count || 0}</strong></div>
+            ${identity.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileMemberSince)}</span><br><strong>${esc(identity.member_since)}</strong></div>` : ''}
+            ${identity.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileMemberUntil)}</span><br><strong>${esc(identity.member_until)}</strong></div>` : ''}
+          </div>
+          ${identity.community_profile_private ? `<div class="mt-2 text-[10px] text-amber-700 italic">⚠ ${esc(T.modal.pmiProfilePrivate)}</div>` : ''}
+          ${identity.phase_b_fetched_at ? `<div class="mt-1.5 text-[10px] text-[var(--text-muted)]">${esc(T.modal.pmiProfileFetched)}: ${esc(identity.phase_b_fetched_at)}</div>` : ''}
+        </div>`;
+
+      // Chapters
+      const memberships = Array.isArray(chapters.memberships) ? chapters.memberships : [];
+      const chaptersSection = (memberships.length || chapters.form_chapter || chapters.chapter_affiliation) ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileChapters)}</h4>
+          ${memberships.length ? `<div class="flex flex-wrap gap-1.5 mb-2">${memberships.map((m: any) => `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${esc(typeof m === 'string' ? m : (m.chapterName || JSON.stringify(m)))}</span>`).join('')}</div>` : ''}
+          ${chapters.form_chapter ? `<div class="text-[11px] mb-0.5"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileFormChapter)}:</strong> ${esc(chapters.form_chapter)}</div>` : ''}
+          ${chapters.chapter_affiliation ? `<div class="text-[11px] mb-0.5"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileChapterAffiliation)}:</strong> ${esc(chapters.chapter_affiliation)}</div>` : ''}
+        </div>` : '';
+
+      // Certifications
+      const verifiedCerts = Array.isArray(certs.verified) ? certs.verified : [];
+      const certsSection = (verifiedCerts.length || certs.form_declared) ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileCertifications)}</h4>
+          ${verifiedCerts.length ? `<div class="flex flex-wrap gap-1.5 mb-2">${verifiedCerts.map((c: string) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700" title="PMI-verified">✓ ${esc(c)}</span>`).join('')}</div>` : ''}
+          ${certs.form_declared ? `<div class="text-[11px] text-[var(--text-secondary)]"><strong>${esc(T.modal.pmiProfileFormDeclared)}:</strong> <span class="font-mono">${esc(certs.form_declared)}</span></div>` : ''}
+        </div>` : '';
+
+      // Profile (LinkedIn-style)
+      const profileHasContent = profile.company || profile.designation || profile.about_me || profile.specialties || profile.industry || profile.location;
+      const profileSection = profileHasContent ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileProfile)}</h4>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] mb-2">
+            ${profile.company ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileCompany)}</span><br><strong>${esc(profile.company)}</strong></div>` : ''}
+            ${profile.designation ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileDesignation)}</span><br><strong>${esc(profile.designation)}</strong></div>` : ''}
+            ${profile.industry ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileIndustry)}</span><br><strong>${esc(profile.industry)}</strong></div>` : ''}
+            ${profile.location ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileLocation)}</span><br><strong>${esc(profile.location)}</strong></div>` : ''}
+          </div>
+          ${profile.about_me ? `<details class="mt-2"><summary class="text-[11px] font-bold text-[var(--text-secondary)] cursor-pointer">${esc(T.modal.pmiProfileAboutMe)} (PMI Community bio)</summary><p class="text-[12px] mt-1.5 text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--surface-base)] rounded-lg p-2 max-h-[200px] overflow-y-auto">${esc(profile.about_me)}</p></details>` : ''}
+          ${profile.specialties ? `<div class="mt-2 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileSpecialties)}:</strong> ${esc(profile.specialties)}</div>` : ''}
+          ${profile.volunteer_interest ? `<div class="mt-1 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileVolInterest)}:</strong> ${esc(profile.volunteer_interest)}</div>` : ''}
+          ${profile.linkedin_url ? `<a href="${esc(profile.linkedin_url)}" target="_blank" rel="noopener" class="inline-block mt-2 text-[11px] text-blue-700 hover:underline">LinkedIn (PMI) →</a>` : ''}
+        </div>` : '';
+
+      // Service history
+      const historySection = serviceHistory.length ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileServiceHistory)} (${serviceHistory.length})</h4>
+          <div class="space-y-2">
+            ${serviceHistory.map((s: any) => {
+              const ongoing = !s.end_date || new Date(s.end_date).getTime() >= Date.now();
+              return `<div class="border-l-4 ${ongoing ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-300 bg-[var(--surface-base)]'} rounded-r p-2 text-[12px]">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <strong class="text-[var(--text-primary)]">${esc(s.role_name || '—')}</strong>
+                  ${ongoing ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">ATIVO</span>' : ''}
+                </div>
+                <div class="text-[11px] text-[var(--text-secondary)]">${esc(s.chapter_name || '—')}</div>
+                <div class="text-[10px] text-[var(--text-muted)]">${esc(s.start_date || '?')} → ${esc(s.end_date || (ongoing ? 'em curso' : '?'))}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : '';
+
+      // Previous cycles
+      const prevSection = previousCycles.length ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfilePreviousCycles)} (${previousCycles.length})</h4>
+          <div class="space-y-1.5">
+            ${previousCycles.map((p: any) => `
+              <div class="text-[12px] border border-[var(--border-subtle)] rounded p-2 flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <strong class="text-navy">${esc(p.cycle_code || '?')}</strong>
+                  <span class="text-[10px] text-[var(--text-muted)] ml-1">${esc(p.role_applied || '')}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${(STATUS_BADGE[p.status]?.bg ?? 'bg-gray-100')} ${(STATUS_BADGE[p.status]?.color ?? 'text-gray-700')}">${esc(STATUS_LABELS[p.status] || p.status)}</span>
+                  ${p.final_score != null ? `<span class="text-[10px] text-[var(--text-muted)]">${Number(p.final_score).toFixed(1)} pts</span>` : ''}
+                  ${p.rank_overall != null ? `<span class="text-[10px] font-bold text-navy">#${p.rank_overall}</span>` : ''}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+
+      // Non-PMI volunteering (form-declared)
+      const nonPmi = data.non_pmi_volunteering;
+      const nonPmiSection = nonPmi ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileNonPmi)}</h4>
+          <p class="text-[12px] text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--surface-base)] rounded-lg p-2 max-h-[150px] overflow-y-auto">${esc(nonPmi)}</p>
+        </div>` : '';
+
+      // Empty state
+      const hasAny = identitySection || chaptersSection || certsSection || profileSection || historySection || prevSection || nonPmiSection;
+      if (!hasAny || (!verifiedCerts.length && !memberships.length && !profileHasContent && !serviceHistory.length && !previousCycles.length && !nonPmi && !identity.pmi_id)) {
+        container.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-[12px] text-amber-800">⚠ ${esc(T.modal.pmiProfileEmpty)}</div>`;
+        return;
+      }
+
+      container.innerHTML = `<div class="space-y-3">${identitySection}${chaptersSection}${certsSection}${profileSection}${historySection}${prevSection}${nonPmiSection}</div>`;
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-700">${esc(T.modal.pmiProfileError)}: ${esc(e.message || 'desconhecido')}</p>`;
     }
   }
 
@@ -2051,7 +2250,7 @@ const SEL_I18N = {
       ? renderValidationControls(app.id, 'gemini_qualitative', geminiVal)
       : '';
 
-    return `<details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4" id="inline-ai-panel">
+    return `<details open class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4" id="inline-ai-panel">
       <summary class="px-4 py-2.5 cursor-pointer select-none flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-[12px] font-bold text-navy">🤖 Sinais IA</span>
