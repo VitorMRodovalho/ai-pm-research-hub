@@ -57,7 +57,22 @@ const SEL_I18N = {
     tabInterview: t('admin.selection.modal.tabInterview', lang),
     tabComms: t('admin.selection.modal.tabComms', lang),
     tabAiRuns: t('admin.selection.modal.tabAiRuns', lang),
+    tabVideos: t('admin.selection.modal.tabVideos', lang),
     tabAudit: t('admin.selection.modal.tabAudit', lang),
+    loadingVideos: t('admin.selection.modal.loadingVideos', lang),
+    videosEmpty: t('admin.selection.modal.videosEmpty', lang),
+    videosOptedOut: t('admin.selection.modal.videosOptedOut', lang),
+    videosSummary: t('admin.selection.modal.videosSummary', lang),
+    videosPillar: t('admin.selection.modal.videosPillar', lang),
+    videosQuestion: t('admin.selection.modal.videosQuestion', lang),
+    videosStatus: t('admin.selection.modal.videosStatus', lang),
+    videosTranscription: t('admin.selection.modal.videosTranscription', lang),
+    videosNoTranscription: t('admin.selection.modal.videosNoTranscription', lang),
+    videosViewFile: t('admin.selection.modal.videosViewFile', lang),
+    videosViewYoutube: t('admin.selection.modal.videosViewYoutube', lang),
+    videosDuration: t('admin.selection.modal.videosDuration', lang),
+    videosConfidence: t('admin.selection.modal.videosConfidence', lang),
+    videosNoAiScoreYet: t('admin.selection.modal.videosNoAiScoreYet', lang),
     returningBadge: t('admin.selection.modal.returningBadge', lang),
     email: t('admin.selection.modal.email', lang),
     chapter: t('admin.selection.chapter', lang),
@@ -173,6 +188,12 @@ const SEL_I18N = {
             <option value="final_eval">Final Eval</option><option value="approved">Approved</option>
             <option value="rejected">Rejected</option><option value="waitlist">Waitlist</option>
             <option value="converted">Converted</option><option value="withdrawn">Withdrawn</option><option value="cancelled">Cancelled</option>
+          </select>
+          <select id="sel-video" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
+            <option value="all">{t('admin.selection.videoFilterAll', lang)}</option>
+            <option value="uploaded">{t('admin.selection.videoFilterUploaded', lang)}</option>
+            <option value="opted_out">{t('admin.selection.videoFilterOptedOut', lang)}</option>
+            <option value="none">{t('admin.selection.videoFilterNone', lang)}</option>
           </select>
           <input type="text" id="sel-search" placeholder={t('admin.selection.searchNameEmail', lang)}
             class="flex-1 min-w-[180px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] focus:outline-none" />
@@ -457,6 +478,7 @@ const SEL_I18N = {
   let filterRole = 'all';
   let filterChapter = 'all';
   let filterStatus = 'all';
+  let filterVideo: 'all' | 'uploaded' | 'opted_out' | 'none' = 'all';
   let filterSearch = '';
   let sortCol = 'final_score';
   let sortAsc = false;
@@ -611,9 +633,23 @@ const SEL_I18N = {
       ? dot('bg-emerald-100 text-emerald-700', 'TK', 'Candidato acessou portal pelo menos 1×')
       : dot('bg-gray-100 text-gray-400', 'TK', 'Token nunca consumido (não acessou portal)');
 
-    const videoBadge = videoDone
-      ? dot('bg-emerald-100 text-emerald-700', 'VD', 'Vídeo screening uploaded ou opted-out')
-      : dot('bg-gray-100 text-gray-400', 'VD', 'Sem vídeo screening');
+    // p150 B-light: tri-state video badge (replaces binary VD).
+    // uploaded   → 📹 emerald — candidato escolheu rota e subiu pelo menos 1 vídeo
+    // opted_out  → ⏭ blue    — candidato decidiu não submeter vídeos (não confundir com "sem dado")
+    // partial    → ⚠ amber   — algumas rows uploaded, outras opted-out (raro)
+    // none       → — gray    — candidato ainda não decidiu
+    const videoAgg = r.video_screening_status_agg || (r.video_screening_done ? 'uploaded' : 'none');
+    const videoUploaded = Number(r.video_screening_uploaded_count ?? 0);
+    const videoTotal = Number(r.video_screening_total_rows ?? 0);
+    const videoBadge = (() => {
+      if (videoAgg === 'uploaded')
+        return dot('bg-emerald-100 text-emerald-700', '📹', `Candidato subiu ${videoUploaded} de ${videoTotal} pilares`);
+      if (videoAgg === 'opted_out')
+        return dot('bg-blue-100 text-blue-700', '⏭', 'Candidato escolheu opt-out (não submete vídeos)');
+      if (videoAgg === 'partial')
+        return dot('bg-amber-100 text-amber-700', '⚠', `Vídeo parcial: ${videoUploaded} uploaded, restante opted-out`);
+      return dot('bg-gray-100 text-gray-400', '—', 'Candidato ainda não decidiu sobre a rota de vídeos');
+    })();
 
     return `<div class="inline-flex items-center gap-1">${aiBadge}${peerBadge}${interviewBadge}${tokenBadge}${videoBadge}</div>`;
   }
@@ -756,6 +792,13 @@ const SEL_I18N = {
       }
       if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+      // p150 B-light: video screening filter
+      if (filterVideo !== 'all') {
+        const agg = r.video_screening_status_agg || 'none';
+        if (filterVideo === 'uploaded' && agg !== 'uploaded') return false;
+        if (filterVideo === 'opted_out' && agg !== 'opted_out') return false;
+        if (filterVideo === 'none' && agg !== 'none') return false;
+      }
       // p109 Onda 4 Fase 3: hideDecided + myEval quick filters
       if (filterHideDecided && ['approved', 'rejected', 'cancelled', 'withdrawn', 'converted', 'waitlist'].includes(r.status)) return false;
       if (filterMyEval === 'pending_mine' && r.my_eval_status === 'submitted') return false;
@@ -917,6 +960,7 @@ const SEL_I18N = {
         <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabInterview}</button>
         <button data-modal-tab="comms" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabComms}</button>
         <button data-modal-tab="ai-runs" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAiRuns}</button>
+        <button data-modal-tab="videos" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabVideos}</button>
         <button data-modal-tab="audit-log" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">${T.modal.tabAudit}</button>
       </div>
 
@@ -1032,6 +1076,13 @@ const SEL_I18N = {
         </div>
       </div>
 
+      <!-- p150 B-light: TAB Vídeos — pmi_video_screenings tri-state visibility -->
+      <div id="modal-tab-videos" class="hidden">
+        <div id="videos-container" class="space-y-3">
+          <p class="text-sm text-[var(--text-muted)]">${T.modal.loadingVideos}</p>
+        </div>
+      </div>
+
       <!-- TAB: Auditoria — gate_attempts timeline (p87 Sprint A.3.b / Issue #117) -->
       <div id="modal-tab-audit-log" class="hidden">
         <div id="audit-log-container" class="space-y-3">
@@ -1056,13 +1107,14 @@ const SEL_I18N = {
           b.classList.toggle('border-transparent', !isActive);
           b.classList.toggle('text-[var(--text-secondary)]', !isActive);
         });
-        ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'audit-log'].forEach(t => {
+        ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'videos', 'audit-log'].forEach(t => {
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
         if (tab === 'evaluate') loadEvaluationForm(row.id);
         if (tab === 'interview') loadInterviewForm(row);
         if (tab === 'comms') loadCommunications(row.id);
         if (tab === 'ai-runs') loadAiAnalysisRuns(row.id);
+        if (tab === 'videos') loadVideoScreenings(row.id);
         if (tab === 'audit-log') loadGateAuditLog(row.id);
       });
     });
@@ -1292,6 +1344,90 @@ const SEL_I18N = {
       container.innerHTML = summary + '<div class="space-y-2 mt-3">' + runsHtml + '</div>';
     } catch (e: any) {
       container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar análises IA: ${esc(e.message || 'desconhecido')}</p>`;
+    }
+  }
+
+  /* ── p150 B-light: Vídeos tab — per-application pmi_video_screenings detail.
+     Renders 3 states:
+       1) summary.total === 0 → "candidato ainda não decidiu" (T.modal.videosEmpty)
+       2) summary.uploaded === 0 AND summary.opted_out > 0 → opt-out banner
+       3) any uploaded → per-pillar list with transcription + drive/youtube links
+     B-full (next sessions) will add ai_subjective_score per pillar in this same view. */
+  async function loadVideoScreenings(applicationId: string) {
+    const container = document.getElementById('videos-container');
+    if (!container || !sb) return;
+    container.innerHTML = `<p class="text-sm text-[var(--text-muted)]">${T.modal.loadingVideos}</p>`;
+    try {
+      const { data, error } = await sb.rpc('get_application_video_screenings', {
+        p_application_id: applicationId,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const rows = Array.isArray(data?.rows) ? data.rows : [];
+      const summary = data?.summary || { total: 0, uploaded: 0, opted_out: 0, failed: 0, total_duration_seconds: 0 };
+
+      // State 1: no decision yet
+      if ((summary.total || 0) === 0) {
+        container.innerHTML = `<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-[var(--text-muted)]">${esc(T.modal.videosEmpty)}</div>`;
+        return;
+      }
+
+      // State 2: opted-out entirely (no uploads)
+      if ((summary.uploaded || 0) === 0 && (summary.opted_out || 0) > 0) {
+        container.innerHTML = `<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">⏭ ${esc(T.modal.videosOptedOut)}</div>`;
+        return;
+      }
+
+      // State 3: at least one uploaded — render per-pillar cards
+      const summaryLine = T.modal.videosSummary
+        .replace('{uploaded}', String(summary.uploaded ?? 0))
+        .replace('{total}', String(summary.total ?? 0))
+        .replace('{durSec}', String(summary.total_duration_seconds ?? 0));
+
+      const headerHtml = `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2">
+          <div class="text-sm font-semibold text-emerald-900">📹 ${esc(summaryLine)}</div>
+          <div class="text-[10px] text-emerald-700 italic">${esc(T.modal.videosNoAiScoreYet)}</div>
+        </div>`;
+
+      const rowsHtml = rows.map((v: any) => {
+        const pillarLabel = `${esc(T.modal.videosPillar)} ${esc(v.pillar || '—')} · Q${v.question_index ?? '?'}`;
+        const statusColor = v.status === 'transcribed' ? 'bg-emerald-100 text-emerald-700'
+          : v.status === 'uploaded' || v.status === 'transcribing' ? 'bg-amber-100 text-amber-700'
+          : v.status === 'opted_out' ? 'bg-blue-100 text-blue-700'
+          : 'bg-gray-100 text-gray-500';
+        const statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor}">${esc(v.status || '—')}</span>`;
+        const durationStr = v.duration_seconds ? T.modal.videosDuration.replace('{sec}', String(v.duration_seconds)) : '';
+        const confidenceStr = v.transcription_confidence
+          ? T.modal.videosConfidence.replace('{pct}', String(Math.round(Number(v.transcription_confidence) * 100)))
+          : '';
+        const driveLink = (v.drive_file_id || v.drive_folder_id)
+          ? `<a href="https://drive.google.com/file/d/${esc(v.drive_file_id || v.drive_folder_id)}/view" target="_blank" rel="noopener" class="text-[11px] text-navy underline">${esc(T.modal.videosViewFile)} ↗</a>`
+          : '';
+        const youtubeLink = v.youtube_url
+          ? `<a href="${esc(v.youtube_url)}" target="_blank" rel="noopener" class="text-[11px] text-red-600 underline">${esc(T.modal.videosViewYoutube)} ↗</a>`
+          : '';
+        const transcription = v.transcription
+          ? `<pre class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded p-2 text-[11px] whitespace-pre-wrap font-sans text-[var(--text-primary)] max-h-[200px] overflow-y-auto">${esc(v.transcription)}</pre>`
+          : `<p class="text-[11px] text-[var(--text-muted)] italic">${esc(T.modal.videosNoTranscription)}</p>`;
+        return `
+          <div class="border border-[var(--border-default)] rounded-lg p-3 bg-[var(--surface-card)]">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-1.5">
+              <div class="text-[12px] font-bold text-navy">${pillarLabel}</div>
+              <div class="flex items-center gap-2">${statusBadge}${durationStr ? `<span class="text-[10px] text-[var(--text-muted)]">${esc(durationStr)}</span>` : ''}</div>
+            </div>
+            <div class="text-[11px] text-[var(--text-secondary)] mb-2">${esc(v.question_text || '')}</div>
+            <div class="mb-2">
+              <div class="text-[10px] font-semibold text-[var(--text-muted)] mb-1">${esc(T.modal.videosTranscription)} ${confidenceStr ? `<span class="font-normal">(${esc(confidenceStr)})</span>` : ''}</div>
+              ${transcription}
+            </div>
+            <div class="flex gap-3">${driveLink}${youtubeLink}</div>
+          </div>`;
+      }).join('');
+
+      container.innerHTML = headerHtml + '<div class="space-y-2 mt-3">' + rowsHtml + '</div>';
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-700">Erro ao carregar vídeos: ${esc(e.message || 'desconhecido')}</p>`;
     }
   }
 
@@ -3059,6 +3195,7 @@ const SEL_I18N = {
     // Dropdowns
     document.getElementById('sel-chapter')?.addEventListener('change', (e) => { filterChapter = (e.target as HTMLSelectElement).value; applyFilters(); });
     document.getElementById('sel-status')?.addEventListener('change', (e) => { filterStatus = (e.target as HTMLSelectElement).value; applyFilters(); });
+    document.getElementById('sel-video')?.addEventListener('change', (e) => { filterVideo = (e.target as HTMLSelectElement).value as any; applyFilters(); });
 
     // p109 Onda 4 Fase 3: quick filters (hideDecided + myEval)
     document.getElementById('filter-hide-decided')?.addEventListener('click', (e) => {
