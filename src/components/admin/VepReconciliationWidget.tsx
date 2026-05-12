@@ -58,7 +58,11 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(load, 400); return; }
     const m = (window as any).navGetMember?.();
-    if (!m || !(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator'))) return;
+    if (!m) { setTimeout(load, 400); return; }
+    const isAdmin = m.is_superadmin
+      || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(m.operational_role)
+      || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board');
+    if (!isAdmin) return;
     setAuthorized(true);
     try {
       const { data: d, error } = await sb.rpc('get_vep_divergence_report');
