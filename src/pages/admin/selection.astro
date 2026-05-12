@@ -126,6 +126,8 @@ const SEL_I18N = {
   // p152 Wave 1.0: shadow VEP filter button toggle text
   hideShadowVep: t('admin.selection.hideShadowVep', lang),
   showShadowVep: t('admin.selection.showShadowVep', lang),
+  // p152 Wave 3.7: hidden-by-filter inline count
+  hiddenByFilter: t('admin.selection.hiddenByFilter', lang),
 };
 ---
 
@@ -531,6 +533,7 @@ const SEL_I18N = {
     },
     hideShadowVep: '🔁 Ocultar shadow VEP',
     showShadowVep: '🔁 Mostrar shadow VEP',
+    hiddenByFilter: 'ocultos por filtro',
   };
 
   /* ── state ────────────────────────────────────────── */
@@ -999,7 +1002,14 @@ const SEL_I18N = {
     const tbody = document.getElementById('sel-tbody');
     const countEl = document.getElementById('sel-count');
     if (!tbody) return;
-    if (countEl) countEl.textContent = `${filteredRows.length} ${filteredRows.length !== 1 ? T.resultSuffixMany : T.resultSuffixOne}`;
+    if (countEl) {
+      // p152 W3.7: count + inline "X hidden by filter" hint when applicable
+      const hidden = allRows.length - filteredRows.length;
+      const base = `${filteredRows.length} ${filteredRows.length !== 1 ? T.resultSuffixMany : T.resultSuffixOne}`;
+      countEl.textContent = hidden > 0
+        ? `${base} · ${hidden} ${T.hiddenByFilter}`
+        : base;
+    }
     if (!filteredRows.length) {
       tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;

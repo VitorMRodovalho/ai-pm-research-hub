@@ -4937,6 +4937,7 @@ const ptBR: Record<string, string> = {
   'admin.selection.hideDecided': '👁 Ocultar decididos',
   'admin.selection.hideShadowVep': '🔁 Ocultar shadow VEP',
   'admin.selection.showShadowVep': '🔁 Mostrar shadow VEP',
+  'admin.selection.hiddenByFilter': 'ocultos por filtro',
   'admin.selection.myPending': '⏳ Minhas pendentes',
   'admin.selection.videoFilterAll': '🎥 Todos vídeos',
   'admin.selection.videoFilterUploaded': '🎥 Subiu vídeo',
