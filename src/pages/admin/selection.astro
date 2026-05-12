@@ -1074,12 +1074,56 @@ const SEL_I18N = {
     const countEl = document.getElementById('sel-count');
     if (!tbody) return;
     if (countEl) {
-      // p152 W3.7: count + inline "X hidden by filter" hint when applicable
+      // p152 W3.7 + B-153.4: count + per-filter breakdown chips
       const hidden = allRows.length - filteredRows.length;
       const base = `${filteredRows.length} ${filteredRows.length !== 1 ? T.resultSuffixMany : T.resultSuffixOne}`;
-      countEl.textContent = hidden > 0
-        ? `${base} · ${hidden} ${T.hiddenByFilter}`
-        : base;
+      if (hidden <= 0) {
+        countEl.textContent = base;
+      } else {
+        // Compute per-filter individual hidden counts (overlapping; meant as quick what-each-filter-hides intuition).
+        const parts: string[] = [];
+        if (filterHideShadowVep) {
+          const n = allRows.filter((r: any) => r.extra_flags?.is_shadow_vep === true).length;
+          if (n > 0) parts.push(`${n} shadow VEP`);
+        }
+        if (filterHideDecided) {
+          const decidedStatus = ['approved','rejected','cancelled','withdrawn','converted','waitlist'];
+          const n = allRows.filter((r: any) => decidedStatus.includes(r.status)).length;
+          if (n > 0) parts.push(`${n} decididos`);
+        }
+        if (filterInterviewToday) {
+          const n = allRows.filter((r: any) => r.meta?.has_interview_today !== true).length;
+          if (n > 0) parts.push(`${n} sem entrevista hoje`);
+        }
+        if (filterMyEval === 'pending_mine') {
+          const n = allRows.filter((r: any) => r.my_eval_status === 'submitted').length;
+          if (n > 0) parts.push(`${n} já avaliados`);
+        } else if (filterMyEval === 'evaluated_mine') {
+          const n = allRows.filter((r: any) => r.my_eval_status !== 'submitted').length;
+          if (n > 0) parts.push(`${n} não-avaliados`);
+        }
+        if (filterRole !== 'all') {
+          const n = allRows.filter((r: any) => r.role_applied !== filterRole).length;
+          if (n > 0) parts.push(`${n} outro track`);
+        }
+        if (filterChapter !== 'all') {
+          const n = allRows.filter((r: any) => r.chapter !== filterChapter).length;
+          if (n > 0) parts.push(`${n} outro capítulo`);
+        }
+        if (filterStatus !== 'all') {
+          const n = allRows.filter((r: any) => r.status !== filterStatus).length;
+          if (n > 0) parts.push(`${n} outro status`);
+        }
+        if (filterVideo !== 'all') {
+          const n = allRows.filter((r: any) => (r.video_agg?.status_agg || 'none') !== filterVideo).length;
+          if (n > 0) parts.push(`${n} outro vídeo state`);
+        }
+        if (filterSearch) {
+          parts.push(`busca "${filterSearch}"`);
+        }
+        const breakdown = parts.length ? ` · oculto: ${parts.join(' · ')}` : ` · ${hidden} ${T.hiddenByFilter}`;
+        countEl.textContent = base + breakdown;
+      }
     }
     if (!filteredRows.length) {
       tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
