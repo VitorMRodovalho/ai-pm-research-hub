@@ -50,7 +50,11 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: 'unauthorized', detail: 'missing Authorization: Bearer <jwt>' }, 401);
   }
 
-  // 3. canV4 gate: manage_member action (same as CSV import path)
+  // 3. canV4 gate: manage_member action (same as CSV import path).
+  // can() takes (person_id, action, resource_type, resource_id) — 4 required args.
+  // Canonical V4 path is can_by_member(member_id, action) per ADR-0007 — needs
+  // the caller's member.id first. p151 C hotfix4: was calling can(p_action=...)
+  // which always errored silently → 500 surfaced in browser without detail.
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
     auth: { persistSession: false, autoRefreshToken: false },
@@ -59,7 +63,21 @@ export const POST: APIRoute = async ({ request }) => {
   if (userErr || !userData?.user) {
     return jsonResponse({ error: 'unauthorized', detail: userErr?.message || 'invalid_jwt' }, 401);
   }
-  const { data: gate, error: gateErr } = await userClient.rpc('can', { p_action: 'manage_member' });
+  const { data: memberRow, error: memberErr } = await userClient
+    .from('members')
+    .select('id')
+    .eq('auth_id', userData.user.id)
+    .maybeSingle();
+  if (memberErr) {
+    return jsonResponse({ error: 'member_lookup_failed', detail: memberErr.message }, 500);
+  }
+  if (!memberRow) {
+    return jsonResponse({ error: 'ghost_user', detail: 'auth user has no member row' }, 403);
+  }
+  const { data: gate, error: gateErr } = await userClient.rpc('can_by_member', {
+    p_member_id: memberRow.id,
+    p_action: 'manage_member',
+  });
   if (gateErr) {
     return jsonResponse({ error: 'auth_check_failed', detail: gateErr.message }, 500);
   }
