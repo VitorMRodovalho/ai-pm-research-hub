@@ -112,6 +112,9 @@ const SEL_I18N = {
     toastRescheduleSent: t('admin.selection.modal.toastRescheduleSent', lang),
     toastErrorReschedule: t('admin.selection.modal.toastErrorReschedule', lang),
   },
+  // p152 Wave 1.0: shadow VEP filter button toggle text
+  hideShadowVep: t('admin.selection.hideShadowVep', lang),
+  showShadowVep: t('admin.selection.showShadowVep', lang),
 };
 ---
 
@@ -158,10 +161,11 @@ const SEL_I18N = {
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
         </div>
 
-        <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) -->
+        <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) + p152 hideShadowVep -->
         <div class="flex flex-wrap gap-2 items-center mb-2 text-[12px]">
           <span class="text-[var(--text-muted)] font-semibold">{t('admin.selection.quickFilters', lang)}</span>
           <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
+          <button id="filter-hide-shadow-vep" class="px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-amber-700 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20" data-active="true" title={t('admin.selection.hideShadowVepHint', lang)}>{t('admin.selection.hideShadowVep', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
@@ -504,6 +508,8 @@ const SEL_I18N = {
       toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
       toastErrorReschedule: 'Erro ao solicitar reagendamento',
     },
+    hideShadowVep: '🔁 Ocultar shadow VEP',
+    showShadowVep: '🔁 Mostrar shadow VEP',
   };
 
   /* ── state ────────────────────────────────────────── */
@@ -527,6 +533,8 @@ const SEL_I18N = {
   // o que ainda falta avaliar e o que já foi decidido.
   let filterHideDecided = true;       // default ON — esconde approved/rejected/etc
   let filterMyEval: 'all' | 'pending_mine' | 'evaluated_mine' = 'all';
+  // p152 Wave 1.0: hide shadow VEP (active member re-imported via bulk VEP) — default ON
+  let filterHideShadowVep = true;
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -908,6 +916,8 @@ const SEL_I18N = {
       if (filterHideDecided && ['approved', 'rejected', 'cancelled', 'withdrawn', 'converted', 'waitlist'].includes(r.status)) return false;
       if (filterMyEval === 'pending_mine' && r.my_eval_status === 'submitted') return false;
       if (filterMyEval === 'evaluated_mine' && r.my_eval_status !== 'submitted') return false;
+      // p152 Wave 1.0: shadow VEP = email matches active member created before this app, terminal status
+      if (filterHideShadowVep && r.extra_flags?.is_shadow_vep === true) return false;
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -3314,6 +3324,21 @@ const SEL_I18N = {
               btn.textContent = '👁‍🗨 Mostrar decididos';
             }
           }
+          // p152 Wave 1.0: same logic for shadow VEP — closed cycles often contain
+          // historical "shadow" matches (V4 migration backfilled members before app
+          // import); auto-toggle OFF so PM sees full archive instead of pruned view.
+          if (cycle.status === 'closed' && filterHideShadowVep) {
+            filterHideShadowVep = false;
+            const btn = document.getElementById('filter-hide-shadow-vep') as HTMLButtonElement | null;
+            if (btn) {
+              btn.dataset.active = 'false';
+              btn.classList.remove('bg-amber-500/10');
+              btn.classList.add('bg-[var(--surface-card)]');
+              btn.classList.remove('text-amber-700');
+              btn.classList.add('text-[var(--text-secondary)]');
+              btn.textContent = T.showShadowVep;
+            }
+          }
           // Notify React islands (DiversityDashboard) about cycle change
           window.dispatchEvent(new CustomEvent('selection:cycle-changed', { detail: { cycleId: newId } }));
           sb.rpc('get_selection_dashboard', { p_cycle_code: cycle.cycle_code }).then(({ data }: any) => {
@@ -3363,6 +3388,19 @@ const SEL_I18N = {
       btn.classList.toggle('text-navy', filterHideDecided);
       btn.classList.toggle('text-[var(--text-secondary)]', !filterHideDecided);
       btn.textContent = filterHideDecided ? '👁 Ocultar decididos' : '👁‍🗨 Mostrar decididos';
+      applyFilters();
+    });
+
+    // p152 Wave 1.0: hide shadow VEP (active member re-imported by PMI recruiter)
+    document.getElementById('filter-hide-shadow-vep')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterHideShadowVep = !filterHideShadowVep;
+      btn.dataset.active = filterHideShadowVep ? 'true' : 'false';
+      btn.classList.toggle('bg-amber-500/10', filterHideShadowVep);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterHideShadowVep);
+      btn.classList.toggle('text-amber-700', filterHideShadowVep);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterHideShadowVep);
+      btn.textContent = filterHideShadowVep ? T.hideShadowVep : T.showShadowVep;
       applyFilters();
     });
 
