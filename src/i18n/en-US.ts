@@ -5075,6 +5075,16 @@ const enUS: Record<string, string> = {
   'admin.selection.modal.toastReasonRequired': 'Provide a reason for rescheduling',
   'admin.selection.modal.toastRescheduleSent': 'Rescheduling requested — email on the way',
   'admin.selection.modal.toastErrorReschedule': 'Error requesting reschedule',
+  'admin.selection.modal.chapterDiscrepancyTitle': 'Chapter discrepancy',
+  'admin.selection.modal.chapterDiscrepancyForm': 'Form (applicant):',
+  'admin.selection.modal.chapterDiscrepancyCanonical': 'PMI canonical:',
+  'admin.selection.modal.phaseBSummaryTitle': 'Phase B Summary (canonical PMI)',
+  'admin.selection.modal.phaseBMemberStatus': 'Member status',
+  'admin.selection.modal.phaseBChapterCanonical': 'Canonical chapter',
+  'admin.selection.modal.phaseBHistoryCount': 'Service history',
+  'admin.selection.modal.phaseBMemberSince': 'Member since',
+  'admin.selection.modal.phaseBMemberUntil': 'Until',
+  'admin.selection.modal.phaseBFetchedAt': 'Last Phase B sync',
 
   // ── Admin Comms ──
   'admin.comms.active': 'Active',
