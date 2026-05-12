@@ -344,6 +344,47 @@ const SEL_I18N = {
           <!-- Result -->
           <div id="csv-result" class="hidden"></div>
         </div>
+
+        <!-- p151 C: Import JSON consolidado (extract_pmi_volunteer_v3+) -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-lg font-bold text-navy">{t('admin.selection.importJsonTitle', lang)}</h2>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">NEW · p151</span>
+          </div>
+          <p class="text-sm text-[var(--text-secondary)]">{t('admin.selection.importJsonDesc', lang)}</p>
+          <p class="text-[11px] text-[var(--text-muted)]">
+            {t('admin.selection.importJsonHint', lang)}
+            <code class="text-[10px] bg-[var(--surface-base)] px-1.5 py-0.5 rounded">extract_pmi_volunteer.js</code>
+          </p>
+
+          <div id="json-dropzone" class="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center cursor-pointer hover:border-navy hover:bg-[var(--surface-hover)] transition-all">
+            <div class="text-3xl mb-2">📦</div>
+            <p class="text-sm font-semibold text-[var(--text-secondary)]" id="json-dropzone-label">{t('admin.selection.importJsonDropZone', lang)}</p>
+            <p class="text-[11px] text-[var(--text-muted)] mt-1">{t('admin.selection.importJsonDropZoneHint', lang)}</p>
+            <input type="file" id="json-file-input" accept=".json,application/json" class="hidden" />
+          </div>
+
+          <div id="json-schema-result" class="hidden text-[12px]"></div>
+
+          <div class="flex gap-2">
+            <button id="json-dry-run-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90 disabled:opacity-40" disabled>
+              📋 {t('admin.selection.importJsonDryRunBtn', lang)}
+            </button>
+            <button id="json-apply-btn" class="px-4 py-2 bg-navy text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90 disabled:opacity-40" disabled>
+              ✓ {t('admin.selection.importJsonApplyBtn', lang)}
+            </button>
+          </div>
+
+          <div id="json-preview" class="hidden space-y-3">
+            <div id="json-preview-summary" class="grid grid-cols-3 gap-2"></div>
+            <details class="border border-[var(--border-default)] rounded-lg p-3">
+              <summary class="text-[12px] font-semibold cursor-pointer">{t('admin.selection.importJsonShowDetails', lang)}</summary>
+              <div id="json-preview-details" class="mt-2 max-h-[300px] overflow-y-auto text-[11px]"></div>
+            </details>
+          </div>
+
+          <div id="json-apply-result" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-[12px]"></div>
+        </div>
       </div>
 
       <!-- TAB: DIVERSITY (CR-040) -->
@@ -3368,6 +3409,173 @@ const SEL_I18N = {
       document.getElementById('csv-dropzone')?.classList.remove('hidden');
       csvParsedRows = [];
     });
+
+    // p151 C: JSON consolidado import handlers
+    initJsonImport();
+  }
+
+  // ── p151 C: VEP JSON import (server-side proxy → worker /ingest) ─────
+  let pendingJsonPayload: any = null;
+  let pendingDryRunSummary: any = null;
+
+  function initJsonImport() {
+    const dz = document.getElementById('json-dropzone');
+    const fi = document.getElementById('json-file-input') as HTMLInputElement | null;
+    if (!dz || !fi) return;
+    dz.addEventListener('click', () => fi.click());
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('border-navy', 'bg-purple-50/30'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('border-navy', 'bg-purple-50/30'));
+    dz.addEventListener('drop', (e: any) => {
+      e.preventDefault();
+      dz.classList.remove('border-navy', 'bg-purple-50/30');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleJsonFile(file);
+    });
+    fi.addEventListener('change', () => {
+      const file = fi.files?.[0];
+      if (file) handleJsonFile(file);
+    });
+    document.getElementById('json-dry-run-btn')?.addEventListener('click', runJsonDryRun);
+    document.getElementById('json-apply-btn')?.addEventListener('click', runJsonApply);
+  }
+
+  async function handleJsonFile(file: File) {
+    const sr = document.getElementById('json-schema-result')!;
+    const dryBtn = document.getElementById('json-dry-run-btn') as HTMLButtonElement;
+    const applyBtn = document.getElementById('json-apply-btn') as HTMLButtonElement;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const v = validateConsolidatedJsonShape(parsed);
+      if (!v.ok) {
+        sr.classList.remove('hidden');
+        sr.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-2 text-red-800">❌ ${esc(v.error!)}</div>`;
+        dryBtn.disabled = true; applyBtn.disabled = true; pendingJsonPayload = null;
+        return;
+      }
+      pendingJsonPayload = parsed;
+      pendingDryRunSummary = null;
+      sr.classList.remove('hidden');
+      sr.innerHTML = `<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-emerald-800">
+        ✓ ${esc(file.name)} — ${parsed.applications?.length ?? 0} applications · ${parsed.opportunities?.length ?? 0} opportunities · ${parsed.questionResponses?.length ?? 0} QRs · ${parsed.serviceHistory?.length ?? 0} history
+      </div>`;
+      dryBtn.disabled = false; applyBtn.disabled = true;
+      document.getElementById('json-preview')?.classList.add('hidden');
+      document.getElementById('json-apply-result')?.classList.add('hidden');
+    } catch (e: any) {
+      sr.classList.remove('hidden');
+      sr.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-2 text-red-800">❌ JSON inválido: ${esc(e.message)}</div>`;
+      dryBtn.disabled = true; applyBtn.disabled = true; pendingJsonPayload = null;
+    }
+  }
+
+  function validateConsolidatedJsonShape(obj: any): { ok: boolean; error?: string } {
+    if (!obj || typeof obj !== 'object') return { ok: false, error: 'root deve ser object JSON' };
+    if (!Array.isArray(obj.applications)) return { ok: false, error: 'falta applications array' };
+    if (obj.applications.length === 0) return { ok: false, error: 'applications array vazio' };
+    if (obj.opportunities && !Array.isArray(obj.opportunities)) return { ok: false, error: 'opportunities deve ser array' };
+    if (obj.questionResponses && !Array.isArray(obj.questionResponses)) return { ok: false, error: 'questionResponses deve ser array' };
+    if (obj.serviceHistory && !Array.isArray(obj.serviceHistory)) return { ok: false, error: 'serviceHistory deve ser array' };
+    const a = obj.applications[0];
+    if (!a.applicationId) return { ok: false, error: 'applications[0].applicationId ausente' };
+    if (!a._opportunityId) return { ok: false, error: 'applications[0]._opportunityId ausente (campo synthetic do script extract)' };
+    return { ok: true };
+  }
+
+  async function callImportEndpoint(payload: any, dryRun: boolean): Promise<any> {
+    if (!sb) throw new Error('Supabase client não inicializado');
+    const { data: session } = await sb.auth.getSession();
+    const jwt = session?.session?.access_token;
+    if (!jwt) throw new Error('Sem sessão Supabase — faça login novamente');
+    const resp = await fetch('/api/admin/import-pmi-vep-json', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ payload, dry_run: dryRun })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error + (data.detail ? `: ${data.detail}` : '') + (data.message ? ` — ${data.message}` : ''));
+    return data;
+  }
+
+  async function runJsonDryRun() {
+    if (!pendingJsonPayload) return;
+    const btn = document.getElementById('json-dry-run-btn') as HTMLButtonElement;
+    btn.disabled = true; const old = btn.textContent; btn.textContent = '⏳ Calculando...';
+    try {
+      const data = await callImportEndpoint(pendingJsonPayload, true);
+      pendingDryRunSummary = data;
+      renderJsonDryRunPreview(data);
+      (document.getElementById('json-apply-btn') as HTMLButtonElement).disabled = false;
+    } catch (e: any) {
+      toast(`Erro no preview: ${e.message}`, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = old;
+    }
+  }
+
+  async function runJsonApply() {
+    if (!pendingJsonPayload || !pendingDryRunSummary) return;
+    const ins = pendingDryRunSummary.will_insert?.length ?? 0;
+    const upd = pendingDryRunSummary.will_update?.length ?? 0;
+    const skp = pendingDryRunSummary.will_skip?.length ?? 0;
+    if (!confirm(`Aplicar import: ${ins} NEW + ${upd} UPDATE + ${skp} SKIP. Confirma?`)) return;
+    const btn = document.getElementById('json-apply-btn') as HTMLButtonElement;
+    btn.disabled = true; const old = btn.textContent; btn.textContent = '⏳ Aplicando...';
+    try {
+      const data = await callImportEndpoint(pendingJsonPayload, false);
+      renderJsonApplyResult(data);
+      pendingJsonPayload = null; pendingDryRunSummary = null;
+      (document.getElementById('json-file-input') as HTMLInputElement).value = '';
+      document.getElementById('json-schema-result')?.classList.add('hidden');
+      document.getElementById('json-preview')?.classList.add('hidden');
+      (document.getElementById('json-dry-run-btn') as HTMLButtonElement).disabled = true;
+      btn.disabled = true;
+    } catch (e: any) {
+      toast(`Erro no apply: ${e.message}`, 'error');
+      btn.disabled = false;
+    } finally {
+      btn.textContent = old;
+    }
+  }
+
+  function renderJsonDryRunPreview(d: any) {
+    const sumEl = document.getElementById('json-preview-summary');
+    const detEl = document.getElementById('json-preview-details');
+    if (!sumEl || !detEl) return;
+    const wi = d.will_insert?.length ?? 0;
+    const wu = d.will_update?.length ?? 0;
+    const ws = d.will_skip?.length ?? 0;
+    sumEl.innerHTML = `
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-emerald-800">${wi}</div><div class="text-[10px] text-emerald-700 uppercase font-semibold">WILL_INSERT</div></div>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-blue-800">${wu}</div><div class="text-[10px] text-blue-700 uppercase font-semibold">WILL_UPDATE</div></div>
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-gray-700">${ws}</div><div class="text-[10px] text-gray-600 uppercase font-semibold">WILL_SKIP</div></div>
+    `;
+    const wiRows = (d.will_insert ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">➕ <strong>${esc(r.applicant_name)}</strong> · ${esc(r.email)} · opp ${esc(r.opportunity_id)} · ${esc(r.chapter ?? '—')}</div>`).join('');
+    const wuRows = (d.will_update ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">🔄 <strong>${esc(r.applicant_name)}</strong> · status=${esc(r.existing_status)} · cycle=${esc(r.existing_cycle_id?.slice(0,8))}…</div>`).join('');
+    const wsRows = (d.will_skip ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">⏭ ${esc(r.ref)}: ${esc(r.reason)}</div>`).join('');
+    detEl.innerHTML = `${wiRows}${wuRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
+    document.getElementById('json-preview')?.classList.remove('hidden');
+  }
+
+  function renderJsonApplyResult(d: any) {
+    const el = document.getElementById('json-apply-result');
+    if (!el) return;
+    const errs = d.errors?.length ?? 0;
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="font-bold text-emerald-900 mb-1">✓ Import concluído</div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] text-emerald-800">
+        <div>processed: <strong>${d.applications_processed ?? 0}</strong></div>
+        <div>new: <strong>${d.applications_new ?? 0}</strong></div>
+        <div>updated: <strong>${d.applications_updated ?? 0}</strong></div>
+        <div>skipped: <strong>${d.applications_skipped ?? 0}</strong></div>
+        <div>welcome dispatched: <strong>${d.welcome_dispatched ?? 0}</strong></div>
+        <div>service_history rows: <strong>${d.service_history_inserted ?? 0}</strong></div>
+        <div>phase_b processed: <strong>${d.phase_b_processed ?? 0}</strong></div>
+        <div>pmi_chapter_memberships: <strong>${d.pmi_chapter_memberships_upserted ?? 0}</strong></div>
+      </div>
+      ${errs > 0 ? `<div class="mt-2 text-[11px] text-amber-700"><strong>${errs} erro(s)</strong> — ver detalhes no cron_run_log do worker.</div>` : ''}
+    `;
   }
 
   function handleCSVFile(file: File) {
