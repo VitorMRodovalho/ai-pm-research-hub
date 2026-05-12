@@ -2185,6 +2185,8 @@ const enUS: Record<string, string> = {
   'admin.selection.committeeLead': 'Committee Lead',
   'admin.selection.hideStatusesHint': 'Hides approved, rejected, waitlist, converted, withdraw, cancelled',
   'admin.selection.hideShadowVepHint': 'Hides applications from active members re-imported by PMI VEP (duplicates of people already in Núcleo)',
+  'admin.selection.interviewToday': '📅 Interviews today',
+  'admin.selection.interviewTodayHint': 'Shows only candidates with interview scheduled for TODAY — useful to rush objective evals before interview',
   'admin.selection.pendingReviewHint': 'Only candidates where you have NOT yet submitted an evaluation',
   'admin.selection.alreadyReviewedHint': 'Only candidates where you have already submitted an evaluation',
   'admin.selection.searchNameEmail': 'Search name or email...',
