@@ -3613,9 +3613,13 @@ const SEL_I18N = {
     });
 
     // Modal close (p109 Onda 4 Fase 4: a11y aria-hidden sync + Escape key)
+    // p152 W4 a11y fix: blur focused descendant BEFORE setting aria-hidden — otherwise
+    // browser warns "Blocked aria-hidden on element because its descendant retained focus".
     function closeApplicantModal() {
       const m = document.getElementById('applicant-modal');
       if (!m || m.classList.contains('hidden')) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active && m.contains(active)) active.blur();
       m.classList.add('hidden');
       m.setAttribute('aria-hidden', 'true');
     }
