@@ -168,7 +168,13 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(load, 400); return; }
     const m = (window as any).navGetMember?.();
-    if (!m || !(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator'))) {
+    // p152 W4 hotfix: retry while member is still loading (was: setAuthorized(false)
+    // immediately, causing "Acesso restrito" flash for legit admins including superadmin).
+    if (!m) { setTimeout(load, 400); return; }
+    const isAdmin = m.is_superadmin
+      || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(m.operational_role)
+      || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board');
+    if (!isAdmin) {
       setAuthorized(false);
       return;
     }
