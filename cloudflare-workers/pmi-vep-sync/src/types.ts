@@ -355,6 +355,33 @@ export interface ScriptIngestPayload {
   questionResponses?: ScriptQuestionResponse[];
   // p126 E2: serviceHistory rows (1:N, separated for clarity)
   serviceHistory?: ScriptServiceHistoryRow[];
+  // p151 C: dry-run preview support (early exit with diff, no DML).
+  // When true, /ingest returns IngestDryRunSummary instead of applying changes.
+  dry_run?: boolean;
+}
+
+// p151 C: shape returned when /ingest is called with dry_run=true.
+export interface IngestDryRunSummary {
+  dry_run: true;
+  cycle_id: string;
+  cycle_code: string;
+  applications_received: number;
+  will_insert: Array<{
+    applicant_name: string;
+    email: string;
+    opportunity_id: string;
+    chapter: string | null;
+    role_applied: string;
+  }>;
+  will_update: Array<{
+    application_id: string;
+    applicant_name: string;
+    existing_cycle_id: string;
+    existing_status: string;
+    existing_role: string;
+  }>;
+  will_skip: Array<{ ref: string; reason: string }>;
+  errors: Array<{ scope: string; ref?: string; error: string }>;
 }
 
 export interface IngestSummary {

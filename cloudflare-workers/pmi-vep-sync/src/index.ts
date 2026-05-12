@@ -224,6 +224,80 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
   const allQRs = body.questionResponses ?? [];
   const allHistory = body.serviceHistory ?? [];  // p126 E2 — 1:N service history rows
 
+  // p151 C: dry-run preview mode — compute diff WITHOUT DML.
+  // Returns IngestDryRunSummary with will_insert/will_update/will_skip arrays.
+  // Used by /api/admin/import-pmi-vep-json Astro endpoint for admin UI preview
+  // before the PM hits the Apply button.
+  if (body.dry_run === true) {
+    const dryDiff: any = {
+      dry_run: true,
+      cycle_id: cycle.id,
+      cycle_code: cycle.cycle_code,
+      applications_received: body.applications.length,
+      will_insert: [],
+      will_update: [],
+      will_skip: [],
+      errors: []
+    };
+
+    for (const app of body.applications) {
+      const oppId = String(app._opportunityId);
+      const opp = oppLookup[oppId];
+      if (!opp) {
+        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'opportunity_not_active' });
+        continue;
+      }
+      if (!opp.essay_mapping || Object.keys(opp.essay_mapping).length === 0) {
+        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'essay_mapping_missing' });
+        continue;
+      }
+      const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, cycle.cycle_code, env.ORG_ID);
+      if (!mapped.email || !mapped.applicant_name) {
+        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'missing_required (applicant_name or email)' });
+        continue;
+      }
+
+      // Lookup existing by compound key (vep_application_id, vep_opportunity_id).
+      // Canonical logic per feedback_pmi_vep_ingest_logic_canonical.md (p150 PM diretiva).
+      const { data: existing } = await db
+        .from('selection_applications')
+        .select('id, applicant_name, status, cycle_id, role_applied, chapter')
+        .eq('vep_application_id', mapped.vep_application_id)
+        .eq('vep_opportunity_id', mapped.vep_opportunity_id)
+        .maybeSingle();
+
+      if (existing) {
+        dryDiff.will_update.push({
+          application_id: existing.id,
+          applicant_name: mapped.applicant_name,
+          existing_cycle_id: existing.cycle_id,
+          existing_status: existing.status,
+          existing_role: existing.role_applied
+        });
+      } else {
+        dryDiff.will_insert.push({
+          applicant_name: mapped.applicant_name,
+          email: mapped.email,
+          opportunity_id: oppId,
+          chapter: opp.chapter_posted,
+          role_applied: opp.role_default
+        });
+      }
+    }
+
+    if (runId) {
+      await logRunComplete(db, runId, 'success', {
+        trigger_reason: 'http_ingest_dry_run',
+        applications_received: body.applications.length,
+        will_insert: dryDiff.will_insert.length,
+        will_update: dryDiff.will_update.length,
+        will_skip: dryDiff.will_skip.length
+      } as any, dryDiff.errors);
+    }
+
+    return jsonResponse(dryDiff, 200);
+  }
+
   for (const app of body.applications) {
     try {
       const oppId = String(app._opportunityId);

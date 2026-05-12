@@ -12,3 +12,13 @@ directory = "./dist/client/"
 [[kv_namespaces]]
 binding = "SESSION"
 id = "6ffb04524d664228b19ce1595d08cbc5"
+
+# p151 C — VEP JSON import endpoint (/api/admin/import-pmi-vep-json)
+# Public worker URL (non-sensitive).
+[vars]
+PMI_VEP_SYNC_URL = "https://pmi-vep-sync.vitormr.dev"
+
+# Secret required (not in this file — bind via CLI):
+#   wrangler secret put INGEST_SHARED_SECRET
+# Must match value bound on cloudflare-workers/pmi-vep-sync worker.
+# Without it, /api/admin/import-pmi-vep-json returns 500 server_misconfig.
