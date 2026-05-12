@@ -1250,7 +1250,9 @@ const SEL_I18N = {
       <!-- TAB: Interview (p109 Onda 4 Fase 1.4: scoringDiv prepended renders briefing + contextual + unified scoring; Roteiro estático removido — fundido com sliders por pilar) -->
       <div id="modal-tab-interview" class="hidden">
         ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">${T.modal.scheduleViaExternal}</a>` : ''}
-        <div class="space-y-4">
+        <!-- p152 W4: wrapped Agendar form with #manual-agendar-section so loadInterviewForm can collapse it
+             when há entrevista ativa (toggle button revela quando admin precisa override). -->
+        <div id="manual-agendar-section" class="space-y-4">
           <h4 class="text-sm font-bold text-navy">${T.modal.scheduleInterviewTitle}</h4>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -3051,28 +3053,102 @@ const SEL_I18N = {
         return;
       }
 
-      const interview = interviews[0];
-      const statusLabel = STATUS_LABELS[`interview_${interview.status}`] || interview.status;
-      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 mb-3 mt-4">
-        <div class="flex items-center justify-between">
-          <span class="text-[12px] font-bold text-[var(--text-secondary)]">Entrevista: ${esc(statusLabel)}</span>
-          <span class="text-[11px] text-[var(--text-muted)]">${interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleString('pt-BR') : '—'}</span>
-        </div>
+      // p152 W4: full history timeline (was: interviews[0] only — causou PM marcar future row pensando ser de hoje).
+      // Sort by scheduled_at DESC: futuras + recentes em cima.
+      const interviewsByDate = [...interviews].sort((a: any, b: any) => {
+        const da = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+        const db = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+        return db - da;
+      });
+      const noshowCount = interviews.filter((i: any) => i.status === 'noshow').length;
+      const rescheduledCount = interviews.filter((i: any) => i.status === 'rescheduled').length;
+      const cancelledCount = interviews.filter((i: any) => i.status === 'cancelled').length;
+      const scheduledCount = interviews.filter((i: any) => i.status === 'scheduled').length;
+      // Pick "active" interview: priority = nearest FUTURE scheduled → scheduled → completed → most recent any
+      const nowMs = Date.now();
+      const futureScheduled = interviews
+        .filter((i: any) => i.status === 'scheduled' && i.scheduled_at && new Date(i.scheduled_at).getTime() >= nowMs)
+        .sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+      const interview = futureScheduled[0]
+        || interviews.find((i: any) => i.status === 'scheduled')
+        || interviews.find((i: any) => i.status === 'completed')
+        || interviewsByDate[0];
+
+      // Stats banner
+      const statusBadgeColor = (s: string) => ({
+        scheduled: 'bg-blue-100 text-blue-700',
+        completed: 'bg-emerald-100 text-emerald-700',
+        noshow: 'bg-orange-100 text-orange-700',
+        cancelled: 'bg-gray-200 text-gray-600',
+        rescheduled: 'bg-amber-100 text-amber-700',
+      } as Record<string, string>)[s] || 'bg-gray-100 text-gray-700';
+
+      html += `<div class="grid grid-cols-4 gap-2 mb-3 mt-4 text-[11px]">
+        <div class="bg-[var(--surface-base)] rounded-lg p-2 text-center"><div class="font-bold text-navy text-sm">${interviews.length}</div><div class="text-[var(--text-muted)]">Total</div></div>
+        <div class="bg-blue-50 rounded-lg p-2 text-center"><div class="font-bold text-blue-700 text-sm">${scheduledCount}</div><div class="text-blue-700">Agendadas</div></div>
+        <div class="bg-orange-50 rounded-lg p-2 text-center"><div class="font-bold text-orange-700 text-sm">${noshowCount}</div><div class="text-orange-700">No-Shows</div></div>
+        <div class="bg-amber-50 rounded-lg p-2 text-center"><div class="font-bold text-amber-700 text-sm">${rescheduledCount + cancelledCount}</div><div class="text-amber-700">Remarcadas</div></div>
       </div>`;
 
-      // Gap 3: Interview status buttons
-      if (interview.status === 'scheduled') {
-        html += `<div class="flex gap-2 mb-3">
-          <button class="interview-status-btn px-3 py-1.5 bg-orange-500 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(interview.id)}" data-status="noshow">No-Show</button>
-          <button class="interview-status-btn px-3 py-1.5 bg-red-500 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(interview.id)}" data-status="cancelled">Cancelar</button>
+      // History timeline — all interviews with per-row actions
+      html += '<details open class="bg-[var(--surface-base)] rounded-xl mb-3 border border-[var(--border-subtle)]"><summary class="px-3 py-2 text-[12px] font-bold text-navy cursor-pointer select-none">📋 Histórico de entrevistas</summary><div class="px-3 pb-3 space-y-2">';
+      for (const intv of interviewsByDate) {
+        const label = STATUS_LABELS[`interview_${intv.status}`] || intv.status;
+        const dt = intv.scheduled_at
+          ? new Date(intv.scheduled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }) + ' SP'
+          : '—';
+        const isActive = intv.id === interview.id;
+        const isFuture = intv.scheduled_at && new Date(intv.scheduled_at).getTime() > nowMs;
+        const isPast = intv.scheduled_at && new Date(intv.scheduled_at).getTime() < nowMs - 60 * 60 * 1000; // >1h ago
+        const isTodayLocal = (() => {
+          if (!intv.scheduled_at) return false;
+          const d = new Date(intv.scheduled_at);
+          const today = new Date();
+          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+        })();
+        const tag = isTodayLocal ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">HOJE</span>'
+          : isFuture ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">FUTURO</span>'
+          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">PASSADO</span>';
+        const actions = intv.status === 'scheduled'
+          ? `<div class="flex gap-1.5">
+              ${isPast || isTodayLocal ? `<button class="interview-status-btn px-2 py-1 bg-orange-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="noshow">No-Show</button>` : ''}
+              <button class="interview-status-btn px-2 py-1 bg-gray-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="cancelled" title="Cancelar — sem reagendamento. Use 'Pedir Reagendamento' abaixo para enviar email ao candidato.">Cancelar</button>
+              <button class="interview-status-btn px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="rescheduled" title="Marcar como remarcada (candidato reagendou em outro slot — sem email)">Remarcar</button>
+              ${intv.status === 'scheduled' && (isPast || isTodayLocal) ? `<button class="interview-status-btn px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="completed" title="Marcar como concluída (entrevista aconteceu)">Concluir</button>` : ''}
+            </div>`
+          : '';
+        const notesPreview = intv.notes
+          ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic line-clamp-2">${esc(String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced')).slice(-2).join(' · '))}</div>`
+          : '';
+        html += `<div class="${isActive ? 'border-2 border-navy bg-navy/5' : 'border border-[var(--border-subtle)]'} rounded-lg p-2.5 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              ${tag}
+              <span class="text-[12px] font-bold text-[var(--text-primary)]">${esc(dt)}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadgeColor(intv.status)}">${esc(label)}</span>
+              ${isActive ? '<span class="text-[9px] font-bold text-navy bg-navy/10 px-1.5 py-0.5 rounded">ATIVA p/ scoring</span>' : ''}
+            </div>
+            ${actions}
+          </div>
+          ${notesPreview}
         </div>`;
       }
+      html += '</div></details>';
 
-      // Gap 2: Interview scoring form (uses already-fetched formData)
-      // p109 Onda 4 Fase 1.4: UNIFICADO — cada critério renderiza com as perguntas
-      // do pilar correspondente (match por criterion_key === c.key) acima do slider.
-      // Roteiro+Pilares deixaram de ser blocos separados.
-      if ((interview.status === 'scheduled' || interview.status === 'completed') && formData) {
+      // p152 W4: Auto-collapse static "Agendar Entrevista" section when há scheduled active
+      // (PM complaint: form sempre aparece mesmo com entrevista existente). Toggle reveal via button.
+      const hasActiveScheduled = scheduledCount > 0;
+      setTimeout(() => {
+        const agendarSection = document.getElementById('manual-agendar-section');
+        if (agendarSection) agendarSection.classList.toggle('hidden', hasActiveScheduled);
+      }, 0);
+      if (hasActiveScheduled) {
+        html += '<button id="toggle-agendar-section" type="button" class="text-[11px] text-navy hover:underline cursor-pointer bg-transparent border-0 p-0 mb-3">⊕ Agendar outra manualmente (override)</button>';
+      }
+
+      // Gap 2: Interview scoring form (uses already-fetched formData) — bind to active interview.
+      // PM diretiva: scoring nunca deve estar bloqueado. Permitimos para todas exceto 'cancelled'.
+      if (interview.status !== 'cancelled' && formData) {
         try {
           if (formData) {
             const criteria = formData.criteria || [];
@@ -3148,19 +3224,41 @@ const SEL_I18N = {
       });
 
       // Wire up interview status buttons (Gap 3)
+      // p152 W4: confirm dialog per-row (especialmente no-show, dispara email)
       scoringDiv.querySelectorAll<HTMLButtonElement>('.interview-status-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const intvId = btn.dataset.interviewId;
           const status = btn.dataset.status;
           if (!intvId || !status) return;
+          const confirmMsg = status === 'noshow'
+            ? 'Marcar como No-Show? Dispara email empático ao candidato com link de reagendamento (prazo 7 dias).'
+            : status === 'cancelled'
+            ? 'Cancelar esta entrevista? Sem reagendamento automático nem email.'
+            : status === 'rescheduled'
+            ? 'Marcar como remarcada? Use se o candidato já agendou outro slot (sem email).'
+            : status === 'completed'
+            ? 'Marcar entrevista como concluída?'
+            : 'Confirmar?';
+          if (!confirm(confirmMsg)) return;
           try {
-            const { error } = await sb.rpc('mark_interview_status', { p_interview_id: intvId, p_status: status });
+            const { data, error } = await sb.rpc('mark_interview_status', { p_interview_id: intvId, p_status: status });
             if (error) throw error;
-            toast(status === 'noshow' ? 'Marcado como No-Show' : 'Entrevista cancelada');
+            const successMsg = status === 'noshow' ? (data?.email_dispatched ? 'No-Show marcado + email enviado ao candidato' : 'No-Show marcado (email falhou — ver logs)')
+              : status === 'cancelled' ? 'Entrevista cancelada'
+              : status === 'rescheduled' ? 'Marcada como remarcada'
+              : status === 'completed' ? 'Marcada como concluída'
+              : 'Atualizada';
+            toast(successMsg);
             loadInterviewForm(row);
             loadDashboard();
           } catch (e: any) { toast(e.message || 'Erro', 'error'); }
         });
+      });
+
+      // p152 W4: toggle Agendar section override
+      scoringDiv.querySelector('#toggle-agendar-section')?.addEventListener('click', () => {
+        const agendarSection = document.getElementById('manual-agendar-section');
+        if (agendarSection) agendarSection.classList.toggle('hidden');
       });
 
       // Wire up interview scoring submit (Gap 2)
