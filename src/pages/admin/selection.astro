@@ -639,7 +639,8 @@ const SEL_I18N = {
   function pipelineBadges(r: any): string {
     const aiDone = r.ai_analysis_done === true;
     const peerCount = Number(r.peer_eval_count ?? 0);
-    const peerDistinct = Number(r.peer_eval_distinct_evaluators ?? 0);
+    // p150 hotfix 100-args: peer_extra subgroup (fallback to flat field for backwards compat)
+    const peerDistinct = Number(r.peer_extra?.distinct_evaluators ?? r.peer_eval_distinct_evaluators ?? 0);
     const peerPending = Number(r.peer_invites_pending ?? 0);
     const interviewSched = r.interview_scheduled === true;
     const tokenUsed = r.token_consumed === true;
@@ -679,9 +680,10 @@ const SEL_I18N = {
     // opted_out  → ⏭ blue    — candidato decidiu não submeter vídeos (não confundir com "sem dado")
     // partial    → ⚠ amber   — algumas rows uploaded, outras opted-out (raro)
     // none       → — gray    — candidato ainda não decidiu
-    const videoAgg = r.video_screening_status_agg || (r.video_screening_done ? 'uploaded' : 'none');
-    const videoUploaded = Number(r.video_screening_uploaded_count ?? 0);
-    const videoTotal = Number(r.video_screening_total_rows ?? 0);
+    // p150 hotfix 100-args: video_agg subgroup (fallback to flat fields for backwards compat)
+    const videoAgg = r.video_agg?.status_agg || r.video_screening_status_agg || (r.video_screening_done ? 'uploaded' : 'none');
+    const videoUploaded = Number(r.video_agg?.uploaded_count ?? r.video_screening_uploaded_count ?? 0);
+    const videoTotal = Number(r.video_agg?.total_rows ?? r.video_screening_total_rows ?? 0);
     const videoBadge = (() => {
       if (videoAgg === 'uploaded')
         return dot('bg-emerald-100 text-emerald-700', '📹', `Candidato subiu ${videoUploaded} de ${videoTotal} pilares`);
@@ -702,7 +704,8 @@ const SEL_I18N = {
   function pipelineTimeline(r: any): string {
     const isTerminal = ['approved', 'rejected', 'converted', 'withdrawn', 'cancelled'].includes(r.status);
     const peerCount = Number(r.peer_eval_count ?? 0);
-    const peerDistinct = Number(r.peer_eval_distinct_evaluators ?? 0);
+    // p150 hotfix 100-args: peer_extra subgroup (fallback to flat field)
+    const peerDistinct = Number(r.peer_extra?.distinct_evaluators ?? r.peer_eval_distinct_evaluators ?? 0);
     const submittedAt = r.application_date || r.created_at;
 
     const stages = [
@@ -833,9 +836,9 @@ const SEL_I18N = {
       }
       if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-      // p150 B-light: video screening filter
+      // p150 B-light: video screening filter (p150 hotfix: video_agg subgroup)
       if (filterVideo !== 'all') {
-        const agg = r.video_screening_status_agg || 'none';
+        const agg = r.video_agg?.status_agg || r.video_screening_status_agg || 'none';
         if (filterVideo === 'uploaded' && agg !== 'uploaded') return false;
         if (filterVideo === 'opted_out' && agg !== 'opted_out') return false;
         if (filterVideo === 'none' && agg !== 'none') return false;
@@ -3410,8 +3413,11 @@ const SEL_I18N = {
       csvParsedRows = [];
     });
 
-    // p151 C: JSON consolidado import handlers
-    initJsonImport();
+    // p151 C: JSON consolidado import handlers.
+    // Wrapped in try/catch — initJsonImport must NEVER block bindEvents().
+    // If anything goes wrong here, applyGate() must still run so the
+    // candidate list loads. Sediment p151: regression caused empty table.
+    try { initJsonImport(); } catch (e) { console.warn('[p151 C] initJsonImport failed (non-fatal):', e); }
   }
 
   // ── p151 C: VEP JSON import (server-side proxy → worker /ingest) ─────
