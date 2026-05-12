@@ -5081,6 +5081,16 @@ const ptBR: Record<string, string> = {
   'admin.selection.modal.toastReasonRequired': 'Informe o motivo do reagendamento',
   'admin.selection.modal.toastRescheduleSent': 'Reagendamento solicitado — email a caminho',
   'admin.selection.modal.toastErrorReschedule': 'Erro ao solicitar reagendamento',
+  'admin.selection.modal.chapterDiscrepancyTitle': 'Divergência de capítulo',
+  'admin.selection.modal.chapterDiscrepancyForm': 'Form do candidato:',
+  'admin.selection.modal.chapterDiscrepancyCanonical': 'PMI canonical:',
+  'admin.selection.modal.phaseBSummaryTitle': 'Resumo Phase B (canonical PMI)',
+  'admin.selection.modal.phaseBMemberStatus': 'Status membro',
+  'admin.selection.modal.phaseBChapterCanonical': 'Capítulo canonical',
+  'admin.selection.modal.phaseBHistoryCount': 'Service history',
+  'admin.selection.modal.phaseBMemberSince': 'Membro desde',
+  'admin.selection.modal.phaseBMemberUntil': 'Até',
+  'admin.selection.modal.phaseBFetchedAt': 'Última sync Phase B',
 
   // ── Admin Comms ──
   'admin.comms.active': 'Ativo',

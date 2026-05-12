@@ -5076,6 +5076,16 @@ const esLATAM: Record<string, string> = {
   'admin.selection.modal.toastReasonRequired': 'Informa el motivo del reagendamiento',
   'admin.selection.modal.toastRescheduleSent': 'Reagendamiento solicitado — email en camino',
   'admin.selection.modal.toastErrorReschedule': 'Error al solicitar reagendamiento',
+  'admin.selection.modal.chapterDiscrepancyTitle': 'Divergencia de capítulo',
+  'admin.selection.modal.chapterDiscrepancyForm': 'Form del candidato:',
+  'admin.selection.modal.chapterDiscrepancyCanonical': 'PMI canonical:',
+  'admin.selection.modal.phaseBSummaryTitle': 'Resumen Phase B (canonical PMI)',
+  'admin.selection.modal.phaseBMemberStatus': 'Estado miembro',
+  'admin.selection.modal.phaseBChapterCanonical': 'Capítulo canonical',
+  'admin.selection.modal.phaseBHistoryCount': 'Service history',
+  'admin.selection.modal.phaseBMemberSince': 'Miembro desde',
+  'admin.selection.modal.phaseBMemberUntil': 'Hasta',
+  'admin.selection.modal.phaseBFetchedAt': 'Última sync Phase B',
 
   // ── Admin Comms ──
   'admin.comms.active': 'Activo',
