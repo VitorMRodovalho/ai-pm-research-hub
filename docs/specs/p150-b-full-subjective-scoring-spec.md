@@ -1,10 +1,13 @@
 # Spec p150 B-full — Subjective Scoring via Video Transcription
 
-**Status**: DRAFT (pre-council)
-**Sessão**: p150 (2026-05-12)
+**Status**: DRAFT · POST-COUNCIL (council 4-lens p151 concluído; 11 blockers + 10 decisões consolidadas; AWAITING ratification gates antes de implementação)
+**Sessão**: p150 (drafted) + p151 council 4-lens + p152 (amendments registrados)
 **Owner**: PM Vitor Maia Rodovalho
 **Predecessor**: p150 B-light (commit `73168c0`) — visibilidade tri-state shipped
-**Sucessor planejado**: ADR-0079 (próxima sessão depois desta spec)
+**Sucessor planejado**: ADR-0079 → ACCEPTED após gates fecharem
+**Council synthesis**: `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md`
+
+> ⚠ **Esta spec NÃO está código-ready.** Implementação inicia somente após **todos** os 11 blockers em §11 da ADR-0079 fecharem (M0 = consent column dedicada + Termo v2.8 + DPA Anthropic). Sessão p152 registrou amendments documentais; código fica congelado até gate clearance.
 
 ---
 
@@ -323,15 +326,91 @@ Brief pro council deve solicitar pesar especificamente:
 
 ---
 
-## 12. Trabalho remanescente após esta spec
+## 12. Trabalho remanescente após esta spec — REVISADO p151
 
-1. **Esta sessão (p150)**: criar ADR-0079 Draft com decision matrix (depois desta spec aprovada).
-2. **p151 (próxima sessão)**: invocar 4 council agents em paralelo com brief específico; PM decide 9 decisões; ADR-0079 → Accepted.
-3. **p152**: implementar migrations 1-5 + EF + smoke (single candidato Eduardo Luz).
-4. **p153**: MCP tools + frontend update + calibration view + i18n.
-5. **p154**: QA + dry-run completo cycle 4 + monitoring/observability.
+1. ✅ **p150**: spec drafted + ADR-0079 PROPOSED.
+2. ✅ **p151**: council 4-lens (data-architect + ai-engineer + security-engineer + legal-counsel) em paralelo + synthesis em `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md`. Output: 10 decisões consolidadas + 11 blockers identificados.
+3. ✅ **p152 (esta sessão)**: amendments documentais — spec + ADR-0079 atualizados refletindo decisões + checklist. Status spec → DRAFT · POST-COUNCIL. Status ADR → PROPOSED · AWAITING-RATIFICATION.
+4. ⏳ **p153**: Material change Termo de Adesão v2.7→v2.8 (#9 do gate) — draft + workflow ratificação curadores (Sarah + Fabricio + Roberto + Ângelina + Ivan DPO).
+5. ⏳ **p154**: DPA Anthropic confirmação (#11). Após confirmação + Termo v2.8 ratificado + ADR ACCEPTED, migrations M0 (consent column dedicada) + M1 (video_screening_analysis) + M2 (trigger sync) + M3 (pillar_rubrics) + M4 (RPCs) + M5 (cron) podem ser aplicadas.
+6. ⏳ **p155+**: EF `pmi-ai-subjective` + frontend (banner UI + consent gate + calibration view + notificações) + MCP tools + QA + dry-run Cycle 4 (Eduardo Luz com re-disclosure individual).
 
-Total estimado: 4-5 sessões a partir desta.
+Total revisado: 5-6 sessões a partir desta. Cronograma sensível a velocidade ratificação humana (curadores + DPO).
+
+---
+
+## 12.1 Amendments aplicados p151b/p152 (council-derived)
+
+Estas mudanças refletem as 10 decisões consolidadas e 11 blockers. Onde a spec original tem texto incompatível com a decisão consolidada, este addendum prevalece até o próximo full-rewrite. Detalhe em `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md`.
+
+### §2 Schema — overrides
+
+- §2.1 `video_screening_analysis`: substituir `UNIQUE (source_screening_id, model, model_version) WHERE status != 'superseded'` por **partial unique index nomeado** `idx_vsa_uniq_active ON video_screening_analysis (source_screening_id, model, model_version) WHERE status NOT IN ('superseded','failed')`. (Blocker #1)
+- §2.1: adicionar coluna `superseded_by uuid REFERENCES video_screening_analysis(id) ON DELETE SET NULL`. (Blocker #2)
+- §2.1: adicionar `reasoning_truncated boolean DEFAULT false` em vez de hard `CHECK length(reasoning) <= 500` (truncate em EF + marca coluna).
+- §2.1: `failure_reason` como ENUM/CHECK em `('low_transcription_confidence','transcription_too_short','model_timeout','invalid_json_output','consent_revoked','rubric_load_error')` (texto livre = risco PII).
+- §2.1: introduzir status `failed_permanent` separado de `failed` + `CHECK (retry_count <= 3)`. (D-RETRY-CAP)
+- §2.1: índices adicionais `idx_vsa_source_completed ON video_screening_analysis(source_screening_id) WHERE status='completed'` + adicionar `'transcribed'` ao `idx_video_screenings_status_pending`.
+- §2.2 trigger derivado: renomear para `_trg_subjective_score_avg_sync` + adicionar invariant `P_subjective_score_avg_consistency` (ADR-0012 Principle 2). (Blocker #4)
+- §2.3 `pillar_rubrics`: adicionar `organization_id NOT NULL DEFAULT auth_org()` + RLS + `is_active boolean DEFAULT true` + `prompt_hash text NOT NULL` + ordenação determinística no SELECT.
+
+### §3 EF — overrides
+
+- §3 step 1: validar `consent_subjective_video_scoring_at IS NOT NULL AND consent_subjective_video_scoring_revoked_at IS NULL` (NÃO reutilizar `consent_ai_analysis_*`). (Blocker #6 + D-CONSENT)
+- §3 JSON schema output: `score: { type: "number" }` (NÃO integer) + `additionalProperties: false`; validação min/max via código pós-parse (per `feedback_anthropic_structured_output_schema_limits.md`). (Blocker #5)
+- §3 STT threshold: elevar para `>= 0.65`; faixa `0.50-0.64` força `confidence='low'`.
+- §3 system prompt cacheado: incluir instrução anti-bias PT-BR explícita: "avalie conteúdo semântico, não penalize vocabulário regional/informalidade".
+- §3 preprocessing: truncar transcrição a ~2000 tokens no final de frase + sanitizar timestamps STT.
+- §3 rubric loading: ler `pillar_rubrics` per-invocation (não cached at EF boot) com ordenação determinística.
+
+### §4 Pipeline — overrides
+
+- §4.2 cron: triggered por `pmi_video_screenings.status IN ('transcribed')` (não `'completed'` antigo). Cobertura via novo índice.
+- §4.3 revoke handler: `handle_consent_revocation()` AGORA deve incluir `DELETE FROM video_screening_analysis WHERE application_id = NEW.id` (atualmente faltando = LGPD gap concreto). (Blocker #3) Execução **imediata** mesma transaction + fallback cron 72h.
+
+### §5 LGPD — overrides
+
+- §5 D-CONSENT: substituir reuse de `consent_ai_analysis_at` por **consent dedicado** `consent_subjective_video_scoring_at` + `consent_subjective_video_scoring_revoked_at` em `selection_applications`. (Blocker #8 + D-CONSENT)
+- §5: adicionar tela de consent dedicada no fluxo de upload de vídeos (frontend `interview_optout.astro` ou equivalente).
+- §5 export: confirmar shape de `ai_processing_log` armazena somente hashes (não conteúdo); incluir `screening_id` FK referencing `pmi_video_screenings`.
+- §5: notificação ao candidato pós-scoring via Resend: "Seus vídeos foram analisados por IA. Direito de acesso e revisão." (Art. 9 + Art. 20 transparência).
+- §5: SLA comunicado ao titular: "até 5 dias úteis" (mesmo que execução técnica seja imediata).
+- §5: verificar purge cron `cycle_decision_date` — DELETE em `selection_applications` (CASCADE propaga) vs UPDATE/anonymize (CASCADE não dispara — Risk 2 ADR-0076).
+
+### §6 Frontend — overrides
+
+- §6 modal Vídeos: banner UI obrigatório `<aside>` não-dismissable: "Score gerado por IA — sinal de apoio. Decisão final é exclusivamente do Comitê de Curadoria." (Blocker #10)
+- §6 calibration view: per-pillar table com **n + α (Krippendorff) + MAE + viés sistemático**; warnings se n<20; null para n<5 por pillar.
+- §6 calibration: lazy show score — revelar score IA SOMENTE depois de avaliação humana submetida para o pillar (Cycle 5+ feature; Cycle 4 mantém visível por volume baixo).
+
+### §7 Calibration RPC — overrides
+
+- §7 `get_subjective_calibration_stats`: retornar **Krippendorff α + MAE + viés sistemático** além de Pearson r. (Blocker #7)
+
+### §8 Material change Termo Adesão v2.7→v2.8 (Blocker #9 — novo)
+
+Conteúdo obrigatório da v2.8:
+- (a) divulgação de análise IA sobre conteúdo de vídeo com scoring por pillar;
+- (b) disclosure de processamento por terceiro (Anthropic como operador LGPD);
+- (c) direitos do titular: acesso, revogação, revisão, explicação;
+- (d) finalidade específica (não generaliza com `consent_ai_analysis_at`);
+- (e) retenção alinhada com `cycle_decision_date` purge (90d/180d).
+
+Workflow ratificação:
+1. PM redige draft v2.8 (p153)
+2. Curador-jurídico Ângelina valida texto LGPD
+3. DPO Ivan ratifica
+4. Workflow approval_chains via `recirculate_governance_doc` para 7 curadores
+5. Quando aprovada, signature deadline para candidatos opted-in cycles ativos
+6. Sem candidato signatário do v2.8 → EF subjective scoring não roda para esse candidato
+
+### §11 DPA Anthropic verification (Blocker #11)
+
+Antes de qualquer deploy production-grade:
+- [ ] Localizar DPA Anthropic vigente
+- [ ] Confirmar cobertura para "transcrição de vídeo enviado por candidato" como input ao modelo
+- [ ] Se gap: solicitar adendo DPA antes de deploy
+- [ ] Registrar evidência em `docs/legal/` ou equivalente
 
 ---
 
