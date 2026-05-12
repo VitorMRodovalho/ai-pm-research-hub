@@ -179,6 +179,7 @@ const SEL_I18N = {
           <span class="text-[var(--text-muted)] font-semibold">{t('admin.selection.quickFilters', lang)}</span>
           <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
           <button id="filter-hide-shadow-vep" class="px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-amber-700 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20" data-active="true" title={t('admin.selection.hideShadowVepHint', lang)}>{t('admin.selection.hideShadowVep', lang)}</button>
+          <button id="filter-interview-today" class="px-3 py-1 rounded-full font-semibold border border-purple-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-purple-500/10" data-active="false" title={t('admin.selection.interviewTodayHint', lang)}>{t('admin.selection.interviewToday', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
@@ -559,6 +560,8 @@ const SEL_I18N = {
   let filterMyEval: 'all' | 'pending_mine' | 'evaluated_mine' = 'all';
   // p152 Wave 1.0: hide shadow VEP (active member re-imported via bulk VEP) — default ON
   let filterHideShadowVep = true;
+  // p152 W3+: "Entrevistas hoje" quick filter (default OFF; PM ativa no dia)
+  let filterInterviewToday = false;
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -942,6 +945,8 @@ const SEL_I18N = {
       if (filterMyEval === 'evaluated_mine' && r.my_eval_status !== 'submitted') return false;
       // p152 Wave 1.0: shadow VEP = email matches active member created before this app, terminal status
       if (filterHideShadowVep && r.extra_flags?.is_shadow_vep === true) return false;
+      // p152 W3+: "Entrevistas hoje" — uses meta.has_interview_today (canonical SP-tz check in RPC)
+      if (filterInterviewToday && r.meta?.has_interview_today !== true) return false;
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -3463,6 +3468,18 @@ const SEL_I18N = {
       btn.classList.toggle('text-amber-700', filterHideShadowVep);
       btn.classList.toggle('text-[var(--text-secondary)]', !filterHideShadowVep);
       btn.textContent = filterHideShadowVep ? T.hideShadowVep : T.showShadowVep;
+      applyFilters();
+    });
+
+    // p152 W3+: "Entrevistas hoje" toggle (default OFF; útil para PM correr avaliações do dia)
+    document.getElementById('filter-interview-today')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterInterviewToday = !filterInterviewToday;
+      btn.dataset.active = filterInterviewToday ? 'true' : 'false';
+      btn.classList.toggle('bg-purple-500/10', filterInterviewToday);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterInterviewToday);
+      btn.classList.toggle('text-purple-700', filterInterviewToday);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterInterviewToday);
       applyFilters();
     });
 

@@ -2190,6 +2190,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.committeeLead': 'Líder do Comitê',
   'admin.selection.hideStatusesHint': 'Esconde aprovados, rejeitados, lista de espera, convertidos, withdraw, cancelled',
   'admin.selection.hideShadowVepHint': 'Esconde aplicações de membros ativos que foram re-importadas pelo PMI VEP (duplicatas de quem já está no Núcleo)',
+  'admin.selection.interviewToday': '📅 Entrevistas hoje',
+  'admin.selection.interviewTodayHint': 'Mostra apenas candidatos com entrevista agendada para HOJE — útil para correr avaliações objetivas antes da entrevista',
   'admin.selection.pendingReviewHint': 'Só candidatos onde você ainda NÃO submeteu avaliação',
   'admin.selection.alreadyReviewedHint': 'Só candidatos onde você já submeteu avaliação',
   'admin.selection.searchNameEmail': 'Buscar nome ou e-mail...',
