@@ -8,6 +8,7 @@ import SyncHealthWidget from '../../components/admin/SyncHealthWidget';
 import VolunteerComplianceWidget from '../../components/admin/VolunteerComplianceWidget';
 import CrossTribeWidget from '../../components/admin/CrossTribeWidget';
 import ResearchPipelineWidget from '../../components/admin/ResearchPipelineWidget';
+import VepReconciliationWidget from '../../components/admin/VepReconciliationWidget';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
 
@@ -37,8 +38,9 @@ const DASH_I18N = {
         <VolunteerComplianceWidget client:load lang={lang} />
       </div>
     </div>
-    <div class="mt-4">
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
       <SyncHealthWidget client:load lang={lang} />
+      <VepReconciliationWidget client:load lang={lang} />
     </div>
 
     <div class="mt-6 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">

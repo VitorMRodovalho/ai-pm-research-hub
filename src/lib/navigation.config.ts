@@ -102,6 +102,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-cross-tribes', labelKey: 'nav.adminCrossTribes', href: '/admin/tribes', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' },
   { key: 'admin-tribe-dashboard', labelKey: 'nav.adminTribeDashboard', href: '/admin/tribe/', minTier: 'leader', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', dynamic: true, resolver: 'resolveMyTribeDashboard', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', lgpdSensitive: true },
+  { key: 'admin-vep-reconciliation', labelKey: 'nav.adminVepReconciliation', href: '/admin/vep-reconciliation', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
   { key: 'admin-campaigns', labelKey: 'nav.adminCampaigns', href: '/admin/campaigns', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
