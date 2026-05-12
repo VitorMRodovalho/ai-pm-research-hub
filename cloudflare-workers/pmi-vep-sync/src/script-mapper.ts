@@ -140,6 +140,13 @@ export function mapScriptToNucleo(
       app.applicantCountry ?? ''
     ),
     membership_status: null,
+    // p150 P0 (2026-05-12): capture VEP raw status for reconciliation report.
+    // Used by get_vep_divergence_report() to surface 3-lifecycle drift between
+    // VEP and Núcleo (selection / onboarding / active member offboarded).
+    // Source of truth for VEP-side. Compare with selection_applications.status
+    // (Núcleo-side) to flag divergence.
+    vep_status_raw: app.status ?? null,
+    vep_last_seen_at: new Date().toISOString(),
     // Wave 3 synth fix (S-CONV-3 — 2 agents): null-semantic consistency vs empty string
     certifications: phaseBCertsString ?? null,
     role_applied: opp.role_default,
