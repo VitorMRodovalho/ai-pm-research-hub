@@ -206,6 +206,10 @@ const SEL_I18N = {
           <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.recalcRankings', lang)}</button>
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
         </div>
+        <!-- p152 W4 OPP-152.6: alert when most rows have rank null (closed cycle reopened com legacy) -->
+        <div id="rank-empty-alert" class="hidden mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
+          ⚠ <strong>Rankings vazios:</strong> <span id="rank-empty-msg">a maioria das aplicações está sem rank calculado.</span> Clique <strong>Recalcular Rankings</strong> acima para regenerar via `calculate_cycle_rankings` + `recalculate_cycle_rankings`.
+        </div>
 
         <!-- p109 Onda 4 Fase 3: quick filters (hideDecided + myEval) + p152 hideShadowVep -->
         <div class="flex flex-wrap gap-2 items-center mb-2 text-[12px]">
@@ -1032,6 +1036,26 @@ const SEL_I18N = {
     renderQuickStats();
     renderKanban();
     renderTable();
+    renderRankEmptyAlert();
+  }
+
+  // p152 W4 OPP-152.6: show alert when >80% of filtered rows have NO rank
+  function renderRankEmptyAlert() {
+    const alertEl = document.getElementById('rank-empty-alert');
+    const msgEl = document.getElementById('rank-empty-msg');
+    if (!alertEl || !msgEl) return;
+    if (filteredRows.length < 5) { alertEl.classList.add('hidden'); return; }
+    const noRank = filteredRows.filter((r: any) =>
+      r.rank_chapter == null && r.rank_leader == null && r.rank_researcher == null && r.rank_overall == null
+    ).length;
+    const pct = (noRank / filteredRows.length) * 100;
+    if (pct >= 80) {
+      const totalText = `${noRank}/${filteredRows.length} aplicações sem rank (${pct.toFixed(0)}%).`;
+      msgEl.textContent = totalText;
+      alertEl.classList.remove('hidden');
+    } else {
+      alertEl.classList.add('hidden');
+    }
   }
 
   function renderQuickStats() {
