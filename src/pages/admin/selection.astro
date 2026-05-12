@@ -138,6 +138,10 @@ const SEL_I18N = {
     pmiProfileServiceHistory: t('admin.selection.modal.pmiProfileServiceHistory', lang),
     pmiProfilePreviousCycles: t('admin.selection.modal.pmiProfilePreviousCycles', lang),
     pmiProfileNonPmi: t('admin.selection.modal.pmiProfileNonPmi', lang),
+    pmiProfileFunnel: t('admin.selection.modal.pmiProfileFunnel', lang),
+    pmiProfileFunnelSource: t('admin.selection.modal.pmiProfileFunnelSource', lang),
+    pmiProfileFunnelReferrer: t('admin.selection.modal.pmiProfileFunnelReferrer', lang),
+    pmiProfileImportedAt: t('admin.selection.modal.pmiProfileImportedAt', lang),
     // p152 W2.5: chapter discrepancy + Phase B summary inline panel
     chapterDiscrepancyTitle: t('admin.selection.modal.chapterDiscrepancyTitle', lang),
     chapterDiscrepancyForm: t('admin.selection.modal.chapterDiscrepancyForm', lang),
@@ -575,6 +579,10 @@ const SEL_I18N = {
       pmiProfileServiceHistory: 'Histórico de voluntariado PMI',
       pmiProfilePreviousCycles: 'Aplicações em ciclos anteriores',
       pmiProfileNonPmi: 'Voluntariado fora do PMI (declarado no form)',
+      pmiProfileFunnel: 'Funil de origem',
+      pmiProfileFunnelSource: 'Fonte (referral_source)',
+      pmiProfileFunnelReferrer: 'Indicado por',
+      pmiProfileImportedAt: 'Importado em',
       chapterDiscrepancyTitle: 'Divergência de capítulo',
       chapterDiscrepancyForm: 'Form do candidato:',
       chapterDiscrepancyCanonical: 'PMI canonical:',
@@ -1843,6 +1851,23 @@ const SEL_I18N = {
           </div>
         </div>` : '';
 
+      // p152 W4 GAP-152.1: funnel attribution
+      const funnel = data.funnel || {};
+      const utm = funnel.utm_data;
+      const hasFunnelSignal = funnel.referral_source || funnel.referrer_member_name || (utm && Object.keys(utm).length) || funnel.vep_application_id;
+      const funnelSection = hasFunnelSignal ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <h4 class="text-[12px] font-bold text-navy mb-2">🎯 ${esc(T.modal.pmiProfileFunnel)}</h4>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+            ${funnel.referral_source ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileFunnelSource)}</span><br><strong>${esc(funnel.referral_source)}</strong></div>` : ''}
+            ${funnel.referrer_member_name ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileFunnelReferrer)}</span><br><strong class="text-emerald-700">${esc(funnel.referrer_member_name)}</strong></div>` : ''}
+            ${funnel.vep_application_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">VEP App ID</span><br><span class="font-mono text-[10px]">${esc(String(funnel.vep_application_id))}</span></div>` : ''}
+            ${funnel.vep_opportunity_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">VEP Opportunity</span><br><span class="font-mono text-[10px]">${esc(String(funnel.vep_opportunity_id))}</span></div>` : ''}
+          </div>
+          ${utm && Object.keys(utm).length ? `<details class="mt-2"><summary class="text-[11px] font-bold text-[var(--text-secondary)] cursor-pointer">UTM data</summary><pre class="text-[10px] mt-1.5 bg-[var(--surface-base)] rounded-lg p-2 overflow-x-auto">${esc(JSON.stringify(utm, null, 2))}</pre></details>` : ''}
+          ${funnel.imported_at ? `<div class="mt-1.5 text-[10px] text-[var(--text-muted)]">${esc(T.modal.pmiProfileImportedAt)}: ${esc(funnel.imported_at)}</div>` : ''}
+        </div>` : '';
+
       // Non-PMI volunteering (form-declared)
       const nonPmi = data.non_pmi_volunteering;
       const nonPmiSection = nonPmi ? `
@@ -1852,13 +1877,13 @@ const SEL_I18N = {
         </div>` : '';
 
       // Empty state
-      const hasAny = identitySection || chaptersSection || certsSection || profileSection || historySection || prevSection || nonPmiSection;
-      if (!hasAny || (!verifiedCerts.length && !memberships.length && !profileHasContent && !serviceHistory.length && !previousCycles.length && !nonPmi && !identity.pmi_id)) {
+      const hasAny = identitySection || chaptersSection || certsSection || profileSection || historySection || prevSection || funnelSection || nonPmiSection;
+      if (!hasAny || (!verifiedCerts.length && !memberships.length && !profileHasContent && !serviceHistory.length && !previousCycles.length && !nonPmi && !identity.pmi_id && !hasFunnelSignal)) {
         container.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-[12px] text-amber-800">⚠ ${esc(T.modal.pmiProfileEmpty)}</div>`;
         return;
       }
 
-      container.innerHTML = `<div class="space-y-3">${identitySection}${chaptersSection}${certsSection}${profileSection}${historySection}${prevSection}${nonPmiSection}</div>`;
+      container.innerHTML = `<div class="space-y-3">${identitySection}${chaptersSection}${certsSection}${profileSection}${historySection}${prevSection}${funnelSection}${nonPmiSection}</div>`;
     } catch (e: any) {
       container.innerHTML = `<p class="text-sm text-red-700">${esc(T.modal.pmiProfileError)}: ${esc(e.message || 'desconhecido')}</p>`;
     }
