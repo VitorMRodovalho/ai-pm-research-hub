@@ -614,6 +614,35 @@ const SEL_I18N = {
 
   const STATUS_LABELS: Record<string, string> = T.statusLabels;
 
+  /* p150 PM feedback — PMI canonical chapter name → curto code mapping.
+     Fonte: PMI Community Member History strings (formato "X, Brazil Chapter").
+     Quando não tem mapping conhecido, retorna o raw input (display fica
+     mais longo mas correto). Lista pode crescer conforme novos chapters
+     aparecem em ciclos futuros. */
+  function mapPmiChapterToCode(raw: string): string {
+    const map: Record<string, string> = {
+      'Ceará, Brazil Chapter': 'PMI-CE',
+      'Minas Gerais, Brazil Chapter': 'PMI-MG',
+      'Distrito Federal, Brazil Chapter': 'PMI-DF',
+      'Rio Grande do Sul, Brazil Chapter': 'PMI-RS',
+      'São Paulo, Brazil Chapter': 'PMI-SP',
+      'Goiás, Brazil Chapter': 'PMI-GO',
+      'Rio de Janeiro, Brazil Chapter': 'PMI-RJ',
+      'Bahia, Brazil Chapter': 'PMI-BA',
+      'Pernambuco, Brazil Chapter': 'PMI-PE',
+      'Espírito Santo, Brazil Chapter': 'PMI-ES',
+      'Paraná, Brazil Chapter': 'PMI-PR',
+      'Santa Catarina, Brazil Chapter': 'PMI-SC',
+      'Manaus, Brazil Chapter': 'PMI-AM',
+      'Mato Grosso, Brazil Chapter': 'PMI-MT',
+      'Alagoas, Brazil Chapter': 'PMI-AL',
+      'Pará, Brazil Chapter': 'PMI-PA',
+      'Maranhão, Brazil Chapter': 'PMI-MA',
+      'Rio Grande do Norte, Brazil Chapter': 'PMI-RN',
+    };
+    return map[raw] || raw;
+  }
+
   /* p109 Onda 4 Fase 1.2 — "Minha avaliação" badge na lista (FP-4).
      Resolve PM pain "já avaliei?" sem precisar abrir o modal.
      Reads my_eval_status from get_selection_dashboard (Onda 2.3). */
@@ -954,11 +983,45 @@ const SEL_I18N = {
       }
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
+      // p150 PM feedback — chapter canonical from PMI Member History (vs form-declared).
+      // canonicalRaw: e.g. "Ceará, Brazil Chapter". Mapped to "PMI-CE" via PMI_CHAPTER_CODE_MAP.
+      // If both present and differ, show canonical primary + form in tooltip (⚠ discrepancy).
+      // If only form present, fallback to form (free-text, unverified).
+      const pmiCanonical = r.pmi_canonical || {};
+      const chapterCanonicalRaw: string | null = pmiCanonical.chapter_canonical || null;
+      const chapterCanonicalCode = chapterCanonicalRaw ? mapPmiChapterToCode(chapterCanonicalRaw) : null;
+      const formChapter: string | null = r.chapter || null;
+      const chapterDisplay = chapterCanonicalCode || chapterCanonicalRaw || formChapter || '—';
+      const chapterDivergent = chapterCanonicalCode && formChapter && chapterCanonicalCode !== formChapter;
+      const chapterTooltip = chapterDivergent
+        ? `Canonical PMI: ${chapterCanonicalRaw}. Declarou no form: ${formChapter}.`
+        : chapterCanonicalRaw
+        ? `Canonical PMI: ${chapterCanonicalRaw}`
+        : formChapter
+        ? `Declarou (free text, não verificado): ${formChapter}`
+        : 'Sem capítulo identificado';
+      const chapterSourceBadge = chapterCanonicalRaw
+        ? '<span class="text-[8px] font-bold ml-1 text-emerald-600" title="Fonte PMI Member History">✓</span>'
+        : formChapter
+        ? '<span class="text-[8px] font-bold ml-1 text-amber-500" title="Apenas form do candidato (não verificado PMI)">~</span>'
+        : '';
+      const chapterDivergentBadge = chapterDivergent
+        ? `<span class="text-[8px] font-bold ml-0.5 text-amber-600" title="Form declarou: ${esc(formChapter ?? '')}">⚠</span>`
+        : '';
+      // PMI member status badge (active/past/unknown).
+      const memberStatus = pmiCanonical.member_status || 'unknown';
+      const memberBadge = pmiCanonical.is_pmi_member
+        ? memberStatus === 'active'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700" title="Membro PMI ativo (service_latest_end_date >= hoje)">✓PMI</span>'
+          : memberStatus === 'past'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600" title="Membro PMI passado (cadastro existe, expirado)">⚪PMI</span>'
+          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Cadastro PMI existe mas sem service history (Phase B pendente)">?PMI</span>'
+        : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
         <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante">R</span>' : ''}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${esc(r.chapter || '—')}</td>
+        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-navy' : 'text-[var(--text-muted)]'}">${researchScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
