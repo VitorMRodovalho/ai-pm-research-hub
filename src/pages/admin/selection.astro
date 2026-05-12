@@ -2157,6 +2157,41 @@ const SEL_I18N = {
    * Default collapsed; expand → 2 columns Sonnet/Gemini side by side.
    * p109 Onda 4 Fase 2: thumbs/override controls (validations array from list_my_ai_validations).
    */
+  // p152 W4 P2 OPP-152.9: per-pillar AI hint matching via keyword scan.
+  // Inputs: ai_analysis (Gemini) + criterion label. Output: top-2 strengths +
+  // top-2 areas_to_probe + top-1 evidence quote with label-token overlap.
+  // Token = 4+ char word in lowercase. Empty if no signal.
+  function matchPillarHints(aa: any, label: string): { strengths: string[]; probes: string[]; quotes: string[] } {
+    const empty = { strengths: [] as string[], probes: [] as string[], quotes: [] as string[] };
+    if (!aa || !label) return empty;
+    const tokens = String(label).toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents
+      .split(/[\s,/.()\-]+/)
+      .filter(t => t.length >= 4);
+    if (!tokens.length) return empty;
+    const norm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const matches = (arr: any) => (Array.isArray(arr) ? arr : []).filter((s: any) => {
+      const lower = norm(s);
+      return tokens.some(t => lower.includes(t));
+    });
+    return {
+      strengths: matches(aa.key_strengths).slice(0, 2),
+      probes: matches(aa.areas_to_probe).slice(0, 2),
+      quotes: matches(aa.evidence_quotes).slice(0, 1),
+    };
+  }
+
+  function renderPillarHintsCallout(aa: any, label: string): string {
+    const h = matchPillarHints(aa, label);
+    if (!h.strengths.length && !h.probes.length && !h.quotes.length) return '';
+    return `<div class="bg-purple-50 border-l-4 border-purple-300 rounded-r p-2 mb-2 text-[11px]">
+      <div class="text-[9px] font-bold uppercase text-purple-700 mb-1">🤖 IA sugere para este pilar</div>
+      ${h.strengths.length ? `<div class="mb-0.5"><strong class="text-emerald-700">💪 Forças:</strong> <span class="text-[var(--text-primary)]">${h.strengths.map((s: string) => esc(s)).join(' · ')}</span></div>` : ''}
+      ${h.probes.length ? `<div class="mb-0.5"><strong class="text-blue-700">🔎 Probar:</strong> <span class="text-[var(--text-primary)]">${h.probes.map((s: string) => esc(s)).join(' · ')}</span></div>` : ''}
+      ${h.quotes.length ? `<div class="text-[10px] italic text-purple-700">📝 "${h.quotes.map((s: string) => esc(s)).join('" · "')}"</div>` : ''}
+    </div>`;
+  }
+
   function renderInlineAiPanel(app: any, validations: any[] = []): string {
     const sonnetVal = validations.find((v: any) => v.ai_purpose === 'sonnet_triage') || null;
     const geminiVal = validations.find((v: any) => v.ai_purpose === 'gemini_qualitative') || null;
@@ -2538,12 +2573,14 @@ const SEL_I18N = {
                   ? `<div class="text-[12px] text-[var(--text-primary)] bg-emerald-50/40 border border-emerald-200 rounded-lg p-2 mt-1.5"><strong class="text-[10px] text-emerald-700 uppercase">Pré-nota</strong><br>${esc(submittedNote)}</div>`
                   : '')
               : `<textarea data-eval-note-key="${esc(c.key)}" aria-label="Pré-nota ${esc(c.label)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Pré-nota: justifique o score deste critério...">${esc(submittedNote)}</textarea>`;
+            const pillarHints = renderPillarHintsCallout(app.ai_analysis, c.label);
             return `
             <div class="bg-[var(--surface-base)] rounded-xl p-3">
               <div class="flex items-center justify-between mb-1">
                 <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight}, 0-${cMax})</span></label>
                 ${!isLocked ? `<span class="eval-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${savedScore ?? '—'}</span>` : ''}
               </div>
+              ${pillarHints}
               ${valueDisplay}
               ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
               ${noteDisplay}
@@ -3402,12 +3439,15 @@ const SEL_I18N = {
                     ? `<div class="text-[12px] text-[var(--text-primary)] bg-emerald-50/40 border border-emerald-200 rounded-lg p-2 mt-1.5"><strong class="text-[10px] text-emerald-700 uppercase">Pré-nota</strong><br>${esc(submittedNote)}</div>`
                     : '')
                 : `<textarea data-intv-note-key="${esc(c.key)}" aria-label="Pré-nota ${esc(c.label)}" class="w-full mt-1.5 px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-12 resize-none" placeholder="Pré-nota: justifique o score deste pilar...">${esc(submittedNote)}</textarea>`;
+              // p152 W4 P2 OPP-152.9: AI hints per-pillar inline (Entrevista tab).
+              const intvPillarHints = renderPillarHintsCallout(formApp?.ai_analysis, c.label);
               return `
               <div class="bg-[var(--surface-base)] rounded-xl p-3">
                 <div class="flex items-center justify-between mb-2">
                   <label class="text-[13px] font-bold text-navy">${esc(c.label)} <span class="text-[var(--text-muted)] text-[11px] font-normal">(peso ${c.weight}, 0-${cMax})</span></label>
                   ${!isLocked ? `<span class="intv-score-display text-base font-bold text-navy" data-key="${esc(c.key)}">${savedScore ?? '—'}</span>` : ''}
                 </div>
+                ${intvPillarHints}
                 ${questionsBlock}
                 ${valueDisplay}
                 ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
