@@ -111,6 +111,17 @@ const SEL_I18N = {
     toastReasonRequired: t('admin.selection.modal.toastReasonRequired', lang),
     toastRescheduleSent: t('admin.selection.modal.toastRescheduleSent', lang),
     toastErrorReschedule: t('admin.selection.modal.toastErrorReschedule', lang),
+    // p152 W2.5: chapter discrepancy + Phase B summary inline panel
+    chapterDiscrepancyTitle: t('admin.selection.modal.chapterDiscrepancyTitle', lang),
+    chapterDiscrepancyForm: t('admin.selection.modal.chapterDiscrepancyForm', lang),
+    chapterDiscrepancyCanonical: t('admin.selection.modal.chapterDiscrepancyCanonical', lang),
+    phaseBSummaryTitle: t('admin.selection.modal.phaseBSummaryTitle', lang),
+    phaseBMemberStatus: t('admin.selection.modal.phaseBMemberStatus', lang),
+    phaseBChapterCanonical: t('admin.selection.modal.phaseBChapterCanonical', lang),
+    phaseBHistoryCount: t('admin.selection.modal.phaseBHistoryCount', lang),
+    phaseBMemberSince: t('admin.selection.modal.phaseBMemberSince', lang),
+    phaseBMemberUntil: t('admin.selection.modal.phaseBMemberUntil', lang),
+    phaseBFetchedAt: t('admin.selection.modal.phaseBFetchedAt', lang),
   },
   // p152 Wave 1.0: shadow VEP filter button toggle text
   hideShadowVep: t('admin.selection.hideShadowVep', lang),
@@ -507,6 +518,16 @@ const SEL_I18N = {
       toastReasonRequired: 'Informe o motivo do reagendamento',
       toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
       toastErrorReschedule: 'Erro ao solicitar reagendamento',
+      chapterDiscrepancyTitle: 'Divergência de capítulo',
+      chapterDiscrepancyForm: 'Form do candidato:',
+      chapterDiscrepancyCanonical: 'PMI canonical:',
+      phaseBSummaryTitle: 'Resumo Phase B (canonical PMI)',
+      phaseBMemberStatus: 'Status membro',
+      phaseBChapterCanonical: 'Capítulo canonical',
+      phaseBHistoryCount: 'Service history',
+      phaseBMemberSince: 'Membro desde',
+      phaseBMemberUntil: 'Até',
+      phaseBFetchedAt: 'Última sync Phase B',
     },
     hideShadowVep: '🔁 Ocultar shadow VEP',
     showShadowVep: '🔁 Mostrar shadow VEP',
@@ -1101,6 +1122,34 @@ const SEL_I18N = {
       ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${T.modal.returningBadge}</span>`
       : '';
 
+    // p152 W2.5: chapter discrepancy alert (form chapter vs canonical PMI service_history)
+    const pmiC = row.pmi_canonical || {};
+    const chapterCanonical = pmiC.chapter_canonical || null;
+    const chapterMismatch = chapterCanonical
+      && row.chapter
+      && String(chapterCanonical).trim().toLowerCase() !== String(row.chapter).trim().toLowerCase();
+    const chapterDiscrepancyAlert = chapterMismatch
+      ? `<div class="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
+           <strong>⚠ ${T.modal.chapterDiscrepancyTitle}:</strong> ${T.modal.chapterDiscrepancyForm} <strong>${esc(row.chapter)}</strong> · ${T.modal.chapterDiscrepancyCanonical} <strong>${esc(chapterCanonical)}</strong>
+         </div>`
+      : '';
+
+    // p152 W2.5: Phase B summary inline (uses pmi_canonical subgroup already in row)
+    const phaseBSummary = (pmiC.is_pmi_member || pmiC.member_status === 'active' || pmiC.member_status === 'past' || pmiC.service_history_count > 0)
+      ? `<div class="mt-3 p-3 rounded-xl border border-navy/15 bg-navy/5 text-[12px]">
+           <h4 class="text-[11px] font-bold text-navy mb-1.5">${T.modal.phaseBSummaryTitle}</h4>
+           <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+             ${pmiC.pmi_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">PMI ID</span><br><strong>${esc(pmiC.pmi_id)}</strong></div>` : ''}
+             ${pmiC.member_status ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberStatus}</span><br><strong>${esc(pmiC.member_status)}</strong></div>` : ''}
+             ${chapterCanonical ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBChapterCanonical}</span><br><strong>${esc(chapterCanonical)}</strong></div>` : ''}
+             ${pmiC.service_history_count != null ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBHistoryCount}</span><br><strong>${pmiC.service_history_count}</strong></div>` : ''}
+             ${pmiC.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberSince}</span><br><strong>${esc(pmiC.member_since)}</strong></div>` : ''}
+             ${pmiC.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberUntil}</span><br><strong>${esc(pmiC.member_until)}</strong></div>` : ''}
+           </div>
+           ${pmiC.phase_b_fetched_at ? `<div class="mt-1.5 text-[10px] text-[var(--text-muted)]">${T.modal.phaseBFetchedAt}: ${esc(pmiC.phase_b_fetched_at)}</div>` : ''}
+         </div>`
+      : '';
+
     body.innerHTML = `
       <!-- Modal tabs -->
       <div class="flex gap-1 border-b border-[var(--border-default)] mb-4">
@@ -1115,6 +1164,8 @@ const SEL_I18N = {
 
       <!-- TAB: Info -->
       <div id="modal-tab-info">
+        <!-- p152 W2.5: chapter discrepancy alert (form vs PMI canonical) -->
+        ${chapterDiscrepancyAlert}
         <!-- Issue #116 Part 2: 6-stage pipeline timeline (full modal width, above 2-col grid) -->
         <div class="mb-5">
           ${pipelineTimeline(row)}
@@ -1160,6 +1211,7 @@ const SEL_I18N = {
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.rankOverall}</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
             </div>
             ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
+            ${phaseBSummary}
             ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>` : ''}
           </div>
           <div class="space-y-4">
