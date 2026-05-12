@@ -4931,6 +4931,7 @@ const enUS: Record<string, string> = {
   'admin.selection.hideDecided': '👁 Hide decided',
   'admin.selection.hideShadowVep': '🔁 Hide shadow VEP',
   'admin.selection.showShadowVep': '🔁 Show shadow VEP',
+  'admin.selection.hiddenByFilter': 'hidden by filter',
   'admin.selection.myPending': '⏳ My pending',
   'admin.selection.videoFilterAll': '🎥 All videos',
   'admin.selection.videoFilterUploaded': '🎥 Uploaded video',
