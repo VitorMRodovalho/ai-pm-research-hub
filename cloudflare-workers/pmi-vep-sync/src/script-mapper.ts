@@ -188,7 +188,13 @@ export function mapScriptToNucleo(
     service_latest_end_date: phaseBSvcLatest,
     is_open_to_volunteer: phaseBOpenToVol,
     community_profile_private: isPhaseBPrivate,
-    pmi_data_fetched_at: app.pmiDataFetchedAt ?? null,
+    // p152 W4 GAP-152.2: PMI script doesn't emit pmiDataFetchedAt — fall back to
+    // now() if ANY Phase B signal is present (means worker DID fetch enriched data).
+    // Without this, pmi_data_fetched_at stayed 0/103 despite phase_b_processed=25.
+    pmi_data_fetched_at: app.pmiDataFetchedAt
+      ?? ((phaseBMemberships || phaseBLocation || phaseBAboutMe || phaseBCompany || phaseBIndustry || phaseBSvcCount !== null)
+        ? new Date().toISOString()
+        : null),
     consent_version: consentVersion
   };
 }
