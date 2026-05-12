@@ -158,7 +158,7 @@ export interface SelectionApplicationUpsert {
   profile_industry?: string | null;
   profile_company?: string | null;
   profile_designation?: string | null;
-  profile_certifications?: string | null;
+  profile_certifications?: string[] | null;
   profile_volunteer_interest?: string | null;
   profile_specialties?: string | null;
   profile_linkedin_url?: string | null;
