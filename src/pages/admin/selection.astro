@@ -576,6 +576,7 @@ const SEL_I18N = {
   function pipelineBadges(r: any): string {
     const aiDone = r.ai_analysis_done === true;
     const peerCount = Number(r.peer_eval_count ?? 0);
+    const peerDistinct = Number(r.peer_eval_distinct_evaluators ?? 0);
     const peerPending = Number(r.peer_invites_pending ?? 0);
     const interviewSched = r.interview_scheduled === true;
     const tokenUsed = r.token_consumed === true;
@@ -588,15 +589,17 @@ const SEL_I18N = {
       ? dot('bg-emerald-100 text-emerald-700', 'IA', 'AI analysis concluída + consent dado')
       : dot('bg-gray-100 text-gray-400', 'IA', 'Aguardando AI / consent');
 
-    const peerLabel = `${peerCount}/2`;
-    const peerColor = peerCount >= 2
+    // p150 fix — peer review = 2 avaliações OBJETIVAS por avaliadores DISTINTOS.
+    // peerCount já é filtrado no RPC (objective + submitted); peerDistinct é o gate verde.
+    const peerLabel = `${peerDistinct}/2`;
+    const peerColor = peerDistinct >= 2
       ? 'bg-emerald-100 text-emerald-700'
-      : peerCount === 1
+      : peerDistinct === 1
         ? 'bg-amber-100 text-amber-700'
         : peerPending > 0
           ? 'bg-blue-100 text-blue-700'
           : 'bg-gray-100 text-gray-400';
-    const peerHint = `${peerCount} avaliação(ões) submetida(s)` +
+    const peerHint = `${peerDistinct} avaliador(es) distinto(s), ${peerCount} avaliação(ões) objetiva(s) submetida(s)` +
       (peerPending > 0 ? `, ${peerPending} convite(s) pendente(s)` : '');
     const peerBadge = dot(peerColor, peerLabel, peerHint);
 
@@ -622,12 +625,13 @@ const SEL_I18N = {
   function pipelineTimeline(r: any): string {
     const isTerminal = ['approved', 'rejected', 'converted', 'withdrawn', 'cancelled'].includes(r.status);
     const peerCount = Number(r.peer_eval_count ?? 0);
+    const peerDistinct = Number(r.peer_eval_distinct_evaluators ?? 0);
     const submittedAt = r.application_date || r.created_at;
 
     const stages = [
       { label: 'Aplicação', state: 'done', detail: submittedAt ? new Date(submittedAt).toLocaleDateString('pt-BR') : 'Submetida' },
       { label: 'Análise IA', state: r.ai_analysis_done ? 'done' : (r.consent_ai_analysis_at ? 'current' : 'pending'), detail: r.ai_analysis_done ? 'Concluída' : (r.consent_ai_analysis_at ? 'Em curso' : 'Aguardando consent') },
-      { label: 'Par-revisão', state: peerCount >= 2 ? 'done' : peerCount > 0 ? 'current' : 'pending', detail: `${peerCount}/2 avaliações` },
+      { label: 'Par-revisão', state: peerDistinct >= 2 ? 'done' : peerDistinct > 0 ? 'current' : 'pending', detail: `${peerDistinct}/2 avaliadores · ${peerCount} obj. submetida(s)` },
       { label: 'Vídeo', state: r.video_screening_done ? 'done' : 'pending', detail: r.video_screening_done ? 'OK ou opt-out' : 'Não realizado' },
       { label: 'Entrevista', state: r.interview_scheduled ? 'done' : 'pending', detail: r.interview_scheduled ? 'Agendada' : 'Não agendada' },
       { label: 'Decisão', state: isTerminal ? 'done' : 'pending', detail: isTerminal ? (STATUS_LABELS[r.status] || r.status) : 'Em andamento' },
