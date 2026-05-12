@@ -3432,9 +3432,20 @@ const SEL_I18N = {
       const btn = document.getElementById('recalc-rankings-btn') as HTMLButtonElement;
       if (btn) { btn.disabled = true; btn.textContent = 'Calculando...'; }
       try {
-        const { error } = await sb.rpc('calculate_rankings', { p_cycle_id: currentCycleId });
-        if (error) throw error;
-        toast('Rankings recalculados');
+        // p150 fix (2026-05-12): two RPCs need to run for full ranking.
+        // calculate_rankings (legacy CR-040): populates rank_chapter + rank_overall.
+        // recalculate_cycle_rankings (CR-047): populates rank_leader + rank_researcher,
+        // including promoted candidates (promotion_path='triaged_to_leader' like
+        // Herlon Sousa b2 final_eval). Frontend Rank column reads rank_leader/
+        // rank_researcher first → calling only the legacy left them NULL,
+        // hence the "—" display despite Score Final = 316.
+        const [r1, r2] = await Promise.all([
+          sb.rpc('calculate_rankings', { p_cycle_id: currentCycleId }),
+          sb.rpc('recalculate_cycle_rankings', { p_cycle_id: currentCycleId, p_reason: 'manual_recalc' }),
+        ]);
+        if (r1.error) throw r1.error;
+        if (r2.error) throw r2.error;
+        toast('Rankings recalculados (chapter + overall + leader + researcher)');
         loadDashboard();
       } catch (e: any) {
         toast(e.message || 'Erro ao recalcular', 'error');
