@@ -2185,6 +2185,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.committeeLead': 'Líder del Comité',
   'admin.selection.hideStatusesHint': 'Oculta aprobados, rechazados, lista de espera, convertidos, retirados, cancelados',
   'admin.selection.hideShadowVepHint': 'Oculta postulaciones de miembros activos re-importados por PMI VEP (duplicados de personas que ya están en Núcleo)',
+  'admin.selection.interviewToday': '📅 Entrevistas hoy',
+  'admin.selection.interviewTodayHint': 'Muestra solo candidatos con entrevista programada para HOY — útil para apurar evaluaciones objetivas antes de la entrevista',
   'admin.selection.pendingReviewHint': 'Solo candidatos donde aún NO has enviado evaluación',
   'admin.selection.alreadyReviewedHint': 'Solo candidatos donde ya has enviado evaluación',
   'admin.selection.searchNameEmail': 'Buscar nombre o e-mail...',
