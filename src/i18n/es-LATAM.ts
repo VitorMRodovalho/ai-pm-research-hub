@@ -4948,6 +4948,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.colStatus': 'Estado',
   'admin.selection.colMyEval': 'Mi eval.',
   'admin.selection.colPipeline': 'Pipeline',
+  'admin.selection.colInterview': 'Entrevista',
+  'admin.selection.colInterviewHint': 'Próxima entrevista programada (status=scheduled). Badge HOY cuando fecha == hoy SP-tz.',
   'admin.selection.colDate': 'Fecha',
   'admin.selection.colOnboarding': 'Onboarding',
   'admin.selection.bulkSelectedSuffix': 'seleccionados',

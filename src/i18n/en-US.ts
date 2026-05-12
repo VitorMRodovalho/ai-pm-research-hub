@@ -4947,6 +4947,8 @@ const enUS: Record<string, string> = {
   'admin.selection.colStatus': 'Status',
   'admin.selection.colMyEval': 'My eval.',
   'admin.selection.colPipeline': 'Pipeline',
+  'admin.selection.colInterview': 'Interview',
+  'admin.selection.colInterviewHint': 'Next scheduled interview (status=scheduled). Badge TODAY when date == today SP-tz.',
   'admin.selection.colDate': 'Date',
   'admin.selection.colOnboarding': 'Onboarding',
   'admin.selection.bulkSelectedSuffix': 'selected',

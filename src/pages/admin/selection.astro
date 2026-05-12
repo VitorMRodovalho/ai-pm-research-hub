@@ -237,6 +237,7 @@ const SEL_I18N = {
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>{t('admin.selection.colPipeline', lang)}</th>
+                  <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.colInterviewHint', lang)}>{t('admin.selection.colInterview', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colOnboarding', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.actions', lang)}</th>
@@ -892,7 +893,7 @@ const SEL_I18N = {
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -1016,7 +1017,7 @@ const SEL_I18N = {
         : base;
     }
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -1086,6 +1087,20 @@ const SEL_I18N = {
       const chapterDivergentBadge = chapterDivergent
         ? `<span class="text-[8px] font-bold ml-0.5 text-amber-600" title="Form declarou: ${esc(formChapter ?? '')}">⚠</span>`
         : '';
+      // p152 W4 P1: interview column — show next scheduled date/time (SP-tz) + HOJE badge if today
+      const intvNextIso: string | null = r.meta?.interview_next_at || null;
+      const hasIntvToday: boolean = r.meta?.has_interview_today === true;
+      const interviewCell = intvNextIso
+        ? (() => {
+            const d = new Date(intvNextIso);
+            const dateStr = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+            const timeStr = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+            if (hasIntvToday) {
+              return `<div class="flex flex-col items-start gap-0.5"><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">HOJE</span><span class="text-[11px] font-bold text-navy">${esc(timeStr)}</span></div>`;
+            }
+            return `<div class="flex flex-col items-start gap-0.5 text-[11px] text-[var(--text-secondary)]"><span class="font-semibold">${esc(dateStr)}</span><span class="text-[10px] text-[var(--text-muted)]">${esc(timeStr)} SP</span></div>`;
+          })()
+        : '<span class="text-[var(--text-muted)] text-[11px]">—</span>';
       // PMI member status badge (active/past/unknown).
       const memberStatus = pmiCanonical.member_status || 'unknown';
       const memberBadge = pmiCanonical.is_pmi_member
@@ -1106,6 +1121,7 @@ const SEL_I18N = {
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
         <td class="px-3 py-2.5">${pipelineBadges(r)}</td>
+        <td class="px-3 py-2.5 whitespace-nowrap">${interviewCell}</td>
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">

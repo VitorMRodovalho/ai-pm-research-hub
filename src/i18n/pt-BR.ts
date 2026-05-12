@@ -4953,6 +4953,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.colStatus': 'Status',
   'admin.selection.colMyEval': 'Minha aval.',
   'admin.selection.colPipeline': 'Pipeline',
+  'admin.selection.colInterview': 'Entrevista',
+  'admin.selection.colInterviewHint': 'Próxima entrevista agendada (status=scheduled). Badge HOJE quando data == hoje SP-tz.',
   'admin.selection.colDate': 'Data',
   'admin.selection.colOnboarding': 'Onboarding',
   'admin.selection.bulkSelectedSuffix': 'selecionados',
