@@ -1,11 +1,12 @@
 # ADR-0079: Subjective Scoring via Video Transcription (4th AI Frontier)
 
-**Status**: PROPOSED (aguarda council review + PM decisions D-MODEL..D-LATENCY-SLA)
-**Date**: 2026-05-12
+**Status**: PROPOSED · AWAITING-RATIFICATION (council 4-lens review concluded; 11 blockers documented + 10 decisões consolidadas; 4 human gates outstanding antes de flip → ACCEPTED — ver §11 Acceptance Gate)
+**Date**: 2026-05-12 (revisão p152 pós-council; status p152)
 **Decider**: PM Vitor Maia Rodovalho (GP Núcleo IA & GP)
 **Trigger**: p150 B-full — operacionalizar avaliação subjetiva por vídeo para validar modelos e habilitar calibração
 **Predecessor**: p150 B-light (commit `73168c0`) — visibilidade tri-state shipped
 **Spec doc**: `docs/specs/p150-b-full-subjective-scoring-spec.md`
+**Council synthesis**: `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md`
 
 ---
 
@@ -58,21 +59,27 @@ Adicionar **subjective scoring via transcription** como 4ª frente IA da platafo
 
 ---
 
-## Decisões abertas (council irá pesar; PM decide)
+## Decisões consolidadas (pós-council 4-lens, p151)
 
-Detalhe das opções em `docs/specs/p150-b-full-subjective-scoring-spec.md` §8. Matriz resumida:
+Detalhe completo em `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md` §5. **10 decisões** (9 originais + 1 nova D-CONSENT identificada pelos lentes security + legal):
 
-| ID | Decisão | Default proposto | Quem pesa |
+| ID | Decisão | Resolução consolidada | Justificativa |
 |---|---|---|---|
-| D-MODEL | Modelo subjective | Sonnet 4.6 + cache | ai-engineer + PM |
-| D-CTX | Inclui role/chapter no prompt? | Não (evita bias) | ai-engineer + security |
-| D-TRIGGER | Pipeline trigger | Cron 5min polling | data-architect |
-| D-NON-BIND | Score entra em `final_score`? | Nunca | legal-counsel + PM |
-| D-EXPORT | Reasoning em LGPD export? | Sim | legal-counsel + PM |
-| D-RUBRIC | Onde fica rubric? | Tabela `pillar_rubrics` versionada | data-architect + ai-engineer |
-| D-RETRY-CAP | Max retries antes failed permanente | 3 | data-architect |
-| D-LATENCY-SLA | SLA p95 análise | 5min | product-leader + PM |
-| D-SUPERSEDE | Re-run comportamento | Insert + mark prior superseded | data-architect |
+| D-MODEL | Modelo subjective | **Sonnet 4.6 + prompt cache** | ai-engineer; Haiku under-shoots qualitativo, Gemini Free Tier saturação certa |
+| D-CTX | Inclui role/chapter no prompt? | **Não (A)** | ai-engineer; pillar system abstrai context, role cria meta-rubric vicioso |
+| D-TRIGGER | Pipeline trigger | **Cron 5min polling (A)** + 2 índices adicionais | data-architect; latency aceitável (STT já leva minutos) |
+| D-NON-BIND | Score entra em `final_score`? | **Nunca (A)** + banner UI obrigatório + invariante CI auditando `pg_get_functiondef` | consenso; salvaguarda Art. 20 §1 |
+| D-EXPORT | Reasoning em LGPD export? | **Sim (A)** — model + model_version + prompt_hash + transcription_hash + reasoning + confidence + score + data | legal-counsel; Art. 18 II + Art. 20 §1 |
+| D-RUBRIC | Onde fica rubric? | **Tabela versionada (B)** com cache strategy deterministic (system prompt ordenado + `prompt_hash` em `model_version`) | ai-engineer + data-architect |
+| D-RETRY-CAP | Max retries antes failed permanente | **3 (A)** + status `failed_permanent` separado + `CHECK retry_count <= 3` | data-architect |
+| D-LATENCY-SLA | SLA p95 análise | **5min (A)** | sem objeção |
+| D-SUPERSEDE | Re-run comportamento | **Insert + supersede (A)** com partial unique index `WHERE status NOT IN ('superseded','failed')` | data-architect |
+| **D-CONSENT** (NOVA p151) | Consent reuse ou dedicado? | **Consent dedicado** `consent_subjective_video_scoring_at` + Material change Termo Adesão v2.7→v2.8 | legal-counsel preferred path; security HIGH severity sem ajuste |
+
+### Notas operacionais cross-cutting
+
+- Revoke trigger: **execução imediata** (mesma transaction do UPDATE) + fallback cron 72h para edge cases. Comunicar ao titular como "até 5 dias úteis".
+- EF step 1 obrigatoriamente valida `consent_subjective_video_scoring_at IS NOT NULL AND consent_subjective_video_scoring_revoked_at IS NULL` (não reutilizar `consent_ai_analysis_revoked_at`).
 
 ---
 
@@ -104,16 +111,55 @@ Synthesis depois: `docs/council/decisions/2026-05-12-p151-subjective-scoring-syn
 
 ## Implementation gating
 
-ADR-0079 ACCEPTED é **precondição** para qualquer migration `b_full_*` aplicar em prod. Status PROPOSED bloqueia código.
+ADR-0079 ACCEPTED é **precondição** para qualquer migration `b_full_*` aplicar em prod. Status PROPOSED · AWAITING-RATIFICATION bloqueia código.
 
 Sequência de promoção:
 
-1. PM revisa spec p150-b-full-subjective-scoring-spec.md
-2. PM revisa esta ADR-0079 (PROPOSED)
-3. Council 4 lentes em paralelo (próxima sessão p151)
-4. PM decide 9 decisões (D-MODEL..D-SUPERSEDE) em síntese
-5. ADR-0079 → ACCEPTED com decisões registradas
-6. Implementação inicia (sessões p152+)
+1. ✅ PM revisa spec p150-b-full-subjective-scoring-spec.md
+2. ✅ PM revisa esta ADR-0079 (PROPOSED)
+3. ✅ Council 4 lentes em paralelo (p151 — concluído 2026-05-12)
+4. ✅ PM aceita 10 decisões consolidadas em §3 desta ADR
+5. ⏳ Spec amendments p151b — 11 itens bloqueantes incorporados (ver §11)
+6. ⏳ Material change Termo Adesão v2.7→v2.8 ratificada (curadores + Ângelina + Ivan DPO)
+7. ⏳ DPA Anthropic confirma cobertura para transcrição de vídeo como input ao modelo (ou adendo)
+8. ⏳ ADR-0079 → ACCEPTED com decisões registradas
+9. ⏳ Implementação inicia (sessões p153+)
+
+---
+
+## §11 Acceptance Gate — 11 blockers (council 4-lens p151)
+
+ADR fica PROPOSED · AWAITING-RATIFICATION até **todos** os 11 itens abaixo serem resolvidos. Detalhe completo em synthesis §3.
+
+### Schema/DDL (data-architect — M0 + M1 + M2 obrigatórias)
+
+- [ ] **#1** Partial unique index `idx_vsa_uniq_active ... WHERE status NOT IN ('superseded','failed')` em `video_screening_analysis` (em vez de UNIQUE constraint plain) — M1
+- [ ] **#2** `superseded_by uuid REFERENCES video_screening_analysis(id) ON DELETE SET NULL` em `video_screening_analysis` — M1
+- [ ] **#3** Extension de `handle_consent_revocation()` para incluir `DELETE FROM video_screening_analysis WHERE application_id = NEW.id` (LGPD gap concreto) — M1
+- [ ] **#4** Invariant `P_subjective_score_avg_consistency` + named sync trigger `_trg_subjective_score_avg_sync` (ADR-0012 Principle 2) — M2
+
+### EF/Modelo (ai-engineer)
+
+- [ ] **#5** JSON schema corrigido: `score: { type: "number" }` (não integer) + `additionalProperties: false` + validação pós-parse documentada na spec — EF + spec
+- [ ] **#6** EF step 1 valida `consent_subjective_video_scoring_at IS NOT NULL AND consent_subjective_video_scoring_revoked_at IS NULL` — EF
+- [ ] **#7** Calibration RPC retorna Krippendorff α + MAE + viés sistemático além de Pearson r — RPC `get_subjective_calibration_stats`
+
+### Consent/Legal (security + legal — M0 precede M1)
+
+- [ ] **#8** Coluna `consent_subjective_video_scoring_at` + `consent_subjective_video_scoring_revoked_at` em `selection_applications` + tela de consent dedicada na jornada de upload — M0 + frontend
+- [ ] **#9** Material change Termo de Adesão v2.7→v2.8 incluindo: (a) análise IA de conteúdo de vídeo com scoring; (b) disclosure de processamento por terceiro (Anthropic como operador); (c) direitos titular (acesso, revogação, revisão) — Doc + workflow ratificação curadores + Ângelina (LGPD) + Ivan (DPO)
+- [ ] **#10** Banner UI obrigatório `<aside>` não-dismissable no modal Vídeos: "Score gerado por IA — sinal de apoio. Decisão final é exclusivamente do Comitê de Curadoria." — Frontend `selection.astro` modal Vídeos
+- [ ] **#11** Confirmação DPA Anthropic cobre transcrição de vídeo como input ao modelo (ou adendo DPA antes de deploy) — Verificação documental + adendo se necessário
+
+### Cronograma de fechamento
+
+| Sessão | Ação |
+|---|---|
+| p152 (esta) | ADR + spec atualizados (#1-7 documentados na spec; #8-11 cabem a fluxo humano) |
+| p153 | Material change Termo Adesão v2.8 (draft + curador ratification path) — #9 |
+| p154+ | Migrations 1-6 + EF + frontend (após Termo v2.8 ratificado + DPA confirmado) |
+
+---
 
 ---
 
@@ -143,6 +189,8 @@ Sequência de promoção:
 ## Cross-refs
 
 - Spec doc: `docs/specs/p150-b-full-subjective-scoring-spec.md`
+- **Council synthesis (p151)**: `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md` — fonte das 10 decisões consolidadas + 11 blockers
+- Council 4-lens reviews (paralelos p151): `docs/council/2026-05-12-p151-subjective-scoring/` (data-architect, ai-engineer, security-engineer, legal-counsel)
 - ADR-0074 (Onda 3 dual-model AI) — padrão pipeline IA seleção que esta ADR estende
 - ADR-0076 (PMI 3-d volunteer model + Phase B base legal) — base legal LGPD candidato
 - ADR-0077 (auth_org caller-derived) — RLS scope
