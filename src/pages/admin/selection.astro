@@ -698,14 +698,14 @@ const SEL_I18N = {
      Compact one-glance status for AI / peer review / interview / token usage / video.
      Each badge: dot color (emerald=done, amber=partial, gray=pending) + tooltip. */
   function pipelineBadges(r: any): string {
-    const aiDone = r.ai_analysis_done === true;
+    // p150 hotfix2: read from meta + peer_extra subgroups (fallback to flat for backwards compat)
+    const aiDone = (r.meta?.ai_analysis_done ?? r.ai_analysis_done) === true;
     const peerCount = Number(r.peer_eval_count ?? 0);
-    // p150 hotfix 100-args: peer_extra subgroup (fallback to flat field for backwards compat)
     const peerDistinct = Number(r.peer_extra?.distinct_evaluators ?? r.peer_eval_distinct_evaluators ?? 0);
-    const peerPending = Number(r.peer_invites_pending ?? 0);
-    const interviewSched = r.interview_scheduled === true;
-    const tokenUsed = r.token_consumed === true;
-    const videoDone = r.video_screening_done === true;
+    const peerPending = Number(r.peer_extra?.invites_pending ?? r.peer_invites_pending ?? 0);
+    const interviewSched = (r.meta?.interview_scheduled ?? r.interview_scheduled) === true;
+    const tokenUsed = (r.meta?.token_consumed ?? r.token_consumed) === true;
+    const videoDone = (r.meta?.video_screening_done ?? r.video_screening_done) === true;
 
     const dot = (color: string, label: string, hint: string) =>
       `<span title="${esc(hint)}" class="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold ${color}">${label}</span>`;
@@ -742,7 +742,7 @@ const SEL_I18N = {
     // partial    → ⚠ amber   — algumas rows uploaded, outras opted-out (raro)
     // none       → — gray    — candidato ainda não decidiu
     // p150 hotfix 100-args: video_agg subgroup (fallback to flat fields for backwards compat)
-    const videoAgg = r.video_agg?.status_agg || r.video_screening_status_agg || (r.video_screening_done ? 'uploaded' : 'none');
+    const videoAgg = r.video_agg?.status_agg || r.video_screening_status_agg || ((r.meta?.video_screening_done ?? r.video_screening_done) ? 'uploaded' : 'none');
     const videoUploaded = Number(r.video_agg?.uploaded_count ?? r.video_screening_uploaded_count ?? 0);
     const videoTotal = Number(r.video_agg?.total_rows ?? r.video_screening_total_rows ?? 0);
     const videoBadge = (() => {
@@ -771,10 +771,10 @@ const SEL_I18N = {
 
     const stages = [
       { label: 'Aplicação', state: 'done', detail: submittedAt ? new Date(submittedAt).toLocaleDateString('pt-BR') : 'Submetida' },
-      { label: 'Análise IA', state: r.ai_analysis_done ? 'done' : (r.consent_ai_analysis_at ? 'current' : 'pending'), detail: r.ai_analysis_done ? 'Concluída' : (r.consent_ai_analysis_at ? 'Em curso' : 'Aguardando consent') },
+      { label: 'Análise IA', state: (r.meta?.ai_analysis_done ?? r.ai_analysis_done) ? 'done' : (r.consent_ai_analysis_at ? 'current' : 'pending'), detail: (r.meta?.ai_analysis_done ?? r.ai_analysis_done) ? 'Concluída' : (r.consent_ai_analysis_at ? 'Em curso' : 'Aguardando consent') },
       { label: 'Par-revisão', state: peerDistinct >= 2 ? 'done' : peerDistinct > 0 ? 'current' : 'pending', detail: `${peerDistinct}/2 avaliadores · ${peerCount} obj. submetida(s)` },
-      { label: 'Vídeo', state: r.video_screening_done ? 'done' : 'pending', detail: r.video_screening_done ? 'OK ou opt-out' : 'Não realizado' },
-      { label: 'Entrevista', state: r.interview_scheduled ? 'done' : 'pending', detail: r.interview_scheduled ? 'Agendada' : 'Não agendada' },
+      { label: 'Vídeo', state: (r.meta?.video_screening_done ?? r.video_screening_done) ? 'done' : 'pending', detail: (r.meta?.video_screening_done ?? r.video_screening_done) ? 'OK ou opt-out' : 'Não realizado' },
+      { label: 'Entrevista', state: (r.meta?.interview_scheduled ?? r.interview_scheduled) ? 'done' : 'pending', detail: (r.meta?.interview_scheduled ?? r.interview_scheduled) ? 'Agendada' : 'Não agendada' },
       { label: 'Decisão', state: isTerminal ? 'done' : 'pending', detail: isTerminal ? (STATUS_LABELS[r.status] || r.status) : 'Em andamento' },
     ];
 
