@@ -1300,6 +1300,8 @@ const ptBR: Record<string, string> = {
   'attendance.modal.duration': 'Duração (minutos)',
   'attendance.modal.durationMin': 'Duração (min)',
   'attendance.modal.meetingLink': 'Link da reunião',
+  'attendance.modal.timeStart': 'Horário',
+  'attendance.modal.timeStartHint': 'Vazio = horário padrão da tribo',
   'attendance.modal.recordedMeeting': '🔴 Reunião gravada',
   'attendance.modal.recordedMeetings': '🔴 Reuniões gravadas',
   'attendance.modal.createEvent': 'Criar Evento',
