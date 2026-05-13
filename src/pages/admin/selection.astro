@@ -177,6 +177,9 @@ const SEL_I18N = {
     statusOfferNotExtended: t('comp.vepBadge.statusOfferNotExtended', lang),
     lastSync: t('comp.vepBadge.lastSync', lang),
     reconciled: t('comp.vepBadge.reconciled', lang),
+    // p153 GAP-152.5
+    off: t('comp.vepBadge.off', lang),
+    offTooltip: t('comp.vepBadge.offTooltip', lang),
   },
 };
 ---
@@ -630,6 +633,7 @@ const SEL_I18N = {
       statusWithdrawn: 'Desistiu', statusDeclined: 'Recusado pelo recrutador',
       statusOfferNotExtended: 'Ciclo encerrado sem oferta',
       lastSync: 'Última sync VEP', reconciled: 'Reconciliado em',
+      off: 'VEP·OFF', offTooltip: 'Não veio no Apply VEP mais recente — provavelmente removida do recruiter dashboard pela PMI',
     },
   };
 
@@ -638,6 +642,8 @@ const SEL_I18N = {
   let MEMBER: any = null;
   let allRows: any[] = [];
   let filteredRows: any[] = [];
+  // p153 GAP-152.5 — global latest vep_last_seen_at (ms) so vepBadge helper can flag stale rows
+  let latestVepSeenMs = 0;
   let currentCycleId: string | null = null;
   let currentCycle: any = null;
   let allCycles: any[] = [];
@@ -779,24 +785,42 @@ const SEL_I18N = {
 
   /* p153 GAP-152.3 — VEP status raw badge inline on row name cell.
      Reads from vep_recon sub-object (added by migration 20260613000000).
-     Color-coded by status: in-flight (blue), active (emerald), terminal (gray/rose/amber). */
+     Color-coded by status: in-flight (blue), active (emerald), terminal (gray/rose/amber).
+     p153 GAP-152.5 — adds a separate "off" badge when vep_last_seen_at is more than
+     5min older than the dataset's latest ingest (= app was NOT in the latest Apply
+     UI C → PMI removed it from the recruiter dashboard between rounds). */
   function vepBadge(r: any): string {
     const status = r.vep_recon?.status_raw;
-    if (!status) return '';
+    const lastSeenAt = r.vep_recon?.last_seen_at;
+    if (!status && !lastSeenAt) return '';
     const VB = T.vepBadge || {};
-    const labelMap: Record<string, { short: string; long: string; cls: string }> = {
-      Submitted: { short: VB.submitted || 'VEP·Subm', long: VB.statusSubmitted || 'Submetido', cls: 'bg-blue-50 text-blue-700' },
-      Active: { short: VB.active || 'VEP·Ativ', long: VB.statusActive || 'Ativo', cls: 'bg-emerald-50 text-emerald-700' },
-      Withdrawn: { short: VB.withdrawn || 'VEP·Saiu', long: VB.statusWithdrawn || 'Desistiu', cls: 'bg-gray-100 text-gray-600' },
-      Declined: { short: VB.declined || 'VEP·Recus', long: VB.statusDeclined || 'Recusado', cls: 'bg-rose-50 text-rose-700' },
-      OfferNotExtended: { short: VB.offerNotExtended || 'VEP·SemOf', long: VB.statusOfferNotExtended || 'Sem oferta', cls: 'bg-amber-50 text-amber-700' },
-    };
-    const entry = labelMap[status] || { short: VB.unknown || 'VEP·?', long: status, cls: 'bg-slate-100 text-slate-600' };
-    const lastSyncStr = r.vep_recon?.last_seen_at ? new Date(r.vep_recon.last_seen_at).toLocaleDateString('pt-BR') : '—';
-    const reconciledStr = r.vep_recon?.reconciled_at ? new Date(r.vep_recon.reconciled_at).toLocaleDateString('pt-BR') : null;
-    const reconciledLine = reconciledStr ? ` · ${VB.reconciled || 'Reconciliado em'} ${reconciledStr}` : '';
-    const tooltip = `${VB.tooltipPrefix || 'Status no PMI VEP'}: ${entry.long} · ${VB.lastSync || 'Última sync VEP'} ${lastSyncStr}${reconciledLine}`;
-    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${entry.cls}" title="${esc(tooltip)}">${esc(entry.short)}</span>`;
+    let statusBadge = '';
+    if (status) {
+      const labelMap: Record<string, { short: string; long: string; cls: string }> = {
+        Submitted: { short: VB.submitted || 'VEP·Subm', long: VB.statusSubmitted || 'Submetido', cls: 'bg-blue-50 text-blue-700' },
+        Active: { short: VB.active || 'VEP·Ativ', long: VB.statusActive || 'Ativo', cls: 'bg-emerald-50 text-emerald-700' },
+        Withdrawn: { short: VB.withdrawn || 'VEP·Saiu', long: VB.statusWithdrawn || 'Desistiu', cls: 'bg-gray-100 text-gray-600' },
+        Declined: { short: VB.declined || 'VEP·Recus', long: VB.statusDeclined || 'Recusado', cls: 'bg-rose-50 text-rose-700' },
+        OfferNotExtended: { short: VB.offerNotExtended || 'VEP·SemOf', long: VB.statusOfferNotExtended || 'Sem oferta', cls: 'bg-amber-50 text-amber-700' },
+      };
+      const entry = labelMap[status] || { short: VB.unknown || 'VEP·?', long: status, cls: 'bg-slate-100 text-slate-600' };
+      const lastSyncStr = lastSeenAt ? new Date(lastSeenAt).toLocaleDateString('pt-BR') : '—';
+      const reconciledStr = r.vep_recon?.reconciled_at ? new Date(r.vep_recon.reconciled_at).toLocaleDateString('pt-BR') : null;
+      const reconciledLine = reconciledStr ? ` · ${VB.reconciled || 'Reconciliado em'} ${reconciledStr}` : '';
+      const tooltip = `${VB.tooltipPrefix || 'Status no PMI VEP'}: ${entry.long} · ${VB.lastSync || 'Última sync VEP'} ${lastSyncStr}${reconciledLine}`;
+      statusBadge = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${entry.cls}" title="${esc(tooltip)}">${esc(entry.short)}</span>`;
+    }
+    // GAP-152.5 stale flag — only render if lastSeenAt is meaningfully older than dataset max
+    let staleBadge = '';
+    if (lastSeenAt && latestVepSeenMs > 0) {
+      const rowMs = new Date(lastSeenAt).getTime();
+      if (Number.isFinite(rowMs) && (latestVepSeenMs - rowMs) > 5 * 60 * 1000) {
+        const offSince = new Date(lastSeenAt).toLocaleDateString('pt-BR');
+        const offTip = `${VB.offTooltip || 'Não veio no Apply VEP mais recente — provavelmente removida do recruiter dashboard pela PMI'} · ${VB.lastSync || 'Última sync VEP'} ${offSince}`;
+        staleBadge = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200" title="${esc(offTip)}">${esc(VB.off || 'VEP·OFF')}</span>`;
+      }
+    }
+    return `${statusBadge}${staleBadge}`;
   }
 
   /* p150 PM feedback — PMI canonical chapter name → curto code mapping.
@@ -988,6 +1012,16 @@ const SEL_I18N = {
       }
 
       allRows = applications;
+      // p153 GAP-152.5 — compute latest VEP ingest timestamp across the dataset
+      // so the row helper can flag stale rows ("missing from latest VEP" — likely
+      // removed from the PMI recruiter dashboard between Apply rounds).
+      latestVepSeenMs = 0;
+      for (const r of allRows) {
+        const ts = r?.vep_recon?.last_seen_at;
+        if (!ts) continue;
+        const ms = new Date(ts).getTime();
+        if (Number.isFinite(ms) && ms > latestVepSeenMs) latestVepSeenMs = ms;
+      }
       // Fetch onboarding % for approved/converted candidates
       const approvedIds = applications
         .filter((r: any) => ['approved', 'converted'].includes(r.status))

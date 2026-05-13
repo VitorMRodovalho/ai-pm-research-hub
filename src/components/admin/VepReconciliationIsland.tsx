@@ -38,6 +38,22 @@ const L: Record<string, Record<string, string>> = {
     pmiIdLabel: 'PMI ID',
     deniedAccess: 'Acesso restrito.',
     generatedAt: 'Gerado',
+    baselineTitle: '📊 Baseline / drift de reconciliação',
+    baselineSubtitle: 'Capture um snapshot após cada round de Apply UI C. Compare divergências contra a baseline mais recente pra detectar deriva.',
+    captureBaselineBtn: '+ Capturar baseline',
+    captureLabelPrompt: 'Label da baseline (ex: "Pós-Apply 12/05"):',
+    captureNotesPrompt: 'Notas (opcional):',
+    capturedOk: 'Baseline capturada.',
+    capturedErr: 'Erro ao capturar baseline',
+    baselineEmpty: 'Sem baselines capturadas ainda. Capture uma após confirmar que o estado atual está consistente.',
+    deltaLabel: 'Δ vs atual',
+    cur: 'Atual',
+    colCaptured: 'Capturada',
+    colLabel: 'Label',
+    colSel: 'Selection',
+    colOnb: 'Onboarding',
+    colActMem: 'Active mem',
+    colMissing: 'Missing VEP',
   },
   'en-US': {
     title: 'VEP ↔ Núcleo Reconciliation',
@@ -72,6 +88,22 @@ const L: Record<string, Record<string, string>> = {
     pmiIdLabel: 'PMI ID',
     deniedAccess: 'Restricted access.',
     generatedAt: 'Generated',
+    baselineTitle: '📊 Reconciliation baseline / drift',
+    baselineSubtitle: 'Capture a snapshot after each Apply UI C round. Compare divergence against the latest baseline to detect drift.',
+    captureBaselineBtn: '+ Capture baseline',
+    captureLabelPrompt: 'Baseline label (e.g. "Post-Apply 5/12"):',
+    captureNotesPrompt: 'Notes (optional):',
+    capturedOk: 'Baseline captured.',
+    capturedErr: 'Error capturing baseline',
+    baselineEmpty: 'No baselines captured yet. Capture one after confirming the current state is consistent.',
+    deltaLabel: 'Δ vs current',
+    cur: 'Current',
+    colCaptured: 'Captured',
+    colLabel: 'Label',
+    colSel: 'Selection',
+    colOnb: 'Onboarding',
+    colActMem: 'Active mem',
+    colMissing: 'Missing VEP',
   },
   'es-LATAM': {
     title: 'Reconciliación VEP ↔ Núcleo',
@@ -106,6 +138,22 @@ const L: Record<string, Record<string, string>> = {
     pmiIdLabel: 'PMI ID',
     deniedAccess: 'Acceso restringido.',
     generatedAt: 'Generado',
+    baselineTitle: '📊 Baseline / drift de reconciliación',
+    baselineSubtitle: 'Captura un snapshot tras cada round de Apply UI C. Compara divergencias contra la baseline más reciente para detectar deriva.',
+    captureBaselineBtn: '+ Capturar baseline',
+    captureLabelPrompt: 'Etiqueta de la baseline (ej: "Post-Apply 12/05"):',
+    captureNotesPrompt: 'Notas (opcional):',
+    capturedOk: 'Baseline capturada.',
+    capturedErr: 'Error al capturar baseline',
+    baselineEmpty: 'Sin baselines capturadas. Captura una luego de confirmar que el estado actual está consistente.',
+    deltaLabel: 'Δ vs actual',
+    cur: 'Actual',
+    colCaptured: 'Capturada',
+    colLabel: 'Label',
+    colSel: 'Selection',
+    colOnb: 'Onboarding',
+    colActMem: 'Active mem',
+    colMissing: 'Missing VEP',
   },
 };
 
@@ -163,6 +211,45 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
   const [loading, setLoading] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  // p153 OPP-152.5 — baseline drift panel
+  const [baselineData, setBaselineData] = useState<any>(null);
+  const [capturingBaseline, setCapturingBaseline] = useState(false);
+
+  const loadBaselines = useCallback(async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    try {
+      const { data: b, error } = await sb.rpc('get_vep_baseline_history', { p_limit: 10 });
+      if (error) throw error;
+      setBaselineData(b);
+    } catch (e: any) {
+      console.warn('[VepReconciliation] baseline load failed:', e?.message);
+    }
+  }, []);
+
+  const captureBaseline = useCallback(async () => {
+    const label = window.prompt(t.captureLabelPrompt, '');
+    if (label === null || label.trim() === '') return;
+    const notes = window.prompt(t.captureNotesPrompt, '');
+    setCapturingBaseline(true);
+    setToast(null);
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) throw new Error('no supabase');
+      const { data: r, error } = await sb.rpc('capture_vep_baseline', {
+        p_label: label.trim(),
+        p_notes: notes ? notes.trim() : null,
+      });
+      if (error) throw error;
+      if (r && typeof r === 'object' && (r as any).error) throw new Error((r as any).error);
+      setToast({ type: 'ok', msg: t.capturedOk });
+      await loadBaselines();
+    } catch (e: any) {
+      setToast({ type: 'err', msg: `${t.capturedErr}: ${e?.message || String(e)}` });
+    } finally {
+      setCapturingBaseline(false);
+    }
+  }, [t, loadBaselines]);
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
@@ -194,6 +281,8 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  // p153 OPP-152.5 — load baseline history when authorized
+  useEffect(() => { if (authorized === true) loadBaselines(); }, [authorized, loadBaselines]);
 
   const markReconciled = async (applicationId: string) => {
     const note = window.prompt(t.notePrompt, '');
@@ -286,6 +375,79 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
           {toast.msg}
         </div>
       )}
+
+      {/* p153 OPP-152.5 — Baseline / drift panel (collapsible) */}
+      <details className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden" open={(baselineData?.baselines?.length ?? 0) > 0}>
+        <summary className="cursor-pointer px-4 py-3 text-[13px] font-bold text-navy hover:bg-[var(--surface-hover)] flex items-center justify-between">
+          <span>{t.baselineTitle}</span>
+          <span className="text-[10px] text-[var(--text-muted)] font-normal">
+            {baselineData?.baselines?.length ?? 0} {(baselineData?.baselines?.length ?? 0) === 1 ? 'baseline' : 'baselines'}
+          </span>
+        </summary>
+        <div className="px-4 pb-4">
+          <p className="text-[11px] text-[var(--text-secondary)] mb-3">{t.baselineSubtitle}</p>
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={captureBaseline}
+              disabled={capturingBaseline}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-purple-600 text-white hover:opacity-90 cursor-pointer border-0 disabled:opacity-50"
+            >
+              {capturingBaseline ? '…' : t.captureBaselineBtn}
+            </button>
+          </div>
+          {(!baselineData?.baselines || baselineData.baselines.length === 0) ? (
+            <div className="text-center py-6 text-[11px] text-[var(--text-muted)] italic">{t.baselineEmpty}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead className="text-[var(--text-muted)]">
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    <th className="px-2 py-1.5 text-left font-semibold">{t.colCaptured}</th>
+                    <th className="px-2 py-1.5 text-left font-semibold">{t.colLabel}</th>
+                    <th className="px-2 py-1.5 text-right font-semibold">{t.colSel}</th>
+                    <th className="px-2 py-1.5 text-right font-semibold">{t.colOnb}</th>
+                    <th className="px-2 py-1.5 text-right font-semibold">{t.colActMem}</th>
+                    <th className="px-2 py-1.5 text-right font-semibold">{t.colMissing}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* "Current" pinned row at top */}
+                  {baselineData?.current && (
+                    <tr className="bg-purple-50/40 border-b border-purple-100">
+                      <td className="px-2 py-1.5 font-mono text-[10px] text-purple-700">— {t.cur} —</td>
+                      <td className="px-2 py-1.5 italic text-purple-700">{t.deltaLabel}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-purple-700">{baselineData.current.selection_divergent ?? 0}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-purple-700">{baselineData.current.onboarding_divergent ?? 0}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-purple-700">{baselineData.current.active_members_divergent ?? 0}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-purple-700">{baselineData.current.missing_from_latest_vep ?? 0}</td>
+                    </tr>
+                  )}
+                  {baselineData.baselines.map((b: any) => {
+                    const cur = baselineData.current || {};
+                    const renderDelta = (current: number, baseline: number) => {
+                      const d = current - baseline;
+                      if (d === 0) return <span className="text-[var(--text-muted)]">={baseline}</span>;
+                      const sign = d > 0 ? '+' : '';
+                      const cls = d > 0 ? 'text-amber-700' : 'text-emerald-700';
+                      return <span><span className="text-[var(--text-secondary)]">{baseline}</span> <span className={`font-bold ${cls}`}>({sign}{d})</span></span>;
+                    };
+                    return (
+                      <tr key={b.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]" title={b.notes || ''}>
+                        <td className="px-2 py-1.5 text-[var(--text-secondary)] whitespace-nowrap">{new Date(b.captured_at).toLocaleString()}</td>
+                        <td className="px-2 py-1.5 font-semibold text-[var(--text-primary)]">{b.label}{b.captured_by_name ? <span className="text-[10px] text-[var(--text-muted)] font-normal"> · {b.captured_by_name}</span> : null}</td>
+                        <td className="px-2 py-1.5 text-right">{renderDelta(cur.selection_divergent ?? 0, b.selection_divergent ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right">{renderDelta(cur.onboarding_divergent ?? 0, b.onboarding_divergent ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right">{renderDelta(cur.active_members_divergent ?? 0, b.active_members_divergent ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right">{renderDelta(cur.missing_from_latest_vep ?? 0, b.missing_from_latest_vep ?? 0)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </details>
 
       {/* Tabs */}
       <div className="flex border-b border-[var(--border-default)]">
