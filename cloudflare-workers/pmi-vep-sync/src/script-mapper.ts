@@ -88,10 +88,20 @@ export function mapScriptToNucleo(
   // The direct assignment to profile_certifications caused 25/32 cycle 4 UPDATE
   // errors with "malformed array literal". Sediment: profileMembershipChapters
   // has the same class of issue (see parseMaybeJsonArray double-encoded fix).
-  const phaseBCertsString = isPhaseBPrivate ? null : (app.profileCertifications ?? null);
-  const phaseBCertsArray = isPhaseBPrivate ? null : parseMaybeCsvArray(app.profileCertifications);
-  const phaseBVolInterest = isPhaseBPrivate ? null : (app.profileVolunteerInterest ?? null);
-  const phaseBSpecialties = isPhaseBPrivate ? null : (app.profileSpecialties ?? null);
+  // p153 hotfix — sanitize "[object Object]" leak. PMI Community sometimes
+  // returns enum-ish arrays as objects (e.g., volunteerInterest =
+  // [{id, name, description}]); old extract script `.join(',')` produced the
+  // literal string. Fixed in extract_pmi_volunteer.js v3.1, but old JSONs
+  // already in the pipeline still trip this — drop them to null on ingest.
+  const sanitizeObjectLeak = (v: string | null | undefined): string | null => {
+    if (!v) return null;
+    if (typeof v === 'string' && v.includes('[object Object]')) return null;
+    return v;
+  };
+  const phaseBCertsString = isPhaseBPrivate ? null : sanitizeObjectLeak(app.profileCertifications ?? null);
+  const phaseBCertsArray = isPhaseBPrivate ? null : parseMaybeCsvArray(sanitizeObjectLeak(app.profileCertifications));
+  const phaseBVolInterest = isPhaseBPrivate ? null : sanitizeObjectLeak(app.profileVolunteerInterest ?? null);
+  const phaseBSpecialties = isPhaseBPrivate ? null : sanitizeObjectLeak(app.profileSpecialties ?? null);
   const phaseBLinkedin = isPhaseBPrivate ? null : (app.profileLinkedinUrl ?? null);
   const phaseBAboutMe = isPhaseBPrivate ? null : (app.profileAboutMe ?? null);
   const phaseBSvcCount = isPhaseBPrivate ? null : (app.serviceHistoryCount ?? null);

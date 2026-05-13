@@ -1961,8 +1961,8 @@ const SEL_I18N = {
             ${profile.location ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileLocation)}</span><br><strong>${esc(profile.location)}</strong></div>` : ''}
           </div>
           ${profile.about_me ? `<details class="mt-2"><summary class="text-[11px] font-bold text-[var(--text-secondary)] cursor-pointer">${esc(T.modal.pmiProfileAboutMe)} (PMI Community bio)</summary><p class="text-[12px] mt-1.5 text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--surface-base)] rounded-lg p-2 max-h-[200px] overflow-y-auto">${esc(profile.about_me)}</p></details>` : ''}
-          ${profile.specialties ? `<div class="mt-2 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileSpecialties)}:</strong> ${esc(profile.specialties)}</div>` : ''}
-          ${profile.volunteer_interest ? `<div class="mt-1 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileVolInterest)}:</strong> ${esc(profile.volunteer_interest)}</div>` : ''}
+          ${profile.specialties && !String(profile.specialties).includes('[object Object]') ? `<div class="mt-2 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileSpecialties)}:</strong> ${esc(profile.specialties)}</div>` : ''}
+          ${profile.volunteer_interest && !String(profile.volunteer_interest).includes('[object Object]') ? `<div class="mt-1 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileVolInterest)}:</strong> ${esc(profile.volunteer_interest)}</div>` : ''}
           ${profile.linkedin_url ? `<a href="${esc(profile.linkedin_url)}" target="_blank" rel="noopener" class="inline-block mt-2 text-[11px] text-blue-700 hover:underline">LinkedIn (PMI) →</a>` : ''}
         </div>` : '';
 
