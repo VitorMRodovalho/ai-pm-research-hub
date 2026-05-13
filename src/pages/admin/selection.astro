@@ -1961,8 +1961,19 @@ const SEL_I18N = {
             ${profile.location ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileLocation)}</span><br><strong>${esc(profile.location)}</strong></div>` : ''}
           </div>
           ${profile.about_me ? `<details class="mt-2"><summary class="text-[11px] font-bold text-[var(--text-secondary)] cursor-pointer">${esc(T.modal.pmiProfileAboutMe)} (PMI Community bio)</summary><p class="text-[12px] mt-1.5 text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--surface-base)] rounded-lg p-2 max-h-[200px] overflow-y-auto">${esc(profile.about_me)}</p></details>` : ''}
-          ${profile.specialties && !String(profile.specialties).includes('[object Object]') ? `<div class="mt-2 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileSpecialties)}:</strong> ${esc(profile.specialties)}</div>` : ''}
-          ${profile.volunteer_interest && !String(profile.volunteer_interest).includes('[object Object]') ? `<div class="mt-1 text-[11px]"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileVolInterest)}:</strong> ${esc(profile.volunteer_interest)}</div>` : ''}
+          ${(() => {
+            // p153 polish — render comma-separated PMI Community fields as chips.
+            // Same defensive guard (skip if "[object Object]" leak still present).
+            const chipify = (val: string, prefixLabel: string, pillCls: string) => {
+              if (!val || String(val).includes('[object Object]')) return '';
+              const items = String(val).split(',').map(s => s.trim()).filter(Boolean);
+              if (items.length === 0) return '';
+              const chips = items.map(s => `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${pillCls}">${esc(s)}</span>`).join('');
+              return `<div class="mt-2 text-[11px]"><strong class="text-[var(--text-secondary)] block mb-1">${esc(prefixLabel)}:</strong><div class="flex flex-wrap gap-1">${chips}</div></div>`;
+            };
+            return chipify(profile.specialties, T.modal.pmiProfileSpecialties, 'bg-purple-50 text-purple-700')
+                 + chipify(profile.volunteer_interest, T.modal.pmiProfileVolInterest, 'bg-blue-50 text-blue-700');
+          })()}
           ${profile.linkedin_url ? `<a href="${esc(profile.linkedin_url)}" target="_blank" rel="noopener" class="inline-block mt-2 text-[11px] text-blue-700 hover:underline">LinkedIn (PMI) →</a>` : ''}
         </div>` : '';
 
