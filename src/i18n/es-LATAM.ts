@@ -5793,6 +5793,9 @@ const esLATAM: Record<string, string> = {
   'comp.vepBadge.statusOfferNotExtended': 'Ciclo cerrado sin oferta',
   'comp.vepBadge.lastSync': 'Última sincronización VEP',
   'comp.vepBadge.reconciled': 'Reconciliado en',
+  // p153 GAP-152.5 — flag stale (no vino en el Apply VEP más reciente)
+  'comp.vepBadge.off': 'VEP·OFF',
+  'comp.vepBadge.offTooltip': 'No vino en el Apply VEP más reciente — probablemente removida del recruiter dashboard por PMI',
 };
 
 export default esLATAM;
