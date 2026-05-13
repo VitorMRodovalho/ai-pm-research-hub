@@ -210,7 +210,8 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     applications_new: 0,
     applications_updated: 0,
     applications_skipped: 0,
-    applications_skipped_prior_cycle: 0,
+    applications_skipped_prior_cycle: 0, // p153 hotfix7 — kept at 0 for dashboard backward-compat; cross-cycle apps now partial-refresh
+    applications_cross_cycle_refreshed: 0,
     welcome_dispatched: 0,
     welcomes_skipped_non_submitted: 0,
     errors: [],
@@ -339,8 +340,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       summary.applications_processed++;
 
       // ─── p126 E2: Phase B canonical UPSERT + service history INSERT ────────
-      // Skip canonical operations for prior cycle (history preserve) + private profiles.
-      if (!result.skipped_prior_cycle) {
+      // p153 hotfix7: Phase B canonical runs for ALL rows (incl. cross-cycle partial
+      // refresh) so chapter memberships + service history stay current for past
+      // candidates too. Only private profiles skip canonical UPSERT.
+      {
         // Wave 3 synth (D-CONV-3): track Phase B participation by ANY non-null Phase B
         // signal, not just pmi_data_fetched_at presence. Older script versions might
         // not emit pmiDataFetchedAt but still have Phase B fields populated.
@@ -409,8 +412,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         }
       }
 
-      if (result.skipped_prior_cycle) {
-        summary.applications_skipped_prior_cycle++;
+      if (result.cross_cycle_refresh) {
+        // p153 hotfix7 — row from prior cycle received PARTIAL refresh
+        // (resume_url SAS rotation, profile_*, vep_status_raw, etc.) but no
+        // welcome dispatch (not a new candidate; decision history preserved).
+        summary.applications_cross_cycle_refreshed++;
         continue;
       }
 

@@ -82,11 +82,23 @@ function extractMapperReturnKeys() {
 function extractUpdateSetKeys() {
   const src = readFileSync(DB_PATH, 'utf8');
   const cleaned = stripComments(src);
-  // Find .update({ ... }) block
-  const UPDATE_BLOCK = /\.update\(\s*\{([\s\S]*?)\}\s*\)\s*\.eq/;
-  const m = cleaned.match(UPDATE_BLOCK);
-  assert.ok(m, 'db.ts .update({...}) block not found');
-  return extractObjectKeys(m[1]);
+  // p153 hotfix7: db.ts now uses `const commonRefresh = { ... }` shared between
+  // cross-cycle (partial) + same-cycle (full) UPDATE paths. Collect keys from
+  // the commonRefresh decl AND every inline .update({...}).eq block — the union
+  // is the actual set of mapper fields propagated to UPDATE on re-ingest.
+  const keys = new Set();
+  const COMMON_REFRESH = /const\s+commonRefresh\s*=\s*\{([\s\S]*?)\};/;
+  const cr = cleaned.match(COMMON_REFRESH);
+  if (cr) {
+    extractObjectKeys(cr[1]).forEach(k => keys.add(k));
+  }
+  const UPDATE_BLOCK = /\.update\(\s*\{([\s\S]*?)\}\s*\)\s*\.eq/g;
+  let m;
+  while ((m = UPDATE_BLOCK.exec(cleaned)) !== null) {
+    extractObjectKeys(m[1]).forEach(k => keys.add(k));
+  }
+  assert.ok(keys.size > 0, 'db.ts UPDATE keys + commonRefresh extraction returned empty');
+  return keys;
 }
 
 test('worker mapper return keys are all covered by db.ts UPDATE SET (or in allowed-skip list)', () => {
