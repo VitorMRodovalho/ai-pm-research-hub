@@ -396,7 +396,15 @@ export interface IngestSummary {
   applications_new: number;
   applications_updated: number;
   applications_skipped: number;
-  applications_skipped_prior_cycle: number;  // existing in different (closed) cycle
+  /** p153 hotfix7 — kept for dashboard backward-compat. Always 0 going forward
+   *  because cross-cycle apps now get partial refresh instead of full skip.
+   *  See applications_cross_cycle_refreshed. */
+  applications_skipped_prior_cycle: number;
+  /** p153 hotfix7 — count of cross-cycle rows that received partial refresh
+   *  (resume_url/SAS, profile_*, vep_status_raw, pmi_*, service_history_count)
+   *  while preserving decision-history fields (cycle_id/status/role_applied/
+   *  motivation_letter/application_date/imported_at). */
+  applications_cross_cycle_refreshed: number;
   welcome_dispatched: number;
   welcomes_skipped_non_submitted: number;    // _bucket != 'submitted' OR statusId != 2 (qualified leaders + rejected)
   errors: Array<{ scope: string; ref?: string; error: string }>;

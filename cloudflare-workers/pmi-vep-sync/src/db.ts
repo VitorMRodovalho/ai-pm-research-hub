@@ -100,7 +100,10 @@ export interface UpsertResult {
   id: string;
   was_new: boolean;
   consent_active: boolean;
-  skipped_prior_cycle?: boolean;
+  /** p153 hotfix7 — true when existing row belonged to a PRIOR cycle and
+   *  received a PARTIAL refresh (external PMI data only). False otherwise.
+   *  Replaces the legacy `skipped_prior_cycle` flag (which fully skipped). */
+  cross_cycle_refresh?: boolean;
   prior_cycle_id?: string;
 }
 
@@ -114,13 +117,22 @@ export interface UpsertResult {
  * the same PMI applicationId can appear linked to two opportunities
  * (e.g., 64966 leader + 64967 researcher).
  *
- * CYCLE-AWARE BEHAVIOR (post incident 2026-04-29):
- * If existing.cycle_id != payload.cycle_id (i.e., row belongs to a PRIOR
- * closed cycle), the upsert is SKIPPED entirely to preserve historical
- * cycle outcome. PMI's bucket may have moved the app to "rejected" after
- * closing, but we don't want to overwrite our own status/role_applied/
- * cycle_id that captured the actual cycle decision (approved/converted/
- * triaged_to_leader). Same-cycle updates proceed normally.
+ * CYCLE-AWARE BEHAVIOR (p153 hotfix7, replaces post-2026-04-29 full skip):
+ * If existing.cycle_id != payload.cycle_id (row belongs to a PRIOR cycle),
+ * the upsert performs a PARTIAL refresh:
+ *   - PRESERVES decision-history fields: cycle_id, status, role_applied,
+ *     motivation_letter, proposed_theme, areas_of_interest, availability_declared,
+ *     leadership_experience, academic_background, non_pmi_experience,
+ *     reason_for_applying, application_date, imported_at.
+ *   - REFRESHES external PMI data: resume_url (Azure SAS ~1-48h TTL),
+ *     linkedin_url, phone, email, chapter, profile_*, pmi_memberships,
+ *     service_*, vep_status_raw, vep_last_seen_at, pmi_data_fetched_at.
+ * Aligns with PM canonical directive p150 (sediment
+ * `feedback_pmi_vep_ingest_logic_canonical.md`): "Anti-pattern: diff filtrado
+ * por cycle único." Pre-hotfix, prior-cycle rows kept stale resume_url
+ * indefinitely, breaking CV access for past candidates.
+ *
+ * Same-cycle updates proceed with full field update as before.
  */
 export async function upsertSelectionApplication(
   db: SupabaseClient,
@@ -134,30 +146,74 @@ export async function upsertSelectionApplication(
     .maybeSingle();
 
   if (existing) {
+    // External-PMI-data refresh — fields that legitimately change post-cycle
+    // (resume_url SAS rotation, profile data, certifications, chapter, VEP bucket).
+    const commonRefresh = {
+      pmi_id: payload.pmi_id,
+      applicant_name: payload.applicant_name,
+      email: payload.email,
+      phone: payload.phone,
+      linkedin_url: payload.linkedin_url,
+      resume_url: payload.resume_url,
+      chapter: payload.chapter,
+      membership_status: payload.membership_status,
+      certifications: payload.certifications,
+      chapter_affiliation: payload.chapter_affiliation,
+      // p126 E2 Phase B fields (per ADR-0076 Princípio 1 + Migration 1)
+      applicant_city: payload.applicant_city,
+      profile_location: payload.profile_location,
+      profile_state: payload.profile_state,
+      profile_city: payload.profile_city,
+      profile_country: payload.profile_country,
+      pmi_memberships: payload.pmi_memberships,
+      profile_industry: payload.profile_industry,
+      profile_company: payload.profile_company,
+      profile_designation: payload.profile_designation,
+      profile_certifications: payload.profile_certifications,
+      profile_volunteer_interest: payload.profile_volunteer_interest,
+      profile_specialties: payload.profile_specialties,
+      profile_linkedin_url: payload.profile_linkedin_url,
+      profile_about_me: payload.profile_about_me,
+      service_history_count: payload.service_history_count,
+      service_history_chapters: payload.service_history_chapters,
+      service_first_start_date: payload.service_first_start_date,
+      service_latest_end_date: payload.service_latest_end_date,
+      is_open_to_volunteer: payload.is_open_to_volunteer,
+      community_profile_private: payload.community_profile_private,
+      pmi_data_fetched_at: payload.pmi_data_fetched_at,
+      consent_version: payload.consent_version,
+      // p152 W1.2 hotfix6: vep_status_raw + vep_last_seen_at added to mapper p151
+      // but never reached UPDATE SET clause — silently dropped on every ingest.
+      // Worker reported success but vep_status_raw stayed NULL in all 97 apps.
+      vep_status_raw: payload.vep_status_raw,
+      vep_last_seen_at: payload.vep_last_seen_at,
+      updated_at: new Date().toISOString()
+    };
+
     if (existing.cycle_id !== payload.cycle_id) {
-      // Prior cycle: skip update to preserve history
+      // p153 hotfix7 — cross-cycle PARTIAL refresh. See function-level comment.
+      const { error } = await db
+        .from('selection_applications')
+        .update(commonRefresh)
+        .eq('id', existing.id);
+
+      if (error) throw new Error(`cross-cycle partial refresh selection_applications: ${error.message}`);
+
       return {
         id: existing.id,
         was_new: false,
         consent_active: !!existing.consent_ai_analysis_at && !existing.consent_ai_analysis_revoked_at,
-        skipped_prior_cycle: true,
+        cross_cycle_refresh: true,
         prior_cycle_id: existing.cycle_id
       };
     }
 
+    // Same-cycle full update — decision-history fields also overwritten.
     const { error } = await db
       .from('selection_applications')
       .update({
-        // cycle_id intentionally NOT updated (preserves history per cycle-aware behavior above)
-        pmi_id: payload.pmi_id,
-        applicant_name: payload.applicant_name,
-        email: payload.email,
-        phone: payload.phone,
-        linkedin_url: payload.linkedin_url,
-        resume_url: payload.resume_url,
-        chapter: payload.chapter,
-        membership_status: payload.membership_status,
-        certifications: payload.certifications,
+        ...commonRefresh,
+        // cycle_id intentionally NOT updated (set on insert; preserved on every update)
         role_applied: payload.role_applied,
         motivation_letter: payload.motivation_letter,
         proposed_theme: payload.proposed_theme,
@@ -165,7 +221,6 @@ export async function upsertSelectionApplication(
         availability_declared: payload.availability_declared,
         leadership_experience: payload.leadership_experience,
         academic_background: payload.academic_background,
-        chapter_affiliation: payload.chapter_affiliation,
         non_pmi_experience: payload.non_pmi_experience,
         reason_for_applying: payload.reason_for_applying,
         // Wave 3 synth (S-DA-1): application_date refreshed on re-import
@@ -173,35 +228,6 @@ export async function upsertSelectionApplication(
         application_date: payload.application_date,
         status: payload.status,
         imported_at: payload.imported_at,
-        // p126 E2 Phase B fields (per ADR-0076 Princípio 1 + Migration 1)
-        applicant_city: payload.applicant_city,
-        profile_location: payload.profile_location,
-        profile_state: payload.profile_state,
-        profile_city: payload.profile_city,
-        profile_country: payload.profile_country,
-        pmi_memberships: payload.pmi_memberships,
-        profile_industry: payload.profile_industry,
-        profile_company: payload.profile_company,
-        profile_designation: payload.profile_designation,
-        profile_certifications: payload.profile_certifications,
-        profile_volunteer_interest: payload.profile_volunteer_interest,
-        profile_specialties: payload.profile_specialties,
-        profile_linkedin_url: payload.profile_linkedin_url,
-        profile_about_me: payload.profile_about_me,
-        service_history_count: payload.service_history_count,
-        service_history_chapters: payload.service_history_chapters,
-        service_first_start_date: payload.service_first_start_date,
-        service_latest_end_date: payload.service_latest_end_date,
-        is_open_to_volunteer: payload.is_open_to_volunteer,
-        community_profile_private: payload.community_profile_private,
-        pmi_data_fetched_at: payload.pmi_data_fetched_at,
-        consent_version: payload.consent_version,
-        // p152 W1.2 hotfix6: vep_status_raw + vep_last_seen_at added to mapper p151
-        // but never reached UPDATE SET clause — silently dropped on every ingest.
-        // Worker reported success but vep_status_raw stayed NULL in all 97 apps.
-        vep_status_raw: payload.vep_status_raw,
-        vep_last_seen_at: payload.vep_last_seen_at,
-        updated_at: new Date().toISOString()
       })
       .eq('id', existing.id);
 
