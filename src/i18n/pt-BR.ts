@@ -4966,7 +4966,6 @@ const ptBR: Record<string, string> = {
   'admin.selection.opportunityFormTitle': 'Nova Vaga VEP',
   'admin.selection.opportunityIdLabel': 'Opportunity ID',
   'admin.selection.defaultRoleLabel': 'Papel Default',
-  'admin.selection.leader': 'Líder',
   'admin.selection.cfpUrlLabel': 'URL do VEP',
   'admin.selection.chapterLabel': 'Capítulo',
   'admin.selection.positionsLabel': 'Vagas',
@@ -5785,6 +5784,21 @@ const ptBR: Record<string, string> = {
   'teams.emptyActive': 'Sem tribos ativas cadastradas.',
   'teams.emptyOperational': 'Sem subprojetos operacionais cadastrados.',
   'teams.emptyLegacy': 'Sem tribos legadas registradas.',
+  // p153 GAP-152.3 — Inline VEP status badges (selection list + members list)
+  'comp.vepBadge.submitted': 'VEP·Subm',
+  'comp.vepBadge.active': 'VEP·Ativ',
+  'comp.vepBadge.withdrawn': 'VEP·Saiu',
+  'comp.vepBadge.declined': 'VEP·Recus',
+  'comp.vepBadge.offerNotExtended': 'VEP·SemOf',
+  'comp.vepBadge.unknown': 'VEP·?',
+  'comp.vepBadge.tooltipPrefix': 'Status no PMI VEP',
+  'comp.vepBadge.statusSubmitted': 'Submetido (em análise)',
+  'comp.vepBadge.statusActive': 'Ativo (servindo)',
+  'comp.vepBadge.statusWithdrawn': 'Desistiu',
+  'comp.vepBadge.statusDeclined': 'Recusado pelo recrutador',
+  'comp.vepBadge.statusOfferNotExtended': 'Ciclo encerrado sem oferta',
+  'comp.vepBadge.lastSync': 'Última sync VEP',
+  'comp.vepBadge.reconciled': 'Reconciliado em',
 };
 
 export default ptBR;

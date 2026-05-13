@@ -17,7 +17,7 @@ if (filterParam === 'inactive_candidates') {
 }
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const i18nBundle = buildPageI18n(['comp.memberList', 'comp.common'], lang);
+const i18nBundle = buildPageI18n(['comp.memberList', 'comp.common', 'comp.vepBadge'], lang);
 ---
 
 <AdminLayout title={t('admin.breadcrumb.members', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('admin.breadcrumb.members', lang)}]}>
