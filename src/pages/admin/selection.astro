@@ -20,6 +20,14 @@ const SEL_I18N = {
   noCandidates: t('admin.selection.noCandidates', lang),
   errorPrefix: t('admin.selection.errorPrefix', lang),
   detailsBtn: t('admin.selection.detailsBtn', lang),
+  bulkApprove: t('admin.selection.bulkApprove', lang),
+  bulkReject: t('admin.selection.bulkReject', lang),
+  inlineApproveTitle: t('admin.selection.inlineApproveTitle', lang),
+  inlineRejectTitle: t('admin.selection.inlineRejectTitle', lang),
+  confirmInlineApprove: t('admin.selection.confirmInlineApprove', lang),
+  confirmInlineReject: t('admin.selection.confirmInlineReject', lang),
+  inlineApproveToast: t('admin.selection.inlineApproveToast', lang),
+  inlineRejectToast: t('admin.selection.inlineRejectToast', lang),
   bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
   allChaptersOption: t('admin.selection.allChapters', lang),
   statusGroups: {
@@ -1340,7 +1348,13 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
-          <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">${T.detailsBtn}</button>
+          <div class="flex gap-1.5 items-center flex-wrap">
+            ${r.status === 'final_eval' ? `
+              <button class="text-[11px] px-2 py-1 rounded-md bg-emerald-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-approve" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineApproveTitle)}" onclick="event.stopPropagation()">✓ ${esc(T.bulkApprove)}</button>
+              <button class="text-[11px] px-2 py-1 rounded-md bg-red-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-reject" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineRejectTitle)}" onclick="event.stopPropagation()">✗ ${esc(T.bulkReject)}</button>
+            ` : ''}
+            <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">${T.detailsBtn}</button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -3293,6 +3307,26 @@ const SEL_I18N = {
     if (countEl) countEl.textContent = `${checks.length} selecionado${checks.length !== 1 ? 's' : ''}`;
   }
 
+  // p155 F3: single-row decision (inline button on final_eval rows)
+  async function inlineDecide(appId: string, name: string, decision: 'approved' | 'rejected') {
+    const confirmTpl = decision === 'approved' ? T.confirmInlineApprove : T.confirmInlineReject;
+    const confirmMsg = (confirmTpl || '').replace('{name}', name);
+    if (!confirm(confirmMsg)) return;
+    try {
+      const { data, error } = await sb.rpc('admin_update_application', {
+        p_application_id: appId,
+        p_data: { status: decision },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const toastTpl = decision === 'approved' ? T.inlineApproveToast : T.inlineRejectToast;
+      toast((toastTpl || '').replace('{name}', name));
+      loadDashboard();
+    } catch (e: any) {
+      toast(e.message || 'Erro ao salvar', 'error');
+    }
+  }
+
   async function executeBulkDecision(decision: string) {
     const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
     const ids = Array.from(checks).map(c => c.value);
@@ -4086,6 +4120,12 @@ const SEL_I18N = {
       if (!target) return;
       const action = target.dataset.action;
       if (action === 'view-applicant' && target.dataset.id) { openApplicantModal(target.dataset.id); }
+      else if (action === 'inline-approve' && target.dataset.id) {
+        inlineDecide(target.dataset.id, target.dataset.name || '?', 'approved');
+      }
+      else if (action === 'inline-reject' && target.dataset.id) {
+        inlineDecide(target.dataset.id, target.dataset.name || '?', 'rejected');
+      }
       else if (action === 'remove-committee' && target.dataset.memberId) { removeCommitteeMember(target.dataset.memberId); }
       else if (action === 'add-committee-member' && target.dataset.memberId) {
         addCommitteeMemberById(target.dataset.memberId, target.dataset.memberName || '');
