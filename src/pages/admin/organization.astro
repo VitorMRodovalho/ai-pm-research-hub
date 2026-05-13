@@ -36,9 +36,9 @@ const ORG_I18N = {
   saved: t('admin.organization.saved', lang),
   save: t('admin.save', lang),
   errorPrefix: t('common.errorPrefix', lang),
-  langPtBR: 'Português (Brasil)',
-  langEnUS: 'English (US)',
-  langEsLATAM: 'Español (LATAM)',
+  langPtBR: t('admin.organization.langOptionPtBR', lang),
+  langEnUS: t('admin.organization.langOptionEnUS', lang),
+  langEsLATAM: t('admin.organization.langOptionEsLATAM', lang),
 };
 ---
 
@@ -138,10 +138,8 @@ const ORG_I18N = {
 <script>
   import { hasPermission } from '../../lib/permissions';
 
-  const T = (typeof window !== 'undefined' && (window as any).__ORG_ADMIN_I18N) || {
-    loading: 'Carregando…', loadError: 'Erro ao carregar.',
-    saved: 'Salvo', errorPrefix: 'Erro',
-  };
+  // i18n bundle injected via define:vars; no PT-BR fallback (trilingual via dictionaries).
+  const T = (typeof window !== 'undefined' && (window as any).__ORG_ADMIN_I18N) || {};
 
   let sb: any = null;
   let MEMBER: any = null;

@@ -152,22 +152,12 @@ const INIT_I18N = {
 <script>
   import { hasPermission } from '../../lib/permissions';
 
-  const T = (typeof window !== 'undefined' && (window as any).__INIT_ADMIN_I18N) || {
-    pageTitle: 'Iniciativas', empty: 'Nenhuma iniciativa.', loadError: 'Erro ao carregar.',
-    edit: 'Editar', newTitle: 'Nova Iniciativa', editTitle: 'Editar Iniciativa',
-    fillRequired: 'Tipo e título são obrigatórios', invalidJson: 'Metadata: JSON inválido',
-    created: 'Iniciativa criada', updated: 'Iniciativa atualizada', errorPrefix: 'Erro',
-    statusDraft: 'Rascunho', statusActive: 'Ativa', statusArchived: 'Arquivada', statusCompleted: 'Concluída',
-    members: 'Membros', membersLink: 'Gerenciar membros',
-    membersHint: 'Adição/remoção de membros é feita na página de detalhes.',
-    save: 'Salvar', cancel: 'Cancelar',
-  };
+  // i18n bundle is injected via define:vars; bail out if missing (no PT-BR fallback —
+  // keeps the page strictly trilingual via dictionaries).
+  const T = (typeof window !== 'undefined' && (window as any).__INIT_ADMIN_I18N) || {};
   const LANG_PREFIX = (typeof window !== 'undefined' && (window as any).__INIT_ADMIN_LANG_PREFIX) || '';
+  const DEFAULT_KIND_EMOJI = '📌';
 
-  const KIND_ICONS: Record<string, string> = {
-    research_tribe: '🔬', study_group: '📖', committee: '👥',
-    workgroup: '💼', congress: '🎤', book_club: '📚', workshop: '🛠️',
-  };
   const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
     draft:     { bg: 'bg-amber-50',    color: 'text-amber-700',    label: T.statusDraft },
     active:    { bg: 'bg-emerald-50',  color: 'text-emerald-700',  label: T.statusActive },
@@ -253,7 +243,7 @@ const INIT_I18N = {
     }
 
     container.innerHTML = filtered.map((i: any) => {
-      const icon = KIND_ICONS[i.kind] || '📌';
+      const icon = (i.kind_config?.icon_emoji) || DEFAULT_KIND_EMOJI;
       const kindLabel = (i.kind_display_name || i.kind);
       const status = STATUS_STYLES[i.status] || STATUS_STYLES.draft;
       const memberCount = i.member_count ?? 0;
