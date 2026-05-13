@@ -5793,6 +5793,9 @@ const enUS: Record<string, string> = {
   'comp.vepBadge.statusOfferNotExtended': 'Cycle ended without offer',
   'comp.vepBadge.lastSync': 'Last VEP sync',
   'comp.vepBadge.reconciled': 'Reconciled at',
+  // p153 GAP-152.5 — stale flag (row was not in the latest VEP Apply)
+  'comp.vepBadge.off': 'VEP·OFF',
+  'comp.vepBadge.offTooltip': 'Not in the latest VEP Apply — likely removed from the recruiter dashboard by PMI',
 };
 
 export default enUS;

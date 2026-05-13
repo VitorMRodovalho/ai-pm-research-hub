@@ -5799,6 +5799,9 @@ const ptBR: Record<string, string> = {
   'comp.vepBadge.statusOfferNotExtended': 'Ciclo encerrado sem oferta',
   'comp.vepBadge.lastSync': 'Última sync VEP',
   'comp.vepBadge.reconciled': 'Reconciliado em',
+  // p153 GAP-152.5 — stale flag (app não veio no Apply VEP mais recente)
+  'comp.vepBadge.off': 'VEP·OFF',
+  'comp.vepBadge.offTooltip': 'Não veio no Apply VEP mais recente — provavelmente removida do recruiter dashboard pela PMI',
 };
 
 export default ptBR;
