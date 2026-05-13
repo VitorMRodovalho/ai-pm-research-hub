@@ -1,7 +1,49 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import GovernancePipelineBar from './GovernancePipelineBar';
 import ClauseCommentDrawer from './ClauseCommentDrawer';
 import VersionDiffViewer, { normalizeAnchor, type CommentCounts } from './VersionDiffViewer';
+
+// Isolated HTML viewer: renders documents (e.g. project_charter TAPs) inside
+// a sandboxed iframe so their embedded `<style>` blocks (body { max-width },
+// fonts, etc.) don't bleed into the host page. Auto-resizes to content height.
+// OPP-153.1 / p153 — fixes width-overflow when CSS-rich docs are reviewed.
+function IsolatedHtmlFrame({ html, className }: { html: string; className?: string }) {
+  const ref = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    const iframe = ref.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+    doc.open();
+    doc.write(html || '');
+    doc.close();
+    let raf = 0;
+    const resize = () => {
+      try {
+        const h = doc.body && doc.body.scrollHeight ? doc.body.scrollHeight : 600;
+        iframe.style.height = (h + 32) + 'px';
+      } catch { /* noop */ }
+    };
+    resize();
+    // Several deferred resizes catch font-load / image-load reflows
+    const t1 = setTimeout(resize, 150);
+    const t2 = setTimeout(resize, 600);
+    const t3 = setTimeout(resize, 1500);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [html]);
+  return (
+    <iframe
+      ref={ref}
+      sandbox="allow-same-origin"
+      title="document-preview"
+      className={className}
+      style={{ width: '100%', minHeight: '60vh', border: 'none', display: 'block', background: 'white' }}
+    />
+  );
+}
 
 type Gate = {
   kind: string;
@@ -508,11 +550,13 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
               />
             </div>
           ) : viewMode === 'draft' && nextDraft ? (
-            <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)] border-l-4 border-amber-400"
-                 dangerouslySetInnerHTML={{ __html: nextDraft.content_html }} />
+            <div className="px-1 py-1 max-h-[72vh] overflow-y-auto border-l-4 border-amber-400">
+              <IsolatedHtmlFrame html={nextDraft.content_html} />
+            </div>
           ) : (
-            <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)]"
-                 dangerouslySetInnerHTML={{ __html: contentHtml }} />
+            <div className="px-1 py-1 max-h-[72vh] overflow-y-auto">
+              <IsolatedHtmlFrame html={contentHtml} />
+            </div>
           )}
         </div>
         <div className="h-[72vh]">

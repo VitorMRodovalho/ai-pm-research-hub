@@ -1,0 +1,863 @@
+-- TAP CPMAI R00 — populate content_html
+-- Wave 1 Step 2 follow-up: Loads the rendered HTML into the existing document_versions row.
+-- See docs/drafts/v2.7_p153_tap_cpmai_handoff.md
+
+UPDATE public.document_versions
+SET content_html = $TAPHTML$<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>TAP — Grupo de Estudos CPMAI Prep Course · Ciclo 3 (2026) · PMI-GO</title>
+<style>
+  :root {
+    --pmi-blue: #003a70;
+    --pmi-blue-light: #1a5a90;
+    --pmi-grey: #6c757d;
+    --pmi-grey-light: #f4f6f8;
+    --pmi-accent: #c8102e;
+    --ok-green: #2e7d32;
+    --warn-amber: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1f2937;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  header.tap-header {
+    border-top: 6px solid var(--pmi-blue);
+    border-bottom: 1px solid #d1d5db;
+    padding: 16px 0 12px;
+    margin-bottom: 24px;
+  }
+  header.tap-header .brand {
+    color: var(--pmi-blue);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  header.tap-header h1 {
+    color: var(--pmi-blue);
+    font-size: 24px;
+    margin: 8px 0 4px;
+  }
+  header.tap-header .meta {
+    display: flex;
+    gap: 24px;
+    color: var(--pmi-grey);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  h2 {
+    color: var(--pmi-blue);
+    border-bottom: 2px solid var(--pmi-blue-light);
+    padding-bottom: 4px;
+    margin-top: 28px;
+    font-size: 16px;
+  }
+  h3 {
+    color: var(--pmi-blue-light);
+    font-size: 14px;
+    margin-top: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 16px;
+    font-size: 13px;
+  }
+  th, td {
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--pmi-blue);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  table.kv th { width: 30%; background: var(--pmi-grey-light); color: var(--pmi-blue); }
+  tr:nth-child(even) td { background: #fafbfc; }
+  ul, ol { margin: 6px 0 12px 22px; padding: 0; }
+  li { margin-bottom: 3px; }
+  p.disclaimer {
+    background: #fff7ed;
+    border-left: 4px solid var(--warn-amber);
+    padding: 10px 12px;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  p.callout {
+    background: var(--pmi-grey-light);
+    border-left: 4px solid var(--pmi-blue);
+    padding: 10px 12px;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--pmi-blue);
+    margin-right: 4px;
+  }
+  .badge.green { background: var(--ok-green); }
+  .badge.amber { background: var(--warn-amber); }
+  .badge.red { background: var(--pmi-accent); }
+  footer.tap-footer {
+    border-top: 1px solid #d1d5db;
+    margin-top: 32px;
+    padding-top: 12px;
+    color: var(--pmi-grey);
+    font-size: 11px;
+    text-align: center;
+  }
+  @media print {
+    body { padding: 0; max-width: 100%; }
+    h2 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="tap-header">
+  <div class="brand">PMI® Goiás Chapter — PMO · Termo de Abertura do Projeto</div>
+  <h1>Grupo de Estudos CPMAI Prep Course</h1>
+  <div class="meta">
+    <span><strong>Versão</strong> R00</span>
+    <span><strong>Data</strong> 2026-05-12</span>
+    <span><strong>Capítulo Sede</strong> PMI-GO</span>
+    <span><strong>Ciclo Núcleo</strong> 3 (2026)</span>
+  </div>
+</header>
+
+<!-- ============ 1. PROJETO ============ -->
+<section id="s1-projeto">
+<h2>1. Projeto</h2>
+<table class="kv">
+  <tr><th>Nome do Projeto</th>
+      <td>Grupo de Estudos CPMAI Prep Course — Núcleo IA & GP / PMI-GO · Ciclo 3 (2026)</td></tr>
+  <tr><th>Código do Projeto</th>
+      <td><em>PMI-GO/NIA/2026/CPMAI-T1</em> (a confirmar pelo PMO-GO)</td></tr>
+  <tr><th>Patrocinador</th>
+      <td>Ivan Lourenço — Presidente do PMI-GO</td></tr>
+  <tr><th>Líder da Iniciativa</th>
+      <td>Herlon Alves de Sousa (PMI-CE) — <code>study_group_owner</code> / leader</td></tr>
+  <tr><th>GP do Núcleo</th>
+      <td>Vitor Maia Rodovalho (PMI-GO) — responsável pelo Núcleo IA &amp; GP como um todo; supervisão e mentoria da iniciativa</td></tr>
+  <tr><th>Co-GP / Curador do Núcleo</th>
+      <td>Fabricio Costa (PMI-GO)</td></tr>
+  <tr><th>Data de Início (preparação)</th>
+      <td>2026-06-01 — captação + divulgação + corpo docente</td></tr>
+  <tr><th>Data de Término (T2 encerramento)</th>
+      <td>2026-11-30 — Retrospectiva e Termo de Encerramento até 2026-12-30</td></tr>
+  <tr><th>Initiative ID (Núcleo IA Hub)</th>
+      <td><code>2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19</code></td></tr>
+  <tr><th>Integração Artia</th>
+      <td>Activity <code>32811710</code> · Folder <code>6399648</code> (sincronizada ADR-0069)</td></tr>
+</table>
+</section>
+
+<!-- ============ 2. PROPÓSITO ============ -->
+<section id="s2-proposito">
+<h2>2. Propósito ou Justificativa do Projeto</h2>
+
+<p>O projeto capitaliza o alinhamento estratégico global do PMI® com Inteligência Artificial — expresso nos frameworks <strong>PMI MORE</strong>, <strong>PMI NEXT</strong>, no programa <strong>PMI×AI Champion</strong> e na certificação <strong>PMI-CPMAI™</strong> — para suprir a lacuna crítica de profissionais certificados no Brasil. Em <strong>11 de maio de 2026</strong>, o registro oficial PMI listava <strong>apenas 27 holders</strong> CPMAI no Brasil (posição 19 globalmente, atrás de Egito, Itália e Arábia Saudita), com <strong>zero holders no estado de Goiás</strong> e zero no Rio Grande do Sul. O Núcleo IA &amp; GP, sediado pelo PMI-GO, está posicionado para se tornar o principal driver nacional de preparação e certificação CPMAI ao longo dos próximos 24 meses.</p>
+
+<p>A <strong>janela é estratégica e tempo-sensível</strong>: o PMI® anunciou oficialmente em <strong>28 de abril de 2026</strong> a expansão do exame PMI-CPMAI™ para Português Brasileiro (além de 8 outros idiomas), removendo a barreira de idioma que limitava a adoção no Brasil — referência: <code>projectmanagement.com/articles/1185269/pmi-expands-pmi-cpmai-with-9-additional-languages</code>. A certificação foi consolidada após a aquisição da Cognilytica pelo PMI (setembro/2024) e validada por análise de cargo DACUM conduzida pela Ohio State University (maio/2025) — base científica que sustenta o currículo do Grupo de Estudos.</p>
+
+<p>O projeto opera como funil estruturado de desenvolvimento: <em>interesse em IA → preparação técnica (Grupo de Estudos) → filiação ao PMI → certificação CPMAI → engajamento contínuo no Núcleo como pesquisador ou mentor</em>. Esse funil retroalimenta a comunidade dos capítulos parceiros com novos talentos certificados e amplia a base de filiados PMI. O projeto entrega impacto direto aos OKRs dos capítulos (engajamento, retenção, ATPs, LGPD) e consolida o Núcleo como referência nacional em Gestão de Projetos de IA, alinhado ao <strong>Código de Ética e Conduta Profissional do PMI</strong> e ao tripé de sustentabilidade <em>financeira · social · governança</em>.</p>
+
+<p class="disclaimer"><strong>Disclaimer obrigatório de marca e escopo:</strong>
+<br>① O projeto é denominado exclusivamente <strong>"Grupo de Estudos CPMAI Prep Course"</strong>, jamais "curso CPMAI". Esta restrição existe para preservar conformidade com as políticas do <strong>PMI® América Latina</strong>.
+<br>② O <strong>PMI-CPMAI™ Exam Prep Course oficial (21h) do PMI® é PRÉ-REQUISITO obrigatório</strong> para agendar e realizar o exame de certificação. O Grupo de Estudos do Núcleo IA é <strong>complementar</strong> — reforço de conteúdo, simulados estruturados, sessões de mentoria, networking e funil de filiação — e <strong>não substitui</strong> o curso oficial.
+<br>③ O projeto <strong>não atua como Authorized Training Partner (ATP)</strong> nem comercializa direitos sobre a certificação. <strong>CPMAI®</strong> e <strong>PMI®</strong> são marcas registradas do Project Management Institute, Inc.</p>
+</section>
+
+<!-- ============ 3. OBJETIVOS ============ -->
+<section id="s3-objetivos">
+<h2>3. Objetivos Gerais</h2>
+<ol>
+  <li>Realizar <strong>2 turmas (T1 e T2)</strong> do Grupo de Estudos CPMAI em 2026, cada uma com <strong>8 encontros quinzenais</strong>.</li>
+  <li>Alcançar <strong>50 inscritos por turma (target)</strong>, com <strong>25 inscritos como piso mínimo</strong> para viabilidade operacional.</li>
+  <li>Contribuir com <strong>+8 holders CPMAI Brasil até Dez/2026</strong> (passar de 27 para 35+, equivalente a +30% nacional), conforme registro oficial PMI.</li>
+  <li>Atrair <strong>participação de alunos de ao menos 8 dos 15 capítulos</strong> do PMI Brasil — meta realista para os dois primeiros ciclos, aproveitando a expansão do Núcleo IA anunciada no <strong>CBGPL 2026</strong> e o lançamento oficial da CPMAI em PT-BR (28/abr/2026).</li>
+  <li>Demonstrar valor estratégico do Núcleo IA Hub como <strong>case PMIS</strong> integrado de governança (TAP + comentários + aprovação + sync Artia) para o PMO-GO e demais capítulos parceiros.</li>
+</ol>
+
+<h3>3.1 Oportunidades futuras (não-meta · trackeadas como exploração)</h3>
+<p>Os itens abaixo são <strong>desejáveis</strong>, mas <strong>não constituem compromisso formal</strong> deste TAP. Serão avaliados ao final do ciclo:</p>
+<ul>
+  <li><strong>Blueprint reproduzível para T3 (2027)</strong> consolidando lições aprendidas T1+T2.</li>
+  <li><strong>Bridge multicultural com capítulos lusófonos</strong> (Portugal — pool de mentores PT já mapeado).</li>
+  <li><strong>Versão LATAM em espanhol</strong> (sinergia com a estrutura PMI×AI Latam — Daniel Falcão como canal).</li>
+  <li><strong>Conversa formal com PMI sobre ATP regional</strong> (OKR03 KR3.2 PMI-CE BigDream).</li>
+  <li><strong>Cobertura dos 15 capítulos PMI Brasil</strong> (acima da meta de 8) caso a captação T1/T2 exceda projeções.</li>
+</ul>
+</section>
+
+<!-- ============ 4. ESCOPO ============ -->
+<section id="s4-escopo">
+<h2>4. Escopo do Projeto</h2>
+<h3>4.1 Entregas principais</h3>
+<ul>
+  <li><strong>TAP aprovado</strong> + governança (este documento R00) — Mai/2026.</li>
+  <li><strong>Corpo docente confirmado</strong> com pool inicial de 10 nomes mapeados (ver Anexo A).</li>
+  <li><strong>Webinar pré-launch de conscientização</strong> — Jul/2026 — com 3 audiências: (i) profissionais de GP interessados em CPMAI, (ii) lideres corporativos sobre framework data-centric, (iii) lead generation para os próprios mentores.</li>
+  <li><strong>Turma 1 (Ago–Set/2026)</strong>: 8 aulas quinzenais cobrindo os 5 domínios oficiais ECO v8.</li>
+  <li><strong>Turma 2 (Out–Nov/2026)</strong>: mesma estrutura, ajustada com lições aprendidas T1.</li>
+  <li><strong>Mentoria estruturada</strong>: sessões 1:1 ou em grupos pequenos conforme demanda.</li>
+  <li><strong>Banco de questões e simulados</strong>: mock exams por domínio com cutoff ≥70%.</li>
+  <li><strong>Certificado interno Núcleo IA</strong>: emitido a alunos com ≥75% frequência e ≥70% mock final.</li>
+  <li><strong>Sistema de gamificação</strong> (XP table) integrado ao Núcleo IA Hub.</li>
+  <li><strong>Termo de Encerramento</strong> com retrospectiva e lições aprendidas — Dez/2026.</li>
+</ul>
+
+<h3>4.2 Domínios oficiais cobertos (ECO v8 — PMI, setembro/2025)</h3>
+<table>
+  <thead><tr><th>#</th><th>Domínio</th><th>Peso</th><th>Tasks oficiais</th><th>Foco temático</th></tr></thead>
+  <tbody>
+    <tr><td>D1</td><td>Apoiar Esforços de IA Responsável e Confiável</td><td>15%</td><td>5</td><td>Privacidade, transparência, bias, compliance regulatório, audit trail</td></tr>
+    <tr><td>D2</td><td>Identificar Necessidades de Negócio e Soluções</td><td>26%</td><td>10</td><td>Problema, viabilidade, risco, escopo, ROI, adoção, KPIs, business case, recursos</td></tr>
+    <tr><td>D3</td><td>Identificar Necessidades de Dados</td><td>26%</td><td>9</td><td>Definição de dados, SMEs, fontes, infraestrutura, qualidade, labeling, privacidade</td></tr>
+    <tr><td>D4</td><td>Gerenciar Desenvolvimento e Avaliação de Modelos de IA</td><td>16%</td><td>6</td><td>Seleção de modelo, treino, QA/QC, validação, documentação, go/no-go</td></tr>
+    <tr><td>D5</td><td>Operacionalizar Solução de IA</td><td>17%</td><td>7</td><td>Deploy, monitoramento, drift, governance, KPIs operacionais, transição, contingência</td></tr>
+    <tr><th colspan="2" style="text-align:right">Total</th><th>100%</th><th>37</th><td>Currículo do Grupo de Estudos deve respeitar a alocação proporcional de tempo</td></tr>
+  </tbody>
+</table>
+<p class="callout"><strong>Nota estratégica:</strong> Domínios II e III juntos representam <strong>52% do exame</strong> e <strong>19 das 37 tasks (51%)</strong>. O syllabus dedicará proporcionalmente mais tempo a esses dois domínios, sem ignorar D1, D4 e D5 — todos serão cobertos.</p>
+
+<h3>4.3 Plataforma técnica</h3>
+<ul>
+  <li><strong>Airmeet</strong>: aulas síncronas + recursos multi-idioma (PT/EN/ES).</li>
+  <li><strong>Sympla</strong>: inscrições, ticketing por tier, emissão fiscal (capítulo PMI-GO).</li>
+  <li><strong>Núcleo IA Hub</strong> (<code>nucleoia.vitormr.dev</code>): board do projeto, timeline, comunicação, certificado, gamificação, sync Artia.</li>
+  <li><strong>Integração API Sympla → Núcleo Hub</strong> (<em>desirable, não-bloqueante</em>) — para trazer inscritos ao funil do Núcleo (mini-certificações PMI×AI, Credly, gamificação alumni).</li>
+</ul>
+</section>
+
+<!-- ============ 5. FORA DO ESCOPO ============ -->
+<section id="s5-fora-do-escopo">
+<h2>5. Fora do Escopo</h2>
+<ul>
+  <li><strong>PMI-CPMAI™ Exam Prep Course oficial (21h)</strong> — é <strong>pré-requisito obrigatório</strong> do PMI® para agendar e realizar o exame; deve ser adquirido diretamente pelo aluno no portal myPMI. O Grupo de Estudos do Núcleo IA é <strong>complementar</strong>, não substituto.</li>
+  <li><strong>Aplicação da prova de certificação</strong> — operação Pearson VUE (computer-based test em centro físico ou online proctored OnVue). 120 questões, 160 minutos, validade de 12 meses após compra.</li>
+  <li><strong>Cobrança ou intermediação financeira da certificação</strong> — taxa do exame cobrada diretamente pelo PMI ao aluno.</li>
+  <li><strong>Tutoria individualizada paga pós-curso</strong> — poderá ser avaliada em ciclos futuros.</li>
+  <li><strong>Conteúdo proprietário de ATPs externos</strong> (e.g., Udemy, materiais comerciais) — apenas referência educacional, sem redistribuição.</li>
+  <li><strong>Atuação institucional como ATP</strong> — registrada como BigDream (OKR03 KR3.2 PMI-CE) para avaliação futura, fora do escopo deste TAP.</li>
+  <li><strong>Conteúdo do PMP®, PMI-CP, ou outras certificações PMI</strong> — escopo restrito a CPMAI.</li>
+</ul>
+</section>
+
+<!-- ============ 6. ALINHAMENTO ESTRATÉGICO ============ -->
+<section id="s6-alinhamento">
+<h2>6. Alinhamento Estratégico</h2>
+
+<h3>6.1 Catálogo de Serviços PMI (PMI-GO — capítulo sede)</h3>
+<p>O projeto se enquadra simultaneamente em <strong>(2) Desenvolvimento de Carreira</strong> e <strong>(4) Benefícios para Membros</strong>, com componente colateral em <strong>(1) Eventos do Capítulo</strong> via Webinar pré-launch.</p>
+
+<h3>6.2 OKRs e frameworks aplicáveis</h3>
+<table>
+  <thead><tr><th>Framework / OKR</th><th>Conexão</th><th>Impacto</th></tr></thead>
+  <tbody>
+    <tr><td>PMI MORE (Latam)</td><td>Manage perceptions / Own success / Relentlessly reassess / Expand perspective — aplicado na curadoria pedagógica</td><td><span class="badge green">Alto</span></td></tr>
+    <tr><td>PMI NEXT</td><td>Programa de modernização do PMI — Núcleo IA Hub como case operacional</td><td><span class="badge green">Alto</span></td></tr>
+    <tr><td>PMI×AI Champion Program</td><td>Vitor Rodovalho é PMI×AI Champion; conteúdo alinha com diretrizes globais IA</td><td><span class="badge green">Alto</span></td></tr>
+    <tr><td>OKR01 PMI-CE (Engajamento)</td><td>KR1.1 +3% filiados via funil IA→CPMAI; KR1.2 +10% retenção via engajamento recorrente</td><td><span class="badge green">Alto direto</span></td></tr>
+    <tr><td>OKR03 PMI-CE (ATPs)</td><td>KR3.2 Identificar 1 ATP regional — Núcleo como candidato avaliado (BigDream, fora escopo T1/T2)</td><td><span class="badge amber">Médio estratégico</span></td></tr>
+    <tr><td>OKR04 PMI-CE (LGPD)</td><td>Plataforma Núcleo IA já é LGPD by design — case pronto para o capítulo</td><td><span class="badge green">Alto referência</span></td></tr>
+    <tr><td>Planejamento Anual PMI-GO 2026</td><td>Alinha à expansão do Núcleo IA (Ciclo 3) e ao posicionamento de Goiás como hub de inovação regional</td><td><span class="badge green">Alto</span></td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 7. REQUISITOS ============ -->
+<section id="s7-requisitos">
+<h2>7. Requisitos de Alto Nível</h2>
+<ol>
+  <li><strong>Corpo docente sênior:</strong> certificados CPMAI ou notório saber em IA aplicada — pool 10 nomes mapeados PT/BR (Anexo A).</li>
+  <li><strong>Plataforma multi-canal:</strong> Airmeet (aulas) + Sympla (inscrições) + Núcleo IA Hub (board/timeline/comms/certificado/gamificação).</li>
+  <li><strong>Cronograma viável:</strong> aprovação TAP em Mai/2026 → preparação Jun-Jul → T1 Ago-Set → T2 Out-Nov → Retrospectiva Dez.</li>
+  <li><strong>Modelo financeiro tiered (5 faixas):</strong> incentivo a membros Núcleo, filiados PMI Brasil, estudantes filiados, estudantes não-filiados, demais não-filiados — preço inferior à faixa praticada para PMP/PMI-CP.</li>
+  <li><strong>Vouchers / cortesia para equipe da iniciativa:</strong> formação de novos GPs voluntários em troca de apoio operacional (mitiga sobrecarga GP único).</li>
+  <li><strong>Disclaimer de marca:</strong> "Grupo de Estudos" rigoroso em todos materiais, sem uso de "curso" ou "ATP".</li>
+  <li><strong>LGPD by design:</strong> consent gate + anonimização + retenção configurada (já operacional na plataforma Núcleo IA).</li>
+  <li><strong>Capítulo operador único:</strong> PMI-GO concentra movimentação financeira via CNPJ próprio, com transparência via dashboard do Núcleo.</li>
+  <li><strong>Webinar pré-launch:</strong> obrigatório como peça de lead generation e conscientização do framework data-centric.</li>
+  <li><strong>Integração API Sympla → Núcleo Hub (<em>desirable</em>):</strong> trazer inscritos ao funil de mini-certificações PMI×AI, Credly e gamificação do Núcleo.</li>
+</ol>
+</section>
+
+<!-- ============ 8. PREMISSAS ============ -->
+<section id="s8-premissas">
+<h2>8. Premissas</h2>
+<ol>
+  <li>Mentores e instrutores atuam em regime de <strong>voluntariado</strong>, mantendo custo direto zero para o corpo docente.</li>
+  <li>A plataforma Núcleo IA Hub mantém o custo de infraestrutura em <strong>R$ 0/mês</strong> (PaaS free tiers), preservando sustentabilidade financeira.</li>
+  <li>O PMI-GO autoriza operar como <strong>capítulo sede financeira</strong> (CNPJ + tesouraria + transparência), com rateio operacional definido pela Diretoria.</li>
+  <li>Daniel Falcão (PMI Latam) viabiliza canal de relacionamento institucional com os <strong>27 holders CPMAI brasileiros</strong> e com a estrutura PMI×AI Latam.</li>
+  <li>O disclaimer "Grupo de Estudos" mantém o projeto em conformidade com PMI Latam, conforme alinhamento prévio.</li>
+  <li>O <strong>Ciclo 3 do Núcleo IA</strong> (em andamento) viabiliza a alocação de membros do Núcleo como equipe de apoio voluntária ao GP da iniciativa.</li>
+  <li>A estrutura tier Sympla praticada pelos capítulos para PMP/PMI-CP continua válida como balizador de precificação (CPMAI sempre <em>inferior</em>).</li>
+</ol>
+</section>
+
+<!-- ============ 9. RESTRIÇÕES ============ -->
+<section id="s9-restricoes">
+<h2>9. Restrições</h2>
+<ol>
+  <li><strong>Nomenclatura obrigatória</strong>: "Grupo de Estudos" — proibido uso de "curso" ou "ATP" para evitar conflito PMI Latam.</li>
+  <li><strong>Custos diretos zero</strong>: a sustentabilidade financeira é premissa estrutural (mentores voluntários, plataforma R$ 0).</li>
+  <li><strong>Idioma principal PT-BR</strong>; aulas com mentores PT-PT ou ES podem ocorrer com tradução / sessão paralela.</li>
+  <li><strong>CPMAI® é marca registrada PMI®</strong>: uso obrigatório de disclaimer em todo material visual e textual.</li>
+  <li><strong>NDA de Marcos Klemz</strong>: não atua como mentor do prep, mas pode contribuir com o case LGPD do Núcleo.</li>
+  <li><strong>Capítulo operador único PMI-GO</strong>: movimentações financeiras transparentes, sem múltiplos CNPJs envolvidos.</li>
+  <li><strong>Preço inferior à faixa de PMP/PMI-CP</strong> nos capítulos PMI Brasil via Sympla.</li>
+  <li><strong>Cronograma protegido</strong>: 2 turmas no ano-base 2026 (T1 Ago-Set, T2 Out-Nov); deslocamento exige Change Request formal.</li>
+</ol>
+</section>
+
+<!-- ============ 10. CRONOGRAMA ============ -->
+<section id="s10-cronograma">
+<h2>10. Cronograma de Alto Nível</h2>
+<table>
+  <thead><tr><th>Marco</th><th>Previsão</th></tr></thead>
+  <tbody>
+    <tr><td>Aprovação do TAP</td><td>2026-05-25 (target)</td></tr>
+    <tr><td>Confirmação corpo docente (3-5 mentores)</td><td>2026-06-15</td></tr>
+    <tr><td>Abertura inscrições T1 (Sympla)</td><td>2026-06-15</td></tr>
+    <tr><td>Webinar pré-launch de conscientização</td><td>2026-07 (segunda quinzena)</td></tr>
+    <tr><td>Fechamento inscrições T1</td><td>2026-07-31</td></tr>
+    <tr><td>Turma 1 — Aula 1</td><td>2026-08 (primeira quinzena)</td></tr>
+    <tr><td>Turma 1 — Aula 8 + Mock final</td><td>2026-09 (segunda quinzena)</td></tr>
+    <tr><td>Abertura inscrições T2 + lições aprendidas T1</td><td>2026-09</td></tr>
+    <tr><td>Turma 2 — Aula 1</td><td>2026-10 (primeira quinzena)</td></tr>
+    <tr><td>Turma 2 — Aula 8 + Mock final</td><td>2026-11 (segunda quinzena)</td></tr>
+    <tr><td>Retrospectiva e Lições Aprendidas</td><td>2026-12-15</td></tr>
+    <tr><td>Termo de Encerramento (entregue ao PMO-GO)</td><td>2026-12-30</td></tr>
+  </tbody>
+</table>
+<p class="callout">Cronograma detalhado por EAP será entregue na sequência da aprovação do TAP, conforme padrão PMO-GO (artefato MGP012 / Cronograma).</p>
+</section>
+
+<!-- ============ 11. PARTES INTERESSADAS ============ -->
+<section id="s11-stakeholders">
+<h2>11. Partes Interessadas do Projeto</h2>
+
+<h3>11.1 Capítulos PMI Brasil (15 capítulos · meta de cobertura: 8)</h3>
+<p>O projeto é uma iniciativa <strong>inter-capítulos</strong> com PMI-GO como sede institucional. Cada capítulo tem três papéis institucionais relevantes: <strong>Presidência</strong> (autorização institucional), <strong>Diretoria de Filiação</strong> (funnel de filiação como KR1.1) e <strong>Diretoria de Voluntariado</strong> (engajamento de voluntários como time de apoio e divulgação local).</p>
+
+<table>
+  <thead><tr><th>Capítulo</th><th>Presidência (confirmada 12/mai/2026)</th><th>Diretoria de Filiação</th><th>Diretoria de Voluntariado</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>PMI-GO</strong> (sede)</td><td>Ivan Lourenço Costa · presidencia@pmigo.org.br</td><td>Welma Alves de Melo</td><td><em>a confirmar</em></td><td>🟢 Sede · Sponsor</td></tr>
+    <tr><td><strong>PMI-CE</strong></td><td>Francisca Jessyca Alcântara · presidencia@pmice.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>🟢 Federado (Herlon — Líder da Iniciativa)</td></tr>
+    <tr><td><strong>PMI-DF</strong></td><td>Matheus Rocha, PMP · presidente@pmidf.org</td><td>Ricardo André (Certificação)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
+    <tr><td><strong>PMI-MG</strong></td><td>Felipe Borges · presidencia@pmimg.org.br</td><td>Rogério Peixoto (Cert. e Desenv. Prof.)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
+    <tr><td><strong>PMI-RS</strong></td><td>Márcio Santos · presidencia@pmirs.org.br</td><td>Vinícius Piccini (VP Filiação e Voluntariado)</td><td>Vinícius Piccini (VP — mesma área)</td><td>🟢 Federado · Host CBGPL 2026</td></tr>
+    <tr><td>PMI-AM</td><td>João Leite, PMP · presidencia@pmiam.org</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-BA</td><td>Michele Barbosa, MSc, PMP · presidencia@pmiba.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-ES</td><td>Scheila Lagass, PMP · presidencia@pmies.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-PB</td><td>Márcio Gomes da Costa · comunicacao@pmipb.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (15º cap., fundador)</td></tr>
+    <tr><td>PMI-PE</td><td>Rick Lândia Barboza · presidencia@pmipe.org.br</td><td>Juliana Lima (VP Filiação/Vol)</td><td>Juliana Lima (mesma VP)</td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-PR</td><td>Sergio Martines · sergio.martines@pmipr.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-RJ</td><td>Emerson Kühl · presidencia@pmirio.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-SC</td><td>Everaldo Artur Grahl · presidencia@pmisc.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-SE</td><td>Gabriel Wasil Jaciuk Raio · presidencia@pmise.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-SP</td><td>Sérgio Ricardo Nascimento · presidencia@pmisp.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (maior das Américas)</td></tr>
+  </tbody>
+</table>
+<p class="callout">⚠️ Dados de Presidência consolidados em 12/maio/2026 com confiabilidade 🟢 Alta para 13 dos 15 capítulos (fontes: sites oficiais, LinkedIn das diretorias, posts de Integração Nacional PMI-DF mar/2026). 🟡 Média para PMI-CE (eleita biênio 2026-2027 — site /organograma desatualizado) e PMI-RJ (eleição 2026-2027 em transição). Diretorias de Filiação e Voluntariado serão confirmadas por carta institucional do PMI-GO para cada capítulo (próximo passo pós-aprovação TAP).</p>
+
+<h3>11.2 Demais partes interessadas</h3>
+<table>
+  <thead><tr><th>Instituição</th><th>Representante</th><th>Função</th><th>Contato</th></tr></thead>
+  <tbody>
+    <tr><td>PMI-GO — PMO</td><td>Eder Valasco</td><td>Analista PMO / Liaison TAP — comentador e ponte com Diretoria Executiva</td><td><em>a confirmar via PMO-GO</em></td></tr>
+    <tr><td>PMI® América Latina</td><td>Daniel Falcão</td><td>Analista de Negócios — canal de relacionamento Latam + acesso aos 27 holders BR</td><td>via PMI Latam</td></tr>
+    <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>vitor.rodovalho@outlook.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>Fabricio Costa</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>fabriciorcc@gmail.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>saguaho@gmail.com · herlon.sousa@pmice.org.br</td></tr>
+    <tr><td>Comunidade técnica</td><td>Filiados PMI BR + estudantes + líderes corporativos</td><td>Público-alvo do Grupo de Estudos</td><td>público</td></tr>
+    <tr><td>PMI® Global</td><td>Ricardo Vargas · PMI×AI Champion network</td><td>Diretrizes globais de IA · divulgação</td><td>via PMI Global</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 12. EQUIPE BÁSICA ============ -->
+<section id="s12-equipe">
+<h2>12. Equipe Básica</h2>
+<table>
+  <thead><tr><th>Nome</th><th>Função</th><th>Disponibilidade</th><th>Contato</th></tr></thead>
+  <tbody>
+    <tr><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>saguaho@gmail.com</td></tr>
+    <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>vitor.rodovalho@outlook.com</td></tr>
+    <tr><td>Fabricio Costa</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>fabriciorcc@gmail.com</td></tr>
+    <tr><td>Mayanna Duarte</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>mayanna.aires@gmail.com</td></tr>
+    <tr><td>Analista Pedagógico</td><td>Curadoria de conteúdo + simulados <em>(card aberto no board)</em></td><td>6-8h/mês</td><td>TBD</td></tr>
+    <tr><td>Time de Apoio (3-5 voluntários do Núcleo)</td><td>Coordenação alunos, logística de aulas, suporte pedagógico — formação como GPs</td><td>2-4h/mês cada</td><td>a recrutar no Ciclo 3</td></tr>
+    <tr><td>Corpo docente (3-5 mentores convidados)</td><td>Instrutores e mentores das 8 aulas — voluntariado</td><td>2-4h por aula</td><td>ver Anexo A</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 13. RISCOS ============ -->
+<section id="s13-riscos">
+<h2>13. Riscos Gerais</h2>
+<table>
+  <thead><tr><th>Risco</th><th>Causa</th><th>Consequência</th><th>Como Tratar</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>R1.</strong> Escassez de mentores certificados CPMAI no Brasil</td>
+      <td>Apenas 27 holders BR (~0% em GO/RS); pool restrito</td>
+      <td>Dificuldade compor corpo docente; risco qualidade conteúdo</td>
+      <td>Mitigar: pool de 10 nomes mapeados (BR+PT); gravar contingências; treinar Curadores Pedagógicos; canal Daniel Falcão para acesso aos 27 holders</td>
+    </tr>
+    <tr>
+      <td><strong>R2.</strong> Confusão de marca ("Grupo de Estudos" vs "Curso" / ATP)</td>
+      <td>Mercado denomina ofertas similares como "curso CPMAI"; concorrentes pagos (Udemy, ATPs)</td>
+      <td>Conflito com PMI Latam; risco reputacional ao PMI-GO</td>
+      <td>Mitigar: disclaimer rigoroso em todo material; treinamento equipe de divulgação; alinhamento prévio com Daniel Falcão</td>
+    </tr>
+    <tr>
+      <td><strong>R3.</strong> Baixa demanda na Turma 1</td>
+      <td>Tema novo no Brasil; concorrência (Sympla Tiago Pimentel PMI-CP, Frederico Peixoto Udemy CPMAI)</td>
+      <td>Cancelamento de turma ou ROI negativo</td>
+      <td>Mitigar: webinar pré-launch como funil; meta 50 / piso 25; divulgação via 5 capítulos parceiros + 10 em expansão; uso do pool de mentores como leads</td>
+    </tr>
+    <tr>
+      <td><strong>R4.</strong> Sobrecarga do Líder da Iniciativa</td>
+      <td>Histórico do GP atual com atividades concorrentes (migração ERP, prova IFCE, palestras PMI Academy)</td>
+      <td>Atrasos no cronograma; saturação operacional</td>
+      <td>Mitigar: time de apoio 3-5 voluntários do Núcleo; Co-GP/Curador como reserva; cronograma com buffer; vouchers de cortesia para incentivar engajamento da equipe</td>
+    </tr>
+    <tr>
+      <td><strong>R5.</strong> Saída de SME / Analista Pedagógico</td>
+      <td>Histórico Pedro Mendes (saída 2026-05-01)</td>
+      <td>Lacuna de conteúdo D2/D3</td>
+      <td>Mitigar: card "Analista Pedagógico" aberto no board; redundância via Marcos Klemz (LGPD apenas — NDA); pool de mentores como reserva pedagógica</td>
+    </tr>
+    <tr>
+      <td><strong>R6.</strong> Compliance financeiro PMI-GO como capítulo operador</td>
+      <td>Operação financeira concentrada em um único CNPJ</td>
+      <td>Auditoria PMI Global; risco fiscal</td>
+      <td>Mitigar: operação 100% PMI-GO CNPJ; dashboard de transparência via módulo Sustentabilidade do Núcleo IA; reporte semestral à Diretoria Financeira</td>
+    </tr>
+    <tr>
+      <td><strong>R7.</strong> Integração Sympla → Núcleo Hub atrasa ou falha</td>
+      <td>Limites de API tier free Sympla; complexidade técnica</td>
+      <td>Trabalho manual extra; menor conversão funil pesquisador</td>
+      <td>Aceitar: tratar como "desirable, não bloqueante"; sincronização manual aceitável no T1; reavaliar em T2</td>
+    </tr>
+    <tr>
+      <td><strong>R8.</strong> NDA de Marcos Klemz limita pool</td>
+      <td>Compromisso prévio com PMI/ATP</td>
+      <td>Não pode atuar como mentor CPMAI</td>
+      <td>Aceitar: contribuição restrita ao case LGPD do Núcleo</td>
+    </tr>
+    <tr>
+      <td><strong>R9.</strong> Concorrência de ofertas pagas no mercado</td>
+      <td>Cursos pagos pré-existentes (Sympla PMI-CP, Udemy CPMAI)</td>
+      <td>Risco share of mind do público técnico</td>
+      <td>Mitigar: diferencial Núcleo (community + LGPD by design + gamificação + tier free para membros Núcleo + simulados estruturados ECO v8 + sync com Credly)</td>
+    </tr>
+    <tr>
+      <td><strong>R10.</strong> Cycle 3 do Núcleo concorre por atenção dos voluntários</td>
+      <td>Onboarding paralelo de 21 novos pesquisadores no Ciclo 3</td>
+      <td>Disputa por horas de equipe</td>
+      <td>Mitigar: explicitar overlap nos boards; recrutar time apoio do próprio Ciclo 3 (oportunidade formativa)</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 14. ORÇAMENTO ============ -->
+<section id="s14-orcamento">
+<h2>14. Orçamento de Alto Nível</h2>
+
+<p class="callout">O projeto operará financeiramente pelo <strong>PMI-GO (CNPJ + tesouraria)</strong> com transparência via dashboard de Sustentabilidade do Núcleo IA. Pricing posicionado <strong>ligeiramente abaixo da referência Sympla PMI-MG</strong> (Grupo de Estudos PMI-CP Turma 2 2026: R$ 200 filiados home / R$ 250 outros capítulos / R$ 300 público geral) com tier <strong>cortesia (R$ 0)</strong> para membros ativos do Núcleo IA. Diferencial competitivo: <strong>16-24h de aulas síncronas + mentoria + comunidade + plataforma + funnel de filiação</strong> contra o Udemy concorrente (Frederico Peixoto, 3h41 vídeo self-paced, ~R$ 100, 12 students). O preço do exame oficial PMI (Prep Course 21h + Certification bundle, R$ 3.108 PMI member, R$ 3.108+ não-member) <strong>é separado e pago pelo aluno diretamente ao PMI</strong>.</p>
+
+<h3>14.1 Tiers de Preço (proposta para validação Diretoria Financeira PMI-GO)</h3>
+<table>
+  <thead><tr><th>Tier</th><th>Público</th><th>Preço (R$)</th><th>Lógica de posicionamento</th></tr></thead>
+  <tbody>
+    <tr><td>Tier 1</td><td>Membros ativos do Núcleo IA (pesquisadores, líderes de tribo, equipe de iniciativas, alumni)</td><td><strong>R$ 0</strong> (cortesia)</td><td>Incentivo institucional ao voluntariado; reconhecimento de horas de impacto já doadas</td></tr>
+    <tr><td>Tier 2</td><td>Filiados PMI Brasil (qualquer capítulo)</td><td><strong>R$ 180</strong></td><td>10% abaixo do home rate Sympla PMI-MG (R$ 200) — incentivo à filiação PMI ativa</td></tr>
+    <tr><td>Tier 3</td><td>Estudantes filiados PMI (BR / Latam)</td><td><strong>R$ 100</strong></td><td>~55% off Tier 2 — padrão BR de desconto estudante</td></tr>
+    <tr><td>Tier 4</td><td>Estudantes não-filiados PMI</td><td><strong>R$ 200</strong></td><td>Match Sympla PMI-MG home rate — neutralidade competitiva</td></tr>
+    <tr><td>Tier 5</td><td>Demais não-filiados (público externo)</td><td><strong>R$ 280</strong></td><td>~7% abaixo Sympla PMI-MG público (R$ 300) — diferencial competitivo</td></tr>
+    <tr><td>Cortesia operacional</td><td>Equipe da iniciativa (GP, Co-GP, Comms, Curador Pedagógico, 3-5 voluntários do Time de Apoio)</td><td><strong>R$ 0</strong></td><td>Em troca de trabalho voluntário; oportunidade formativa para novos GPs</td></tr>
+  </tbody>
+</table>
+<p class="callout">⚠️ <em>Valores preliminares — aprovação final pela Diretoria Financeira do PMI-GO. Janela de vendas T1: até 31/Jul/2026. Janela T2: até 30/Set/2026 (consistente com pattern Sympla "vendas até [data]").</em></p>
+
+<h3>14.2 Receita do Projeto (cenários)</h3>
+<table>
+  <thead><tr><th>Cenário</th><th>Distribuição assumida (50 inscritos)</th><th>Receita Bruta T1</th><th>Receita Bruta T2</th><th>Receita Anual</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Target (50 inscritos × turma)</strong></td>
+      <td>10 T1 (R$0) + 15 T2 (R$180) + 5 T3 (R$100) + 10 T4 (R$200) + 10 T5 (R$280)</td>
+      <td>R$ 8.000,00</td>
+      <td>R$ 8.000,00</td>
+      <td><strong>R$ 16.000,00</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Piso viável (25 inscritos × turma)</strong></td>
+      <td>5 T1 + 8 T2 + 3 T3 + 5 T4 + 4 T5</td>
+      <td>R$ 4.060,00</td>
+      <td>R$ 4.060,00</td>
+      <td><strong>R$ 8.120,00</strong></td>
+    </tr>
+    <tr>
+      <td>Caixa PMI-GO (cobertura inicial)</td>
+      <td>n/a</td>
+      <td colspan="2">R$ 1.000,00 ramp-up se inscritos &lt; piso</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+<p><em>* Receita líquida = receita bruta − despesas (item 14.3). Excedente operacional será reinvestido pelo PMI-GO nos próximos ciclos do Núcleo IA, conforme política do capítulo.</em></p>
+
+<h3>14.3 Despesas do Projeto</h3>
+<table>
+  <thead><tr><th>Despesa</th><th>Valor (estimativa)</th><th>Razão</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Sympla — fee da plataforma</strong></td><td><strong>16% da receita bruta</strong> · ~R$ 1.280 (target T1) / R$ 650 (piso T1)</td><td>Taxa Sympla cheia (estudo prévio do Núcleo, 2026) — incide somente sobre ingressos pagos (Tier 1 cortesia não passa pelo Sympla)</td></tr>
+    <tr><td>Airmeet — licença / passes</td><td>A confirmar (preferência: licença existente do Núcleo)</td><td>Reuniões online com recursos multi-idioma simultâneo</td></tr>
+    <tr><td>Brindes para mentores (placas / lembranças)</td><td>R$ 500 - R$ 1.000 por turma</td><td>Reconhecimento sênior pela entrega de 8 aulas voluntárias</td></tr>
+    <tr><td><strong>Banco de questões — licença anual de aquisição</strong></td><td>R$ 500 - R$ 2.500 (one-shot anual) <em>a confirmar com parceiros</em></td><td>Simulados premium alinhados ECO v8 (cobertura D1-D5); alternativa: questões produzidas internamente pelo time pedagógico (custo zero, esforço maior). <strong>Item não inclusivo no PM Canvas original — adicionado em R00.3 após PM flag</strong></td></tr>
+    <tr><td>Marketing / divulgação (artes, anúncios)</td><td>R$ 1.000 - R$ 2.000 por turma</td><td>Material visual, tráfego pago, conteúdo do webinar pré-launch</td></tr>
+    <tr><td>Operacional PMI-GO (rateio admin)</td><td>A definir (estimativa 5-10% receita bruta)</td><td>Custo de administração do capítulo sede</td></tr>
+  </tbody>
+</table>
+<p><em>*Os valores serão aprovados pela Diretoria Financeira e/ou Presidência do PMI-GO.</em></p>
+
+<h3>14.4 Margem operacional projetada (anual, ambas turmas)</h3>
+<table>
+  <thead><tr><th>Linha</th><th>Cenário target (100 inscritos)</th><th>Cenário piso (50 inscritos)</th></tr></thead>
+  <tbody>
+    <tr><td>Receita bruta</td><td>R$ 16.000</td><td>R$ 8.120</td></tr>
+    <tr><td>Sympla 16% sobre pagantes</td><td>− R$ 2.560</td><td>− R$ 1.300</td></tr>
+    <tr><td>Banco de questões (one-shot anual, médio)</td><td>− R$ 1.500</td><td>− R$ 1.500</td></tr>
+    <tr><td>Brindes mentores (2 turmas)</td><td>− R$ 1.500</td><td>− R$ 1.000</td></tr>
+    <tr><td>Marketing (2 turmas)</td><td>− R$ 3.000</td><td>− R$ 2.000</td></tr>
+    <tr><td>Operacional PMI-GO (7,5% médio)</td><td>− R$ 1.200</td><td>− R$ 610</td></tr>
+    <tr><td><strong>Total despesas</strong></td><td><strong>− R$ 9.760</strong></td><td><strong>− R$ 6.410</strong></td></tr>
+    <tr><td><strong>Margem operacional</strong></td><td><strong>R$ 6.240 (39%)</strong></td><td><strong>R$ 1.710 (21%)</strong></td></tr>
+  </tbody>
+</table>
+<p class="callout">⚠️ Mesmo no cenário piso (25 inscritos por turma) o projeto mantém margem positiva graças à estrutura de custo enxuta e ao tier de cortesia (mentores voluntários, infraestrutura R$ 0/mês). Excedente operacional reinvestido pelo PMI-GO em ciclos subsequentes ou em iniciativas correlatas do Núcleo (política do capítulo sede).</p>
+</section>
+
+<!-- ============ 15. CRITÉRIOS DE SUCESSO ============ -->
+<section id="s15-sucesso">
+<h2>15. Critérios de Sucesso do Projeto</h2>
+<ol>
+  <li><strong>Inscrições T1</strong> ≥ 25 (piso) / target 50 — Sympla.</li>
+  <li><strong>Inscrições T2</strong> ≥ 25 (piso) / target 50 — Sympla.</li>
+  <li><strong>Frequência média</strong> ≥ 75% (constraint operacional Núcleo IA).</li>
+  <li><strong>Mock final score</strong> ≥ 70% para ≥ 50% dos alunos por turma.</li>
+  <li><strong>+3 holders CPMAI Brasil até Dez/2026</strong> (27 → 30, equivalente a +11% nacional) — atribuível via registry PMI.</li>
+  <li><strong>Funil PMI:</strong> +N filiados PMI brasileiros oriundos do Grupo de Estudos (mensurar via formulário inscrição + cruzamento PMI-GO).</li>
+  <li><strong>Webinar pré-launch</strong>: ≥ 100 attendees registrados.</li>
+  <li><strong>0 incidentes</strong> de brand/compliance PMI (zero notificações Latam, zero retratações públicas).</li>
+  <li><strong>1+ conversa formal iniciada com PMI sobre ATP regional</strong> (BigDream — apenas tracking).</li>
+  <li><strong>NPS dos alunos ≥ 8</strong> (instrumento interno Núcleo IA).</li>
+  <li><strong>100% dos artefatos obrigatórios do PMO-GO entregues no prazo</strong>: TAP (este), Indicadores, Cronograma, Termo de Encerramento.</li>
+</ol>
+</section>
+
+<!-- ============ 16. RESPONSABILIDADE E AUTORIDADE ============ -->
+<section id="s16-responsabilidades">
+<h2>16. Responsabilidade e Autoridade</h2>
+
+<h3>16.1 Presidente do PMI-GO (Patrocinador)</h3>
+<ul>
+  <li>Aprovar formalmente o Termo de Abertura do Projeto (TAP) e demais documentos estratégicos.</li>
+  <li>Garantir alinhamento ao planejamento anual e aos objetivos estratégicos do capítulo.</li>
+  <li>Apoiar política e institucionalmente o projeto junto a parceiros, patrocinadores e partes interessadas de alto nível.</li>
+  <li>Deliberar sobre mudanças relevantes que impactem escopo, prazo, orçamento ou objetivos estratégicos.</li>
+</ul>
+
+<h3>16.2 Diretoria da Área Responsável (PMI-GO Desenvolvimento Profissional)</h3>
+<ul>
+  <li>Validar o alinhamento técnico e estratégico das entregas com a área temática do projeto.</li>
+  <li>Acompanhar a execução, apoiando a resolução de impedimentos e provendo recursos quando necessário.</li>
+  <li>Autorizar despesas de acordo com o orçamento aprovado e políticas do capítulo.</li>
+  <li>Aprovar alterações de menor impacto no escopo e cronograma, conforme governança do PMO.</li>
+</ul>
+
+<h3>16.3 Gerente de Projetos da Iniciativa (Herlon Sousa)</h3>
+<ul>
+  <li>Atuar como ponto central de comunicação do projeto, reportando status regularmente à Diretoria de Área e ao Patrocinador.</li>
+  <li>Elaborar, atualizar e manter todos os documentos e registros do projeto no formato e local definidos pelo PMO.</li>
+  <li>Garantir que a execução siga o escopo, prazo, custo e qualidade definidos.</li>
+  <li>Identificar, registrar e tratar riscos, bem como propor ações corretivas quando necessário.</li>
+  <li>Coordenar a equipe do projeto, atribuindo responsabilidades e acompanhando a execução das atividades.</li>
+</ul>
+
+<h3>16.4 GP do Núcleo (Vitor Rodovalho) — papel adicional</h3>
+<ul>
+  <li>Prover supervisão estratégica e ponte institucional com o PMI-GO (Patrocinador) e demais capítulos parceiros.</li>
+  <li>Atuar como Owner da plataforma Núcleo IA Hub (board, governança digital, sync Artia).</li>
+  <li>Apoiar o Líder da Iniciativa na resolução de impedimentos e na escalada para o Patrocinador quando necessário.</li>
+</ul>
+
+<h3>16.5 Equipe do Projeto</h3>
+<ul>
+  <li>Executar as atividades sob sua responsabilidade conforme o plano do projeto.</li>
+  <li>Comunicar ao GP eventuais riscos, problemas ou mudanças que possam impactar o projeto.</li>
+  <li>Cumprir prazos, padrões de qualidade e procedimentos definidos pelo GP e pelo PMO.</li>
+  <li>Contribuir ativamente com ideias, soluções e melhorias durante todo o ciclo de vida do projeto.</li>
+</ul>
+</section>
+
+<!-- ============ 17. APROVAÇÕES ============ -->
+<section id="s17-aprovacoes">
+<h2>17. Aprovações</h2>
+<table>
+  <thead><tr><th colspan="3">Aprovações</th></tr><tr><th>Participante</th><th>Assinatura</th><th>Data</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Presidente do PMI-GO — <strong>Ivan Lourenço</strong></td>
+      <td>____________________</td>
+      <td>____ / ____ / ________</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 18. CONTROLE DE REVISÕES ============ -->
+<section id="s18-controle">
+<h2>18. Controle de Revisões</h2>
+
+<h3>18.1 Controle de Aprovação do Termo de Abertura</h3>
+<table>
+  <thead><tr><th>Tipo</th><th>Nome</th><th>Data</th></tr></thead>
+  <tbody>
+    <tr><td>Elaboração</td><td>Vitor Maia Rodovalho (GP do Núcleo IA &amp; GP)</td><td>2026-05-12</td></tr>
+    <tr><td>Comentários — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>(aguardando)</td></tr>
+    <tr><td>Comentários — Co-GP / Curador Núcleo</td><td>Fabricio Costa <em>(desirable)</em></td><td>(aguardando)</td></tr>
+    <tr><td>Comentários — PMO-GO (até 2 analistas)</td><td>Eder Valasco + 1 (a indicar pelo PMO)</td><td>(aguardando)</td></tr>
+    <tr><td>Aprovação Diretoria da Área</td><td>Diretoria de Desenvolvimento Profissional PMI-GO</td><td>(aguardando)</td></tr>
+    <tr><td>Aprovação Final (Diretoria Executiva)</td><td>Ivan Lourenço — Presidente PMI-GO</td><td>(aguardando)</td></tr>
+  </tbody>
+</table>
+
+<h3>18.2 Controle de Revisões do Termo de Abertura</h3>
+<table>
+  <thead><tr><th>Nº Revisão</th><th>Descrição da Revisão</th><th>Responsável</th><th>Data Aprovação</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>R00</td>
+      <td>Versão inicial — consolidação do PM Canvas do Líder da Iniciativa (Herlon, 2026-04-11), dados operacionais do Núcleo IA Hub (initiative <code>2f5846f3</code>), ranking CPMAI v8 (PMI registry 2026-05-11) e diretrizes PMI-GO / PMI-CE OKRs</td>
+      <td>Vitor Maia Rodovalho</td>
+      <td>2026-05-12</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ ANEXO A — POOL DE INSTRUTORES ============ -->
+<section id="anexo-a-instrutores">
+<h2>Anexo A — Pool Inicial de Instrutores / Mentores Mapeados</h2>
+
+<p class="callout">Lista de prospects compilada em 2026-05-11 via PMI Certifications Registry + LinkedIn. O contato e a confirmação da disponibilidade são responsabilidade do Líder da Iniciativa, em parceria com Daniel Falcão (PMI Latam) quando aplicável.</p>
+
+<h3>A.1 Brasil — alta certificação (prioritários)</h3>
+<table>
+  <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>André Barcaui</td><td>linkedin.com/in/andrebarcaui</td><td>Voluntário PMI ativo · múltiplas certs</td></tr>
+    <tr><td>2</td><td>Gino Terentim</td><td>linkedin.com/in/ginoterentim</td><td>Referência nacional GP · PMI-SP</td></tr>
+    <tr><td>3</td><td>Henrique Diniz</td><td>linkedin.com/in/henriquediniztech</td><td>Voluntário PMI ativo · perfil técnico forte</td></tr>
+    <tr><td>4</td><td>Luís Eduardo França</td><td>linkedin.com/in/luiseduardofranca</td><td>Acadêmico · perfil pedagógico</td></tr>
+  </tbody>
+</table>
+
+<h3>A.2 Brasil — perfil interessante (conversa exploratória)</h3>
+<table>
+  <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th></tr></thead>
+  <tbody>
+    <tr><td>5</td><td>Aline Abrão</td><td>linkedin.com/in/alineabrao</td></tr>
+    <tr><td>6</td><td>Henrique Castro</td><td>linkedin.com/in/henriquecastropmp</td></tr>
+    <tr><td>7</td><td>Ana Calife</td><td>linkedin.com/in/anacalife</td></tr>
+  </tbody>
+</table>
+
+<h3>A.3 Portugal — bridge multicultural lusófona</h3>
+<table>
+  <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td>8</td><td>Alina Yaneva</td><td>linkedin.com/in/alina-yaneva</td><td>Bridge PMI Portugal</td></tr>
+    <tr><td>9</td><td>Frederico C Batista</td><td>linkedin.com/in/fredericocbatista</td><td>Perfil sênior PT</td></tr>
+    <tr><td>10</td><td>Frederico Peixoto</td><td>linkedin.com/in/peixotofrederico</td><td>Vestas · já tem curso CPMAI em PT no Udemy — referência de mercado</td></tr>
+  </tbody>
+</table>
+
+<h3>A.4 Holders CPMAI ativos no Núcleo IA</h3>
+<table>
+  <thead><tr><th>Nome</th><th>Capítulo</th><th>Certificação</th><th>Status no Núcleo</th><th>Disponibilidade para o projeto</th></tr></thead>
+  <tbody>
+    <tr><td>Pedro H. R. Mendes</td><td>PMI-DF</td><td>CPMAI ✅ (2025-10-23)</td><td>Inativo desde 2026-05-01</td><td>Re-engajamento possível</td></tr>
+    <tr><td>Marcos A. Klemz</td><td>PMI-MG</td><td>CPMAI ✅ (2026-03-04)</td><td>Líder Tribo 7 — Governança &amp; Trustworthy AI</td><td><strong>Restringido por NDA</strong> — contribuição apenas no case LGPD</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Total de holders CPMAI no Brasil:</strong> 27 (PMI Certifications Registry, 2026-05-11) · Brasil é o 19º país globalmente (atrás de Egito, Itália, Arábia Saudita).</p>
+</section>
+
+<!-- ============ ANEXO C — ANÁLISE COMPETITIVA E REFERÊNCIAS DE MERCADO ============ -->
+<section id="anexo-c-mercado">
+<h2>Anexo C — Análise Competitiva e Referências de Mercado (2026-05-12)</h2>
+
+<p class="callout">Pesquisa de mercado conduzida em 11-12/maio/2026 sobre ofertas existentes de preparação CPMAI no Brasil e no mundo. Base para o posicionamento de preço da seção 14 e do diferencial competitivo registrado em §13 (R9).</p>
+
+<h3>C.1 Custo total para o aluno se certificar (caminho oficial PMI)</h3>
+<table class="kv">
+  <tr><th>PMI-CPMAI Exam Prep Course (21h) + Certification — bundle oficial</th><td><strong>R$ 3.108 (PMI member)</strong> · valor superior para não-member</td></tr>
+  <tr><th>Idioma oficial do exame</th><td>Inglês + Português Brasileiro + 7 outros desde janeiro/2026</td></tr>
+  <tr><th>Modalidade</th><td>Pearson VUE (presencial recomendado ou OnVue online)</td></tr>
+  <tr><th>Validade pós-compra</th><td>12 meses · até 3 tentativas em 365 dias · 30 dias mínimos entre retakes</td></tr>
+</table>
+
+<h3>C.2 Concorrentes diretos no Brasil (preparatórios pagos)</h3>
+<table>
+  <thead><tr><th>Oferta</th><th>Formato</th><th>Carga</th><th>Preço (R$)</th><th>Avaliação</th><th>Diferencial Núcleo</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Sympla — Grupo de Estudos PMI-CP Turma 2/2026</strong> (Tiago Pimentel, PMI-MG)</td>
+      <td>Online, 8 encontros, formato grupo</td>
+      <td>~16-24h síncronas</td>
+      <td>R$ 200 (filiado MG) · R$ 250 (filiado outros) · R$ 300 (público geral)</td>
+      <td>Não-CPMAI (PMI-CP) · 25 inscritos turma anterior · capítulo PMI-MG</td>
+      <td>Núcleo cobre CPMAI especificamente, com plataforma própria + LGPD + gamificação + funnel</td>
+    </tr>
+    <tr>
+      <td><strong>Udemy — PMI-CPMAI Preparação Completa</strong> (Frederico Peixoto)</td>
+      <td>Vídeo on-demand self-paced</td>
+      <td>3h41min · 147 lectures</td>
+      <td>~R$ 100 ($19.99) com lifetime access</td>
+      <td>3.9/5 (5 ratings) · 12 students · criado 3/2026 · idioma PT-PT</td>
+      <td>Núcleo entrega 5-7× mais conteúdo síncrono + comunidade + mentoria humana ao vivo</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>C.3 Panorama Udemy global CPMAI (35+ cursos no catálogo, 2026)</h3>
+<table>
+  <thead><tr><th>Tipo de oferta</th><th>Faixa de preço</th><th>Carga típica</th><th>Avaliações</th></tr></thead>
+  <tbody>
+    <tr><td>Curso completo bestseller (Frederico Peixoto EN)</td><td>$19.99 (~R$ 100)</td><td>5h · 145 lectures</td><td>4.5/5 · 470 ratings</td></tr>
+    <tr><td>Curso premium ATP Instructor (Sachin Kumar)</td><td>$39.99 (~R$ 200)</td><td>26h · 266 lectures</td><td>4.0/5 · 8 ratings</td></tr>
+    <tr><td>Mock exam packs (questões com explicações)</td><td>$19.99-$59.99</td><td>240-800 questões</td><td>3.5-5.0/5</td></tr>
+    <tr><td>Master Class / Conteúdo prático (Sanal Mathew)</td><td>$29.99-$199.99</td><td>5-9h vídeo · 73-170 lectures</td><td>4.3-4.8/5 · 50-130 ratings</td></tr>
+  </tbody>
+</table>
+<p><strong>Mercado-Insight:</strong> A oferta global no Udemy está em fase explosiva pós-Jan/2026 (lançamento PT-BR), com forte concorrência de preços baixos ($19.99) mas <strong>nenhuma oferta combina comunidade, mentoria síncrona, simulados estruturados ECO v8 e funnel PMI capítulo</strong> — espaço onde o Núcleo IA se posiciona com vantagem.</p>
+
+<h3>C.4 Diferenciais competitivos do Grupo de Estudos do Núcleo IA</h3>
+<ol>
+  <li><strong>Volume de conteúdo síncrono:</strong> 16-24h ao vivo (8 aulas) vs. 3h41 vídeo self-paced do principal concorrente PT.</li>
+  <li><strong>Comunidade ativa:</strong> WhatsApp + 5 capítulos PMI parceiros + 15 em expansão + 48 voluntários ativos do Núcleo.</li>
+  <li><strong>Pool de mentores sêniores mapeado:</strong> 10 nomes (BR + Portugal) incluindo certificados CPMAI e referências de mercado.</li>
+  <li><strong>Simulados estruturados</strong> alinhados ECO v8 (5 domínios × 37 tasks), com cutoff ≥70%.</li>
+  <li><strong>Plataforma própria</strong> (Núcleo IA Hub — Astro/Cloudflare/Supabase): dashboard pessoal, leaderboard, certificado interno automático, gamificação.</li>
+  <li><strong>Funnel de filiação PMI</strong> — alunos pré-filiados convertem-se em filiados durante o curso (KR1.1 OKR PMI-CE).</li>
+  <li><strong>LGPD by design</strong> — case-referência para diretorias dos capítulos parceiros.</li>
+  <li><strong>Acesso pós-curso:</strong> alumni do Grupo de Estudos podem se candidatar à pesquisa do Núcleo, integrando-se à comunidade técnica continuada.</li>
+  <li><strong>Tier cortesia para membros Núcleo:</strong> incentivo formal ao voluntariado e oportunidade de formar novos GPs.</li>
+  <li><strong>Capítulo operador único PMI-GO</strong> com transparência financeira (dashboard sustentabilidade) — modelo replicável para próximos ciclos.</li>
+</ol>
+</section>
+
+<!-- ============ ANEXO B — ESTRUTURA METODOLÓGICA CPMAI ============ -->
+<section id="anexo-b-cpmai">
+<h2>Anexo B — Estrutura Metodológica CPMAI (referência oficial PMI/Cognilytica 2025)</h2>
+
+<p class="callout">A metodologia <strong>Cognitive Project Management for AI (CPMAI)</strong> é o framework vendor-neutral, iterativo e <em>data-centric</em> que sustenta a certificação PMI-CPMAI™. Foi consolidado por PMI/Cognilytica em 2025 (Overview Guide) e validado por análise de cargo DACUM conduzida pela Ohio State University em maio/2025. O syllabus do Grupo de Estudos cruzará os 5 domínios do ECO v8 (testados no exame) com as <strong>6 fases CPMAI</strong> (metodologia operacional) e os <strong>7 padrões de IA</strong> (taxonomia de soluções).</p>
+
+<h3>B.1 As 6 fases CPMAI (ciclo iterativo)</h3>
+<ol>
+  <li><strong>Business Understanding</strong> — Definir problema, sucesso, escopo, alinhamento estratégico; AI Go/No-Go feasibility checks.</li>
+  <li><strong>Data Understanding</strong> — Inventário de fontes, qualidade, "V's" de Big Data, governance + privacy.</li>
+  <li><strong>Data Preparation</strong> — Wrangling, cleaning, labeling, annotation, data pipelines.</li>
+  <li><strong>Model Development</strong> — Seleção de algoritmo, off-the-shelf vs. transfer learning, treino + tuning.</li>
+  <li><strong>Model Evaluation</strong> — Métricas técnicas e de negócio; governance; decisão go/no-go para deploy.</li>
+  <li><strong>Model Operationalization</strong> — Deploy, monitoramento em tempo real, versionamento, retraining, contingência.</li>
+</ol>
+
+<h3>B.2 Os 7 padrões de IA (taxonomia para escopo de projeto)</h3>
+<table>
+  <thead><tr><th>Padrão</th><th>Exemplos de aplicação</th></tr></thead>
+  <tbody>
+    <tr><td>Conversational &amp; Human Interaction</td><td>Chatbots, assistentes virtuais, comandos de voz</td></tr>
+    <tr><td>Recognition</td><td>Reconhecimento de imagem/áudio, OCR, classificação</td></tr>
+    <tr><td>Patterns &amp; Anomalies</td><td>Detecção de fraude, monitoramento industrial, intrusão</td></tr>
+    <tr><td>Predictive Analytics &amp; Decision Support</td><td>Forecasting, churn, previsão de demanda</td></tr>
+    <tr><td>Hyperpersonalization</td><td>Recomendação de produtos, conteúdo individualizado</td></tr>
+    <tr><td>Autonomous Systems</td><td>Veículos autônomos, robôs, drones, agentes</td></tr>
+    <tr><td>Goal-Driven Systems</td><td>Otimização sob restrição, planejamento, reinforcement learning</td></tr>
+  </tbody>
+</table>
+
+<h3>B.3 Trustworthy AI (princípio transversal)</h3>
+<p>O exame e a metodologia destacam <strong>Trustworthy AI</strong> como princípio que permeia <em>todas</em> as fases (não isolado em D1). Os princípios incluem: <strong>responsabilidade (accountability), transparência (explainability), justiça (bias mitigation), privacidade (GDPR/LGPD), segurança, robustez</strong>. O Grupo de Estudos abordará Trustworthy AI tanto como conteúdo de D1 (15% do exame, 5 tasks específicas) quanto como filtro aplicado às demais fases.</p>
+
+<h3>B.4 Informações operacionais do exame (PMI ECO v8, set/2025)</h3>
+<table class="kv">
+  <tr><th>Total de questões</th><td>120 (100 scored + 20 pretest unscored)</td></tr>
+  <tr><th>Duração</th><td>160 minutos (sem pausa programada)</td></tr>
+  <tr><th>Formato</th><td>Scenario-based (aplicação prática, não memorização)</td></tr>
+  <tr><th>Idiomas disponíveis</th><td>English (sempre); <strong>Brazilian Portuguese</strong> + Spanish + Arabic + French + German + Japanese + Korean + Simplified/Traditional Chinese desde janeiro/2026</td></tr>
+  <tr><th>Pré-requisitos formais</th><td>Nenhum (experiência em PM/IA recomendada, não obrigatória)</td></tr>
+  <tr><th>Pré-requisito de elegibilidade</th><td><strong>Conclusão do PMI-CPMAI Exam Prep Course oficial (21h)</strong> via portal myPMI</td></tr>
+  <tr><th>Modalidade</th><td>Pearson VUE — presencial (recomendado) ou online proctored OnVue</td></tr>
+  <tr><th>Janela de validade pós-compra</th><td>12 meses para realizar a prova</td></tr>
+  <tr><th>Política de retake</th><td>Até 3 tentativas em 365 dias, com 30 dias mínimos entre cada</td></tr>
+  <tr><th>Manutenção</th><td>30 PDUs a cada 3 anos (CCR Program)</td></tr>
+</table>
+
+<h3>B.5 Referências oficiais (links externos)</h3>
+<ul>
+  <li><strong>Página oficial da certificação:</strong> pmi.org/certifications/ai-project-management-cpmai</li>
+  <li><strong>ECO v8 — Examination Content Outline (Setembro/2025):</strong> pmi.org/-/media/pmi/documents/public/pdf/certifications/pmicpmai-exam-content-outline2025-updated.pdf</li>
+  <li><strong>CPMAI Methodology Overview Guide (PMI/Cognilytica, 2025):</strong> distribuído via myPMI</li>
+  <li><strong>Curso introdutório gratuito PMI:</strong> pmi.org/shop/p-/elearning/free-introduction-to-cognitive-project-management-in-ai-cpmai/elearning</li>
+</ul>
+</section>
+
+<footer class="tap-footer">
+  Documento gerado a partir da base unificada Núcleo IA Hub · Initiative <code>2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19</code> · Render <code>v2.7_p153_tap_cpmai_v1</code> · 2026-05-12
+  <br>CPMAI® e PMI® são marcas registradas do Project Management Institute, Inc.
+</footer>
+
+</body>
+</html>
+$TAPHTML$,
+    updated_at = now()
+WHERE id = '830932b8-9632-4951-b094-a94c38757264'
+  AND document_id = 'd7447a94-ca3c-4cf6-8b6e-5e604136522c';
+
+-- Verify
+SELECT
+  id, version_label, version_number,
+  octet_length(content_html) AS content_bytes,
+  length(content_html) AS content_chars,
+  authored_at
+FROM public.document_versions
+WHERE id = '830932b8-9632-4951-b094-a94c38757264';
