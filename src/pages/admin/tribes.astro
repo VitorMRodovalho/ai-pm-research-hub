@@ -15,6 +15,7 @@ const deniedMsg = t('admin.tribes.denied', lang);
     <div class="mb-6">
       <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.breadcrumb.tribesComparison', lang)} — Ciclo 3</h1>
       <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.tribes.subtitle', lang)}</p>
+      <p class="text-[12px] text-[var(--text-muted)] mt-2">{t('admin.tribes.crudHint', lang)}</p>
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <CrossTribeIsland client:load />

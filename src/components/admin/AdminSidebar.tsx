@@ -48,7 +48,8 @@ const SECTIONS: SidebarSection[] = [
     label: { 'pt-BR': 'Pessoas', 'en-US': 'People', 'es-LATAM': 'Personas' },
     items: [
       { href: '/admin/members', label: { 'pt-BR': 'Membros', 'en-US': 'Members', 'es-LATAM': 'Miembros' }, icon: 'Users', permission: 'admin.access' },
-      { href: '/admin/tribes', label: { 'pt-BR': 'Tribos', 'en-US': 'Tribes', 'es-LATAM': 'Tribus' }, icon: 'Users', permission: 'admin.access' },
+      { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase', permission: 'admin.access' },
+      { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
@@ -86,6 +87,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/campaigns', label: { 'pt-BR': 'Campanhas', 'en-US': 'Campaigns', 'es-LATAM': 'Campañas' }, icon: 'Mail', permission: 'admin.campaigns' },
       { href: '/admin/sustainability', label: { 'pt-BR': 'Sustentabilidade', 'en-US': 'Sustainability', 'es-LATAM': 'Sostenibilidad' }, icon: 'Leaf', permission: 'admin.sustainability' },
       { href: '/admin/pilots', label: { 'pt-BR': 'Pilotos', 'en-US': 'Pilots', 'es-LATAM': 'Pilotos' }, icon: 'Rocket', permission: 'admin.portfolio' },
+      { href: '/admin/organization', label: { 'pt-BR': 'Organização', 'en-US': 'Organization', 'es-LATAM': 'Organización' }, icon: 'Building', permission: 'system.global_config' },
       { href: '/admin/settings', label: { 'pt-BR': 'Configurações', 'en-US': 'Settings', 'es-LATAM': 'Configuraciones' }, icon: 'Settings', permission: 'system.global_config' },
       { href: '/admin/audit-log', label: { 'pt-BR': 'Registro de Auditoria', 'en-US': 'Audit Log', 'es-LATAM': 'Registro de Auditoría' }, icon: 'ClipboardList', permission: 'system.global_config' },
       { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },

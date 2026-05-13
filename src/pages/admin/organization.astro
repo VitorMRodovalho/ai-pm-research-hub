@@ -1,0 +1,260 @@
+---
+// p155 Op 3: Admin view/edit of the current organization (Núcleo IA Hub etc).
+// Multi-tenant ready — each Núcleo replica will have its own org row with own host_chapter / language / country.
+// Reads via get_my_organization(), writes via update_organization(). p155 (2026-05-13).
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const ORG_I18N = {
+  pageTitle: t('admin.organization.title', lang),
+  pageDesc: t('admin.organization.desc', lang),
+  loading: t('admin.loading', lang),
+  loadError: t('admin.loadError', lang),
+  denied: t('admin.accessRestricted', lang),
+  backToAdmin: t('admin.backToAdmin', lang),
+  sectionIdentity: t('admin.organization.sectionIdentity', lang),
+  sectionLocale: t('admin.organization.sectionLocale', lang),
+  sectionFederated: t('admin.organization.sectionFederated', lang),
+  fieldName: t('admin.organization.fieldName', lang),
+  fieldSlug: t('admin.organization.fieldSlug', lang),
+  fieldDescription: t('admin.organization.fieldDescription', lang),
+  fieldWebsite: t('admin.organization.fieldWebsite', lang),
+  fieldLogo: t('admin.organization.fieldLogo', lang),
+  fieldHostChapter: t('admin.organization.fieldHostChapter', lang),
+  fieldPrimaryLanguage: t('admin.organization.fieldPrimaryLanguage', lang),
+  fieldCountry: t('admin.organization.fieldCountry', lang),
+  fieldFederatedChapters: t('admin.organization.fieldFederatedChapters', lang),
+  hintSlug: t('admin.organization.hintSlug', lang),
+  hintHostChapter: t('admin.organization.hintHostChapter', lang),
+  hintPrimaryLanguage: t('admin.organization.hintPrimaryLanguage', lang),
+  hintCountry: t('admin.organization.hintCountry', lang),
+  hintFederated: t('admin.organization.hintFederated', lang),
+  saved: t('admin.organization.saved', lang),
+  save: t('admin.save', lang),
+  errorPrefix: t('common.errorPrefix', lang),
+  langPtBR: 'Português (Brasil)',
+  langEnUS: 'English (US)',
+  langEsLATAM: 'Español (LATAM)',
+};
+---
+
+<AdminLayout title={ORG_I18N.pageTitle} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)}, {label: ORG_I18N.pageTitle}]}>
+  <div class="max-w-[800px] mx-auto px-4 pb-12">
+    <div id="org-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{ORG_I18N.denied}</p>
+      <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{ORG_I18N.backToAdmin}</a>
+    </div>
+
+    <div id="org-panel" class="hidden">
+      <div class="mb-6">
+        <h1 class="text-xl font-extrabold text-navy">{ORG_I18N.pageTitle}</h1>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">{ORG_I18N.pageDesc}</p>
+      </div>
+
+      <form id="org-form" class="space-y-6">
+        <!-- Identity section -->
+        <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 space-y-4">
+          <h2 class="text-sm font-bold text-navy">{ORG_I18N.sectionIdentity}</h2>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldName}</label>
+            <input type="text" id="org-name" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldSlug}</label>
+            <input type="text" id="org-slug" disabled class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] font-mono bg-[var(--surface-base)] text-[var(--text-muted)]" />
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{ORG_I18N.hintSlug}</p>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldDescription}</label>
+            <textarea id="org-description" rows="3" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] resize-y bg-[var(--surface-input)]"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldWebsite}</label>
+              <input type="url" id="org-website" placeholder="https://" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]" />
+            </div>
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldLogo}</label>
+              <input type="url" id="org-logo" placeholder="https://" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Locale / Host section -->
+        <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 space-y-4">
+          <h2 class="text-sm font-bold text-navy">{ORG_I18N.sectionLocale}</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldHostChapter}</label>
+              <input type="text" id="org-host-chapter" placeholder="PMI-GO" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]" />
+              <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{ORG_I18N.hintHostChapter}</p>
+            </div>
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldCountry}</label>
+              <input type="text" id="org-country" placeholder="BR" maxlength="2" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)] uppercase" />
+              <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{ORG_I18N.hintCountry}</p>
+            </div>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldPrimaryLanguage}</label>
+            <select id="org-primary-language" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]">
+              <option value="pt-BR">{ORG_I18N.langPtBR}</option>
+              <option value="en-US">{ORG_I18N.langEnUS}</option>
+              <option value="es-LATAM">{ORG_I18N.langEsLATAM}</option>
+            </select>
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{ORG_I18N.hintPrimaryLanguage}</p>
+          </div>
+        </section>
+
+        <!-- Federated chapters -->
+        <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 space-y-4">
+          <h2 class="text-sm font-bold text-navy">{ORG_I18N.sectionFederated}</h2>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{ORG_I18N.fieldFederatedChapters}</label>
+            <input type="text" id="org-federated" placeholder="PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-input)]" />
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{ORG_I18N.hintFederated}</p>
+          </div>
+        </section>
+
+        <div class="flex justify-end">
+          <button type="submit" id="org-save" class="px-6 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{ORG_I18N.save}</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="org-loading" class="text-center py-16 text-[var(--text-muted)]">{ORG_I18N.loading}</div>
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script is:inline define:vars={{ ORG_I18N }}>
+  window.__ORG_ADMIN_I18N = ORG_I18N;
+</script>
+<script>
+  import { hasPermission } from '../../lib/permissions';
+
+  const T = (typeof window !== 'undefined' && (window as any).__ORG_ADMIN_I18N) || {
+    loading: 'Carregando…', loadError: 'Erro ao carregar.',
+    saved: 'Salvo', errorPrefix: 'Erro',
+  };
+
+  let sb: any = null;
+  let MEMBER: any = null;
+  let CURRENT: any = null;
+
+  function showDenied() {
+    document.getElementById('org-loading')?.classList.add('hidden');
+    document.getElementById('org-panel')?.classList.add('hidden');
+    document.getElementById('org-denied')?.classList.remove('hidden');
+  }
+  async function showPanel() {
+    document.getElementById('org-loading')?.classList.add('hidden');
+    document.getElementById('org-denied')?.classList.add('hidden');
+    document.getElementById('org-panel')?.classList.remove('hidden');
+    await loadOrg();
+  }
+
+  async function loadOrg() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.rpc('get_my_organization');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      CURRENT = data;
+      fillForm(data);
+    } catch (e: any) {
+      console.error('loadOrg', e);
+      (window as any).toast?.(T.loadError + ': ' + (e.message || ''), 'error');
+    }
+  }
+
+  function fillForm(o: any) {
+    (document.getElementById('org-name') as HTMLInputElement).value = o.name || '';
+    (document.getElementById('org-slug') as HTMLInputElement).value = o.slug || '';
+    (document.getElementById('org-description') as HTMLTextAreaElement).value = o.description || '';
+    (document.getElementById('org-website') as HTMLInputElement).value = o.website_url || '';
+    (document.getElementById('org-logo') as HTMLInputElement).value = o.logo_url || '';
+    (document.getElementById('org-host-chapter') as HTMLInputElement).value = o.host_chapter || '';
+    (document.getElementById('org-country') as HTMLInputElement).value = (o.country || '').toUpperCase();
+    (document.getElementById('org-primary-language') as HTMLSelectElement).value = o.primary_language || 'pt-BR';
+    const federated = Array.isArray(o.federated_chapters) ? o.federated_chapters : [];
+    (document.getElementById('org-federated') as HTMLInputElement).value = federated.join(', ');
+  }
+
+  async function saveOrg(e: Event) {
+    e.preventDefault();
+    if (!sb) return;
+    const name = (document.getElementById('org-name') as HTMLInputElement).value.trim();
+    const description = (document.getElementById('org-description') as HTMLTextAreaElement).value.trim();
+    const website_url = (document.getElementById('org-website') as HTMLInputElement).value.trim();
+    const logo_url = (document.getElementById('org-logo') as HTMLInputElement).value.trim();
+    const host_chapter = (document.getElementById('org-host-chapter') as HTMLInputElement).value.trim();
+    const country = (document.getElementById('org-country') as HTMLInputElement).value.trim().toUpperCase();
+    const primary_language = (document.getElementById('org-primary-language') as HTMLSelectElement).value;
+    const federatedRaw = (document.getElementById('org-federated') as HTMLInputElement).value.trim();
+    const federated_chapters = federatedRaw
+      ? federatedRaw.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    const btn = document.getElementById('org-save') as HTMLButtonElement;
+    if (btn) btn.disabled = true;
+    try {
+      const { data, error } = await sb.rpc('update_organization', {
+        p_name: name || null,
+        p_description: description || null,
+        p_website_url: website_url || null,
+        p_logo_url: logo_url || null,
+        p_host_chapter: host_chapter || null,
+        p_primary_language: primary_language || null,
+        p_country: country || null,
+        p_federated_chapters: federated_chapters,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      (window as any).toast?.(T.saved, 'success');
+      await loadOrg();
+    } catch (e: any) {
+      console.error('saveOrg', e);
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('org admin boot:', e); }
+    showDenied();
+  }
+
+  function applyGate(m: any) {
+    if (hasPermission(m, 'admin.full')) showPanel();
+    else showDenied();
+  }
+
+  document.getElementById('org-form')?.addEventListener('submit', saveOrg);
+
+  boot();
+</script>
