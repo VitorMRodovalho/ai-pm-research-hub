@@ -1350,8 +1350,8 @@ const SEL_I18N = {
         <td class="px-4 py-2.5">
           <div class="flex gap-1.5 items-center flex-wrap">
             ${r.status === 'final_eval' ? `
-              <button class="text-[11px] px-2 py-1 rounded-md bg-emerald-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-approve" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineApproveTitle)}" onclick="event.stopPropagation()">✓ ${esc(T.bulkApprove)}</button>
-              <button class="text-[11px] px-2 py-1 rounded-md bg-red-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-reject" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineRejectTitle)}" onclick="event.stopPropagation()">✗ ${esc(T.bulkReject)}</button>
+              <button class="text-[11px] px-2 py-1 rounded-md bg-emerald-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-approve" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineApproveTitle)}">✓ ${esc(T.bulkApprove)}</button>
+              <button class="text-[11px] px-2 py-1 rounded-md bg-red-600 text-white font-bold cursor-pointer border-0 hover:opacity-90 inline-flex items-center gap-1" data-action="inline-reject" data-id="${esc(r.id)}" data-name="${esc(r.applicant_name)}" title="${esc(T.inlineRejectTitle)}">✗ ${esc(T.bulkReject)}</button>
             ` : ''}
             <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">${T.detailsBtn}</button>
           </div>
