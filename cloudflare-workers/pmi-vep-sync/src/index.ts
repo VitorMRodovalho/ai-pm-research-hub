@@ -237,6 +237,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       applications_received: body.applications.length,
       will_insert: [],
       will_update: [],
+      will_cross_cycle_refresh: [], // p153 hotfix7 — split out from will_update
       will_skip: [],
       errors: []
     };
@@ -268,7 +269,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         .maybeSingle();
 
       if (existing) {
-        dryDiff.will_update.push({
+        const bucket = (existing.cycle_id !== mapped.cycle_id)
+          ? dryDiff.will_cross_cycle_refresh   // p153 hotfix7 — partial refresh path
+          : dryDiff.will_update;
+        bucket.push({
           application_id: existing.id,
           applicant_name: mapped.applicant_name,
           existing_cycle_id: existing.cycle_id,
@@ -292,6 +296,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         applications_received: body.applications.length,
         will_insert: dryDiff.will_insert.length,
         will_update: dryDiff.will_update.length,
+        will_cross_cycle_refresh: dryDiff.will_cross_cycle_refresh.length,
         will_skip: dryDiff.will_skip.length
       } as any, dryDiff.errors);
     }

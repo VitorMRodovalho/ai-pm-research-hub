@@ -384,6 +384,17 @@ export interface IngestDryRunSummary {
     existing_status: string;
     existing_role: string;
   }>;
+  /** p153 hotfix7 — rows where existing.cycle_id != incoming.cycle_id; will
+   *  receive a PARTIAL refresh (external PMI data only, decision history
+   *  preserved). Separate from will_update so the admin preview UI can show
+   *  the split before Apply. */
+  will_cross_cycle_refresh: Array<{
+    application_id: string;
+    applicant_name: string;
+    existing_cycle_id: string;
+    existing_status: string;
+    existing_role: string;
+  }>;
   will_skip: Array<{ ref: string; reason: string }>;
   errors: Array<{ scope: string; ref?: string; error: string }>;
 }
