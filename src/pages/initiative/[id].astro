@@ -23,6 +23,13 @@ const INIT_I18N = {
   deliverablesTab: t('initiative.deliverablesTab', lang),
   attendanceTab: t('initiative.attendanceTab', lang),
   gamificationTab: t('initiative.gamificationTab', lang),
+  governanceTab: t('initiative.governanceTab', lang),
+  governanceEmpty: t('initiative.governanceEmpty', lang),
+  governancePreview: t('initiative.governancePreview', lang),
+  governanceChain: t('initiative.governanceChain', lang),
+  governanceGatesProgress: t('initiative.governanceGatesProgress', lang),
+  governanceAwaiting: t('initiative.governanceAwaiting', lang),
+  governanceAllDone: t('initiative.governanceAllDone', lang),
   addMember: t('initiative.addMember', lang),
   removeMember: t('initiative.removeMember', lang),
   roleLabel: t('initiative.roleLabel', lang),
@@ -107,6 +114,14 @@ const INIT_I18N = {
       <div id="panel-gamification" class="hidden">
         <TribeGamificationTab client:load initiativeId={id || ''} />
       </div>
+      <div id="panel-governance" class="hidden">
+        <div id="governance-loading" class="text-[var(--text-muted)] text-sm py-6 text-center">{INIT_I18N.loading}</div>
+        <div id="governance-error" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm"></div>
+        <div id="governance-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
+          {INIT_I18N.governanceEmpty}
+        </div>
+        <div id="governance-list" class="hidden space-y-3"></div>
+      </div>
 
       <EventMinutesIsland client:load />
     </div>
@@ -164,7 +179,7 @@ const INIT_I18N = {
   // ── Tab switching ──
   function switchTab(tabName: string) {
     activeTab = tabName;
-    const panels = ['general', 'board', 'members', 'deliverables', 'attendance', 'gamification'];
+    const panels = ['general', 'board', 'members', 'deliverables', 'attendance', 'gamification', 'governance'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -201,6 +216,8 @@ const INIT_I18N = {
     if (kindConfig.has_certificate) {
       tabs.push({ key: 'gamification', label: '🏆 ' + (I18N.gamificationTab || 'Gamification') });
     }
+    // Governance tab — always available; populated from governance_documents linked to this initiative
+    tabs.push({ key: 'governance', label: '📜 ' + (I18N.governanceTab || 'Governança') });
 
     container.innerHTML = tabs.map((tab, i) => {
       const isFirst = i === 0;
@@ -743,7 +760,108 @@ const INIT_I18N = {
       if (tab === 'members') await loadMembersTab();
       if (tab === 'deliverables') await loadDeliverablesTab();
       if (tab === 'attendance') await loadAttendanceTab();
+      if (tab === 'governance') await loadGovernanceTab();
     });
+
+    // ── Governance tab — list project_charter + other docs linked to this initiative ──
+    let governanceLoaded = false;
+    async function loadGovernanceTab() {
+      if (governanceLoaded) return;
+      governanceLoaded = true;
+      const sb = getSb();
+      const loadingEl = document.getElementById('governance-loading');
+      const errorEl = document.getElementById('governance-error');
+      const emptyEl = document.getElementById('governance-empty');
+      const listEl = document.getElementById('governance-list');
+      if (!sb || !loadingEl || !listEl) return;
+
+      const docsRes = await sb.from('governance_documents')
+        .select('id, title, doc_type, version, status, current_version_id, updated_at')
+        .eq('initiative_id', INITIATIVE_ID)
+        .order('updated_at', { ascending: false });
+      if (docsRes.error) {
+        loadingEl.classList.add('hidden');
+        if (errorEl) {
+          errorEl.classList.remove('hidden');
+          errorEl.textContent = (I18N.errorPrefix || 'Erro:') + ' ' + (docsRes.error.message || '');
+        }
+        return;
+      }
+      const docs = docsRes.data || [];
+      loadingEl.classList.add('hidden');
+      if (!docs.length) {
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      // Fetch chains for these docs
+      const docIds = docs.map((d: any) => d.id);
+      const chainsRes = await sb.from('approval_chains')
+        .select('id, document_id, status, gates')
+        .in('document_id', docIds);
+      const chainsByDoc: Record<string, any> = {};
+      (chainsRes.data || []).forEach((c: any) => { chainsByDoc[c.document_id] = c; });
+
+      const docTypeLabels: Record<string, string> = {
+        project_charter: '📜 TAP',
+        cooperation_agreement: '🤝 Acordo',
+        volunteer_term_template: '📝 Termo de Voluntariado',
+        manual: '📚 Manual',
+        policy: '⚖️ Política',
+        framework_reference: '🧭 Framework',
+        executive_summary: '📊 Sumário Executivo',
+        cooperation_addendum: '➕ Adendo',
+        volunteer_addendum: '➕ Adendo Voluntariado',
+      };
+      function badgeStatus(s: string) {
+        let cls = 'bg-gray-100 text-gray-700';
+        if (s === 'draft') cls = 'bg-amber-100 text-amber-800';
+        else if (s === 'under_review' || s === 'review') cls = 'bg-blue-100 text-blue-800';
+        else if (s === 'approved' || s === 'active') cls = 'bg-emerald-100 text-emerald-800';
+        return `<span class="inline-block rounded px-2 py-0.5 text-[11px] font-semibold ${cls}">${escapeHtml(s || '?')}</span>`;
+      }
+      function chainSummary(chain: any) {
+        if (!chain || !Array.isArray(chain.gates)) return '<span class="text-[var(--text-muted)] italic text-[11px]">sem cadeia</span>';
+        const total = chain.gates.length;
+        const completed = chain.gates.filter((g: any) => g.status === 'completed').length;
+        const next = chain.gates.find((g: any) => g.status === 'pending');
+        const progress = (I18N.governanceGatesProgress || '{completed}/{total} gates')
+          .replace('{completed}', completed).replace('{total}', total);
+        const subline = next
+          ? (I18N.governanceAwaiting || 'Aguardando: {actor}').replace('{actor}', escapeHtml(next.actor_name || next.role_label || ''))
+          : (I18N.governanceAllDone || 'Todos os gates aprovados');
+        return `<div class="text-[12px] font-semibold">${escapeHtml(progress)}</div>
+                <div class="text-[11px] text-[var(--text-muted)] mt-0.5">${subline}</div>`;
+      }
+
+      const langPrefix = (window as any).__LANG_PREFIX || '';
+      listEl.innerHTML = docs.map((d: any) => {
+        const chain = chainsByDoc[d.id];
+        const typeLabel = docTypeLabels[d.doc_type] || d.doc_type;
+        const previewUrl = `${langPrefix}/governance/document/${d.id}`;
+        const chainUrl = chain ? `${langPrefix}/admin/governance/documents/${chain.id}` : '';
+        return `
+          <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="min-w-0 flex-1">
+                <div class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">${escapeHtml(typeLabel)}</div>
+                <h3 class="text-[15px] font-bold text-navy mt-1">${escapeHtml(d.title || '—')}</h3>
+                <div class="flex items-center gap-2 mt-2 flex-wrap">
+                  <span class="text-[11px] text-[var(--text-muted)]">v${escapeHtml(d.version || '?')}</span>
+                  ${badgeStatus(d.status)}
+                </div>
+              </div>
+              <div class="text-right min-w-[180px]">${chainSummary(chain)}</div>
+            </div>
+            <div class="mt-3 flex gap-2 flex-wrap">
+              <a href="${previewUrl}" target="_blank" class="text-[12px] font-semibold text-navy no-underline hover:underline">${escapeHtml(I18N.governancePreview || '👁 Preview')}</a>
+              ${chainUrl ? `<a href="${chainUrl}" class="text-[12px] font-semibold text-navy no-underline hover:underline">${escapeHtml(I18N.governanceChain || '🔗 Cadeia')}</a>` : ''}
+            </div>
+          </article>
+        `;
+      }).join('');
+      listEl.classList.remove('hidden');
+    }
 
     // Action handlers (delegated)
     document.addEventListener('click', async (e) => {

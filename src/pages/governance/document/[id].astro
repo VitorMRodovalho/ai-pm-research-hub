@@ -1,0 +1,135 @@
+---
+/**
+ * /governance/document/[id] — Read-only preview of a single governance_document.
+ *
+ * Fetches the document + current version's content_html and renders it sandboxed.
+ * Used as Preview target for project_charter (TAPs) from /admin/governance/charters
+ * and as the public-facing stakeholder view linked from /initiative/[id].
+ *
+ * Auth: any authenticated member can read (RLS-gated on governance_documents).
+ * Escopo: OPP-153.1 / p153 Wave 2 follow-up.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const { id } = Astro.params;
+
+const I18N = {
+  pageTitle: t('admin.governance.charters.pageTitle', lang, 'Project Charter'),
+  loading: t('admin.governance.charters.loading', lang, 'Carregando…'),
+  errorPrefix: t('admin.governance.charters.errorPrefix', lang, 'Erro:'),
+  empty: t('admin.governance.charters.empty', lang, 'Documento não encontrado.'),
+  backToList: t('common.back', lang, '← Voltar'),
+};
+---
+
+<BaseLayout title={I18N.pageTitle} activePage="governance" lang={lang}>
+  <main class="max-w-[1000px] mx-auto px-4 py-6">
+    <div class="mb-4 flex items-center justify-between gap-2 flex-wrap">
+      <a href={`${langPrefix}/admin/governance/charters`}
+         class="text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy">
+        {I18N.backToList}
+      </a>
+      <span class="text-[11px] text-[var(--text-muted)] font-mono">{id}</span>
+    </div>
+
+    <div id="doc-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">{I18N.loading}</div>
+    <div id="doc-error" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm"></div>
+    <div id="doc-empty" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-center text-amber-800 text-sm">
+      {I18N.empty}
+    </div>
+    <article id="doc-content" class="hidden rounded-2xl border border-[var(--border-default)] bg-white shadow-sm overflow-hidden">
+      <div id="doc-html-mount" class="tap-iso-content"></div>
+    </article>
+  </main>
+
+  <style is:global>
+    /* Isolate TAP HTML rendering from app CSS — the HTML brings its own <style> block */
+    .tap-iso-content {
+      padding: 0;
+    }
+    /* Ensure embedded styles in TAP HTML scope correctly */
+    .tap-iso-content body { all: revert; }
+  </style>
+
+  <script define:vars={{ DOC_ID: id, I18N }} is:inline>
+    function showError(msg) {
+      var el = document.getElementById('doc-error');
+      el.classList.remove('hidden');
+      el.textContent = (I18N.errorPrefix || 'Erro:') + ' ' + msg;
+      document.getElementById('doc-loading').classList.add('hidden');
+    }
+    function showEmpty() {
+      document.getElementById('doc-empty').classList.remove('hidden');
+      document.getElementById('doc-loading').classList.add('hidden');
+    }
+    function waitForSb(max) {
+      return new Promise(function (resolve) {
+        var tries = 0;
+        (function pick() {
+          var sb = window.navGetSb && window.navGetSb();
+          if (sb) return resolve(sb);
+          if (++tries > (max || 30)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+    async function loadDoc() {
+      var sb = await waitForSb();
+      if (!sb) { showError('Supabase client unavailable.'); return; }
+      var docRes = await sb
+        .from('governance_documents')
+        .select('id, title, version, status, doc_type, current_version_id, initiative_id, updated_at')
+        .eq('id', DOC_ID)
+        .maybeSingle();
+      if (docRes.error) { showError(docRes.error.message || 'fetch failed'); return; }
+      if (!docRes.data) { showEmpty(); return; }
+      var doc = docRes.data;
+      if (!doc.current_version_id) { showError('Doc has no current version.'); return; }
+      var verRes = await sb
+        .from('document_versions')
+        .select('content_html, version_label, authored_at')
+        .eq('id', doc.current_version_id)
+        .maybeSingle();
+      if (verRes.error) { showError(verRes.error.message || 'fetch version failed'); return; }
+      if (!verRes.data || !verRes.data.content_html) { showEmpty(); return; }
+
+      // Mount HTML — TAP brings its own inline <style>, so we extract body+styles
+      var html = verRes.data.content_html;
+      // Iframe sandboxed rendering for full CSS isolation
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', 'allow-same-origin');
+      iframe.style.width = '100%';
+      iframe.style.minHeight = '80vh';
+      iframe.style.border = 'none';
+      var mount = document.getElementById('doc-html-mount');
+      mount.appendChild(iframe);
+      document.getElementById('doc-loading').classList.add('hidden');
+      document.getElementById('doc-content').classList.remove('hidden');
+      // After append, write the document
+      var d = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      if (d) {
+        d.open();
+        d.write(html);
+        d.close();
+        // Auto-resize iframe height to content
+        function resize() {
+          try {
+            var h = d.body && d.body.scrollHeight ? d.body.scrollHeight : 800;
+            iframe.style.height = (h + 40) + 'px';
+          } catch (e) {}
+        }
+        if (d.readyState === 'complete') resize();
+        else iframe.addEventListener('load', resize);
+        setTimeout(resize, 500);
+      } else {
+        // Fallback: render inline (less isolated, but works)
+        mount.removeChild(iframe);
+        mount.innerHTML = html;
+      }
+    }
+    loadDoc();
+  </script>
+</BaseLayout>

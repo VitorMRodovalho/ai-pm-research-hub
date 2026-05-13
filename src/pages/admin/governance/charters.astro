@@ -1,0 +1,232 @@
+---
+/**
+ * /admin/governance/charters — Project Charters (TAPs) admin list.
+ *
+ * Lista governance_documents WHERE doc_type='project_charter' com:
+ * - Initiative title vinculada
+ * - Versão atual + status do doc
+ * - Status da approval_chain (gates pending/completed + ball-in-court)
+ * - Links: preview público, chain detail, initiative page
+ *
+ * Auth: manage_member (admin). Reads governance_documents + approval_chains + initiatives.
+ * Escopo: OPP-153.1 / p153 Wave 2.
+ */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import { buildPageI18n } from '../../../i18n/pageI18n';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const i18nBundle = buildPageI18n(['governance', 'common'], lang);
+
+const I18N = {
+  pageTitle: t('admin.governance.charters.pageTitle', lang, 'Project Charters / TAPs'),
+  description: t('admin.governance.charters.description', lang, 'Termos de Abertura de Projetos das iniciativas do Núcleo.'),
+  colTitle: t('admin.governance.charters.colTitle', lang, 'Projeto / TAP'),
+  colVersion: t('admin.governance.charters.colVersion', lang, 'Versão'),
+  colStatus: t('admin.governance.charters.colStatus', lang, 'Status'),
+  colChain: t('admin.governance.charters.colChain', lang, 'Aprovação'),
+  colActions: t('admin.governance.charters.colActions', lang, 'Ações'),
+  actionPreview: t('admin.governance.charters.actionPreview', lang, '👁 Preview'),
+  actionChain: t('admin.governance.charters.actionChain', lang, '🔗 Cadeia'),
+  actionInitiative: t('admin.governance.charters.actionInitiative', lang, '📋 Iniciativa'),
+  empty: t('admin.governance.charters.empty', lang, 'Nenhum Project Charter cadastrado ainda.'),
+  loading: t('admin.governance.charters.loading', lang, 'Carregando…'),
+  gatesProgress: t('admin.governance.charters.gatesProgress', lang, '{completed}/{total} gates'),
+  ballInCourt: t('admin.governance.charters.ballInCourt', lang, 'Aguardando: {actor}'),
+  allDone: t('admin.governance.charters.allDone', lang, 'Todos os gates aprovados'),
+  errorPrefix: t('admin.governance.charters.errorPrefix', lang, 'Erro:'),
+  subnavCRs: t('admin.governanceV2.subnavCRs', lang, 'Change Requests & Boards'),
+  subnavIp: t('admin.governanceV2.subnavIp', lang, 'Ratificação de documentos (IP)'),
+  subnavCharters: t('admin.governanceV2.subnavCharters', lang, 'Project Charters (TAPs)'),
+  previewStakeholder: t('admin.governanceV2.previewStakeholder', lang, '👁 Preview Stakeholder'),
+  deniedRestricted: t('admin.governanceV2.deniedRestricted', lang, 'Acesso restrito a gestão de projeto.'),
+};
+---
+
+<AdminLayout title={I18N.pageTitle} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang, 'Operações')}, {label: I18N.pageTitle}]}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-6">
+
+    <!-- Subnav (consistent with /admin/governance-v2) -->
+    <div class="flex justify-between items-center gap-2 flex-wrap">
+      <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
+        <a href={`${langPrefix}/admin/governance-v2`}
+          class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
+          {I18N.subnavCRs}
+        </a>
+        <a href={`${langPrefix}/admin/governance/documents`}
+          class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
+          {I18N.subnavIp}
+        </a>
+        <span class="px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-bold">
+          {I18N.subnavCharters}
+        </span>
+      </nav>
+      <a href={`${langPrefix}/governance?view=document`} target="_blank"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-[var(--text-primary)] hover:border-navy transition-colors">
+        {I18N.previewStakeholder}
+      </a>
+    </div>
+
+    <header>
+      <h1 class="text-xl font-extrabold text-navy">{I18N.pageTitle}</h1>
+      <p class="text-sm text-[var(--text-muted)] mt-1">{I18N.description}</p>
+    </header>
+
+    <div id="charters-loading" class="text-[var(--text-muted)] text-sm">{I18N.loading}</div>
+    <div id="charters-error" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm"></div>
+    <div id="charters-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      {I18N.deniedRestricted}
+    </div>
+
+    <section id="charters-table-section" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left border-b border-[var(--border-default)] text-[var(--text-muted)] text-[12px] font-semibold">
+              <th class="py-2 pr-3">{I18N.colTitle}</th>
+              <th class="py-2 pr-3">{I18N.colVersion}</th>
+              <th class="py-2 pr-3">{I18N.colStatus}</th>
+              <th class="py-2 pr-3">{I18N.colChain}</th>
+              <th class="py-2 pr-3">{I18N.colActions}</th>
+            </tr>
+          </thead>
+          <tbody id="charters-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div id="charters-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
+      {I18N.empty}
+    </div>
+  </div>
+
+  <script define:vars={{ I18N, LANG_PREFIX: langPrefix }} is:inline>
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+    function showError(msg) {
+      var el = document.getElementById('charters-error');
+      el.classList.remove('hidden');
+      el.textContent = (I18N.errorPrefix || 'Erro:') + ' ' + msg;
+      document.getElementById('charters-loading').classList.add('hidden');
+    }
+    function showDenied() {
+      document.getElementById('charters-denied').classList.remove('hidden');
+      document.getElementById('charters-loading').classList.add('hidden');
+    }
+
+    function waitForSb(max) {
+      return new Promise(function (resolve) {
+        var tries = 0;
+        (function pick() {
+          var sb = window.navGetSb && window.navGetSb();
+          if (sb) return resolve(sb);
+          if (++tries > (max || 30)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+
+    function badgeForStatus(status) {
+      var color = 'bg-[var(--surface-hover)] text-[var(--text-secondary)]';
+      if (status === 'draft') color = 'bg-amber-100 text-amber-800';
+      else if (status === 'under_review' || status === 'review') color = 'bg-blue-100 text-blue-800';
+      else if (status === 'approved' || status === 'active') color = 'bg-emerald-100 text-emerald-800';
+      else if (status === 'superseded' || status === 'withdrawn') color = 'bg-gray-200 text-gray-600';
+      return '<span class="inline-block rounded px-2 py-0.5 text-[11px] font-semibold ' + color + '">' + esc(status || '?') + '</span>';
+    }
+
+    function summarizeChain(chain) {
+      if (!chain || !Array.isArray(chain.gates)) return '—';
+      var gates = chain.gates;
+      var total = gates.length;
+      var completed = gates.filter(function(g){return g.status === 'completed';}).length;
+      var progress = (I18N.gatesProgress || '{completed}/{total} gates')
+        .replace('{completed}', completed)
+        .replace('{total}', total);
+      var next = gates.find(function(g){return g.status === 'pending';});
+      var subline = '';
+      if (next) {
+        var actor = next.actor_name || next.role_label || ('gate ' + (next.order || ''));
+        subline = (I18N.ballInCourt || 'Aguardando: {actor}').replace('{actor}', esc(actor));
+      } else {
+        subline = I18N.allDone || 'Todos os gates aprovados';
+      }
+      return '<div class="text-[12px] font-semibold text-[var(--text-primary)]">' + esc(progress) + '</div>' +
+             '<div class="text-[11px] text-[var(--text-muted)] mt-0.5">' + subline + '</div>';
+    }
+
+    async function loadCharters() {
+      var sb = await waitForSb();
+      if (!sb) { showError('Supabase client unavailable.'); return; }
+      // Fetch governance_documents of doc_type='project_charter'
+      var docsRes = await sb
+        .from('governance_documents')
+        .select('id, title, version, status, initiative_id, current_version_id, created_at, updated_at')
+        .eq('doc_type', 'project_charter')
+        .order('updated_at', { ascending: false });
+      if (docsRes.error) {
+        if ((docsRes.error.code || '').toString() === 'PGRST301' || /permission denied|RLS/i.test(docsRes.error.message || '')) {
+          showDenied();
+        } else {
+          showError(docsRes.error.message || 'fetch failed');
+        }
+        return;
+      }
+      var docs = docsRes.data || [];
+      var loading = document.getElementById('charters-loading');
+      loading.classList.add('hidden');
+
+      if (!docs.length) {
+        document.getElementById('charters-empty').classList.remove('hidden');
+        return;
+      }
+
+      // Fetch chains for these docs (one query)
+      var docIds = docs.map(function(d){return d.id;});
+      var chainsRes = await sb
+        .from('approval_chains')
+        .select('id, document_id, status, gates, opened_at')
+        .in('document_id', docIds);
+      var chainsByDoc = {};
+      (chainsRes.data || []).forEach(function(c){ chainsByDoc[c.document_id] = c; });
+
+      // Fetch initiatives info (titles)
+      var initIds = docs.map(function(d){return d.initiative_id;}).filter(Boolean);
+      var initsByid = {};
+      if (initIds.length) {
+        var initsRes = await sb
+          .from('initiatives')
+          .select('id, title, kind')
+          .in('id', initIds);
+        (initsRes.data || []).forEach(function(i){ initsByid[i.id] = i; });
+      }
+
+      var tbody = document.getElementById('charters-tbody');
+      tbody.innerHTML = docs.map(function(d) {
+        var init = initsByid[d.initiative_id];
+        var initLabel = init ? esc(init.title) : '<em class="text-[var(--text-muted)]">(sem initiative)</em>';
+        var chain = chainsByDoc[d.id];
+        var actions =
+          '<a href="' + LANG_PREFIX + '/governance/document/' + esc(d.id) + '" target="_blank" class="inline-block mr-2 text-[12px] font-semibold text-navy no-underline hover:underline">' + (I18N.actionPreview || '👁 Preview') + '</a>' +
+          (chain ? '<a href="' + LANG_PREFIX + '/admin/governance/documents/' + esc(chain.id) + '" class="inline-block mr-2 text-[12px] font-semibold text-navy no-underline hover:underline">' + (I18N.actionChain || '🔗 Cadeia') + '</a>' : '') +
+          (d.initiative_id ? '<a href="' + LANG_PREFIX + '/initiative/' + esc(d.initiative_id) + '" target="_blank" class="inline-block text-[12px] font-semibold text-navy no-underline hover:underline">' + (I18N.actionInitiative || '📋 Iniciativa') + '</a>' : '');
+        return (
+          '<tr class="border-b border-[var(--border-light)] hover:bg-[var(--surface-hover)]">' +
+            '<td class="py-3 pr-3">' +
+              '<div class="font-semibold text-[var(--text-primary)] text-[13px]">' + esc(d.title) + '</div>' +
+              '<div class="text-[11px] text-[var(--text-muted)] mt-0.5">' + initLabel + '</div>' +
+            '</td>' +
+            '<td class="py-3 pr-3 text-[12px]">' + esc(d.version || '—') + '</td>' +
+            '<td class="py-3 pr-3">' + badgeForStatus(d.status) + '</td>' +
+            '<td class="py-3 pr-3">' + summarizeChain(chain) + '</td>' +
+            '<td class="py-3 pr-3">' + actions + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+      document.getElementById('charters-table-section').classList.remove('hidden');
+    }
+
+    loadCharters();
+  </script>
+</AdminLayout>
