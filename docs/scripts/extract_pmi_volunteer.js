@@ -281,6 +281,25 @@
   }
 
   // ===== UTIL =====
+  // p153: PMI Community APIs sometimes return enum-ish arrays as array-of-objects
+  // (e.g., volunteerInterest = [{id, name, description}]) instead of strings.
+  // Old code did `.join(',')` straight which produced literal "[object Object],
+  // [object Object]" stored in the DB (26 apps affected, surfaced 2026-05-12).
+  // Always flatten through this helper before joining.
+  const flattenArrField = (value) => {
+    if (value == null) return null;
+    if (typeof value === 'string') return value;
+    if (!Array.isArray(value)) return String(value);
+    return value
+      .map(v => {
+        if (v == null) return '';
+        if (typeof v === 'string') return v;
+        if (typeof v === 'object') return v.name || v.title || v.label || v.value || '';
+        return String(v);
+      })
+      .filter(Boolean)
+      .join(',');
+  };
   const fetchJson = async (url, opts = {}) => {
     const r = await fetch(url, { headers: { accept: 'application/json' }, ...opts });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -431,14 +450,14 @@
         cached.flat.profileState = res.state ?? null;
         cached.flat.profileCity = res.city ?? null;
         cached.flat.profileCountry = res.country ?? null;
-        cached.flat.profileCertifications = (res.certifications || []).join(',');
+        cached.flat.profileCertifications = flattenArrField(res.certifications);
         cached.flat.profileIndustry = res.industry ?? null;
         cached.flat.profileCompany = res.company ?? null;
         cached.flat.profileDesignation = res.designation ?? null;
         cached.flat.profileAboutMe = res.aboutMe ?? null;
         cached.flat.profileLinkedinUrl = res.linkedInURL ?? null;
-        cached.flat.profileVolunteerInterest = (res.volunteerInterest || []).join(',');
-        cached.flat.profileSpecialties = (res.specialties || []).join(',');
+        cached.flat.profileVolunteerInterest = flattenArrField(res.volunteerInterest);
+        cached.flat.profileSpecialties = flattenArrField(res.specialties);
         // Multi-chapter ATUAL (membership ativa) — separado do histórico
         if (Array.isArray(res.membership) && res.membership.length) {
           cached.flat.profileMemberships = JSON.stringify(res.membership);
@@ -818,9 +837,9 @@
         if (cached.info) {
           a.profileLocation = cached.info.location;
           a.profileState = cached.info.state;
-          a.profileCertifications = (cached.info.certifications || []).join(',');
+          a.profileCertifications = flattenArrField(cached.info.certifications);
           a.profileIndustry = cached.info.industry;
-          a.profileVolunteerInterest = (cached.info.volunteerInterest || []).join(',');
+          a.profileVolunteerInterest = flattenArrField(cached.info.volunteerInterest);
         }
         if (cached.history) {
           a.serviceHistoryCount = cached.history.length;
