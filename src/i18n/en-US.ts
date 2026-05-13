@@ -4960,7 +4960,6 @@ const enUS: Record<string, string> = {
   'admin.selection.opportunityFormTitle': 'New VEP Job',
   'admin.selection.opportunityIdLabel': 'Opportunity ID',
   'admin.selection.defaultRoleLabel': 'Default Role',
-  'admin.selection.leader': 'Leader',
   'admin.selection.cfpUrlLabel': 'VEP URL',
   'admin.selection.chapterLabel': 'Chapter',
   'admin.selection.positionsLabel': 'Positions',
@@ -5779,6 +5778,21 @@ const enUS: Record<string, string> = {
   'teams.emptyActive': 'No active tribes registered.',
   'teams.emptyOperational': 'No operational subprojects registered.',
   'teams.emptyLegacy': 'No legacy tribes registered.',
+  // p153 GAP-152.3 — Inline VEP status badges (selection list + members list)
+  'comp.vepBadge.submitted': 'VEP·Subm',
+  'comp.vepBadge.active': 'VEP·Act',
+  'comp.vepBadge.withdrawn': 'VEP·Withd',
+  'comp.vepBadge.declined': 'VEP·Decl',
+  'comp.vepBadge.offerNotExtended': 'VEP·NoOff',
+  'comp.vepBadge.unknown': 'VEP·?',
+  'comp.vepBadge.tooltipPrefix': 'PMI VEP status',
+  'comp.vepBadge.statusSubmitted': 'Submitted (under review)',
+  'comp.vepBadge.statusActive': 'Active (serving)',
+  'comp.vepBadge.statusWithdrawn': 'Withdrawn',
+  'comp.vepBadge.statusDeclined': 'Declined by recruiter',
+  'comp.vepBadge.statusOfferNotExtended': 'Cycle ended without offer',
+  'comp.vepBadge.lastSync': 'Last VEP sync',
+  'comp.vepBadge.reconciled': 'Reconciled at',
 };
 
 export default enUS;
