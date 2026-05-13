@@ -4289,8 +4289,10 @@ const SEL_I18N = {
     if (!pendingJsonPayload || !pendingDryRunSummary) return;
     const ins = pendingDryRunSummary.will_insert?.length ?? 0;
     const upd = pendingDryRunSummary.will_update?.length ?? 0;
+    const ccr = pendingDryRunSummary.will_cross_cycle_refresh?.length ?? 0; // p153 hotfix7
     const skp = pendingDryRunSummary.will_skip?.length ?? 0;
-    if (!confirm(`Aplicar import: ${ins} NEW + ${upd} UPDATE + ${skp} SKIP. Confirma?`)) return;
+    const ccrPart = ccr > 0 ? ` + ${ccr} CROSS-CYCLE REFRESH` : '';
+    if (!confirm(`Aplicar import: ${ins} NEW + ${upd} UPDATE${ccrPart} + ${skp} SKIP. Confirma?`)) return;
     const btn = document.getElementById('json-apply-btn') as HTMLButtonElement;
     btn.disabled = true; const old = btn.textContent; btn.textContent = '⏳ Aplicando...';
     try {
@@ -4316,16 +4318,19 @@ const SEL_I18N = {
     if (!sumEl || !detEl) return;
     const wi = d.will_insert?.length ?? 0;
     const wu = d.will_update?.length ?? 0;
+    const wcc = d.will_cross_cycle_refresh?.length ?? 0; // p153 hotfix7
     const ws = d.will_skip?.length ?? 0;
     sumEl.innerHTML = `
       <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-emerald-800">${wi}</div><div class="text-[10px] text-emerald-700 uppercase font-semibold">WILL_INSERT</div></div>
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-blue-800">${wu}</div><div class="text-[10px] text-blue-700 uppercase font-semibold">WILL_UPDATE</div></div>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center" title="p153 hotfix7 — rows em ciclos anteriores que vão receber PARTIAL refresh (resume_url + profile + vep_status). Decisão histórica preservada (cycle_id/status/role_applied)."><div class="text-2xl font-extrabold text-purple-800">${wcc}</div><div class="text-[10px] text-purple-700 uppercase font-semibold">CROSS-CYCLE</div></div>
       <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center"><div class="text-2xl font-extrabold text-gray-700">${ws}</div><div class="text-[10px] text-gray-600 uppercase font-semibold">WILL_SKIP</div></div>
     `;
     const wiRows = (d.will_insert ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">➕ <strong>${esc(r.applicant_name)}</strong> · ${esc(r.email)} · opp ${esc(r.opportunity_id)} · ${esc(r.chapter ?? '—')}</div>`).join('');
     const wuRows = (d.will_update ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">🔄 <strong>${esc(r.applicant_name)}</strong> · status=${esc(r.existing_status)} · cycle=${esc(r.existing_cycle_id?.slice(0,8))}…</div>`).join('');
+    const wccRows = (d.will_cross_cycle_refresh ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">♻️ <strong>${esc(r.applicant_name)}</strong> · status=${esc(r.existing_status)} (preservado) · cycle=${esc(r.existing_cycle_id?.slice(0,8))}… → partial refresh</div>`).join('');
     const wsRows = (d.will_skip ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">⏭ ${esc(r.ref)}: ${esc(r.reason)}</div>`).join('');
-    detEl.innerHTML = `${wiRows}${wuRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
+    detEl.innerHTML = `${wiRows}${wuRows}${wccRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
     document.getElementById('json-preview')?.classList.remove('hidden');
   }
 
@@ -4334,12 +4339,17 @@ const SEL_I18N = {
     if (!el) return;
     const errs = d.errors?.length ?? 0;
     el.classList.remove('hidden');
+    // p153 hotfix7: surface applications_cross_cycle_refreshed so the PM can see
+    // the 65 prior-cycle rows that got partial-refreshed (resume_url SAS + profile
+    // data) instead of silently disappearing from the new/updated/skipped totals.
+    const crossCycle = d.applications_cross_cycle_refreshed ?? 0;
     el.innerHTML = `
       <div class="font-bold text-emerald-900 mb-1">✓ Import concluído</div>
       <div class="grid grid-cols-2 gap-2 text-[11px] text-emerald-800">
         <div>processed: <strong>${d.applications_processed ?? 0}</strong></div>
         <div>new: <strong>${d.applications_new ?? 0}</strong></div>
-        <div>updated: <strong>${d.applications_updated ?? 0}</strong></div>
+        <div>updated (mesmo ciclo): <strong>${d.applications_updated ?? 0}</strong></div>
+        <div title="p153 hotfix7 — refresh parcial em rows de ciclos anteriores (resume_url + profile + vep_status), preservando cycle_id/status/role_applied/motivation">cross-cycle refreshed: <strong>${crossCycle}</strong></div>
         <div>skipped: <strong>${d.applications_skipped ?? 0}</strong></div>
         <div>welcome dispatched: <strong>${d.welcome_dispatched ?? 0}</strong></div>
         <div>service_history rows: <strong>${d.service_history_inserted ?? 0}</strong></div>
