@@ -24,6 +24,9 @@ interface MemberRow {
   credly_username: string | null;
   offboarded_at: string | null;
   status_change_reason: string | null;
+  /* p153 GAP-152.3: VEP status from latest selection_applications row linked by email. */
+  vep_status_raw: string | null;
+  vep_last_seen_at: string | null;
 }
 
 // NOTE: OPROLE_LABELS and DESIG_LABELS are module-scope constants with Portuguese strings;
@@ -63,6 +66,30 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   return `${days}d`;
+}
+
+/* p153 GAP-152.3 — VEP status raw badge inline next to member name/email.
+   Color-coded chip with tooltip carrying full status label + last sync date.
+   Renders nothing when vep_status_raw is null (pre-Phase-B-import era members). */
+function VepStatusBadge({ status, lastSeenAt, t }: { status: string | null; lastSeenAt: string | null; t: (key: string, fallback?: string) => string }) {
+  if (!status) return null;
+  const entry: { short: string; long: string; cls: string } = (() => {
+    switch (status) {
+      case 'Submitted': return { short: t('comp.vepBadge.submitted', 'VEP·Subm'), long: t('comp.vepBadge.statusSubmitted', 'Submetido (em análise)'), cls: 'bg-blue-50 text-blue-700' };
+      case 'Active': return { short: t('comp.vepBadge.active', 'VEP·Ativ'), long: t('comp.vepBadge.statusActive', 'Ativo (servindo)'), cls: 'bg-emerald-50 text-emerald-700' };
+      case 'Withdrawn': return { short: t('comp.vepBadge.withdrawn', 'VEP·Saiu'), long: t('comp.vepBadge.statusWithdrawn', 'Desistiu'), cls: 'bg-gray-100 text-gray-600' };
+      case 'Declined': return { short: t('comp.vepBadge.declined', 'VEP·Recus'), long: t('comp.vepBadge.statusDeclined', 'Recusado pelo recrutador'), cls: 'bg-rose-50 text-rose-700' };
+      case 'OfferNotExtended': return { short: t('comp.vepBadge.offerNotExtended', 'VEP·SemOf'), long: t('comp.vepBadge.statusOfferNotExtended', 'Sem oferta'), cls: 'bg-amber-50 text-amber-700' };
+      default: return { short: t('comp.vepBadge.unknown', 'VEP·?'), long: status, cls: 'bg-slate-100 text-slate-600' };
+    }
+  })();
+  const lastSyncStr = lastSeenAt ? new Date(lastSeenAt).toLocaleDateString('pt-BR') : '—';
+  const tooltip = `${t('comp.vepBadge.tooltipPrefix', 'Status no PMI VEP')}: ${entry.long} · ${t('comp.vepBadge.lastSync', 'Última sync VEP')} ${lastSyncStr}`;
+  return (
+    <span className={`text-[.55rem] font-bold px-1.5 py-0.5 rounded-full ${entry.cls} whitespace-nowrap`} title={tooltip}>
+      {entry.short}
+    </span>
+  );
 }
 
 /* ────── Component ────── */
@@ -420,7 +447,10 @@ export default function MemberListIsland() {
                         : <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-[.6rem] font-bold flex-shrink-0">{initials(m.full_name)}</div>
                       }
                       <div className="min-w-0">
-                        <a href={`/admin/members/${m.id}`} className="font-medium text-[var(--text-primary)] hover:underline truncate block no-underline">{m.full_name}</a>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <a href={`/admin/members/${m.id}`} className="font-medium text-[var(--text-primary)] hover:underline truncate no-underline">{m.full_name}</a>
+                          <VepStatusBadge status={m.vep_status_raw} lastSeenAt={m.vep_last_seen_at} t={t} />
+                        </div>
                         <div className="text-[.7rem] text-[var(--text-muted)] truncate">{m.email}</div>
                       </div>
                     </div>

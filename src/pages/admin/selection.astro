@@ -161,6 +161,23 @@ const SEL_I18N = {
   showShadowVep: t('admin.selection.showShadowVep', lang),
   // p152 Wave 3.7: hidden-by-filter inline count
   hiddenByFilter: t('admin.selection.hiddenByFilter', lang),
+  // p153 GAP-152.3: VEP status raw badge inline (selection list row name cell)
+  vepBadge: {
+    submitted: t('comp.vepBadge.submitted', lang),
+    active: t('comp.vepBadge.active', lang),
+    withdrawn: t('comp.vepBadge.withdrawn', lang),
+    declined: t('comp.vepBadge.declined', lang),
+    offerNotExtended: t('comp.vepBadge.offerNotExtended', lang),
+    unknown: t('comp.vepBadge.unknown', lang),
+    tooltipPrefix: t('comp.vepBadge.tooltipPrefix', lang),
+    statusSubmitted: t('comp.vepBadge.statusSubmitted', lang),
+    statusActive: t('comp.vepBadge.statusActive', lang),
+    statusWithdrawn: t('comp.vepBadge.statusWithdrawn', lang),
+    statusDeclined: t('comp.vepBadge.statusDeclined', lang),
+    statusOfferNotExtended: t('comp.vepBadge.statusOfferNotExtended', lang),
+    lastSync: t('comp.vepBadge.lastSync', lang),
+    reconciled: t('comp.vepBadge.reconciled', lang),
+  },
 };
 ---
 
@@ -605,6 +622,15 @@ const SEL_I18N = {
     hideShadowVep: '🔁 Ocultar shadow VEP',
     showShadowVep: '🔁 Mostrar shadow VEP',
     hiddenByFilter: 'ocultos por filtro',
+    vepBadge: {
+      submitted: 'VEP·Subm', active: 'VEP·Ativ', withdrawn: 'VEP·Saiu',
+      declined: 'VEP·Recus', offerNotExtended: 'VEP·SemOf', unknown: 'VEP·?',
+      tooltipPrefix: 'Status no PMI VEP',
+      statusSubmitted: 'Submetido (em análise)', statusActive: 'Ativo (servindo)',
+      statusWithdrawn: 'Desistiu', statusDeclined: 'Recusado pelo recrutador',
+      statusOfferNotExtended: 'Ciclo encerrado sem oferta',
+      lastSync: 'Última sync VEP', reconciled: 'Reconciliado em',
+    },
   };
 
   /* ── state ────────────────────────────────────────── */
@@ -749,6 +775,28 @@ const SEL_I18N = {
         ? 'bg-amber-50 text-amber-700'
         : 'bg-gray-100 text-gray-600';
     return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${color}" title="AI Triage score (Sonnet 4.6) ${numScore.toFixed(1)}/10 · confidence ${esc(confidence)} · NÃO entra na decisão final (LGPD Art. 20 §1)">IA:${numScore.toFixed(1)}</span>`;
+  }
+
+  /* p153 GAP-152.3 — VEP status raw badge inline on row name cell.
+     Reads from vep_recon sub-object (added by migration 20260613000000).
+     Color-coded by status: in-flight (blue), active (emerald), terminal (gray/rose/amber). */
+  function vepBadge(r: any): string {
+    const status = r.vep_recon?.status_raw;
+    if (!status) return '';
+    const VB = T.vepBadge || {};
+    const labelMap: Record<string, { short: string; long: string; cls: string }> = {
+      Submitted: { short: VB.submitted || 'VEP·Subm', long: VB.statusSubmitted || 'Submetido', cls: 'bg-blue-50 text-blue-700' },
+      Active: { short: VB.active || 'VEP·Ativ', long: VB.statusActive || 'Ativo', cls: 'bg-emerald-50 text-emerald-700' },
+      Withdrawn: { short: VB.withdrawn || 'VEP·Saiu', long: VB.statusWithdrawn || 'Desistiu', cls: 'bg-gray-100 text-gray-600' },
+      Declined: { short: VB.declined || 'VEP·Recus', long: VB.statusDeclined || 'Recusado', cls: 'bg-rose-50 text-rose-700' },
+      OfferNotExtended: { short: VB.offerNotExtended || 'VEP·SemOf', long: VB.statusOfferNotExtended || 'Sem oferta', cls: 'bg-amber-50 text-amber-700' },
+    };
+    const entry = labelMap[status] || { short: VB.unknown || 'VEP·?', long: status, cls: 'bg-slate-100 text-slate-600' };
+    const lastSyncStr = r.vep_recon?.last_seen_at ? new Date(r.vep_recon.last_seen_at).toLocaleDateString('pt-BR') : '—';
+    const reconciledStr = r.vep_recon?.reconciled_at ? new Date(r.vep_recon.reconciled_at).toLocaleDateString('pt-BR') : null;
+    const reconciledLine = reconciledStr ? ` · ${VB.reconciled || 'Reconciliado em'} ${reconciledStr}` : '';
+    const tooltip = `${VB.tooltipPrefix || 'Status no PMI VEP'}: ${entry.long} · ${VB.lastSync || 'Última sync VEP'} ${lastSyncStr}${reconciledLine}`;
+    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${entry.cls}" title="${esc(tooltip)}">${esc(entry.short)}</span>`;
   }
 
   /* p150 PM feedback — PMI canonical chapter name → curto code mapping.
@@ -1245,7 +1293,7 @@ const SEL_I18N = {
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}</td>
+        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-navy' : 'text-[var(--text-muted)]'}">${researchScore}</td>
