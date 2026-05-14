@@ -240,6 +240,10 @@ const PROFILE_I18N = {
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
 
   const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
+  // p158 hotfix#8 (Fixes AI-PM-RESEARCH-HUB-1P): module-level so myWeekHtml + renderProfile +
+  // any other function in this script can reference `lp` without TDZ ReferenceError. Was
+  // declared inside renderProfile() only, but myWeekHtml() (sibling function) also uses it.
+  const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
   const OPROLE_LABELS: Record<string, string> = {
     manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, comms_leader: PROFILE_I18N.oproleCommsLeader || 'Líder de Comunicação', researcher: PROFILE_I18N.oproleResearcher,
     facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest,
@@ -926,8 +930,8 @@ const PROFILE_I18N = {
     const el = document.getElementById('profile-content');
     if (!el) return;
 
-    // p123 i18n nav: prefix preserves /en /es when navigating between sections
-    const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+    // p123 i18n nav: `lp` (locale prefix) now module-level (p158 hotfix#8) so all sibling
+    // template functions can reference it without scope issues.
     const safeName = String(m?.name || PROFILE_I18N.defaultName || 'Membro');
     const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
     const comp = getCompleteness(m);
