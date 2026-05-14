@@ -15,7 +15,45 @@
  * sem export offline (boa prática a futuro).
  */
 import { useCallback, useEffect, useState } from 'react';
-import HTMLtoDOCX from '@turbodocx/html-to-docx';
+// @turbodocx/html-to-docx ships 3 builds (UMD main / ESM module / browser IIFE)
+// and NONE work via direct `import`:
+//   - main (UMD): imports node built-ins (fs, http, …) — fails Rollup resolve
+//   - module (ESM): same node imports — fails Rollup resolve
+//   - browser: IIFE assigning `var HTMLToDOCX = …()` to global, never calls
+//     module.exports — Vite's CJS interop returns `{}` and `d5(m5)` → undefined
+//     (the "g5 is not a function" runtime crash shipped in 55265f7).
+// Fix: load the browser bundle as a `<script>` tag via Vite's `?url` asset
+// import. That's what the IIFE was designed for — sets `window.HTMLToDOCX`
+// on load. We bypass bundler interop entirely.
+import htmlToDocxScriptUrl from '@turbodocx/html-to-docx/dist/html-to-docx.browser.js?url';
+
+type HTMLtoDOCXFn = (
+  html: string,
+  headerHtml: string | null,
+  options: Record<string, unknown>,
+  footerHtml?: string | null,
+) => Promise<Blob | ArrayBuffer>;
+
+let htmlToDocxPromise: Promise<HTMLtoDOCXFn> | null = null;
+function loadHTMLtoDOCX(): Promise<HTMLtoDOCXFn> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('Sem window'));
+  const existing = (window as any).HTMLToDOCX as HTMLtoDOCXFn | undefined;
+  if (existing) return Promise.resolve(existing);
+  if (htmlToDocxPromise) return htmlToDocxPromise;
+  htmlToDocxPromise = new Promise<HTMLtoDOCXFn>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = htmlToDocxScriptUrl;
+    script.async = true;
+    script.onload = () => {
+      const fn = (window as any).HTMLToDOCX as HTMLtoDOCXFn | undefined;
+      if (typeof fn === 'function') resolve(fn);
+      else reject(new Error('HTMLToDOCX global indisponível após load do script'));
+    };
+    script.onerror = () => reject(new Error('Falha ao carregar html-to-docx browser bundle'));
+    document.head.appendChild(script);
+  });
+  return htmlToDocxPromise;
+}
 
 type ChainData = {
   chain_id: string;
@@ -98,6 +136,7 @@ export default function ChainDocxExportIsland({ chainId }: { chainId: string }) 
 </body>
 </html>`;
 
+      const HTMLtoDOCX = await loadHTMLtoDOCX();
       const result = await HTMLtoDOCX(wrappedHtml, null, {
         title: `${data.document.title} — ${data.version.label}`,
         creator: 'Núcleo IA & GP — Plataforma de Governança',
