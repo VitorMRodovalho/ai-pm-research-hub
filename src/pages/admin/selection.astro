@@ -163,6 +163,21 @@ const SEL_I18N = {
     phaseBMemberSince: t('admin.selection.modal.phaseBMemberSince', lang),
     phaseBMemberUntil: t('admin.selection.modal.phaseBMemberUntil', lang),
     phaseBFetchedAt: t('admin.selection.modal.phaseBFetchedAt', lang),
+    // p160 T5: dual_track i18n
+    dualTrackBadge: t('admin.selection.modal.dualTrackBadge', lang),
+    dualTrackDescription: t('admin.selection.modal.dualTrackDescription', lang),
+    dualTrackResearcherDecision: t('admin.selection.modal.dualTrackResearcherDecision', lang),
+    dualTrackLeaderDecision: t('admin.selection.modal.dualTrackLeaderDecision', lang),
+    dualTrackSelectOption: t('admin.selection.modal.dualTrackSelectOption', lang),
+    dualTrackApplyBtn: t('admin.selection.modal.dualTrackApplyBtn', lang),
+    dualTrackOriginSuffix: t('admin.selection.modal.dualTrackOriginSuffix', lang),
+    dualTrackPairScoresTitle: t('admin.selection.modal.dualTrackPairScoresTitle', lang),
+    dualTrackMirrorTitle: t('admin.selection.modal.dualTrackMirrorTitle', lang),
+    dualTrackMirrorHint: t('admin.selection.modal.dualTrackMirrorHint', lang),
+    dualTrackMirrorBtn: t('admin.selection.modal.dualTrackMirrorBtn', lang),
+    dualTrackMirroringBtn: t('admin.selection.modal.dualTrackMirroringBtn', lang),
+    dualTrackApplyError: t('admin.selection.modal.dualTrackApplyError', lang),
+    dualTrackMirrorError: t('admin.selection.modal.dualTrackMirrorError', lang),
   },
   // p152 Wave 1.0: shadow VEP filter button toggle text
   hideShadowVep: t('admin.selection.hideShadowVep', lang),
@@ -629,6 +644,20 @@ const SEL_I18N = {
       phaseBMemberSince: 'Membro desde',
       phaseBMemberUntil: 'Até',
       phaseBFetchedAt: 'Última sync Phase B',
+      dualTrackBadge: '🔗 Dual Track',
+      dualTrackDescription: 'Candidato submeteu 2 candidaturas (Pesquisador + Líder). Decisão pode ser independente para cada papel.',
+      dualTrackResearcherDecision: 'Decisão como Pesquisador',
+      dualTrackLeaderDecision: 'Decisão como Líder',
+      dualTrackSelectOption: '— Selecionar —',
+      dualTrackApplyBtn: 'Aplicar decisões duplas',
+      dualTrackOriginSuffix: '(da candidatura {role})',
+      dualTrackPairScoresTitle: '🔗 Pair Scores (Dual Track)',
+      dualTrackMirrorTitle: '🔗 Dual Track — espelhar entrevista do sibling',
+      dualTrackMirrorHint: 'Se o sibling (Pesquisador ↔ Líder) já foi entrevistado e os 4 criterios role-agnostic se aplicam aqui também, espelhe a avaliação. A pergunta-tema (leader-only) NÃO é copiada.',
+      dualTrackMirrorBtn: '🪞 Espelhar entrevista do sibling',
+      dualTrackMirroringBtn: '⏳ Espelhando…',
+      dualTrackApplyError: 'Erro ao aplicar decisões duplas',
+      dualTrackMirrorError: 'Erro ao espelhar entrevista',
     },
     hideShadowVep: '🔁 Ocultar shadow VEP',
     showShadowVep: '🔁 Mostrar shadow VEP',
@@ -1480,24 +1509,24 @@ const SEL_I18N = {
           <div class="space-y-4">
             ${row.promotion_path === 'dual_track' && row.linked_application_id ? `
               <div class="px-3 py-2 rounded-lg bg-purple-50 border border-purple-200 text-[11px] text-purple-900">
-                <strong>🔗 Dual Track</strong> · Candidato submeteu 2 candidaturas (Pesquisador + Líder). Decisão pode ser independente para cada papel.
+                <strong>${T.modal.dualTrackBadge}</strong> · ${T.modal.dualTrackDescription}
               </div>
-              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Decisão como Pesquisador</h4>
+              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.dualTrackResearcherDecision}</h4>
               <select id="modal-status-researcher" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
-                <option value="" disabled selected>— Selecionar —</option>
+                <option value="" disabled selected>${T.modal.dualTrackSelectOption}</option>
                 <option value="approved">${T.statusLabels?.approved || 'Aprovado'}</option>
                 <option value="rejected">${T.statusLabels?.rejected || 'Rejeitado'}</option>
                 <option value="waitlist">${T.statusLabels?.waitlist || 'Lista de Espera'}</option>
               </select>
-              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Decisão como Líder</h4>
+              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.dualTrackLeaderDecision}</h4>
               <select id="modal-status-leader" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
-                <option value="" disabled selected>— Selecionar —</option>
+                <option value="" disabled selected>${T.modal.dualTrackSelectOption}</option>
                 <option value="approved">${T.statusLabels?.approved || 'Aprovado'}</option>
                 <option value="rejected">${T.statusLabels?.rejected || 'Rejeitado'}</option>
                 <option value="waitlist">${T.statusLabels?.waitlist || 'Lista de Espera'}</option>
               </select>
               <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
-              <button id="modal-dual-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Aplicar decisões duplas</button>
+              <button id="modal-dual-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackApplyBtn}</button>
             ` : `
               <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.changeStatus}</h4>
               <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
@@ -1707,9 +1736,9 @@ const SEL_I18N = {
         modal.classList.add('hidden');
         loadDashboard();
       } catch (e: any) {
-        toast(e.message || 'Erro ao aplicar decisões duplas', 'error');
+        toast(e.message || T.modal.dualTrackApplyError, 'error');
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'Aplicar decisões duplas'; }
+        if (btn) { btn.disabled = false; btn.textContent = T.modal.dualTrackApplyBtn; }
       }
     });
 
@@ -1729,22 +1758,24 @@ const SEL_I18N = {
         const leftCol = body.querySelector('#modal-tab-info .grid > div.space-y-4');
         if (!leftCol) return;
 
-        const appendMergedSection = (label: string, value: string | null | undefined, originRole: 'pesquisador' | 'líder') => {
+        const appendMergedSection = (label: string, value: string | null | undefined, originRole: 'researcher' | 'leader') => {
           if (!value || !value.trim()) return;
           const div = document.createElement('div');
           div.dataset.mergedField = label;
-          div.innerHTML = `<h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${esc(label)} <span class="text-[10px] font-normal text-purple-700">(da candidatura ${originRole})</span></h4><p class="text-[13px] text-[var(--text-primary)] bg-purple-50/50 rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(value)}</p>`;
+          const roleLabel = (originRole === 'researcher' ? T.roleLabels?.researcher : T.roleLabels?.leader) || originRole;
+          const suffix = (T.modal.dualTrackOriginSuffix || '(da candidatura {role})').replace('{role}', String(roleLabel).toLowerCase());
+          div.innerHTML = `<h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${esc(label)} <span class="text-[10px] font-normal text-purple-700">${esc(suffix)}</span></h4><p class="text-[13px] text-[var(--text-primary)] bg-purple-50/50 rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(value)}</p>`;
           leftCol.appendChild(div);
         };
 
         if (!row.areas_of_interest && merged.areas_of_interest) {
-          appendMergedSection(T.modal.areasOfInterest || 'Áreas de Interesse', merged.areas_of_interest, 'pesquisador');
+          appendMergedSection(T.modal.areasOfInterest || 'Áreas de Interesse', merged.areas_of_interest, 'researcher');
         }
         if (!row.proposed_theme && merged.proposed_theme) {
-          appendMergedSection('Tema Proposto', merged.proposed_theme, 'líder');
+          appendMergedSection('Tema Proposto', merged.proposed_theme, 'leader');
         }
         if (!row.leadership_experience && merged.leadership_experience) {
-          appendMergedSection('Experiência em Liderança', merged.leadership_experience, 'líder');
+          appendMergedSection('Experiência em Liderança', merged.leadership_experience, 'leader');
         }
 
         const scoresDiv = document.createElement('div');
@@ -1752,10 +1783,10 @@ const SEL_I18N = {
         const fmt = (v: number | null | undefined) => v != null ? Number(v).toFixed(1) : '—';
         scoresDiv.innerHTML = `
           <div class="mt-2 p-3 rounded-xl border border-purple-200 bg-purple-50/30 text-[12px]">
-            <h4 class="text-[11px] font-bold text-purple-900 mb-1.5">🔗 Pair Scores (Dual Track)</h4>
+            <h4 class="text-[11px] font-bold text-purple-900 mb-1.5">${T.modal.dualTrackPairScoresTitle}</h4>
             <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-              <div><span class="text-[var(--text-muted)] text-[10px]">Pesquisador</span><br><strong class="text-[12px]">obj ${fmt(scores.researcher_objective)} · entr ${fmt(scores.researcher_interview)} · final ${fmt(scores.researcher_final)}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[10px]">Líder</span><br><strong class="text-[12px]">obj ${fmt(scores.leader_objective)} · entr ${fmt(scores.leader_interview)} · final ${fmt(scores.leader_final)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[10px]">${T.roleLabels?.researcher || 'Pesquisador'}</span><br><strong class="text-[12px]">obj ${fmt(scores.researcher_objective)} · entr ${fmt(scores.researcher_interview)} · final ${fmt(scores.researcher_final)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[10px]">${T.roleLabels?.leader || 'Líder'}</span><br><strong class="text-[12px]">obj ${fmt(scores.leader_objective)} · entr ${fmt(scores.leader_interview)} · final ${fmt(scores.leader_final)}</strong></div>
             </div>
           </div>`;
         leftCol.appendChild(scoresDiv);
@@ -3622,9 +3653,9 @@ const SEL_I18N = {
         const isDualTrack = row.promotion_path === 'dual_track' && row.linked_application_id;
         if (isDualTrack) {
           html += `<div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
-            <p class="text-sm text-purple-900 font-semibold mb-2">🔗 Dual Track — espelhar entrevista do sibling</p>
-            <p class="text-[12px] text-purple-800 mb-3">Se o sibling (Pesquisador ↔ Líder) já foi entrevistado e os 4 criterios role-agnostic se aplicam aqui também, espelhe a avaliação. A pergunta-tema (leader-only) NÃO é copiada.</p>
-            <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">🪞 Espelhar entrevista do sibling</button>
+            <p class="text-sm text-purple-900 font-semibold mb-2">${T.modal.dualTrackMirrorTitle}</p>
+            <p class="text-[12px] text-purple-800 mb-3">${T.modal.dualTrackMirrorHint}</p>
+            <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackMirrorBtn}</button>
           </div>`;
         }
         // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
@@ -3647,7 +3678,7 @@ const SEL_I18N = {
         // p158 hotfix#2: wire mirror button — uses mirror_sibling_interview RPC
         scoringDiv.querySelector('#mirror-sibling-interview-btn')?.addEventListener('click', async (ev) => {
           const btn = ev.currentTarget as HTMLButtonElement;
-          btn.disabled = true; btn.textContent = '⏳ Espelhando…';
+          btn.disabled = true; btn.textContent = T.modal.dualTrackMirroringBtn;
           try {
             const { data, error } = await sb.rpc('mirror_sibling_interview', { p_application_id: row.id });
             if (error) throw error;
@@ -3656,8 +3687,8 @@ const SEL_I18N = {
             loadInterviewForm(row);
             loadDashboard();
           } catch (e: any) {
-            toast(e.message || 'Erro ao espelhar entrevista', 'error');
-            btn.disabled = false; btn.textContent = '🪞 Espelhar entrevista do sibling';
+            toast(e.message || T.modal.dualTrackMirrorError, 'error');
+            btn.disabled = false; btn.textContent = T.modal.dualTrackMirrorBtn;
           }
         });
 

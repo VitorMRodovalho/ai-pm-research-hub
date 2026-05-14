@@ -5155,6 +5155,22 @@ const esLATAM: Record<string, string> = {
   'admin.selection.modal.phaseBMemberUntil': 'Hasta',
   'admin.selection.modal.phaseBFetchedAt': 'Última sync Phase B',
 
+  // ── Dual Track (p159 F4 + p160 T5 i18n) ──
+  'admin.selection.modal.dualTrackBadge': '🔗 Dual Track',
+  'admin.selection.modal.dualTrackDescription': 'El candidato envió 2 postulaciones (Investigador + Líder). Las decisiones pueden ser independientes por rol.',
+  'admin.selection.modal.dualTrackResearcherDecision': 'Decisión como Investigador',
+  'admin.selection.modal.dualTrackLeaderDecision': 'Decisión como Líder',
+  'admin.selection.modal.dualTrackSelectOption': '— Seleccionar —',
+  'admin.selection.modal.dualTrackApplyBtn': 'Aplicar decisiones duales',
+  'admin.selection.modal.dualTrackOriginSuffix': '(de la postulación {role})',
+  'admin.selection.modal.dualTrackPairScoresTitle': '🔗 Pair Scores (Dual Track)',
+  'admin.selection.modal.dualTrackMirrorTitle': '🔗 Dual Track — reflejar entrevista emparejada',
+  'admin.selection.modal.dualTrackMirrorHint': 'Si la postulación emparejada (Investigador ↔ Líder) ya fue entrevistada y los 4 criterios role-agnostic también se aplican aquí, refleja esa evaluación. La pregunta-tema (solo-líder) NO se copia.',
+  'admin.selection.modal.dualTrackMirrorBtn': '🪞 Reflejar entrevista emparejada',
+  'admin.selection.modal.dualTrackMirroringBtn': '⏳ Reflejando…',
+  'admin.selection.modal.dualTrackApplyError': 'Error al aplicar decisiones duales',
+  'admin.selection.modal.dualTrackMirrorError': 'Error al reflejar entrevista',
+
   // ── Admin Comms ──
   'admin.comms.active': 'Activo',
   'admin.comms.expired': 'Expirado',
