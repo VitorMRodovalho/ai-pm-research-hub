@@ -37,6 +37,14 @@ type HTMLtoDOCXFn = (
 let htmlToDocxPromise: Promise<HTMLtoDOCXFn> | null = null;
 function loadHTMLtoDOCX(): Promise<HTMLtoDOCXFn> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Sem window'));
+  // Node global shim — the @turbodocx browser bundle references `global` bare
+  // (not `globalThis` / not the `commonjsGlobal` it defines at the top) inside
+  // the blob-detection branch: `Object.prototype.hasOwnProperty.call(global, "Blob")`.
+  // In Node, `global` exists; in browser it doesn't, throwing
+  // `ReferenceError: global is not defined`. Standard browserify shim:
+  if (typeof (window as any).global === 'undefined') {
+    (window as any).global = window;
+  }
   const existing = (window as any).HTMLToDOCX as HTMLtoDOCXFn | undefined;
   if (existing) return Promise.resolve(existing);
   if (htmlToDocxPromise) return htmlToDocxPromise;
