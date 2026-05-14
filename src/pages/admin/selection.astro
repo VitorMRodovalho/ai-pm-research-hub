@@ -1464,6 +1464,8 @@ const SEL_I18N = {
             ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.academicBackground}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.motivation}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
             ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.areasOfInterest}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
+            ${row.proposed_theme ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Tema Proposto</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.proposed_theme)}</p></div>` : ''}
+            ${row.leadership_experience ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Experiência em Liderança</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.leadership_experience)}</p></div>` : ''}
             ${row.non_pmi_experience ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.nonPmiExperience}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.non_pmi_experience)}</p></div>` : ''}
             <div class="grid grid-cols-2 gap-3 text-[13px]">
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.objScore}</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
@@ -1476,12 +1478,34 @@ const SEL_I18N = {
             ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>` : ''}
           </div>
           <div class="space-y-4">
-            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.changeStatus}</h4>
-            <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
-              ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-            <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
-            <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveChanges}</button>
+            ${row.promotion_path === 'dual_track' && row.linked_application_id ? `
+              <div class="px-3 py-2 rounded-lg bg-purple-50 border border-purple-200 text-[11px] text-purple-900">
+                <strong>🔗 Dual Track</strong> · Candidato submeteu 2 candidaturas (Pesquisador + Líder). Decisão pode ser independente para cada papel.
+              </div>
+              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Decisão como Pesquisador</h4>
+              <select id="modal-status-researcher" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                <option value="" disabled selected>— Selecionar —</option>
+                <option value="approved">${T.statusLabels?.approved || 'Aprovado'}</option>
+                <option value="rejected">${T.statusLabels?.rejected || 'Rejeitado'}</option>
+                <option value="waitlist">${T.statusLabels?.waitlist || 'Lista de Espera'}</option>
+              </select>
+              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Decisão como Líder</h4>
+              <select id="modal-status-leader" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                <option value="" disabled selected>— Selecionar —</option>
+                <option value="approved">${T.statusLabels?.approved || 'Aprovado'}</option>
+                <option value="rejected">${T.statusLabels?.rejected || 'Rejeitado'}</option>
+                <option value="waitlist">${T.statusLabels?.waitlist || 'Lista de Espera'}</option>
+              </select>
+              <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
+              <button id="modal-dual-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Aplicar decisões duplas</button>
+            ` : `
+              <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.changeStatus}</h4>
+              <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+              <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
+              <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveChanges}</button>
+            `}
           </div>
         </div>
       </div>
@@ -1656,6 +1680,81 @@ const SEL_I18N = {
         if (btn) { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
       }
     });
+
+    // p158 F4: dual_track save handler — uses admin_decide_dual_track RPC (cross-role decision +
+    // auto-copy of role-agnostic scores). Mutually exclusive with #modal-save-btn (UI renders one
+    // or the other based on row.promotion_path === 'dual_track').
+    body.querySelector('#modal-dual-save-btn')?.addEventListener('click', async () => {
+      const researcherDecision = (body.querySelector('#modal-status-researcher') as HTMLSelectElement)?.value;
+      const leaderDecision = (body.querySelector('#modal-status-leader') as HTMLSelectElement)?.value;
+      const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
+      const btn = body.querySelector('#modal-dual-save-btn') as HTMLButtonElement;
+      if (!researcherDecision || !leaderDecision) {
+        toast('Selecione decisão para Pesquisador E Líder', 'error');
+        return;
+      }
+      if (btn) { btn.disabled = true; btn.textContent = 'Aplicando…'; }
+      try {
+        const { data, error } = await sb.rpc('admin_decide_dual_track', {
+          p_application_id:      row.id,
+          p_researcher_decision: researcherDecision,
+          p_leader_decision:     leaderDecision,
+          p_feedback:            feedback || null,
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast(`Decisões aplicadas — Pesquisador: ${researcherDecision} · Líder: ${leaderDecision}`);
+        modal.classList.add('hidden');
+        loadDashboard();
+      } catch (e: any) {
+        toast(e.message || 'Erro ao aplicar decisões duplas', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Aplicar decisões duplas'; }
+      }
+    });
+
+    // p158 F4: dual_track post-render — fetch merged_payload + inject sibling essay fields and
+    // scores summary panel. Runs async after modal renders; silently no-ops on non-pair apps.
+    if (row.promotion_path === 'dual_track' && row.linked_application_id) {
+      sb.rpc('get_dual_track_merged_payload', { p_application_id: row.id }).then(({ data, error }) => {
+        if (error || !data || data.error || !data.is_dual_track) return;
+        const merged = data.merged_essays || {};
+        const scores = data.scores_summary || {};
+        const leftCol = body.querySelector('#modal-tab-info .grid > div.space-y-4');
+        if (!leftCol) return;
+
+        const appendMergedSection = (label: string, value: string | null | undefined, originRole: 'pesquisador' | 'líder') => {
+          if (!value || !value.trim()) return;
+          const div = document.createElement('div');
+          div.dataset.mergedField = label;
+          div.innerHTML = `<h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${esc(label)} <span class="text-[10px] font-normal text-purple-700">(da candidatura ${originRole})</span></h4><p class="text-[13px] text-[var(--text-primary)] bg-purple-50/50 rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(value)}</p>`;
+          leftCol.appendChild(div);
+        };
+
+        if (!row.areas_of_interest && merged.areas_of_interest) {
+          appendMergedSection(T.modal.areasOfInterest || 'Áreas de Interesse', merged.areas_of_interest, 'pesquisador');
+        }
+        if (!row.proposed_theme && merged.proposed_theme) {
+          appendMergedSection('Tema Proposto', merged.proposed_theme, 'líder');
+        }
+        if (!row.leadership_experience && merged.leadership_experience) {
+          appendMergedSection('Experiência em Liderança', merged.leadership_experience, 'líder');
+        }
+
+        const scoresDiv = document.createElement('div');
+        scoresDiv.dataset.mergedField = 'pair_scores';
+        const fmt = (v: number | null | undefined) => v != null ? Number(v).toFixed(1) : '—';
+        scoresDiv.innerHTML = `
+          <div class="mt-2 p-3 rounded-xl border border-purple-200 bg-purple-50/30 text-[12px]">
+            <h4 class="text-[11px] font-bold text-purple-900 mb-1.5">🔗 Pair Scores (Dual Track)</h4>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+              <div><span class="text-[var(--text-muted)] text-[10px]">Pesquisador</span><br><strong class="text-[12px]">obj ${fmt(scores.researcher_objective)} · entr ${fmt(scores.researcher_interview)} · final ${fmt(scores.researcher_final)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[10px]">Líder</span><br><strong class="text-[12px]">obj ${fmt(scores.leader_objective)} · entr ${fmt(scores.leader_interview)} · final ${fmt(scores.leader_final)}</strong></div>
+            </div>
+          </div>`;
+        leftCol.appendChild(scoresDiv);
+      }).catch(() => { /* silent */ });
+    }
 
     // Save contact handler (phone/linkedin inline edit)
     body.querySelector('#save-contact-btn')?.addEventListener('click', async () => {
