@@ -212,7 +212,7 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
         try { const res = await sb.rpc('get_member_by_auth'); if (res.data) m = res.data; } catch {}
       }
     }
-    if (!m) { setError('Faça login para acessar.'); setLoading(false); return; }
+    if (!m) { setError('Faça login para acessar este link. Se você tem múltiplos emails (ex: pessoal + institucional), tente o que está cadastrado como principal no seu perfil — o sistema auto-reconhece emails secundários no próximo login.'); setLoading(false); return; }
     setMember(m);
 
     const dRes = await sb.rpc('get_chain_workflow_detail', { p_chain_id: chainId });
