@@ -1,9 +1,10 @@
 /*
  * theme.css — Design Tokens for Núcleo IA & GP
- * 
+ * Build: 2026-05-14-p158-hotfix4-cache-bust
+ *
  * Import this in your global CSS or Astro layout.
  * All tokens auto-switch with [data-theme="dark"].
- * 
+ *
  * Usage in components:
  *   bg-[var(--surface-base)]
  *   text-[var(--text-primary)]
@@ -148,6 +149,11 @@
    ══════════════════════════════════════════════════════════════════ */
 
 [data-theme="dark"] {
+  /* p158 hotfix#4 (2026-05-14): cache-bust marker — forces Vite content hash to rotate so
+     Cloudflare edges + browsers re-fetch this CSS. Replace with timestamp on next dark
+     mode change. Unused property, present only to mutate file bytes. */
+  --p158-cache-bust: "2026-05-14-2330";
+
   /* ── Brand (adjusted for dark bg legibility) ── */
   /* p158 hotfix#4 (2026-05-14): navy was missing from dark overrides, leaving text-navy
      (#003B5C) invisible on dark surfaces across the admin (sidebar, headings, accents).
