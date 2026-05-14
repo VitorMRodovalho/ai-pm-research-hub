@@ -149,6 +149,12 @@
 
 [data-theme="dark"] {
   /* ── Brand (adjusted for dark bg legibility) ── */
+  /* p158 hotfix#4 (2026-05-14): navy was missing from dark overrides, leaving text-navy
+     (#003B5C) invisible on dark surfaces across the admin (sidebar, headings, accents).
+     Mapping to blue-400/500/300 preserves the "primary blue brand accent" semantic. */
+  --color-navy: #60A5FA;         /* blue-400 — was #003B5C, ~12:1 on surface-card */
+  --color-navy-deep: #3B82F6;    /* blue-500 — was #0A1628 */
+  --color-navy-light: #93C5FD;   /* blue-300 — was #004B7A */
   --color-teal: #22D3EE;
   --color-teal-deep: #06B6D4;
   --color-teal-light: rgba(34, 211, 238, 0.1);
