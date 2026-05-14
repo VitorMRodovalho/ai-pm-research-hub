@@ -196,6 +196,63 @@ const COMMS_I18N = {
         </div>
       </section>
 
+      <!-- S4c (p159 S#2 Q2 MP-1 Phase A): Funnel Comms → Adoção (best-effort, correlation only) -->
+      <section id="comms-funnel-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">🎯 Funnel Comms → Adoção</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Phase A: correlação (não atribuição). UTM pré-VEP infra pendente em Phase B.</p>
+          </div>
+          <select id="funnel-period-select" class="px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] text-[.7rem] font-semibold">
+            <option value="7">Últimos 7d</option>
+            <option value="30" selected>Últimos 30d</option>
+            <option value="90">Últimos 90d</option>
+          </select>
+        </div>
+        <div id="comms-funnel-body" class="p-4">
+          <div id="comms-funnel-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">Carregando funnel...</div>
+          <div id="comms-funnel-error" class="hidden rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-amber-800 text-sm"></div>
+          <div id="comms-funnel-content" class="hidden space-y-4">
+            <!-- Caveat banner -->
+            <div class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-[.7rem] text-blue-900">
+              ⚠️ <strong>Correlation, not attribution.</strong> <span id="funnel-caveat-text"></span>
+            </div>
+            <!-- 4-stage funnel -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div class="rounded-xl border border-purple-200 bg-purple-50/40 p-3">
+                <div class="text-[10px] uppercase font-bold text-purple-700 tracking-wide mb-1">1 · Social Reach</div>
+                <div id="funnel-stage1-audience" class="text-2xl font-extrabold text-purple-900">—</div>
+                <div id="funnel-stage1-sub" class="text-[10px] text-purple-700">— alcance · — canais</div>
+                <div id="funnel-stage1-detail" class="mt-2 space-y-0.5 text-[10px] text-purple-800"></div>
+              </div>
+              <div class="rounded-xl border border-teal-200 bg-teal-50/40 p-3">
+                <div class="text-[10px] uppercase font-bold text-teal-700 tracking-wide mb-1">2 · Site Engagement</div>
+                <div id="funnel-stage2-content" class="text-2xl font-extrabold text-teal-900">—</div>
+                <div id="funnel-stage2-sub" class="text-[10px] text-teal-700">— membros únicos em conteúdo</div>
+                <div id="funnel-stage2-detail" class="mt-2 space-y-0.5 text-[10px] text-teal-800"></div>
+              </div>
+              <div class="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
+                <div class="text-[10px] uppercase font-bold text-amber-700 tracking-wide mb-1">3 · Aplicações</div>
+                <div id="funnel-stage3-total" class="text-2xl font-extrabold text-amber-900">—</div>
+                <div id="funnel-stage3-sub" class="text-[10px] text-amber-700">— submetidas no período</div>
+                <div id="funnel-stage3-detail" class="mt-2 space-y-0.5 text-[10px] text-amber-800"></div>
+              </div>
+              <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+                <div class="text-[10px] uppercase font-bold text-emerald-700 tracking-wide mb-1">4 · Aprovados</div>
+                <div id="funnel-stage4-total" class="text-2xl font-extrabold text-emerald-900">—</div>
+                <div id="funnel-stage4-sub" class="text-[10px] text-emerald-700">— taxa de aprovação</div>
+                <div id="funnel-stage4-detail" class="mt-2 space-y-0.5 text-[10px] text-emerald-800"></div>
+              </div>
+            </div>
+            <!-- Top content engagement signal -->
+            <div>
+              <h3 class="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wide mb-2">Top Engagement no período (sinal, não atribuição)</h3>
+              <div id="funnel-top-content" class="grid grid-cols-1 md:grid-cols-3 gap-2"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- S5: Best Time to Post (Instagram) -->
       <section id="best-time-section" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
@@ -820,6 +877,97 @@ const COMMS_I18N = {
   document.getElementById('btn-save-channel')?.addEventListener('click', saveChannelConfig);
   document.getElementById('channel-config-modal')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeChannelModal(); });
 
+  // ── S4c (p159 S#2 Q2 MP-1 Phase A): Funnel Comms → Adoção ──
+
+  async function loadCommsFunnel(periodDays?: number) {
+    const loading = document.getElementById('comms-funnel-loading');
+    const errorEl = document.getElementById('comms-funnel-error');
+    const content = document.getElementById('comms-funnel-content');
+    if (!loading || !errorEl || !content) return;
+    const period = periodDays ?? Number((document.getElementById('funnel-period-select') as HTMLSelectElement)?.value || 30);
+    loading.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    content.classList.add('hidden');
+    try {
+      const { data, error } = await sb.rpc('get_comms_to_adoption_funnel', { p_period_days: period });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const stages = data?.stages || {};
+      const social = stages.social_reach || {};
+      const engagement = stages.site_engagement || {};
+      const apps = stages.applications || {};
+      const approved = stages.approved || {};
+
+      (document.getElementById('funnel-caveat-text') as HTMLElement).textContent = data?.caveat || '';
+
+      // Stage 1
+      (document.getElementById('funnel-stage1-audience') as HTMLElement).textContent = fmt(social.total_audience_latest || 0);
+      (document.getElementById('funnel-stage1-sub') as HTMLElement).textContent = `${fmt(social.total_reach_period || 0)} alcance · ${(social.by_channel || []).length} canais`;
+      (document.getElementById('funnel-stage1-detail') as HTMLElement).innerHTML = (social.by_channel || [])
+        .map((c: any) => `<div>${c.channel}: <strong>${fmt(c.audience_latest)}</strong> aud · ${fmt(c.reach_period)} reach</div>`)
+        .join('');
+
+      // Stage 2
+      (document.getElementById('funnel-stage2-content') as HTMLElement).textContent = fmt(engagement.content_unique_members || 0);
+      (document.getElementById('funnel-stage2-sub') as HTMLElement).textContent = `${fmt(engagement.content_sessions || 0)} sessões conteúdo · ${fmt(engagement.home_unique_members || 0)} home (${fmt(engagement.home_sessions || 0)} sess)`;
+      (document.getElementById('funnel-stage2-detail') as HTMLElement).innerHTML = (engagement.by_landing_group || [])
+        .filter((g: any) => ['blog','cpmai','trail','presentations','gamification'].includes(g.group))
+        .map((g: any) => `<div>${g.group}: <strong>${g.unique_members}</strong>m · ${g.sessions}s</div>`)
+        .join('') || '<div class="text-[var(--text-muted)]">Sem sessões em páginas de conteúdo neste período</div>';
+
+      // Stage 3
+      (document.getElementById('funnel-stage3-total') as HTMLElement).textContent = fmt(apps.total || 0);
+      (document.getElementById('funnel-stage3-sub') as HTMLElement).textContent = `${fmt(apps.via_vep || 0)} via VEP · ${fmt(apps.other || 0)} outros`;
+      const byRole = apps.by_role || {};
+      (document.getElementById('funnel-stage3-detail') as HTMLElement).innerHTML = Object.entries(byRole)
+        .map(([role, n]: [string, any]) => `<div>${role}: <strong>${n}</strong></div>`)
+        .join('') || '<div class="text-[var(--text-muted)]">Sem aplicações no período</div>';
+
+      // Stage 4
+      (document.getElementById('funnel-stage4-total') as HTMLElement).textContent = fmt(approved.total || 0);
+      const rate = approved.approval_rate != null ? `${approved.approval_rate}%` : '—';
+      (document.getElementById('funnel-stage4-sub') as HTMLElement).textContent = `taxa: ${rate}`;
+      (document.getElementById('funnel-stage4-detail') as HTMLElement).innerHTML =
+        `<div>approved: <strong>${approved.approved || 0}</strong></div><div>converted: <strong>${approved.converted || 0}</strong></div>`;
+
+      // Top content
+      const topContentEl = document.getElementById('funnel-top-content') as HTMLElement;
+      const topItems = data?.top_content || [];
+      if (topItems.length) {
+        topContentEl.innerHTML = topItems.map((item: any) => {
+          const ch = item.channel || '?';
+          const chColor: Record<string, string> = { instagram: 'text-pink-600', youtube: 'text-red-600', linkedin: 'text-blue-700' };
+          const engagementTotal = (item.likes || 0) + (item.comments || 0) + (item.views || 0);
+          return `<article class="rounded-lg border border-[var(--border-default)] p-2 text-[.7rem]">
+            <div class="flex items-center justify-between mb-1">
+              <span class="${chColor[ch] || ''} text-[.6rem] font-bold uppercase">${ch}</span>
+              <span class="text-[.6rem] text-[var(--text-muted)]">${item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : ''}</span>
+            </div>
+            <p class="text-[.7rem] line-clamp-2 mb-1">${escapeHtml(item.caption_excerpt || '(sem caption)')}</p>
+            <div class="flex gap-2 text-[.6rem] text-[var(--text-secondary)]">
+              ${item.likes ? `<span>♥ ${item.likes}</span>` : ''}
+              ${item.comments ? `<span>💬 ${item.comments}</span>` : ''}
+              ${item.views ? `<span>▶ ${fmt(item.views)}</span>` : ''}
+              <span class="ml-auto font-semibold">Σ ${fmt(engagementTotal)}</span>
+            </div>
+            ${item.permalink ? `<a href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener" class="mt-1 inline-block text-[.6rem] text-teal font-semibold no-underline hover:underline">Abrir ↗</a>` : ''}
+          </article>`;
+        }).join('');
+      } else {
+        topContentEl.innerHTML = '<div class="col-span-3 text-[.7rem] text-[var(--text-muted)] text-center py-3">Sem posts publicados no período</div>';
+      }
+
+      loading.classList.add('hidden');
+      content.classList.remove('hidden');
+    } catch (e: any) {
+      loading.classList.add('hidden');
+      errorEl.textContent = `Erro ao carregar funnel: ${e?.message || 'unknown'}`;
+      errorEl.classList.remove('hidden');
+    }
+  }
+
+  document.getElementById('funnel-period-select')?.addEventListener('change', () => loadCommsFunnel());
+
   // ── S4b (p159 S#1 T7 / Q4): Comms Calendar embed ──
 
   async function loadCommsCalendar() {
@@ -853,6 +1001,7 @@ const COMMS_I18N = {
     loadBestTimeToPost();
     loadTopContent();
     loadCommsCalendar();  // p159 S#1 T7 / Q4
+    loadCommsFunnel();    // p159 S#2 Q2 MP-1 Phase A
 
     // Admin sections (leader+ only)
     if (canManageChannels(currentMember)) {
