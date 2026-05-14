@@ -1126,10 +1126,27 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 {/* Variance indicator */}
                 {baselineDate && forecastDate && (
                   (() => {
-                    const diff = Math.round((new Date(forecastDate).getTime() - new Date(baselineDate).getTime()) / 86400000);
-                    const color = diff <= 0 ? 'text-emerald-600' : diff <= 7 ? 'text-amber-600' : 'text-red-600';
-                    const icon = diff <= 0 ? '✅' : diff <= 7 ? '⚠️' : '🔴';
-                    const label = diff === 0 ? 'No prazo' : diff < 0 ? `${Math.abs(diff)}d adiantado` : `${diff}d atraso`;
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const baseline = new Date(baselineDate);
+                    const forecast = new Date(forecastDate);
+                    const actual = actualDate ? new Date(actualDate) : null;
+                    let color: string, icon: string, label: string;
+                    if (actual) {
+                      const diff = Math.round((actual.getTime() - baseline.getTime()) / 86400000);
+                      color = diff <= 0 ? 'text-emerald-600' : diff <= 7 ? 'text-amber-600' : 'text-red-600';
+                      icon = diff <= 0 ? '✅' : diff <= 7 ? '⚠️' : '🔴';
+                      label = diff === 0 ? 'Concluído no prazo' : diff < 0 ? `Concluído ${Math.abs(diff)}d antes` : `Concluído ${diff}d após baseline`;
+                    } else if (today.getTime() > forecast.getTime()) {
+                      const overdue = Math.round((today.getTime() - forecast.getTime()) / 86400000);
+                      color = 'text-red-600';
+                      icon = '🔴';
+                      label = `Atrasado ${overdue}d (forecast venceu)`;
+                    } else {
+                      const diff = Math.round((forecast.getTime() - baseline.getTime()) / 86400000);
+                      color = diff <= 0 ? 'text-emerald-600' : diff <= 7 ? 'text-amber-600' : 'text-red-600';
+                      icon = diff <= 0 ? '✅' : diff <= 7 ? '⚠️' : '🔴';
+                      label = diff === 0 ? 'No prazo' : diff < 0 ? `${Math.abs(diff)}d adiantado` : `Forecast ${diff}d após baseline`;
+                    }
                     return <span className={`text-[10px] font-bold ${color}`}>{icon} Desvio: {label}</span>;
                   })()
                 )}
