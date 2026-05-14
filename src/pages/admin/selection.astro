@@ -1715,8 +1715,14 @@ const SEL_I18N = {
 
     // p158 F4: dual_track post-render — fetch merged_payload + inject sibling essay fields and
     // scores summary panel. Runs async after modal renders; silently no-ops on non-pair apps.
+    // p159 S#1 T2: race-condition guard. If user closes modal + reopens for a different
+    // candidate before fetch resolves, the late promise must NOT inject into the new modal.
+    // Marker `body.dataset.currentAppId` set at open, checked at append time.
+    body.dataset.currentAppId = row.id;
     if (row.promotion_path === 'dual_track' && row.linked_application_id) {
+      const expectedAppId = row.id;
       sb.rpc('get_dual_track_merged_payload', { p_application_id: row.id }).then(({ data, error }) => {
+        if (body.dataset.currentAppId !== expectedAppId) return;  // p159 race guard
         if (error || !data || data.error || !data.is_dual_track) return;
         const merged = data.merged_essays || {};
         const scores = data.scores_summary || {};
