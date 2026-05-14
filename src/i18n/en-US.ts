@@ -5154,6 +5154,22 @@ const enUS: Record<string, string> = {
   'admin.selection.modal.phaseBMemberUntil': 'Until',
   'admin.selection.modal.phaseBFetchedAt': 'Last Phase B sync',
 
+  // ── Dual Track (p159 F4 + p160 T5 i18n) ──
+  'admin.selection.modal.dualTrackBadge': '🔗 Dual Track',
+  'admin.selection.modal.dualTrackDescription': 'Candidate submitted 2 applications (Researcher + Leader). Decisions can be independent per role.',
+  'admin.selection.modal.dualTrackResearcherDecision': 'Decision as Researcher',
+  'admin.selection.modal.dualTrackLeaderDecision': 'Decision as Leader',
+  'admin.selection.modal.dualTrackSelectOption': '— Select —',
+  'admin.selection.modal.dualTrackApplyBtn': 'Apply dual decisions',
+  'admin.selection.modal.dualTrackOriginSuffix': '(from {role} application)',
+  'admin.selection.modal.dualTrackPairScoresTitle': '🔗 Pair Scores (Dual Track)',
+  'admin.selection.modal.dualTrackMirrorTitle': '🔗 Dual Track — mirror sibling interview',
+  'admin.selection.modal.dualTrackMirrorHint': 'If the sibling (Researcher ↔ Leader) has been interviewed and the 4 role-agnostic criteria also apply here, mirror that evaluation. The theme question (leader-only) is NOT copied.',
+  'admin.selection.modal.dualTrackMirrorBtn': '🪞 Mirror sibling interview',
+  'admin.selection.modal.dualTrackMirroringBtn': '⏳ Mirroring…',
+  'admin.selection.modal.dualTrackApplyError': 'Failed to apply dual decisions',
+  'admin.selection.modal.dualTrackMirrorError': 'Failed to mirror interview',
+
   // ── Admin Comms ──
   'admin.comms.active': 'Active',
   'admin.comms.expired': 'Expired',
