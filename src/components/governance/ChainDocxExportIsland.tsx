@@ -1,10 +1,12 @@
 /**
- * ChainDocxExportIsland — IP-4 Chunk 3 (p128 D2)
+ * ChainDocxExportIsland — IP-4 Chunk 3 (p128 D2 · p156 lib swap)
  *
  * Gera DOCX do conteúdo da versão lacrada da cadeia, para envio offline a
  * curadores externos sem conta na plataforma (e.g., advogados externos).
- * Usa html-docx-js-typescript client-side (sem EF). Reusa get_chain_for_pdf
- * RPC que já retorna version.content_html.
+ * Usa @turbodocx/html-to-docx (OOXML real, sem altChunk MHT trick — a lib
+ * anterior html-docx-js-typescript embeda HTML via <w:altChunk/> + afchunk.mht,
+ * que LibreOffice nunca suportou e Word recente rejeita por security policy).
+ * Reusa get_chain_for_pdf RPC que já retorna version.content_html.
  *
  * NOTA: este export inclui apenas o CONTEÚDO da versão (sem assinaturas /
  * audit trail). Para envio formal pós-ratificação, use o PDF Oficial.
@@ -13,7 +15,7 @@
  * sem export offline (boa prática a futuro).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { asBlob } from 'html-docx-js-typescript';
+import HTMLtoDOCX from '@turbodocx/html-to-docx';
 
 type ChainData = {
   chain_id: string;
@@ -77,42 +79,39 @@ export default function ChainDocxExportIsland({ chainId }: { chainId: string }) 
       const fileName = `${safeTitle}_${safeVersion}.docx`;
 
       const wrappedHtml = `<!DOCTYPE html>
-<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40' lang='pt-BR'>
+<html lang='pt-BR'>
 <head>
   <meta charset='utf-8'>
   <title>${escapeHtml(data.document.title)} — ${escapeHtml(data.version.label)}</title>
-  <style>
-    body { font-family: 'Calibri', 'Helvetica', sans-serif; font-size: 11pt; line-height: 1.4; color: #222; }
-    h1, h2, h3 { color: #0f172a; margin-top: 1.4em; margin-bottom: 0.4em; }
-    h2 { font-size: 18pt; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.2em; }
-    h3 { font-size: 13pt; }
-    p { margin: 0.4em 0; }
-    ul, ol { margin: 0.4em 0; padding-left: 1.6em; }
-    li { margin: 0.15em 0; }
-    em, i { font-style: italic; }
-    strong, b { font-weight: 700; }
-    blockquote { margin: 0.6em 0 0.6em 1.6em; padding: 0.4em 1em; border-left: 3px solid #94a3b8; color: #475569; }
-    a { color: #0f172a; text-decoration: underline; }
-    .header-meta { color: #64748b; font-size: 10pt; margin-bottom: 1.4em; padding-bottom: 0.6em; border-bottom: 2px solid #cbd5e1; }
-  </style>
 </head>
 <body>
-  <div class='header-meta'>
-    <strong>${escapeHtml(data.document.title)}</strong><br>
-    Versão: ${escapeHtml(data.version.label)} · Status da cadeia: ${escapeHtml(data.chain_status)}<br>
-    Submetido por: ${escapeHtml(data.submitter?.name || '—')}<br>
-    Lacrado em: ${data.version.locked_at ? new Date(data.version.locked_at).toLocaleString('pt-BR') : '—'}<br>
-    Cadeia aberta em: ${data.opened_at ? new Date(data.opened_at).toLocaleString('pt-BR') : '—'}<br>
+  <p style="color: #64748b; font-size: 10pt; margin-bottom: 8pt;">
+    <strong>${escapeHtml(data.document.title)}</strong><br/>
+    Versão: ${escapeHtml(data.version.label)} · Status da cadeia: ${escapeHtml(data.chain_status)}<br/>
+    Submetido por: ${escapeHtml(data.submitter?.name || '—')}<br/>
+    Lacrado em: ${data.version.locked_at ? escapeHtml(new Date(data.version.locked_at).toLocaleString('pt-BR')) : '—'}<br/>
+    Cadeia aberta em: ${data.opened_at ? escapeHtml(new Date(data.opened_at).toLocaleString('pt-BR')) : '—'}<br/>
     <em>Documento exportado para revisão offline. Use o PDF Oficial para envio formal pós-ratificação.</em>
-  </div>
+  </p>
+  <hr/>
   ${data.version.content_html}
 </body>
 </html>`;
 
-      const blobOrBuffer = await asBlob(wrappedHtml);
-      const blob = blobOrBuffer instanceof Blob
-        ? blobOrBuffer
-        : new Blob([blobOrBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const result = await HTMLtoDOCX(wrappedHtml, null, {
+        title: `${data.document.title} — ${data.version.label}`,
+        creator: 'Núcleo IA & GP — Plataforma de Governança',
+        orientation: 'portrait',
+        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440, header: 720, footer: 720, gutter: 0 },
+        font: 'Calibri',
+        fontSize: 22,
+        pageNumber: true,
+        lang: 'pt-BR',
+        table: { row: { cantSplit: true } },
+      });
+      const blob = result instanceof Blob
+        ? result
+        : new Blob([result as ArrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
