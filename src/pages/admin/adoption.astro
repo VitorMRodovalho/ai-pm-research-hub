@@ -969,10 +969,10 @@ const ADP_I18N = {
       // KPIs
       const now = new Date();
       const d30 = new Date(now.getTime() - 30 * 86400000);
-      const recentCount = ghosts.filter((g: any) => g.last_sign_in_at && new Date(g.last_sign_in_at) > d30).length;
-      const matchCount = ghosts.filter((g: any) => g.possible_member_name).length;
+      const recentCount = ghosts.filter((g: any) => g.out_last_sign_in_at && new Date(g.out_last_sign_in_at) > d30).length;
+      const matchCount = ghosts.filter((g: any) => g.out_possible_member_name).length;
       const providers: Record<string, number> = {};
-      ghosts.forEach((g: any) => { providers[g.provider || 'unknown'] = (providers[g.provider || 'unknown'] || 0) + 1; });
+      ghosts.forEach((g: any) => { providers[g.out_provider || 'unknown'] = (providers[g.out_provider || 'unknown'] || 0) + 1; });
       const topProvider = Object.entries(providers).sort((a, b) => b[1] - a[1])[0];
 
       const kpiEl = document.getElementById('visitors-kpis');
@@ -997,19 +997,19 @@ const ADP_I18N = {
 
       const providerIcons: Record<string, string> = { google: '🔵', linkedin_oidc: '🔷', azure: '🟦', email: '📧' };
       body.innerHTML = ghosts.map((g: any) => {
-        const createdAt = g.created_at ? new Date(g.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
-        const lastLogin = g.last_sign_in_at ? new Date(g.last_sign_in_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
-        const provIcon = providerIcons[g.provider] || '🔑';
-        const match = g.possible_member_name
-          ? `<span class="text-amber-600 font-semibold" title="${T.visitorMatchTooltip}">⚠️ ${esc(g.possible_member_name)}</span>`
+        const createdAt = g.out_created_at ? new Date(g.out_created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+        const lastLogin = g.out_last_sign_in_at ? new Date(g.out_last_sign_in_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+        const provIcon = providerIcons[g.out_provider] || '🔑';
+        const match = g.out_possible_member_name
+          ? `<span class="text-amber-600 font-semibold" title="${T.visitorMatchTooltip}">⚠️ ${esc(g.out_possible_member_name)}</span>`
           : '<span class="text-[var(--text-muted)]">—</span>';
-        const action = g.possible_member_name
+        const action = g.out_possible_member_name
           ? `<span class="text-[.65rem] text-amber-600">${T.visitorActionLink}</span>`
           : `<span class="text-[.65rem] text-teal">${T.visitorActionCandidate}</span>`;
 
         return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
-          <td class="px-4 py-2.5 font-medium">${esc(g.email)}</td>
-          <td class="px-3 py-2.5 text-center">${provIcon} ${esc(g.provider || '?')}</td>
+          <td class="px-4 py-2.5 font-medium">${esc(g.out_email)}</td>
+          <td class="px-3 py-2.5 text-center">${provIcon} ${esc(g.out_provider || '?')}</td>
           <td class="px-3 py-2.5 text-center">${createdAt}</td>
           <td class="px-3 py-2.5 text-center">${lastLogin}</td>
           <td class="px-3 py-2.5 text-center">${match}</td>
