@@ -1335,11 +1335,11 @@ const SEL_I18N = {
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
+        <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-navy' : 'text-[var(--text-muted)]'}">${researchScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${researchScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
@@ -3609,6 +3609,18 @@ const SEL_I18N = {
       }
 
       if (!interviews?.length) {
+        // p158 hotfix#2 (2026-05-14): dual_track candidates whose interview was conducted only
+        // on the sibling app — offer 1-click mirror (copies 4 role-agnostic criteria; skips
+        // role-specific theme/leader_extra). Always shown when conditions met, even when
+        // canStartLive is true (PM picks).
+        const isDualTrack = row.promotion_path === 'dual_track' && row.linked_application_id;
+        if (isDualTrack) {
+          html += `<div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
+            <p class="text-sm text-purple-900 font-semibold mb-2">🔗 Dual Track — espelhar entrevista do sibling</p>
+            <p class="text-[12px] text-purple-800 mb-3">Se o sibling (Pesquisador ↔ Líder) já foi entrevistado e os 4 criterios role-agnostic se aplicam aqui também, espelhe a avaliação. A pergunta-tema (leader-only) NÃO é copiada.</p>
+            <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">🪞 Espelhar entrevista do sibling</button>
+          </div>`;
+        }
         // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
         // está em status que permite entrevista (interview_pending+). Cria row com now+30min
         // e re-renderiza para exibir o scoring form.
@@ -3620,11 +3632,29 @@ const SEL_I18N = {
             <p class="text-[12px] text-amber-700 mb-3">Para pontuar a entrevista (objetiva ou live), crie o registro abaixo. Cria com horário atual + 30min como duração — você pode ajustar depois.</p>
             <button id="start-live-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">▶ Iniciar avaliação ao vivo</button>
           </div>`;
-        } else {
+        } else if (!isDualTrack) {
           html += '<p class="text-sm text-[var(--text-muted)] mt-4">Nenhuma entrevista agendada ainda.</p>';
         }
         scoringDiv.innerHTML = html;
         wireUpInterviewBriefing(scoringDiv, row.id);
+
+        // p158 hotfix#2: wire mirror button — uses mirror_sibling_interview RPC
+        scoringDiv.querySelector('#mirror-sibling-interview-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          btn.disabled = true; btn.textContent = '⏳ Espelhando…';
+          try {
+            const { data, error } = await sb.rpc('mirror_sibling_interview', { p_application_id: row.id });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            toast(`Entrevista espelhada — score ${data.mirrored_score} copiado do sibling`);
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || 'Erro ao espelhar entrevista', 'error');
+            btn.disabled = false; btn.textContent = '🪞 Espelhar entrevista do sibling';
+          }
+        });
+
         // Wire up live start button (creates interview row + reloads tab)
         scoringDiv.querySelector('#start-live-interview-btn')?.addEventListener('click', async (ev) => {
           const btn = ev.currentTarget as HTMLButtonElement;
