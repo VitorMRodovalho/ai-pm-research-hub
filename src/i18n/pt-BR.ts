@@ -5160,6 +5160,22 @@ const ptBR: Record<string, string> = {
   'admin.selection.modal.phaseBMemberUntil': 'Até',
   'admin.selection.modal.phaseBFetchedAt': 'Última sync Phase B',
 
+  // ── Dual Track (p159 F4 + p160 T5 i18n) ──
+  'admin.selection.modal.dualTrackBadge': '🔗 Dual Track',
+  'admin.selection.modal.dualTrackDescription': 'Candidato submeteu 2 candidaturas (Pesquisador + Líder). Decisão pode ser independente para cada papel.',
+  'admin.selection.modal.dualTrackResearcherDecision': 'Decisão como Pesquisador',
+  'admin.selection.modal.dualTrackLeaderDecision': 'Decisão como Líder',
+  'admin.selection.modal.dualTrackSelectOption': '— Selecionar —',
+  'admin.selection.modal.dualTrackApplyBtn': 'Aplicar decisões duplas',
+  'admin.selection.modal.dualTrackOriginSuffix': '(da candidatura {role})',
+  'admin.selection.modal.dualTrackPairScoresTitle': '🔗 Pair Scores (Dual Track)',
+  'admin.selection.modal.dualTrackMirrorTitle': '🔗 Dual Track — espelhar entrevista do sibling',
+  'admin.selection.modal.dualTrackMirrorHint': 'Se o sibling (Pesquisador ↔ Líder) já foi entrevistado e os 4 criterios role-agnostic se aplicam aqui também, espelhe a avaliação. A pergunta-tema (leader-only) NÃO é copiada.',
+  'admin.selection.modal.dualTrackMirrorBtn': '🪞 Espelhar entrevista do sibling',
+  'admin.selection.modal.dualTrackMirroringBtn': '⏳ Espelhando…',
+  'admin.selection.modal.dualTrackApplyError': 'Erro ao aplicar decisões duplas',
+  'admin.selection.modal.dualTrackMirrorError': 'Erro ao espelhar entrevista',
+
   // ── Admin Comms ──
   'admin.comms.active': 'Ativo',
   'admin.comms.expired': 'Expirado',
