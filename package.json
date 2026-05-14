@@ -79,5 +79,8 @@
     "playwright": "^1.59.1",
     "typescript": "^6.0.2",
     "wrangler": "^4.88.0"
+  },
+  "overrides": {
+    "devalue": "^5.8.1"
   }
 }
