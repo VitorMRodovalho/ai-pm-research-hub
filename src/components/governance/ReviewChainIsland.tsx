@@ -14,8 +14,16 @@ function IsolatedHtmlFrame({ html, className }: { html: string; className?: stri
     if (!iframe) return;
     const doc = iframe.contentDocument;
     if (!doc) return;
+    // p159 S#1 T4: pre-strip <script> blocks + inline on*= handlers before doc.write to
+    // eliminate Chromium console warning "Blocked script execution because 'allow-scripts'
+    // not set". Sandbox stays restrictive (allow-same-origin only). XSS protection
+    // unchanged (was always blocking script execution via sandbox).
+    const sanitized = (html || '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/\s+on\w+="[^"]*"/gi, '')
+      .replace(/\s+on\w+='[^']*'/gi, '');
     doc.open();
-    doc.write(html || '');
+    doc.write(sanitized);
     doc.close();
     let raf = 0;
     const resize = () => {

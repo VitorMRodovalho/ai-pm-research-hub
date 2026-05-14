@@ -177,6 +177,25 @@ const COMMS_I18N = {
         <div id="top-content-body" class="p-4"></div>
       </section>
 
+      <!-- S4b (p159 S#1 T7 / Q4): Calendário Editorial Comms — embed read-only do Google Calendar -->
+      <section id="comms-calendar-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">📅 Calendário Editorial Comms</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Read-only · source: Google Calendar institucional</p>
+          </div>
+          <a id="comms-calendar-open-external" href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener" class="hidden px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[.7rem] font-semibold hover:bg-[var(--surface-hover)] no-underline">Abrir no Google Calendar ↗</a>
+        </div>
+        <div id="comms-calendar-body" class="p-4">
+          <div id="comms-calendar-placeholder" class="text-center py-8 text-[.78rem] text-[var(--text-secondary)] space-y-2">
+            <p class="font-semibold">⚙️ Configuração pendente</p>
+            <p class="text-[var(--text-muted)] max-w-lg mx-auto">Pra exibir o calendário editorial: (1) tornar o Google Calendar institucional <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">público</code> ou <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">shared via link</code>, (2) copiar URL de "Integrar agenda" → "URL pública neste calendário", (3) update <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">site_config.comms_calendar_embed_url</code> via SQL ou tool admin.</p>
+            <p class="text-[10px] text-[var(--text-muted)] mt-3">Mantém workflow Comms team em GCal (source of truth); este painel é só visualização.</p>
+          </div>
+          <iframe id="comms-calendar-iframe" class="hidden w-full" style="height: 500px; border: 0;" loading="lazy" title="Calendário Editorial Comms"></iframe>
+        </div>
+      </section>
+
       <!-- S5: Best Time to Post (Instagram) -->
       <section id="best-time-section" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
@@ -801,6 +820,25 @@ const COMMS_I18N = {
   document.getElementById('btn-save-channel')?.addEventListener('click', saveChannelConfig);
   document.getElementById('channel-config-modal')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeChannelModal(); });
 
+  // ── S4b (p159 S#1 T7 / Q4): Comms Calendar embed ──
+
+  async function loadCommsCalendar() {
+    const placeholder = document.getElementById('comms-calendar-placeholder');
+    const iframe = document.getElementById('comms-calendar-iframe') as HTMLIFrameElement | null;
+    const openExternal = document.getElementById('comms-calendar-open-external');
+    if (!placeholder || !iframe || !openExternal) return;
+    try {
+      const { data, error } = await sb.from('site_config').select('value').eq('key', 'comms_calendar_embed_url').single();
+      if (error || !data) return;  // placeholder remains visible
+      const url = typeof data.value === 'string' ? data.value : (data.value as any)?.toString();
+      if (!url || url.trim() === '' || url === '""') return;
+      placeholder.classList.add('hidden');
+      iframe.src = url;
+      iframe.classList.remove('hidden');
+      openExternal.classList.remove('hidden');
+    } catch (e) { console.warn('Comms calendar:', e); }
+  }
+
   // ── Boot ──
 
   function showPanel() {
@@ -814,6 +852,7 @@ const COMMS_I18N = {
     loadMetricsTable();
     loadBestTimeToPost();
     loadTopContent();
+    loadCommsCalendar();  // p159 S#1 T7 / Q4
 
     // Admin sections (leader+ only)
     if (canManageChannels(currentMember)) {
