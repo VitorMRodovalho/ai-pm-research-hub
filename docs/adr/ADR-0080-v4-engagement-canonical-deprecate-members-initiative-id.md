@@ -182,7 +182,11 @@ Pós-cutover Fase C, qualquer dependência V3 surgindo = bug → fix com query V
 ## Status próximas ações
 
 - **PM sign-off pendente** — esta ADR é PROPOSED. Após sign-off, Fase A vira sessão executável.
-- **Fase A — quando agendada**: estimativa ~3h (TribeKanbanIsland refactor + useBoard hook + admin/types annotation).
+- **Test contract sedimentado p166 (2026-05-15, compatível com PROPOSED status)**: `tests/contracts/v4-engagement-canonical.test.mjs` trava a baseline atual de reads V3 via allowlist por arquivo. Não força cutover (allowlist preserva refs existentes); previne regressão (qualquer arquivo novo fora da allowlist = test fail). Allowlist ratchets para zero conforme Fase A migra cada arquivo.
+  - V3_FIELD_READ_ALLOWLIST (2 arquivos): `useBoardPermissions.ts`, `permissions.ts`
+  - V3_PUBLIC_MEMBERS_FILTER_ALLOWLIST (2 arquivos): `TribeKanbanIsland.tsx`, `pages/tribe/[id].astro`
+  - Type def em `src/lib/admin/types.ts` é Phase A item separado (não enforced no test — regex foca field access).
+- **Fase A — quando agendada**: estimativa ~3-4h (4 arquivos do allowlist + type def annotation).
 - **Fase B — após A**: ~1h setup invariant + 7d quiet window.
 - **Fase C — após B verde**: ~1h cutover final.
 
