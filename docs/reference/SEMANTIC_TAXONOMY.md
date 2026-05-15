@@ -1,9 +1,9 @@
 # Taxonomia semântica — eventos, reuniões, atas, artefatos, atividades, action-items, XP
 
-**Status:** Draft p161 — pendente alinhamento PM/curadores antes de tocar código
+**Status:** Q1–Q7 ratificados PM 2026-05-14/15 — gamification + Champion shipped p161 (ver ADR-0081). Q8 deferido para Onda 2.
 **Created:** 2026-05-14 (sessão p161 — TIER A gamification + semantic clarity)
 **Audience:** PM, curadores, líderes de tribo, agentes IA que tocam eventos / atas / gamificação
-**Cross-refs:** [ADR-0050](../adr/ADR-0050-gamification-leaderboard-v2-and-opt-out.md) (leaderboard v2 + opt-out), [ADR-0051](../adr/ADR-0051-gamification-leaderboard-scope-filter.md) (scope filter), [ADR-0062](../adr/ADR-0062-gamification-streak-and-cycle-points.md) (streak + cycle points), [V4 Authority Model](./V4_AUTHORITY_MODEL.md) (auth equivalente para autoridade)
+**Cross-refs:** [ADR-0050](../adr/ADR-0050-gamification-leaderboard-v2-and-opt-out.md) (leaderboard v2 + opt-out), [ADR-0051](../adr/ADR-0051-gamification-leaderboard-scope-filter.md) (scope filter), [ADR-0062](../adr/ADR-0062-gamification-streak-and-cycle-points.md) (streak + cycle points), [ADR-0081](../adr/ADR-0081-gamification-config-driven-and-champions-ledger.md) (config-driven rules + Champion ledger — captura design Q5-Q7), [V4 Authority Model](./V4_AUTHORITY_MODEL.md) (auth equivalente para autoridade)
 
 ---
 
