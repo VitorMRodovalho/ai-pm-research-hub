@@ -244,6 +244,9 @@ const PROFILE_I18N = {
   // any other function in this script can reference `lp` without TDZ ReferenceError. Was
   // declared inside renderProfile() only, but myWeekHtml() (sibling function) also uses it.
   const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+  // p162: lang derived from URL prefix for client-side i18n in pillar/champion render helpers.
+  // Frontmatter `lang` is server-side only; this script-scoped const is the canonical client lang.
+  const lang: 'pt-BR' | 'en-US' | 'es-LATAM' = lp === '/en' ? 'en-US' : lp === '/es' ? 'es-LATAM' : 'pt-BR';
   const OPROLE_LABELS: Record<string, string> = {
     manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, comms_leader: PROFILE_I18N.oproleCommsLeader || 'Líder de Comunicação', researcher: PROFILE_I18N.oproleResearcher,
     facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest,
