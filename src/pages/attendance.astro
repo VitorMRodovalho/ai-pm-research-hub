@@ -780,7 +780,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   function renderEventCard(ev: any): string {
     const isPast = isEventPast(ev);
-    const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
+    const isCancelled = ev.status === 'cancelled';
+    const attIcon = isCancelled ? '🚫' : ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
     const linkHtml = ev.meeting_link && !isPast
       ? ` · <a href="${ev.meeting_link}" target="_blank" rel="noopener" class="text-navy font-semibold no-underline text-[11px]">🔗 Entrar</a>`
       : '';
@@ -807,12 +808,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-4 bg-[var(--surface-section-cool)] rounded-lg text-sm text-[var(--text-primary)] prose prose-sm max-w-none border-l-3 border-[var(--color-teal)]">${minutesRendered}${editMinutesBtn ? `<div class="mt-2 border-t border-[var(--border-subtle)] pt-2">${editMinutesBtn}</div>` : ''}</div>`
       : (canEditThisMinutes ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-3 bg-amber-50 rounded-lg text-[11px] text-amber-700">${editMinutesBtn}</div>` : '');
 
+    const cancelledBadge = isCancelled
+      ? ` · <span class="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded" title="${escapeAttr(ev.cancellation_reason || 'Reunião cancelada')}">CANCELADA</span>`
+      : '';
+    const rowOpacity = isCancelled ? ' opacity-60' : '';
+    const titleStrike = isCancelled ? ' line-through' : '';
     return `<div>
-      <div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2">
+      <div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2${rowOpacity}">
       <span class="text-xs">${attIcon}</span>
       <div class="flex-1 min-w-0">
-        <div class="text-[13px] font-medium text-[var(--text-primary)] truncate${hasMinutes ? ' cursor-pointer hover:text-navy' : ''}" ${hasMinutes ? `data-action="toggle-minutes" data-event-id="${ev.id}"` : ''}>${ev.title}</div>
-        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${ev.initiative_name ? ` · <span class="text-[10px] font-semibold text-purple">📌 ${escapeAttr(ev.initiative_name)}</span>` : ''}${linkHtml}${recHtml} ${badges}</div>
+        <div class="text-[13px] font-medium text-[var(--text-primary)] truncate${titleStrike}${hasMinutes ? ' cursor-pointer hover:text-navy' : ''}" ${hasMinutes ? `data-action="toggle-minutes" data-event-id="${ev.id}"` : ''}>${ev.title}</div>
+        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast && !isCancelled ? ` · ${ev.attendee_count || 0} presentes` : ''}${ev.initiative_name ? ` · <span class="text-[10px] font-semibold text-purple">📌 ${escapeAttr(ev.initiative_name)}</span>` : ''}${cancelledBadge}${linkHtml}${recHtml} ${badges}</div>
       </div>
       <div class="flex gap-1 items-center flex-shrink-0">
         ${ev.i_attended !== true ? (isInCheckinWindow(ev)
@@ -823,7 +829,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           )) : ''}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
         ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
-        ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.deleteEvent || 'Cancelar esta reunião'}">🗑️</button>` : ''}
+        ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.cancelEventTitle || 'Cancelar esta reunião (preserva auditoria). Shift+click para EXCLUIR definitivamente.'}">🗑️</button>` : ''}
       </div>
     </div>${minutesHtml}</div>`;
   }
@@ -1091,7 +1097,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'delete-event': {
           const evId = target.dataset.eventId || '';
           const evTitle = target.dataset.eventTitle || '';
-          deleteEventInstance(evId, evTitle);
+          // p160: Shift+click = hard-delete (admin override). Default = soft-cancel.
+          const hardDelete = (e as MouseEvent).shiftKey === true;
+          deleteEventInstance(evId, evTitle, hardDelete);
           break;
         }
         case 'toggle-minutes': {
@@ -1286,42 +1294,71 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     }
   }
 
-  // ── DELETE EVENT INSTANCE ──
-  async function deleteEventInstance(eventId: string, eventTitle: string) {
+  // ── CANCEL EVENT INSTANCE ── (p160 soft-cancel by default; hard-delete is admin override)
+  // Default flow: cancel_event_occurrence (sets events.status='cancelled', preserves audit trail,
+  // grid renders cells as '—' for the whole row when no ISO-week replan exists).
+  // Hard-delete (drop_event_instance) only when user holds Shift while clicking — admin override.
+  async function deleteEventInstance(eventId: string, eventTitle: string, hardDelete: boolean = false) {
     if (!CAN_MANAGE) return;
-    const confirmed = confirm(
-      `${I18N.deleteConfirm || 'Tem certeza que deseja cancelar esta reunião?'}\n\n${eventTitle}\n\n${I18N.deleteWarning || 'Esta ação não pode ser desfeita.'}`
-    );
-    if (!confirmed) return;
 
-    const doDelete = async (force: boolean) => sb.rpc('drop_event_instance', {
-      p_event_id: eventId,
-      p_force_delete_attendance: force
-    });
+    if (hardDelete) {
+      // Admin hard-delete (existing behavior — preserved for genuine wrong-data removal)
+      const confirmed = confirm(
+        `${I18N.deleteHardConfirm || '⚠ EXCLUIR DEFINITIVAMENTE esta reunião?'}\n\n${eventTitle}\n\n${I18N.deleteHardWarning || 'Esta ação não pode ser desfeita. Use somente para dados claramente errados (duplicatas, testes). Para cancelamento normal, NÃO segure Shift.'}`
+      );
+      if (!confirmed) return;
+      const doDelete = async (force: boolean) => sb.rpc('drop_event_instance', {
+        p_event_id: eventId,
+        p_force_delete_attendance: force
+      });
+      try {
+        let { data, error } = await doDelete(false);
+        if (error && /attendance_exists:(\d+)/.test(error.message || '')) {
+          const count = Number((error.message.match(/attendance_exists:(\d+)/) || [])[1] || 0);
+          const template = (I18N.deleteForcePrompt as string) || 'Este evento tem {count} presença(s) registrada(s).\n\nConfirmar remoção das presenças E exclusão do evento?';
+          const ok = confirm(template.replace('{count}', String(count)));
+          if (!ok) return;
+          ({ data, error } = await doDelete(true));
+        }
+        if (error) throw error;
+        if (data?.success) {
+          toast(I18N.deleteHardSuccess || 'Evento excluído definitivamente.', 'success');
+          loadEvents(); loadKPIs();
+        } else {
+          toast(data?.error || 'Erro ao excluir evento.', 'error');
+        }
+      } catch (e: any) {
+        toast(e?.message || 'Erro ao excluir evento.', 'error');
+      }
+      return;
+    }
+
+    // Default: soft-cancel
+    const reason = prompt(
+      `${I18N.cancelConfirm || 'Cancelar esta reunião?'}\n\n${eventTitle}\n\n${I18N.cancelReasonPrompt || 'Motivo (opcional):'}`,
+      ''
+    );
+    if (reason === null) return; // user clicked Cancel on prompt
 
     try {
-      let { data, error } = await doDelete(false);
-      // Two-step flow: if attendance exists, confirm and retry with force
-      if (error && /attendance_exists:(\d+)/.test(error.message || '')) {
-        const count = Number((error.message.match(/attendance_exists:(\d+)/) || [])[1] || 0);
-        const template = (I18N.deleteForcePrompt as string) || 'Este evento tem {count} presença(s) registrada(s).\n\nConfirmar remoção das presenças E cancelamento do evento?';
-        const ok = confirm(template.replace('{count}', String(count)));
-        if (!ok) return;
-        ({ data, error } = await doDelete(true));
-      }
+      const { data, error } = await sb.rpc('cancel_event_occurrence', {
+        p_event_id: eventId,
+        p_reason: reason.trim() || null
+      });
       if (error) throw error;
       if (data?.success) {
-        const attCount = Number(data.deleted_attendance_count || 0);
-        const msg = attCount > 0
-          ? ((I18N.deleteSuccessWithAttendance as string) || 'Evento cancelado. {count} presença(s) também foram removidas.').replace('{count}', String(attCount))
-          : (I18N.deleteSuccess || 'Evento cancelado com sucesso.');
-        toast(msg, 'success');
+        toast(
+          data.already_cancelled
+            ? (I18N.cancelAlready || 'Esta reunião já estava cancelada.')
+            : (I18N.cancelSuccess || 'Reunião cancelada. Aparece com — para todos. Sem penalidade.'),
+          'success'
+        );
         loadEvents(); loadKPIs();
       } else {
-        toast(data?.error || 'Erro ao deletar evento.', 'error');
+        toast(data?.error || 'Erro ao cancelar reunião.', 'error');
       }
     } catch (e: any) {
-      toast(e?.message || 'Erro ao deletar evento.', 'error');
+      toast(e?.message || 'Erro ao cancelar reunião.', 'error');
     }
   }
 
