@@ -143,7 +143,7 @@ Zero cost at decision time. Drift `comms_leader` fix é follow-up separado (cabe
 - ADR-0012 — Schema consolidation principles (cache cols as coerce-not-reject)
 - `check_schema_invariants()` — A1/A2/A3 reconciliation
 
-## Appendix A — Current CASE (2026-04-25)
+## Appendix A — Original CASE (2026-04-25, historical)
 
 ```sql
 CASE
@@ -162,6 +162,85 @@ CASE
   ELSE 'guest'
 END
 ```
+
+Superseded by Amendment A (p162) and Amendment B (p164) — see sections below.
+
+## Amendment A — Track E (2026-05-14, p162)
+
+Extended the ladder to cover V4 engagement kinds (`study_group_owner`, `committee_*`, `workgroup_*`) that previously fell to `ELSE 'guest'`. Migration `20260652000000`.
+
+Key changes:
+- `volunteer.{leader,comms_leader}` mapped together as `tribe_leader` (resolved Drift 1 from main body).
+- `volunteer.co_gp` promoted to clause 2 (manager).
+- V4 leadership kinds → `tribe_leader`: `study_group_owner` / `committee_coordinator` / `workgroup_coordinator` (roles leader/co_leader/owner/coordinator) and `committee_member` / `workgroup_member` (roles leader/coordinator).
+- V4 contributor kinds → `researcher`: `committee_member` / `workgroup_member` / `study_group_owner` (roles researcher/contributor/member/participant).
+
+Drift later flagged (p163, 2026-05-15): a single global `tribe_leader` value coerced workgroup/committee leaders into the same TIER_PERMISSIONS bucket as research_tribe leaders — granting cross-context admin authority (board.edit_tribe_items, admin.access via Tier A gates, etc.). PM audit reverted the autonomous A3 backfill (5/6 cases scope-leak) and approved Opção C (capability cache + canFor scoped UI gates — see ADR-0083). Amendment B (below) refines the ladder to match institutional intent.
+
+## Amendment B — Track E v3 (2026-05-15, p164)
+
+**Status:** Accepted 2026-05-15
+**Migration:** `20260662000000_p164_track_e_v3_committee_workgroup_to_researcher.sql`
+**Refs:** ADR-0083 (capability cache for V4 UI gates), `docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md`
+
+### Rationale
+
+ADR-0083 introduced `canFor(action, scope?)` so frontend gates evaluate authority against the actual engagement scope (initiative/tribe), not the global `operational_role` cache. With UI gates migrated (Tier A 11 + Tier B 7 in p163), the cache no longer needs to "tier-leak" overlay leadership into the `tribe_leader` slot. The ladder is refined to match institutional intent:
+
+- `volunteer.{leader, comms_leader}` → `tribe_leader` ONLY (genuine research_tribe leadership)
+- All committee/workgroup/study_group leadership and membership → `researcher` (overlay; real authority via canFor scoped)
+- All other clauses unchanged.
+
+### Canonical CASE (2026-05-15, current)
+
+```sql
+CASE
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'manager')        THEN 'manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'co_gp')          THEN 'manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'deputy_manager') THEN 'deputy_manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role IN ('leader','comms_leader')) THEN 'tribe_leader'
+  WHEN bool_or(
+    (ae.kind = 'volunteer' AND ae.role IN ('researcher','facilitator','communicator','curator'))
+    OR (ae.kind IN ('committee_member','workgroup_member','study_group_owner')
+        AND ae.role IN ('leader','co_leader','owner','coordinator','researcher','contributor','member','participant'))
+    OR (ae.kind IN ('committee_coordinator','workgroup_coordinator')
+        AND ae.role IN ('leader','co_leader','owner','coordinator'))
+  ) THEN 'researcher'
+  WHEN bool_or(ae.kind = 'external_signer') THEN 'external_signer'
+  WHEN bool_or(ae.kind = 'observer')      THEN 'observer'
+  WHEN bool_or(ae.kind = 'alumni')        THEN 'alumni'
+  WHEN bool_or(ae.kind = 'sponsor')       THEN 'sponsor'
+  WHEN bool_or(ae.kind = 'chapter_board') THEN 'chapter_liaison'
+  WHEN bool_or(ae.kind = 'candidate')     THEN 'candidate'
+  ELSE 'guest'
+END
+```
+
+11 WHEN clauses + ELSE. Same in both `sync_operational_role_cache()` and `check_schema_invariants().A3` (parity rule).
+
+### Impact applied in migration
+
+- Trigger function replaced.
+- Invariant body replaced (A3 CASE chain identical to trigger — ADR-0023 mandatory parity).
+- Selective backfill: Sarah Faria Alcantara Macedo Rodovalho + Roberto Macêdo (`observer` → `researcher`). 2 audit-log rows inserted via `admin_audit_log` with rationale.
+- A3 violation_count: 6 → 1 (Eder Valasco edge case remains, orthogonal — no engagements).
+
+### What changed institutionally
+
+| Engagement signature | v2 (Amendment A) → | v3 (Amendment B) → |
+|---|---|---|
+| `committee_member.{leader,coordinator}` | tribe_leader | researcher |
+| `workgroup_member.{leader,coordinator}` | tribe_leader | researcher |
+| `study_group_owner.{leader,co_leader,owner,coordinator}` | tribe_leader | researcher |
+| `committee_coordinator.{leader,co_leader,owner,coordinator}` | tribe_leader | researcher |
+| `workgroup_coordinator.{leader,co_leader,owner,coordinator}` | tribe_leader | researcher |
+| `volunteer.{leader,comms_leader}` | tribe_leader | tribe_leader (unchanged) |
+
+Authority for the overlay groups continues to flow via `can()` / `canFor()` scoped (engagement_kind_permissions seeds unchanged — those grant manage_event/write_board/etc. with `scope='initiative'`).
+
+### Rollback constraint
+
+Reverting Amendment B alone would re-introduce scope-leak risk because ADR-0083 frontend gates expect canFor scoped authority for the 18 migrated sites — they no longer fall back to operational_role exact-match. A rollback would need to revert both the trigger AND the 18 frontend gates in the same release. Practical guidance: don't revert; if cache semantics need to change further, introduce Amendment C.
 
 ## Appendix B — `engagement_kind_permissions` relationship
 
