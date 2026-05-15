@@ -23,6 +23,9 @@ export function getAttendanceHandoffCopy(action?: string | null): string {
   if (action === 'youtube-url') {
     return 'Handoff contextual: registrar o replay deste webinar no evento correspondente.';
   }
+  if (action === 'register') {
+    return 'Vindo do digest semanal: marcar presença desta reunião pendente.';
+  }
   return 'Handoff contextual: abrir o fluxo de eventos no contexto do webinar selecionado.';
 }
 
