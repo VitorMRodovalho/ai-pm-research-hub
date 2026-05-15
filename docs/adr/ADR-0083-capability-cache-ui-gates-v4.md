@@ -148,10 +148,26 @@ Scope-leak fechado para os 4 mems flagados pelo PM.
 
 ## Backlog
 
-- **Tier B migration** (allowlist gates with `tribe_leader`)
+- **Tier B migration** (allowlist gates with `tribe_leader`) — ✅ shipped p163 (7 gates)
 - **Tier C polish** (manager/deputy_manager exact-match)
 - **Display-only gates** (TeamSection, PresentationLayer, Nav items)
 - **operational_role cache deprecation plan** — once Tiers A+B done, cache can be drift-tolerant (no security impact). A3 invariant could be downgraded to "informational" or removed.
-- **Trigger refinement** (`sync_operational_role_cache` Track E v3): map workgroup/committee.leader → researcher (not tribe_leader) in cache; UI gates won't notice because they consult canFor.
-- **Re-evaluate A3 backfill candidates** — Fabricio (manager via volunteer.co_gp) is the only institutionally legitimate promotion from the original 6.
-- **Capability cache invalidation hook** — refresh on engagement INSERT/UPDATE/DELETE via realtime channel (today refresh is auth-event-bound only).
+- **Trigger refinement** (`sync_operational_role_cache` Track E v3): map workgroup/committee.leader → researcher (not tribe_leader) in cache; UI gates won't notice because they consult canFor. — ✅ shipped p164 Tier A (ADR-0023 Amendment B, migration `20260662`)
+- **Re-evaluate A3 backfill candidates** — Fabricio (manager via volunteer.co_gp) is the only institutionally legitimate promotion from the original 6. — ✅ Fabricio shipped p163 + Sarah/Roberto shipped p164 Tier A.
+- **Capability cache invalidation hook** — refresh on engagement INSERT/UPDATE/DELETE via realtime channel (today refresh is auth-event-bound only). — ✅ shipped p164 Tier B (migration `20260663` + `subscribeCapabilityInvalidation` helper + Nav.astro wiring). See validation trace below.
+
+## Tier B realtime invalidation — live validation (p164, 2026-05-15)
+
+Worker deployed `2ee09456-b21d-4fdf-9e7c-15383ae4fcc4`. Evidence sequence:
+
+| Phase | Time (UTC) | Source | Evidence |
+|---|---|---|---|
+| Migration `20260663` applied | ~22:01 | apply_migration MCP | engagements added to `supabase_realtime` publication; `pg_publication_tables` confirmed |
+| Frontend subscribe (phx_join) | 22:03:28 | HAR + PM frame | channel `realtime:engagements:person_<uuid>` registered; broker accepted with `postgres_changes` id=94793455 + filter `person_id=eq.<uuid>` |
+| Broker discovered engagements oid 50437 in publication | 22:09:50 | realtime logs | `Found new oids: {public,engagements} => [50437]` |
+| Manual trigger `UPDATE engagements SET updated_at=now()` | 22:13:18.685 | execute_sql | 1 row affected, person_id matches subscribed channel |
+| Frontend auto re-fetch | 22:13:20.043 | api logs | `POST 200 /rest/v1/rpc/get_caller_capabilities` from same browser UA |
+
+**Δ = 1.358s** between UPDATE and re-fetch — consistent with WAL replication (~200-500ms) + 500ms debounce + WebSocket round-trip. No page reload required.
+
+Conclusion: the capability cache now invalidates on engagement mutations without user-visible staleness window. The original ADR-0083 backlog item closed.
