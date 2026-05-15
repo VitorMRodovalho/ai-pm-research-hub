@@ -24,9 +24,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const check = () => {
       const member = window.navGetMember?.();
       if (!member) { setTimeout(check, 300); return; }
-      const isAdmin = member.is_superadmin
-        || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role)
-        || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
+      // ADR-0083 Tier B
+      const hasAdminCapability = window.__nucleoCanForAdminEntry?.() === true;
+      const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
+      const hasAdminDesignation = (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
+      const isAdmin = member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
       if (!isAdmin) {
         document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
       }

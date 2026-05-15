@@ -457,11 +457,15 @@ const WK = {
         `;
         $tribeCard?.classList.remove('hidden');
       } else if (!member.tribe_id) {
-        // Check if admin/stakeholder — show "access to all tribes" instead of "no tribe"
+        // ADR-0083 Tier B: stakeholder/admin scope for "access to all tribes"
+        // header derived from V4 capabilities (view_chapter_dashboards or
+        // view_internal_analytics signals chapter-level / sponsor-level reach).
+        const hasStakeholderCapability = (window as any).__nucleoCanFor?.('view_chapter_dashboards')
+          || (window as any).__nucleoCanFor?.('view_internal_analytics');
         const isAdminOrStakeholder = member.is_superadmin
           || ['manager'].includes(member.operational_role)
           || (member.designations || []).includes('deputy_manager')
-          || ['sponsor', 'chapter_liaison'].includes(member.operational_role);
+          || hasStakeholderCapability;
 
         if (isAdminOrStakeholder) {
           if ($tribeCard) $tribeCard.innerHTML = `
