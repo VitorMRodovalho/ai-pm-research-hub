@@ -278,9 +278,11 @@ const PROFILE_I18N = {
   let journeyStats: any = null;
   let xpByCycle: Record<string, number> = {};
   let cycleXpData: any = null;
-  let xpPillarsData: any = null;
+  let xpPillarsLifetimeData: any = null;
+  let xpPillarsCycleData: any = null;
   let championsHistoryData: any = null;
-  let cycleGamificationPoints: any[] = [];
+  let allGamificationPoints: any[] = [];
+  let currentXpScope: 'lifetime' | 'cycle' = 'lifetime';
   let attendanceHoursData: { total_hours: number; total_events: number; avg_hours_per_event: number } | null = null;
   let currentCycleCode: string = '';
   let currentCycleLabel: string = '';
@@ -401,11 +403,16 @@ const PROFILE_I18N = {
         }
       } catch (_) { attendanceHoursData = null; }
 
-      // XP pillars breakdown (ADR-0081 transparency UI — p162)
+      // XP pillars breakdown — load BOTH scopes upfront (ADR-0081 + Track A transparency)
       try {
-        const { data: pillars } = await sb.rpc('get_member_xp_pillars', { p_member_id: currentMember.id });
-        xpPillarsData = typeof pillars === 'string' ? JSON.parse(pillars) : pillars;
-      } catch (_) { xpPillarsData = null; }
+        const { data: lifetime } = await sb.rpc('get_member_xp_pillars', { p_member_id: currentMember.id, p_scope: 'lifetime' });
+        xpPillarsLifetimeData = typeof lifetime === 'string' ? JSON.parse(lifetime) : lifetime;
+      } catch (_) { xpPillarsLifetimeData = null; }
+
+      try {
+        const { data: cycle } = await sb.rpc('get_member_xp_pillars', { p_member_id: currentMember.id, p_scope: 'cycle' });
+        xpPillarsCycleData = typeof cycle === 'string' ? JSON.parse(cycle) : cycle;
+      } catch (_) { xpPillarsCycleData = null; }
 
       // Champions received history
       try {
@@ -413,19 +420,14 @@ const PROFILE_I18N = {
         championsHistoryData = typeof champs === 'string' ? JSON.parse(champs) : champs;
       } catch (_) { championsHistoryData = null; }
 
-      // Raw cycle gamification_points for drilldown history (ref_id list per rule)
+      // All-time gamification_points for drilldown history (filter client-side based on scope)
       try {
-        if (xpPillarsData?.cycle_start) {
-          const upper = xpPillarsData.cycle_end || '2099-12-31T23:59:59Z';
-          const { data: cyPoints } = await sb.from('gamification_points')
-            .select('id, category, points, reason, created_at, ref_id')
-            .eq('member_id', currentMember.id)
-            .gte('created_at', xpPillarsData.cycle_start)
-            .lt('created_at', upper)
-            .order('created_at', { ascending: false });
-          cycleGamificationPoints = Array.isArray(cyPoints) ? cyPoints : [];
-        }
-      } catch (_) { cycleGamificationPoints = []; }
+        const { data: allPts } = await sb.from('gamification_points')
+          .select('id, category, points, reason, created_at, ref_id')
+          .eq('member_id', currentMember.id)
+          .order('created_at', { ascending: false });
+        allGamificationPoints = Array.isArray(allPts) ? allPts : [];
+      } catch (_) { allGamificationPoints = []; }
 
       // Publications (ex-artifacts, post ADR-0012 Part 3)
       const { data: artifacts } = await sb.from('publication_submissions')
@@ -947,11 +949,26 @@ const PROFILE_I18N = {
   }
 
   function xpPillarsHtml(): string {
-    if (!xpPillarsData || xpPillarsData.error) return '';
-    const pillars: any[] = xpPillarsData.pillars || [];
+    const isLifetime = currentXpScope === 'lifetime';
+    const data = isLifetime ? xpPillarsLifetimeData : xpPillarsCycleData;
+    if (!data || data.error) return '';
+    const pillars: any[] = data.pillars || [];
     if (pillars.length === 0) return '';
-    const cycleCode = xpPillarsData.cycle_code || '';
-    const totalPts = xpPillarsData.total_pts || 0;
+    const cycleCode = data.cycle_code || '';
+    const cycleStartIso = data.cycle_start || null;
+    const cycleEndIso = data.cycle_end || null;
+    const totalPts = data.total_pts || 0;
+
+    // Filter allGamificationPoints by scope for drilldown history
+    const scopedPoints = isLifetime
+      ? allGamificationPoints
+      : allGamificationPoints.filter((gp: any) => {
+          if (!cycleStartIso) return true;
+          const ts = new Date(gp.created_at).getTime();
+          const start = new Date(cycleStartIso).getTime();
+          const end = cycleEndIso ? new Date(cycleEndIso).getTime() + 24*60*60*1000 : Infinity;
+          return ts >= start && ts < end;
+        });
 
     const ptsLabel = 'pts';
     const itemsLabel = (n: number) => {
@@ -965,19 +982,32 @@ const PROFILE_I18N = {
     const howToLabelGrow = lang === 'en-US' ? 'How to grow here'
                          : lang === 'es-LATAM' ? 'Cómo crecer aquí'
                          : 'Como crescer aqui';
-    const earnedListLabel = lang === 'en-US' ? 'Earned this cycle'
-                          : lang === 'es-LATAM' ? 'Obtenido en este ciclo'
-                          : 'Pontuado neste ciclo';
+    const earnedListLabel = isLifetime
+      ? (lang === 'en-US' ? 'All-time earnings'
+        : lang === 'es-LATAM' ? 'Puntos histórico total'
+        : 'Pontuação histórica total')
+      : (lang === 'en-US' ? 'Earned this cycle'
+        : lang === 'es-LATAM' ? 'Obtenido en este ciclo'
+        : 'Pontuado neste ciclo');
     const noEarningsYet = lang === 'en-US' ? 'No earnings yet — see "How to grow here"'
                         : lang === 'es-LATAM' ? 'Aún sin puntos — vea "Cómo crecer aquí"'
                         : 'Ainda sem pontos — veja "Como crescer aqui"';
     const variableNote = lang === 'en-US' ? '(variable: 15–25 pts by type)'
                        : lang === 'es-LATAM' ? '(variable: 15–25 pts por tipo)'
                        : '(variável: 15–25 pts por tipo)';
+    const tabLifetimeI18n = lang === 'en-US' ? 'All-time'
+                          : lang === 'es-LATAM' ? 'Histórico'
+                          : 'Vida toda';
+    const tabCycleI18n = lang === 'en-US' ? 'Current cycle'
+                       : lang === 'es-LATAM' ? 'Ciclo actual'
+                       : 'Ciclo atual';
+    const ofTotalI18n = lang === 'en-US' ? '% of total'
+                      : lang === 'es-LATAM' ? '% del total'
+                      : '% do total';
 
     const cardsHtml = pillars.map((p: any) => {
       const rules: any[] = p.rules || [];
-      const pillarRulesId = `pillar-rules-${p.pillar}`;
+      const pillarRulesId = `pillar-rules-${p.pillar}-${currentXpScope}`;
       const hasPts = p.total_pts > 0;
       const headerColor = hasPts ? 'text-navy' : 'text-[var(--text-secondary)]';
       const pillarPct = totalPts > 0 ? Math.round((p.total_pts / totalPts) * 100) : 0;
@@ -993,20 +1023,25 @@ const PROFILE_I18N = {
           ? `<span class="font-bold text-emerald-700">+${r.pts}</span>`
           : `<span class="text-[var(--text-muted)]">${ptsHint}${isShowcase ? ' <span class="text-[.55rem]">'+variableNote+'</span>' : ''}</span>`;
 
-        // History rows when rule has earned pts; description hint when empty.
         let detailHtml = '';
         if (r.pts > 0) {
-          const earnings = cycleGamificationPoints.filter((gp: any) => gp.category === r.slug);
+          const earnings = scopedPoints.filter((gp: any) => gp.category === r.slug);
           if (earnings.length > 0) {
-            const rowsHtml = earnings.map((gp: any) => `
+            const shown = earnings.slice(0, 30);
+            const overflow = earnings.length - shown.length;
+            const rowsHtml = shown.map((gp: any) => `
               <div class="flex items-center justify-between gap-2 text-[.58rem] text-[var(--text-muted)]">
                 <span class="truncate flex-1">• ${escapeHtmlSafe(gp.reason || '—')}</span>
                 <span class="shrink-0 font-mono">${formatDateShort(gp.created_at)} <span class="text-emerald-700 font-semibold">+${gp.points}</span></span>
               </div>`).join('');
+            const overflowHtml = overflow > 0
+              ? `<div class="text-[.55rem] text-[var(--text-muted)] italic">+${overflow}</div>`
+              : '';
             detailHtml = `
               <div class="ml-2 mt-1 mb-1 pl-2 border-l-2 border-emerald-200 space-y-0.5">
                 <div class="text-[.55rem] uppercase tracking-wider text-emerald-700 font-bold">${earnedListLabel}</div>
                 ${rowsHtml}
+                ${overflowHtml}
               </div>`;
           }
         } else if (desc) {
@@ -1037,7 +1072,7 @@ const PROFILE_I18N = {
             <div class="text-xl font-black text-navy">${p.total_pts}</div>
           </div>
           <div class="text-[.62rem] text-[var(--text-muted)] mb-1">
-            ${p.earned_count} ${itemsLabel(p.earned_count)} ${hasPts ? `· ${pillarPct}% do total` : ''}
+            ${p.earned_count} ${itemsLabel(p.earned_count)} ${hasPts ? `· ${pillarPct}${ofTotalI18n}` : ''}
           </div>
           <div class="w-full h-1.5 bg-[var(--surface-section-cool)] rounded-full overflow-hidden mb-1.5">
             <div class="h-full ${barColor} transition-all duration-500" style="width:${pillarPct}%"></div>
@@ -1056,17 +1091,30 @@ const PROFILE_I18N = {
     const titleI18n = lang === 'en-US' ? '🏆 Your XP Journey'
                     : lang === 'es-LATAM' ? '🏆 Tu Recorrido en XP'
                     : '🏆 Sua Jornada em XP';
-    const cycleSuffix = lang === 'en-US' ? 'pts this cycle'
-                      : lang === 'es-LATAM' ? 'pts en este ciclo'
-                      : 'pts no ciclo';
+    const scopeLabel = isLifetime
+      ? (lang === 'en-US' ? 'all-time' : lang === 'es-LATAM' ? 'histórico' : 'vida toda')
+      : (cycleCode ? cycleCode : (lang === 'en-US' ? 'current cycle' : lang === 'es-LATAM' ? 'ciclo actual' : 'ciclo atual'));
+    const ptsSuffix = lang === 'en-US' ? 'pts' : 'pts';
+
+    const tabBtn = (scope: string, label: string, active: boolean) => `
+      <button type="button" data-action="xp-scope-toggle" data-scope="${scope}"
+              class="px-3 py-1 text-[.65rem] font-semibold rounded-full transition-all border ${active
+                ? 'bg-navy text-white border-navy'
+                : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-base)]'}">
+        ${label}
+      </button>`;
 
     return `
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6" data-section="xp-pillars">
-        <div class="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+        <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
           <h2 class="text-sm font-bold text-navy">${titleI18n}</h2>
           <div class="text-[.7rem] text-[var(--text-muted)]">
-            ${cycleCode ? cycleCode + ' · ' : ''}<strong class="text-navy">${totalPts}</strong> ${cycleSuffix}
+            ${scopeLabel} · <strong class="text-navy">${totalPts}</strong> ${ptsSuffix}
           </div>
+        </div>
+        <div class="flex gap-1.5 mb-4">
+          ${tabBtn('lifetime', tabLifetimeI18n, isLifetime)}
+          ${tabBtn('cycle', tabCycleI18n, !isLifetime)}
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${cardsHtml}</div>
       </div>`;
@@ -1935,6 +1983,14 @@ const PROFILE_I18N = {
         case 'pillar-toggle': {
           const rulesId = target.dataset.target;
           if (rulesId) document.getElementById(rulesId)?.classList.toggle('hidden');
+          break;
+        }
+        case 'xp-scope-toggle': {
+          const newScope = target.dataset.scope as 'lifetime' | 'cycle';
+          if (newScope && newScope !== currentXpScope && (newScope === 'lifetime' || newScope === 'cycle')) {
+            currentXpScope = newScope;
+            if (currentMember) renderProfile(currentMember);
+          }
           break;
         }
       }
