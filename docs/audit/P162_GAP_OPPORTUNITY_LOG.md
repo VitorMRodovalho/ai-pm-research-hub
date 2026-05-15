@@ -98,3 +98,53 @@
 ## Recomendação para issue_gap_opportunity_log.md
 
 Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-condições para Tracks C/E. Item 7 é debt da Phase E i18n p163.
+
+---
+
+## Onda 2 — items adicionados via 2ª deliberação council (digest pivot, 2026-05-15)
+
+### 16. RISK — `.claude/agents/platform-guardian.md` cita "8 invariantes" mas DB tem 15 (após O+P p162)
+- **Tipo:** risk · **Effort:** XS
+- **Trigger:** system prompt do agente outdated (A1/A2/A3/B/C/D/E/F = 8). DB tem A1/A2/A3/B/C/D/E/F/J/K/L/M/N/O/P = 15.
+- **Impact:** audit reports do guardiao checam contagem errada.
+- **Fix:** update system prompt do agente: "15 invariantes".
+
+### 17. RISK — `get_weekly_tribe_digest:47` identifica líder via `tribes.leader_member_id` (V3)
+- **Tipo:** risk · **Effort:** S
+- **File:** `supabase/migrations/20260516490001` + `20260655000000` (G2a herda)
+- **Impact:** digest pode ir para ex-líder após mudança V4 sem sync para V3 cache.
+- **Fix:** substituir lookup por `auth_engagements WHERE kind='volunteer' AND role='leader' AND status='active' AND is_authoritative=true` filtrado por initiative_id correspondente.
+- **Não-bloqueador:** smoke com 1 líder/tribo. Pre-req para rollout multi-chapter.
+
+### 18. GAP — `meeting_artifacts` RLS V3 hardcoded (item #12 reflag como pre-req crítico)
+- Mesmo do item #12 original. Reflag: Track B' não tocou meeting_artifacts (D-arq-1 = events.event_champion_waived em vez de jsonb em ma). G0 deferred.
+- **Quando torna-se bloqueador:** próxima track que ALTER meeting_artifacts.
+
+### 19. GAP — Recurrence grouping aplicado SÓ em ata_pending
+- **Tipo:** gap · **Effort:** S
+- **Trigger:** G2a aplica GROUP BY recurrence_group apenas em ata_pending. attendance_pending e champion_pending stayed flat per-event.
+- **Impact:** se série recorrente tem 10 ocorrências sem presença registrada, digest mostra apenas top-3 events (não top-3 séries agrupadas).
+- **Fix:** estender pattern de grouping para as 2 outras seções em p163+ se PM ratificar.
+
+### 20. GAP — `champion_decision` semantic PM decision (resolvido pela D-arq-1)
+- ✅ RESOLVIDO: PM ratificou alternativa (b) — `events.event_champion_waived` boolean + trio, NÃO `meeting_artifacts.champion_decision jsonb`.
+- G1 migration deferred (não load-bearing para G2). Adicionar quando G3 UI requerir distinção pending vs deliberate-none.
+
+### 21. OPPORTUNITY — Multi-leader per initiative (V4 N:N) digest delivery
+- **Tipo:** opportunity · **Effort:** M
+- **Trigger:** hoje cron itera tribes com 1 leader_member_id. V4 permite múltiplos líderes ativos (leader + co_leader). Digest enviado só para 1.
+- **Fix:** query V4 retornar todos os leaders ativos por initiative, enviar email para cada.
+- **Não-bloqueador:** quando V4 cutover (ADR-0080 Fase A) acontecer.
+
+### 22. GAP — A3 drift 7 membros após Track E trigger extension (continuation Track E)
+- **Tipo:** gap · **Effort:** S
+- **Membros afetados:** Sarah, Roberto, Fabricio, Leticia, Maria Luiza, Mayanna, Eder
+- **Trigger:** Track E migration `20260652` estendeu CASE chain do trigger sync_operational_role_cache para cobrir 5 V4 kinds. Mas o trigger só dispara em INSERT/UPDATE de engagements — rows existentes ficam stale.
+- **Fix:** backfill manual via `UPDATE members SET operational_role = <expected> WHERE id IN (7)`. Ou: trigger artificial em todos os engagements para forçar recompute.
+- **Impact:** Sarah/Roberto/Fabricio operacionalmente perdem privilégios tribe_leader que mereciam ter via committee/workgroup engagements. Affecta gates RLS e `admin.gamification` permission visibility.
+- **Cross-ref:** Track E (item #4 original), continuation p163.
+
+### 23. RESOLVED — Invariantes O + P shipped p162 Track B' G2b
+- ✅ `O_meeting_artifact_event_orphan` (medium, 0 violations)
+- ✅ `P_tribe_initiative_bridge_complete` (medium, 0 violations)
+- Total invariantes em DB: 15 (era 13 antes do p162).

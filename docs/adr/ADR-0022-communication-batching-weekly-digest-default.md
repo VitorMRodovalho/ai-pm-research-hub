@@ -200,3 +200,57 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - [ ] W3: leader digest, smart-skip empty digest, rate-limit tribe_broadcast urgent (1/week/leader)
 - [ ] Stakeholder review: validar com Roberto+Ivan+Fabricio+Sarah+curadoria se algum kind de notification é sensível a latência (ex: review gate pending) — review window pós-W2
 - [ ] CR-051 (formal): converter ADR-0022 para CR formal de ratificação ainda? Ou ADR-0022 Accepted suficiente até CBGPL?
+
+---
+
+## Amendment B — W3 Leader Digest Sections v2 (p162 Track B', 2026-05-15)
+
+**Status:** Accepted (PM ratified after council deliberation)
+**Driver:** Initial Track B proposed gate-at-publish UI modal for Champion capture in ata flow. Council (6 lenses: 3 personas + product-leader + ux-leader + data-architect) flagged friction + mobile + dual-write risks. PM pivoted to **digest-based reminder** — non-blocking, recurring rhythm, multi-domain coverage.
+
+### Adições ao W3 Leader Digest
+
+`get_weekly_tribe_digest(p_tribe_id integer)` ganha 3 seções além dos 8 agregados de cards existentes:
+
+1. **`ata_pending`** — eventos `type IN (tribo,geral,lideranca)` no ciclo atual, passados, sem `meeting_artifacts.is_published=true`. **Recurrence-grouped** por `events.recurrence_group` (uma série de 4 ocorrências sem ata aparece como 1 grupo, não 4 alertas). Top-3 grupos com `sample_title`, `occurrence_count`, `latest_date`, `latest_event_id`.
+
+2. **`attendance_pending`** — eventos do ciclo passados, mesmo escopo de tipos, com **zero rows em `attendance`** (`NOT EXISTS`). Distinção semântica: NÃO inclui eventos com `present=false + excused=true` (ausência justificada já é registro). Top-3 events com event_id/title/date.
+
+3. **`champion_pending`** — eventos do ciclo passados, mesmo escopo, com **zero `champions_awarded` ativos** (heurística pura). Aceita falso positivo: líder que decidiu verbalmente "Nenhum" aparece pendente eternamente. Coluna `events.event_champion_waived` futura (G1 deferred) elimina.
+
+### Decisões PM ratificadas (D-arq-1 a D-arq-7)
+
+| ID | Decisão | Justificativa |
+|---|---|---|
+| D-arq-1 | **NÃO** adicionar `meeting_artifacts.champion_decision jsonb`. Alternativa: `events.event_champion_waived boolean` + trio (waived_at/by/reason) pattern p160 soft-cancel — **G1 deferred opcional** | Evita TOAST composto em ma; tipo boolean explícito; predicate index seletivo |
+| D-arq-2 | G1 não é load-bearing para G2. Digest funciona com heurística pura | Senior-engineer: ata pendente detecta por is_published ausente, não precisa champion column |
+| D-arq-3 | G0 (RLS V3 fix de meeting_artifacts, item #12) deferred pois Track B' não toca a tabela | RLS violation continua aberta no log, mas não bloqueia digest |
+| D-arq-4 | Recurrence GROUP BY na ata_pending; COALESCE para eventos `type=geral` sem initiative_id | Reduz noise no email; cobre eventos institucionais sem tribe binding |
+| D-arq-5 | Extender este ADR-0022 como Amendment B, NÃO criar ADR novo | Track B' é concretização de W3 W3 existente; ADR-0081 = domínio errado (Champion ledger) |
+| D-arq-6 | Adicionar invariantes O + P agora (defesa anti-drift FK + V3-V4 bridge cron) | Baratas, independentes de Track B' funcionamento |
+| D-arq-7 | Phasing: G2a + G2b nesta sessão (foundation); G3 + G3b + G4 + G5 em p163 | Splita 7.5h em 2 sessões; permite smoke real Sat 12:30 entre elas |
+
+### Migrations shipped (p162 ondas)
+
+- `20260655000000` G2a — `get_weekly_tribe_digest` com 3 seções novas
+- `20260656000000` G2b — `generate_weekly_leader_digest_cron` v_has_signal estendido + invariantes O + P em check_schema_invariants
+- `20260657000000` — Hotfix invariant P (integer→uuid cast removed)
+
+### Pendências (p163+)
+
+- G3a: extend `send-notification-email` HTML template com 3 sections + CTAs (Publicar Ata / Marcar Presença / Conferir Champion) — PT-BR inline + tech debt i18n trilingual
+- G3b: URLSearchParams deep link readers em `/attendance` e `/admin/gamification` para pre-fill modal
+- G4: smoke real cron Sat 12:30 + verify email render para Roberto/Sarah/Fabricio/líderes
+- G5: contract test `tests/contracts/weekly-tribe-digest.test.mjs` (cobertura 3 sections + recurrence grouping + hide-if-empty)
+- G1 (opcional): migration `events.event_champion_waived` + trio para eliminar falso positivo de champion_pending
+- Backlog item #17 (V4 leader identification): `get_weekly_tribe_digest:47` ainda usa `tribes.leader_member_id` (V3) em vez de auth_engagements. Não bloqueia smoke; pre-req para rollout multi-chapter.
+- Backlog A3 drift (7 membros): Sarah, Roberto, Fabricio, Leticia, Maria Luiza, Mayanna, Eder — operational_role precisa backfill após Track E trigger extension (continuation Track E).
+
+### Cross-refs
+
+- `docs/council/p162_track_b_design_call.md` — deliberação 6 lenses (1ª rodada gate-at-publish)
+- `docs/council/p162_track_b_prime_architecture_audit.md` — auditoria 3 lenses (data-arch + guardian + senior) que motivou pivot
+- `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` — itens 16-21 novos + carry-forward
+- ADR-0081 — Champion ledger (NÃO host do digest; cross-ref domain)
+- ADR-0028 — privacy-preserving aggregates (princípio honrado nas 3 seções: nenhuma exposição individual)
+- ADR-0012 Princípio 2 — cache column requires trigger (champion_decision evitada por essa razão)
