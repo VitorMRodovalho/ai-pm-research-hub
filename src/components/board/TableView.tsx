@@ -12,6 +12,32 @@ interface Props {
 type SortKey = 'title' | 'assignee' | 'status' | 'baseline' | 'forecast' | 'deviation' | 'checklist';
 type SortDir = 'asc' | 'desc';
 
+// p160 bug fix: schedule-aware deviation. Mirrors CardDetail Desvio badge logic (commit e34e2df).
+// Returns null when baseline+forecast missing. Positive = behind schedule / late. Negative = early.
+// Three modes:
+//   actual_completion_date set → final accounting: actual − baseline
+//   active + today > forecast → overdue: today − forecast (forced positive, signals red)
+//   active + today ≤ forecast → planning variance: forecast − baseline
+function computeDeviation(item: BoardItem): number | null {
+  if (!item.baseline_date || !item.forecast_date) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const baseline = new Date(item.baseline_date);
+  const forecast = new Date(item.forecast_date);
+  const actual = item.actual_completion_date ? new Date(item.actual_completion_date) : null;
+  if (actual) return Math.round((actual.getTime() - baseline.getTime()) / 86400000);
+  if (today.getTime() > forecast.getTime()) return Math.round((today.getTime() - forecast.getTime()) / 86400000);
+  return Math.round((forecast.getTime() - baseline.getTime()) / 86400000);
+}
+
+function deviationCellMode(item: BoardItem): 'concluded' | 'overdue' | 'planning' | 'none' {
+  if (!item.baseline_date || !item.forecast_date) return 'none';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const forecast = new Date(item.forecast_date);
+  if (item.actual_completion_date) return 'concluded';
+  if (today.getTime() > forecast.getTime()) return 'overdue';
+  return 'planning';
+}
+
 export default function TableView({ items, columns, i18n, onOpenDetail, onMove }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('title');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -32,8 +58,8 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
         case 'baseline': return dir * ((a.baseline_date || '').localeCompare(b.baseline_date || ''));
         case 'forecast': return dir * ((a.forecast_date || '').localeCompare(b.forecast_date || ''));
         case 'deviation': {
-          const devA = a.baseline_date && a.forecast_date ? Math.round((new Date(a.forecast_date).getTime() - new Date(a.baseline_date).getTime()) / 86400000) : 0;
-          const devB = b.baseline_date && b.forecast_date ? Math.round((new Date(b.forecast_date).getTime() - new Date(b.baseline_date).getTime()) / 86400000) : 0;
+          const devA = computeDeviation(a) ?? -Infinity;
+          const devB = computeDeviation(b) ?? -Infinity;
           return dir * (devA - devB);
         }
         case 'checklist': {
@@ -72,10 +98,21 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
         </thead>
         <tbody>
           {sorted.map((item) => {
-            const dev = item.baseline_date && item.forecast_date
-              ? Math.round((new Date(item.forecast_date).getTime() - new Date(item.baseline_date).getTime()) / 86400000) : null;
-            const devColor = dev === null ? '' : dev <= 0 ? 'text-emerald-600' : dev <= 7 ? 'text-amber-600' : 'text-red-600';
-            const devIcon = dev === null ? '' : dev <= 0 ? '✅' : dev <= 7 ? '⚠️' : '🔴';
+            const dev = computeDeviation(item);
+            const devMode = deviationCellMode(item);
+            const devColor = dev === null ? ''
+              : devMode === 'overdue' ? 'text-red-600'
+              : dev <= 0 ? 'text-emerald-600'
+              : dev <= 7 ? 'text-amber-600'
+              : 'text-red-600';
+            const devIcon = dev === null ? ''
+              : devMode === 'overdue' ? '🔴'
+              : devMode === 'concluded' ? (dev <= 0 ? '✅' : '🟠')
+              : dev <= 0 ? '✅' : dev <= 7 ? '⚠️' : '🔴';
+            const devPrefix = devMode === 'overdue' ? '+' : devMode === 'concluded' && dev > 0 ? '+' : '';
+            const devTitle = devMode === 'overdue' ? `Atrasado ${dev}d (forecast venceu)`
+              : devMode === 'concluded' ? (dev <= 0 ? `Concluído ${Math.abs(dev)}d antes` : `Concluído ${dev}d após baseline`)
+              : dev === null ? '' : dev === 0 ? 'No prazo' : dev < 0 ? `${Math.abs(dev)}d adiantado` : `Forecast ${dev}d após baseline`;
             const _cl = safeChecklist(item.checklist);
             const checkDone = _cl.filter(c => c.done).length;
             const checkTotal = _cl.length;
@@ -111,8 +148,8 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
                 </td>
                 <td className="px-3 py-2.5 text-[var(--text-muted)] whitespace-nowrap">{item.baseline_date || '—'}</td>
                 <td className="px-3 py-2.5 text-[var(--text-muted)] whitespace-nowrap">{item.forecast_date || '—'}</td>
-                <td className={`px-3 py-2.5 font-bold whitespace-nowrap ${devColor}`}>
-                  {dev !== null ? `${devIcon} ${dev}d` : '—'}
+                <td className={`px-3 py-2.5 font-bold whitespace-nowrap ${devColor}`} title={devTitle}>
+                  {dev !== null ? `${devIcon} ${devPrefix}${dev}d` : '—'}
                 </td>
                 <td className="px-3 py-2.5 text-[var(--text-muted)]">{checkTotal > 0 ? `${checkDone}/${checkTotal}` : '—'}</td>
               </tr>
