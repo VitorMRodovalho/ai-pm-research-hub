@@ -965,6 +965,79 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ─── Champion tools (p161 Fase 4b — SEMANTIC_TAXONOMY.md Q5) ──────────────────
+  mcp.tool("award_champion", "Award a Champion to a member for standout contribution. Surfaces: 'general' (plenary meeting), 'tribe' (tribe meeting), 'deliverable' (artifact/deliverable completion). V4-gated by award_champion action (org-scope for general; initiative-scope for tribe/deliverable). Caps: 3/2/1 per-event, 3 per-grantor-per-event, soft-warn at 5+8+3 per-cycle. Auto-computes points via gamification_rules (base 30/20/40 + 5/criterion, capped 50/40/60). Recipient must be present at event (general/tribe) or be assigned_member/created_by (deliverable). criteria_met: 1-4 strings; justification: ≥50 chars.", {
+    recipient_id: z.string().describe("Member UUID receiving the Champion"),
+    surface: z.string().describe("'general' | 'tribe' | 'deliverable'"),
+    context_kind: z.string().describe("'event' (for general/tribe) | 'deliverable' (tribe_deliverables) | 'artifact' (meeting_artifacts)"),
+    context_id: z.string().describe("UUID of the event/deliverable/artifact"),
+    criteria_met: z.array(z.string()).describe("Array of 1-4 objective criteria slugs marked by grantor"),
+    justification: z.string().describe("Textual justification, ≥50 chars (audit-load-bearing)")
+  }, async (params: { recipient_id: string; surface: string; context_kind: string; context_id: string; criteria_met: string[]; justification: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "award_champion", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("award_champion", {
+      p_recipient_id: params.recipient_id,
+      p_surface: params.surface,
+      p_context_kind: params.context_kind,
+      p_context_id: params.context_id,
+      p_criteria_met: params.criteria_met,
+      p_justification: params.justification,
+    });
+    if (error) { await logUsage(sb, member.id, "award_champion", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "award_champion", false, data.error, start); return err(data.error + (data.detail ? ': ' + data.detail : '')); }
+    await logUsage(sb, member.id, "award_champion", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("revoke_champion", "Revoke a Champion previously awarded. Soft-revokes row (status=revoked + audit fields) AND deletes corresponding gamification_points (no XP compounding from revoked Champions). Authority: original awarder within 7-day window, OR manage_platform anytime. Reason ≥10 chars required (audit). ADR p161 Q5.7.", {
+    champion_id: z.string().describe("UUID of champions_awarded row to revoke"),
+    reason: z.string().describe("Reason for revocation, ≥10 chars (audit-load-bearing)")
+  }, async (params: { champion_id: string; reason: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "revoke_champion", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("revoke_champion", { p_champion_id: params.champion_id, p_reason: params.reason });
+    if (error) { await logUsage(sb, member.id, "revoke_champion", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "revoke_champion", false, data.error, start); return err(data.error + (data.detail ? ': ' + data.detail : '')); }
+    await logUsage(sb, member.id, "revoke_champion", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_champions_ranking", "Ranking of Champion recipients within scope (global or initiative) for a cycle. Returns aggregated stats: total_points + counts by surface (general/tribe/deliverable). Respects LGPD opt-out (gamification_opt_out). Limit clamp [1,100]. Useful for /tribe/[id] leaderboard or /admin transparency UX.", {
+    scope_kind: z.string().optional().describe("'global' (default) | 'initiative'"),
+    scope_id: z.string().optional().describe("UUID required when scope_kind='initiative'"),
+    cycle_code: z.string().optional().describe("Cycle code (e.g., 'cycle_3'). Defaults to current cycle."),
+    limit: z.number().optional().describe("Max rows. Default 20, clamped to [1,100].")
+  }, async (params: { scope_kind?: string; scope_id?: string; cycle_code?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_champions_ranking", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_champions_ranking", {
+      p_scope_kind: params.scope_kind || 'global',
+      p_scope_id: params.scope_id || null,
+      p_cycle_code: params.cycle_code || null,
+      p_limit: params.limit || 20,
+    });
+    if (error) { await logUsage(sb, member.id, "get_champions_ranking", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_champions_ranking", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_member_champions_history", "Chronological history of Champions received by a member. Self-view always allowed; cross-member view requires view_pii action OR target not opted-out. Returns history[] (per-Champion details with awarder name, criteria, justification, status) + totals (active_count, revoked_count, active_points, breakdown by surface). Audit-load-bearing.", {
+    member_id: z.string().optional().describe("Member UUID. If omitted, returns caller's own history.")
+  }, async (params: { member_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_member_champions_history", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_member_champions_history", { p_member_id: params.member_id || null });
+    if (error) { await logUsage(sb, member.id, "get_member_champions_history", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_member_champions_history", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_member_champions_history", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 7: get_meeting_notes (unified — reads from events.minutes_text)
   mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe."), limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { tribe_id?: number; limit?: number }) => {
     const start = Date.now();
@@ -6255,7 +6328,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.68.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.69.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6275,6 +6348,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.68.1", tools: 282, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.69.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
