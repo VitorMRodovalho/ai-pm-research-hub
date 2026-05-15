@@ -11,6 +11,8 @@
 // RPCs (used by MCP and RLS), not this file. This file provides frontend-only
 // UI gating and is safe to use as long as the sync trigger is active.
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 // ==========================================
 // TYPES
 // ==========================================
@@ -477,6 +479,79 @@ export function canForAdminEntry(): boolean {
   if (!caps) return false;
   if (caps.is_superadmin) return true;
   return ADMIN_TIER_ACTIONS.some(a => caps.org_actions.includes(a));
+}
+
+// ==========================================
+// CAPABILITY CACHE — REALTIME INVALIDATION (ADR-0083 Tier B, p164)
+// ==========================================
+//
+// Bootstrap loadCapabilities() in Nav.astro fires once per auth event
+// (boot, SIGNED_IN, try_auto_link_ghost). During a long session, engagement
+// INSERT/UPDATE/DELETE on the user's row does NOT refresh the cache —
+// canFor()/canForAdminEntry() answer from stale data until page reload.
+//
+// This helper subscribes to postgres_changes on `public.engagements` filtered
+// by person_id and invokes the refresh callback (debounced) on any event.
+//
+// Pre-req migration `20260663000000` adds `engagements` to supabase_realtime
+// publication. RLS `engagements_select_authenticated` (qual=true) is the SELECT
+// filter Realtime applies; no extra exposure beyond existing read surface.
+//
+// Fail-open: channel errors are logged via console.warn; cache stays as-is.
+// Caller owns lifecycle — call the returned unsubscribe on SIGNED_OUT or
+// before resubscribing for a different person_id.
+export function subscribeCapabilityInvalidation(
+  sb: SupabaseClient,
+  personId: string,
+  onRefresh: () => void | Promise<void>,
+  opts?: { debounceMs?: number }
+): () => void {
+  if (!personId || typeof window === 'undefined') return () => {};
+  const debounceMs = opts?.debounceMs ?? 500;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const schedule = () => {
+    if (timer !== null) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      Promise.resolve(onRefresh()).catch(err =>
+        console.warn('capability refresh failed', err)
+      );
+    }, debounceMs);
+  };
+  let channel: ReturnType<SupabaseClient['channel']> | null = null;
+  try {
+    channel = sb
+      .channel(`engagements:person_${personId}`)
+      .on(
+        // Cast: supabase-js typing for postgres_changes is narrower than the
+        // runtime accepts; the `filter` string follows PostgREST eq syntax.
+        'postgres_changes' as any,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'engagements',
+          filter: `person_id=eq.${personId}`,
+        },
+        schedule,
+      )
+      .subscribe(status => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('capability realtime channel', status);
+        }
+      });
+  } catch (e) {
+    console.warn('capability realtime subscribe failed', e);
+  }
+  return () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    if (channel) {
+      try { sb.removeChannel(channel); } catch { /* idempotent */ }
+      channel = null;
+    }
+  };
 }
 
 export function hasPermission(

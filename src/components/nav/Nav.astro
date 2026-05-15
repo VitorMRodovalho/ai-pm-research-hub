@@ -283,6 +283,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   import { TIER_RANK } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
+  import { subscribeCapabilityInvalidation } from '../../lib/permissions';
 
   // Ensure runtime-injected env is available before creating the client.
   setSupabaseRuntimeConfig(
@@ -293,6 +294,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   let _member: any = null;
   let _user: any = null;
   let _tribesCache: any[] | null = null;
+  // Capability cache realtime invalidation (ADR-0083 Tier B). Single live
+  // subscription per session; rebound when person_id changes (auto-link ghost,
+  // re-login as different user).
+  let _capInvalidate: (() => void) | null = null;
+  let _capSubscribedPersonId: string | null = null;
 
   async function loadTribesForDropdown(): Promise<any[]> {
     if (_tribesCache) return _tribesCache;
@@ -1110,6 +1116,17 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (error) throw error;
       (window as any).__nucleoCapabilities = data || null;
       window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: data || null }));
+      // ADR-0083 Tier B: bind realtime invalidation once per session for the
+      // resolved person_id. Re-bind if the bound id changes (e.g. ghost auto-link).
+      const personId = (data && (data as any).person_id) || null;
+      if (personId && _capSubscribedPersonId !== personId) {
+        if (_capInvalidate) {
+          try { _capInvalidate(); } catch { /* idempotent */ }
+          _capInvalidate = null;
+        }
+        _capInvalidate = subscribeCapabilityInvalidation(sb, personId, loadCapabilities);
+        _capSubscribedPersonId = personId;
+      }
     } catch (e) {
       // Fail-closed: leave window cap as null. canFor() returns false.
       (window as any).__nucleoCapabilities = null;
@@ -1175,6 +1192,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (event === 'SIGNED_OUT') {
         _member = null; _user = null;
         (window as any).__nucleoCapabilities = null;
+        if (_capInvalidate) {
+          try { _capInvalidate(); } catch { /* idempotent */ }
+          _capInvalidate = null;
+        }
+        _capSubscribedPersonId = null;
         renderLoggedOut();
         window.dispatchEvent(new CustomEvent('nav:member', { detail: null }));
         window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: null }));
