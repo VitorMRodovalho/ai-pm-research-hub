@@ -1619,11 +1619,20 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           if (parsed && typeof parsed === 'object') {
             contactData = parsed;
             const members = Array.from(membersMap.values());
+            // p164 Tier C: expand sort priority — manager/deputy_manager
+            // (engagement-derived) should appear at the top alongside tribe_leader.
+            // Order: manager (0) > deputy_manager (1) > tribe_leader (2) >
+            // comms_leader (3) > others (9 — alphabetical within bucket).
+            const ROLE_PRIO: Record<string, number> = {
+              manager: 0,
+              deputy_manager: 1,
+              tribe_leader: 2,
+              comms_leader: 3,
+            };
             members.sort((a: any, b: any) => {
-              if (a.operational_role === 'tribe_leader') return -1;
-              if (b.operational_role === 'tribe_leader') return 1;
-              if (a.operational_role === 'comms_leader') return -1;
-              if (b.operational_role === 'comms_leader') return 1;
+              const ap = ROLE_PRIO[a.operational_role] ?? 9;
+              const bp = ROLE_PRIO[b.operational_role] ?? 9;
+              if (ap !== bp) return ap - bp;
               return (a.name || '').localeCompare(b.name || '');
             });
             renderMembers(members);
@@ -1778,11 +1787,17 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         showDenied('Esta tribo não está ativa no ciclo atual para exploração geral.');
         return;
       }
+      // p164 Tier C: same priority ladder as the nav-member sort above.
+      const ROLE_PRIO_ALL: Record<string, number> = {
+        manager: 0,
+        deputy_manager: 1,
+        tribe_leader: 2,
+        comms_leader: 3,
+      };
       allMembers.sort((a: any, b: any) => {
-        if (a.operational_role === 'tribe_leader') return -1;
-        if (b.operational_role === 'tribe_leader') return 1;
-        if (a.operational_role === 'comms_leader') return -1;
-        if (b.operational_role === 'comms_leader') return 1;
+        const ap = ROLE_PRIO_ALL[a.operational_role] ?? 9;
+        const bp = ROLE_PRIO_ALL[b.operational_role] ?? 9;
+        if (ap !== bp) return ap - bp;
         return (a.name || '').localeCompare(b.name || '');
       });
 
