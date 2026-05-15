@@ -1013,12 +1013,41 @@ const PROFILE_I18N = {
       const pillarPct = totalPts > 0 ? Math.round((p.total_pts / totalPts) * 100) : 0;
       const barColor = hasPts ? 'bg-teal' : 'bg-[var(--border-default)]';
 
+      const triggerMeta = (ts: string) => {
+        if (ts === 'manual') return {
+          icon: '✋',
+          tip: lang === 'en-US' ? 'Manual recognition by leadership'
+             : lang === 'es-LATAM' ? 'Reconocimiento manual por liderazgo'
+             : 'Reconhecimento manual por liderança',
+          color: 'text-amber-700'
+        };
+        if (ts === 'auto_trigger') return {
+          icon: '⚡',
+          tip: lang === 'en-US' ? 'Automatic when source action happens'
+             : lang === 'es-LATAM' ? 'Automático cuando la acción fuente ocurre'
+             : 'Automático quando a ação-fonte acontece',
+          color: 'text-teal'
+        };
+        if (ts === 'rpc_callback') return {
+          icon: '📋',
+          tip: lang === 'en-US' ? 'Registered via system (e.g. showcase, certificate)'
+             : lang === 'es-LATAM' ? 'Registrado vía sistema (ej. showcase, certificado)'
+             : 'Registrado via sistema (ex: showcase, certificado)',
+          color: 'text-purple-700'
+        };
+        return { icon: '', tip: '', color: 'text-[var(--text-muted)]' };
+      };
+
       const rulesHtml = rules.map((r: any) => {
         const name = ruleLabel(r.display_name_i18n, r.slug);
         const desc = ruleDescription(r.description_i18n);
         const ptsHint = r.cap_points ? `${r.base_points}–${r.cap_points} ${ptsLabel}` : `${r.base_points} ${ptsLabel}`;
         const isShowcase = r.slug === 'showcase';
+        const tm = triggerMeta(r.trigger_source || '');
         const earnedStyle = r.pts > 0 ? 'font-semibold text-navy' : 'text-[var(--text-secondary)]';
+        const triggerBadge = tm.icon
+          ? `<span class="inline-block mr-1 ${tm.color}" title="${escapeHtmlSafe(tm.tip)}">${tm.icon}</span>`
+          : '';
         const ptsCell = r.pts > 0
           ? `<span class="font-bold text-emerald-700">+${r.pts}</span>`
           : `<span class="text-[var(--text-muted)]">${ptsHint}${isShowcase ? ' <span class="text-[.55rem]">'+variableNote+'</span>' : ''}</span>`;
@@ -1054,7 +1083,7 @@ const PROFILE_I18N = {
         return `
           <div class="py-0.5">
             <div class="flex items-center justify-between text-[.68rem]">
-              <span class="${earnedStyle} truncate pr-2">${name}</span>
+              <span class="${earnedStyle} truncate pr-2">${triggerBadge}${name}</span>
               ${ptsCell}
             </div>
             ${detailHtml}
@@ -1104,6 +1133,12 @@ const PROFILE_I18N = {
         ${label}
       </button>`;
 
+    const legendI18n = lang === 'en-US'
+      ? '✋ Recognition · ⚡ Auto · 📋 System-registered'
+      : lang === 'es-LATAM'
+        ? '✋ Reconocimiento · ⚡ Automático · 📋 Registrado vía sistema'
+        : '✋ Reconhecimento · ⚡ Automático · 📋 Registrado via sistema';
+
     return `
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6" data-section="xp-pillars">
         <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
@@ -1112,10 +1147,11 @@ const PROFILE_I18N = {
             ${scopeLabel} · <strong class="text-navy">${totalPts}</strong> ${ptsSuffix}
           </div>
         </div>
-        <div class="flex gap-1.5 mb-4">
+        <div class="flex gap-1.5 mb-2">
           ${tabBtn('lifetime', tabLifetimeI18n, isLifetime)}
           ${tabBtn('cycle', tabCycleI18n, !isLifetime)}
         </div>
+        <div class="text-[.6rem] text-[var(--text-muted)] mb-4">${legendI18n}</div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${cardsHtml}</div>
       </div>`;
   }
