@@ -690,14 +690,19 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const locale = I18N.dateLocale || 'pt-BR';
       const perms = currentMember ? getTribePermissions(currentMember, TRIBE_ID) : null;
 
-      // Minutes edit permission: superadmin, GP, deputy, tribe leader, or researcher for own tribe
+      // ADR-0083 Tier B: minutes edit permission scope-aware via canFor.
+      // V3 path used (operational_role === 'tribe_leader' && tribe_id === evtTribeId)
+      // which leaked when cache promoted via wrong engagement. V4: directly
+      // check canFor('manage_event', tribe scope) — true only for legitimate
+      // leaders/researchers OF THAT specific tribe.
       const canEditMinutes = (evtTribeId: number | null) => {
         if (!currentMember) return false;
         if (currentMember.is_superadmin) return true;
         if (['manager'].includes(currentMember.operational_role)) return true;
         if ((currentMember.designations || []).includes('deputy_manager')) return true;
-        if ((currentMember.operational_role === 'tribe_leader' || currentMember.operational_role === 'comms_leader') && currentMember.tribe_id === evtTribeId) return true;
-        if (currentMember.operational_role === 'researcher' && currentMember.tribe_id === evtTribeId) return true;
+        if (evtTribeId !== null && (window as any).__nucleoCanFor?.('manage_event', { type: 'tribe', id: evtTribeId })) return true;
+        // Researcher of THIS tribe can edit minutes (write_board scope=initiative seed)
+        if (evtTribeId !== null && (window as any).__nucleoCanFor?.('write_board', { type: 'tribe', id: evtTribeId })) return true;
         return false;
       };
 
@@ -1713,9 +1718,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         if (content) content.prepend(bannerEl);
       }
 
-      // Find tribe leader
+      // Find tribe leader — prefer canonical tribes.leader_member_id when set
+      // (V3 bridge), fall back to operational_role tribe_leader/manager match.
+      // Avoids losing the leader badge when a tribe leader is also vice-GP and
+      // their operational_role cache resolves to 'manager' (ADR-0083 follow-up).
       const allDirectMembers: any[] = membersRes.data || [];
-      headerLeader = allDirectMembers.find((m: any) => m.operational_role === 'tribe_leader') || null;
+      const canonicalLeaderId = tribeRes.data?.leader_member_id;
+      headerLeader = (canonicalLeaderId && allDirectMembers.find((m: any) => m.id === canonicalLeaderId))
+        || allDirectMembers.find((m: any) => m.operational_role === 'tribe_leader')
+        || null;
       headerSlots = slotsRes.data || [];
 
       // Render header
