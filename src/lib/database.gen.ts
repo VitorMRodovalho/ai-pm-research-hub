@@ -13769,23 +13769,35 @@ export type Database = {
       }
       get_executive_kpis: { Args: never; Returns: Json }
       get_gamification_leaderboard: {
-        Args: never
+        Args: {
+          p_chapter_code?: string
+          p_cycle_code?: string
+          p_initiative_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_scope_kind?: string
+        }
         Returns: {
           artifact_points: number
           attendance_points: number
           badge_points: number
           bonus_points: number
           cert_points: number
+          champions_points: number
           chapter: string
           course_points: number
+          curadoria_points: number
           cycle_artifact_points: number
           cycle_attendance_points: number
           cycle_badge_points: number
           cycle_bonus_points: number
           cycle_cert_points: number
+          cycle_champions_points: number
           cycle_course_points: number
+          cycle_curadoria_points: number
           cycle_learning_points: number
           cycle_points: number
+          cycle_producao_points: number
           cycle_showcase_points: number
           designations: string[]
           learning_points: number
@@ -13793,7 +13805,9 @@ export type Database = {
           name: string
           operational_role: string
           photo_url: string
+          producao_points: number
           showcase_points: number
+          total_count: number
           total_points: number
         }[]
       }
