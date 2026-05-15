@@ -1759,7 +1759,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const nature = (document.getElementById('edit-ev-nature') as HTMLSelectElement).value;
     const visibility = (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value;
     const recordingUrl = (document.getElementById('edit-ev-recording-url') as HTMLInputElement).value.trim() || null;
-    const externalAttendees = (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value.trim() || null;
+    // events.external_attendees is text[] in DB — parse CSV input into array. Empty → null (clears column).
+    // p160 bug fix: previously sent as scalar string → PostgREST 400 swallowed silently, killing the entire row update including type change.
+    const externalAttendeesRaw = (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value.trim();
+    const externalAttendees: string[] | null = externalAttendeesRaw
+      ? externalAttendeesRaw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
+      : null;
     const tribeId = editType === 'tribo' ? (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value || null : null;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
     const recurrenceGroup = (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value;
@@ -1807,7 +1812,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
           updateFields.initiative_id = initRow?.id || null;
         }
-        await sb.from('events').update(updateFields).eq('id', id);
+        const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
+        if (rowUpdateError) throw rowUpdateError;
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
         const count = futureData?.updated_count || 0;
@@ -1834,7 +1840,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
               .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
             updateFields.initiative_id = initRow?.id || null;
           }
-          await sb.from('events').update(updateFields).eq('id', id);
+          const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
+          if (rowUpdateError) throw rowUpdateError;
           await assignEventTagsAndAudience(id, tagIds, audience);
           closeModal('modal-edit-event');
           toast(I18N.msgEventUpdated, 'success');
