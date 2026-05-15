@@ -267,12 +267,85 @@ Justificativa PM: aceita recomendação por consistência com `effective_from` s
 - [ ] **Member-facing UI** — /profile/me Champion section + /tribe/[id] Champion ranking (carry-forward p162 TIER B)
 - [ ] **Pickers polidos no admin grant form (Fase 4c)** — autocomplete evento/membro/deliverable (carry-forward p162)
 
+## Amendment A — Reader RPCs aligned with config (p165, 2026-05-15)
+
+Phase 1–3 of this ADR delivered the **writer** side of the config-driven contract:
+seed `gamification_rules`, FK-enforce `gamification_points.category` against the rules
+table, route auto-XP through `_grant_auto_xp` (forward-only, idempotent). What had
+*not* been migrated were two **reader / single-RPC writer** surfaces still on the
+pre-config-driven shape:
+
+1. `get_gamification_leaderboard` aggregated points into eight hardcoded buckets via
+   literal slug lists in `FILTER (WHERE gp.category = ANY (ARRAY['...']))`. Every new
+   slug introduced after the original write went into a `bonus_points` catch-all by
+   default. Plus a pre-existing bug: the `artifact_points` filter compared against
+   the literal `'artifact'`, but the real slug is `'artifact_published'` — so the
+   bucket was always 0. And `specialization` (pillar=trilha) was being summed into
+   `badge_points` (a residue from the earlier flat taxonomy).
+2. `register_event_showcase` hardcoded its per-subtype XP table (case_study=25,
+   tool_review=20, prompt_week=20, quick_insight=15, awareness=15) and wrote all
+   rows with `category='showcase'`. The seeded `gamification_rules.showcase` rule
+   (base_points=20) was a placeholder — the RPC ignored it and admin had no way
+   to tune the subtypes without code deploy.
+
+### Closure
+
+- **Migration `20260664000000_p165_get_gamification_leaderboard_config_driven.sql`** —
+  DROP + CREATE the leaderboard RPC with `LEFT JOIN gamification_rules gr ON
+  (gp.organization_id = gr.organization_id AND gp.category = gr.slug)`. All bucket
+  filters now reference `gr.pillar` / `gr.slug` directly. Preserved 8 legacy column
+  names (backward-compat with `TribeGamificationTab` + `gamification.astro`) and
+  added 3 new pillar buckets: `producao_points`, `curadoria_points`,
+  `champions_points` (+ cycle mirrors). `bonus_points` becomes a defensive
+  catch-all (= 0 today; `gamification_rules.pillar` CHECK enum is exhaustive over
+  the six pillars). Smoke (impersonated Vitor): bucket arithmetic balanced for all
+  members; `curation_ratification` (50pts) surfaced from `bonus_points` into
+  `curadoria_points`; `specialization` (1150pts, Vitor cohort) moved from
+  `badge_points` to `learning_points`.
+
+- **Migration `20260665000000_p165_register_event_showcase_config_driven.sql`** —
+  Seed 5 dedicated `showcase_<subtype>` rules (case_study=25, tool_review=20,
+  prompt_week=20, quick_insight=15, awareness=15) with trilingual i18n. DROP +
+  CREATE the RPC to resolve `v_slug := 'showcase_' || p_showcase_type`, look up
+  the rule (forward-only, org-scoped), then award XP via the shared
+  `_grant_auto_xp` helper. Explicit error response `showcase_type_not_configured`
+  before reaching the `event_showcases.showcase_type` CHECK. Slug `showcase`
+  remains active (FK integrity for 12 legacy rows); new writes flow through the
+  per-subtype slugs. Smoke (impersonated Vitor, tx-wrapped with ROLLBACK):
+  case_study→25, tool_review→20, awareness→15, bogus_type→explicit error.
+
+### Pattern sedimented (new)
+
+47. **Reader RPCs join the rules table — never literal slug lists**. When you
+    introduce a config-driven *writer* side (rules table + FK), all *reader* RPCs
+    that bucket or filter by the configurable column must also resolve their
+    grouping via JOIN to the rules table. Hardcoded `IN ('slug_a','slug_b',...)`
+    lists in readers re-introduce the same drift the writer migration was meant
+    to eliminate, and the FK enforcement masks the gap — points pile up under a
+    valid slug, just in the wrong UI bucket. Audit checklist when adding a
+    config-driven dimension: writer + FK + at least one reader + every aggregator
+    referencing the column. (Sedimented from p165 closures of leaderboard
+    `bonus_points`-catchall drift and showcase RPC hardcoded XP.)
+
+### Verification updates
+
+- [x] **Migrations applied** — extended from 4 to 6 (`20260664` + `20260665`).
+- [x] **Live smoke (leaderboard)** — bucket arithmetic balances; new slugs land in
+      correct pillars; specialization moved out of badges; bonus_points = 0.
+- [x] **Live smoke (showcase RPC)** — 3 happy-path subtypes + 1 negative (bogus
+      subtype) all return expected shape; tx-wrapped with ROLLBACK, no prod data
+      written.
+- [x] **PM forward-only ratified** — no backfill; the 21 historical event_showcases
+      keep their `showcase` slug and original XP; new writes use `showcase_*` slugs.
+
 ## References
 
 - Migration `20260645000000_p161_gamification_rules_and_champions_phase1.sql`
 - Migration `20260646000000_p161_champion_rpcs_phase2.sql`
 - Migration `20260647000000_p161_gamification_points_category_fk_replace_check.sql`
 - Migration `20260648000000_p161_auto_xp_triggers_phase3.sql`
+- Migration `20260664000000_p165_get_gamification_leaderboard_config_driven.sql` (Amendment A)
+- Migration `20260665000000_p165_register_event_showcase_config_driven.sql` (Amendment A)
 - `docs/reference/SEMANTIC_TAXONOMY.md` Q5–Q7 (taxonomy ratified p161)
 - ADR-0009 (config-not-code pattern for initiative kinds — same pattern applied here)
 - ADR-0050 (leaderboard v2 + gamification_opt_out, respected by `get_champions_ranking` + `get_member_champions_history`)
