@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck,
+  Library, SearchCheck, Tag, FileCheck, Trophy,
 } from 'lucide-react';
 import { hasPermission as checkPermission } from '../../lib/permissions';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck,
+  Library, SearchCheck, Tag, FileCheck, Trophy,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -93,6 +93,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },
       { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
       { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.governance.view' },
+      { href: '/admin/gamification', label: { 'pt-BR': 'Gamificação', 'en-US': 'Gamification', 'es-LATAM': 'Gamificación' }, icon: 'Trophy', permission: 'admin.gamification' },
       { href: '/governance/my-pending', label: { 'pt-BR': 'Minhas pendências', 'en-US': 'My pending signatures', 'es-LATAM': 'Mis firmas pendientes' }, icon: 'FileCheck', permission: 'workspace.access' },
       { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake', permission: 'admin.access' },
       { href: '/help', label: { 'pt-BR': 'Ajuda / Guia', 'en-US': 'Help / Guide', 'es-LATAM': 'Ayuda / Guía' }, icon: 'HelpCircle', permission: 'workspace.access' },

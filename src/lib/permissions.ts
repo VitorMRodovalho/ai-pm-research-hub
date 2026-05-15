@@ -55,6 +55,7 @@ export type Permission =
   | 'admin.portfolio'
   | 'admin.partners'
   | 'admin.simulation'
+  | 'admin.gamification'
   // ── Boards ──
   | 'board.view_own_tribe'
   | 'board.view_all'
@@ -108,7 +109,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'admin.blog', 'admin.publications', 'admin.curation',
     'admin.governance.view',
     'admin.sustainability', 'admin.portfolio', 'admin.partners',
-    'admin.simulation',
+    'admin.simulation', 'admin.gamification',
     'board.view_all', 'board.view_global', 'board.create_item',
     'board.edit_tribe_items', 'board.delete_item',
     'board.manage_checklist', 'board.create_mirror',
@@ -202,7 +203,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
     'admin.sustainability', 'admin.portfolio', 'admin.simulation',
-    'admin.governance.view',
+    'admin.governance.view', 'admin.gamification',
     'board.view_all', 'board.view_global',
     'data.view_members', 'data.view_analytics',
     'event.view_all',
@@ -213,6 +214,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   ],
   comms_leader: [
     'board.view_global',
+    'admin.gamification',
   ],
   comms_member: [
     'board.view_global',
