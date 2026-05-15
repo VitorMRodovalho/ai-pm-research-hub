@@ -823,7 +823,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           )) : ''}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
         ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
-        ${canRoster && isPast && (ev.attendee_count || 0) === 0 ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.deleteEvent || 'Cancelar esta reunião'}">🗑️</button>` : ''}
+        ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.deleteEvent || 'Cancelar esta reunião'}">🗑️</button>` : ''}
       </div>
     </div>${minutesHtml}</div>`;
   }
