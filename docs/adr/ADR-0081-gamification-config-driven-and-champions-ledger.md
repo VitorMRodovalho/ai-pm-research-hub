@@ -198,11 +198,13 @@ Razões:
 - **Justiça intra-cycle**: cycle 3 está em curso; XP de eventos do mesmo ciclo "deveria" contar (recipient ainda pode mudar comportamento). Mitigação parcial: backfillar apenas rows com `created_at >= cycle_3_start`.
 - **Sinal de valor para curadores**: backfill mostra que produção/curadoria importam tanto quanto presença. Mitigação: comunicação interna pode dizer isso sem backfill (anúncio + tutorial).
 
-### Decisão PM (a ratificar)
+### Decisão PM (ratificada 2026-05-15 sessão p162)
 
-- [ ] **Forward-only** (recommended) — nenhuma ação adicional; rules aplicam-se a writes futuros via triggers já ativos
-- [ ] **Partial backfill** — só rows com `created_at >= cycle_3_start` (estimar volume separadamente)
-- [ ] **Full backfill** — todos os 167 rows; aceita rerank de cycle 3
+- [x] **Forward-only** — nenhuma ação adicional; rules aplicam-se a writes futuros via triggers já ativos
+- [ ] ~~Partial backfill~~ — só rows com `created_at >= cycle_3_start`
+- [ ] ~~Full backfill~~ — todos os 167 rows; aceita rerank de cycle 3
+
+Justificativa PM: aceita recomendação por consistência com `effective_from` semantics + reversibilidade preservada (migration adicional em p163+ pode aplicar `_grant_auto_xp` sobre rows existentes via idempotency check).
 
 ## Consequences
 
