@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { canFor } from '../../lib/permissions';
 import CRDetail from '../governance/CRDetail';
 import GovernanceBatchModal from './GovernanceBatchModal';
 
@@ -48,8 +49,12 @@ export default function GovernanceCRTable({ crs, sections, member, preFilter = '
   const [showBatch, setShowBatch] = useState(false);
   const [quickLoading, setQuickLoading] = useState<string | null>(null);
 
+  // ADR-0083 Tier B: governance review gated by participate_in_governance_review
+  // (engagement-derived) instead of operational_role allowlist. Sponsor and
+  // chapter_liaison engagements both seed this action org-scoped; curator
+  // designation retained as orthogonal grant.
   const isGP = member?.is_superadmin || member?.operational_role === 'manager' || (member?.designations || []).includes('deputy_manager');
-  const canReview = isGP || (member?.designations || []).includes('curator') || ['sponsor', 'chapter_liaison'].includes(member?.operational_role);
+  const canReview = isGP || (member?.designations || []).includes('curator') || canFor('participate_in_governance_review');
 
   // Apply pre-filter + manual filters
   let filtered = crs;

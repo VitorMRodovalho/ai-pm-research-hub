@@ -209,7 +209,7 @@ const PRES_I18N = {
           + '<span class="w-1.5 h-1.5 rounded-full '
           + (m.current_cycle_active ? 'bg-green-400' : 'bg-white/30') + '"></span>'
           + '<span>' + esc(m.name) + '</span>'
-          + (m.operational_role === 'tribe_leader'
+          + ((m.operational_role === 'tribe_leader' || m.operational_role === 'manager' || m.operational_role === 'deputy_manager')
             ? ' <span class="text-[.6rem] text-amber-300">(Lider)</span>' : '')
           + '</div>'
         ).join('') || '<div class="text-white/40">&mdash;</div>';
