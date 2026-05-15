@@ -29,7 +29,16 @@ const migrations = fs.readdirSync(MIGRATIONS_DIR)
   .filter(f => f.endsWith('.sql'))
   .sort()
   .map(f => ({ name: f, content: fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf-8') }));
-const allSQL = migrations.map(m => m.content).join('\n');
+
+// Strip SQL line comments (`-- …`) before regex matching. Rollback notes in
+// migration headers/footers commonly mention `CREATE OR REPLACE FUNCTION …`
+// inside comments; without stripping, the non-greedy body regex can latch onto
+// a comment occurrence and extend its `[\s\S]*?` across migration boundaries
+// until it finds a downstream `AS $tag$…$tag$` belonging to a different RPC,
+// returning a wrong body. Caught when p165 added a new function (gamification
+// leaderboard reshape) after the p164 rollback comment.
+const stripSqlLineComments = (sql) => sql.replace(/--[^\n]*/g, '');
+const allSQL = migrations.map(m => stripSqlLineComments(m.content)).join('\n');
 
 function findFunctionBody(funcName) {
   const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
