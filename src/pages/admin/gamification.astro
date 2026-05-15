@@ -1,0 +1,449 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// PT-BR canonical strings (audiência admin GP/co-GP). EN/ES via dict keys em follow-up.
+const GAM_I18N = {
+  title: 'Gamificação',
+  subtitle: 'Regras de XP, Champions e auditoria — config-driven (ADR-0009)',
+  accessRestricted: t('admin.accessRestricted', lang),
+  backToAdmin: t('admin.backToAdmin', lang),
+  loading: t('admin.loading', lang),
+  rulesHeading: 'Regras de XP ativas',
+  rulesEmpty: 'Nenhuma regra cadastrada.',
+  championsHeading: 'Champions recentes',
+  championsEmpty: 'Nenhum Champion ainda — Conferir o primeiro abaixo.',
+  grantButton: '+ Conferir Champion',
+  revokeButton: 'Revogar',
+  revokeWindowExpired: 'Janela 7d expirada',
+  modalTitle: 'Conferir Champion',
+  recipientLabel: 'Recipient (member_id UUID)',
+  surfaceLabel: 'Superfície',
+  surfaceGeneral: 'Geral (reunião plenária)',
+  surfaceTribe: 'Tribo (reunião da tribo)',
+  surfaceDeliverable: 'Entregável (artefato/deliverable)',
+  contextKindLabel: 'Tipo de contexto',
+  contextIdLabel: 'ID do contexto (UUID)',
+  contextIdHelp: 'event_id (general/tribe), tribe_deliverable_id ou meeting_artifact_id',
+  criteriaLabel: 'Critérios atendidos (1-4)',
+  justificationLabel: 'Justificativa (≥50 chars)',
+  submitButton: 'Conferir Champion',
+  cancelButton: 'Cancelar',
+  successAwarded: 'Champion conferido',
+  successRevoked: 'Champion revogado',
+  errorPrefix: 'Erro',
+  softCapWarning: 'Conferido — atenção: membro próximo do cap do ciclo',
+  rulesColSlug: 'Categoria',
+  rulesColBase: 'Base',
+  rulesColBonus: 'Bônus/crit',
+  rulesColCap: 'Cap',
+  rulesColTrigger: 'Trigger',
+};
+
+// Criteria checklist per surface (matches SEMANTIC_TAXONOMY.md Q5.4)
+const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
+  general: [
+    { slug: 'conduziu_pauta', pt: 'Conduziu pauta com clareza' },
+    { slug: 'apresentou_resultados', pt: 'Apresentou resultados de tribo/iniciativa' },
+    { slug: 'destravou_bloqueio', pt: 'Destravou bloqueio cross-tribal' },
+    { slug: 'mediou_decisao', pt: 'Facilitou decisão coletiva' },
+  ],
+  tribe: [
+    { slug: 'conduziu_reuniao', pt: 'Conduziu reunião' },
+    { slug: 'entregou_demo', pt: 'Demonstrou avanço técnico' },
+    { slug: 'mentorou_novo', pt: 'Mentorou novo membro' },
+    { slug: 'apoio_externo', pt: 'Suporte além da tribo' },
+  ],
+  deliverable: [
+    { slug: 'qualidade_acima_baseline', pt: 'Qualidade acima do baseline' },
+    { slug: 'prazo_antecipado', pt: 'Entregue antes do prazo' },
+    { slug: 'impacto_pmi', pt: 'Impacto institucional PMI' },
+    { slug: 'inovacao_tecnica', pt: 'Inovação técnica/conceitual' },
+  ],
+};
+---
+
+<AdminLayout title={GAM_I18N.title} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: GAM_I18N.title}]}>
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+    <div id="gam-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">🔒</div>
+      <p class="font-semibold text-amber-800">{GAM_I18N.accessRestricted}</p>
+      <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{GAM_I18N.backToAdmin}</a>
+    </div>
+
+    <div id="gam-loading" class="text-center py-16 text-[var(--text-muted)]">{GAM_I18N.loading}</div>
+
+    <div id="gam-panel" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-extrabold text-navy">🏆 {GAM_I18N.title}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{GAM_I18N.subtitle}</p>
+        </div>
+        <button id="gam-grant-btn" class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+          {GAM_I18N.grantButton}
+        </button>
+      </div>
+
+      <!-- Section 1: Recent Champions -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 mb-6">
+        <h2 class="text-sm font-bold text-navy mb-3">{GAM_I18N.championsHeading}</h2>
+        <div id="gam-champions-list" class="space-y-2">
+          <p class="text-[.7rem] text-[var(--text-muted)]">{GAM_I18N.loading}</p>
+        </div>
+      </section>
+
+      <!-- Section 2: Rules table -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+        <h2 class="text-sm font-bold text-navy mb-3">{GAM_I18N.rulesHeading}</h2>
+        <div id="gam-rules-table" class="overflow-x-auto">
+          <p class="text-[.7rem] text-[var(--text-muted)]">{GAM_I18N.loading}</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- Grant Champion Modal -->
+    <div id="gam-modal-overlay" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center overflow-auto">
+      <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-xl mx-4 my-8 border border-[var(--border-default)]">
+        <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+          <h3 class="text-sm font-bold text-navy">🏆 {GAM_I18N.modalTitle}</h3>
+          <button id="gam-modal-close" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0">&times;</button>
+        </div>
+        <div class="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.surfaceLabel}</label>
+            <select id="gam-surface" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              <option value="general">{GAM_I18N.surfaceGeneral}</option>
+              <option value="tribe">{GAM_I18N.surfaceTribe}</option>
+              <option value="deliverable">{GAM_I18N.surfaceDeliverable}</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.contextKindLabel}</label>
+            <select id="gam-context-kind" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              <option value="event">event</option>
+              <option value="deliverable">deliverable</option>
+              <option value="artifact">artifact</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.contextIdLabel}</label>
+            <input type="text" id="gam-context-id" placeholder="uuid" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.72rem] font-mono">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{GAM_I18N.contextIdHelp}</p>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.recipientLabel}</label>
+            <input type="text" id="gam-recipient-id" placeholder="member uuid" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.72rem] font-mono">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-2">{GAM_I18N.criteriaLabel}</label>
+            <div id="gam-criteria-list" class="space-y-1.5"></div>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.justificationLabel}</label>
+            <textarea id="gam-justification" rows="3" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] resize-y" placeholder="≥50 chars"></textarea>
+            <p id="gam-justification-counter" class="text-[.6rem] text-[var(--text-muted)] mt-0.5">0 / 50</p>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button id="gam-modal-cancel" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-gray-200 transition-all">
+              {GAM_I18N.cancelButton}
+            </button>
+            <button id="gam-modal-submit" class="flex-1 px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+              {GAM_I18N.submitButton}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script is:inline define:vars={{ GAM_I18N, CRITERIA }}>
+  window.__GAM_I18N = GAM_I18N;
+  window.__GAM_CRITERIA = CRITERIA;
+</script>
+<script>
+  import { hasPermission } from '../../lib/permissions';
+
+  const T = (typeof window !== 'undefined' && (window as any).__GAM_I18N) || {};
+  const CRIT = (typeof window !== 'undefined' && (window as any).__GAM_CRITERIA) || { general: [], tribe: [], deliverable: [] };
+
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showDenied() {
+    document.getElementById('gam-loading')?.classList.add('hidden');
+    document.getElementById('gam-panel')?.classList.add('hidden');
+    document.getElementById('gam-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('gam-loading')?.classList.add('hidden');
+    document.getElementById('gam-denied')?.classList.add('hidden');
+    document.getElementById('gam-panel')?.classList.remove('hidden');
+    loadRules();
+    loadChampions();
+    renderCriteria(); // initial render
+  }
+
+  async function loadRules() {
+    if (!sb) return;
+    const container = document.getElementById('gam-rules-table');
+    if (!container) return;
+    try {
+      const { data, error } = await sb.from('gamification_rules')
+        .select('slug, display_name_i18n, base_points, bonus_per_criterion, cap_points, trigger_source, active')
+        .order('trigger_source')
+        .order('slug');
+      if (error) throw error;
+      const rules = data || [];
+      if (rules.length === 0) {
+        container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.rulesEmpty}</p>`;
+        return;
+      }
+      const rows = rules.map((r: any) => {
+        const displayName = (r.display_name_i18n && r.display_name_i18n['pt-BR']) || r.slug;
+        const triggerColor = r.trigger_source === 'manual' ? 'bg-amber-50 text-amber-700'
+                           : r.trigger_source === 'auto_trigger' ? 'bg-emerald-50 text-emerald-700'
+                           : 'bg-blue-50 text-blue-700';
+        return `
+          <tr class="border-b border-[var(--border-default)]">
+            <td class="py-2 pr-3 font-mono text-[.7rem]">${escapeHtml(r.slug)}</td>
+            <td class="py-2 pr-3 text-[.75rem]">${escapeHtml(displayName)}</td>
+            <td class="py-2 pr-3 text-right font-semibold">${r.base_points}</td>
+            <td class="py-2 pr-3 text-right text-[var(--text-muted)]">${r.bonus_per_criterion > 0 ? '+' + r.bonus_per_criterion : '—'}</td>
+            <td class="py-2 pr-3 text-right text-[var(--text-muted)]">${r.cap_points ?? '—'}</td>
+            <td class="py-2 pr-3"><span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold ${triggerColor}">${r.trigger_source}</span></td>
+          </tr>`;
+      }).join('');
+      container.innerHTML = `
+        <table class="w-full text-[.78rem]">
+          <thead><tr class="border-b-2 border-[var(--border-default)] text-[.65rem] uppercase tracking-wider text-[var(--text-muted)]">
+            <th class="py-2 pr-3 text-left">${T.rulesColSlug}</th>
+            <th class="py-2 pr-3 text-left">Display</th>
+            <th class="py-2 pr-3 text-right">${T.rulesColBase}</th>
+            <th class="py-2 pr-3 text-right">${T.rulesColBonus}</th>
+            <th class="py-2 pr-3 text-right">${T.rulesColCap}</th>
+            <th class="py-2 pr-3 text-left">${T.rulesColTrigger}</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-[.7rem] text-red-600">${T.errorPrefix}: ${escapeHtml(e?.message || 'load failed')}</p>`;
+    }
+  }
+
+  async function loadChampions() {
+    if (!sb) return;
+    const container = document.getElementById('gam-champions-list');
+    if (!container) return;
+    try {
+      const { data, error } = await sb.from('champions_awarded')
+        .select('id, surface, points_awarded, status, criteria_met, justification, created_at, awarded_by, recipient_id, initiative_id, revoked_reason')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      const champs = data || [];
+      if (champs.length === 0) {
+        container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.championsEmpty}</p>`;
+        return;
+      }
+
+      // Fetch member names in bulk
+      const memberIds = Array.from(new Set([...champs.map((c: any) => c.recipient_id), ...champs.map((c: any) => c.awarded_by)]));
+      const { data: members } = await sb.from('members').select('id, name').in('id', memberIds);
+      const memberMap = new Map((members || []).map((m: any) => [m.id, m.name]));
+
+      const now = Date.now();
+      const cards = champs.map((c: any) => {
+        const recipientName = memberMap.get(c.recipient_id) || c.recipient_id.slice(0, 8);
+        const awarderName = memberMap.get(c.awarded_by) || c.awarded_by.slice(0, 8);
+        const ageMs = now - new Date(c.created_at).getTime();
+        const withinWindow = ageMs < 7 * 24 * 60 * 60 * 1000;
+        const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+        const statusBadge = c.status === 'revoked'
+          ? '<span class="inline-block px-1.5 py-0.5 bg-red-50 text-red-700 rounded text-[.6rem] font-semibold">REVOGADO</span>'
+          : `<span class="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[.6rem] font-semibold">${c.points_awarded} pts</span>`;
+        const surfaceLabel = c.surface === 'general' ? '🏛️ Geral'
+                           : c.surface === 'tribe' ? '🏕️ Tribo'
+                           : '📦 Entregável';
+        const revokeBtn = c.status === 'active' && withinWindow
+          ? `<button data-champion-id="${c.id}" class="gam-revoke-btn text-[.65rem] px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 border-0 cursor-pointer">${T.revokeButton}</button>`
+          : c.status === 'active'
+            ? `<span class="text-[.6rem] text-[var(--text-muted)]" title="${T.revokeWindowExpired}">⏱️</span>`
+            : '';
+        return `
+          <div class="border border-[var(--border-default)] rounded-lg p-3 ${c.status === 'revoked' ? 'opacity-60' : ''}">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="text-[.7rem] font-semibold text-navy">${escapeHtml(recipientName)}</span>
+                  <span class="text-[.65rem] text-[var(--text-muted)]">${surfaceLabel}</span>
+                  ${statusBadge}
+                  <span class="text-[.6rem] text-[var(--text-muted)]">${ageDays}d</span>
+                </div>
+                <p class="text-[.7rem] text-[var(--text-secondary)] truncate">${escapeHtml(c.justification)}</p>
+                <p class="text-[.6rem] text-[var(--text-muted)] mt-1">por ${escapeHtml(awarderName)} · critérios: ${escapeHtml((c.criteria_met || []).join(', '))}</p>
+                ${c.status === 'revoked' && c.revoked_reason ? `<p class="text-[.6rem] text-red-600 mt-1">↩ ${escapeHtml(c.revoked_reason)}</p>` : ''}
+              </div>
+              <div class="shrink-0">${revokeBtn}</div>
+            </div>
+          </div>`;
+      }).join('');
+      container.innerHTML = cards;
+
+      document.querySelectorAll('.gam-revoke-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const champId = btn.getAttribute('data-champion-id');
+          if (!champId) return;
+          const reason = prompt('Motivo da revogação (≥10 chars):');
+          if (!reason || reason.trim().length < 10) {
+            (window as any).toast?.('Motivo obrigatório (≥10 chars)', 'error');
+            return;
+          }
+          try {
+            const { data, error } = await sb.rpc('revoke_champion', { p_champion_id: champId, p_reason: reason });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            (window as any).toast?.(T.successRevoked, 'success');
+            loadChampions();
+          } catch (e: any) {
+            (window as any).toast?.(`${T.errorPrefix}: ${e?.message || 'revoke failed'}`, 'error');
+          }
+        });
+      });
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-[.7rem] text-red-600">${T.errorPrefix}: ${escapeHtml(e?.message || 'load failed')}</p>`;
+    }
+  }
+
+  function renderCriteria() {
+    const surface = (document.getElementById('gam-surface') as HTMLSelectElement)?.value || 'general';
+    const container = document.getElementById('gam-criteria-list');
+    if (!container) return;
+    const items = CRIT[surface] || [];
+    container.innerHTML = items.map((c: any) => `
+      <label class="flex items-center gap-2 text-[.75rem] cursor-pointer">
+        <input type="checkbox" class="gam-criterion-cb" value="${escapeHtml(c.slug)}">
+        <span>${escapeHtml(c.pt)}</span>
+      </label>`).join('');
+  }
+
+  function openGrantModal() {
+    document.getElementById('gam-modal-overlay')?.classList.remove('hidden');
+    (document.getElementById('gam-surface') as HTMLSelectElement).value = 'general';
+    (document.getElementById('gam-context-kind') as HTMLSelectElement).value = 'event';
+    (document.getElementById('gam-context-id') as HTMLInputElement).value = '';
+    (document.getElementById('gam-recipient-id') as HTMLInputElement).value = '';
+    (document.getElementById('gam-justification') as HTMLTextAreaElement).value = '';
+    updateJustificationCounter();
+    renderCriteria();
+  }
+
+  function closeGrantModal() {
+    document.getElementById('gam-modal-overlay')?.classList.add('hidden');
+  }
+
+  function updateJustificationCounter() {
+    const ta = document.getElementById('gam-justification') as HTMLTextAreaElement;
+    const counter = document.getElementById('gam-justification-counter');
+    if (!ta || !counter) return;
+    const len = ta.value.trim().length;
+    counter.textContent = `${len} / 50`;
+    counter.className = len >= 50 ? 'text-[.6rem] text-emerald-600 mt-0.5' : 'text-[.6rem] text-[var(--text-muted)] mt-0.5';
+  }
+
+  async function submitGrant() {
+    if (!sb) return;
+    const surface = (document.getElementById('gam-surface') as HTMLSelectElement).value;
+    const contextKind = (document.getElementById('gam-context-kind') as HTMLSelectElement).value;
+    const contextId = (document.getElementById('gam-context-id') as HTMLInputElement).value.trim();
+    const recipientId = (document.getElementById('gam-recipient-id') as HTMLInputElement).value.trim();
+    const justification = (document.getElementById('gam-justification') as HTMLTextAreaElement).value.trim();
+    const criteriaChecked = Array.from(document.querySelectorAll('.gam-criterion-cb:checked')).map((cb: any) => cb.value);
+
+    if (!contextId || !recipientId) {
+      (window as any).toast?.('Preencha context_id e recipient_id', 'error');
+      return;
+    }
+    if (criteriaChecked.length < 1 || criteriaChecked.length > 4) {
+      (window as any).toast?.('Selecione 1-4 critérios', 'error');
+      return;
+    }
+    if (justification.length < 50) {
+      (window as any).toast?.('Justificativa precisa ter ≥50 chars', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('gam-modal-submit') as HTMLButtonElement;
+    if (btn) btn.disabled = true;
+    try {
+      const { data, error } = await sb.rpc('award_champion', {
+        p_recipient_id: recipientId,
+        p_surface: surface,
+        p_context_kind: contextKind,
+        p_context_id: contextId,
+        p_criteria_met: criteriaChecked,
+        p_justification: justification,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error + (data.detail ? ': ' + data.detail : ''));
+      const msg = data?.soft_cap_warning ? T.softCapWarning : T.successAwarded;
+      (window as any).toast?.(msg, 'success');
+      closeGrantModal();
+      loadChampions();
+    } catch (e: any) {
+      (window as any).toast?.(`${T.errorPrefix}: ${e?.message || 'grant failed'}`, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function applyGate(m: any) {
+    if (hasPermission(m, 'admin.full')) showPanel();
+    else showDenied();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('gam boot:', e); }
+    showDenied();
+  }
+
+  document.getElementById('gam-grant-btn')?.addEventListener('click', openGrantModal);
+  document.getElementById('gam-modal-close')?.addEventListener('click', closeGrantModal);
+  document.getElementById('gam-modal-cancel')?.addEventListener('click', closeGrantModal);
+  document.getElementById('gam-modal-submit')?.addEventListener('click', submitGrant);
+  document.getElementById('gam-surface')?.addEventListener('change', renderCriteria);
+  document.getElementById('gam-justification')?.addEventListener('input', updateJustificationCounter);
+  document.getElementById('gam-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeGrantModal();
+  });
+
+  boot();
+</script>
