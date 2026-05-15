@@ -408,7 +408,7 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
   }
 
   function applyGate(m: any) {
-    if (hasPermission(m, 'admin.full')) showPanel();
+    if (hasPermission(m, 'admin.gamification')) showPanel();
     else showDenied();
   }
 

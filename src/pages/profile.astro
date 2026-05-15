@@ -275,6 +275,8 @@ const PROFILE_I18N = {
   let journeyStats: any = null;
   let xpByCycle: Record<string, number> = {};
   let cycleXpData: any = null;
+  let xpPillarsData: any = null;
+  let championsHistoryData: any = null;
   let attendanceHoursData: { total_hours: number; total_events: number; avg_hours_per_event: number } | null = null;
   let currentCycleCode: string = '';
   let currentCycleLabel: string = '';
@@ -394,6 +396,18 @@ const PROFILE_I18N = {
           attendanceHoursData = ahRows[0];
         }
       } catch (_) { attendanceHoursData = null; }
+
+      // XP pillars breakdown (ADR-0081 transparency UI — p162)
+      try {
+        const { data: pillars } = await sb.rpc('get_member_xp_pillars', { p_member_id: currentMember.id });
+        xpPillarsData = typeof pillars === 'string' ? JSON.parse(pillars) : pillars;
+      } catch (_) { xpPillarsData = null; }
+
+      // Champions received history
+      try {
+        const { data: champs } = await sb.rpc('get_member_champions_history', { p_member_id: currentMember.id });
+        championsHistoryData = typeof champs === 'string' ? JSON.parse(champs) : champs;
+      } catch (_) { championsHistoryData = null; }
 
       // Publications (ex-artifacts, post ADR-0012 Part 3)
       const { data: artifacts } = await sb.from('publication_submissions')
@@ -863,6 +877,179 @@ const PROFILE_I18N = {
       </div>`;
   }
 
+  // ── XP Pillars (ADR-0081 transparency) ──
+  const PILLAR_META: Record<string, { emoji: string; pt: string; en: string; es: string }> = {
+    presenca:      { emoji: '🎯', pt: 'Presença',       en: 'Attendance',     es: 'Asistencia' },
+    trilha:        { emoji: '🛤️', pt: 'Trilha',          en: 'Trail',          es: 'Ruta' },
+    certificacoes: { emoji: '🎖️', pt: 'Certificações',   en: 'Certifications', es: 'Certificaciones' },
+    producao:      { emoji: '🏗️', pt: 'Produção',        en: 'Production',     es: 'Producción' },
+    curadoria:     { emoji: '📚', pt: 'Curadoria',       en: 'Curation',       es: 'Curaduría' },
+    champions:     { emoji: '🏆', pt: 'Champions',       en: 'Champions',      es: 'Champions' },
+  };
+
+  function pillarLabel(slug: string): string {
+    const m = PILLAR_META[slug];
+    if (!m) return slug;
+    if (lang === 'en-US') return m.en;
+    if (lang === 'es-LATAM') return m.es;
+    return m.pt;
+  }
+
+  function pillarEmoji(slug: string): string {
+    return PILLAR_META[slug]?.emoji || '⭐';
+  }
+
+  function ruleLabel(displayI18n: any, slug: string): string {
+    if (!displayI18n) return slug;
+    if (lang === 'en-US' && displayI18n['en-US']) return displayI18n['en-US'];
+    if (lang === 'es-LATAM' && displayI18n['es-LATAM']) return displayI18n['es-LATAM'];
+    return displayI18n['pt-BR'] || slug;
+  }
+
+  function xpPillarsHtml(): string {
+    if (!xpPillarsData || xpPillarsData.error) return '';
+    const pillars: any[] = xpPillarsData.pillars || [];
+    if (pillars.length === 0) return '';
+    const cycleCode = xpPillarsData.cycle_code || '';
+    const totalPts = xpPillarsData.total_pts || 0;
+
+    const cardsHtml = pillars.map((p: any) => {
+      const rules: any[] = p.rules || [];
+      const pillarRulesId = `pillar-rules-${p.pillar}`;
+      const hasPts = p.total_pts > 0;
+      const headerColor = hasPts ? 'text-navy' : 'text-[var(--text-secondary)]';
+      const ptsLabel = lang === 'en-US' ? 'pts'
+                     : lang === 'es-LATAM' ? 'pts'
+                     : 'pts';
+      const itemsLabel = (n: number) => {
+        if (lang === 'en-US') return n === 1 ? 'item earned' : 'items earned';
+        if (lang === 'es-LATAM') return n === 1 ? 'punto obtenido' : 'puntos obtenidos';
+        return n === 1 ? 'item pontuado' : 'itens pontuados';
+      };
+      const howToLabel = lang === 'en-US' ? 'How to earn'
+                       : lang === 'es-LATAM' ? 'Cómo puntuar'
+                       : 'Como pontuar';
+
+      const rulesHtml = rules.map((r: any) => {
+        const name = ruleLabel(r.display_name_i18n, r.slug);
+        const ptsHint = r.cap_points ? `${r.base_points}–${r.cap_points} ${ptsLabel}` : `${r.base_points} ${ptsLabel}`;
+        const earnedStyle = r.pts > 0 ? 'font-semibold text-navy' : 'text-[var(--text-secondary)]';
+        const ptsCell = r.pts > 0
+          ? `<span class="font-bold text-emerald-700">+${r.pts}</span>`
+          : `<span class="text-[var(--text-muted)]">${ptsHint}</span>`;
+        return `
+          <div class="flex items-center justify-between text-[.68rem] py-0.5">
+            <span class="${earnedStyle} truncate pr-2">${name}</span>
+            ${ptsCell}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="bg-[var(--surface-base)] rounded-xl border border-[var(--border-default)] p-3">
+          <div class="flex items-center justify-between mb-1">
+            <div class="font-bold text-[.78rem] ${headerColor}">${pillarEmoji(p.pillar)} ${pillarLabel(p.pillar)}</div>
+            <div class="text-xl font-black text-navy">${p.total_pts}</div>
+          </div>
+          <div class="text-[.62rem] text-[var(--text-muted)] mb-1.5">
+            ${p.earned_count} ${itemsLabel(p.earned_count)}
+          </div>
+          <button type="button" data-action="pillar-toggle" data-target="${pillarRulesId}"
+                  class="text-[.62rem] text-teal font-semibold cursor-pointer bg-transparent border-0 p-0 hover:underline">
+            ${howToLabel} ↓
+          </button>
+          <div id="${pillarRulesId}" class="hidden mt-2 space-y-0.5 border-t border-[var(--border-default)] pt-2">
+            ${rulesHtml}
+          </div>
+        </div>`;
+    }).join('');
+
+    const titleI18n = lang === 'en-US' ? '🏆 Your XP Journey'
+                    : lang === 'es-LATAM' ? '🏆 Tu Recorrido en XP'
+                    : '🏆 Sua Jornada em XP';
+    const cycleSuffix = lang === 'en-US' ? 'pts this cycle'
+                      : lang === 'es-LATAM' ? 'pts en este ciclo'
+                      : 'pts no ciclo';
+
+    return `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <div class="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+          <h2 class="text-sm font-bold text-navy">${titleI18n}</h2>
+          <div class="text-[.7rem] text-[var(--text-muted)]">
+            ${cycleCode ? cycleCode + ' · ' : ''}<strong class="text-navy">${totalPts}</strong> ${cycleSuffix}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${cardsHtml}</div>
+      </div>`;
+  }
+
+  function championsHtml(): string {
+    if (!championsHistoryData || championsHistoryData.error) return '';
+    const history: any[] = (championsHistoryData.history || []).filter((c: any) => c.status === 'active');
+    const totals = championsHistoryData.totals || {};
+    const total = totals.active_count || 0;
+
+    const titleI18n = lang === 'en-US' ? '🏅 Your Champions'
+                    : lang === 'es-LATAM' ? '🏅 Tus Champions'
+                    : '🏅 Seus Champions';
+    const emptyMsg = lang === 'en-US'
+      ? 'No Champion yet. Champion is a manual recognition by leadership for exceptional contributions in meetings or deliverables.'
+      : lang === 'es-LATAM'
+        ? 'Aún no tienes Champion. Champion es un reconocimiento manual de la liderazgo por contribuciones excepcionales en reuniones o entregables.'
+        : 'Você ainda não foi conferido Champion. Champion é um reconhecimento manual da liderança por contribuições excepcionais em reuniões ou entregáveis.';
+
+    if (total === 0) {
+      return `
+        <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+          <h2 class="text-sm font-bold text-navy mb-2">${titleI18n}</h2>
+          <p class="text-[.75rem] text-[var(--text-muted)]">${emptyMsg}</p>
+        </div>`;
+    }
+
+    const surfaceMeta: Record<string, { pt: string; en: string; es: string }> = {
+      general:     { pt: '🏛️ Reunião geral',     en: '🏛️ General meeting',  es: '🏛️ Reunión general' },
+      tribe:       { pt: '🏕️ Reunião de tribo',  en: '🏕️ Tribe meeting',    es: '🏕️ Reunión de tribu' },
+      deliverable: { pt: '📦 Entregável',        en: '📦 Deliverable',       es: '📦 Entregable' },
+    };
+    const surfaceLabel = (s: string) => {
+      const meta = surfaceMeta[s];
+      if (!meta) return s;
+      return lang === 'en-US' ? meta.en : lang === 'es-LATAM' ? meta.es : meta.pt;
+    };
+
+    const cards = history.slice(0, 5).map((c: any) => {
+      const awarder = c.awarded_by?.name || (lang === 'en-US' ? 'Leadership' : lang === 'es-LATAM' ? 'Liderazgo' : 'Liderança');
+      const initiative = c.initiative?.name ? ` · ${c.initiative.name}` : '';
+      const criteriaLabel = lang === 'en-US' ? 'criteria' : lang === 'es-LATAM' ? 'criterios' : 'critérios';
+      const safeJust = String(c.justification || '').replace(/[<>]/g, '');
+      return `
+        <div class="border border-[var(--border-default)] rounded-xl p-3 mb-2">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-[.7rem] font-semibold text-navy">${surfaceLabel(c.surface)}</span>
+            <span class="text-[.65rem] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-semibold">${c.points_awarded} pts</span>
+            ${initiative ? `<span class="text-[.6rem] text-[var(--text-muted)]">${initiative}</span>` : ''}
+          </div>
+          <p class="text-[.7rem] text-[var(--text-secondary)] italic">"${safeJust}"</p>
+          <p class="text-[.6rem] text-[var(--text-muted)] mt-1">— ${awarder} · ${criteriaLabel}: ${(c.criteria_met || []).join(', ')}</p>
+        </div>`;
+    }).join('');
+
+    const totalSuffix = lang === 'en-US' ? `active · ${totals.active_points || 0} pts`
+                      : lang === 'es-LATAM' ? `activo${total === 1 ? '' : 's'} · ${totals.active_points || 0} pts`
+                      : `ativo${total === 1 ? '' : 's'} · ${totals.active_points || 0} pts`;
+
+    return `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+          <h2 class="text-sm font-bold text-navy">${titleI18n}</h2>
+          <div class="text-[.7rem] text-[var(--text-muted)]">
+            <strong class="text-navy">${total}</strong> ${totalSuffix}
+          </div>
+        </div>
+        ${cards}
+        ${history.length > 5 ? `<p class="text-[.65rem] text-[var(--text-muted)] mt-1">+${history.length - 5}</p>` : ''}
+      </div>`;
+  }
+
   // ── Main render ──
   function attendanceHistoryHtml(): string {
     if (!attendanceHistory || attendanceHistory.length === 0) {
@@ -987,6 +1174,10 @@ const PROFILE_I18N = {
 
       <!-- Dashboard: Current Cycle -->
       ${dashboardHtml(m)}
+
+      <!-- XP Pillars + Champions (ADR-0081 transparency UI — p162) -->
+      ${xpPillarsHtml()}
+      ${championsHtml()}
 
       <!-- Card: Emails -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
@@ -1633,6 +1824,11 @@ const PROFILE_I18N = {
         case 'link-provider': {
           const provider = (target as HTMLElement).dataset.provider;
           if (provider) linkProvider(provider);
+          break;
+        }
+        case 'pillar-toggle': {
+          const rulesId = target.dataset.target;
+          if (rulesId) document.getElementById(rulesId)?.classList.toggle('hidden');
           break;
         }
       }
