@@ -43,15 +43,19 @@ function findFunctionBody(funcName) {
 }
 
 // Find the role-ladder CASE block within a function body.
-// Discriminator: contains both "ae.role = 'manager'" and "ae.role = 'deputy_manager'".
+// Discriminator: contains both ae.role='manager' and ae.role='deputy_manager'
+// (with or without whitespace around `=` — sync_operational_role_cache uses
+// ` = ` and check_schema_invariants uses `=`; both are valid SQL).
 // Returns the inner text between CASE and END (exclusive).
 function findLadderCaseBlock(body) {
   if (!body) return null;
   const caseRegex = /CASE\b([\s\S]+?)\bEND\b/g;
   const matches = [...body.matchAll(caseRegex)];
+  const managerRe = /ae\.role\s*=\s*'manager'/;
+  const deputyRe = /ae\.role\s*=\s*'deputy_manager'/;
   for (const m of matches) {
     const inner = m[1];
-    if (inner.includes("ae.role = 'manager'") && inner.includes("ae.role = 'deputy_manager'")) {
+    if (managerRe.test(inner) && deputyRe.test(inner)) {
       return inner;
     }
   }
@@ -74,23 +78,26 @@ function normalizeCondition(raw) {
 }
 
 // Parse CASE inner into normalized clauses.
+// Multiline-tolerant: WHEN clauses can span newlines (the V4-kinds extension
+// in p162 uses multi-line bool_or() expressions).
+// Strategy: split by WHEN keyword, then split each fragment by THEN '<role>'.
 function parseClauses(caseInner) {
-  const lines = caseInner.split('\n');
   const whenClauses = [];
   let elseResult = null;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
-    const whenMatch = line.match(/^WHEN\s+(.+?)\s+THEN\s+'([^']+)'/);
-    if (whenMatch) {
-      whenClauses.push({ condition: normalizeCondition(whenMatch[1]), result: whenMatch[2].trim() });
-      continue;
-    }
-    const elseMatch = line.match(/^ELSE\s+'([^']+)'/);
-    if (elseMatch) {
-      elseResult = elseMatch[1].trim();
-    }
+
+  // Capture each WHEN ... THEN '<role>' clause across lines. The condition is
+  // everything after WHEN up to the first THEN that is followed by a quoted role.
+  const whenRe = /\bWHEN\b([\s\S]+?)\bTHEN\s+'([^']+)'/g;
+  for (const m of caseInner.matchAll(whenRe)) {
+    whenClauses.push({
+      condition: normalizeCondition(m[1]),
+      result: m[2].trim(),
+    });
   }
+
+  const elseMatch = caseInner.match(/\bELSE\s+'([^']+)'/);
+  if (elseMatch) elseResult = elseMatch[1].trim();
+
   return { whenClauses, elseResult };
 }
 
