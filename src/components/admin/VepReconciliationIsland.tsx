@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { canForAdminEntry } from '../../lib/permissions';
 
 interface Props { lang?: string; }
 
@@ -258,8 +259,10 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     // p152 W4 hotfix: retry while member is still loading (was: setAuthorized(false)
     // immediately, causing "Acesso restrito" flash for legit admins including superadmin).
     if (!m) { setTimeout(load, 400); return; }
+    // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
     const isAdmin = m.is_superadmin
-      || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(m.operational_role)
+      || canForAdminEntry()
+      || ['manager', 'deputy_manager'].includes(m.operational_role)
       || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board');
     if (!isAdmin) {
       setAuthorized(false);

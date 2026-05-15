@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
+import { canFor } from '../../lib/permissions';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
 import CardDriveFiles from './CardDriveFiles';
@@ -79,8 +80,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const isCurationItem = item.curation_status === 'curation_pending';
 
   // ── Governance role checks (D1-D20) ──
+  // ADR-0007 V4 (p163 Opção C): leader-of-this-card is now scope-aware via
+  // canFor('manage_board_admin', tribe/initiative) — replaces V3
+  // operational_role === 'tribe_leader' that gave global edit to anyone
+  // promoted to the tribe_leader cache (e.g. workgroup leaders). See
+  // docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
   const isGP = permissions.member?.is_superadmin || ['manager','deputy_manager'].includes(permissions.member?.operational_role || '');
-  const isLeader = permissions.member?.operational_role === 'tribe_leader';
+  const cardTribeId = item.tribe_id ?? board.tribe_id ?? null;
+  const cardInitiativeId = item.initiative_id ?? board.initiative_id ?? null;
+  const isLeader = (cardInitiativeId && canFor('manage_board_admin', { type: 'initiative', id: cardInitiativeId }))
+    || (cardTribeId !== null && canFor('manage_board_admin', { type: 'tribe', id: cardTribeId }));
   const isCardOwner = item.assignee_id === permissions.member?.id;
   const canEditBaseline = (isGP || isLeader) && !item.baseline_locked_at;
   const canUnlockBaseline = isGP;

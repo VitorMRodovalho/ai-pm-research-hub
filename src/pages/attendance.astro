@@ -506,7 +506,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (ev.visibility === 'gp_only') return false;
         if ((ev.type === '1on1' || ev.type === 'parceria' || ev.type === 'entrevista' || ev.type === 'interview') && !CAN_MANAGE) return false;
       }
-      if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER?.operational_role !== 'tribe_leader' && !isParticipant) return false;
+      // ADR-0007 V4 (p163 Opção C): leadership-visible filter scope-aware via canFor.
+      // Org admin (CAN_MANAGE) or leader of THIS event's tribe sees it. Workgroup
+      // leaders no longer see leadership events of other tribes (V3 cache leak).
+      const canSeeLeadership = ev.tribe_id != null
+        ? (window as any).__nucleoCanFor?.('manage_event', { type: 'tribe', id: ev.tribe_id }) === true
+        : (ev.initiative_id
+          ? (window as any).__nucleoCanFor?.('manage_event', { type: 'initiative', id: ev.initiative_id }) === true
+          : (window as any).__nucleoCanFor?.('manage_event') === true);
+      if (ev.visibility === 'leadership' && !CAN_MANAGE && !canSeeLeadership && !isParticipant) return false;
       // Type filter
       if (typeF !== 'todos' && ev.type !== typeF) return false;
       // Tribe filter — scope to tribo events only. Non-tribo events (geral/kickoff/lideranca/
@@ -548,6 +556,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     if (ATTENDANCE_ROUTE.edit && CAN_MANAGE && !ATTENDANCE_ROUTE.autoOpened) {
       ATTENDANCE_ROUTE.autoOpened = true;
       openEditEvent(focused);
+    }
+    // p162 Track B' G3b — leader digest CTA "Marcar presença" deep-links here
+    // with ?eventId=<uuid>&action=register. CAN_MANAGE gate matches the canRoster
+    // visibility used for inline 📋 buttons.
+    if (ATTENDANCE_ROUTE.action === 'register' && CAN_MANAGE && !ATTENDANCE_ROUTE.autoOpened) {
+      ATTENDANCE_ROUTE.autoOpened = true;
+      openRoster(focused.id, focused.title || '');
     }
   }
 
@@ -665,8 +680,18 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       || (MEMBER?.designations || []).includes('deputy_manager');
   }
 
-  function canAdminCheckin(): boolean {
-    return isGPLevel() || MEMBER?.operational_role === 'tribe_leader';
+  function canAdminCheckin(ev?: any): boolean {
+    if (isGPLevel()) return true;
+    // ADR-0007 V4 (p163 Opção C): scope-aware checkin authority. When event
+    // context provided, narrow to that tribe/initiative; otherwise fall back to
+    // org-scoped manage_event (only true tribe leaders, not workgroup leaders).
+    if (ev?.tribe_id != null) {
+      return (window as any).__nucleoCanFor?.('manage_event', { type: 'tribe', id: ev.tribe_id }) === true;
+    }
+    if (ev?.initiative_id) {
+      return (window as any).__nucleoCanFor?.('manage_event', { type: 'initiative', id: ev.initiative_id }) === true;
+    }
+    return (window as any).__nucleoCanFor?.('manage_event') === true;
   }
 
   function isInCheckinWindow(ev: any): boolean {
@@ -823,7 +848,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <div class="flex gap-1 items-center flex-shrink-0">
         ${ev.i_attended !== true ? (isInCheckinWindow(ev)
           ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-navy text-white border-0 cursor-pointer" data-action="check-in" data-event-id="${ev.id}">Check-In</button>`
-          : (canAdminCheckin()
+          : (canAdminCheckin(ev)
             ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-amber-600 text-white border-0 cursor-pointer" data-action="admin-check-in" data-event-id="${ev.id}">${I18N.adminOverride || 'Register (Admin)'}</button>`
             : `<span class="px-2 py-1 rounded text-[10px] text-[var(--text-muted)] bg-[var(--surface-section-cool)]">${I18N.windowClosed || 'Check-in closed'}</span>`
           )) : ''}
@@ -1275,7 +1300,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   // ── ADMIN CHECK-IN (bypasses time window) ──
   async function adminCheckIn(eventId: string) {
-    if (!canAdminCheckin()) return;
+    const ev = ALL_EVENTS.find((e: any) => e.id === eventId);
+    if (!canAdminCheckin(ev)) return;
     try {
       const { data, error } = await sb.rpc('mark_member_present', {
         p_event_id: eventId,

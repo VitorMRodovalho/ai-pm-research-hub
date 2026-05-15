@@ -49,7 +49,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   function canEdit(sub: any): boolean {
     if (!MEMBER) return false;
     if (MEMBER.is_superadmin) return true;
-    if (MEMBER.operational_role === 'tribe_leader' || MEMBER.operational_role === 'comms_leader' || (MEMBER.designations || []).includes('curator')) return true;
+    // ADR-0007 V4 (p163 Opção C): editing rights derived from engagement
+    // 'write' org-scope (volunteer.{manager,deputy_manager,co_gp,leader,comms_leader})
+    // + designation curator. Replaces V3 tribe_leader exact-match that leaked
+    // scope. See docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
+    if ((window as any).__nucleoCanFor?.('write')) return true;
+    if (['manager', 'deputy_manager'].includes(MEMBER.operational_role)) return true;
+    if ((MEMBER.designations || []).includes('curator')) return true;
     return sub.primary_author_id === MEMBER.id;
   }
 

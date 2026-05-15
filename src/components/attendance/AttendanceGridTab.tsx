@@ -10,6 +10,7 @@ import {
   type ColumnGroup,
 } from '@tanstack/react-table';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { canForAnyTribe } from '../../lib/permissions';
 import {
   Users,
   Percent,
@@ -55,9 +56,12 @@ function canManageAttendance(): boolean {
   const m = getMember();
   if (!m) return false;
   if (m.is_superadmin) return true;
-  if (['manager', 'tribe_leader'].includes(m.operational_role)) return true;
+  if (m.operational_role === 'manager') return true;
   if ((m.designations || []).includes('deputy_manager')) return true;
-  return false;
+  // ADR-0007 V4 (p163 Opção C): grid attendance management for tribe-scoped
+  // leaders via canForAnyTribe('manage_event'). Replaces V3 tribe_leader cache
+  // exact-match. See docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
+  return canForAnyTribe('manage_event');
 }
 
 function isChapterBoard(): boolean {
