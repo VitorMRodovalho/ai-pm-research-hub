@@ -192,6 +192,7 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     loadRules();
     loadChampions();
     renderCriteria(); // initial render
+    maybeAutoOpenFromUrl();
   }
 
   async function loadRules() {
@@ -337,15 +338,32 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
       </label>`).join('');
   }
 
-  function openGrantModal() {
+  function openGrantModal(prefill?: { surface?: string; contextKind?: string; contextId?: string }) {
     document.getElementById('gam-modal-overlay')?.classList.remove('hidden');
-    (document.getElementById('gam-surface') as HTMLSelectElement).value = 'general';
-    (document.getElementById('gam-context-kind') as HTMLSelectElement).value = 'event';
-    (document.getElementById('gam-context-id') as HTMLInputElement).value = '';
+    const surfaceSel = document.getElementById('gam-surface') as HTMLSelectElement;
+    const kindSel = document.getElementById('gam-context-kind') as HTMLSelectElement;
+    surfaceSel.value = prefill?.surface && ['general', 'tribe', 'deliverable'].includes(prefill.surface) ? prefill.surface : 'general';
+    kindSel.value = prefill?.contextKind && ['event', 'deliverable', 'artifact'].includes(prefill.contextKind) ? prefill.contextKind : 'event';
+    (document.getElementById('gam-context-id') as HTMLInputElement).value = prefill?.contextId || '';
     (document.getElementById('gam-recipient-id') as HTMLInputElement).value = '';
     (document.getElementById('gam-justification') as HTMLTextAreaElement).value = '';
     updateJustificationCounter();
     renderCriteria();
+  }
+
+  // p162 Track B' G3b — leader digest CTA "Conferir Champion" deep-links here
+  // with ?award_event_id=<uuid>&surface=tribe (default kind=event). Auto-opens
+  // the grant modal pre-filled. Honors permission gate — if showDenied path
+  // wins, the params are ignored. Backlog item: tribe_leader operational role
+  // does not currently hold `admin.gamification` permission, so the auto-open
+  // succeeds only for managers/deputy_managers/comms_leaders. PM follow-up
+  // pending (whether to widen permission or build a leaner /champion/award page).
+  function maybeAutoOpenFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('award_event_id');
+    if (!eventId) return;
+    const surface = params.get('surface') || 'tribe';
+    setTimeout(() => openGrantModal({ surface, contextKind: 'event', contextId: eventId }), 50);
   }
 
   function closeGrantModal() {

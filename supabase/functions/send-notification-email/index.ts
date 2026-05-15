@@ -159,8 +159,13 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
 }
 
 // ADR-0022 W3: leader digest aggregate-only renderer. Body is JSON from
-// get_weekly_tribe_digest RPC. Privacy-preserving — no individual member
-// names or card titles, only counts/percentages.
+// get_weekly_tribe_digest RPC. Card aggregates remain privacy-preserving
+// (counts only). p162 Track B' added 3 documentation-hygiene sections
+// (ata_pending recurrence-grouped, attendance_pending, champion_pending)
+// — these expose event titles/dates by design so the leader can act, but
+// no member names. Hide-if-empty per section. Deep-link CTAs into
+// /meetings, /attendance?eventId=…, /admin/gamification?award_event_id=….
+// PT-BR inline (i18n EN/ES tech debt — backlog).
 function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   let payload: any = {}
   try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
@@ -181,6 +186,136 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
       <td style="padding: 10px 12px; color: #495057; font-size: 13px; border-bottom: 1px solid #f1f3f5;">${escapeHtml(label)}</td>
       <td style="padding: 10px 12px; text-align: right; color: ${color}; font-size: 16px; font-weight: 600; border-bottom: 1px solid #f1f3f5;">${value}</td>
     </tr>`
+
+  // p162 Track B' G3a — 3 documentation hygiene sections.
+  // ataPending: { count_groups, count_events, top_groups: [{ is_recurring, occurrence_count, sample_title, latest_event_id, latest_date }] }
+  // attendancePending: { count, top_events: [{ event_id, title, date }] }
+  // championPending: { count, top_events: [{ event_id, title, date }] }
+  const ataPending = agg.ata_pending || { count_groups: 0, count_events: 0, top_groups: [] }
+  const attendancePending = agg.attendance_pending || { count: 0, top_events: [] }
+  const championPending = agg.champion_pending || { count: 0, top_events: [] }
+
+  const fmtDate = (iso: string | null | undefined): string => {
+    if (!iso) return ''
+    try {
+      const d = new Date(iso)
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' })
+    } catch { return String(iso).slice(0, 10) }
+  }
+
+  const docSection = (title: string, headerColor: string, rowsHtml: string, ctaHref: string, ctaLabel: string, helpText: string) => `
+    <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+      <div style="background: ${headerColor}; padding: 10px 14px;">
+        <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">${escapeHtml(title)}</h3>
+      </div>
+      <div style="padding: 14px 16px;">
+        ${rowsHtml}
+        <p style="color: #868e96; font-size: 11px; margin: 12px 0 0 0; line-height: 1.5;">${escapeHtml(helpText)}</p>
+        <div style="margin: 12px 0 0 0;">
+          <a href="${ctaHref}" style="display: inline-block; background: ${headerColor}; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">${escapeHtml(ctaLabel)}</a>
+        </div>
+      </div>
+    </div>`
+
+  // Ata pending — recurrence-grouped. Each top_group: latest_event_id is the
+  // most recent occurrence and is the deep-link target. The label combines
+  // sample_title + occurrence count when recurring (e.g. "Tribo Semanal · 4 ocorrências sem ata").
+  const ataCount = Number(ataPending.count_groups || 0)
+  const ataEvents = Number(ataPending.count_events || 0)
+  let ataHtml = ''
+  if (ataCount > 0) {
+    const topGroups = Array.isArray(ataPending.top_groups) ? ataPending.top_groups : []
+    const rows = topGroups.map((g: any) => {
+      const occ = Number(g.occurrence_count || 1)
+      const isRec = !!g.is_recurring
+      const suffix = isRec && occ > 1 ? ` <span style="color: #868e96;">· ${occ} ocorrências sem ata</span>` : ''
+      return `<li style="margin-bottom: 4px;"><strong>${escapeHtml(g.sample_title || 'Sem título')}</strong> <span style="color: #868e96;">— ${escapeHtml(fmtDate(g.latest_date))}</span>${suffix}</li>`
+    }).join('')
+    const moreNote = ataCount > topGroups.length
+      ? `<p style="color: #868e96; font-size: 12px; margin: 6px 0 0 0;">+${ataCount - topGroups.length} grupo(s) adicional(is) — abra a página de atas para ver tudo.</p>`
+      : ''
+    const summary = isAtaSummaryNeeded(ataCount, ataEvents)
+      ? `<p style="color: #495057; font-size: 12px; margin: 0 0 10px 0;">${ataCount} grupo(s) de reuniões aguardam ata${ataEvents > ataCount ? ` (${ataEvents} ocorrências no total)` : ''}.</p>`
+      : ''
+    const listHtml = `${summary}<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">${rows}</ul>${moreNote}`
+    // Deep-link target: /meetings (page lists pending). Includes anchor focus on latest_event_id of first group as best-effort.
+    const focusId = topGroups[0]?.latest_event_id || ''
+    const ataHref = focusId
+      ? `https://nucleoia.vitormr.dev/meetings?event_id=${encodeURIComponent(focusId)}`
+      : 'https://nucleoia.vitormr.dev/meetings'
+    ataHtml = docSection(
+      `📝 Atas pendentes (${ataCount})`,
+      '#c62828',
+      listHtml,
+      ataHref,
+      'Publicar ata',
+      'Reuniões da tribo, geral e liderança que ainda não têm ata publicada no ciclo atual.'
+    )
+  }
+
+  // Attendance pending — per-event (no recurrence grouping).
+  const attCount = Number(attendancePending.count || 0)
+  let attHtml = ''
+  if (attCount > 0) {
+    const topEvents = Array.isArray(attendancePending.top_events) ? attendancePending.top_events : []
+    const rows = topEvents.map((e: any) => {
+      const eid = e.event_id || ''
+      const href = eid
+        ? `https://nucleoia.vitormr.dev/attendance?eventId=${encodeURIComponent(eid)}&action=register`
+        : 'https://nucleoia.vitormr.dev/attendance'
+      return `<li style="margin-bottom: 4px;"><a href="${href}" style="color: #1976d2; text-decoration: none;"><strong>${escapeHtml(e.title || 'Sem título')}</strong></a> <span style="color: #868e96;">— ${escapeHtml(fmtDate(e.date))}</span></li>`
+    }).join('')
+    const moreNote = attCount > topEvents.length
+      ? `<p style="color: #868e96; font-size: 12px; margin: 6px 0 0 0;">+${attCount - topEvents.length} evento(s) adicional(is).</p>`
+      : ''
+    const summary = `<p style="color: #495057; font-size: 12px; margin: 0 0 10px 0;">${attCount} reunião(ões) sem registro de presença no ciclo atual.</p>`
+    const listHtml = `${summary}<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">${rows}</ul>${moreNote}`
+    const focusId = topEvents[0]?.event_id || ''
+    const href = focusId
+      ? `https://nucleoia.vitormr.dev/attendance?eventId=${encodeURIComponent(focusId)}&action=register`
+      : 'https://nucleoia.vitormr.dev/attendance'
+    attHtml = docSection(
+      `📋 Presenças não registradas (${attCount})`,
+      '#f57c00',
+      listHtml,
+      href,
+      'Marcar presença',
+      'Reuniões passadas onde nenhum membro foi marcado como presente. Registre presença para reconhecer engajamento.'
+    )
+  }
+
+  // Champion pending — per-event. Heuristic-only (no events.event_champion_waived column yet → false positives possible).
+  const champCount = Number(championPending.count || 0)
+  let champHtml = ''
+  if (champCount > 0) {
+    const topEvents = Array.isArray(championPending.top_events) ? championPending.top_events : []
+    const rows = topEvents.map((e: any) => {
+      const eid = e.event_id || ''
+      const href = eid
+        ? `https://nucleoia.vitormr.dev/admin/gamification?award_event_id=${encodeURIComponent(eid)}&surface=tribe`
+        : 'https://nucleoia.vitormr.dev/admin/gamification'
+      return `<li style="margin-bottom: 4px;"><a href="${href}" style="color: #7b1fa2; text-decoration: none;"><strong>${escapeHtml(e.title || 'Sem título')}</strong></a> <span style="color: #868e96;">— ${escapeHtml(fmtDate(e.date))}</span></li>`
+    }).join('')
+    const moreNote = champCount > topEvents.length
+      ? `<p style="color: #868e96; font-size: 12px; margin: 6px 0 0 0;">+${champCount - topEvents.length} evento(s) adicional(is).</p>`
+      : ''
+    const summary = `<p style="color: #495057; font-size: 12px; margin: 0 0 10px 0;">${champCount} reunião(ões) sem Champion conferido no ciclo atual.</p>`
+    const listHtml = `${summary}<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">${rows}</ul>${moreNote}<p style="color: #868e96; font-size: 11px; margin: 8px 0 0 0; font-style: italic;">Nem toda reunião precisa de Champion — se for o caso, ignore. (Marca de "dispensado" virá em release futuro.)</p>`
+    const focusId = topEvents[0]?.event_id || ''
+    const href = focusId
+      ? `https://nucleoia.vitormr.dev/admin/gamification?award_event_id=${encodeURIComponent(focusId)}&surface=tribe`
+      : 'https://nucleoia.vitormr.dev/admin/gamification'
+    champHtml = docSection(
+      `🏆 Champions ainda não conferidos (${champCount})`,
+      '#7b1fa2',
+      listHtml,
+      href,
+      'Conferir Champion',
+      'Reuniões passadas onde ninguém recebeu Champion. Reconheça contribuições para sustentar engajamento.'
+    )
+  }
+
+  const docHygieneAny = ataCount + attCount + champCount > 0
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
@@ -209,10 +344,25 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
           </table>
         </div>
 
+        ${docHygieneAny ? `
+        <div style="margin: 0 0 8px 0;">
+          <h2 style="color: #003B5C; font-size: 14px; margin: 0 0 4px 0; font-weight: 700;">Documentação pendente</h2>
+          <p style="color: #868e96; font-size: 11px; margin: 0 0 12px 0;">Itens do ciclo atual que aguardam ação do líder ou delegado.</p>
+        </div>
+        ${ataHtml}
+        ${attHtml}
+        ${champHtml}
+        ` : `
+        <div style="background: #e8f5e9; border-left: 4px solid #388e3c; padding: 12px 14px; margin: 0 0 16px 0; border-radius: 4px;">
+          <p style="color: #1b5e20; font-size: 12px; margin: 0; line-height: 1.5;">
+            <strong>✓ Documentação em dia.</strong> Nenhuma ata, presença ou Champion pendente no ciclo atual. 🎉
+          </p>
+        </div>
+        `}
+
         <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 14px; margin: 0 0 16px 0; border-radius: 4px;">
           <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
-            <strong>Privacy-preserving:</strong> este resumo mostra apenas contadores agregados.
-            Para ver o detalhe (quais cards, quais membros), abra o portfolio do board.
+            <strong>Privacy-preserving:</strong> indicadores de cards mostram apenas contadores agregados — sem nomes ou títulos. Para detalhe abra o portfolio do board.
           </p>
         </div>
 
@@ -228,6 +378,12 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
         <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
       </div>
     </div>`
+}
+
+// Helper used only by ata section: when 1-2 groups, list itself is enough;
+// when 3+ groups, the explicit total improves scanability.
+function isAtaSummaryNeeded(countGroups: number, countEvents: number): boolean {
+  return countGroups >= 3 || countEvents > countGroups
 }
 
 function buildHtml(notification: any): string {
