@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { canForAdminEntry } from '../../lib/permissions';
 
 interface Props { lang?: string; }
 
@@ -59,8 +60,12 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
     if (!sb) { setTimeout(load, 400); return; }
     const m = (window as any).navGetMember?.();
     if (!m) { setTimeout(load, 400); return; }
+    // ADR-0007 V4 (p163 Opção C): admin entry via canForAdminEntry (engagement-derived
+     // org-scoped actions). manager/deputy_manager kept as hard-tier fallback.
+    // See docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
     const isAdmin = m.is_superadmin
-      || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(m.operational_role)
+      || canForAdminEntry()
+      || ['manager', 'deputy_manager'].includes(m.operational_role)
       || (m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board');
     if (!isAdmin) return;
     setAuthorized(true);

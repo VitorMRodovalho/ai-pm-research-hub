@@ -311,6 +311,174 @@ export function clearSimulation() {
   _simulation = { active: false, tier: null, designations: [], tribe_id: null, initiative_id: null };
 }
 
+// ==========================================
+// V4 CAPABILITY CACHE (ADR-0007)
+// ==========================================
+//
+// Capabilities is the per-call cache populated at bootstrap from
+// `get_caller_capabilities()` RPC. It mirrors `can()` semantics in pure
+// data: org-scoped action set + per-initiative + per-tribe (legacy_tribe_id).
+//
+// `canFor(action, scope?)` is the V4 replacement for V3 patterns like
+// `member.operational_role === 'tribe_leader'`. The V3 cache (operational_role)
+// is single-value and global — promoting on the priority ladder leaks scope
+// (a workgroup leader becomes "tribe_leader" globally and gets
+// admin/board/event privileges they do not hold institutionally).
+// `canFor` consults the engagement-derived permission set with scope intact.
+//
+// Migration is gradual: gates that need scope distinction (tribe_leader exact
+// match, "leader of THIS tribe", etc.) move to canFor. Tier-based gates that
+// already match member tier semantics (manager/deputy_manager admin pages)
+// can remain on hasPermission until a follow-up pass.
+//
+// Background: docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
+
+export interface Capabilities {
+  caller_id: string | null;
+  person_id: string | null;
+  is_superadmin: boolean;
+  org_actions: string[];
+  initiative_actions: Record<string, string[]>;  // initiative_id (uuid) → action set
+  tribe_actions: Record<string, string[]>;       // legacy_tribe_id (int as string) → action set
+}
+
+let _capabilities: Capabilities | null = null;
+
+// Symbol-based window key — chosen so the Astro inline `<script>` in Nav.astro
+// (which can't import this module directly) can populate the cache through
+// `window.__nucleoCapabilities` and React islands consume it transparently.
+// Keeping both module-scope and window storage avoids islands fighting each
+// other when multiple bundles co-exist.
+const WINDOW_KEY = '__nucleoCapabilities';
+
+export function setCapabilities(caps: Capabilities | null): void {
+  _capabilities = caps;
+  if (typeof window !== 'undefined') {
+    (window as any)[WINDOW_KEY] = caps;
+  }
+}
+
+export function getCapabilities(): Capabilities | null {
+  if (_capabilities) return _capabilities;
+  if (typeof window !== 'undefined') {
+    const w = (window as any)[WINDOW_KEY];
+    if (w) {
+      _capabilities = w;
+      return w;
+    }
+  }
+  return null;
+}
+
+export function clearCapabilities(): void {
+  _capabilities = null;
+  if (typeof window !== 'undefined') {
+    (window as any)[WINDOW_KEY] = null;
+  }
+}
+
+// Normalize the raw RPC payload (which may have null/missing fields if the
+// caller is unauthenticated or has no member). Centralises defensive coercion
+// so call sites don't repeat null-guards.
+export function normalizeCapabilities(raw: unknown): Capabilities {
+  const r = (raw ?? {}) as Partial<Capabilities>;
+  return {
+    caller_id: typeof r.caller_id === 'string' ? r.caller_id : null,
+    person_id: typeof r.person_id === 'string' ? r.person_id : null,
+    is_superadmin: !!r.is_superadmin,
+    org_actions: Array.isArray(r.org_actions) ? r.org_actions.filter(s => typeof s === 'string') : [],
+    initiative_actions: (r.initiative_actions && typeof r.initiative_actions === 'object')
+      ? r.initiative_actions as Record<string, string[]>
+      : {},
+    tribe_actions: (r.tribe_actions && typeof r.tribe_actions === 'object')
+      ? r.tribe_actions as Record<string, string[]>
+      : {},
+  };
+}
+
+export type CanForScope =
+  | { type: 'initiative'; id: string }
+  | { type: 'tribe'; id: number | string };
+
+// canFor — V4 capability check with scope.
+//   canFor('manage_member')                       → org-scoped only
+//   canFor('write_board', { type: 'initiative', id }) → org or that initiative
+//   canFor('write_board', { type: 'tribe', id })      → org or that tribe (legacy_tribe_id)
+//
+// If capabilities have not been loaded (e.g. anon, ghost, or pre-bootstrap),
+// returns false (fail-closed). Superadmin bypasses everything by design.
+export function canFor(action: string, scope?: CanForScope): boolean {
+  const caps = getCapabilities();
+  if (!caps) return false;
+  if (caps.is_superadmin) return true;
+  if (caps.org_actions?.includes(action)) return true;
+  if (!scope) return false;
+  if (scope.type === 'initiative') {
+    return caps.initiative_actions?.[scope.id]?.includes(action) ?? false;
+  }
+  // tribe scope: id can be number or string; key is text
+  const key = String(scope.id);
+  return caps.tribe_actions?.[key]?.includes(action) ?? false;
+}
+
+// canForAnyTribe — true if the action holds in ANY tribe scope (not just one).
+// Used by gates that don't have a specific tribe context but want "is this
+// person a tribe-scoped leader anywhere?" semantics. Org-scoped actions still
+// short-circuit to true.
+export function canForAnyTribe(action: string): boolean {
+  const caps = getCapabilities();
+  if (!caps) return false;
+  if (caps.is_superadmin) return true;
+  if (caps.org_actions?.includes(action)) return true;
+  for (const acts of Object.values(caps.tribe_actions || {})) {
+    if (acts.includes(action)) return true;
+  }
+  for (const acts of Object.values(caps.initiative_actions || {})) {
+    if (acts.includes(action)) return true;
+  }
+  return false;
+}
+
+// Set of org-scoped V4 actions that legitimately indicate admin-tier authority
+// (engagement-derived). Source: engagement_kind_permissions WHERE scope IN
+// ('organization','global'). Verdade institucional:
+//   - volunteer.{manager,deputy_manager,co_gp,leader,comms_leader} têm `write` org
+//   - sponsor.sponsor → manage_finance / manage_partner / view_internal_analytics
+//   - chapter_board.{liaison,board_member} → view_chapter_dashboards / view_pii / view_internal_analytics
+//   - observer.{curator,reviewer} → participate_in_governance_review (não dá admin entry isolado)
+// Nota: 'participate_in_governance_review' propositalmente NÃO inclusa — observer.curator/reviewer
+// puros não devem ganhar admin entry, apenas governance review pages (gate separado).
+export const ADMIN_TIER_ACTIONS = [
+  'write',
+  'manage_event',
+  'manage_member',
+  'manage_partner',
+  'manage_finance',
+  'manage_comms',
+  'manage_board_admin',
+  'manage_platform',
+  'view_internal_analytics',
+  'view_chapter_dashboards',
+] as const;
+
+// canForAdminEntry — true if the caller has any ENGAGEMENT-DERIVED org-scoped
+// action that historically conveys admin-tier authority. Used as the V4
+// substitute for V3 patterns like:
+//   ['manager','deputy_manager','tribe_leader','comms_leader','sponsor','chapter_liaison']
+//     .includes(member.operational_role)
+//
+// Designation-based admin grants (curator, deputy_manager designation,
+// chapter_board) remain checked separately in the call site — designations are
+// institutionally assigned and not engagement-derived.
+//
+// Background: docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
+export function canForAdminEntry(): boolean {
+  const caps = getCapabilities();
+  if (!caps) return false;
+  if (caps.is_superadmin) return true;
+  return ADMIN_TIER_ACTIONS.some(a => caps.org_actions.includes(a));
+}
+
 export function hasPermission(
   member: MemberForPermission,
   permission: Permission

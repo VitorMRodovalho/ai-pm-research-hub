@@ -1031,6 +1031,31 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   (window as any).navGetUser = () => _user;
   (window as any).navGetSb = () => sb;
 
+  // V4 capability helpers exposed to Astro inline scripts (parity with
+  // src/lib/permissions.ts canFor/canForAdminEntry for React islands).
+  // Source-of-truth list of ADMIN_TIER_ACTIONS lives in permissions.ts;
+  // mirrored here for vanilla-script access without bundler imports.
+  const ADMIN_TIER_ACTIONS_INLINE = [
+    'write', 'manage_event', 'manage_member', 'manage_partner', 'manage_finance',
+    'manage_comms', 'manage_board_admin', 'manage_platform',
+    'view_internal_analytics', 'view_chapter_dashboards',
+  ];
+  (window as any).__nucleoCanFor = (action: string, scope?: { type: 'initiative'|'tribe', id: string|number }) => {
+    const caps = (window as any).__nucleoCapabilities;
+    if (!caps) return false;
+    if (caps.is_superadmin) return true;
+    if ((caps.org_actions || []).includes(action)) return true;
+    if (!scope) return false;
+    if (scope.type === 'initiative') return ((caps.initiative_actions || {})[scope.id] || []).includes(action);
+    return ((caps.tribe_actions || {})[String(scope.id)] || []).includes(action);
+  };
+  (window as any).__nucleoCanForAdminEntry = () => {
+    const caps = (window as any).__nucleoCapabilities;
+    if (!caps) return false;
+    if (caps.is_superadmin) return true;
+    return ADMIN_TIER_ACTIONS_INLINE.some(a => (caps.org_actions || []).includes(a));
+  };
+
   // ── Boot ──
   // Close tribe dropdown and sections dropdown on outside click
   document.addEventListener('click', function(ev: MouseEvent) {
@@ -1075,16 +1100,43 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
   }
 
+  // Loads capability cache for the current member (ADR-0007 V4 capability cache,
+  // mirrors `can()` semantics; see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md).
+  // Stored on `window.__nucleoCapabilities` so React islands and Astro inline
+  // scripts share one snapshot; src/lib/permissions.ts `canFor()` reads from there.
+  async function loadCapabilities() {
+    try {
+      const { data, error } = await sb.rpc('get_caller_capabilities');
+      if (error) throw error;
+      (window as any).__nucleoCapabilities = data || null;
+      window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: data || null }));
+    } catch (e) {
+      // Fail-closed: leave window cap as null. canFor() returns false.
+      (window as any).__nucleoCapabilities = null;
+      console.warn('loadCapabilities failed', e);
+    }
+  }
+
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
     syncAuthCookie(session);
     if (session) {
       _user = session.user;
-      let { data } = await sb.rpc('get_member_by_auth');
+      // Fire member + capabilities in parallel — both are bootstrap-time reads
+      // and independent, so single round-trip latency.
+      const [memberRes] = await Promise.all([
+        sb.rpc('get_member_by_auth'),
+        loadCapabilities(),
+      ]);
+      let data = memberRes.data;
       // Ghost auto-resolution: if no member found, try linking by email
       if (!data) {
         const autoLink = await sb.rpc('try_auto_link_ghost');
-        if (autoLink.data) data = autoLink.data;
+        if (autoLink.data) {
+          data = autoLink.data;
+          // The link may have created authoritative engagements — refresh capabilities.
+          await loadCapabilities();
+        }
       }
       _member = data;
       // PostHog identify — set person properties for segmentation
@@ -1100,10 +1152,17 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         _user = session?.user ?? null;
         if (_user && !_member) {
-          let { data } = await sb.rpc('get_member_by_auth');
+          const [memberRes] = await Promise.all([
+            sb.rpc('get_member_by_auth'),
+            loadCapabilities(),
+          ]);
+          let data = memberRes.data;
           if (!data) {
             const autoLink = await sb.rpc('try_auto_link_ghost');
-            if (autoLink.data) data = autoLink.data;
+            if (autoLink.data) {
+              data = autoLink.data;
+              await loadCapabilities();
+            }
           }
           _member = data;
           renderAuth();
@@ -1115,8 +1174,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       }
       if (event === 'SIGNED_OUT') {
         _member = null; _user = null;
+        (window as any).__nucleoCapabilities = null;
         renderLoggedOut();
         window.dispatchEvent(new CustomEvent('nav:member', { detail: null }));
+        window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: null }));
       }
     });
   }
