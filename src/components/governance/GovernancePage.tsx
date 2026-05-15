@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { canFor } from '../../lib/permissions';
 import ManualDocumentViewer from './ManualDocumentViewer';
 import CRList from './CRList';
 import DocumentsList from './DocumentsList';
@@ -138,11 +139,14 @@ export default function GovernancePage() {
     if (Array.isArray(data)) setCrs(data);
   }, [getSb]);
 
+  // ADR-0007 V4 (p163 Opção C): governance submit/review derived from
+  // engagement-based actions (sign_chain_leader / participate_in_governance_review)
+  // not from operational_role cache. Replaces V3 tribe_leader exact-match that
+  // leaked scope to workgroup/committee leaders. See docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
   const isGP = member?.is_superadmin || member?.operational_role === 'manager' || (member?.designations || []).includes('deputy_manager');
   const isCurator = (member?.designations || []).includes('curator');
-  const isLeader = member?.operational_role === 'tribe_leader';
-  const canSubmit = isGP || isCurator || isLeader;
-  const canReview = isGP || isCurator || ['sponsor', 'chapter_liaison'].includes(member?.operational_role);
+  const canSubmit = isGP || isCurator || canFor('sign_chain_leader');
+  const canReview = isGP || isCurator || canFor('participate_in_governance_review');
 
   if (loading) {
     return (
