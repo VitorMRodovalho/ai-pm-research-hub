@@ -46,6 +46,9 @@ const GAM_I18N = {
   // p171 TIER C — showcaseNudge migrou pra i18n dict (3 langs)
   showcaseNudgeTitle: t('admin.gamification.showcaseNudgeTitle', lang),
   showcaseNudgeSubtitle: t('admin.gamification.showcaseNudgeSubtitle', lang),
+  // p171 #9 — meeting_close suggestion nudge (Track B)
+  suggestionsNudgeTitle: 'Sugeridos no fechamento da reunião',
+  suggestionsNudgeSubtitle: '(meeting_close · clique para preencher)',
   // p171 #13 — Category activity panel
   activityHeading: 'Atividade Recente por categoria',
   activitySubtitle: 'Canários: regras nunca acionadas (🚨) ou idle >30d (⚠️). Drift inverso (categoria sem regra) destacado como 👻 orphan.',
@@ -192,6 +195,16 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
           <div>
             <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.recipientLabel}</label>
             <input type="text" id="gam-recipient-id" placeholder="member uuid" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.72rem] font-mono">
+          </div>
+          {/* p171 #9 (Track B) — Meeting close suggestions nudge: rendered when event_id has suggested_champion_ids */}
+          <div id="gam-suggestions-nudge" class="hidden">
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+              <div class="flex items-center gap-1.5 mb-1.5">
+                <span class="text-[.65rem] font-bold text-amber-800">💡 {GAM_I18N.suggestionsNudgeTitle}</span>
+                <span class="text-[.6rem] text-amber-700">{GAM_I18N.suggestionsNudgeSubtitle}</span>
+              </div>
+              <div id="gam-suggestions-nudge-list" class="space-y-1"></div>
+            </div>
           </div>
           {/* p170 #15 (ADR-0084) — Showcase nudge: shown when recipient_id valid + showcases recent exist */}
           <div id="gam-showcase-nudge" class="hidden">
@@ -525,8 +538,59 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
     (document.getElementById('gam-justification') as HTMLTextAreaElement).value = '';
     // p170 #15: reset showcase nudge
     document.getElementById('gam-showcase-nudge')?.classList.add('hidden');
+    // p171 #9: reset suggestions nudge + fetch if event prefilled
+    document.getElementById('gam-suggestions-nudge')?.classList.add('hidden');
+    if (prefill?.contextId && prefill?.contextKind === 'event') {
+      loadEventSuggestions(prefill.contextId);
+    }
     updateJustificationCounter();
     renderCriteria();
+  }
+
+  // p171 #9 — fetch meeting_close suggestions for the event + render nudge
+  async function loadEventSuggestions(eventId: string) {
+    if (!sb || !eventId) return;
+    const nudge = document.getElementById('gam-suggestions-nudge');
+    const list = document.getElementById('gam-suggestions-nudge-list');
+    if (!nudge || !list) return;
+    try {
+      const { data, error } = await sb.rpc('get_event_champion_suggestions', { p_event_id: eventId });
+      if (error || !Array.isArray(data) || data.length === 0) {
+        nudge.classList.add('hidden');
+        return;
+      }
+      list.innerHTML = data.map((s: any) => `
+        <button type="button" data-suggestion-id="${escapeHtml(s.member_id)}"
+                class="gam-suggestion-btn w-full text-left text-[.65rem] bg-white border border-amber-200 rounded px-2 py-1.5 hover:bg-amber-50 cursor-pointer transition-colors">
+          <div class="font-semibold text-amber-900">${escapeHtml(s.member_name)}</div>
+          <div class="text-amber-700/70 text-[.6rem]">${escapeHtml(s.designation_summary || '')}</div>
+        </button>
+      `).join('');
+      // Wire click → prefill recipient_id input + trigger showcase nudge refetch
+      list.querySelectorAll('.gam-suggestion-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const memberId = btn.getAttribute('data-suggestion-id');
+          if (!memberId) return;
+          const recipientInput = document.getElementById('gam-recipient-id') as HTMLInputElement | null;
+          if (recipientInput) {
+            recipientInput.value = memberId;
+            // Trigger showcaseNudge refetch (debounced input handler)
+            recipientInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+      });
+      nudge.classList.remove('hidden');
+      // If exactly 1 suggestion AND recipient_id is empty, auto-prefill
+      if (data.length === 1) {
+        const recipientInput = document.getElementById('gam-recipient-id') as HTMLInputElement | null;
+        if (recipientInput && !recipientInput.value) {
+          recipientInput.value = data[0].member_id;
+          recipientInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    } catch (e) {
+      nudge.classList.add('hidden');
+    }
   }
 
   // p170 #15 (ADR-0084) — Showcase nudge: fetch recent showcases for a member
