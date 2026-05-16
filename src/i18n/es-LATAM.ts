@@ -1682,6 +1682,9 @@ const esLATAM: Record<string, string> = {
   // p171 TIER C — showcaseNudge i18n (ADR-0084 Showcase→Champion eligibility)
   'admin.gamification.showcaseNudgeTitle': 'Showcases recientes de este miembro',
   'admin.gamification.showcaseNudgeSubtitle': '(últimos 30d — considere si justifica Champion)',
+  // p172 TIER C — suggestionsNudge i18n (Track B meeting_close p171 #9)
+  'admin.gamification.suggestionsNudgeTitle': 'Sugeridos al cierre de la reunión',
+  'admin.gamification.suggestionsNudgeSubtitle': '(meeting_close · clic para rellenar)',
   'admin.stat.total': 'Total',
   'admin.stat.active': 'Activos',
   'admin.stat.noTribe': 'Sin Tribu',
