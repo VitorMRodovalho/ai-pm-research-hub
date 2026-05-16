@@ -44,6 +44,27 @@ const GAM_I18N = {
   rulesColTrigger: 'Trigger',
   showcaseNudgeTitle: 'Showcases recentes deste membro',
   showcaseNudgeSubtitle: '(últimos 30d — considere se justifica Champion)',
+  // p171 #13 — Category activity panel
+  activityHeading: 'Atividade Recente por categoria',
+  activitySubtitle: 'Canários: regras nunca acionadas (🚨) ou idle >30d (⚠️). Drift inverso (categoria sem regra) destacado como 👻 orphan.',
+  activityEmpty: 'Sem categorias ativas.',
+  activityWindowLabel: 'Janela (dias)',
+  activityColCategory: 'Categoria',
+  activityColPillar: 'Pilar',
+  activityColBase: 'Base XP',
+  activityColTotal: 'Total',
+  activityColMembers: 'Members',
+  activityColWindow: 'Janela',
+  activityColLast7d: '7d',
+  activityColLastAward: 'Último',
+  activityColStatus: 'Status',
+  activityStatusHealthy: 'healthy',
+  activityStatusWarm: 'warm',
+  activityStatusIdle: 'idle',
+  activityStatusNever: 'never',
+  activityStatusInactive: 'inactive',
+  activityStatusOrphan: 'orphan',
+  activityIncludeInactive: 'Incluir inativas',
 };
 
 // Criteria checklist per surface (matches SEMANTIC_TAXONOMY.md Q5.4)
@@ -99,9 +120,36 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
       </section>
 
       <!-- Section 2: Rules table -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 mb-6">
         <h2 class="text-sm font-bold text-navy mb-3">{GAM_I18N.rulesHeading}</h2>
         <div id="gam-rules-table" class="overflow-x-auto">
+          <p class="text-[.7rem] text-[var(--text-muted)]">{GAM_I18N.loading}</p>
+        </div>
+      </section>
+
+      {/* p171 #13 — Category activity panel (canary: never-fired rules + idle drift) */}
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+        <div class="flex items-start justify-between mb-2 gap-3 flex-wrap">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-bold text-navy">{GAM_I18N.activityHeading}</h2>
+            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">{GAM_I18N.activitySubtitle}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-[.65rem] text-[var(--text-secondary)] flex items-center gap-1.5">
+              <span>{GAM_I18N.activityWindowLabel}</span>
+              <select id="gam-activity-window" class="border border-[var(--border-default)] rounded px-1.5 py-0.5 text-[.7rem]">
+                <option value="7">7</option>
+                <option value="30" selected>30</option>
+                <option value="90">90</option>
+              </select>
+            </label>
+            <label class="text-[.65rem] text-[var(--text-secondary)] flex items-center gap-1.5 cursor-pointer">
+              <input id="gam-activity-include-inactive" type="checkbox" class="cursor-pointer">
+              <span>{GAM_I18N.activityIncludeInactive}</span>
+            </label>
+          </div>
+        </div>
+        <div id="gam-activity-table" class="overflow-x-auto">
           <p class="text-[.7rem] text-[var(--text-muted)]">{GAM_I18N.loading}</p>
         </div>
       </section>
@@ -203,8 +251,76 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     document.getElementById('gam-panel')?.classList.remove('hidden');
     loadRules();
     loadChampions();
+    loadCategoryActivity();
     renderCriteria(); // initial render
     maybeAutoOpenFromUrl();
+  }
+
+  // p171 #13 — Category activity panel
+  async function loadCategoryActivity() {
+    if (!sb) return;
+    const container = document.getElementById('gam-activity-table');
+    if (!container) return;
+    const windowEl = document.getElementById('gam-activity-window') as HTMLSelectElement | null;
+    const includeInactiveEl = document.getElementById('gam-activity-include-inactive') as HTMLInputElement | null;
+    const windowDays = Number(windowEl?.value || 30);
+    const includeInactive = Boolean(includeInactiveEl?.checked);
+    try {
+      const { data, error } = await sb.rpc('get_gamification_category_activity', { p_window_days: windowDays });
+      if (error) throw error;
+      const rows = (data || []).filter((r: any) => includeInactive || r.status !== 'inactive');
+      if (rows.length === 0) {
+        container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.activityEmpty}</p>`;
+        return;
+      }
+      const statusBadge = (s: string) => {
+        switch (s) {
+          case 'healthy':  return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-emerald-100 text-emerald-800">✓ ${T.activityStatusHealthy}</span>`;
+          case 'warm':     return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-emerald-50 text-emerald-700">${T.activityStatusWarm}</span>`;
+          case 'idle':     return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-amber-100 text-amber-800">⚠ ${T.activityStatusIdle}</span>`;
+          case 'never':    return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-red-100 text-red-800">🚨 ${T.activityStatusNever}</span>`;
+          case 'inactive': return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-gray-100 text-gray-600">${T.activityStatusInactive}</span>`;
+          case 'orphan':   return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-purple-100 text-purple-800">👻 ${T.activityStatusOrphan}</span>`;
+          default:         return `<span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-gray-100 text-gray-600">${escapeHtml(s)}</span>`;
+        }
+      };
+      const fmtLast = (ts: string | null) => {
+        if (!ts) return '<span class="text-[var(--text-muted)]">—</span>';
+        const ageMs = Date.now() - new Date(ts).getTime();
+        const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+        const cls = ageDays > 60 ? 'text-red-700' : ageDays > 30 ? 'text-amber-700' : ageDays > 7 ? 'text-gray-600' : 'text-emerald-700';
+        return `<span class="${cls}">${ageDays}d</span>`;
+      };
+      const html = rows.map((r: any) => `
+        <tr class="border-b border-[var(--border-default)] ${r.status === 'never' || r.status === 'orphan' ? 'bg-red-50/30' : r.status === 'idle' ? 'bg-amber-50/30' : ''}">
+          <td class="py-1.5 pr-3 font-mono text-[.68rem]">${escapeHtml(r.slug)}</td>
+          <td class="py-1.5 pr-3 text-[.68rem] text-[var(--text-secondary)]">${escapeHtml(r.pillar || '—')}</td>
+          <td class="py-1.5 pr-3 text-right text-[.7rem] font-semibold">${r.base_points ?? '—'}</td>
+          <td class="py-1.5 pr-3 text-right text-[.7rem]">${r.total_events}</td>
+          <td class="py-1.5 pr-3 text-right text-[.65rem] text-[var(--text-muted)]">${r.unique_members}</td>
+          <td class="py-1.5 pr-3 text-right text-[.7rem]">${r.last_window_events}</td>
+          <td class="py-1.5 pr-3 text-right text-[.7rem]">${r.last_7d_events}</td>
+          <td class="py-1.5 pr-3 text-right text-[.65rem]">${fmtLast(r.last_award)}</td>
+          <td class="py-1.5 pr-3 text-center">${statusBadge(r.status)}</td>
+        </tr>`).join('');
+      container.innerHTML = `
+        <table class="w-full text-[.78rem]">
+          <thead><tr class="border-b-2 border-[var(--border-default)] text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">
+            <th class="py-1.5 pr-3 text-left">${T.activityColCategory}</th>
+            <th class="py-1.5 pr-3 text-left">${T.activityColPillar}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColBase}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColTotal}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColMembers}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColWindow}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColLast7d}</th>
+            <th class="py-1.5 pr-3 text-right">${T.activityColLastAward}</th>
+            <th class="py-1.5 pr-3 text-center">${T.activityColStatus}</th>
+          </tr></thead>
+          <tbody>${html}</tbody>
+        </table>`;
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-[.7rem] text-red-600">${T.errorPrefix}: ${escapeHtml(e?.message || 'load failed')}</p>`;
+    }
   }
 
   async function loadRules() {
@@ -517,6 +633,10 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     if (showcaseNudgeDebounce) clearTimeout(showcaseNudgeDebounce);
     showcaseNudgeDebounce = setTimeout(() => loadShowcaseNudge(val), 400);
   });
+
+  // p171 #13: activity panel controls
+  document.getElementById('gam-activity-window')?.addEventListener('change', () => loadCategoryActivity());
+  document.getElementById('gam-activity-include-inactive')?.addEventListener('change', () => loadCategoryActivity());
 
   boot();
 </script>
