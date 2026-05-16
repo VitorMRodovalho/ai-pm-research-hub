@@ -501,10 +501,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     return ALL_EVENTS.filter((ev: any) => {
       // Participant override: user always sees events they participated in
       const isParticipant = ev.i_attended != null; // has attendance record
+      // p169: entrevistas (selection portal) e 1:1s NUNCA aparecem em /attendance.
+      // Tracking dedicado em /admin/selection. Manter aqui causa false-positive
+      // "0/49 presentes" porque entrevistas 1:1 têm audience_level='all' herdado
+      // de calendar import — denominador errado + status não sync com selection_interviews.
+      if (ev.type === '1on1' || ev.type === 'parceria' || ev.type === 'entrevista' || ev.type === 'interview') {
+        return false;
+      }
       // Visibility filtering (unless participant)
       if (!isParticipant && !gp) {
         if (ev.visibility === 'gp_only') return false;
-        if ((ev.type === '1on1' || ev.type === 'parceria' || ev.type === 'entrevista' || ev.type === 'interview') && !CAN_MANAGE) return false;
       }
       // ADR-0007 V4 (p163 Opção C): leadership-visible filter scope-aware via canFor.
       // Org admin (CAN_MANAGE) or leader of THIS event's tribe sees it. Workgroup
