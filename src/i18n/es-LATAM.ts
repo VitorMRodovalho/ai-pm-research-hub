@@ -4856,6 +4856,36 @@ const esLATAM: Record<string, string> = {
   'profile.history.type1on1': '1:1',
   'profile.history.typeExterno': 'Externo',
 
+  // ── Profile XP Pillars (p171 #7 — migrar 20+19 ternários inline) ──
+  'profile.xp.itemEarnedSingular': 'punto obtenido',
+  'profile.xp.itemEarnedPlural': 'puntos obtenidos',
+  'profile.xp.howToEarn': 'Cómo puntuar',
+  'profile.xp.howToGrow': 'Cómo crecer aquí',
+  'profile.xp.earnedLifetime': 'Puntos histórico total',
+  'profile.xp.earnedCycle': 'Obtenido en este ciclo',
+  'profile.xp.noEarningsYet': 'Aún sin puntos — vea "Cómo crecer aquí"',
+  'profile.xp.variableNote': '(variable: 15–25 pts por tipo)',
+  'profile.xp.tabLifetime': 'Histórico',
+  'profile.xp.tabCycle': 'Ciclo actual',
+  'profile.xp.ofTotal': '% del total',
+  'profile.xp.triggerTipManual': 'Reconocimiento manual por liderazgo',
+  'profile.xp.triggerTipAuto': 'Automático cuando la acción fuente ocurre',
+  'profile.xp.triggerTipRpc': 'Registrado vía sistema (ej. showcase, certificado)',
+  'profile.xp.journeyTitle': '🏆 Tu Recorrido en XP',
+  'profile.xp.scopeAllTime': 'histórico',
+  'profile.xp.scopeCurrentCycle': 'ciclo actual',
+  'profile.xp.legend': '✋ Reconocimiento · ⚡ Automático · 📋 Registrado vía sistema',
+
+  // ── Profile Champions section (p171 #7) ──
+  'profile.champions.title': '🏅 Tus Champions',
+  'profile.champions.subtitle': 'Reconocimiento manual de la liderazgo por contribuciones excepcionales',
+  'profile.champions.emptyTitle': 'Aún no tienes Champion',
+  'profile.champions.emptyHint': 'Champion es conferido por líderes de tribu, GP, co-GP, adjuntos y líderes de comunicación en reuniones generales, de tribu o por entregables destacados. Tres superficies: 🏛️ general (30 pts) · 🏕️ tribu (20 pts) · 📦 entregable (40 pts) — más 5 pts por criterio.',
+  'profile.champions.awarderFallback': 'Liderazgo',
+  'profile.champions.criteriaLabel': 'criterios',
+  'profile.champions.activeSingular': 'activo',
+  'profile.champions.activePlural': 'activos',
+
   // ── Library Search (F4) ──
   'library.search.placeholder': 'Buscar recursos...',
   'library.search.searching': 'Buscando...',
