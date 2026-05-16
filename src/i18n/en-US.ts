@@ -4342,6 +4342,13 @@ const enUS: Record<string, string> = {
   'comp.dataHealth.anomaliesFound': 'anomalies found',
   'comp.dataHealth.errorResolve': 'Error resolving anomaly.',
   'comp.dataHealth.resolvedSuccess': 'Anomaly resolved successfully.',
+  'comp.dataHealth.orphanInterviews.title': 'Unlinked Interviews',
+  'comp.dataHealth.orphanInterviews.subtitle': 'Interview events without a linked application — link manually to close the historical record.',
+  'comp.dataHealth.orphanInterviews.selectApplication': 'Select application...',
+  'comp.dataHealth.orphanInterviews.linkButton': 'Link',
+  'comp.dataHealth.orphanInterviews.linkingError': 'Error linking interview: ',
+  'comp.dataHealth.orphanInterviews.linkedSuccess': 'Interview linked successfully.',
+  'comp.dataHealth.orphanInterviews.noSuggestions': 'No automatic suggestion (manual link via SQL console).',
 
   // ── comp.knowledge ──
   'comp.knowledge.loading': 'Loading resources...',
