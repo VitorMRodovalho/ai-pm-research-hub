@@ -345,15 +345,15 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       .eq('is_active', true)
       .not('leader_member_id', 'is', null);
     if (!tribesData || tribesData.length === 0) return;
-    const memberIds = tribesData.map((t: any) => t.leader_member_id).filter(Boolean);
+    const memberIds = tribesData.map((t) => t.leader_member_id).filter(Boolean);
     if (memberIds.length === 0) return;
     const { data: photos } = await sb.from('public_members')
       .select('id, photo_url')
       .in('id', memberIds)
       .not('photo_url', 'is', null);
     if (!photos) return;
-    const photoById = new Map(photos.map((p: any) => [p.id, p.photo_url]));
-    tribesData.forEach((t: any) => {
+    const photoById = new Map(photos.map((p) => [p.id, p.photo_url]));
+    tribesData.forEach((t) => {
       const url = photoById.get(t.leader_member_id);
       if (!url) return;
       const el = document.getElementById('tp-' + t.id);
