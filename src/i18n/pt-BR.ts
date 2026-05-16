@@ -1684,6 +1684,9 @@ const ptBR: Record<string, string> = {
   'admin.viewProfile': '👤 Ver meu perfil',
   'admin.checkingAccess': 'Verificando acesso...',
   'admin.loading': 'Carregando...',
+  // p171 TIER C — showcaseNudge i18n (ADR-0084 Showcase→Champion eligibility)
+  'admin.gamification.showcaseNudgeTitle': 'Showcases recentes deste membro',
+  'admin.gamification.showcaseNudgeSubtitle': '(últimos 30d — considere se justifica Champion)',
   'admin.stat.total': 'Total',
   'admin.stat.active': 'Ativos',
   'admin.stat.noTribe': 'Sem Tribo',

@@ -1679,6 +1679,9 @@ const esLATAM: Record<string, string> = {
   'admin.viewProfile': '👤 Ver mi perfil',
   'admin.checkingAccess': 'Verificando acceso...',
   'admin.loading': 'Cargando...',
+  // p171 TIER C — showcaseNudge i18n (ADR-0084 Showcase→Champion eligibility)
+  'admin.gamification.showcaseNudgeTitle': 'Showcases recientes de este miembro',
+  'admin.gamification.showcaseNudgeSubtitle': '(últimos 30d — considere si justifica Champion)',
   'admin.stat.total': 'Total',
   'admin.stat.active': 'Activos',
   'admin.stat.noTribe': 'Sin Tribu',
