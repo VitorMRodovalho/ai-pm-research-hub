@@ -29,6 +29,9 @@ interface Member {
   cert_points: number;
   badge_points: number;
   learning_points: number;
+  producao_points: number;
+  curadoria_points: number;
+  champions_points: number;
   credly_badge_count: number;
   has_cpmai: boolean;
   trail_progress: number;
@@ -53,9 +56,10 @@ interface GamificationData {
 }
 
 type SortKey = 'total_points' | 'cycle_points' | 'attendance_points' | 'cert_points'
-  | 'badge_points' | 'learning_points' | 'name';
+  | 'badge_points' | 'learning_points' | 'producao_points' | 'curadoria_points'
+  | 'champions_points' | 'name';
 
-const CHART_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#EF4444'];
+const CHART_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#EF4444', '#0EA5E9'];
 
 export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGamificationTabProps) {
   const t = usePageI18n();
@@ -101,20 +105,24 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
     if (!data?.members) return [];
     const totals = data.members.reduce(
       (acc, m) => ({
-        cycle: acc.cycle + (m.cycle_points || 0),
         attendance: acc.attendance + (m.attendance_points || 0),
         certs: acc.certs + (m.cert_points || 0),
         badges: acc.badges + (m.badge_points || 0),
         learning: acc.learning + (m.learning_points || 0),
+        producao: acc.producao + (m.producao_points || 0),
+        curadoria: acc.curadoria + (m.curadoria_points || 0),
+        champions: acc.champions + (m.champions_points || 0),
       }),
-      { cycle: 0, attendance: 0, certs: 0, badges: 0, learning: 0 },
+      { attendance: 0, certs: 0, badges: 0, learning: 0, producao: 0, curadoria: 0, champions: 0 },
     );
     return [
-      { name: t('comp.gamification.cycle', 'Ciclo'), value: totals.cycle },
       { name: t('comp.gamification.attendance', 'Presenca'), value: totals.attendance },
       { name: t('comp.gamification.certs', 'Certificacoes'), value: totals.certs },
       { name: t('comp.gamification.badges', 'Badges'), value: totals.badges },
       { name: t('comp.gamification.learning', 'Aprendizado'), value: totals.learning },
+      { name: t('comp.gamification.producao', 'Producao'), value: totals.producao },
+      { name: t('comp.gamification.curadoria', 'Curadoria'), value: totals.curadoria },
+      { name: t('comp.gamification.champions', 'Champions'), value: totals.champions },
     ].filter(d => d.value > 0);
     // p124: include t in deps so the memo recomputes when usePageI18n's
     // dict updates after the post-mount useEffect. Without this, the pie
@@ -239,6 +247,9 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                 <Th label={t('comp.gamification.certsCol', 'Certs')} sortKey="cert_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 <Th label={t('comp.gamification.badgesCol', 'Badges')} sortKey="badge_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 <Th label={t('comp.gamification.learningCol', 'Aprendizado')} sortKey="learning_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                <Th label={t('comp.gamification.producaoCol', 'Producao')} sortKey="producao_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                <Th label={t('comp.gamification.curadoriaCol', 'Curadoria')} sortKey="curadoria_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                <Th label={t('comp.gamification.championsCol', 'Champions')} sortKey="champions_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 <Th label="CPMAI" />
                 <Th label={t('comp.gamification.trail', 'Trilha')} />
               </tr>
@@ -261,6 +272,9 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                   <td className="px-3 py-2.5 text-center">{m.cert_points}</td>
                   <td className="px-3 py-2.5 text-center">{m.badge_points}</td>
                   <td className="px-3 py-2.5 text-center">{m.learning_points}</td>
+                  <td className="px-3 py-2.5 text-center">{m.producao_points}</td>
+                  <td className="px-3 py-2.5 text-center">{m.curadoria_points}</td>
+                  <td className="px-3 py-2.5 text-center">{m.champions_points}</td>
                   <td className="px-3 py-2.5 text-center">
                     {m.has_cpmai ? (
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">&#x2705;</span>
@@ -275,7 +289,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
               ))}
               {sortedMembers.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-6 text-center text-[var(--text-muted)]">
+                  <td colSpan={13} className="px-3 py-6 text-center text-[var(--text-muted)]">
                     {t('comp.gamification.noMembers', 'Nenhum membro encontrado')}
                   </td>
                 </tr>
