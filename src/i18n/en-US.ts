@@ -4529,6 +4529,7 @@ const enUS: Record<string, string> = {
   // Event Governance (3-level hierarchy)
   'attendance.modal.audienceType': 'Audience Type',
   'attendance.modal.whichTribe': 'Which Tribe',
+  'attendance.modal.whichInitiative': 'Which Initiative',
   'attendance.modal.nature': 'Nature',
   'attendance.modal.advancedFields': 'Advanced fields',
   'attendance.modal.advanced': 'Advanced settings',

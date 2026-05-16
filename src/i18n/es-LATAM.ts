@@ -4530,6 +4530,7 @@ const esLATAM: Record<string, string> = {
   // Event Governance (3-level hierarchy)
   'attendance.modal.audienceType': 'Tipo de Público',
   'attendance.modal.whichTribe': 'Qué Tribu',
+  'attendance.modal.whichInitiative': 'Qué Iniciativa',
   'attendance.modal.nature': 'Naturaleza',
   'attendance.modal.advancedFields': 'Campos avanzados',
   'attendance.modal.advanced': 'Configuración avanzada',

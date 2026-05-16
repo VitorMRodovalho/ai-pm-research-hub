@@ -1579,8 +1579,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     (document.getElementById('ev-agenda-text') as HTMLTextAreaElement).value = '';
     (document.getElementById('ev-agenda-url') as HTMLInputElement).value = '';
     (document.getElementById('ev-external-attendees') as HTMLInputElement).value = '';
-    // Load tribes for tribe selector
-    await ensureTribesLoaded();
+    // Load tribes + initiatives for selectors
+    await Promise.all([ensureTribesLoaded(), ensureInitiativesLoaded()]);
     const tribeSelCreate = document.getElementById('ev-tribe-select') as HTMLSelectElement;
     if (tribeSelCreate && tribeSelCreate.options.length <= 1) {
       for (const t of _tribesCache) {
@@ -1590,21 +1590,20 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         tribeSelCreate.appendChild(opt);
       }
     }
-    // Show/hide tribe wrapper based on type
+    // Show/hide tribe + initiative wrappers based on type
     const tribeWrapper = document.getElementById('ev-tribe-wrapper')!;
+    const initiativeWrapper = document.getElementById('ev-initiative-wrapper')!;
     tribeWrapper.classList.add('hidden');
+    initiativeWrapper.classList.add('hidden');
     const typeSelect = document.getElementById('ev-type') as HTMLSelectElement;
     typeSelect.onchange = () => {
-      if (typeSelect.value === 'tribo') {
-        tribeWrapper.classList.remove('hidden');
-      } else {
-        tribeWrapper.classList.add('hidden');
-      }
+      tribeWrapper.classList.toggle('hidden', typeSelect.value !== 'tribo');
+      initiativeWrapper.classList.toggle('hidden', typeSelect.value !== 'iniciativa');
       // Auto-set visibility for certain types
       const visEl = document.getElementById('ev-visibility') as HTMLSelectElement;
       if (['lideranca', '1on1'].includes(typeSelect.value)) {
         visEl.value = 'leadership';
-      } else if (typeSelect.value === 'geral' || typeSelect.value === 'kickoff') {
+      } else if (typeSelect.value === 'geral' || typeSelect.value === 'kickoff' || typeSelect.value === 'iniciativa') {
         visEl.value = 'public';
       }
     };
@@ -1630,6 +1629,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
     const tribeId = type === 'tribo' ? parseInt((document.getElementById('ev-tribe-select') as HTMLSelectElement).value) : null;
+    const initiativeIdNew = type === 'iniciativa' ? (document.getElementById('ev-initiative-select') as HTMLSelectElement).value || null : null;
     const nature = (document.getElementById('ev-nature') as HTMLSelectElement).value;
     const visibility = (document.getElementById('ev-visibility') as HTMLSelectElement)?.value || 'public';
     const agendaText = (document.getElementById('ev-agenda-text') as HTMLTextAreaElement)?.value?.trim() || null;
@@ -1653,6 +1653,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       });
       if (error) throw error;
       if (data?.success) {
+        // p169 quick win: when type=iniciativa, link initiative_id (create_event RPC só aceita p_tribe_id)
+        if (initiativeIdNew && data.event_id) {
+          const { error: linkErr } = await sb.from('events')
+            .update({ initiative_id: initiativeIdNew, audience_level: 'initiative' })
+            .eq('id', data.event_id);
+          if (linkErr) console.warn('initiative link failed:', linkErr);
+        }
         // W140: assign tags
         if (tagIds.length) {
           await assignEventTagsAndAudience(data.event_id, tagIds, 'all_active_operational');
@@ -1737,29 +1744,58 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     return _tribesCache;
   }
 
+  // ── INITIATIVES CACHE for modal (p169 quick win: add iniciativa as event type) ──
+  let _initiativesCache: any[] = [];
+  async function ensureInitiativesLoaded() {
+    if (_initiativesCache.length > 0) return _initiativesCache;
+    const { data } = await sb.from('initiatives')
+      .select('id, title, kind, status')
+      .neq('status', 'archived')
+      .order('title');
+    _initiativesCache = data || [];
+    for (const selId of ['edit-ev-initiative-select', 'ev-initiative-select']) {
+      const sel = document.getElementById(selId) as HTMLSelectElement;
+      if (sel) {
+        while (sel.options.length > 1) sel.remove(1);
+        for (const i of _initiativesCache) {
+          const opt = document.createElement('option');
+          opt.value = String(i.id);
+          const kindLabel = i.kind === 'research_tribe' ? 'tribo' : i.kind === 'study_group' ? 'estudo' : i.kind === 'workgroup' ? 'WG' : i.kind === 'committee' ? 'comitê' : i.kind === 'congress' ? 'congresso' : i.kind;
+          opt.textContent = `${i.title} (${kindLabel})`;
+          sel.appendChild(opt);
+        }
+      }
+    }
+    return _initiativesCache;
+  }
+
   // ── EDIT EVENT ──
   async function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
     (document.getElementById('edit-ev-type') as HTMLSelectElement).value = ev.type || 'geral';
     (document.getElementById('edit-ev-nature') as HTMLSelectElement).value = ev.nature || 'avulsa';
-    // Load tribes and show/hide tribe selector based on type
-    await ensureTribesLoaded();
+    // Load tribes + initiatives and show/hide selectors based on type
+    await Promise.all([ensureTribesLoaded(), ensureInitiativesLoaded()]);
     const tribeWrapper = document.getElementById('edit-ev-tribe-wrapper')!;
+    const initiativeWrapper = document.getElementById('edit-ev-initiative-wrapper')!;
     if (ev.type === 'tribo') {
       tribeWrapper.classList.remove('hidden');
+      initiativeWrapper.classList.add('hidden');
       (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value = String(ev.tribe_id || '');
+    } else if (ev.type === 'iniciativa') {
+      tribeWrapper.classList.add('hidden');
+      initiativeWrapper.classList.remove('hidden');
+      (document.getElementById('edit-ev-initiative-select') as HTMLSelectElement).value = String(ev.initiative_id || '');
     } else {
       tribeWrapper.classList.add('hidden');
+      initiativeWrapper.classList.add('hidden');
     }
-    // Listen for type changes to toggle tribe selector
+    // Listen for type changes to toggle correct selector
     const typeSelect = document.getElementById('edit-ev-type') as HTMLSelectElement;
     typeSelect.onchange = () => {
-      if (typeSelect.value === 'tribo') {
-        tribeWrapper.classList.remove('hidden');
-      } else {
-        tribeWrapper.classList.add('hidden');
-      }
+      tribeWrapper.classList.toggle('hidden', typeSelect.value !== 'tribo');
+      initiativeWrapper.classList.toggle('hidden', typeSelect.value !== 'iniciativa');
     };
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
     (document.getElementById('edit-ev-time-start') as HTMLInputElement).value = ev.time_start || '';
@@ -1843,6 +1879,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       ? externalAttendeesRaw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
       : null;
     const tribeId = editType === 'tribo' ? (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value || null : null;
+    const initiativeIdFromSelect = editType === 'iniciativa' ? (document.getElementById('edit-ev-initiative-select') as HTMLSelectElement).value || null : null;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
     const recurrenceGroup = (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value;
     const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
@@ -1889,6 +1926,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
           updateFields.initiative_id = initRow?.id || null;
         }
+        if (initiativeIdFromSelect !== null) {
+          updateFields.initiative_id = initiativeIdFromSelect;
+        }
         const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
         if (rowUpdateError) throw rowUpdateError;
         await assignEventTagsAndAudience(id, tagIds, audience);
@@ -1916,6 +1956,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             const { data: initRow } = await sb.from('initiatives')
               .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
             updateFields.initiative_id = initRow?.id || null;
+          }
+          if (initiativeIdFromSelect !== null) {
+            updateFields.initiative_id = initiativeIdFromSelect;
           }
           const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
           if (rowUpdateError) throw rowUpdateError;

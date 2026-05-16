@@ -4535,6 +4535,7 @@ const ptBR: Record<string, string> = {
   // Event Governance (3-level hierarchy)
   'attendance.modal.audienceType': 'Tipo de Público',
   'attendance.modal.whichTribe': 'Qual Tribo',
+  'attendance.modal.whichInitiative': 'Qual Iniciativa',
   'attendance.modal.nature': 'Natureza',
   'attendance.modal.advancedFields': 'Campos avançados',
   'attendance.modal.advanced': 'Configurações avançadas',
