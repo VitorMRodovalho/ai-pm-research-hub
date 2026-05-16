@@ -1,5 +1,8 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.69.0 — 284 tools (count via grep; ratio drift over time) + 4 prompts + 3 resources + usage logging
+// MCP server v2.70.0 — 289 tools + 4 prompts + 3 resources + usage logging
+// v2.70.0 (p172): meeting_close tool extended (p171 #9 Track B) — accepts
+//   suggested_champion_ids[] param. Persists pra events.suggested_champion_ids.
+//   UI /admin/gamification deep-link reads via get_event_champion_suggestions.
 // v2.69.0: +1 tool p133 ARM-10 hygiene (ADR-0022 W3 last-deliverable substrate):
 //   get_notifications_analytics — per-delivery_mode + per-type + timeseries notifications send rates.
 //   Complements get_digest_health (cron focus). Auth: view_internal_analytics.
@@ -6336,7 +6339,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.69.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.70.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6356,6 +6359,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.69.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.70.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
