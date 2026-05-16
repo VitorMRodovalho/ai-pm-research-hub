@@ -987,43 +987,23 @@ const PROFILE_I18N = {
           return ts >= start && ts < end;
         });
 
+    // p171 #7 — i18n migrou ternários inline pra dict keys (profile.xp.*)
     const ptsLabel = 'pts';
-    const itemsLabel = (n: number) => {
-      if (lang === 'en-US') return n === 1 ? 'item earned' : 'items earned';
-      if (lang === 'es-LATAM') return n === 1 ? 'punto obtenido' : 'puntos obtenidos';
-      return n === 1 ? 'item pontuado' : 'itens pontuados';
-    };
-    const howToLabelOpen = lang === 'en-US' ? 'How to earn'
-                         : lang === 'es-LATAM' ? 'Cómo puntuar'
-                         : 'Como pontuar';
-    const howToLabelGrow = lang === 'en-US' ? 'How to grow here'
-                         : lang === 'es-LATAM' ? 'Cómo crecer aquí'
-                         : 'Como crescer aqui';
+    const itemsLabel = (n: number) =>
+      n === 1 ? t('profile.xp.itemEarnedSingular', lang) : t('profile.xp.itemEarnedPlural', lang);
+    const howToLabelOpen = t('profile.xp.howToEarn', lang);
+    const howToLabelGrow = t('profile.xp.howToGrow', lang);
     const earnedListLabel = isLifetime
-      ? (lang === 'en-US' ? 'All-time earnings'
-        : lang === 'es-LATAM' ? 'Puntos histórico total'
-        : 'Pontuação histórica total')
-      : (lang === 'en-US' ? 'Earned this cycle'
-        : lang === 'es-LATAM' ? 'Obtenido en este ciclo'
-        : 'Pontuado neste ciclo');
-    const noEarningsYet = lang === 'en-US' ? 'No earnings yet — see "How to grow here"'
-                        : lang === 'es-LATAM' ? 'Aún sin puntos — vea "Cómo crecer aquí"'
-                        : 'Ainda sem pontos — veja "Como crescer aqui"';
-    const variableNote = lang === 'en-US' ? '(variable: 15–25 pts by type)'
-                       : lang === 'es-LATAM' ? '(variable: 15–25 pts por tipo)'
-                       : '(variável: 15–25 pts por tipo)';
-    const tabLifetimeI18n = lang === 'en-US' ? 'All-time'
-                          : lang === 'es-LATAM' ? 'Histórico'
-                          : 'Vida toda';
+      ? t('profile.xp.earnedLifetime', lang)
+      : t('profile.xp.earnedCycle', lang);
+    const noEarningsYet = t('profile.xp.noEarningsYet', lang);
+    const variableNote = t('profile.xp.variableNote', lang);
+    const tabLifetimeI18n = t('profile.xp.tabLifetime', lang);
     // p171 #6 — include cycle code/label in tab when available pra dar contexto temporal
     const cycleShort = cycleCode || '';
     const cycleSuffix = cycleShort ? ` (${cycleShort.replace(/^cycle_/, 'C')})` : '';
-    const tabCycleI18n = (lang === 'en-US' ? 'Current cycle'
-                       : lang === 'es-LATAM' ? 'Ciclo actual'
-                       : 'Ciclo atual') + cycleSuffix;
-    const ofTotalI18n = lang === 'en-US' ? '% of total'
-                      : lang === 'es-LATAM' ? '% del total'
-                      : '% do total';
+    const tabCycleI18n = t('profile.xp.tabCycle', lang) + cycleSuffix;
+    const ofTotalI18n = t('profile.xp.ofTotal', lang);
 
     const cardsHtml = pillars.map((p: any) => {
       const rules: any[] = p.rules || [];
@@ -1033,26 +1013,21 @@ const PROFILE_I18N = {
       const pillarPct = totalPts > 0 ? Math.round((p.total_pts / totalPts) * 100) : 0;
       const barColor = hasPts ? 'bg-teal' : 'bg-[var(--border-default)]';
 
+      // p171 #7 — triggerMeta tips migrados pra dict keys
       const triggerMeta = (ts: string) => {
         if (ts === 'manual') return {
           icon: '✋',
-          tip: lang === 'en-US' ? 'Manual recognition by leadership'
-             : lang === 'es-LATAM' ? 'Reconocimiento manual por liderazgo'
-             : 'Reconhecimento manual por liderança',
+          tip: t('profile.xp.triggerTipManual', lang),
           color: 'text-amber-700'
         };
         if (ts === 'auto_trigger') return {
           icon: '⚡',
-          tip: lang === 'en-US' ? 'Automatic when source action happens'
-             : lang === 'es-LATAM' ? 'Automático cuando la acción fuente ocurre'
-             : 'Automático quando a ação-fonte acontece',
+          tip: t('profile.xp.triggerTipAuto', lang),
           color: 'text-teal'
         };
         if (ts === 'rpc_callback') return {
           icon: '📋',
-          tip: lang === 'en-US' ? 'Registered via system (e.g. showcase, certificate)'
-             : lang === 'es-LATAM' ? 'Registrado vía sistema (ej. showcase, certificado)'
-             : 'Registrado via sistema (ex: showcase, certificado)',
+          tip: t('profile.xp.triggerTipRpc', lang),
           color: 'text-purple-700'
         };
         return { icon: '', tip: '', color: 'text-[var(--text-muted)]' };
@@ -1137,13 +1112,12 @@ const PROFILE_I18N = {
         </div>`;
     }).join('');
 
-    const titleI18n = lang === 'en-US' ? '🏆 Your XP Journey'
-                    : lang === 'es-LATAM' ? '🏆 Tu Recorrido en XP'
-                    : '🏆 Sua Jornada em XP';
+    // p171 #7 — title + scopeLabel migrados
+    const titleI18n = t('profile.xp.journeyTitle', lang);
     const scopeLabel = isLifetime
-      ? (lang === 'en-US' ? 'all-time' : lang === 'es-LATAM' ? 'histórico' : 'vida toda')
-      : (cycleCode ? cycleCode : (lang === 'en-US' ? 'current cycle' : lang === 'es-LATAM' ? 'ciclo actual' : 'ciclo atual'));
-    const ptsSuffix = lang === 'en-US' ? 'pts' : 'pts';
+      ? t('profile.xp.scopeAllTime', lang)
+      : (cycleCode ? cycleCode : t('profile.xp.scopeCurrentCycle', lang));
+    const ptsSuffix = 'pts';
 
     const tabBtn = (scope: string, label: string, active: boolean) => `
       <button type="button" data-action="xp-scope-toggle" data-scope="${scope}"
@@ -1153,11 +1127,7 @@ const PROFILE_I18N = {
         ${label}
       </button>`;
 
-    const legendI18n = lang === 'en-US'
-      ? '✋ Recognition · ⚡ Auto · 📋 System-registered'
-      : lang === 'es-LATAM'
-        ? '✋ Reconocimiento · ⚡ Automático · 📋 Registrado vía sistema'
-        : '✋ Reconhecimento · ⚡ Automático · 📋 Registrado via sistema';
+    const legendI18n = t('profile.xp.legend', lang);
 
     return `
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6" data-section="xp-pillars">
@@ -1183,22 +1153,11 @@ const PROFILE_I18N = {
     const totals = championsHistoryData?.totals || {};
     const total = totals.active_count || 0;
 
-    const titleI18n = lang === 'en-US' ? '🏅 Your Champions'
-                    : lang === 'es-LATAM' ? '🏅 Tus Champions'
-                    : '🏅 Seus Champions';
-    const subtitleI18n = lang === 'en-US'
-      ? 'Manual recognition by leadership for exceptional contributions'
-      : lang === 'es-LATAM'
-        ? 'Reconocimiento manual de la liderazgo por contribuciones excepcionales'
-        : 'Reconhecimento manual da liderança por contribuições excepcionais';
-    const emptyTitleI18n = lang === 'en-US' ? 'No Champion yet'
-                         : lang === 'es-LATAM' ? 'Aún no tienes Champion'
-                         : 'Você ainda não foi conferido Champion';
-    const emptyHintI18n = lang === 'en-US'
-      ? 'Champion is awarded by tribe leaders, GP, co-GP, deputies and comms leaders in general meetings, tribe meetings, or for outstanding deliverables. Three surfaces: 🏛️ general (30 pts) · 🏕️ tribe (20 pts) · 📦 deliverable (40 pts) — plus 5 pts per criterion met.'
-      : lang === 'es-LATAM'
-        ? 'Champion es conferido por líderes de tribu, GP, co-GP, adjuntos y líderes de comunicación en reuniones generales, de tribu o por entregables destacados. Tres superficies: 🏛️ general (30 pts) · 🏕️ tribu (20 pts) · 📦 entregable (40 pts) — más 5 pts por criterio.'
-        : 'Champion é conferido por líderes de tribo, GP, co-GP, deputies e líderes de comunicação em reuniões gerais, reuniões de tribo ou por entregáveis destacados. Três superfícies: 🏛️ geral (30 pts) · 🏕️ tribo (20 pts) · 📦 entregável (40 pts) — mais 5 pts por critério atendido.';
+    // p171 #7 — Champions section i18n migrou pra dict keys
+    const titleI18n = t('profile.champions.title', lang);
+    const subtitleI18n = t('profile.champions.subtitle', lang);
+    const emptyTitleI18n = t('profile.champions.emptyTitle', lang);
+    const emptyHintI18n = t('profile.champions.emptyHint', lang);
 
     if (total === 0) {
       return `
@@ -1227,9 +1186,9 @@ const PROFILE_I18N = {
     };
 
     const cards = history.slice(0, 5).map((c: any) => {
-      const awarder = c.awarded_by?.name || (lang === 'en-US' ? 'Leadership' : lang === 'es-LATAM' ? 'Liderazgo' : 'Liderança');
+      const awarder = c.awarded_by?.name || t('profile.champions.awarderFallback', lang);
       const initiative = c.initiative?.name ? ` · ${c.initiative.name}` : '';
-      const criteriaLabel = lang === 'en-US' ? 'criteria' : lang === 'es-LATAM' ? 'criterios' : 'critérios';
+      const criteriaLabel = t('profile.champions.criteriaLabel', lang);
       const safeJust = String(c.justification || '').replace(/[<>]/g, '');
       return `
         <div class="border border-[var(--border-default)] rounded-xl p-3 mb-2">
@@ -1243,9 +1202,11 @@ const PROFILE_I18N = {
         </div>`;
     }).join('');
 
-    const totalSuffix = lang === 'en-US' ? `active · ${totals.active_points || 0} pts`
-                      : lang === 'es-LATAM' ? `activo${total === 1 ? '' : 's'} · ${totals.active_points || 0} pts`
-                      : `ativo${total === 1 ? '' : 's'} · ${totals.active_points || 0} pts`;
+    // p171 #7 — totalSuffix migrou pra dict keys (active singular/plural per lang)
+    const activeWord = total === 1
+      ? t('profile.champions.activeSingular', lang)
+      : t('profile.champions.activePlural', lang);
+    const totalSuffix = `${activeWord} · ${totals.active_points || 0} pts`;
 
     return `
       <div class="bg-gradient-to-br from-amber-50/40 to-yellow-50/30 rounded-2xl border-2 border-amber-200/60 p-6" data-section="champions" data-state="active">
