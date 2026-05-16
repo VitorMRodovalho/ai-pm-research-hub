@@ -38,6 +38,7 @@ const GAM_I18N = {
   errorPrefix: 'Erro',
   softCapWarning: 'Conferido — atenção: membro próximo do cap do ciclo',
   rulesColSlug: 'Categoria',
+  rulesColPillar: 'Pilar',
   rulesColBase: 'Base',
   rulesColBonus: 'Bônus/crit',
   rulesColCap: 'Cap',
@@ -329,7 +330,8 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     if (!container) return;
     try {
       const { data, error } = await sb.from('gamification_rules')
-        .select('slug, display_name_i18n, base_points, bonus_per_criterion, cap_points, trigger_source, active')
+        .select('slug, pillar, display_name_i18n, base_points, bonus_per_criterion, cap_points, trigger_source, active')
+        .order('pillar')
         .order('trigger_source')
         .order('slug');
       if (error) throw error;
@@ -338,14 +340,28 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
         container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${T.rulesEmpty}</p>`;
         return;
       }
+      // p171 #14: pillar visible — admins SEE each rule's pillar (NOT NULL CHECK in DB).
+      // Future CRUD forms MUST include pillar field — sediment p138 (supabase-js silent 400).
+      const pillarColor = (p: string) => {
+        switch (p) {
+          case 'presenca':       return 'bg-blue-50 text-blue-700';
+          case 'trilha':         return 'bg-indigo-50 text-indigo-700';
+          case 'certificacoes':  return 'bg-violet-50 text-violet-700';
+          case 'producao':       return 'bg-emerald-50 text-emerald-700';
+          case 'curadoria':      return 'bg-orange-50 text-orange-700';
+          case 'champions':      return 'bg-amber-50 text-amber-700';
+          default:               return 'bg-gray-50 text-gray-600';
+        }
+      };
       const rows = rules.map((r: any) => {
         const displayName = (r.display_name_i18n && r.display_name_i18n['pt-BR']) || r.slug;
         const triggerColor = r.trigger_source === 'manual' ? 'bg-amber-50 text-amber-700'
                            : r.trigger_source === 'auto_trigger' ? 'bg-emerald-50 text-emerald-700'
                            : 'bg-blue-50 text-blue-700';
         return `
-          <tr class="border-b border-[var(--border-default)]">
+          <tr class="border-b border-[var(--border-default)] ${r.active === false ? 'opacity-60' : ''}">
             <td class="py-2 pr-3 font-mono text-[.7rem]">${escapeHtml(r.slug)}</td>
+            <td class="py-2 pr-3"><span class="inline-block px-1.5 py-0.5 rounded text-[.6rem] font-semibold ${pillarColor(r.pillar)}">${escapeHtml(r.pillar || '—')}</span></td>
             <td class="py-2 pr-3 text-[.75rem]">${escapeHtml(displayName)}</td>
             <td class="py-2 pr-3 text-right font-semibold">${r.base_points}</td>
             <td class="py-2 pr-3 text-right text-[var(--text-muted)]">${r.bonus_per_criterion > 0 ? '+' + r.bonus_per_criterion : '—'}</td>
@@ -357,6 +373,7 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
         <table class="w-full text-[.78rem]">
           <thead><tr class="border-b-2 border-[var(--border-default)] text-[.65rem] uppercase tracking-wider text-[var(--text-muted)]">
             <th class="py-2 pr-3 text-left">${T.rulesColSlug}</th>
+            <th class="py-2 pr-3 text-left">${T.rulesColPillar}</th>
             <th class="py-2 pr-3 text-left">Display</th>
             <th class="py-2 pr-3 text-right">${T.rulesColBase}</th>
             <th class="py-2 pr-3 text-right">${T.rulesColBonus}</th>
