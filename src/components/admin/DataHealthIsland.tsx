@@ -28,6 +28,24 @@ interface AnomalyReport {
   history: HistoryItem[];
 }
 
+interface InvariantAlert {
+  invariant_name: string;
+  description: string;
+  severity: string;
+  violation_count: number;
+  sample_ids: string[];
+  first_seen_at: string;
+  age_hours: number;
+  persistent: boolean;
+}
+
+interface InvariantAlertsPayload {
+  alerts: InvariantAlert[];
+  alert_count: number;
+  has_persistent: boolean;
+  checked_at: string;
+}
+
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   warning: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -49,6 +67,7 @@ const ANOMALY_LABELS: Record<string, string> = {
 export default function DataHealthIsland() {
   const t = usePageI18n();
   const [report, setReport] = useState<AnomalyReport | null>(null);
+  const [invariants, setInvariants] = useState<InvariantAlertsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [detecting, setDetecting] = useState(false);
   const [fixing, setFixing] = useState(false);
@@ -63,9 +82,13 @@ export default function DataHealthIsland() {
     const sb = getSb();
     if (!sb) return;
     setLoading(true);
-    const { data, error } = await sb.rpc('admin_get_anomaly_report');
-    if (!error && data) setReport(data);
-    else if (error) toast(t('comp.dataHealth.errorLoad', 'Erro ao carregar relatório: ') + error.message, 'error');
+    const [anomalyRes, invariantRes] = await Promise.all([
+      sb.rpc('admin_get_anomaly_report'),
+      sb.rpc('get_invariant_alerts'),
+    ]);
+    if (!anomalyRes.error && anomalyRes.data) setReport(anomalyRes.data);
+    else if (anomalyRes.error) toast(t('comp.dataHealth.errorLoad', 'Erro ao carregar relatório: ') + anomalyRes.error.message, 'error');
+    if (!invariantRes.error && invariantRes.data) setInvariants(invariantRes.data);
     setLoading(false);
   }, [getSb, toast]);
 
@@ -135,6 +158,56 @@ export default function DataHealthIsland() {
           </button>
         </div>
       </div>
+
+      {/* Schema Invariants (P168 R6) */}
+      {invariants && invariants.alert_count > 0 && (
+        <div className={`rounded-xl border p-3 ${invariants.has_persistent ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className={`text-sm font-bold ${invariants.has_persistent ? 'text-red-700' : 'text-amber-700'}`}>
+              {invariants.has_persistent ? '🚨 ' : '⚠️ '}
+              {t('comp.dataHealth.invariantsTitle', 'Invariantes de Schema')}
+              <span className="ml-2 text-[10px] font-semibold">
+                {invariants.alert_count} {invariants.alert_count === 1 ? 'violação' : 'violações'}
+                {invariants.has_persistent && ' · persistente >24h'}
+              </span>
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {invariants.alerts.map(a => {
+              const isPersistent = a.persistent;
+              const sevColor = a.severity === 'critical' ? 'text-red-700' : a.severity === 'high' ? 'text-red-600' : a.severity === 'medium' ? 'text-amber-600' : 'text-blue-600';
+              return (
+                <div key={a.invariant_name} className="rounded-lg bg-white/70 border border-[var(--border-default)] p-2.5">
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <span className={`text-[10px] font-bold uppercase tracking-wide ${sevColor}`}>{a.severity}</span>
+                    <span className="text-xs font-bold text-[var(--text-primary)]">{a.invariant_name}</span>
+                    <span className="text-[10px] font-semibold text-[var(--text-secondary)]">×{a.violation_count}</span>
+                    {isPersistent && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold text-red-700 bg-red-100 border border-red-200">
+                        persistente {a.age_hours.toFixed(0)}h
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-1">{a.description}</p>
+                  {a.sample_ids && a.sample_ids.length > 0 && (
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1 font-mono">
+                      sample: {a.sample_ids.slice(0, 3).join(', ')}{a.sample_ids.length > 3 ? ` +${a.sample_ids.length - 3}` : ''}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                    {t('comp.dataHealth.invariantsFirstSeen', 'Detectado:')} {new Date(a.first_seen_at).toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {invariants && invariants.alert_count === 0 && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 font-semibold">
+          ✓ {t('comp.dataHealth.invariantsClean', 'Invariantes de schema: tudo limpo')}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
