@@ -14,6 +14,11 @@ export const PMI_TRAIL_KEYWORDS = [
 ]
 
 // ── Non-trail PMI courses (15 XP, category: course) ──
+// NOTE (p169): 'PMI Essentials: Seven AI Project Patterns' (el343) exists as
+// course in DB but PMI does NOT currently emit Credly badge for it (confirmed
+// 2026-05-16: 0 members in our DB + 0 results in credly.com PMI org page).
+// When PMI starts emitting, add: { keywords: ['seven', 'ai', 'patterns'], code: 'AI_PATTERNS' }
+// to this list so badge classifies as 'course' (15 XP) instead of fallback 'badge' (10 XP).
 export const PMI_NONTRIAL_KEYWORDS = [
   { keywords: ['citizen developer', 'cdba'], code: 'CDBA_INTRO' },
   { keywords: ['introduction', 'cognitive', 'cpmai'], code: 'CPMAI_INTRO' },
