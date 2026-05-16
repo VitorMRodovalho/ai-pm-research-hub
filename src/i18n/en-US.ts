@@ -4855,6 +4855,36 @@ const enUS: Record<string, string> = {
   'profile.history.type1on1': '1:1',
   'profile.history.typeExterno': 'External',
 
+  // ── Profile XP Pillars (p171 #7 — migrar 20+19 ternários inline) ──
+  'profile.xp.itemEarnedSingular': 'item earned',
+  'profile.xp.itemEarnedPlural': 'items earned',
+  'profile.xp.howToEarn': 'How to earn',
+  'profile.xp.howToGrow': 'How to grow here',
+  'profile.xp.earnedLifetime': 'All-time earnings',
+  'profile.xp.earnedCycle': 'Earned this cycle',
+  'profile.xp.noEarningsYet': 'No earnings yet — see "How to grow here"',
+  'profile.xp.variableNote': '(variable: 15–25 pts by type)',
+  'profile.xp.tabLifetime': 'All-time',
+  'profile.xp.tabCycle': 'Current cycle',
+  'profile.xp.ofTotal': '% of total',
+  'profile.xp.triggerTipManual': 'Manual recognition by leadership',
+  'profile.xp.triggerTipAuto': 'Automatic when source action happens',
+  'profile.xp.triggerTipRpc': 'Registered via system (e.g. showcase, certificate)',
+  'profile.xp.journeyTitle': '🏆 Your XP Journey',
+  'profile.xp.scopeAllTime': 'all-time',
+  'profile.xp.scopeCurrentCycle': 'current cycle',
+  'profile.xp.legend': '✋ Recognition · ⚡ Auto · 📋 System-registered',
+
+  // ── Profile Champions section (p171 #7) ──
+  'profile.champions.title': '🏅 Your Champions',
+  'profile.champions.subtitle': 'Manual recognition by leadership for exceptional contributions',
+  'profile.champions.emptyTitle': 'No Champion yet',
+  'profile.champions.emptyHint': 'Champion is awarded by tribe leaders, GP, co-GP, deputies and comms leaders in general meetings, tribe meetings, or for outstanding deliverables. Three surfaces: 🏛️ general (30 pts) · 🏕️ tribe (20 pts) · 📦 deliverable (40 pts) — plus 5 pts per criterion met.',
+  'profile.champions.awarderFallback': 'Leadership',
+  'profile.champions.criteriaLabel': 'criteria',
+  'profile.champions.activeSingular': 'active',
+  'profile.champions.activePlural': 'active',
+
   // ── Library Search (F4) ──
   'library.search.placeholder': 'Search resources...',
   'library.search.searching': 'Searching...',

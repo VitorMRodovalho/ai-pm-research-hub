@@ -4861,6 +4861,36 @@ const ptBR: Record<string, string> = {
   'profile.history.type1on1': '1:1',
   'profile.history.typeExterno': 'Externo',
 
+  // ── Profile XP Pillars (p171 #7 — migrar 20+19 ternários inline) ──
+  'profile.xp.itemEarnedSingular': 'item pontuado',
+  'profile.xp.itemEarnedPlural': 'itens pontuados',
+  'profile.xp.howToEarn': 'Como pontuar',
+  'profile.xp.howToGrow': 'Como crescer aqui',
+  'profile.xp.earnedLifetime': 'Pontuação histórica total',
+  'profile.xp.earnedCycle': 'Pontuado neste ciclo',
+  'profile.xp.noEarningsYet': 'Ainda sem pontos — veja "Como crescer aqui"',
+  'profile.xp.variableNote': '(variável: 15–25 pts por tipo)',
+  'profile.xp.tabLifetime': 'Vida toda',
+  'profile.xp.tabCycle': 'Ciclo atual',
+  'profile.xp.ofTotal': '% do total',
+  'profile.xp.triggerTipManual': 'Reconhecimento manual por liderança',
+  'profile.xp.triggerTipAuto': 'Automático quando a ação-fonte acontece',
+  'profile.xp.triggerTipRpc': 'Registrado via sistema (ex: showcase, certificado)',
+  'profile.xp.journeyTitle': '🏆 Sua Jornada em XP',
+  'profile.xp.scopeAllTime': 'vida toda',
+  'profile.xp.scopeCurrentCycle': 'ciclo atual',
+  'profile.xp.legend': '✋ Reconhecimento · ⚡ Automático · 📋 Registrado via sistema',
+
+  // ── Profile Champions section (p171 #7) ──
+  'profile.champions.title': '🏅 Seus Champions',
+  'profile.champions.subtitle': 'Reconhecimento manual da liderança por contribuições excepcionais',
+  'profile.champions.emptyTitle': 'Você ainda não foi conferido Champion',
+  'profile.champions.emptyHint': 'Champion é conferido por líderes de tribo, GP, co-GP, deputies e líderes de comunicação em reuniões gerais, reuniões de tribo ou por entregáveis destacados. Três superfícies: 🏛️ geral (30 pts) · 🏕️ tribo (20 pts) · 📦 entregável (40 pts) — mais 5 pts por critério atendido.',
+  'profile.champions.awarderFallback': 'Liderança',
+  'profile.champions.criteriaLabel': 'critérios',
+  'profile.champions.activeSingular': 'ativo',
+  'profile.champions.activePlural': 'ativos',
+
   // ── Library Search (F4) ──
   'library.search.placeholder': 'Pesquisar recursos...',
   'library.search.searching': 'Buscando...',
