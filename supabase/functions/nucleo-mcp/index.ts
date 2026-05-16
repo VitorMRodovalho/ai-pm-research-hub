@@ -5434,14 +5434,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  mcp.tool("meeting_close", "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. Returns drift_signal flag + counter set. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo'.", {
+  mcp.tool("meeting_close", "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. p171 #9 (Track B): also accepts suggested_champion_ids[] — member UUIDs the closer suggests for Champion. UI /admin/gamification deep-link reads these for prefill/nudge. Returns drift_signal flag + counter set + suggestions_count. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo + sugiro Champion pra Y e Z'.", {
     event_id: z.string().describe("UUID of the meeting event to close"),
-    summary: z.string().optional().describe("Optional summary appended to events.notes")
-  }, async (params: { event_id: string; summary?: string }) => {
+    summary: z.string().optional().describe("Optional summary appended to events.notes"),
+    suggested_champion_ids: z.array(z.string()).optional().describe("Optional array of member UUIDs the closer suggests for Champion. Max 10. Same-org validated. Persisted to events.suggested_champion_ids for UI prefill.")
+  }, async (params: { event_id: string; summary?: string; suggested_champion_ids?: string[] }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "meeting_close", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.event_id)) return err("event_id must be a UUID");
+    if (params.suggested_champion_ids) {
+      if (params.suggested_champion_ids.length > 10) return err("suggested_champion_ids: max 10");
+      for (const id of params.suggested_champion_ids) {
+        if (!isUUID(id)) return err(`suggested_champion_ids: '${id}' is not a UUID`);
+      }
+    }
     if (!(await canV4(sb, member.id, 'manage_event'))) {
       await logUsage(sb, member.id, "meeting_close", false, "Unauthorized", start);
       return err("Unauthorized — requires manage_event.");
@@ -5449,6 +5456,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("meeting_close", {
       p_event_id: params.event_id,
       p_summary: params.summary ?? null,
+      p_suggested_champion_ids: params.suggested_champion_ids ?? null,
     });
     if (error) { await logUsage(sb, member.id, "meeting_close", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "meeting_close", true, undefined, start);
