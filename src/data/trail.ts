@@ -70,6 +70,14 @@ export const COURSES: Course[] = [
     url: 'https://www.pmi.org/shop/brazil/p-/elearning/free-introduction-to-cognitive-project-management-in-ai-cpmai/el185',
   },
   {
+    code: 'AI_PATTERNS',
+    name: 'PMI Essentials: Seven AI Project Patterns',
+    tier: 'complementary',
+    isTrail: false,
+    hasCredly: false,
+    url: 'https://www.pmi.org/shop/p-/elearning/pmi-essentials-seven-ai-project-patterns/el343',
+  },
+  {
     code: 'CDBA_INTRO',
     name: 'PMI Citizen Developer: CDBA Introduction',
     tier: 'complementary',
