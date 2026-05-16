@@ -1,5 +1,13 @@
-// ─── Trilha PMI AI — 4 tiers: 4 core mini-certs + 2 specialty + 2 complementary + 1 master cert ───
-// PM-confirmed 2026-05-16 (p169) — synced with DB courses.tier column
+// ─── Trilha PMI AI — 4 tiers: 4 core mini-certs + 2 specialty + 3 complementary + 1 master cert ───
+// PM-confirmed 2026-05-16 (p169) — synced with DB courses.tier column.
+//
+// CONTRACT (p169): This file MUST stay in sync with public.courses DB rows.
+// `tests/contracts/courses-trail-sync.test.mjs` asserts code/tier/is_trail/url
+// match between this file and DB via get_trail_courses() RPC. When adding a
+// new course, update BOTH:
+//   1. Insert into public.courses via migration
+//   2. Add entry to COURSES array below
+// The contract test will fail (when SUPABASE_URL + key present) if they diverge.
 
 export type CourseTier = 'core' | 'specialty' | 'complementary' | 'master';
 

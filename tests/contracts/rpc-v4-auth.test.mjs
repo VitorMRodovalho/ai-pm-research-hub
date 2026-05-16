@@ -223,3 +223,24 @@ test('ADR-0011: refactored RPCs (A4.1+A4.2+A4.3) are present and use can_by_memb
     }
   }
 });
+
+test('ADR-0011: p169 V4 auth hotfix migrations use can_by_member', () => {
+  // Positive assertion that retrofitted RPCs keep V4 auth across future edits.
+  // Without this, the rpcLatest tracker only catches violations if the LATEST
+  // definition regresses; explicit assertion guards against intentional V3
+  // re-introduction (e.g. revert PR) by failing test loudly.
+  const expectedHotfixes = [
+    { file: '20260673100000_p169_fix_get_security_incidents_v4_auth.sql',
+      fns: ['get_security_incidents'] }
+  ];
+
+  for (const { file, fns } of expectedHotfixes) {
+    const sql = readMigration(file);
+    for (const fn of fns) {
+      assert.ok(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.[A-Za-z_]*/.test(sql) && sql.includes(fn),
+        `Hotfix ${file} must (re)define function ${fn}`);
+      assert.ok(/public\.can_by_member/i.test(sql),
+        `Hotfix ${file} must reference public.can_by_member (ADR-0011)`);
+    }
+  }
+});
