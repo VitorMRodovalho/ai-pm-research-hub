@@ -38,6 +38,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="geral">Geral</option>
             <option value="tribo">Tribo</option>
+            <option value="iniciativa">Iniciativa</option>
             <option value="lideranca">Liderança</option>
             <option value="kickoff">Kickoff</option>
             <option value="comms">Comunicação</option>
@@ -50,6 +51,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div id="ev-tribe-wrapper" class="hidden flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.whichTribe', lang)} *</label>
           <select id="ev-tribe-select" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div id="ev-initiative-wrapper" class="hidden flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.whichInitiative', lang)} *</label>
+          <select id="ev-initiative-select" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
             <option value="">— select —</option>
           </select>
         </div>
