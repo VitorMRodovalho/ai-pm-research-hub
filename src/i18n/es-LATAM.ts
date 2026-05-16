@@ -787,6 +787,8 @@ const esLATAM: Record<string, string> = {
   'trail.complementary': 'Complementarios (cursos PMI relacionados)',
   'trail.master': 'Cert. Master (PMI-CPMAI)',
   'trail.masterDesc': 'Próximo nivel: certificación top de IA del PMI — paga, sucesora de CPMAI v7.',
+  'trail.master.recommendedPrep': 'Preparación recomendada antes',
+  'trail.master.prepHint': 'Estos 2 cursos gratuitos cubren los fundamentos de la metodología PMI-CPMAI (7 patrones + intro).',
   'trail.ranking.title': 'Ranking del Equipo',
   'trail.ranking.sub': 'Progreso de los participantes activos en la ruta',
   'trail.ranking.avg': 'Promedio general',
