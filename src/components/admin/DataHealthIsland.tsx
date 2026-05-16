@@ -46,6 +46,28 @@ interface InvariantAlertsPayload {
   checked_at: string;
 }
 
+interface SuggestedApplication {
+  application_id: string;
+  applicant_name: string;
+  email: string;
+  chapter: string | null;
+  status: string;
+  cycle_code: string | null;
+  similarity_score: number;
+}
+
+interface OrphanInterviewEvent {
+  event_id: string;
+  title: string;
+  event_date: string | null;
+  time_start: string | null;
+  duration_minutes: number;
+  calendar_event_id: string | null;
+  source: string;
+  status: string;
+  suggested_applications: SuggestedApplication[];
+}
+
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   warning: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
@@ -68,6 +90,9 @@ export default function DataHealthIsland() {
   const t = usePageI18n();
   const [report, setReport] = useState<AnomalyReport | null>(null);
   const [invariants, setInvariants] = useState<InvariantAlertsPayload | null>(null);
+  const [orphans, setOrphans] = useState<OrphanInterviewEvent[]>([]);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
+  const [pickerSelection, setPickerSelection] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [detecting, setDetecting] = useState(false);
   const [fixing, setFixing] = useState(false);
@@ -82,15 +107,36 @@ export default function DataHealthIsland() {
     const sb = getSb();
     if (!sb) return;
     setLoading(true);
-    const [anomalyRes, invariantRes] = await Promise.all([
+    const [anomalyRes, invariantRes, orphansRes] = await Promise.all([
       sb.rpc('admin_get_anomaly_report'),
       sb.rpc('get_invariant_alerts'),
+      sb.rpc('list_orphan_interview_events'),
     ]);
     if (!anomalyRes.error && anomalyRes.data) setReport(anomalyRes.data);
     else if (anomalyRes.error) toast(t('comp.dataHealth.errorLoad', 'Erro ao carregar relatório: ') + anomalyRes.error.message, 'error');
     if (!invariantRes.error && invariantRes.data) setInvariants(invariantRes.data);
+    if (!orphansRes.error && Array.isArray(orphansRes.data)) setOrphans(orphansRes.data);
     setLoading(false);
-  }, [getSb, toast]);
+  }, [getSb, t, toast]);
+
+  const handleLinkOrphan = useCallback(async (eventId: string, applicationId: string) => {
+    const sb = getSb();
+    if (!sb || !applicationId) return;
+    setLinkingId(eventId);
+    const { error } = await sb.rpc('link_interview_event', { p_event_id: eventId, p_application_id: applicationId });
+    setLinkingId(null);
+    if (error) {
+      toast(t('comp.dataHealth.orphanInterviews.linkingError', 'Erro ao vincular entrevista: ') + error.message, 'error');
+      return;
+    }
+    toast(t('comp.dataHealth.orphanInterviews.linkedSuccess', 'Entrevista vinculada com sucesso.'), 'success');
+    setPickerSelection(prev => {
+      const next = { ...prev };
+      delete next[eventId];
+      return next;
+    });
+    fetchReport();
+  }, [getSb, t, toast]);
 
   useEffect(() => {
     const boot = () => { if (getSb()) fetchReport(); else setTimeout(boot, 300); };
@@ -206,6 +252,65 @@ export default function DataHealthIsland() {
       {invariants && invariants.alert_count === 0 && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700 font-semibold">
           ✓ {t('comp.dataHealth.invariantsClean', 'Invariantes de schema: tudo limpo')}
+        </div>
+      )}
+
+      {/* Orphan Interview Events (p170 ATT-2) */}
+      {orphans.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="mb-2">
+            <h3 className="text-sm font-bold text-amber-700">
+              🔗 {t('comp.dataHealth.orphanInterviews.title', 'Entrevistas Sem Vínculo')}
+              <span className="ml-2 text-[10px] font-semibold text-amber-600">{orphans.length}</span>
+            </h3>
+            <p className="text-[11px] text-amber-700/80 mt-0.5">
+              {t('comp.dataHealth.orphanInterviews.subtitle', 'Eventos de entrevista sem aplicação vinculada — link manualmente para fechar histórico.')}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {orphans.map(o => {
+              const selectedAppId = pickerSelection[o.event_id] || (o.suggested_applications[0]?.application_id ?? '');
+              const isLinking = linkingId === o.event_id;
+              return (
+                <div key={o.event_id} className="rounded-lg bg-white/70 border border-amber-200 p-2.5">
+                  <div className="text-xs font-bold text-[var(--text-primary)]">{o.title}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {o.event_date && <span>📅 {new Date(o.event_date).toLocaleDateString('pt-BR')}</span>}
+                    {o.time_start && <span>🕐 {o.time_start.slice(0, 5)}</span>}
+                    <span className="font-mono opacity-70">{o.source}</span>
+                    <span>{o.status}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {o.suggested_applications.length > 0 ? (
+                      <select
+                        value={selectedAppId}
+                        onChange={e => setPickerSelection(prev => ({ ...prev, [o.event_id]: e.target.value }))}
+                        className="flex-1 min-w-[200px] px-2 py-1 rounded-md border border-amber-300 text-[11px] bg-white text-[var(--text-primary)]"
+                      >
+                        <option value="">{t('comp.dataHealth.orphanInterviews.selectApplication', 'Selecionar aplicação...')}</option>
+                        {o.suggested_applications.map(s => (
+                          <option key={s.application_id} value={s.application_id}>
+                            {s.applicant_name} · {s.chapter || 'sem chapter'} · {s.cycle_code || '?'} · sim {(s.similarity_score * 100).toFixed(0)}%
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-[11px] text-[var(--text-muted)] italic flex-1 min-w-[200px]">
+                        {t('comp.dataHealth.orphanInterviews.noSuggestions', 'Nenhuma sugestão automática (link manual via console SQL).')}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleLinkOrphan(o.event_id, selectedAppId)}
+                      disabled={isLinking || !selectedAppId}
+                      className="px-3 py-1 rounded-md bg-amber-600 text-white text-[11px] font-semibold cursor-pointer disabled:opacity-50 hover:opacity-90 border-0"
+                    >
+                      {isLinking ? '...' : t('comp.dataHealth.orphanInterviews.linkButton', 'Vincular')}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
