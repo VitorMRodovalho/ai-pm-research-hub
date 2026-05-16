@@ -13,7 +13,20 @@ interface AttRow {
   tribe_mandatory: number; tribe_attended: number; tribe_pct: number;
   combined_pct: number; last_attendance: string | null;
   dropout_risk: boolean;
+  typology: 'curator' | 'no-data' | 'healthy' | 'borderline' | 'missing-general' | 'missing-tribe' | 'missing-both' | 'balanced-low';
 }
+
+// p170 — typology badges for split panel diagnostics (PM clarification 2026-05-16)
+const TYPOLOGY_BADGE: Record<AttRow['typology'], { label: string; emoji: string; cls: string }> = {
+  'curator':         { label: 'Curador (cross-tribe)',      emoji: '🟦', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  'healthy':         { label: 'Saudável (≥70%)',            emoji: '🟢', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  'borderline':      { label: 'Borderline (50-70%)',        emoji: '🟡', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  'missing-general': { label: 'Falta geral (tribo OK)',     emoji: '⚠️', cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  'missing-tribe':   { label: 'Falta tribo (geral OK)',     emoji: '⚠️', cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  'missing-both':    { label: 'Falta ambos (crítico)',      emoji: '🔴', cls: 'bg-red-50 text-red-700 border-red-200' },
+  'balanced-low':    { label: 'Balanceado baixo',           emoji: '🟡', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  'no-data':         { label: 'Sem obrigatoriedade',        emoji: '⚫', cls: 'bg-gray-50 text-gray-600 border-gray-200' },
+};
 
 interface MemberInfo {
   id: string; tribe_id: number | null;
@@ -240,13 +253,14 @@ export default function AttendanceDashboard() {
               <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Geral</th>
               <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Tribo</th>
               <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Combinado</th>
-              <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Indicador</th>
+              <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Tipo</th>
               <th className="text-center px-3 py-2.5 font-semibold text-[var(--text-secondary)]">Última</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(r => {
-              const ind = INDICATOR(r.combined_pct);
+              const typ = TYPOLOGY_BADGE[r.typology] || TYPOLOGY_BADGE['no-data'];
+              const isCurator = r.typology === 'curator';
               return (
                 <tr key={r.member_id} className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] transition-colors">
                   <td className="px-4 py-2.5 font-semibold text-[var(--text-primary)] whitespace-nowrap">{r.member_name}</td>
@@ -256,16 +270,32 @@ export default function AttendanceDashboard() {
                     </td>
                   )}
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-[var(--text-secondary)]">{r.general_attended}/{r.general_mandatory}</span>
-                    <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.general_pct}%)</span>
+                    {isCurator ? (
+                      <span className="text-[var(--text-muted)] italic">n/a</span>
+                    ) : (
+                      <>
+                        <span className="text-[var(--text-secondary)]">{r.general_attended}/{r.general_mandatory}</span>
+                        <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.general_pct}%)</span>
+                      </>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-[var(--text-secondary)]">{r.tribe_attended}/{r.tribe_mandatory}</span>
-                    <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.tribe_pct}%)</span>
+                    {isCurator ? (
+                      <span className="text-[var(--text-muted)] italic">n/a</span>
+                    ) : (
+                      <>
+                        <span className="text-[var(--text-secondary)]">{r.tribe_attended}/{r.tribe_mandatory}</span>
+                        <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.tribe_pct}%)</span>
+                      </>
+                    )}
                   </td>
-                  <td className="px-3 py-2.5 text-center font-bold text-[var(--text-primary)]">{r.combined_pct}%</td>
+                  <td className="px-3 py-2.5 text-center font-bold text-[var(--text-primary)]">
+                    {isCurator ? '—' : `${r.combined_pct}%`}
+                  </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-sm" title={ind.text}>{ind.label}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${typ.cls}`} title={typ.label}>
+                      {typ.emoji} {r.typology}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 text-center text-[var(--text-secondary)]">{fmtDate(r.last_attendance)}</td>
                 </tr>
