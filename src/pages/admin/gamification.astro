@@ -68,8 +68,10 @@ const GAM_I18N = {
   activityIncludeInactive: 'Incluir inativas',
 };
 
-// Criteria checklist per surface (matches SEMANTIC_TAXONOMY.md Q5.4)
-const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
+// p171 #8 — criteria source-of-truth migrou pra DB (champion_criteria_catalog).
+// Frontend fetch via RPC `get_champion_criteria_for_surface` on showPanel().
+// Caso fetch falhe, fallback minimo abaixo (read-only safety net).
+const CRITERIA_FALLBACK: Record<string, Array<{slug: string; pt: string}>> = {
   general: [
     { slug: 'conduziu_pauta', pt: 'Conduziu pauta com clareza' },
     { slug: 'apresentou_resultados', pt: 'Apresentou resultados de tribo/iniciativa' },
@@ -89,6 +91,7 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     { slug: 'inovacao_tecnica', pt: 'Inovação técnica/conceitual' },
   ],
 };
+const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt-BR';
 ---
 
 <AdminLayout title={GAM_I18N.title} breadcrumbs={[{label: t('admin.breadcrumb.operations', lang)},{label: GAM_I18N.title}]}>
@@ -223,15 +226,24 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
   <Toast />
 </AdminLayout>
 
-<script is:inline define:vars={{ GAM_I18N, CRITERIA }}>
+<script is:inline define:vars={{ GAM_I18N, CRITERIA_FALLBACK, LANG_FOR_CRITERIA }}>
   window.__GAM_I18N = GAM_I18N;
-  window.__GAM_CRITERIA = CRITERIA;
+  window.__GAM_CRITERIA_FALLBACK = CRITERIA_FALLBACK;
+  window.__GAM_LANG = LANG_FOR_CRITERIA;
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
 
   const T = (typeof window !== 'undefined' && (window as any).__GAM_I18N) || {};
-  const CRIT = (typeof window !== 'undefined' && (window as any).__GAM_CRITERIA) || { general: [], tribe: [], deliverable: [] };
+  const FALLBACK = (typeof window !== 'undefined' && (window as any).__GAM_CRITERIA_FALLBACK) || { general: [], tribe: [], deliverable: [] };
+  const LANG = ((typeof window !== 'undefined' && (window as any).__GAM_LANG) || 'pt-BR') as string;
+  // p171 #8 — runtime catalog cache per surface (loaded via RPC on showPanel)
+  // Keyed by surface: 'general'|'tribe'|'deliverable'. Values: { slug, display }.
+  const CRIT: Record<string, Array<{ slug: string; display: string }>> = {
+    general: FALLBACK.general.map((c: any) => ({ slug: c.slug, display: c.pt })),
+    tribe: FALLBACK.tribe.map((c: any) => ({ slug: c.slug, display: c.pt })),
+    deliverable: FALLBACK.deliverable.map((c: any) => ({ slug: c.slug, display: c.pt })),
+  };
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -253,8 +265,26 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     loadRules();
     loadChampions();
     loadCategoryActivity();
-    renderCriteria(); // initial render
+    loadCriteriaCatalog().then(() => renderCriteria()); // p171 #8 — fetch DB criteria then render
     maybeAutoOpenFromUrl();
+  }
+
+  // p171 #8 — fetch criteria catalog from DB, replace fallback
+  async function loadCriteriaCatalog() {
+    if (!sb) return;
+    const surfaces: Array<'general' | 'tribe' | 'deliverable'> = ['general', 'tribe', 'deliverable'];
+    await Promise.all(surfaces.map(async (surface) => {
+      try {
+        const { data, error } = await sb.rpc('get_champion_criteria_for_surface', { p_surface: surface });
+        if (error || !Array.isArray(data) || data.length === 0) return;
+        CRIT[surface] = data.map((row: any) => ({
+          slug: row.slug,
+          display: (row.display_name_i18n && row.display_name_i18n[LANG]) || row.display_name_i18n?.['pt-BR'] || row.slug,
+        }));
+      } catch {
+        // Fallback already populated from CRITERIA_FALLBACK
+      }
+    }));
   }
 
   // p171 #13 — Category activity panel
@@ -476,10 +506,10 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     const container = document.getElementById('gam-criteria-list');
     if (!container) return;
     const items = CRIT[surface] || [];
-    container.innerHTML = items.map((c: any) => `
+    container.innerHTML = items.map((c) => `
       <label class="flex items-center gap-2 text-[.75rem] cursor-pointer">
         <input type="checkbox" class="gam-criterion-cb" value="${escapeHtml(c.slug)}">
-        <span>${escapeHtml(c.pt)}</span>
+        <span>${escapeHtml(c.display)}</span>
       </label>`).join('');
   }
 
