@@ -1,0 +1,110 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const VERIFY_I18N = {
+  title: t('verifyEmail.title', lang),
+  loading: t('verifyEmail.loading', lang),
+  success: t('verifyEmail.success', lang),
+  expired: t('verifyEmail.expired', lang),
+  invalid: t('verifyEmail.invalid', lang),
+  consumed: t('verifyEmail.consumed', lang),
+  notAuthenticated: t('verifyEmail.notAuthenticated', lang),
+  back: t('verifyEmail.back', lang),
+};
+---
+<BaseLayout title={VERIFY_I18N.title} activePage="profile" lang={lang}>
+  <Toast />
+  <div class="max-w-xl mx-auto py-12 px-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-8 shadow-sm">
+      <h1 class="text-xl font-semibold text-[var(--text-primary)] mb-6">{VERIFY_I18N.title}</h1>
+      <div id="verify-status" class="text-[var(--text-secondary)]">
+        <span class="inline-block animate-pulse">⏳ {VERIFY_I18N.loading}</span>
+      </div>
+      <div class="mt-8">
+        <a href={`${langPrefix}/profile`} class="text-sm text-[var(--brand-primary)] hover:underline">
+          ← {VERIFY_I18N.back}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ VERIFY_I18N, langPrefix }}>
+    window.__VERIFY_I18N = VERIFY_I18N;
+    window.__VERIFY_LANG_PREFIX = langPrefix;
+  </script>
+
+  <script>
+    const VERIFY_I18N = (window as any).__VERIFY_I18N || {};
+    const langPrefix = (window as any).__VERIFY_LANG_PREFIX || '';
+
+    function setStatus(html: string, kind: 'success' | 'error' | 'info' = 'info') {
+      const el = document.getElementById('verify-status');
+      if (!el) return;
+      const color =
+        kind === 'success' ? 'var(--success-text, #15803d)'
+        : kind === 'error' ? 'var(--danger-text, #b91c1c)'
+        : 'var(--text-secondary)';
+      el.style.color = color;
+      el.innerHTML = html;
+    }
+
+    const I18N = VERIFY_I18N as Record<string, string>;
+
+    async function run() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token')?.trim();
+      if (!token) {
+        setStatus(`❌ ${I18N['invalid']}`, 'error');
+        return;
+      }
+
+      // Wait for nav to expose sb
+      const navGetSb = (window as any).navGetSb;
+      let sb = navGetSb?.();
+      if (!sb) {
+        await new Promise<void>((resolve) => {
+          let tries = 0;
+          const id = setInterval(() => {
+            sb = (window as any).navGetSb?.();
+            tries++;
+            if (sb || tries > 50) { clearInterval(id); resolve(); }
+          }, 100);
+        });
+      }
+      if (!sb) {
+        setStatus(`⚠️ ${I18N['notAuthenticated']}`, 'error');
+        return;
+      }
+
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        setStatus(`⚠️ ${I18N['notAuthenticated']}`, 'error');
+        return;
+      }
+
+      const { data, error } = await sb.rpc('confirm_secondary_email', { p_token: token });
+      if (error) {
+        setStatus(`❌ ${error.message}`, 'error');
+        return;
+      }
+      if (!data?.success) {
+        const msg = (data?.error || '').toString().toLowerCase();
+        const code = msg.includes('expired') ? 'expired'
+                   : msg.includes('already') ? 'consumed'
+                   : 'invalid';
+        setStatus(`❌ ${I18N[code]}`, 'error');
+        return;
+      }
+      setStatus(`✓ ${I18N['success']}<br><br><strong>${data.email}</strong>`, 'success');
+    }
+
+    if (document.readyState === 'complete') {
+      run();
+    } else {
+      window.addEventListener('load', run);
+    }
+  </script>
+</BaseLayout>
