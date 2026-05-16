@@ -284,7 +284,11 @@ const PROFILE_I18N = {
   let xpPillarsCycleData: any = null;
   let championsHistoryData: any = null;
   let allGamificationPoints: any[] = [];
-  let currentXpScope: 'lifetime' | 'cycle' = 'lifetime';
+  // p171 #6 — Default scope = 'cycle' (most relevant to active members).
+  // Will auto-switch to 'lifetime' if member has zero cycle pts but lifetime pts > 0
+  // (offboarded/between-cycles UX). User can still toggle freely.
+  let currentXpScope: 'lifetime' | 'cycle' = 'cycle';
+  let _xpScopeInitialized = false;
   let attendanceHoursData: { total_hours: number; total_events: number; avg_hours_per_event: number } | null = null;
   let currentCycleCode: string = '';
   let currentCycleLabel: string = '';
@@ -415,6 +419,17 @@ const PROFILE_I18N = {
         const { data: cycle } = await sb.rpc('get_member_xp_pillars', { p_member_id: currentMember.id, p_scope: 'cycle' });
         xpPillarsCycleData = typeof cycle === 'string' ? JSON.parse(cycle) : cycle;
       } catch (_) { xpPillarsCycleData = null; }
+
+      // p171 #6 — Smart default: prefer 'cycle' if member has activity here, else fallback to 'lifetime'.
+      // Only auto-decide on first load (user toggle persists thereafter).
+      if (!_xpScopeInitialized) {
+        const cyclePts = xpPillarsCycleData?.total_pts ?? cycleXpData?.cycle_points ?? 0;
+        const lifetimePts = xpPillarsLifetimeData?.total_pts ?? cycleXpData?.lifetime_points ?? 0;
+        if (cyclePts === 0 && lifetimePts > 0) {
+          currentXpScope = 'lifetime';
+        }
+        _xpScopeInitialized = true;
+      }
 
       // Champions received history
       try {
@@ -1000,9 +1015,12 @@ const PROFILE_I18N = {
     const tabLifetimeI18n = lang === 'en-US' ? 'All-time'
                           : lang === 'es-LATAM' ? 'Histórico'
                           : 'Vida toda';
-    const tabCycleI18n = lang === 'en-US' ? 'Current cycle'
+    // p171 #6 — include cycle code/label in tab when available pra dar contexto temporal
+    const cycleShort = cycleCode || '';
+    const cycleSuffix = cycleShort ? ` (${cycleShort.replace(/^cycle_/, 'C')})` : '';
+    const tabCycleI18n = (lang === 'en-US' ? 'Current cycle'
                        : lang === 'es-LATAM' ? 'Ciclo actual'
-                       : 'Ciclo atual';
+                       : 'Ciclo atual') + cycleSuffix;
     const ofTotalI18n = lang === 'en-US' ? '% of total'
                       : lang === 'es-LATAM' ? '% del total'
                       : '% do total';
