@@ -8,8 +8,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const PROFILE_I18N = {
   emailAlreadyRegistered: t('profile.emailAlreadyRegistered', lang),
   emailAdded: t('profile.emailAdded', lang),
+  verificationEmailSent: t('profile.verificationEmailSent', lang),
   errorAddPrefix: t('profile.errorAddPrefix', lang),
   errorRemovePrefix: t('profile.errorRemovePrefix', lang),
+  errorRequestFailed: t('profile.errorRequestFailed', lang),
   removeEmailConfirm: t('profile.removeEmailConfirm', lang),
   emailRemoved: t('profile.emailRemoved', lang),
   heading: t('profile.heading', lang),
@@ -1857,7 +1859,10 @@ const PROFILE_I18N = {
     }
   }
 
-  // ── Secondary email management ──
+  // ── Secondary email management (P168 R4 — verified flow) ──
+  // addSecondaryEmail dispatches a verification email via RPC; the member must
+  // click the link in /profile/verify-secondary?token=... within 24h to actually
+  // append the address. removeSecondaryEmail is direct (PM choice: less risky).
   async function addSecondaryEmail() {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
@@ -1872,16 +1877,17 @@ const PROFILE_I18N = {
       (window as any).toast?.(PROFILE_I18N.emailAlreadyRegistered, 'error');
       return;
     }
-    const newList = [...existing, email];
-    const { error } = await sb.from('members').update({ secondary_emails: newList }).eq('id', currentMember.id);
+    const { data, error } = await sb.rpc('request_secondary_email_verification', { p_email: email });
     if (error) {
-      (window as any).toast?.(PROFILE_I18N.errorAddPrefix + error.message, 'error');
-    } else {
-      currentMember.secondary_emails = newList;
-      input.value = '';
-      renderProfile(currentMember);
-      (window as any).toast?.(PROFILE_I18N.emailAdded, 'success');
+      (window as any).toast?.(PROFILE_I18N.errorRequestFailed + error.message, 'error');
+      return;
     }
+    if (!data?.success) {
+      (window as any).toast?.(PROFILE_I18N.errorRequestFailed + (data?.error || 'unknown'), 'error');
+      return;
+    }
+    input.value = '';
+    (window as any).toast?.(PROFILE_I18N.verificationEmailSent.replace('{email}', email), 'success');
   }
 
   async function removeSecondaryEmail(idx: number) {
@@ -1890,15 +1896,18 @@ const PROFILE_I18N = {
     const existing: string[] = currentMember.secondary_emails || [];
     const removed = existing[idx];
     if (!removed || !(await (window as any).confirmAction(PROFILE_I18N.removeEmailConfirm.replace('{email}', removed)))) return;
-    const newList = existing.filter((_: string, i: number) => i !== idx);
-    const { error } = await sb.from('members').update({ secondary_emails: newList }).eq('id', currentMember.id);
+    const { data, error } = await sb.rpc('remove_secondary_email', { p_email: removed });
     if (error) {
       (window as any).toast?.(PROFILE_I18N.errorRemovePrefix + error.message, 'error');
-    } else {
-      currentMember.secondary_emails = newList;
-      renderProfile(currentMember);
-      (window as any).toast?.(PROFILE_I18N.emailRemoved.replace('{email}', removed), 'info');
+      return;
     }
+    if (!data?.success) {
+      (window as any).toast?.(PROFILE_I18N.errorRemovePrefix + (data?.error || 'unknown'), 'error');
+      return;
+    }
+    currentMember.secondary_emails = existing.filter((_: string, i: number) => i !== idx);
+    renderProfile(currentMember);
+    (window as any).toast?.(PROFILE_I18N.emailRemoved.replace('{email}', removed), 'info');
   }
 
   // ── Notification preferences ──
