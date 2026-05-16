@@ -4348,6 +4348,13 @@ const ptBR: Record<string, string> = {
   'comp.dataHealth.anomaliesFound': 'anomalias encontradas',
   'comp.dataHealth.errorResolve': 'Erro ao resolver anomalia.',
   'comp.dataHealth.resolvedSuccess': 'Anomalia resolvida com sucesso.',
+  'comp.dataHealth.orphanInterviews.title': 'Entrevistas Sem Vínculo',
+  'comp.dataHealth.orphanInterviews.subtitle': 'Eventos de entrevista sem aplicação vinculada — link manualmente para fechar histórico.',
+  'comp.dataHealth.orphanInterviews.selectApplication': 'Selecionar aplicação...',
+  'comp.dataHealth.orphanInterviews.linkButton': 'Vincular',
+  'comp.dataHealth.orphanInterviews.linkingError': 'Erro ao vincular entrevista: ',
+  'comp.dataHealth.orphanInterviews.linkedSuccess': 'Entrevista vinculada com sucesso.',
+  'comp.dataHealth.orphanInterviews.noSuggestions': 'Nenhuma sugestão automática (link manual via console SQL).',
 
   // ── comp.knowledge ──
   'comp.knowledge.loading': 'Carregando recursos...',

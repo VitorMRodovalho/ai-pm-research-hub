@@ -4343,6 +4343,13 @@ const esLATAM: Record<string, string> = {
   'comp.dataHealth.anomaliesFound': 'anomalías encontradas',
   'comp.dataHealth.errorResolve': 'Error al resolver anomalía.',
   'comp.dataHealth.resolvedSuccess': 'Anomalía resuelta con éxito.',
+  'comp.dataHealth.orphanInterviews.title': 'Entrevistas Sin Vincular',
+  'comp.dataHealth.orphanInterviews.subtitle': 'Eventos de entrevista sin aplicación vinculada — vincula manualmente para cerrar el histórico.',
+  'comp.dataHealth.orphanInterviews.selectApplication': 'Seleccionar aplicación...',
+  'comp.dataHealth.orphanInterviews.linkButton': 'Vincular',
+  'comp.dataHealth.orphanInterviews.linkingError': 'Error al vincular entrevista: ',
+  'comp.dataHealth.orphanInterviews.linkedSuccess': 'Entrevista vinculada con éxito.',
+  'comp.dataHealth.orphanInterviews.noSuggestions': 'Sin sugerencia automática (vincula manualmente vía consola SQL).',
 
   // ── comp.knowledge ──
   'comp.knowledge.loading': 'Cargando recursos...',
