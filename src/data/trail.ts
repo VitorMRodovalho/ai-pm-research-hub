@@ -108,8 +108,3 @@ export function complementaryCourses(): Course[] {
 export function masterCertCourses(): Course[] {
   return COURSES.filter((c) => c.tier === 'master');
 }
-
-/** @deprecated use specialtyCourses() — kept for backward compat during p169 transition */
-export function extraCourses(): Course[] {
-  return specialtyCourses();
-}

@@ -158,12 +158,14 @@ try {
 <span id="trail-i18n-avg" class="hidden">{t('trail.ranking.avg', lang)}</span>
 <span id="trail-i18n-completed" class="hidden">{t('trail.completed', lang)}</span>
 <span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
+<span id="trail-i18n-noMembers" class="hidden">{t('trail.ranking.noMembers', lang)}</span>
 
 <script>
   import { TOTAL_COURSES as TOTAL } from '../../data/trail';
   const trailRankingAvg = document.getElementById('trail-i18n-avg')?.textContent || 'Overall average';
   const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
   const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';
+  const trailNoMembers = document.getElementById('trail-i18n-noMembers')?.textContent || 'No members in this tribe';
 
   async function bootTrail() {
     const sb = (window as any).navGetSb?.();
@@ -215,7 +217,7 @@ try {
       const container = document.getElementById('rankingContainer');
       if (!container) return;
       if (ranked.length === 0) {
-        container.innerHTML = '<div class="text-white/40 text-[.85rem]">Nenhum membro nesta tribo</div>';
+        container.innerHTML = `<div class="text-white/40 text-[.85rem]">${trailNoMembers}</div>`;
         return;
       }
       container.innerHTML = ranked.map((r: any) => {

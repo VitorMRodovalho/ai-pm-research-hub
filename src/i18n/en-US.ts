@@ -784,7 +784,6 @@ const enUS: Record<string, string> = {
   'trail.credlyNote': '📌 Completion on PMI.org auto-syncs your Credly badge here within 5 days.',
   'trail.core': 'Core (4 mandatory mini-certs)',
   'trail.specialty': 'Specialty (2 mini-certs)',
-  'trail.extra': 'Specialty (2 mini-certs)',
   'trail.complementary': 'Complementary (related PMI courses)',
   'trail.master': 'Master Cert (PMI-CPMAI)',
   'trail.masterDesc': "Next level: PMI's top AI certification — paid, successor to CPMAI v7.",
@@ -792,11 +791,11 @@ const enUS: Record<string, string> = {
   'trail.ranking.sub': 'Progress of active participants on the trail',
   'trail.ranking.avg': 'Overall average',
   'trail.ranking.allTribes': 'All Tribes',
+  'trail.ranking.noMembers': 'No members in this tribe',
   'trail.completed': 'completed',
   'trail.inProgress': 'in progress',
   'trail.coreUnavailable': 'Core courses unavailable at the moment.',
   'trail.specialtyUnavailable': 'Specialty courses unavailable at the moment.',
-  'trail.extraUnavailable': 'Specialty courses unavailable at the moment.',
 
   // ── CPMAI Showcase (S9) — Celebration wall for certified members in the cycle ──
   // Do NOT confuse with cpmai.title/subtitle (preparatory course page, GC-120)
