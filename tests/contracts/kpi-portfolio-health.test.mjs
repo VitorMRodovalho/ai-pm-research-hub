@@ -28,8 +28,28 @@ function loadAllMigrations() {
 }
 
 const migrations = loadAllMigrations();
-const allSQL = migrations.map(m => m.content).join('\n');
+// p171 TIER C — strip SQL line comments antes de regex matching. Rollback notes
+// nos headers de migrations frequentemente citam `CREATE OR REPLACE FUNCTION …`
+// dentro de comments, e o regex lazy do body pode latchar nessas ocorrências
+// e estender o match through migration boundaries até encontrar um $tag$…$tag$
+// de RPC diferente. Mesmo padrão de role-ladder-parity.test.mjs (sediment p165).
+const stripSqlLineComments = (sql) => sql.replace(/--[^\n]*/g, '');
+const allSQL = migrations.map(m => stripSqlLineComments(m.content)).join('\n');
 const kpiSource = readFileSync(KPI_FILE, 'utf8');
+
+// p171 TIER C — Helper to find FUNCTION body by name, ignoring DO blocks.
+// Pattern: CREATE OR REPLACE FUNCTION X(args) ... AS $TAG$ body $TAG$
+// Captures tag name so DO blocks (with $$ delimiter) não conflict.
+function findFunctionBody(funcName, sql) {
+  const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?AS\\s+\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
+    'gi'
+  );
+  const matches = [...sql.matchAll(regex)];
+  if (matches.length === 0) return null;
+  return matches[matches.length - 1][2];
+}
 
 // Extract KPIS array entries from kpis.ts
 const KPI_ENTRIES = [...kpiSource.matchAll(/\{\s*value:\s*'([^']+)',\s*labelKey:\s*'([^']+)'/g)]
@@ -79,11 +99,9 @@ test('exec_portfolio_health is SECURITY DEFINER', () => {
 // ─── Test 5: All 9 metric_keys are computed in exec_portfolio_health ───
 
 test('exec_portfolio_health computes all 9 expected metric_keys', () => {
-  // Find the last (most recent) definition of exec_portfolio_health
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?exec_portfolio_health[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0, 'exec_portfolio_health body not found');
-  const body = matches[matches.length - 1][1];
+  // p171 TIER C — findFunctionBody anchored em FUNCTION declaration (vs DO blocks)
+  const body = findFunctionBody('exec_portfolio_health', allSQL);
+  assert.ok(body, 'exec_portfolio_health body not found');
 
   for (const key of EXPECTED_METRICS) {
     const found = body.includes(`'${key}'`);
@@ -121,10 +139,9 @@ test('KpiSection.astro has METRIC_TO_LABEL mapping for all 9 metrics', () => {
 // ─── Test 9: Color thresholds use green/yellow/red status ───
 
 test('exec_portfolio_health uses green/yellow/red status classification', () => {
-  const regex = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?exec_portfolio_health[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
-  const matches = [...allSQL.matchAll(regex)];
-  assert.ok(matches.length > 0);
-  const body = matches[matches.length - 1][1];
+  // p171 TIER C — findFunctionBody anchored em FUNCTION declaration (vs DO blocks)
+  const body = findFunctionBody('exec_portfolio_health', allSQL);
+  assert.ok(body, 'exec_portfolio_health body not found');
 
   assert.ok(body.includes("'green'"), 'exec_portfolio_health must use green status');
   assert.ok(body.includes("'yellow'"), 'exec_portfolio_health must use yellow status');
