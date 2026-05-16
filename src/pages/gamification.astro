@@ -772,12 +772,18 @@ const SCORING_I18N = {
       const trail = trailProgressByMember.get(m.member_id) || { completed: 0, inProgress: 0, pct: 0 };
 
       const showcasePts = m.showcase_points || 0;
+      const producaoPts = m.producao_points || 0;
+      const curadoriaPts = m.curadoria_points || 0;
+      const championsPts = m.champions_points || 0;
       const breakdown = [
         `🧭 ${modeLabel}: ${displayPoints}`,
         leaderboardMode === 'lifetime' ? `📅 ${I.lbBreakdownCycle}: ${m.cycle_points}` : `♾️ ${I.lbBreakdownLifetime}: ${m.lifetime_points}`,
         `📚 ${trail.completed}/${TRAIL_TOTAL}`,
         trail.inProgress > 0 ? `⏳ ${trail.inProgress} ${I.lbBreakdownInProgress}` : '',
         showcasePts > 0 ? `🎤 ${showcasePts}` : '',
+        producaoPts > 0 ? `🏗️ ${producaoPts}` : '',
+        curadoriaPts > 0 ? `📋 ${curadoriaPts}` : '',
+        championsPts > 0 ? `🏆 ${championsPts}` : '',
       ].filter(Boolean).join(' · ');
 
       return `
