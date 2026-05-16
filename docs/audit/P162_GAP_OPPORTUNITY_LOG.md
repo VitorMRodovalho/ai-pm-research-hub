@@ -14,24 +14,24 @@
 | 1 | leaderboard stale (11 categorias) | p165 | Migration `2026066x` — JOIN gamification_rules.pillar config-driven (Pattern 47) |
 | 2 | register_event_showcase XP hardcoded | p165 | Migration p165 — 5 dedicated showcase_* slugs + `_grant_auto_xp` helper |
 | 3 | sync_attendance_points sem filtro events.type | p161 | Verified 2026-05-16: function tem `e.type IN ('tribo','geral','lideranca','kickoff')` |
+| 10 | leaderboard exclui current_cycle_active=false | **p170** | Commit `9d15a29` — hybrid scope (current_cycle_active OR has XP cycle) via PM Option C, migration `20260675000000` |
 | 11 | ADR-0080 PROPOSED + test contract ausente | p166 | `tests/contracts/v4-engagement-canonical.test.mjs` exists, ratcheting allowlist |
 | 12 | event_showcases_manage policy V3 | unknown | Verified 2026-05-16: policy uses `rls_is_superadmin() OR rls_can('write')` |
+| 15 | Showcase vs Champion semantic ADR | **p170** | Commit `9890457` — ADR-0084 ratified Option C (Showcase = eligibility/nudge), helper RPC `get_recent_showcases_by_member` + UI nudge no modal Champion |
 | 16 | platform-guardian doc 8→15 invariantes | p166 | Doc refreshed; baseline 1186→1434 pass |
 | 17 | get_weekly_tribe_digest V3 cache | **p170** | Migration `20260674500000` — `_v4_tribe_leader_member_id()` helper |
 | 18 | meeting_artifacts RLS V3 | unknown | Verified 2026-05-16: policy uses `rls_can_for_initiative('write', initiative_id)` |
 | 19 | recurrence grouping só ata_pending | **p170** | Migration `20260674800000` — attendance+champion now group |
 
-**Still open (5 items):**
+**Still open (10 items):**
 - #4 sync_operational_role_cache collision (Track E root, M effort)
 - #5 Onboarding sem seed_member_engagement template (M effort)
 - #6 Profile XP cycle vs lifetime invisível (S effort, Track A)
 - #7 20+19 ternários inline i18n profile (M effort)
 - #8 champion.criteria_met sem catálogo canônico (S effort)
 - #9 Champion capture no flow ata-publish (M effort, Track B)
-- #10 leaderboard exclui current_cycle_active=false (S effort, PM decisão pendente)
 - #13 /admin/gamification recent activity panel (S effort)
 - #14 gamification_rules.pillar CRUD form (S effort, future-proof)
-- #15 Showcase vs Champion semantic ADR (S effort, Track D)
 - #21 Multi-leader per initiative digest (M effort, pos-ADR-0080 cutover)
 - #22 A3 drift 7 members (continuation Track E)
 
@@ -106,10 +106,11 @@
 - **Trigger:** `meeting_close` RPC + `upsert_event_minutes` não abrem prompt de "dar Champion". Conexão só via `champions_awarded.context_id`.
 - **Fix:** `suggested_champion_ids[]` opcional em `meeting_close` payload + grant modal pré-populado.
 
-### 10. GAP — `get_gamification_leaderboard` exclui `current_cycle_active=false`
+### 10. GAP — `get_gamification_leaderboard` exclui `current_cycle_active=false` ✅ RESOLVED p170
 - **Tipo:** gap · **Effort:** S
 - **Trigger:** `20260513050000:104` — `WHERE m.current_cycle_active = true`. Membros entre ciclos / offboarding-in-flight desaparecem.
 - **Fix:** mudar pra `is_active=true OR EXISTS(gamification_points current cycle)`. PM input.
+- **Resolution:** p170 commit `9d15a29` — migration `20260675000000` aplica hybrid scope (PM Option C): `current_cycle_active=true OR (member tem XP no ciclo corrente)`. Mantém leaderboard relevante; cobre alumni com XP residual e membros offboarding-in-flight.
 
 ### 11. GAP — ADR-0080 PROPOSED + test contract `v4-engagement-canonical.test.mjs` ausente ✅ RESOLVED p166
 - **Tipo:** gap · **Effort:** M
@@ -131,10 +132,11 @@
 - **Tipo:** gap · **Effort:** S
 - **Risk pattern:** sediment p138 — `supabase-js INSERT silencioso 400`. Form precisa `.throwOnError()` + campo `pillar` obrigatório.
 
-### 15. GAP — Showcase vs Champion: sobreposição semântica sem ADR delimitando
+### 15. GAP — Showcase vs Champion: sobreposição semântica sem ADR delimitando ✅ RESOLVED p170
 - **Tipo:** gap · **Effort:** S · **Track D**
 - **Trigger:** SEMANTIC_TAXONOMY.md seção 6. Líder pode dar showcase E Champion ao mesmo membro no mesmo evento — sem constraint.
 - **Fix:** Decisão PM Track D: showcase é input pra Champion (eligibility) ou independente?
+- **Resolution:** p170 commit `9890457` — **ADR-0084 ratified Option C**: Showcase = eligibility hint/nudge (não constraint). Migration `20260675200000` adicionou `get_recent_showcases_by_member(p_member_id, p_window_days=30)` RPC + UI nudge no modal Champion grant em `/admin/gamification` mostrando showcases recentes do membro. Mantém liberdade líder + reduz Champion-blind-spot.
 
 ## Bloqueadores apontados
 
@@ -249,12 +251,19 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 
 ## Status final p170 close (2026-05-16)
 
-**Carryforward (12 items still open):** #4, #5, #6, #7, #8, #9, #10, #13, #14, #15, #21, #22 (more above). PM deferred items.
+**Carryforward (10 items still open):** #4, #5, #6, #7, #8, #9, #13, #14, #21, #22. PM deferred items. (#10 + #15 fechados em commits posteriores ao log housekeeping inicial — atualizados retroativamente em p171 boot.)
 
-**Migrations head p170:** `20260674800000` (9 migrations p170: ATT-1 sync + cleanup + ATT-2 + ATT-3 + HOI canonical + Item #17 V4 + VEP linkage + OQ-B1 #2 + #19 recurrence).
+**Migrations head p170:** `20260675300000` (14 migrations p170: ATT-1 sync + cleanup + ATT-2 + ATT-3 + HOI canonical + Item #17 V4 + VEP linkage + OQ-B1 #2 + #19 recurrence + Workspace Fix D + #10 hybrid scope + future events fix + #15 showcase nudge + curator/typology).
 
-**Commits p170:** 9 (1625e55 → ab851ea). Worker deploy: ba764141 (active prod).
+**Commits p170:** 15 (1625e55 → bcacfed). Worker deploy: 5f6619cc (active prod).
 
 **Invariantes DB:** 16 total (A1-A3, B-F, J-Q new — `Q_expired_engagement_end_date` shipped p170).
 
 **Tests baseline:** 1438 pass / 0 fail / 39 skip.
+
+## p171 housekeeping (2026-05-16)
+
+- #10 + #15 marked ✅ RESOLVED retroactively (closure happened in p170 commits 9d15a29 + 9890457 after `3f7adea` log housekeeping commit).
+- Open count corrected: 12 → 10.
+- Migrations head corrected: `20260674800000` → `20260675300000`.
+- Commits/deploys corrected: 9 → 15 / `ba764141` → `5f6619cc`.
