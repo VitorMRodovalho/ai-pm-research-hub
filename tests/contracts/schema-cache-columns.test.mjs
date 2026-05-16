@@ -60,6 +60,12 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // FK linking initiative to originating partner_entity (p95 #97 G1, Partnership→Initiative journey).
   // NULL for organic initiatives. Set once at initiative creation when seeded from a partner; not derivable.
   ['initiatives.origin_partner_entity_id', 'Optional FK to source partner (#97 G1 external speaker journey); no derivation source'],
+  // Explicit FK upstream para selection_applications (p170 VEP linkage, PM ask 2026-05-16).
+  // VEP JSON é fonte canônica de status/datas — esta FK torna explícita a relação
+  // "engagement nasceu desta VEP application". Set manualmente na criação do engagement
+  // (futuro: backfill via VEP sync workflow). Não derivável de outras colunas — é um
+  // ponteiro explícito, não um cache. Backfill p170 linkou 53/129 via email+cycle match.
+  ['engagements.selection_application_id', 'Explicit upstream FK to selection_applications (p170 VEP source-of-truth linkage); explicit pointer, no derivation source'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.
