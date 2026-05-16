@@ -43,8 +43,9 @@ const GAM_I18N = {
   rulesColBonus: 'Bônus/crit',
   rulesColCap: 'Cap',
   rulesColTrigger: 'Trigger',
-  showcaseNudgeTitle: 'Showcases recentes deste membro',
-  showcaseNudgeSubtitle: '(últimos 30d — considere se justifica Champion)',
+  // p171 TIER C — showcaseNudge migrou pra i18n dict (3 langs)
+  showcaseNudgeTitle: t('admin.gamification.showcaseNudgeTitle', lang),
+  showcaseNudgeSubtitle: t('admin.gamification.showcaseNudgeSubtitle', lang),
   // p171 #13 — Category activity panel
   activityHeading: 'Atividade Recente por categoria',
   activitySubtitle: 'Canários: regras nunca acionadas (🚨) ou idle >30d (⚠️). Drift inverso (categoria sem regra) destacado como 👻 orphan.',
