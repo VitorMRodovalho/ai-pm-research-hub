@@ -42,6 +42,8 @@ const GAM_I18N = {
   rulesColBonus: 'Bônus/crit',
   rulesColCap: 'Cap',
   rulesColTrigger: 'Trigger',
+  showcaseNudgeTitle: 'Showcases recentes deste membro',
+  showcaseNudgeSubtitle: '(últimos 30d — considere se justifica Champion)',
 };
 
 // Criteria checklist per surface (matches SEMANTIC_TAXONOMY.md Q5.4)
@@ -137,6 +139,16 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
           <div>
             <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{GAM_I18N.recipientLabel}</label>
             <input type="text" id="gam-recipient-id" placeholder="member uuid" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.72rem] font-mono">
+          </div>
+          {/* p170 #15 (ADR-0084) — Showcase nudge: shown when recipient_id valid + showcases recent exist */}
+          <div id="gam-showcase-nudge" class="hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+              <div class="flex items-center gap-1.5 mb-1.5">
+                <span class="text-[.65rem] font-bold text-blue-700">📋 {GAM_I18N.showcaseNudgeTitle}</span>
+                <span class="text-[.6rem] text-blue-600">{GAM_I18N.showcaseNudgeSubtitle}</span>
+              </div>
+              <div id="gam-showcase-nudge-list" class="space-y-1"></div>
+            </div>
           </div>
           <div>
             <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-2">{GAM_I18N.criteriaLabel}</label>
@@ -347,8 +359,45 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
     (document.getElementById('gam-context-id') as HTMLInputElement).value = prefill?.contextId || '';
     (document.getElementById('gam-recipient-id') as HTMLInputElement).value = '';
     (document.getElementById('gam-justification') as HTMLTextAreaElement).value = '';
+    // p170 #15: reset showcase nudge
+    document.getElementById('gam-showcase-nudge')?.classList.add('hidden');
     updateJustificationCounter();
     renderCriteria();
+  }
+
+  // p170 #15 (ADR-0084) — Showcase nudge: fetch recent showcases for a member
+  let showcaseNudgeDebounce: any = null;
+  async function loadShowcaseNudge(memberId: string) {
+    const nudge = document.getElementById('gam-showcase-nudge');
+    const list = document.getElementById('gam-showcase-nudge-list');
+    if (!nudge || !list) return;
+    if (!memberId || memberId.length < 30) {
+      nudge.classList.add('hidden');
+      return;
+    }
+    try {
+      const { data, error } = await sb.rpc('get_recent_showcases_by_member', {
+        p_member_id: memberId,
+        p_days: 30
+      });
+      if (error || !data || data.length === 0) {
+        nudge.classList.add('hidden');
+        return;
+      }
+      list.innerHTML = data.slice(0, 5).map((s: any) => `
+        <div class="text-[.65rem] bg-white border border-blue-100 rounded px-2 py-1.5">
+          <div class="font-semibold text-blue-800">
+            ${escapeHtml(s.showcase_type)} · ${escapeHtml(s.showcase_title || '—')}
+          </div>
+          <div class="text-blue-600/70 text-[.6rem]">
+            ${escapeHtml(s.event_title || 'sem event')} · ${s.event_date || '—'} · ${s.xp_awarded || 0} XP
+          </div>
+        </div>
+      `).join('');
+      nudge.classList.remove('hidden');
+    } catch (e) {
+      nudge.classList.add('hidden');
+    }
   }
 
   // p162 Track B' G3b — leader digest CTA "Conferir Champion" deep-links here
@@ -461,6 +510,12 @@ const CRITERIA: Record<string, Array<{slug: string; pt: string}>> = {
   document.getElementById('gam-justification')?.addEventListener('input', updateJustificationCounter);
   document.getElementById('gam-modal-overlay')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeGrantModal();
+  });
+  // p170 #15: debounced recipient_id watch → fetch showcase nudge
+  document.getElementById('gam-recipient-id')?.addEventListener('input', (e) => {
+    const val = ((e.target as HTMLInputElement).value || '').trim();
+    if (showcaseNudgeDebounce) clearTimeout(showcaseNudgeDebounce);
+    showcaseNudgeDebounce = setTimeout(() => loadShowcaseNudge(val), 400);
   });
 
   boot();
