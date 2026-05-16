@@ -20,13 +20,16 @@ let core = [] as ReturnType<typeof coreCourses>;
 let specialty = [] as ReturnType<typeof specialtyCourses>;
 let complementary = [] as ReturnType<typeof complementaryCourses>;
 let master = [] as ReturnType<typeof masterCertCourses>;
+let masterPrep = [] as ReturnType<typeof complementaryCourses>;
 try {
   core = Array.isArray(coreCourses()) ? coreCourses() : [];
   specialty = Array.isArray(specialtyCourses()) ? specialtyCourses() : [];
   complementary = Array.isArray(complementaryCourses()) ? complementaryCourses() : [];
   master = Array.isArray(masterCertCourses()) ? masterCertCourses() : [];
+  // Bridge: complementary courses that are recommended prep for PMI-CPMAI Master Cert
+  masterPrep = complementary.filter((c) => c.code === 'CPMAI_INTRO' || c.code === 'AI_PATTERNS');
 } catch {
-  core = []; specialty = []; complementary = []; master = [];
+  core = []; specialty = []; complementary = []; master = []; masterPrep = [];
 }
 ---
 
@@ -124,6 +127,24 @@ try {
             <p class="text-[.78rem] text-[var(--text-secondary)] mt-1">
               {t('trail.masterDesc', lang)}
             </p>
+            {masterPrep.length > 0 && (
+              <div class="mt-4 pt-3 border-t border-amber-200/60 dark:border-amber-800/40">
+                <div class="text-[.65rem] font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span>↑</span> {t('trail.master.recommendedPrep', lang)}
+                </div>
+                <p class="text-[.7rem] text-[var(--text-muted)] mb-2 italic">
+                  {t('trail.master.prepHint', lang)}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  {masterPrep.map((c) => (
+                    <a href={c.url} target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1.5 text-[.72rem] font-semibold text-amber-800 bg-amber-100/70 hover:bg-amber-200 px-2.5 py-1 rounded-full no-underline transition-colors dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/70">
+                      {c.name} ↗
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -787,6 +787,8 @@ const enUS: Record<string, string> = {
   'trail.complementary': 'Complementary (related PMI courses)',
   'trail.master': 'Master Cert (PMI-CPMAI)',
   'trail.masterDesc': "Next level: PMI's top AI certification — paid, successor to CPMAI v7.",
+  'trail.master.recommendedPrep': 'Recommended prep before',
+  'trail.master.prepHint': "These 2 free courses cover PMI-CPMAI methodology foundations (7 patterns + intro).",
   'trail.ranking.title': 'Team Ranking',
   'trail.ranking.sub': 'Progress of active participants on the trail',
   'trail.ranking.avg': 'Overall average',
