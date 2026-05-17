@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate the Phase C body-hash drift allowlist baseline (p175).
+ * Generate the Phase C body-hash drift allowlist baseline (p175; LIVE_INVENTORY mode p177).
  *
  * Fetches live function bodies via `_audit_list_public_function_bodies()`,
  * diffs against the latest CREATE FUNCTION captures in
@@ -9,18 +9,36 @@
  *
  * Run after capture migrations (drift recovery) to ratchet the baseline DOWN.
  *
+ * Two input modes (parity with scripts/audit-rpc-body-drift.mjs since p177):
+ *   A. SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY env vars — fetches live state
+ *      directly via `_audit_list_public_function_bodies()` RPC (preferred).
+ *   B. LIVE_INVENTORY env pointing at a JSON file produced by MCP
+ *      `execute_sql` with `<untrusted-data>` wrapper. Used in sessions where
+ *      the service role key is not loaded locally; pair with `execute_sql`
+ *      MCP call against `_audit_list_public_function_bodies()`.
+ *
+ * If both are set, env-fetch wins.
+ *
  * Usage:
+ *   # Mode A (env credentials):
  *   SUPABASE_URL=https://…supabase.co SUPABASE_SERVICE_ROLE_KEY=eyJ… \
- *   node scripts/generate-rpc-drift-baseline.mjs
+ *     node scripts/generate-rpc-drift-baseline.mjs
+ *
+ *   # Mode B (MCP-fetched JSON):
+ *   LIVE_INVENTORY=/tmp/drift-audit/live.json \
+ *     node scripts/generate-rpc-drift-baseline.mjs
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadLatestCaptures, diffLiveVsCaptures } from '../tests/helpers/rpc-body-drift-parser.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars');
+const LIVE_INVENTORY = process.env.LIVE_INVENTORY;
+
+if (!LIVE_INVENTORY && (!SUPABASE_URL || !SERVICE_ROLE_KEY)) {
+  console.error('Set either SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (preferred) ' +
+    'or LIVE_INVENTORY (path to MCP-execute_sql JSON output)');
   process.exit(1);
 }
 
@@ -28,7 +46,7 @@ const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const ALLOWLIST_OUT = resolve(ROOT, 'docs/audit/RPC_BODY_DRIFT_ALLOWLIST_P175.txt');
 
-async function callRpc() {
+async function fetchLiveViaRpc() {
   const url = `${SUPABASE_URL}/rest/v1/rpc/_audit_list_public_function_bodies`;
   const res = await fetch(url, {
     method: 'POST',
@@ -45,7 +63,31 @@ async function callRpc() {
   return res.json();
 }
 
-const liveRows = await callRpc();
+function loadLiveFromFile() {
+  const raw = readFileSync(LIVE_INVENTORY, 'utf8');
+  const outer = JSON.parse(raw);
+  const resultStr = outer.result;
+  const m = resultStr.match(/<untrusted-data-[^>]+>\n([\s\S]+?)\n<\/untrusted-data-[^>]+>/);
+  if (!m) throw new Error('Cannot find untrusted-data wrapper in result string');
+  const inner = JSON.parse(m[1].trim());
+  const rows = inner[0].inventory_json || inner;
+  return rows.map(r => ({
+    proname: r.proname,
+    identity_args: r.args || r.identity_args || '',
+    body_md5: r.body_md5,
+    prosrc_len: r.prosrc_len,
+    is_secdef: r.prosecdef ?? r.is_secdef,
+  }));
+}
+
+let liveRows;
+if (SUPABASE_URL && SERVICE_ROLE_KEY) {
+  console.log('Fetching live inventory via _audit_list_public_function_bodies RPC...');
+  liveRows = await fetchLiveViaRpc();
+} else {
+  console.log(`Loading live inventory from ${LIVE_INVENTORY}`);
+  liveRows = loadLiveFromFile();
+}
 console.log(`Live functions: ${liveRows.length}`);
 
 const captures = loadLatestCaptures(MIGRATIONS_DIR);
