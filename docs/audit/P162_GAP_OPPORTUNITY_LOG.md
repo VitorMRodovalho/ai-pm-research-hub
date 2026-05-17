@@ -68,7 +68,7 @@
 - **Fix:** `AND e.type IN ('tribo','geral','lideranca','1on1','parceria','webinar','kickoff')`. (PM ratificou excluir 1on1+entrevista+parceria; agent recomenda revisar.)
 - **Resolution:** verified 2026-05-16 — function has `AND e.type IN ('tribo','geral','lideranca','kickoff')` (entrevista/1on1/parceria/webinar/evento_externo all excluded).
 
-### 4. GAP — `sync_operational_role_cache` collision observer + pending-cert leader [Track E root]
+### 4. GAP — `sync_operational_role_cache` collision observer + pending-cert leader [Track E root] ⏸ DEFERRED p173
 - **Tipo:** gap · **Effort:** M · **Track E precondition**
 - **Trigger:** `20260413430000_v4_phase4_role_cache_sync.sql:28-44`. Membro com `observer is_authoritative=true` (no agreement required) + `study_group_owner role=leader is_authoritative=false` (cert pending) → trigger mapeia para `observer`. Herlon é o caso.
 - **Impact:** qualquer onboarding via observer prévio + promotion para kind com `requires_agreement=true` sem cert → trava em observer.
@@ -77,6 +77,7 @@
   - (b) adicionar `is_primary` column em engagements
   - (c) re-ordenar: kinds com requires_agreement=true → "pending" não bloqueia
 - **Cross-ref:** ADR-0080 (PROPOSED), ADR-0008.
+- **Resolution p173 (2026-05-16):** PM ratificou **defer para dedicated session C** (handoff rank C: operational_role single-value cache cleanup, MID-HIGH impact, M effort). Razão: memory `feedback_operational_role_changes_require_pm_confirmation.md` (p163) expressa princípio — "cache global single-value não modela isso; pessoa pode ter funções diferentes em tribo/iniciativa/workgroup". Patches (a)/(b)/(c) acomodam modelo sabidamente errado. Herlon current state (`operational_role='observer'` com study_group_owner auth=false pending) NÃO quebra permissions (cert não-assinada = sem privilege grant). UX hint "você tem N promoções pendentes" candidato follow-up separado. Session C decidirá: oficializar como cache restrito OU plan remoção pós-V4 full cutover.
 
 ### 5. GAP — Onboarding sem `seed_member_engagement_by_role` template
 - **Tipo:** gap · **Effort:** M
@@ -188,13 +189,14 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Fix:** query V4 retornar todos os leaders ativos por initiative, enviar email para cada.
 - **Não-bloqueador:** quando V4 cutover (ADR-0080 Fase A) acontecer.
 
-### 22. GAP — A3 drift 7 membros após Track E trigger extension (continuation Track E)
+### 22. GAP — A3 drift 7 membros após Track E trigger extension (continuation Track E) ✅ RESOLVED p173
 - **Tipo:** gap · **Effort:** S
 - **Membros afetados:** Sarah, Roberto, Fabricio, Leticia, Maria Luiza, Mayanna, Eder
 - **Trigger:** Track E migration `20260652` estendeu CASE chain do trigger sync_operational_role_cache para cobrir 5 V4 kinds. Mas o trigger só dispara em INSERT/UPDATE de engagements — rows existentes ficam stale.
 - **Fix:** backfill manual via `UPDATE members SET operational_role = <expected> WHERE id IN (7)`. Ou: trigger artificial em todos os engagements para forçar recompute.
 - **Impact:** Sarah/Roberto/Fabricio operacionalmente perdem privilégios tribe_leader que mereciam ter via committee/workgroup engagements. Affecta gates RLS e `admin.gamification` permission visibility.
 - **Cross-ref:** Track E (item #4 original), continuation p163.
+- **Resolution p173 (2026-05-16):** 7/7 membros verificados em expected state (operational_role = A3 expected_role derivation). Backfill organico via p163 seletivo + p170 dropout fixes + p172 #5 RPC dogfood (Eder chapter_liaison). A3 invariant = 0 violations. Audit query: `SELECT m.id, m.name, m.operational_role, (...expected_role...) FROM members m WHERE m.name ~* 'Sarah|Roberto|Fabricio|Leticia|Maria Luiza|Mayanna|Eder'` — 8 rows (inclui Matheus Frederico já alinhado). Não há ação pendente.
 
 ### 23. RESOLVED — Invariantes O + P shipped p162 Track B' G2b
 - ✅ `O_meeting_artifact_event_orphan` (medium, 0 violations)
