@@ -1,6 +1,6 @@
 ---
 name: invariants
-description: Fast path para rodar check_schema_invariants() via Supabase MCP e interpretar resultado. Use mid-session para confirmar que nenhuma mudança quebrou as 8 invariantes estruturais (ADR-0012). Não dispara guardian completo — é um check rápido.
+description: Fast path para rodar check_schema_invariants() via Supabase MCP e interpretar resultado. Use mid-session para confirmar que nenhuma mudança quebrou as 16 invariantes estruturais (A1-A3, B-F, J-Q — ADR-0012 + p162/p170 extensions). Não dispara guardian completo — é um check rápido.
 user_invocable: true
 ---
 
@@ -14,7 +14,7 @@ ORDER BY
   invariant_name;
 ```
 
-Expected: 8 rows, all `violation_count = 0`.
+Expected: 16 rows, all `violation_count = 0` (A1-A3, B-F, J-Q post-p170).
 
 Interpret:
 - **All 0** → ✅ Clean. Report in 1 line and continue.

@@ -12,7 +12,7 @@
 |---|---|---|
 | **Bugs / features / tasks acionáveis** (com prioridade, tipo, label) | GitHub Issues | `gh issue list --state open --label "priority:high"` |
 | **Contexto cross-session** (gaps de design, oportunidades, dívida técnica não-issuável) | Memory (Claude Code) | `memory/project_issue_gap_opportunity_log.md` |
-| **Decisões arquiteturais** (immutable, com rationale) | ADRs | `docs/adr/ADR-NNNN-*.md` (70 ADRs) |
+| **Decisões arquiteturais** (immutable, com rationale) | ADRs | `docs/adr/ADR-NNNN-*.md` (84 ADRs) |
 | **Estado da última sessão** (handoff entre conversas) | Memory (Claude Code) | `memory/handoff_p<N>_*.md` (mais recente) |
 | **Roadmap estratégico de longo prazo** (3 Paths Trentim, Detroit, LIM) | Memory + council decisions | `memory/project_nucleo_*.md` + `docs/council/decisions/` |
 | **Specs em execução** | docs/specs | `docs/specs/p<N>-*.md` |
