@@ -28,6 +28,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { loadLatestCaptures, diffLiveVsCaptures } from '../helpers/rpc-body-drift-parser.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,6 +46,14 @@ const TABLE_DRIFT_ALLOWLIST_PATH = resolve(
   ROOT,
   'docs/audit/TABLE_DRIFT_ALLOWLIST_P64.txt'
 );
+// Phase C body-hash drift allowlist — p175 baseline (one entry per
+// drifted function key `name@normalized_args`). Ratchet DOWN as drift
+// is captured via apply_migration in Phase B/D bucket sessions.
+const BODY_DRIFT_ALLOWLIST_PATH = resolve(
+  ROOT,
+  'docs/audit/RPC_BODY_DRIFT_ALLOWLIST_P175.txt'
+);
+const BODY_DRIFT_BASELINE_SIZE = 225;
 // Pacote M / ADR-0029 retroactive retirement: 17 ingestion/release-readiness/
 // governance-bundle substrate tables + adjacent tables acknowledged as
 // extinct without DROP TABLE migration capture. p174 (2026-05-17): +4 from
@@ -135,6 +144,33 @@ async function callRevokedFnsRlsRefsAuditRpc() {
     throw new Error(`revoked-fns RLS-refs audit RPC failed: ${res.status} ${await res.text()}`);
   }
   return res.json();
+}
+
+async function callBodiesAuditRpc() {
+  const url = `${SUPABASE_URL}/rest/v1/rpc/_audit_list_public_function_bodies`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(`bodies audit RPC failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+function loadBodyDriftAllowlist() {
+  const raw = readFileSync(BODY_DRIFT_ALLOWLIST_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
 }
 
 function loadTableDriftAllowlist() {
@@ -445,3 +481,109 @@ test(
     }
   }
 );
+
+// ============================================================================
+// Phase C body-hash drift — closes the "captured ≠ canonical" gap
+//
+// Q-C catches when a function exists in DB without ANY CREATE FUNCTION
+// migration capturing it (orphan). It does NOT catch when a function IS
+// captured by a migration but the live body has since diverged — the
+// drift pattern that motivated the entire p52 / p174 audits.
+//
+// Phase C compares md5(regexp_replace(prosrc, '\s+', ' ', 'g')) on the
+// live function (via `_audit_list_public_function_bodies()`) against the
+// same hash computed over the latest CREATE FUNCTION migration capture
+// per (name, normalized_args) key. Drift = hashes differ.
+//
+// The 225-entry allowlist baseline (p175) freezes today's known drift;
+// ratchets DOWN each Phase B/D bucket session. Three failure paths:
+//   1. NEW drift: live body diverged AND key not in allowlist. Author
+//      either captures via apply_migration + writes file (Phase B
+//      pattern) OR adds key to allowlist with bump (rare — drift recovery
+//      is the preferred path).
+//   2. RESOLVED drift: allowlisted key is now clean (or extinct). Author
+//      removes it AND decrements BODY_DRIFT_BASELINE_SIZE.
+//   3. SIZE mismatch: allowlist count != BODY_DRIFT_BASELINE_SIZE.
+//      Forces every cleanup to update the test constant.
+//
+// Helper: tests/helpers/rpc-body-drift-parser.mjs (shared with
+// scripts/audit-rpc-body-drift.mjs).
+// ============================================================================
+
+test(
+  'Phase C: no NEW body-hash drift vs p175 allowlist',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const liveRows = await callBodiesAuditRpc();
+    const captures = loadLatestCaptures(MIGRATIONS_DIR);
+    const diff = diffLiveVsCaptures(liveRows, captures);
+    const allowlist = loadBodyDriftAllowlist();
+
+    const allDrift = [...diff.driftedDefinite, ...diff.driftedSuspect];
+    const newDrift = allDrift.filter(r => !allowlist.has(r.key));
+
+    if (newDrift.length > 0) {
+      const summary = newDrift
+        .sort((a, b) => (b.touch_count || 0) - (a.touch_count || 0))
+        .slice(0, 20)
+        .map(r => `  [${r.touch_count}x] ${r.name}(${r.args})  live_len=${r.live_len}  mig_len=${r.migration_len}  latest=${r.latest_file}`)
+        .join('\n');
+      const more = newDrift.length > 20 ? `\n  ... and ${newDrift.length - 20} more` : '';
+      assert.fail(
+        `NEW body-hash drift detected — live function body diverged from ` +
+          `the latest CREATE FUNCTION migration capture, and the key is NOT ` +
+          `in the p175 allowlist.\n\n` +
+          `Preferred fix: capture the current body via apply_migration ` +
+          `(GC-097 / ADR-0029 governance). For each function, run\n` +
+          `  SELECT pg_get_functiondef(p.oid) FROM pg_proc p WHERE p.proname = '<name>' AND ...\n` +
+          `then commit the verbatim DDL as a new migration file (see ` +
+          `scripts/audit-rpc-body-drift.mjs for capture workflow).\n\n` +
+          `Alternate fix (rare): extend ${BODY_DRIFT_ALLOWLIST_PATH} and ` +
+          `bump BODY_DRIFT_BASELINE_SIZE in this test file. Use only when ` +
+          `body intentionally diverges and capture is blocked.\n\n` +
+          `NEW drift (top 20 by touch_count):\n${summary}${more}`
+      );
+    }
+  }
+);
+
+test(
+  'Phase C: body-drift allowlist stays in sync (no resolved-or-extinct entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const liveRows = await callBodiesAuditRpc();
+    const captures = loadLatestCaptures(MIGRATIONS_DIR);
+    const diff = diffLiveVsCaptures(liveRows, captures);
+    const allowlist = loadBodyDriftAllowlist();
+
+    const currentDriftKeys = new Set(
+      [...diff.driftedDefinite, ...diff.driftedSuspect].map(r => r.key)
+    );
+
+    const stale = [...allowlist].filter(key => !currentDriftKeys.has(key));
+
+    if (stale.length > 0) {
+      assert.fail(
+        `Body-drift allowlist contains entries that are no longer drifted ` +
+          `(either captured by a new migration OR the function is extinct). ` +
+          `Remove from ${BODY_DRIFT_ALLOWLIST_PATH} and decrement ` +
+          `BODY_DRIFT_BASELINE_SIZE in this file by ${stale.length}:\n\n  ` +
+          stale.sort().join('\n  ')
+      );
+    }
+  }
+);
+
+test('Phase C: body-drift allowlist size matches p175 baseline', () => {
+  const allowlist = loadBodyDriftAllowlist();
+  assert.equal(
+    allowlist.size,
+    BODY_DRIFT_BASELINE_SIZE,
+    `Body-drift allowlist size drifted from ${BODY_DRIFT_BASELINE_SIZE} to ${allowlist.size}. ` +
+      `Ratcheting DOWN (Phase B/D drift recovery): decrement the baseline ` +
+      `constant in this file to match the new allowlist count. ` +
+      `Ratcheting UP requires capturing the body via apply_migration first; ` +
+      `if intentionally accepting new drift, document the rationale in the ` +
+      `allowlist file AND bump the constant.`
+  );
+});
