@@ -19,7 +19,6 @@
 
 _audit_list_public_tables@
 _audit_preview_gate_eligibles_drift@
-_auto_audience_rule_on_meeting_tag@
 _auto_stage_alumni_on_cycle_open@
 _block_self_evaluation@
 _enqueue_engagement_welcome@p_engagement_id uuid
@@ -36,13 +35,7 @@ _trg_refresh_preview_gate_eligibles_on_engagement@
 _trg_sync_interview_to_event@
 _tribe_broadcast_urgent_rate_limit@
 _validate_gates_shape@p_gates jsonb
-add_checklist_item@p_board_item_id uuid, p_text text, p_position smallint, p_assigned_to uuid, p_target_date date
-admin_archive_project_board@p_board_id uuid, p_reason text, p_archive_items boolean
 admin_decide_dual_track@p_application_id uuid, p_researcher_decision text, p_leader_decision text, p_feedback text
-admin_detect_board_taxonomy_drift@
-admin_link_communication_boards@p_tribe_id integer
-admin_restore_project_board@p_board_id uuid, p_reason text
-admin_run_portfolio_data_sanity@
 admin_set_ingestion_source_sla@p_source text, p_expected_max_minutes integer, p_timeout_minutes integer, p_escalation_severity text, p_enabled boolean
 admin_update_setting@p_key text, p_new_value jsonb, p_reason text
 advance_approval_gate@p_chain_id uuid, p_target_status text, p_reason text
@@ -53,20 +46,15 @@ auto_archive_done_cards@
 auto_link_interview_event@
 bulk_mark_excused@p_member_id uuid, p_date_from date, p_date_to date, p_reason text, p_override_existing boolean
 can@p_person_id uuid, p_action text, p_resource_type text, p_resource_id uuid
-can_read_internal_analytics@
 cancel_re_engagement@p_pipeline_id uuid, p_reason text
 capture_vep_baseline@p_label text, p_notes text
 capture_visitor_lead@p_payload jsonb
-check_code_schema_drift@
 check_pre_onboarding_auto_steps@p_member_id uuid
 comms_executive_kpis@
 compute_pert_cutoff@p_cycle_id uuid, p_role text, p_filter_active_only boolean, p_score_column text
 confirm_manual_version@p_proposal_id uuid
 convert_action_to_card@p_action_item_id uuid, p_board_id uuid, p_title text, p_description text, p_status text, p_due_date date
 create_action_item@p_event_id uuid, p_description text, p_assignee_id uuid, p_due_date date, p_board_item_id uuid, p_checklist_item_id uuid, p_kind text
-create_card_comment@p_board_item_id uuid, p_body text, p_parent_comment_id uuid, p_mentioned_member_ids uuid[]
-create_change_note@p_chain_id uuid, p_body text
-create_document_comment@p_version_id uuid, p_clause_anchor text, p_body text, p_visibility text, p_parent_id uuid
 create_event@p_type text, p_title text, p_date date, p_duration_minutes integer, p_tribe_id integer, p_meeting_link text, p_nature text, p_visibility text, p_agenda_text text, p_agenda_url text, p_external_attendees text[], p_invited_member_ids uuid[], p_audience_level text, p_time_start time without time zone
 create_external_signer_invite@p_email text, p_name text, p_organization text, p_relationship text, p_chapter_code text
 create_external_speaker_engagement@p_partner_entity_id uuid, p_lead_person_id uuid, p_initiative_title text, p_co_person_id uuid, p_initiative_kind text, p_initiative_description text, p_deadlines jsonb, p_whatsapp_url text, p_meeting_link text, p_drive_folder_url text, p_board_domain_key text, p_org_id uuid
@@ -82,7 +70,6 @@ detect_stale_events_cron@
 detect_stale_portfolio_items_cron@
 dismiss_visitor_lead@p_lead_id uuid, p_reason text
 generate_weekly_card_digest_cron@
-generate_weekly_member_digest_cron@
 get_active_engagements@p_person_id uuid
 get_application_returning_context@p_application_id uuid
 get_audit_log@p_actor_id uuid, p_target_id uuid, p_action text, p_date_from timestamp with time zone, p_date_to timestamp with time zone, p_limit integer, p_offset integer
@@ -94,7 +81,6 @@ get_chain_for_pdf@p_chain_id uuid
 get_chain_workflow_detail@p_chain_id uuid
 get_comms_to_adoption_funnel@p_period_days integer
 get_cpmai_course_dashboard@p_course_id uuid
-get_cross_tribe_comparison@
 get_digest_health@
 get_dual_track_merged_payload@p_application_id uuid
 get_event_champion_suggestions@p_event_id uuid
@@ -116,29 +102,21 @@ get_person@p_person_id uuid
 get_pert_cutoff_summary@p_cycle_id uuid, p_score_column text
 get_pre_onboarding_leaderboard@
 get_publication_pipeline_summary@
-get_selection_pipeline_metrics@p_cycle_id uuid, p_chapter text
-get_selection_rankings@p_cycle_code text, p_track text
-get_tribe_member_contacts@p_tribe_id integer
 get_tribe_members_with_credly@p_tribe_id integer
-get_vep_divergence_report@
-get_version_diff@p_version_a uuid, p_version_b uuid, p_include_content boolean
 get_weekly_card_digest@p_member_id uuid
 invite_alumni_to_re_engage@p_pipeline_id uuid, p_message text
 is_eu_resident@p_person_id uuid
-is_event_mandatory_for_member@p_event_id uuid, p_member_id uuid
 join_initiative@p_initiative_id uuid, p_motivation text, p_metadata jsonb
 link_board_to_drive@p_board_id uuid, p_drive_folder_id text, p_drive_folder_url text, p_drive_folder_name text
 link_initiative_to_drive@p_initiative_id uuid, p_drive_folder_id text, p_drive_folder_url text, p_drive_folder_name text, p_link_purpose text
 link_interview_event@p_event_id uuid, p_application_id uuid
 link_partner_to_card@p_partner_entity_id uuid, p_board_item_id uuid, p_link_role text, p_notes text
 list_card_comments@p_board_item_id uuid
-list_card_drive_files@p_board_item_id uuid
 list_initiative_events@p_tribe_id integer, p_initiative_id uuid, p_types text[], p_date_from date, p_date_to date, p_has_minutes boolean, p_has_recording boolean, p_has_attendance boolean, p_limit integer, p_offset integer
 list_invitations_for_my_initiatives@p_initiative_id uuid, p_status_filter text
 list_meeting_action_items@p_event_id uuid, p_status text, p_assignee_id uuid, p_kind text, p_unresolved_only boolean
 list_my_ai_validations@p_application_id uuid
 list_orphan_interview_events@
-list_pending_curation@p_table text
 lock_document_version@p_version_id uuid, p_gates jsonb
 mark_all_notifications_read@
 mark_notification_read@p_notification_id uuid
@@ -151,17 +129,13 @@ process_vep_acceptance_transition@
 promote_lead_to_application@p_lead_id uuid, p_cycle_id uuid, p_pmi_id text
 propose_manual_version@p_version_label text, p_notes text
 purge_expired_logs@p_dry_run boolean, p_limit integer
-recirculate_governance_doc@p_chain_id uuid, p_dry_run boolean, p_recipient_emails text[]
 record_ai_validation@p_application_id uuid, p_ai_purpose text, p_validation_action text, p_ai_score numeric, p_ai_verdict text, p_ai_model text, p_override_score numeric, p_comment text
 record_member_activity@p_page text
 record_offboarding_interview@p_member_id uuid, p_exit_interview_full_text text, p_exit_interview_source text, p_return_interest boolean, p_return_window_suggestion text, p_lessons_learned text, p_recommendation_for_future text, p_referred_by_tribe_leader boolean, p_attachment_urls text[], p_reason_category_code text
 register_card_drive_file@p_board_item_id uuid, p_drive_file_id text, p_drive_file_url text, p_filename text, p_mime_type text, p_size_bytes bigint, p_uploaded_via text
 register_decision@p_event_id uuid, p_title text, p_description text, p_related_card_ids uuid[]
-request_interview_reschedule@p_application_id uuid, p_reason text
-request_secondary_email_verification@p_email text
 request_to_join_initiative@p_initiative_id uuid, p_message text
 resolve_action_item@p_action_item_id uuid, p_resolution_note text, p_carry_to_event_id uuid
-resolve_document_comment@p_comment_id uuid, p_resolution_note text
 respond_re_engagement@p_pipeline_id uuid, p_response text, p_note text
 respond_to_initiative_invitation@p_invitation_id uuid, p_response text, p_note text
 review_change_request@p_cr_id uuid, p_action text, p_notes text
@@ -187,7 +161,6 @@ unlink_partner_from_card@p_partner_entity_id uuid, p_board_item_id uuid
 update_card_comment@p_comment_id uuid, p_new_body text
 update_card_during_meeting@p_card_id uuid, p_event_id uuid, p_new_status text, p_fields jsonb, p_note text
 update_checklist_item@p_checklist_item_id uuid, p_text text, p_position smallint, p_target_date date
-update_event_instance@p_event_id uuid, p_new_date date, p_new_time_start time without time zone, p_new_duration_minutes integer, p_meeting_link text, p_notes text, p_agenda_text text
 update_future_events_in_group@p_event_id uuid, p_new_time_start time without time zone, p_duration_minutes integer, p_meeting_link text, p_notes text, p_visibility text, p_type text, p_nature text
 update_initiative@p_initiative_id uuid, p_title text, p_description text, p_status text, p_metadata jsonb
 update_my_application@p_fields jsonb
@@ -199,6 +172,5 @@ v4_expire_engagements@
 v4_expire_engagements_shadow@
 validate_initiative_metadata@p_kind text, p_metadata jsonb
 validate_interview_booking_token@p_token text
-validate_status_transition@p_from text, p_to text
 verify_certificate@p_code text
 why_denied@p_person_id uuid, p_action text, p_resource_type text, p_resource_id uuid
