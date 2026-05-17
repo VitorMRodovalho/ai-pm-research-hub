@@ -2477,3 +2477,225 @@ batches should use:
 **Action item for Q-E charter (Phase B'' ≥50% trigger)**:
 Re-evaluate metric. If pg_proc scan shows 0 violations consistently, the
 ≥50% trigger may already be effectively met. PM-discretionary review.
+
+---
+
+## p174 re-audit (2026-05-17) — drift returned + CI gap surfaced
+
+### Trigger
+
+p174 boot session (3 weeks post-p72 final). PM directive: "RPC body drift
+Phases 2-3" (handoff item rank A). Re-baseline + capture top-priority subset.
+
+### Baseline expansion
+
+| Metric | p50 (2026-04-24) | p174 (2026-05-17) | Δ |
+|---|---|---|---|
+| Total project functions | 607 | 826 | +219 (+36%) |
+| Migration files | ~860 | 1005 | +145 |
+| Functions seeded since p52 | — | ~219 | — |
+| Q-A orphan allowlist | 92→0 (p52) | 0→23 | +23 NEW orphans accumulated |
+| Multi-touch drift (p52 batches 1-4 cleared) | 0 (post p52) | 242 | +242 |
+
+### Methodology
+
+Mirror of p52 (live `pg_proc.prosrc` md5 hash vs latest CREATE FUNCTION block
+in migrations), automated in Node:
+
+1. Fetch live inventory: `(proname, args, md5(regexp_replace(prosrc, '\s+', ' ', 'g')), prosrc_len)` for all 826 project functions (via execute_sql JSON).
+2. Parse all 1005 migration files: extract CREATE [OR REPLACE] FUNCTION blocks via state-machine (handles `$$` / `$function$` / `$tag$` delimiters + balanced-paren arg extraction).
+3. Compute same md5 over the extracted body (between `AS $delim$ ... $delim$`).
+4. Index latest capture per `(name, normalized_args)` key, chronologically by filename.
+5. Diff live md5 vs latest capture md5 — bucket into **drifted DEFINITE** (live_len ≠ migration_len, almost certainly real drift) vs **drifted SUSPECT** (same length, different hash — rare, possibly parser noise).
+6. Bucket orphans into **TRUE** (no capture of name at all) vs **OVERLOAD** (name captured under different signature).
+
+Audit script: `/tmp/p174-drift-audit/audit.mjs` (ephemeral). Reusable for
+future re-audits.
+
+### Findings
+
+| Category | Count | Notes |
+|---|---|---|
+| Live functions | 826 | +219 since p50 |
+| Clean (live = latest migration) | 528 | 63.9% — baseline integrity |
+| **Drifted DEFINITE** | **242** | 29.3% — live bodies diverged from latest capture |
+| Drifted SUSPECT | 0 | (length-equal-hash-different bucket empty) |
+| **Orphans TRUE** | **23** | NO migration captures any signature — NEW orphans since p52 |
+| Orphans OVERLOAD | 33 | Captures exist under different args (rename/signature change) |
+| Extinct | 132 | Captured but absent from live (old DROPs/RENAMEs) |
+
+### Drifted DEFINITE bucket distribution
+
+| Touch count | Drifted | Cumulative |
+|---|---|---|
+| 11x | 1 | 1 |
+| 10x | 1 | 2 |
+| 8x | 2 | 4 |
+| 7x | 1 | 5 |
+| 6x | 5 | 10 |
+| 5x | 6 | 16 |
+| 4x | 18 | 34 |
+| 3x | 23 | 57 |
+| 2x | 28 | 85 |
+| **1x** | **157** | **242** |
+
+Surprising: 157 of 242 (65%) are 1-touch drifts — functions with a single
+migration capture that the live body diverged from. Single-touch drift means
+post-capture modification via `execute_sql`/dashboard bypass. The bucket
+inversion (1-touch dominates) suggests **drift accumulated broadly across
+the new 219 functions** added post-p52, not concentrated in legacy high-churn
+functions.
+
+### CI contract test SKIP gap (root cause for orphan accumulation)
+
+**Discovery:** `tests/contracts/rpc-migration-coverage.test.mjs` has 5
+DB-aware tests gated on `SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY` env
+vars. Without them, the tests silently skip (showing `# Skipped:` in node:test
+output). The 6th test (`allowlist file size matches p52 baseline`) is offline-
+only and always runs — that's the test that passes.
+
+**CI gap:** `.github/workflows/ci.yml` `Run Unit Tests` step had NO env vars
+configured → service role test always SKIPPED on CI → 23 orphans accumulated
+since p52 (2026-04-25) without detection.
+
+**Resolution (p174 same session):** added `SUPABASE_URL` +
+`SUPABASE_SERVICE_ROLE_KEY` env from GH secrets to `npm test` step in
+`ci.yml`. GH secrets must be configured manually by PM in repo settings.
+Forward: next PR with a new orphan will hard-fail Q-C contract test.
+
+### p174 remediation (this session)
+
+**1. Drift correction — 5+ touch bucket (16 fns, all "drifted DEFINITE"):**
+
+Migration: `20260679000000_p174_qb_drift_correction_5plus_touch.sql` (82 KB).
+Captures verbatim live bodies via `pg_get_functiondef` for:
+- `_delivery_mode_for`, `admin_list_members`, `admin_offboard_member`,
+  `create_pilot`, `curate_item`, `exec_portfolio_health`, `exec_tribe_dashboard`,
+  `get_admin_dashboard`, `get_attendance_grid`, `get_board_members`,
+  `get_ghost_visitors`, `get_member_attendance_hours`,
+  `get_tribe_attendance_grid`, `list_curation_board`, `mark_member_present`,
+  `update_board_item`.
+
+Method: 16 functions, batched apply (batch A applied via `apply_migration`;
+batches B/C/D not separately applied because live state IS the canonical
+state — migration file captures verbatim from `pg_get_functiondef`, idempotent
+on existing live definitions). Local file written + `supabase migration repair
+--status applied 20260679000000`.
+
+**2. Orphan recovery — 23 true orphans:**
+
+Migration: `20260679100000_p174_qa_orphan_recovery_23fns.sql` (23 KB).
+Captures verbatim live bodies (via `supabase db query --linked` for SQL
+extraction, then Python CSV-parsed) for:
+
+- **10 trigger functions** (`*_set_updated_at`): board_source_tribe_map,
+  ingestion_batch_files, ingestion_run_ledger, legacy_member_links,
+  legacy_tribe_board_links, notion_import_staging, set_comms_metrics,
+  set_hub_resources, tribe_continuity_overrides, tribe_lineage.
+- **4 analytics / tier helpers**: analytics_is_leadership_role,
+  analytics_role_bucket, has_min_tier, exec_role_transitions.
+- **9 misc readers / writers**: count_tribe_slots, get_comms_dashboard_metrics,
+  get_communication_template, list_admin_links, list_taxonomy_tags,
+  member_self_update, resolve_whatsapp_link, search_knowledge, suggest_tags.
+
+Local file written + repair.
+
+### p174 closure state
+
+| Metric | Pre-p174 | Post-p174 | Δ |
+|---|---|---|---|
+| Live functions | 826 | 826 | = |
+| Clean | 528 | 567 | +39 (16 drift + 23 orphan) |
+| Drifted DEFINITE | 242 | 226 | -16 (5+ touch bucket cleared) |
+| Orphans TRUE | 23 | **0** | **-23** (all captured) |
+| Orphans OVERLOAD | 33 | 33 | = (not in p174 scope) |
+| Extinct | 132 | 132 | = (not in p174 scope) |
+
+### Backlog (carry from p174)
+
+Open work to close drift completely. Realistic to batch over 2-3 follow-up
+sessions:
+
+| Backlog item | Count | Effort | Priority |
+|---|---|---|---|
+| **4-touch drifted** capture | 18 | S | HIGH (high-churn semi-stable) |
+| **3-touch drifted** capture | 23 | S | HIGH |
+| **2-touch drifted** capture | 28 | M | MID |
+| **1-touch drifted** capture | 157 | L | MID-LOW (largest but smallest delta each) |
+| Orphans OVERLOAD review | 33 | S | LOW (likely intentional refactors) |
+| Extinct capture cleanup | 132 | M | LOW (cosmetic — purge old captures or add DROP migrations) |
+| **Phase C — body hash drift contract test** | — | M | HIGH (prevents new drift silently accumulating) |
+
+### Council backlog items surfaced p174 (code-reviewer, 2026-05-17)
+
+Findings from pre-commit code review. All are **pre-existing live patterns**
+canonicalized verbatim into capture migrations — NO regressions introduced.
+But they remain V3→V4 migration debt:
+
+| Item | Severity | Source | Effort | Notes |
+|---|---|---|---|---|
+| `resolve_whatsapp_link`: migrate `operational_role IN ('manager', 'deputy_manager')` → `can_by_member(v_caller_id, 'view_pii')` | HIGH | orphan recovery | S | SECDEF RPC returns PII (phone). ADR-0011 full compliance |
+| `update_board_item`: migrate `v_is_gp` path from V3 role enumeration → V4 `can_by_member()` | HIGH | drift correction | M | Already has `write_board` short-circuit; deeper V4 needed |
+| `has_min_tier`: replace hardcoded tier rank ladder → `can()` delegation | MID | orphan recovery | S | Currently shadow auth system parallel to ADR-0007 |
+| `get_board_members`: migrate `is_superadmin OR manager/deputy_manager` → V4 | MID | drift correction | S | CLAUDE.md restricts is_superadmin to emergency-break |
+| `count_tribe_slots`: add `get_my_member_record()` auth check | MID | orphan recovery | S | SECDEF + no auth = leaks aggregate slot counts |
+| CI sentinel: explicit fail-on-missing-env test | LOW | ci.yml | S | Replace silent skip with assertive presence check |
+| Audit script: balanced-quote parser for nested `$$` bodies | LOW | scripts/audit-rpc-body-drift.mjs | M | Current `indexOf` works for current corpus |
+| GH secrets configured: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in repo settings | HIGH | ci.yml | XS | **PM action** — without secrets, CI gate still silently skips |
+
+### Phase C strengthening (recommended for next dedicated session)
+
+Current contract test catches orphans (name-only). Does NOT catch body drift.
+Add a hash-based drift test in `rpc-migration-coverage.test.mjs`:
+
+```js
+test('Track Q-D: no body drift between live and latest migration capture', async () => {
+  // For each pg_proc fn: compute md5(regexp_replace(prosrc, '\s+', ' ', 'g'))
+  // Parse migration files for latest CREATE OR REPLACE block per name+args
+  // Compute same md5 over body content (between AS $delim$ ... $delim$)
+  // Compare; fail listing drifted functions
+});
+```
+
+Same allowlist-with-ratchet pattern as Q-C orphan check. Initial baseline =
+226 (remaining post-p174). Each session ratchets the baseline DOWN.
+
+### Repeat audit playbook (for future sessions)
+
+```bash
+# 1. Fetch live inventory (read-only):
+mcp__supabase__execute_sql "SELECT json_agg(...) FROM pg_proc ..."
+
+# 2. Run audit script (already at /tmp/p174-drift-audit/audit.mjs):
+cd /tmp/p174-drift-audit && node audit.mjs
+
+# 3. For drifted N+ touch: fetch defs via:
+supabase db query --linked --output csv -f /tmp/p174-drift-audit/X-extract.sql --agent no > raw.txt
+# Then python CSV-parse + write migration
+
+# 4. Apply patterns:
+#    - First batch via mcp__supabase__apply_migration (validates syntax)
+#    - Remaining: write local file + supabase migration repair --status applied
+```
+
+### Sediments and policy implications
+
+1. **Migration discipline drift since p52** — despite CLAUDE.md `database.md`
+   rule, drift accumulated. Root cause was undetected: contract test SKIP
+   on CI. **Lesson:** contract tests must be verified to actually run, not
+   just exist. Future audit cadence: every ~3-5 weeks while platform churns.
+
+2. **`apply_migration` MCP does NOT register schema_migrations** — confirmed
+   p174 (batch A applied; head unchanged at 20260678000000 until manual
+   repair). Existing CLAUDE.md sediment is correct; pattern reinforced.
+
+3. **`supabase db push` blocked by historical orphan migrations in remote**
+   (`schema_migrations` has rows missing from local). Workaround: use
+   `apply_migration` + `repair` pattern. Cleanup deferred — push isn't
+   critical when repair works.
+
+4. **`pg_get_functiondef` outputs `$function$` delimiter** — must be
+   converted to `$$` for `kpi-portfolio-health.test.mjs` regex (p52 pattern).
+   Done via `replace(replace(def, 'AS $function$', 'AS $$'), '$function$' || E'\n', '$$' || E'\n')`
+   in SQL extraction step. Sediment from p52 preserved.
+
