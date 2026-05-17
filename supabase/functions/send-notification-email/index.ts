@@ -25,7 +25,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   ip_ratification_awaiting_members: 'Aguardando sua ratificacao',
   weekly_card_digest_member: 'Seu resumo semanal de atividades',
   weekly_member_digest: 'Seu resumo semanal — Núcleo IA',
-  weekly_tribe_digest_leader: 'Resumo da sua tribo — Núcleo IA',
+  weekly_tribe_digest_leader: 'Resumo semanal — Núcleo IA',
 }
 
 // Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
@@ -169,7 +169,13 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
 function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   let payload: any = {}
   try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
-  const tribeName = payload.tribe_name || 'sua tribo'
+  const tribeName = payload.tribe_name || 'sua iniciativa'
+  // p173: initiative-aware. payload.is_tribe distinguishes research_tribe (Tribo)
+  // from other kinds (workgroup/committee/study_group/congress = Iniciativa).
+  // Default true for legacy payloads without the field.
+  const isTribe = payload.is_tribe !== false
+  const kindNounCap = isTribe ? 'Tribo' : 'Iniciativa'
+  const kindNounLower = isTribe ? 'tribo' : 'iniciativa'
   const agg = payload.aggregates || {}
   const overdue = Number(agg.cards_overdue_total || 0)
   const dueNext = Number(agg.cards_due_next_7d || 0)
@@ -320,7 +326,7 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
       <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
-        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da Tribo ${escapeHtml(tribeName)}</h1>
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da ${kindNounCap} ${escapeHtml(tribeName)}</h1>
         <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${activeMembers} membros ativos</p>
       </div>
       <div style="padding: 20px 16px;">
@@ -370,7 +376,7 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
           <a href="https://nucleoia.vitormr.dev/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
         </div>
         <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
-          Você recebe este resumo porque é líder da tribo ${escapeHtml(tribeName)}.
+          Você recebe este resumo porque é líder da ${kindNounLower} ${escapeHtml(tribeName)}.
           <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
         </p>
       </div>
