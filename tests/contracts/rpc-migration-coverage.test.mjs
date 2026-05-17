@@ -53,7 +53,7 @@ const BODY_DRIFT_ALLOWLIST_PATH = resolve(
   ROOT,
   'docs/audit/RPC_BODY_DRIFT_ALLOWLIST_P175.txt'
 );
-const BODY_DRIFT_BASELINE_SIZE = 185;
+const BODY_DRIFT_BASELINE_SIZE = 157;
 // Pacote M / ADR-0029 retroactive retirement: 17 ingestion/release-readiness/
 // governance-bundle substrate tables + adjacent tables acknowledged as
 // extinct without DROP TABLE migration capture. p174 (2026-05-17): +4 from
