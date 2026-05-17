@@ -47,9 +47,19 @@ const TABLE_DRIFT_ALLOWLIST_PATH = resolve(
 );
 // Pacote M / ADR-0029 retroactive retirement: 17 ingestion/release-readiness/
 // governance-bundle substrate tables + adjacent tables acknowledged as
-// extinct without DROP TABLE migration capture. Going forward this baseline
-// must NOT grow — every new entry requires a retirement ADR + PM ack.
-const TABLE_DRIFT_BASELINE_SIZE = 17;
+// extinct without DROP TABLE migration capture. p174 (2026-05-17): +4 from
+// same era surfaced when CI gate activated. Going forward this baseline must
+// NOT grow — every new entry requires a retirement ADR + PM ack.
+const TABLE_DRIFT_BASELINE_SIZE = 21;
+
+const TABLE_ORPHAN_ALLOWLIST_PATH = resolve(
+  ROOT,
+  'docs/audit/TABLE_ORPHAN_ALLOWLIST_P174.txt'
+);
+// p174 baseline: 35 pre-migration-discipline tables surfaced when CI gate
+// activated. Ratchet down by capturing via apply_migration in dedicated
+// sessions. See `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` p174 section.
+const TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE = 35;
 
 function loadAllMigrationsConcat() {
   const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort();
@@ -129,6 +139,16 @@ async function callRevokedFnsRlsRefsAuditRpc() {
 
 function loadTableDriftAllowlist() {
   const raw = readFileSync(TABLE_DRIFT_ALLOWLIST_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
+}
+
+function loadTableOrphanAllowlist() {
+  const raw = readFileSync(TABLE_ORPHAN_ALLOWLIST_PATH, 'utf8');
   return new Set(
     raw
       .split('\n')
@@ -254,24 +274,73 @@ test(
   async () => {
     const rows = await callTablesAuditRpc();
     const allSQL = loadAllMigrationsConcat();
+    const orphanAllowlist = loadTableOrphanAllowlist();
 
     const dbTables = new Set(rows.map(r => r.table_name));
-    const newOrphans = [...dbTables].filter(
+    const allOrphans = [...dbTables].filter(
       n => !buildCreateTableMatcher(n).test(allSQL)
     );
+
+    // Filter against p174 baseline allowlist (35 pre-discipline tables).
+    // Future orphans must either be captured via apply_migration OR added
+    // to the allowlist with PM ack + baseline bump.
+    const newOrphans = allOrphans.filter(n => !orphanAllowlist.has(n));
 
     if (newOrphans.length > 0) {
       assert.fail(
         `NEW orphan table(s) detected — exist in DB but no CREATE TABLE ` +
-          `migration captures them. Add a migration via apply_migration ` +
-          `(NEVER execute_sql for DDL — see GC-097 + ADR-0029 governance gap). ` +
-          `If intentionally outside migration discipline (e.g., introspection ` +
-          `view), document and waive explicitly.\n\n` +
+          `migration captures them, and not in p174 baseline allowlist. ` +
+          `Add a migration via apply_migration (NEVER execute_sql for DDL — ` +
+          `see GC-097 + ADR-0029 governance gap). If intentionally outside ` +
+          `migration discipline (e.g., introspection view), extend ` +
+          `${TABLE_ORPHAN_ALLOWLIST_PATH} with rationale AND bump ` +
+          `TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE.\n\n` +
           `New orphan tables:\n  ${newOrphans.sort().join('\n  ')}`
       );
     }
   }
 );
+
+test(
+  'p174 ratchet: table-orphan allowlist stays in sync (no resolved-or-extinct entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callTablesAuditRpc();
+    const orphanAllowlist = loadTableOrphanAllowlist();
+    const allSQL = loadAllMigrationsConcat();
+
+    const dbTables = new Set(rows.map(r => r.table_name));
+
+    const stale = [...orphanAllowlist].filter(name => {
+      const stillInDb = dbTables.has(name);
+      const captured = buildCreateTableMatcher(name).test(allSQL);
+      // Stale if: removed from DB OR captured by migration (orphan resolved).
+      return !stillInDb || captured;
+    });
+
+    if (stale.length > 0) {
+      assert.fail(
+        `Table-orphan allowlist contains entries that are no longer orphans. ` +
+          `Remove them from ${TABLE_ORPHAN_ALLOWLIST_PATH} (drift cleanup ` +
+          `ratcheting down) and update TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE:\n\n  ` +
+          stale.sort().join('\n  ')
+      );
+    }
+  }
+);
+
+test('p174 ratchet: table-orphan allowlist size matches baseline', () => {
+  const allowlist = loadTableOrphanAllowlist();
+  assert.equal(
+    allowlist.size,
+    TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE,
+    `Table-orphan allowlist size drifted from ${TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE} ` +
+      `to ${allowlist.size}. p174 baseline was 35 pre-migration-discipline ` +
+      `tables. Ratcheting DOWN (capture via apply_migration) requires updating ` +
+      `the baseline constant in this file. Ratcheting UP requires PM ack + ` +
+      `documented justification in the allowlist file.`
+  );
+});
 
 test(
   'Pacote M Phase 4: no EXTINCT tables (silent drops without DROP TABLE migration)',

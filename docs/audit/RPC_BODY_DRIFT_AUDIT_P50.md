@@ -2678,6 +2678,39 @@ supabase db query --linked --output csv -f /tmp/p174-drift-audit/X-extract.sql -
 #    - Remaining: write local file + supabase migration repair --status applied
 ```
 
+### Table-level drift surfaced post-CI-fix (2026-05-17, same day)
+
+CI run for commit `8c1b946` (the p174 main fix) **failed** because the
+Pacote M Phase 4 table-drift tests (475/476) ALSO started running with
+the new env vars. Surfaced:
+
+* **35 ORPHAN tables** in DB without CREATE TABLE migration capture:
+  Core platform foundation (`members`, `events`, `attendance`, `tribes`,
+  `certificates`, `gamification_points`, `knowledge_*`, etc.) — all
+  predate the migration discipline (cycle 1 / early bootstrap).
+* **4 EXTINCT tables** in migrations but absent from live DB (same
+  ADR-0029 retirement class, missed in p64 capture):
+  `ingestion_alert_events`, `ingestion_batch_files`, `legacy_member_links`,
+  `readiness_slo_alerts`.
+
+**Resolution (p174 fix-forward commit):**
+
+1. Extended `TABLE_DRIFT_ALLOWLIST_P64.txt` with the 4 new extincts.
+   Bumped `TABLE_DRIFT_BASELINE_SIZE` 17 → 21.
+2. Created `TABLE_ORPHAN_ALLOWLIST_P174.txt` with the 35 orphans + p174
+   acknowledgment + remediation guidance (`pg_dump --schema-only` for
+   verbatim capture in dedicated session).
+3. Refactored test 475 (`no NEW orphan tables`) to filter against the
+   new allowlist — same Q-C ratchet pattern. Bug found: the original
+   test comment said "AND not in table-drift allowlist" but the code
+   had no allowlist filter. Now consistent.
+4. Added 2 new tests:
+   - `p174 ratchet: table-orphan allowlist stays in sync` (mirror Q-C)
+   - `p174 ratchet: table-orphan allowlist size matches baseline (35)`
+
+CI now passes the table drift gates. Backlog: capture each orphan table
+via `apply_migration` in dedicated session(s), ratcheting baseline down.
+
 ### Sediments and policy implications
 
 1. **Migration discipline drift since p52** — despite CLAUDE.md `database.md`

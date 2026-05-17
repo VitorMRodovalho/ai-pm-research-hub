@@ -1,0 +1,65 @@
+# Table-level orphan allowlist — Pacote M Phase 4 (orphan path) / p174
+#
+# Lists tables that exist in the live DB but have NO `CREATE TABLE` capture
+# in any supabase/migrations/*.sql file. These are pre-migration-discipline
+# tables: created via psql / Dashboard / early-dev seed before the
+# `apply_migration` rule was established (mid-cycle 1).
+#
+# Surfaced p174 (2026-05-17) when ci.yml `Run Unit Tests` step was wired
+# to `SUPABASE_SERVICE_ROLE_KEY` secret. The DB-aware Pacote M Phase 4
+# orphan check was previously SKIPPED on CI (no env var → silent skip).
+# 3 weeks of accumulation surfaced 35 tables.
+#
+# Going forward (ratchet pattern, mirror Q-C):
+#   - Future orphan tables NOT in this allowlist will hard-fail CI
+#   - Removing entries (capturing via apply_migration) ratchets baseline DOWN
+#   - Adding entries requires PM ack + bump TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE
+#
+# Recommended remediation (dedicated session post-cron 2026-05-23):
+#   For each orphan: use `pg_dump --schema-only --table=<name>` to extract
+#   CREATE TABLE + indexes + constraints + RLS policies. Bundle into
+#   thematic recovery migrations (e.g., `qa_orphan_recovery_p1XX_core_tables.sql`).
+#   Similar pattern to p52 function orphan recovery (13 thematic migrations
+#   for 92 functions).
+#
+# Format: one table_name per line. Lines starting with # are comments.
+
+# === Core platform foundation (cycle 1 / pre-discipline) ===
+# These predate the migration rule (GC-097) and were created during initial
+# platform bootstrap via psql / Supabase Dashboard. Heavy lift to capture
+# verbatim — defer to dedicated session.
+analysis_results
+announcements
+attendance
+blog_likes
+board_members
+certificates
+change_requests
+comparison_results
+course_progress
+courses
+events
+evm_analyses
+gamification_points
+home_schedule
+knowledge_assets
+knowledge_chunks
+knowledge_ingestion_runs
+knowledge_insights
+knowledge_insights_ingestion_log
+member_cycle_history
+members
+offboard_reason_categories
+onboarding_steps
+partner_attachments
+partner_interactions
+pii_access_log
+platform_settings
+release_items
+risk_simulations
+selection_ranking_snapshots
+tia_analyses
+tribe_meeting_slots
+tribe_selections
+tribes
+user_profiles
