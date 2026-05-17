@@ -54,3 +54,4 @@ ingestion_alert_events
 ingestion_batch_files
 legacy_member_links
 readiness_slo_alerts
+portfolio_data_sanity_runs

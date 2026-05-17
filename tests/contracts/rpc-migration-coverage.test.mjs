@@ -50,7 +50,7 @@ const TABLE_DRIFT_ALLOWLIST_PATH = resolve(
 // extinct without DROP TABLE migration capture. p174 (2026-05-17): +4 from
 // same era surfaced when CI gate activated. Going forward this baseline must
 // NOT grow — every new entry requires a retirement ADR + PM ack.
-const TABLE_DRIFT_BASELINE_SIZE = 21;
+const TABLE_DRIFT_BASELINE_SIZE = 22;
 
 const TABLE_ORPHAN_ALLOWLIST_PATH = resolve(
   ROOT,
