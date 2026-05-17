@@ -35,31 +35,6 @@ _trg_refresh_preview_gate_eligibles_on_engagement@
 _trg_sync_interview_to_event@
 _tribe_broadcast_urgent_rate_limit@
 _validate_gates_shape@p_gates jsonb
-invite_alumni_to_re_engage@p_pipeline_id uuid, p_message text
-is_eu_resident@p_person_id uuid
-join_initiative@p_initiative_id uuid, p_motivation text, p_metadata jsonb
-link_board_to_drive@p_board_id uuid, p_drive_folder_id text, p_drive_folder_url text, p_drive_folder_name text
-link_initiative_to_drive@p_initiative_id uuid, p_drive_folder_id text, p_drive_folder_url text, p_drive_folder_name text, p_link_purpose text
-link_interview_event@p_event_id uuid, p_application_id uuid
-link_partner_to_card@p_partner_entity_id uuid, p_board_item_id uuid, p_link_role text, p_notes text
-list_card_comments@p_board_item_id uuid
-list_initiative_events@p_tribe_id integer, p_initiative_id uuid, p_types text[], p_date_from date, p_date_to date, p_has_minutes boolean, p_has_recording boolean, p_has_attendance boolean, p_limit integer, p_offset integer
-list_invitations_for_my_initiatives@p_initiative_id uuid, p_status_filter text
-list_meeting_action_items@p_event_id uuid, p_status text, p_assignee_id uuid, p_kind text, p_unresolved_only boolean
-list_my_ai_validations@p_application_id uuid
-list_orphan_interview_events@
-lock_document_version@p_version_id uuid, p_gates jsonb
-mark_all_notifications_read@
-mark_notification_read@p_notification_id uuid
-meeting_close@p_event_id uuid, p_summary text, p_suggested_champion_ids uuid[]
-mirror_sibling_interview@p_application_id uuid
-parse_vep_chapters@p_membership text
-process_interview_reminders_1h@
-process_pending_reschedule_nudges@
-process_vep_acceptance_transition@
-promote_lead_to_application@p_lead_id uuid, p_cycle_id uuid, p_pmi_id text
-propose_manual_version@p_version_label text, p_notes text
-purge_expired_logs@p_dry_run boolean, p_limit integer
 record_ai_validation@p_application_id uuid, p_ai_purpose text, p_validation_action text, p_ai_score numeric, p_ai_verdict text, p_ai_model text, p_override_score numeric, p_comment text
 record_member_activity@p_page text
 record_offboarding_interview@p_member_id uuid, p_exit_interview_full_text text, p_exit_interview_source text, p_return_interest boolean, p_return_window_suggestion text, p_lessons_learned text, p_recommendation_for_future text, p_referred_by_tribe_leader boolean, p_attachment_urls text[], p_reason_category_code text
