@@ -44,9 +44,9 @@
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@react-pdf/renderer": "^4.5.1",
     "@sentry/browser": "^10.47.0",
-    "@supabase/supabase-js": "^2.105.1",
+    "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/typography": "^0.5.19",
-    "@tailwindcss/vite": "^4.2.2",
+    "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-image": "^3.22.2",
     "@tiptap/extension-link": "^3.22.2",
@@ -60,12 +60,12 @@
     "cmdk": "^1.1.1",
     "lucide-react": "^1.7.0",
     "marked": "^18.0.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -78,7 +78,7 @@
     "eslint-plugin-react": "^7.37.5",
     "playwright": "^1.59.1",
     "typescript": "^6.0.2",
-    "wrangler": "^4.88.0"
+    "wrangler": "^4.92.0"
   },
   "overrides": {
     "devalue": "^5.8.1"
