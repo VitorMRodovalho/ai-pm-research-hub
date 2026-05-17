@@ -22,7 +22,7 @@
 | [PERMISSIONS_MATRIX.md](PERMISSIONS_MATRIX.md) | Matriz V4 actions × engagement kinds × roles |
 | [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md) | Pre-deploy validation steps |
 | [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) | Recovery procedures (Supabase outage, Cloudflare, etc.) |
-| [adr/README.md](adr/README.md) | Architecture Decision Records (ADR-0001..0076) |
+| [adr/README.md](adr/README.md) | Architecture Decision Records (ADR-0001..0084) |
 | [refactor/DOMAIN_MODEL_V4_MASTER.md](refactor/DOMAIN_MODEL_V4_MASTER.md) | V4 refactor master tracking (concluído 2026-04-13) |
 | [reference/V4_AUTHORITY_MODEL.md](reference/V4_AUTHORITY_MODEL.md) | V4 authority audit checklist (4-step antes de seed expansion) |
 
@@ -49,7 +49,7 @@
 
 | Diretório | Tipo | Exemplos |
 |---|---|---|
-| [adr/](adr/) | Decisões arquiteturais | ADR-0001..0076 |
+| [adr/](adr/) | Decisões arquiteturais | ADR-0001..0084 |
 | [refactor/](refactor/) | Refactor master docs | DOMAIN_MODEL_V4_MASTER, HERLON_VEP_PARALLEL_TRACK |
 | [strategy/](strategy/) | Strategy audits | ARM_PILLARS_AUDIT_P107, p134_omega_a_* |
 | [research/](research/) | Web research | p134_sympla_landscape, p134_airmeet_landscape, p134_nfse_nacional_2026 |
