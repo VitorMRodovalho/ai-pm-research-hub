@@ -31,8 +31,15 @@ jobs:
 
       - name: Run i18n hardcoded lint gate
         run: npm run lint:i18n
-        
+
       - name: Run Unit Tests
+        # SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY enable DB-aware contract tests
+        # (rpc-migration-coverage Q-C orphan check + drift detection). Without
+        # them, the Track Q-C orphan check silently skips (p174 audit sediment).
+        # Required GH secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm test
         
       - name: Build Project

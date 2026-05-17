@@ -29,6 +29,7 @@ Rule:
   2. Run `supabase migration repair --status applied <timestamp>` to register in CLI tracking + sync to `schema_migrations` table.
   3. `NOTIFY pgrst, 'reload schema'` via `execute_sql` if the change affects PostgREST surface (RPC signatures, view shapes, policies on exposed tables).
 - Without the manual sync, `tests/contracts/rpc-migration-coverage.test.mjs` will fail in CI when a new function appears in `pg_proc` without a `CREATE FUNCTION` block in any migration — catches accidental DDL via the wrong tool **and** the apply_migration MCP gap.
+- **Contract test CI gate (p174 sediment)**: the Q-C orphan check requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` env vars; without them tests SKIP silently (offline baseline check still passes). Confirmed fix: `.github/workflows/ci.yml` `Run Unit Tests` step now uses `${{ secrets.SUPABASE_URL }}` + `${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}` (p174, 2026-05-17). Without those secrets configured in GH repo settings, the gate still silently skips — verify periodically that CI is actually running the DB-aware tests, not just the offline baseline.
 
 ## LGPD Compliance (GC-162)
 - All new tables MUST have RLS enabled
