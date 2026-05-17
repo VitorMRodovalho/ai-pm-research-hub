@@ -254,3 +254,65 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - ADR-0081 — Champion ledger (NÃO host do digest; cross-ref domain)
 - ADR-0028 — privacy-preserving aggregates (princípio honrado nas 3 seções: nenhuma exposição individual)
 - ADR-0012 Princípio 2 — cache column requires trigger (champion_decision evitada por essa razão)
+
+---
+
+## Amendment C — Multi-leader + Initiative-aware Digest (p172 #21 + p173, 2026-05-16/17)
+
+**Status:** Accepted (PM ratified inline durante shipping)
+**Driver:** V4 N:N model permite múltiplos líderes ativos por initiative (item #21 OPPORTUNITY no P162_GAP_LOG) + cron tribe-centric era subset; non-tribe initiatives (workgroup/committee/study_group/congress) com leaders eram invisíveis (PM ask 2026-05-17).
+
+### Evolução semântica do cron
+
+| Versão | Iteração | Cardinalidade líder/digest | Cobertura |
+|--------|----------|---------------------------|-----------|
+| Pré-p172 | `tribes WHERE is_active=true` | 1 líder por tribo (`tribes.leader_member_id` V3 cache) | 7 tribos |
+| p172 #21 | `tribes WHERE is_active=true` | N líderes via `_v4_initiative_leader_member_ids` (leader + co_leader engagements V4) | 7 tribos |
+| p173 | `_v4_active_initiatives_with_leaders()` | N líderes por initiative via `_v4_leader_member_ids_by_initiative(uuid)` (leader/co_leader/coordinator/owner) | 13 initiatives (tribes + workgroups + committee + study_group + congress) |
+
+### Decisões PM ratificadas
+
+| ID | Decisão | Justificativa |
+|---|---|---|
+| D-mc-1 | p172: substituir `_v4_tribe_leader_member_id` (single uuid) por `_v4_initiative_leader_member_ids` (SETOF uuid) | V4 N:N requer plural. Backward compat preservada via tribe-id parameter |
+| D-mc-2 | p173: refactor cron de tribe-centric pra initiative-centric. Helper `_v4_active_initiatives_with_leaders()` retorna todas inits ativas com >=1 leader | PM ask 2026-05-17 surfaced gap: 8 leaders non-tribe invisíveis pre-p173 |
+| D-mc-3 | Notification type permanece `'weekly_tribe_digest_leader'` mesmo após p173 refactor | Email handler `send-notification-email` reads tribe_name/tribe_health_pct. Mudar type = handler refactor + risk. Back-compat via payload aliases (tribe_name=initiative_name, tribe_id=legacy_tribe_id). Title atualizado pra "Resumo semanal: <initiative_name>" |
+| D-mc-4 | RPC novo `get_weekly_initiative_digest(uuid)` em vez de modificar `get_weekly_tribe_digest(integer)` | Latter ainda usado por MCP tool + frontend. Coexist é cheap; deprecation pode vir em session dedicated futura |
+| D-mc-5 | Leader roles incluem `leader/co_leader/coordinator/owner` em p173 (vs `leader/co_leader` em p172) | Workgroups usam `coordinator` (Hub Comm), congress usa `coordinator` (LATAM LIM). `owner` reserved p futuro |
+| D-mc-6 | NÃO filtrar por `is_authoritative=true` em helpers de leader-membership | Cert-pending leaders (Herlon CPMAI study_group_owner auth=false, Vitor LATAM LIM coord auth=false) ainda devem receber digest. Digest = notification, não permission grant |
+| D-mc-7 | Eventos `type='geral' AND initiative_id IS NULL` incluídos APENAS para initiatives tribe (legacy_tribe_id NOT NULL) | Pre-p173 todos digests incluíam geral events (1 tribe → 1 digest). Post-p173 múltiplas initiatives → cada digest somaria N× → ruído. Decision: keep geral em tribes (back-compat) + exclude de non-tribe |
+
+### Migrations shipped
+
+- `20260676000000` (p172) — `_v4_initiative_leader_member_ids` SETOF helper + cron LOOP per leader em tribes
+- `20260678000000` (p173) — `_v4_active_initiatives_with_leaders()` + `_v4_leader_member_ids_by_initiative(uuid)` + `get_weekly_initiative_digest(uuid)` + cron DROP+CREATE com new signature (initiative_id/initiative_name columns no RETURN TABLE)
+
+### Cobertura sat 2026-05-23 09:30 BRT (primeira execução p173)
+
+15 leaders notified-eligible (dry-run validated):
+
+**Tribes (7):**
+- Hayala Curto · Débora Moura · Fernando Maquiaveli · Jefferson Pinto · Fabricio Costa · Marcos Antunes Klemz · Ana Carla Cavalcante
+
+**Non-tribe (8):**
+- Hub Comunicação (3): Leticia · Maria Luiza · Mayanna
+- Publicações & Submissões (3): Fabricio · Roberto · Sarah
+- CPMAI Study Group (1): Herlon
+- LATAM LIM Congress (1): Vitor
+
+**Auto-skip (correto):** Curadoria + Newsletter (no signal — sem pending events/cards). Tribe 3 (TMO) is_active=false.
+
+### Riscos/Trade-offs aceitos
+
+1. **Email subject still says "Resumo da sua tribo"** (subject hardcoded em `SUBJECT_BY_TYPE` map do EF). Cosmetic — funcional via notif.title override. Carry p174: update `SUBJECT_BY_TYPE['weekly_tribe_digest_leader']` para "Resumo semanal — Núcleo IA" (initiative-agnostic).
+
+2. **Email handler body builder still named `buildWeeklyTribeDigestLeaderHtml`**. Funciona porque payload aliases preservados. Cosmetic — renomeação futura quando notification type migrate.
+
+3. **Member orchestrator digest (`generate_weekly_member_digest_cron`) ainda independente** — segue lógica diferente (per-member instead of per-leader). Não impactado por p172/p173.
+
+### Cross-refs
+
+- p172 commit `17ece3a` — multi-leader per tribe (#21 partial)
+- p173 commit `7956e84` — initiative-aware extension (#21 fully resolved)
+- `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #21 ✅ RESOLVED p173
+- `memory/feedback_create_or_replace_full_body_fetch.md` — sediment de p172 #21 (CREATE OR REPLACE full body fetch antes de modificar)
