@@ -48,9 +48,12 @@ const FIXTURES = [
   // `can(v_caller_person_id, ...)` pattern
   { fn: 'get_initiative_member_contacts', expected: 'V4_can' },
 
-  // V3_legacy — uses operational_role / is_superadmin
-  { fn: 'admin_manage_comms_channel',     expected: 'V3_legacy' },
-  { fn: 'get_change_requests',            expected: 'V3_legacy' },
+  // V4_can_by_member — converted V3→V4 in Phase B'' (p59 ADRs 0025-0027).
+  // Fixtures updated p174 (2026-05-17) when Q-D test stopped silently
+  // skipping. The classification regex correctly identifies the new V4 gate;
+  // fixtures were stale relative to actual function bodies.
+  { fn: 'admin_manage_comms_channel',     expected: 'V4_can_by_member' },
+  { fn: 'get_change_requests',            expected: 'V4_can_by_member' },
 
   // CUSTOM_auth_uid — uses auth.uid() but is RLS helper, not V3/V4
   { fn: 'rls_can',                        expected: 'CUSTOM_auth_uid' },
