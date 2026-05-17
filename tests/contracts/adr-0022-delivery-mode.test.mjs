@@ -199,10 +199,13 @@ test('ADR-0022 W3: generate_weekly_leader_digest_cron orchestrator declared', ()
   assert.ok(match, 'generate_weekly_leader_digest_cron must be declared.');
   const body = match[2];
 
-  assert.ok(body.includes('get_weekly_tribe_digest'),
-    'Leader orchestrator must call get_weekly_tribe_digest RPC.');
+  // p173: cron refactored from tribe-centric to initiative-aware.
+  // Calls get_weekly_initiative_digest (new) instead of get_weekly_tribe_digest.
+  // Notification type kept ('weekly_tribe_digest_leader') for email handler back-compat.
+  assert.ok(body.includes('get_weekly_initiative_digest'),
+    'Leader orchestrator must call get_weekly_initiative_digest RPC (p173 refactor).');
   assert.ok(body.includes('weekly_tribe_digest_leader'),
-    'Leader orchestrator must insert weekly_tribe_digest_leader notification type.');
+    'Leader orchestrator must insert weekly_tribe_digest_leader notification type (back-compat).');
   assert.ok(body.includes('suppress_all'),
     'Leader orchestrator must respect suppress_all preference.');
 });
