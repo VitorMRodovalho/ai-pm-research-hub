@@ -183,11 +183,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - ✅ RESOLVIDO: PM ratificou alternativa (b) — `events.event_champion_waived` boolean + trio, NÃO `meeting_artifacts.champion_decision jsonb`.
 - G1 migration deferred (não load-bearing para G2). Adicionar quando G3 UI requerir distinção pending vs deliberate-none.
 
-### 21. OPPORTUNITY — Multi-leader per initiative (V4 N:N) digest delivery
+### 21. OPPORTUNITY — Multi-leader per initiative (V4 N:N) digest delivery ✅ RESOLVED p173 (extended scope)
 - **Tipo:** opportunity · **Effort:** M
 - **Trigger:** hoje cron itera tribes com 1 leader_member_id. V4 permite múltiplos líderes ativos (leader + co_leader). Digest enviado só para 1.
 - **Fix:** query V4 retornar todos os leaders ativos por initiative, enviar email para cada.
 - **Não-bloqueador:** quando V4 cutover (ADR-0080 Fase A) acontecer.
+- **Resolution p172 commit `17ece3a`:** multi-leader per tribe (leader + co_leader via `_v4_initiative_leader_member_ids` helper SETOF). Tribes ainda single-source-of-truth pra cron iteration.
+- **Resolution p173 commit `7956e84`:** initiative-aware cron extension. PM ask 2026-05-17 surfaced que tribes-only era subset — Herlon (CPMAI study_group), Mayanna/Leticia/Maria Luiza (Hub Comunicação workgroup), Fabricio cross 3 inits (Curadoria/Newsletter/Publicações), Roberto/Sarah (Curadoria/Publicações), Vitor (LATAM LIM) ficavam invisíveis. Refactor: `_v4_active_initiatives_with_leaders()` + `_v4_leader_member_ids_by_initiative(uuid)` + `get_weekly_initiative_digest(uuid)` + cron LOOP por initiative. Sat 2026-05-23 09:30 BRT cobre 15 leaders (era 7). Notification type unchanged pra email handler back-compat. Tribes is_active=false still auto-excluded.
 
 ### 22. GAP — A3 drift 7 membros após Track E trigger extension (continuation Track E) ✅ RESOLVED p173
 - **Tipo:** gap · **Effort:** S
