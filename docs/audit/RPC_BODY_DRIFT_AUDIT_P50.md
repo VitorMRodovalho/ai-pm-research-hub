@@ -2732,3 +2732,102 @@ via `apply_migration` in dedicated session(s), ratcheting baseline down.
    Done via `replace(replace(def, 'AS $function$', 'AS $$'), '$function$' || E'\n', '$$' || E'\n')`
    in SQL extraction step. Sediment from p52 preserved.
 
+## Phase C charter — body-hash drift contract test (added p175, 2026-05-17)
+
+### Why a new charter
+
+Q-C (Phase A/B) detects **orphans**: functions in DB with NO `CREATE FUNCTION`
+migration covering them at all. The CI gate activated in p174 catches this
+class. But the original drift incident (the 92 fns in p50, the 16 fns in
+p174) wasn't only orphans — many functions HAD a capture but the body had
+since silently diverged (the live and the latest migration differed). Q-C
+treats those as "covered" because the name appears in some `CREATE FUNCTION`
+block; it has no way to assert the bodies match.
+
+Phase C closes that gap. It computes
+`md5(regexp_replace(prosrc, '\s+', ' ', 'g'))` on the live side (via the
+new `_audit_list_public_function_bodies()` RPC, migration 20260680000000)
+AND on each captured migration body (via the shared parser in
+`tests/helpers/rpc-body-drift-parser.mjs`), keys both by
+`(name, normalized_args)`, then asserts the hashes match.
+
+### Baseline + allowlist
+
+Starting state at p175 bootstrap is 225 drifted functions (mirrors the
+p174 audit's 226 minus one resolved during normal session work). These
+are frozen as the **p175 baseline allowlist** at
+`docs/audit/RPC_BODY_DRIFT_ALLOWLIST_P175.txt`, one
+`name@normalized_args` per line. Touch-count bucket distribution:
+
+| Bucket | Count |
+|---|---|
+| 4-touch | 18 |
+| 3-touch | 22 |
+| 2-touch | 28 |
+| 1-touch | 157 |
+| **Total** | **225** |
+
+(p174 doc showed 226 — the 1-fn delta is one drift that resolved between
+p174 close and p175 bootstrap, captured by some intervening migration.)
+
+### Tests added
+
+`tests/contracts/rpc-migration-coverage.test.mjs` gains 3 tests, all
+gated on `SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY`:
+
+1. **Phase C: no NEW body-hash drift vs p175 allowlist** — fails if a
+   currently-drifted function key isn't allowlisted. Fix path = capture
+   via `apply_migration` (preferred) or extend allowlist + bump baseline
+   (rare).
+2. **Phase C: body-drift allowlist stays in sync** — fails if the
+   allowlist contains entries that are now clean OR extinct (i.e., drift
+   was resolved but allowlist wasn't ratcheted down).
+3. **Phase C: body-drift allowlist size matches p175 baseline** — guards
+   the `BODY_DRIFT_BASELINE_SIZE = 225` constant. Every ratchet (up or
+   down) requires updating BOTH the file AND the constant.
+
+### How to ratchet (drift recovery workflow)
+
+For each function being captured:
+
+```
+# 1. Pull canonical DDL from live:
+SELECT replace(replace(pg_get_functiondef(p.oid), 'AS $function$', 'AS $$'),
+               '$function$' || E'\n', '$$' || E'\n')
+FROM pg_proc p WHERE p.proname = '<fn_name>' AND p.pronamespace = 'public'::regnamespace;
+
+# 2. Write to supabase/migrations/<timestamp>_<batch_label>.sql (one or many fns).
+# 3. supabase migration repair --status applied <timestamp>
+# 4. (no NOTIFY needed — body change doesn't shift PostgREST schema)
+# 5. Re-run baseline generator:
+SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/generate-rpc-drift-baseline.mjs
+# 6. Decrement BODY_DRIFT_BASELINE_SIZE in tests/contracts/rpc-migration-coverage.test.mjs
+#    to match new allowlist count.
+```
+
+The `apply_migration` step is **idempotent** when the live state is
+already canonical (p174 sediment); just `Write` the file + `repair`.
+
+### Helper / script architecture
+
+```
+tests/helpers/rpc-body-drift-parser.mjs    (shared parser)
+  ├─ scripts/audit-rpc-body-drift.mjs       (one-shot manual audit)
+  ├─ scripts/generate-rpc-drift-baseline.mjs (regenerate allowlist)
+  └─ tests/contracts/rpc-migration-coverage.test.mjs (CI contract)
+```
+
+If the normalization or parser changes, EVERY function will appear
+drifted on the next test run. Treat the helper as an interface; the SQL
+side (`_audit_list_public_function_bodies`) must produce hashes that
+match byte-for-byte.
+
+### Backlog after p175
+
+- Capture buckets per recommended Phase B sequence (4+3-touch → 2-touch
+  → 1-touch). Each session ratchets the baseline DOWN.
+- Optional CI sentinel test: explicitly FAIL when `SUPABASE_URL` env is
+  absent, rather than silent skip (current behavior). Closes the same
+  failure mode that caused 3 weeks of invisible drift accumulation
+  before p174.
+
