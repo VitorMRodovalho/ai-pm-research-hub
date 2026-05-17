@@ -223,6 +223,32 @@ function extractCreateTableNames(sql) {
   return out;
 }
 
+// CI sentinel (p177): if we are running inside GitHub Actions / a CI runner
+// and SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are absent, the DB-aware contract
+// assertions below would silently skip — exactly the gap that hid 3 weeks of
+// drift accumulation (23 orphans) before p174 fixed the workflow env block.
+// This sentinel hard-fails CI when secrets are missing so the next "secrets
+// rotated out" or "fork PR doesn't see secrets" incident surfaces immediately
+// instead of letting drift accumulate invisibly.
+test('CI sentinel: SUPABASE_URL + SERVICE_ROLE_KEY must be set when running in CI', () => {
+  const inCi = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  if (!inCi) return;
+  assert.ok(
+    SUPABASE_URL,
+    'SUPABASE_URL env var missing in CI context — DB-aware Track Q-C / Phase C ' +
+    'contract tests would silently skip. Add SUPABASE_URL to GH repo secrets ' +
+    'and reference it via `${{ secrets.SUPABASE_URL }}` in the workflow env ' +
+    'block (see .github/workflows/ci.yml `Run Unit Tests` step).'
+  );
+  assert.ok(
+    SERVICE_ROLE_KEY,
+    'SUPABASE_SERVICE_ROLE_KEY env var missing in CI context — DB-aware ' +
+    'Track Q-C / Phase C contract tests would silently skip. Add ' +
+    'SUPABASE_SERVICE_ROLE_KEY to GH repo secrets and reference it via ' +
+    '`${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}` in the workflow env block.'
+  );
+});
+
 test(
   'Track Q-C: no NEW orphan functions vs allowlist',
   { skip: !canRun && skipMsg },
