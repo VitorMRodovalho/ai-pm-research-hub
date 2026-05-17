@@ -45,3 +45,12 @@ legacy_tribes
 legacy_tribe_board_links
 ingestion_batches
 partner_governance_metrics
+
+# === p174 extinct surfaced (2026-05-17) ===
+# Same ADR-0029 ingestion/release-readiness retirement class. Surfaced when
+# ci.yml Q-C gate was activated (was silently skipped pre-p174). These were
+# dropped in the same Pacote M era but missed in the original 17-row capture.
+ingestion_alert_events
+ingestion_batch_files
+legacy_member_links
+readiness_slo_alerts
