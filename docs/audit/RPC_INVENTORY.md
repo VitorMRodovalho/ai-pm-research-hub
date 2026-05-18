@@ -40,7 +40,7 @@ Estas são legítimas — triggers, computed columns, ou helpers internos:
 | `enforce_project_board_taxonomy` | Trigger |
 | `enqueue_artifact_publication_card` | Trigger |
 | `events_default_duration_actual` | Trigger |
-| `has_min_tier` | RLS helper |
+| ~~`has_min_tier`~~ | ~~RLS helper~~ — **DROPPED p182** (2026-05-17, migration `20260693000000`). All 4 callers migrated to V4 native (ADR-0011): 3 RLS policies → `rls_can('manage_platform')` / `rls_is_superadmin()`; `exec_cert_timeline` → `can_by_member('manage_platform')`. |
 | `notify_on_assignment` | Trigger |
 | `notify_on_curation_status_change` | Trigger |
 | `notify_on_publication_insert` / `notify_on_publication_published` | Trigger |
