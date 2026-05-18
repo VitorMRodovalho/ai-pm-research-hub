@@ -30,7 +30,7 @@ revealed:
 | Helper | Total callers (SECDEF) | Frontend | RLS refs | ACL anon | Verdict |
 |---|---|---|---|---|---|
 | `current_member_tier_rank` | 0 | 0 | 0 | NO_X | **DEAD CODE — DROP** |
-| `has_min_tier` | 1 (exec_cert_timeline) | 0 | 0 | NO_X | leave-as-is (live) |
+| `has_min_tier` | 1 (exec_cert_timeline) | 0 | 0 | NO_X | ~~leave-as-is (live)~~ **DROPPED p182** (V4 sweep closure, migration `20260693000000`) |
 | `_can_manage_event` | 3 (event admin fns) | 0 | 0 | HAS_X | **REVOKE-from-anon** |
 | `_can_sign_gate` | 8 (cert/governance fns) | 0 | 0 | HAS_X | **REVOKE-from-anon** |
 | `can_manage_comms_metrics` | 1 (publish_comms_metrics_batch) | 0 | 0 | HAS_X | **REVOKE-from-anon** |
