@@ -87,6 +87,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0081-gamification-config-driven-and-champions-ledger.md` — Gamification rules config-driven via `gamification_rules` table + Champions ledger (3-surface manual award). Migrations `20260645`–`20260648`. Amendment A (2026-05-15 p165): `get_gamification_leaderboard` JOIN `gamification_rules.pillar` + `register_event_showcase` config-driven via `_grant_auto_xp` helper + 5 `showcase_*` slugs seeded (migrations `20260664`/`20260665`). **Status: Accepted (p161 ratified p162; Amendment A shipped p165).**
 - `ADR-0082` — *(numbering reservado; sem arquivo associado. Numbering jump intencional de 0081 → 0083, confirmado 2026-05-15 audit p165: nenhuma referência em docs/src/supabase nem em git history.)*
 - `ADR-0083-capability-cache-ui-gates-v4.md` — Capability cache para UI gates V4 conformity. Substitui exact-match em `members.operational_role` por RPC `get_caller_capabilities()` + 18 gates V3 → `canFor()` scope-aware. Refs `docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md`. **Status: ACCEPTED (2026-05-15 p163).**
+- `ADR-0084-showcase-champion-eligibility-not-constraint.md` — Showcase → Champion como eligibility nudge (não constraint hard). Helper RPC `get_recent_showcases_by_member` para suggesting at meeting_close. Resolve overlap semântico Showcase vs Champion ledger. Cross-ref ADR-0081 + SEMANTIC_TAXONOMY.md seção 6. **Status: Accepted (2026-05-16 p170).**
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
