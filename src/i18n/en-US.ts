@@ -5662,6 +5662,8 @@ const enUS: Record<string, string> = {
   'comp.crossTribe.lastMeeting': 'Last Meeting',
   'comp.crossTribe.initiative': 'Initiative',
   'comp.crossTribe.inactiveShort': 'inact.',
+  'comp.crossTribe.noOwnEventsShort': '(no events)',
+  'comp.crossTribe.noOwnEventsTooltip': 'Initiative with no own events — attendance metric not applicable',
   'comp.crossTribe.visualComparison': 'Visual Comparison',
   'comp.impact.consentRequired': 'Consent is required.',
   'comp.errorBoundary.message': 'Error loading component. Please reload the page.',

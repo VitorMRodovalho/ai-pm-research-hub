@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-18 — nav: Stakeholder Dashboard moved Admin → Meu Espaço (p191 → p195 transition aid)
+
+Affected users (~3-5 sponsors/chapter_liaisons/chapter_board): the
+"Stakeholder Dashboard" link (`/stakeholder`) was relocated in p191
+(commit `04d5068`) from the **Admin** drawer section to the **Meu Espaço**
+section. Both sections are accessible from the main nav drawer; only the
+grouping changed.
+
+- **Old location**: Drawer → Admin → Stakeholder Dashboard
+- **New location**: Drawer → Meu Espaço → Stakeholder Dashboard
+- **URL unchanged**: `/stakeholder` continues to work (direct links + bookmarks safe)
+- **Rationale**: stakeholder portal is scope of the member, not admin tooling
+
+If you are a sponsor/chapter_liaison/chapter_board user and cannot find
+the link where you remember it, look under "Meu Espaço" in the nav drawer.
+LOW-191.C transition aid.
+
+---
+
 ## 2026-04-05 — chore: Full dependency upgrade + Zod 4 migration
 
 ### Dependencies (16 packages → all latest)

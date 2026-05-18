@@ -5662,6 +5662,8 @@ const esLATAM: Record<string, string> = {
   'comp.crossTribe.lastMeeting': 'Última Reunión',
   'comp.crossTribe.initiative': 'Iniciativa',
   'comp.crossTribe.inactiveShort': 'inact.',
+  'comp.crossTribe.noOwnEventsShort': '(s/ eventos)',
+  'comp.crossTribe.noOwnEventsTooltip': 'Iniciativa sin eventos propios — métrica de asistencia no aplicable',
   'comp.crossTribe.visualComparison': 'Comparativo Visual',
   'comp.impact.consentRequired': 'El consentimiento es obligatorio.',
   'comp.errorBoundary.message': 'Error al cargar componente. Recargue la página.',
