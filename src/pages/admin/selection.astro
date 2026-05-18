@@ -4686,6 +4686,9 @@ const SEL_I18N = {
         <div>service_history rows: <strong>${d.service_history_inserted ?? 0}</strong></div>
         <div>phase_b processed: <strong>${d.phase_b_processed ?? 0}</strong></div>
         <div>pmi_chapter_memberships: <strong>${d.pmi_chapter_memberships_upserted ?? 0}</strong></div>
+        <div title="p195 Opção B+ — PDFs baixados do Azure SAS e replicados no bucket selection-resumes (sustentável vs Azure 24h expiry)">📦 resumes sincronizados: <strong>${d.resumes_synced ?? 0}</strong></div>
+        <div title="p195 — resumes que falharam download/upload (link Azure pode estar expirado entre Phase A export e este Apply). Re-importe o JSON com link fresco se ${(d.resumes_failed ?? 0) > 0 ? 'crítico' : 'persistir'}.">${(d.resumes_failed ?? 0) > 0 ? '⚠️' : '✓'} resumes falhos: <strong>${d.resumes_failed ?? 0}</strong></div>
+        <div title="p195 BUG-195.B — apps cuja application_date caía em ciclo fechado diferente do open atual; Worker auto-redirecionou para o ciclo semanticamente correto.">🔀 cycle redirects: <strong>${d.applications_cycle_redirected ?? 0}</strong></div>
       </div>
       ${errs > 0 ? `<div class="mt-2 text-[11px] text-amber-700"><strong>${errs} erro(s)</strong> — ver detalhes no cron_run_log do worker.</div>` : ''}
     `;
