@@ -833,6 +833,9 @@ const ADP_I18N = {
 
     const { Chart, LineController, BarController, DoughnutController, CategoryScale, LinearScale,
       PointElement, LineElement, BarElement, ArcElement, Legend, Tooltip, Filler } = await import('chart.js');
+
+    if (myGen !== _analyticsLoadGen) return;
+
     Chart.register(LineController, BarController, DoughnutController, CategoryScale, LinearScale,
       PointElement, LineElement, BarElement, ArcElement, Legend, Tooltip, Filler);
 
