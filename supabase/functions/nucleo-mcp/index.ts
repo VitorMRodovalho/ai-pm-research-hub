@@ -2306,13 +2306,17 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 63: get_tribes_comparison — V4 cross-initiative comparison (p193 OPP-192.D)
+  // TOOL 70: get_tribes_comparison — V4 cross-initiative comparison (p193 OPP-192.D)
+  // (numbering aligned with catalog index line 442; was "TOOL 63" — cosmetic drift
+  // pre-p195, see LOW-193.C close)
   // Wraps exec_cross_initiative_comparison(p_kind, p_cycle). Tool name preserved
   // for backward compat with AI agents; response shape upgraded from V3 row array
   // to V4 envelope { initiatives: [...], kinds_present: [...], generated_at }.
+  // Post-p194 (GAP-192.C + GAP-194.A): total_hours + members_inactive_30d are
+  // strict-scoped to ev.initiative_id (event-derived metrics).
   mcp.tool(
     "get_tribes_comparison",
-    "Returns cross-initiative comparison (research_tribes by default; supports all kinds via `kind` param): attendance rate, cards done/total, impact hours, events, last meeting, member count, members_inactive_30d, XP. Pass kind = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' to filter, or kind = 'all' for cross-kind. Omit for research_tribe (preserves V3 behavior). Returns JSONB { initiatives: [...], kinds_present: [...], generated_at }. Admin/GP only (manage_platform OR view_chapter_dashboards).",
+    "BREAKING SHAPE CHANGE post-p192: response is now a V4 envelope { initiatives: [...], kinds_present: [...], generated_at } — NOT a V3 row array. Returns cross-initiative comparison (research_tribes by default; supports all kinds via `kind` param): attendance rate, cards done/total, impact hours (strict-scoped to initiative events post-p194 GAP-192.C), events, last meeting, member count, members_inactive_30d (strict-scoped to initiative events post-p194 GAP-194.A), XP (cohort-scoped: total XP earned by initiative members across all chapter activities, see GAP-194.B). Pass kind = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' to filter, or kind = 'all' for cross-kind. Omit for research_tribe (preserves V3 behavior). Admin/GP only (manage_platform OR view_chapter_dashboards).",
     {
       kind: z.enum(['research_tribe', 'workgroup', 'committee', 'study_group', 'congress', 'all'])
         .optional()

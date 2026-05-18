@@ -137,7 +137,7 @@ REVOKE EXECUTE ON FUNCTION public.can_manage_comms_metrics() FROM PUBLIC, anon;
   (was previously in the 55-candidate count from p68 re-discovery).
 - 1 helper item closed in p67 audit doc § "Helpers (caller graph audit
   needed)" cluster (`current_member_tier_rank`); 1 item triaged
-  (`has_min_tier` confirmed live, leave-as-is).
+  (~~`has_min_tier` confirmed live, leave-as-is~~ — **DROPPED p182** via migration `20260693000000`; V4 sweep closure).
 
 ### Para members
 - Zero net change — pure security/cleanup hygiene.
@@ -155,7 +155,9 @@ REVOKE EXECUTE ON FUNCTION public.can_manage_comms_metrics() FROM PUBLIC, anon;
 
 Confirmed dead code via comprehensive search. Created in p52 Q-A orphan
 recovery batch but never wired into any caller. `has_min_tier` (the
-natural caller) has its own inline tier mapping.
+natural caller) has its own inline tier mapping (~~live~~ — note: `has_min_tier`
+itself was later DROPPED p182 via migration `20260693000000` as part of V4
+sweep closure; see ADR-0011 Batch 1 amendment).
 
 Recomendação: **SIM** — pure dead code removal.
 
@@ -184,7 +186,7 @@ Recomendação: **SIM** — security hygiene.
   `can_manage_comms_metrics`).
 - Helper cluster from p67 audit § "Helpers (caller graph audit needed)":
   - `current_member_tier_rank`: DROPPED (dead code).
-  - `has_min_tier`: triaged live (1 caller, leave-as-is).
+  - ~~`has_min_tier`: triaged live (1 caller, leave-as-is)~~ — **DROPPED p182** via migration `20260693000000` (V4 sweep closure).
   - `_can_manage_event`, `_can_sign_gate`: triaged live (multi-caller,
     REVOKE-from-anon applied).
   - 2 of 4 helpers from cluster fully closed (DROP'd or REVOKE'd);
