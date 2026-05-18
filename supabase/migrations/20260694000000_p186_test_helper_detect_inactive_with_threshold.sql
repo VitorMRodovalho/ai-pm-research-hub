@@ -26,9 +26,10 @@ DECLARE
   v_result jsonb;
 BEGIN
   -- Defense: service_role only (matches detect_inactive_members cron-bypass check).
+  -- Phrasing aligned with ADR-0011 canonical hasAuthGate set (p187 MED-186.F).
   IF current_setting('role', true) NOT IN ('service_role', 'postgres')
      AND current_user NOT IN ('postgres', 'supabase_admin') THEN
-    RAISE EXCEPTION '_test_detect_inactive_with_threshold restricted to service_role';
+    RAISE EXCEPTION 'Unauthorized: _test_detect_inactive_with_threshold requires service_role';
   END IF;
 
   IF p_threshold < 0 THEN

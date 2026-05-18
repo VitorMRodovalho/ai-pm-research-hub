@@ -285,3 +285,52 @@ para impedir pattern creep além do surface documentado.
 chamáveis tanto por cron/EFs (autenticadas no nível de infraestrutura
 via service_role JWT) QUANTO por usuários admin via UI. NUNCA usar como
 escape hatch de conveniência para falhas de gate user-tier.
+
+---
+
+## Amendment C — `has_min_tier` sweep closure (2026-05-17)
+
+**Status:** Sweep closed.
+
+**Contexto:** o helper `has_min_tier(integer)` era o último gate
+V3-based com exposição transitiva via RLS após o cutover V4 (13/Abr).
+Como parte do follow-up estrutural ao ADR-0011, p181 (2026-05-17) e
+p182 (2026-05-17) executaram a migração coordenada de todos os
+chamadores live + o DROP atômico do helper.
+
+**O que mudou:**
+- **p181 — migração 20260692000000**: body do `has_min_tier` refactor
+  para chamar `can_by_member('manage_platform')` em rank 4 +
+  `is_superadmin` em rank 5 + defensive false em ranks 0-3. Três RLS
+  policies migradas para helpers V4 nativos (`rls_can('manage_platform')`,
+  `rls_is_superadmin()`) e uma RPC (`exec_cert_timeline`) migrada para
+  `can_by_member('manage_platform')`. Função marcada DEPRECATED via
+  `COMMENT ON FUNCTION` para DROP no p182.
+- **p182 — migração 20260693000000**: `DROP FUNCTION has_min_tier(integer)`
+  atomic. `pg_depend` empty pre-DROP confirmou 0 dependências live.
+  Quatro callers (3 RLS + 1 RPC) já estavam migrados em p181. Alinhamento
+  paralelo do `exec_cert_timeline.search_path` de `'public','extensions'`
+  para `'public','pg_temp'` (não usa extensions internamente).
+
+**Surface coberto**: 1 helper + 3 RLS + 1 RPC, 0 callers ativos após
+remoção, `database.gen.ts:14244` surgical cleanup.
+
+**Por que isso vai aqui (Amendment C):** o ADR-0011 foi o que estabeleceu
+`can()`/`can_by_member()` como única fonte de verdade. O sweep até DROP
+fecha a transição V3→V4 nos pontos transitivos via RLS que sobreviveram
+ao cutover original. Ver `docs/adr/ADR-0040-*.md` para o histórico do
+deferral (p70 helper deferral closed p182 via DROP).
+
+**Migrations**:
+- `20260692000000_p181_has_min_tier_v4_joint.sql` — body refactor + 3 RLS + 1 RPC
+- `20260693000000_p182_has_min_tier_drop_plus_search_path_align.sql` — DROP
+
+**Pre-2026-04-24 file references** (historical, não-runtime):
+`comms_metrics_v1.sql`, `broadcast_log.sql`, `members_rls_and_public_view.sql`
+referenciam `has_min_tier(4)`. Estão SUPERSEDIDAS pelas migrations
+posteriores do V4 sweep chain (`20260427030000`, `20260514200000`,
+`20260514460000`, `20260515040000`). Confirmado via close council
+code-reviewer MEDIUM finding (p181). Sem cleanup pendente.
+
+**Smokes**: pg_proc count=0 pós-DROP, `exec_cert_timeline` 3 rows OK,
+`proconfig=public/pg_temp`, invariants 16/16 = 0.
