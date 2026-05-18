@@ -55,7 +55,9 @@ const KIND_PREFIX: Record<string, string> = {
 };
 
 function rowLabel(it: InitiativeMetrics): string {
-  if (it.tribe_id != null) return `T${String(it.tribe_id).padStart(2, '0')}`;
+  // Only research_tribe rows get the T0X legacy prefix; guard prevents leakage if a
+  // future non-tribe kind ever inherits legacy_tribe_id (code-reviewer p192 LOW).
+  if (it.tribe_id != null && it.initiative_kind === 'research_tribe') return `T${String(it.tribe_id).padStart(2, '0')}`;
   const prefix = KIND_PREFIX[it.initiative_kind] || it.initiative_kind.slice(0, 2).toUpperCase();
   return prefix + (it.initiative_id ? it.initiative_id.slice(0, 4) : '');
 }
@@ -115,6 +117,15 @@ export default function CrossTribeIsland() {
     const byXp = [...items].sort((a, b) => b.total_xp - a.total_xp);
     const byHours = [...items].sort((a, b) => b.total_hours - a.total_hours);
     return { attendance: byAttendance, production: byProduction, xp: byXp, hours: byHours };
+  }, [items]);
+
+  // Per-initiative color map keyed by initiative_id (stable across chart sections).
+  // code-reviewer p192 MED: was inconsistent — inline rankings used rank-position color
+  // and Recharts used items-order color, so the same initiative changed color across sections.
+  const colorMap = useMemo(() => {
+    const m = new Map<string, string>();
+    items.forEach((it, i) => m.set(it.initiative_id, ROW_COLORS[i % 8]));
+    return m;
   }, [items]);
 
   const handleSort = (key: SortKey) => {
@@ -221,7 +232,7 @@ export default function CrossTribeIsland() {
                     <div key={it.initiative_id} className="flex items-center gap-2">
                       <span className="text-[11px] font-bold w-10 text-right text-[var(--text-secondary)]">{rowLabel(it)}</span>
                       <div className="flex-1 h-5 rounded bg-[var(--border-subtle)] overflow-hidden">
-                        <div className="h-full rounded transition-all" style={{ width: `${pct}%`, background: ROW_COLORS[i % 8] }} />
+                        <div className="h-full rounded transition-all" style={{ width: `${pct}%`, background: colorMap.get(it.initiative_id) || ROW_COLORS[i % 8] }} />
                       </div>
                       <span className="text-[11px] font-bold w-12 text-[var(--text-primary)]">{display}</span>
                     </div>
@@ -254,14 +265,14 @@ export default function CrossTribeIsland() {
                 const linkHref = isTribe ? `/admin/tribe/${it.tribe_id}` : null;
                 const nameNode = (
                   <>
-                    <span className="font-bold text-xs mr-1" style={{ color: ROW_COLORS[i % 8] }}>{rowLabel(it)}</span>
+                    <span className="font-bold text-xs mr-1" style={{ color: colorMap.get(it.initiative_id) || ROW_COLORS[i % 8] }}>{rowLabel(it)}</span>
                     <span className="font-semibold text-[var(--text-primary)]">{it.tribe_name || it.initiative_title}</span>
                   </>
                 );
                 return (
                   <tr key={it.initiative_id} className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
                     <td className="px-3 py-2.5">
-                      {linkHref ? <a href={linkHref} className="no-underline hover:underline">{nameNode}</a> : <span>{nameNode}</span>}
+                      {linkHref ? <a href={linkHref} className="no-underline hover:underline">{nameNode}</a> : nameNode}
                       <div className="text-[11px] text-[var(--text-muted)]">{it.leader || '—'}</div>
                     </td>
                     <td className="px-3 py-2.5 text-center">
@@ -309,7 +320,7 @@ export default function CrossTribeIsland() {
           <BarChart data={rankings[trendMetric].map((it) => ({
             name: rowLabel(it),
             value: trendMetric === 'attendance' ? Math.round(Number(it[rankingConfig[trendMetric].key]) * 100) : Number(it[rankingConfig[trendMetric].key]),
-            fill: ROW_COLORS[items.findIndex(t2 => t2.initiative_id === it.initiative_id) % 8],
+            fill: colorMap.get(it.initiative_id) || ROW_COLORS[0],
           }))}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -317,7 +328,7 @@ export default function CrossTribeIsland() {
             <Tooltip />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {rankings[trendMetric].map((it) => (
-                <Cell key={it.initiative_id} fill={ROW_COLORS[items.findIndex(t2 => t2.initiative_id === it.initiative_id) % 8]} />
+                <Cell key={it.initiative_id} fill={colorMap.get(it.initiative_id) || ROW_COLORS[0]} />
               ))}
             </Bar>
           </BarChart>
