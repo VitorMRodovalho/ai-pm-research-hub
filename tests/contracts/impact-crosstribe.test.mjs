@@ -163,6 +163,18 @@ test('exec_cross_initiative_comparison dispatches p_kind filter (p192 OPP-191.A 
     'Must dispatch p_kind filter via "p_kind IS NULL OR i.kind = p_kind" WHERE clause');
 });
 
+test('exec_cross_initiative_comparison total_hours is strict-scoped to initiative (p194 GAP-192.C close council HIGH)', () => {
+  const body = findFunctionBody('exec_cross_initiative_comparison');
+  assert.ok(body);
+  // Find the total_hours subquery block and assert ev.initiative_id = i.id present.
+  // Anchors: 'total_hours' label + closing ');' / next field 'meetings_count'.
+  const totalHoursMatch = body.match(/'total_hours',\s*\([\s\S]*?'meetings_count'/);
+  assert.ok(totalHoursMatch, 'Must locate total_hours subquery block');
+  assert.ok(/AND\s+ev\.initiative_id\s*=\s*i\.id/i.test(totalHoursMatch[0]),
+    'total_hours subquery must filter by `ev.initiative_id = i.id` (GAP-192.C strict scope). ' +
+    'Without this filter, workgroups/committees show inflated hours from members attending other initiatives\' events.');
+});
+
 test('detect_operational_alerts RPC exists', () => {
   const body = findFunctionBody('detect_operational_alerts');
   assert.ok(body, 'detect_operational_alerts not found');
