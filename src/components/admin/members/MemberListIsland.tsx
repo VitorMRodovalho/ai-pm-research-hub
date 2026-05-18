@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Edit2, Users, UserX, ShieldOff, Loader2, X } from 'lucide-react';
 import { trackEvent } from '../../../lib/analytics';
 import { usePageI18n } from '../../../i18n/usePageI18n';
@@ -145,14 +145,24 @@ export default function MemberListIsland() {
     setLoading(false);
   }, [search, tierFilter, tribeFilter, statusFilter, getSb]);
 
+  // p190 BUG-190.B sweep: ref pattern + cleanup to avoid listener accumulation.
+  const fetchMembersRef = useRef(fetchMembers);
+  fetchMembersRef.current = fetchMembers;
   useEffect(() => {
+    let cancelled = false;
     const boot = () => {
-      if (getSb()) fetchMembers();
+      if (cancelled) return;
+      if (getSb()) fetchMembersRef.current();
       else setTimeout(boot, 300);
     };
     boot();
-    window.addEventListener('nav:member', () => fetchMembers());
+    const handler = () => fetchMembersRef.current();
+    window.addEventListener('nav:member', handler);
     loadChapters().then(setChapters);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('nav:member', handler);
+    };
   }, []);
 
   // Re-fetch when filters change (debounce search)
