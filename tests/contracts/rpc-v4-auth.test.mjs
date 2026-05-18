@@ -61,7 +61,12 @@ function hasAuthGate(body) {
   // `'Not authorized'` (two words). Same extension applied to RAISE/RETURN
   // alternations for symmetry, and `[Aa]ccess\s+denied` added to jsonb
   // matcher to mirror the RAISE/RETURN coverage.
-  return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only|Not\s+authorized)/i.test(body)
+  //
+  // Extended p187 (2026-05-18, OPP-182.D) to catch `insufficient_privilege`
+  // bare PG errcode in RAISE EXCEPTION. Today only `exec_cert_timeline`
+  // uses this phrasing without a text hint, but a future fn raising the
+  // raw errcode would escape the matcher and not be checked for V4 can().
+  return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only|Not\s+authorized|insufficient_privilege)/i.test(body)
       || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied|access_denied|Not\s+authorized)/i.test(body)
       || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*(unauthor|not\s+author|access\s+denied)/i.test(body);
 }
