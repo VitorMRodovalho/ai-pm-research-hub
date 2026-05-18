@@ -70,6 +70,69 @@ export async function getOpenSelectionCycle(db: SupabaseClient): Promise<{ id: s
   return data;
 }
 
+// p195 BUG-195.B fix: per-app cycle assignment based on application_date.
+//
+// Returns recent selection_cycles (open + closed) ordered by open_date desc.
+// Used by pickCycleForApplicationDate() to redirect mis-assigned apps to
+// their semantic-correct cycle when application_date falls in a closed cycle.
+export interface CycleWindow {
+  id: string;
+  cycle_code: string;
+  status: string;
+  open_date: string | null;     // ISO YYYY-MM-DD
+  close_date: string | null;    // ISO YYYY-MM-DD
+}
+
+export async function getRecentCycles(db: SupabaseClient): Promise<CycleWindow[]> {
+  // Pull all cycles with non-null open_date (sentinel rows like "draft" without
+  // dates are excluded). Going back 18 months gives plenty of overlap window
+  // for late VEP imports without bloating the response.
+  const cutoff = new Date(Date.now() - 18 * 30 * 86400000).toISOString().slice(0, 10);
+  const { data, error } = await db
+    .from('selection_cycles')
+    .select('id, cycle_code, status, open_date, close_date')
+    .gte('open_date', cutoff)
+    .order('open_date', { ascending: false });
+
+  if (error) {
+    console.error('getRecentCycles:', error.message);
+    return [];
+  }
+  return (data ?? []) as CycleWindow[];
+}
+
+// Pure function — picks the cycle whose [open_date, close_date] range contains
+// applicationDate. If multiple cycles match (overlapping ranges), prefers the
+// one with the latest open_date (most-recent applicable). If applicationDate
+// is null or no cycle matches, returns null (caller falls back to "open cycle"
+// default behavior — matches pre-p195 semantics).
+//
+// Date semantics: applicationDate is the candidate's VEP submittedDate.
+// Cycle windows use [open_date, close_date] INCLUSIVE on both ends. A cycle
+// without close_date matches anything >= open_date (still-open cycle).
+export function pickCycleForApplicationDate(
+  applicationDate: string | null | undefined,
+  cycles: CycleWindow[]
+): CycleWindow | null {
+  if (!applicationDate || cycles.length === 0) return null;
+  // Normalize to date-only string for comparison (ISO is sortable).
+  const appDate = applicationDate.length >= 10 ? applicationDate.slice(0, 10) : applicationDate;
+
+  // First pass: cycles whose range includes appDate.
+  const matches = cycles.filter(c => {
+    if (!c.open_date) return false;
+    if (appDate < c.open_date) return false;
+    if (c.close_date && appDate > c.close_date) return false;
+    return true;
+  });
+  if (matches.length === 0) return null;
+
+  // Multiple matches → prefer latest open_date (most-recent applicable).
+  // This handles cycle overlap (e.g., b2 ending while next cycle opening).
+  matches.sort((a, b) => (a.open_date! < b.open_date! ? 1 : -1));
+  return matches[0];
+}
+
 // =====================================================================
 // VEP opportunity helpers
 // =====================================================================

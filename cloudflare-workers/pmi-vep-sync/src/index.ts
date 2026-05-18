@@ -38,6 +38,8 @@ import {
   logRunStart,
   logRunComplete,
   getOpenSelectionCycle,
+  getRecentCycles,
+  pickCycleForApplicationDate,
   getActiveOpportunities,
   upsertSelectionApplication,
   findPersonIdByEmail,
@@ -201,6 +203,15 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
   const oppLookup: Record<string, VepOpportunityRow> = {};
   for (const o of opps) oppLookup[String(o.opportunity_id)] = o;
 
+  // p195 BUG-195.B fix: pre-fetch recent cycles (open + closed) for per-app
+  // cycle redirection based on application_date. When an application's
+  // submitted date falls within a CLOSED cycle's [open, close] window, the
+  // app should be assigned to that semantic-correct cycle instead of the
+  // currently-open one. Fixes the misassignment pattern surfaced in p195:
+  // 5 apps applied during c3 were imported into b2 because b2 was open at
+  // import time. Now logged via summary.applications_cycle_redirected.
+  const recentCycles = await getRecentCycles(db);
+
   const ttlDays = parseInt(env.ONBOARDING_TOKEN_TTL_DAYS, 10) || 7;
 
   const summary: IngestSummary = {
@@ -224,7 +235,9 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     // p195 Opção B+: resume binary mirror to Supabase Storage
     resumes_synced: 0,
     resumes_skipped_no_url: 0,
-    resumes_failed: 0
+    resumes_failed: 0,
+    // p195 BUG-195.B: per-app cycle redirect counter
+    applications_cycle_redirected: 0
   };
 
   const allQRs = body.questionResponses ?? [];
@@ -376,6 +389,19 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       }
 
       const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, cycle.cycle_code, env.ORG_ID);
+
+      // p195 BUG-195.B fix: redirect to semantically-correct cycle when
+      // application_date falls in a different cycle's window. Mapper already
+      // computed application_date (from submittedDate or fallback). If a
+      // closed-cycle match exists, override the cycle_id stamped by mapper.
+      const dateMatched = pickCycleForApplicationDate(mapped.application_date, recentCycles);
+      if (dateMatched && dateMatched.id !== cycle.id) {
+        // Track the redirect for observability + audit
+        summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
+        console.log(`[cycle-redirect] app=${app.applicationId} date=${mapped.application_date} ` +
+          `default=${cycle.cycle_code} → matched=${dateMatched.cycle_code}`);
+        mapped.cycle_id = dateMatched.id;
+      }
 
       // p195 Opção B+: stamp storage mirror result if pre-flight sync succeeded.
       // Mapper defaults both fields to null, so this is purely additive.
