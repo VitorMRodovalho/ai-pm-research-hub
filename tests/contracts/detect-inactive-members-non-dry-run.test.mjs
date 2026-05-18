@@ -22,17 +22,12 @@
  *   work correctly. ROLLBACK reverted threshold to 180 + 0 persisted rows.
  *   Cron sat 2026-05-23 09:30 BRT is now GREEN for first multi-leader V4 execution.
  *
- * Coverage gap acknowledged:
- *   With production threshold=180, candidates_count may be 0 at CI time, in which
- *   case the IF NOT p_dry_run AND v_count > 0 gate skips the INSERT block and this
- *   test does NOT directly exercise the INSERT path. Test still catches:
- *     - response shape regressions
- *     - dispatch errors (syntax breakage in function body)
- *     - auth gate regressions
- *     - non-zero candidate path constraint violations (when prod has candidates)
- *   To get hermetic INSERT-path coverage, a future test helper RPC could force
- *   candidates>0 inside a tx=rollback request. Out of scope for p185 (WATCH-180.F
- *   already closed by runtime exercise above).
+ * Coverage gap (p185) → CLOSED p186 (OPP-185.A):
+ *   Originally, with production threshold=180, candidates_count may be 0 at CI
+ *   time, skipping the IF block and bypassing INSERT-path coverage. p186 added
+ *   the test helper RPC _test_detect_inactive_with_threshold(int) which forces
+ *   candidates>0 by lowering the threshold within a tx=rollback request. Test #3
+ *   below uses it to deterministically exercise the INSERT branch in CI.
  *
  * What this test does:
  *   1. Calls detect_inactive_members(p_dry_run := true) via service_role:
@@ -41,9 +36,13 @@
  *      header so all INSERT side effects (notifications + admin_audit_log) are
  *      rolled back at request end. PostgREST honors tx=rollback for stateless
  *      RPC calls when the role can use it (service_role permitted).
- *   3. Asserts the call returns successfully (no 23502, no other constraint
- *      violation, no Unauthorized given service_role bypass). If the contract
- *      breaks at runtime, this test fails BEFORE the next scheduled cron run.
+ *   3. Calls _test_detect_inactive_with_threshold(0) with `Prefer: tx=rollback`:
+ *      forces candidates>0 so the INSERT branch executes deterministically in CI.
+ *      Asserts managers_notified>0 and candidates_count>0 — hermetic INSERT-path
+ *      coverage that doesn't depend on prod state at test time.
+ *   In all three cases, if the contract breaks at runtime the test fails BEFORE
+ *   the next scheduled cron run (no 23502, no other constraint violation, no
+ *   Unauthorized given service_role bypass).
  *
  * Why tx=rollback (not actual INSERT + cleanup):
  *   - notifications INSERT could trigger downstream consumers (realtime/email).
@@ -82,6 +81,29 @@ async function callDetectInactive(dryRun, options = {}) {
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`RPC failed (dryRun=${dryRun}, rollback=${!!options.rollback}): HTTP ${res.status} — ${text}`);
+  }
+  return await res.json();
+}
+
+async function callTestHelperWithThreshold(threshold) {
+  // p186 OPP-185.A: helper RPC that forces candidates>0 by temporarily
+  // overriding site_config.inactivity_threshold_days. Must be invoked with
+  // Prefer: tx=rollback to guarantee zero persisted side effects.
+  const url = `${SUPABASE_URL}/rest/v1/rpc/_test_detect_inactive_with_threshold`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    'Prefer': 'tx=rollback',
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ p_threshold: threshold }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Helper RPC failed (threshold=${threshold}): HTTP ${res.status} — ${text}`);
   }
   return await res.json();
 }
@@ -125,5 +147,34 @@ test(
         `candidates_count=${result.candidates_count} but managers_notified=0 — manage_platform capability may be missing or filter logic broken`
       );
     }
+  }
+);
+
+test(
+  canRun
+    ? 'detect_inactive_members INSERT path hermetically exercised via _test helper (threshold=0)'
+    : skipMsg,
+  { skip: !canRun },
+  async () => {
+    // p186 OPP-185.A: hermetic INSERT-path coverage. The previous tx=rollback
+    // test only exercises the INSERT block if prod has candidates_count > 0
+    // at CI time. This test calls _test_detect_inactive_with_threshold(0)
+    // which forces every active member to qualify as a candidate (last
+    // attendance > 0 days ago is trivially true), guaranteeing v_count > 0
+    // and the IF NOT p_dry_run AND v_count > 0 branch executes. The helper
+    // restores site_config.inactivity_threshold_days defensively before
+    // returning AND tx=rollback drops every persisted row at request end.
+    const result = await callTestHelperWithThreshold(0);
+
+    assert.equal(result.success, true, 'success flag should be true');
+    assert.equal(result.dry_run, false, 'dry_run must echo false (helper passes false)');
+    assert.equal(result.threshold_days, 0, 'threshold_days should reflect the override value (0)');
+    assert.ok(result.candidates_count > 0, 'threshold=0 must produce at least one candidate');
+    assert.ok(Array.isArray(result.candidates), 'candidates should be array');
+    assert.ok(
+      result.managers_notified > 0,
+      `INSERT path coverage requires managers_notified > 0 (got ${result.managers_notified}) — ` +
+      'either manage_platform capability is missing or notifications INSERT branch silently failed'
+    );
   }
 );
