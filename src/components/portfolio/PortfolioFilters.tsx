@@ -32,13 +32,27 @@ export default function PortfolioFilters({ filters, setFilters, clearFilters, ha
   const set = (key: keyof Filters, value: any) =>
     setFilters(f => ({ ...f, [key]: value || null }));
 
+  const KIND_LABELS: Record<string, string> = {
+    research_tribe: 'Tribo',
+    workgroup: 'Workgroup',
+    committee: 'Comitê',
+    study_group: 'Estudo',
+    congress: 'Congresso',
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select className={selectCls} value={filters.tribe ?? ''} onChange={e => set('tribe', e.target.value ? Number(e.target.value) : null)}>
-        <option value="">Todas as Tribos</option>
-        {tribes.map(t => (
-          <option key={t.tribe_id} value={t.tribe_id}>T{t.tribe_id} — {t.tribe_name}</option>
-        ))}
+      <select className={selectCls} value={filters.initiative ?? ''} onChange={e => set('initiative', e.target.value || null)}>
+        <option value="">Todas as Iniciativas</option>
+        {tribes.map(t => {
+          const prefix = t.tribe_id != null ? `T${t.tribe_id} — ` : '';
+          const suffix = t.initiative_kind && t.initiative_kind !== 'research_tribe' ? ` (${KIND_LABELS[t.initiative_kind] || t.initiative_kind})` : '';
+          return (
+            <option key={t.initiative_id ?? t.tribe_id ?? t.tribe_name} value={t.initiative_id ?? ''} disabled={!t.initiative_id}>
+              {prefix}{t.tribe_name}{suffix}
+            </option>
+          );
+        })}
       </select>
 
       <select className={selectCls} value={filters.type ?? ''} onChange={e => set('type', e.target.value)}>
