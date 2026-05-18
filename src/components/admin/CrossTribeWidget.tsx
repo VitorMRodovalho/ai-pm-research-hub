@@ -72,6 +72,8 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
     const initiatives: V4InitiativeRow[] = result?.initiatives ?? [];
     // V4 returns attendance_rate as 0-1 fraction; widget UI expects 0-100 (V3 parity).
     // tribe_id is guaranteed non-null when p_kind='research_tribe' (RPC filters via legacy_tribe_id join).
+    // RPC guarantees: attendance_rate + total_hours both wrapped in COALESCE(..., 0)
+    // server-side, so null-guards here would be dead branches. Council p194 LOW-194.A.
     const mapped: TribeRow[] = initiatives
       .filter((it) => it.tribe_id != null && it.tribe_name != null)
       .map((it) => ({
@@ -79,10 +81,10 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
         tribe_name: it.tribe_name as string,
         leader_name: it.leader,
         member_count: it.member_count,
-        attendance_rate: it.attendance_rate != null ? Math.round(it.attendance_rate * 100) : null,
+        attendance_rate: Math.round(it.attendance_rate * 100),
         cards_done: it.cards_completed,
         cards_total: it.total_cards,
-        impact_hours: it.total_hours != null ? Math.round(it.total_hours) : null,
+        impact_hours: Math.round(it.total_hours),
         events_held: it.meetings_count,
         last_meeting: it.last_meeting_date,
       }));
