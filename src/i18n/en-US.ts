@@ -387,6 +387,8 @@ const enUS: Record<string, string> = {
   'partnerships.file_too_large': 'File exceeds 5MB',
   'nav.adminCycleReport': '📄 Cycle Report',
   'nav.governance': '⚖️ Governance',
+  'nav.cpmai': '🎓 CPMAI',
+  'nav.docsMcp': '🔌 MCP Docs',
   'nav.boards': '📋 Boards',
   'nav.meetings': '📝 Minutes',
   'nav.myInitiatives': '🚀 Initiatives',
