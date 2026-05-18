@@ -779,6 +779,7 @@ const ADP_I18N = {
   let visitorsLoaded = false;
   let analyticsPeriod = 30;
   let chartInstances: any[] = [];
+  let _analyticsLoadGen = 0;
 
   async function phQuery(q: string, days?: number) {
     try {
@@ -815,6 +816,7 @@ const ADP_I18N = {
   }
 
   async function loadAnalytics() {
+    const myGen = ++_analyticsLoadGen;
     destroyCharts();
 
     // Fetch all 5 queries + Phase 1 details in parallel
@@ -826,6 +828,8 @@ const ADP_I18N = {
       phQuery('retention_weekly', Math.max(analyticsPeriod, 60)),
       phGet('dashboards', '1407425'),
     ]);
+
+    if (myGen !== _analyticsLoadGen) return;
 
     const { Chart, LineController, BarController, DoughnutController, CategoryScale, LinearScale,
       PointElement, LineElement, BarElement, ArcElement, Legend, Tooltip, Filler } = await import('chart.js');
