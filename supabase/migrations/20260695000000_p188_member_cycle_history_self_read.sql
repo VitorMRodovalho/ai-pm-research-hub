@@ -1,5 +1,11 @@
 -- p188 GAP-181.B: enable authenticated members to read own cycle history
 --
+-- Rollback: DROP POLICY mch_self_read ON public.member_cycle_history;
+--           (Reverts to pre-fix state: only mch_superadmin_write covers SELECT
+--            → non-superadmin members lose self-read access again. Acceptable
+--            mitigation if a security review later requires more restrictive
+--            scope; otherwise prefer ALTER POLICY over DROP+CREATE.)
+--
 -- Background: member_cycle_history had only the mch_superadmin_write policy
 -- (USING rls_is_superadmin(), polcmd=ALL — covers SELECT but only for
 -- superadmins). Authenticated members hold GRANT SELECT but RLS blocked
