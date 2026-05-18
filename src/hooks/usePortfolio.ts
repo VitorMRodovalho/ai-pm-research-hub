@@ -76,7 +76,6 @@ export interface PortfolioData {
 }
 
 export interface PortfolioFilters {
-  tribe: number | null;
   initiative: string | null;
   type: string | null;
   status: string | null;
@@ -87,7 +86,7 @@ export interface PortfolioFilters {
 }
 
 const EMPTY_FILTERS: PortfolioFilters = {
-  tribe: null, initiative: null, type: null, status: null, health: null,
+  initiative: null, type: null, status: null, health: null,
   search: '', quarter: null, month: null,
 };
 
@@ -127,7 +126,6 @@ export function usePortfolio(cycle = 3) {
     if (!data?.artifacts) return [];
     return data.artifacts.filter((a: Artifact) => {
       if (filters.initiative && a.initiative_id !== filters.initiative) return false;
-      if (filters.tribe && a.tribe_id !== filters.tribe) return false;
       if (filters.type && !a.unified_tags?.some(t => t.name === filters.type)) return false;
       if (filters.status && a.status !== filters.status) return false;
       if (filters.health && a.health !== filters.health) return false;
