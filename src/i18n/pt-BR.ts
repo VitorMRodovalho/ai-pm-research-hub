@@ -5278,7 +5278,7 @@ const ptBR: Record<string, string> = {
   'admin.breadcrumb.aiCalibration': 'Calibração de IA',
   'admin.breadcrumb.knowledgeLibrary': 'Biblioteca de Recursos',
   'admin.breadcrumb.tribes': 'Tribos',
-  'admin.breadcrumb.tribesComparison': 'Comparativo de Tribos',
+  'admin.breadcrumb.tribesComparison': 'Comparativo de Tribos de Pesquisa',
   'admin.breadcrumb.members': 'Membros',
   'admin.breadcrumb.curatorship': 'Curadoria',
   'admin.breadcrumb.partnerships': 'Parcerias',
@@ -5321,9 +5321,11 @@ const ptBR: Record<string, string> = {
   'admin.memberEdit.prompt.inactivateReason': 'Motivo da inativação de {name} (opcional):',
 
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
-  'admin.tribes.subtitle': 'Visão consolidada de todas as tribos. Apenas GP/DM.',
+  'admin.tribes.subtitle': 'Visão consolidada das tribos de pesquisa do ciclo atual. Apenas GP/DM.',
   'admin.tribes.denied': 'Acesso restrito a GP/DM',
-  'admin.tribes.crudHint': 'Para criar, editar ou arquivar iniciativas (incluindo tribos), use /admin/initiatives. Esta página é somente comparação cross-tribo do ciclo atual.',
+  'admin.tribes.crudHint': 'Para criar, editar ou arquivar iniciativas (incluindo tribos), use /admin/initiatives. Esta página compara apenas tribos de pesquisa.',
+  'admin.tribes.otherInitiativesNote': 'ℹ️ Workgroups, comitês, estudos e congressos têm metrics no Portfolio. Ver /admin/portfolio.',
+  'admin.tribes.otherInitiativesLink': 'Ver Portfolio →',
   'admin.initiatives.title': 'Iniciativas',
   'admin.initiatives.desc': 'Portfólio completo do Núcleo: tribos de pesquisa, grupos de estudo, comitês, workgroups, congressos, workshops.',
   'admin.initiatives.newBtn': 'Nova Iniciativa',
