@@ -243,7 +243,7 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `webinars`        | `leader`   | `['comms_leader','comms_member','curator','co_gp']` | ✅ (workspace operacional fora de admin-only) |
 | `publications`    | `leader`   | `['curator','co_gp','comms_leader','comms_member']` | ✅ (quadro global de submissões) |
 
-### Backend (`has_min_tier` / RLS)
+### Backend (V4 RLS policies)
 
 | Tabela / RPC                 | Policy                          | Tier Req | Coerente? |
 |------------------------------|---------------------------------|----------|-----------|
