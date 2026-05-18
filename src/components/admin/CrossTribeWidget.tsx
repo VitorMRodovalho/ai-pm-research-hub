@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
+// p194 OPP-192.E/OPP-193.A: migrated to V4 exec_cross_initiative_comparison.
+// V4 envelope: { initiatives: [...], kinds_present, generated_at }. We call with
+// p_kind='research_tribe' to preserve V3 widget semantics (tribes-only).
+// V4 lacks cards_in_progress (only exposes total/completed) — dropped from display
+// to avoid misleading derivation (PM decision A, p194).
 interface TribeRow {
   tribe_id: number;
   tribe_name: string;
@@ -7,19 +12,34 @@ interface TribeRow {
   member_count: number;
   attendance_rate: number | null;
   cards_done: number;
-  cards_in_progress: number;
   cards_total: number;
   impact_hours: number | null;
   events_held: number;
   last_meeting: string | null;
 }
 
+interface V4InitiativeRow {
+  initiative_id: string;
+  initiative_kind: string;
+  initiative_title: string;
+  tribe_id: number | null;
+  tribe_name: string | null;
+  leader: string | null;
+  member_count: number;
+  attendance_rate: number;
+  total_cards: number;
+  cards_completed: number;
+  total_hours: number;
+  meetings_count: number;
+  last_meeting_date: string | null;
+}
+
 interface Props { lang?: string; }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Comparativo de Tribos', tribe: 'Tribo', leader: 'Lider', members: 'Membros', attendance: 'Presenca', cards: 'Cards', hours: 'Horas', events: 'Eventos', lastMeeting: 'Ultima Reuniao', done: 'feitos', inProg: 'andamento', noData: 'Sem dados', daysAgo: 'd atras' },
-  'en-US': { title: 'Tribe Comparison', tribe: 'Tribe', leader: 'Leader', members: 'Members', attendance: 'Attendance', cards: 'Cards', hours: 'Hours', events: 'Events', lastMeeting: 'Last Meeting', done: 'done', inProg: 'in progress', noData: 'No data', daysAgo: 'd ago' },
-  'es-LATAM': { title: 'Comparativo de Tribus', tribe: 'Tribu', leader: 'Lider', members: 'Miembros', attendance: 'Asistencia', cards: 'Cards', hours: 'Horas', events: 'Eventos', lastMeeting: 'Ultima Reunion', done: 'hechos', inProg: 'progreso', noData: 'Sin datos', daysAgo: 'd atras' },
+  'pt-BR': { title: 'Comparativo de Tribos', tribe: 'Tribo', leader: 'Lider', members: 'Membros', attendance: 'Presenca', cards: 'Cards', hours: 'Horas', events: 'Eventos', lastMeeting: 'Ultima Reuniao', done: 'feitos', noData: 'Sem dados', daysAgo: 'd atras' },
+  'en-US': { title: 'Tribe Comparison', tribe: 'Tribe', leader: 'Leader', members: 'Members', attendance: 'Attendance', cards: 'Cards', hours: 'Hours', events: 'Events', lastMeeting: 'Last Meeting', done: 'done', noData: 'No data', daysAgo: 'd ago' },
+  'es-LATAM': { title: 'Comparativo de Tribus', tribe: 'Tribu', leader: 'Lider', members: 'Miembros', attendance: 'Asistencia', cards: 'Cards', hours: 'Horas', events: 'Eventos', lastMeeting: 'Ultima Reunion', done: 'hechos', noData: 'Sin datos', daysAgo: 'd atras' },
 };
 
 function getSb() {
@@ -48,9 +68,25 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
     if (!sb) { setTimeout(load, 400); return; }
     const m = (window as any).navGetMember?.();
     if (!m) { setTimeout(load, 400); return; }
-    const { data: result } = await sb.rpc('get_cross_tribe_comparison');
-    if (Array.isArray(result)) setData(result);
-    else if (result && !result.error) setData(result);
+    const { data: result } = await sb.rpc('exec_cross_initiative_comparison', { p_kind: 'research_tribe' });
+    const initiatives: V4InitiativeRow[] = result?.initiatives ?? [];
+    // V4 returns attendance_rate as 0-1 fraction; widget UI expects 0-100 (V3 parity).
+    // tribe_id is guaranteed non-null when p_kind='research_tribe' (RPC filters via legacy_tribe_id join).
+    const mapped: TribeRow[] = initiatives
+      .filter((it) => it.tribe_id != null && it.tribe_name != null)
+      .map((it) => ({
+        tribe_id: it.tribe_id as number,
+        tribe_name: it.tribe_name as string,
+        leader_name: it.leader,
+        member_count: it.member_count,
+        attendance_rate: it.attendance_rate != null ? Math.round(it.attendance_rate * 100) : null,
+        cards_done: it.cards_completed,
+        cards_total: it.total_cards,
+        impact_hours: it.total_hours != null ? Math.round(it.total_hours) : null,
+        events_held: it.meetings_count,
+        last_meeting: it.last_meeting_date,
+      }));
+    setData(mapped);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -91,8 +127,6 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
                   </td>
                   <td className="py-2.5 text-center">
                     <span className="text-green-600 font-bold">{tribe.cards_done}</span>
-                    <span className="text-[var(--text-muted)]"> / </span>
-                    <span className="text-amber-600">{tribe.cards_in_progress}</span>
                     <span className="text-[var(--text-muted)]"> / </span>
                     <span>{tribe.cards_total}</span>
                   </td>
