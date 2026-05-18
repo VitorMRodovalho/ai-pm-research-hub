@@ -14241,7 +14241,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      has_min_tier: { Args: { required_rank: number }; Returns: boolean }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
       import_leader_evaluations: { Args: { p_data: Json }; Returns: Json }
