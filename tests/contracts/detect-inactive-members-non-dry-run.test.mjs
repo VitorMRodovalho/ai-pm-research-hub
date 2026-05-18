@@ -46,11 +46,12 @@
  *      forces candidates>0 so the INSERT branch executes deterministically in CI.
  *      Asserts managers_notified>0 and candidates_count>0 — hermetic INSERT-path
  *      coverage that doesn't depend on prod state at test time.
- *   4. Calls _test_detect_inactive_with_threshold(10000) WITHOUT tx=rollback so
- *      the request runs in PostgREST commit mode. Asserts threshold_days echoes
- *      10000 (override active) and post-call site_config.inactivity_threshold_days
- *      = 180 (defensive restore worked). threshold=10000 keeps candidates=0 so
- *      the INSERT branch never fires and no cleanup is needed.
+ *   4. Calls _test_detect_inactive_with_threshold(100000) WITHOUT tx=rollback
+ *      so the request runs in PostgREST commit mode. Asserts threshold_days
+ *      echoes 100000 (override active) and post-call
+ *      site_config.inactivity_threshold_days = 180 (defensive restore worked).
+ *      threshold=100000 (~274 years; physically unreachable) keeps candidates=0
+ *      so the INSERT branch never fires and no cleanup is needed.
  *   In all four cases, if the contract breaks at runtime the test fails BEFORE
  *   the next scheduled cron run (no 23502, no other constraint violation, no
  *   Unauthorized given service_role bypass).
@@ -227,8 +228,8 @@ test(
     // admin_audit_log INSERTs. The defensive restore of site_config at the
     // end of the function body is belt+suspenders that runs regardless of
     // whether the caller used tx=rollback. This test exercises that path:
-    //   1. Choose threshold=10000 (no member is >27 years old → 0 candidates →
-    //      no INSERTs into notifications/admin_audit_log → no cleanup needed).
+    //   1. Choose threshold=100000 (~274 years; physically unreachable for any
+    //      member record → 0 candidates → no INSERTs → no cleanup needed).
     //   2. Call the helper WITHOUT Prefer: tx=rollback so the request runs in
     //      PostgREST commit mode.
     //   3. Verify result.threshold_days = 10000 (proves the override was
@@ -238,13 +239,13 @@ test(
     //      the override didn't leak into prod state).
     // If the defensive restore is removed in a future refactor, this test
     // fails by surfacing site_config still at 10000.
-    const PROBE_THRESHOLD = 10000;
+    const PROBE_THRESHOLD = 100000;
     const result = await callTestHelperWithThreshold(PROBE_THRESHOLD, { rollback: false });
 
     assert.equal(result.success, true, 'helper should succeed even without tx=rollback');
     assert.equal(result.threshold_days, PROBE_THRESHOLD, 'override should be active during call');
     assert.equal(result.candidates_count, 0,
-      'threshold=10000 should produce 0 candidates (no member is >27 years old) — ' +
+      'threshold=100000 (~274 years) should produce 0 candidates (physically unreachable) — ' +
       'if this fails, the test threshold no longer prevents INSERTs and needs cleanup logic');
 
     const restoredValue = await readInactivityThreshold();

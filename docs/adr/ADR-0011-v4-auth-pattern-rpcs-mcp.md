@@ -288,7 +288,13 @@ escape hatch de conveniência para falhas de gate user-tier.
 
 ---
 
-## Amendment C — `has_min_tier` sweep closure (2026-05-17)
+## Amendment D — `has_min_tier` sweep closure (2026-05-17)
+
+> Note: this is labeled "D" (skipping "C") because the cross-reference to
+> ADR-0028 above describes that ADR as "conceitualmente equivalente a uma
+> 'Amendment C'" — treating ADR-0028 as the informal C slot. Letter D
+> preserves the cross-reference text intact while keeping the formal
+> amendment sequence (A → B → [conceptual C via ADR-0028] → D) unambiguous.
 
 **Status:** Sweep closed.
 
