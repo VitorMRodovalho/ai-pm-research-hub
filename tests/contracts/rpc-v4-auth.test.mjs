@@ -63,7 +63,7 @@ function hasAuthGate(body) {
   // matcher to mirror the RAISE/RETURN coverage.
   return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only|Not\s+authorized)/i.test(body)
       || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied|access_denied|Not\s+authorized)/i.test(body)
-      || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*([Uu]nauthor|[Nn]ot\s+author|[Aa]ccess\s+denied)/i.test(body);
+      || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*(unauthor|not\s+author|access\s+denied)/i.test(body);
 }
 
 function usesV4Can(body) {
