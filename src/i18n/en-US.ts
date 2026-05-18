@@ -2268,6 +2268,8 @@ const enUS: Record<string, string> = {
   'admin.comms.linkedinAwaitingApi': 'Awaiting API approval',
   'admin.comms.topContentTitle': 'Top Content',
   'admin.comms.topContentSubtitle': 'Best performing posts in the last 30 days',
+  'admin.comms.topContentFilterAll': 'All',
+  'admin.comms.topContentEmpty': 'No content in the period',
   'admin.comms.bestTimeTitle': 'Best Time to Post',
   'admin.comms.bestTimeSubtitle': 'When your Instagram followers are online (per hour of day)',
   'admin.comms.metricsTitle': 'Metrics History',
