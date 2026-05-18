@@ -13663,7 +13663,6 @@ export type Database = {
       get_cpmai_leaderboard: { Args: { p_course_id?: string }; Returns: Json }
       get_cr_approval_status: { Args: { p_cr_id: string }; Returns: Json }
       get_cron_status: { Args: never; Returns: Json }
-      get_cross_tribe_comparison: { Args: never; Returns: Json }
       get_curation_cross_board: { Args: never; Returns: Json }
       get_curation_dashboard: { Args: never; Returns: Json }
       get_current_cycle: { Args: never; Returns: Json }
