@@ -169,7 +169,8 @@ const scriptI18n = JSON.stringify({
 
     const [{ data, error }, membersQuery, tribesQuery] = await Promise.all([
       sb.rpc('exec_portfolio_board_summary', { p_include_inactive: false }),
-      sb.from('public_members').select('member_id', { count: 'exact', head: true }).eq('current_cycle_active', true),
+      // p195 BUG-195.A: public_members view column is `id`, not `member_id` (was returning 400 Bad Request)
+      sb.from('public_members').select('id', { count: 'exact', head: true }).eq('current_cycle_active', true),
       sb.from('tribes').select('id', { count: 'exact', head: true }).eq('is_active', true),
     ]);
     if (error) {
