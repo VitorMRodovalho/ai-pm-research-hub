@@ -25,10 +25,10 @@ const deniedMsg = t('admin.tribes.denied', lang);
 <script is:inline define:vars={{ deniedMsg }}>
   document.addEventListener('DOMContentLoaded', () => {
     const check = () => {
-      const member = (window as any).navMember;
+      const member = window.navMember;
       if (!member) { setTimeout(check, 300); return; }
       // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
-      const hasAdminCapability = (window as any).__nucleoCanForAdminEntry?.() === true;
+      const hasAdminCapability = window.__nucleoCanForAdminEntry?.() === true;
       const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
       const hasAdminDesignation = (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
       const isGP = member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
