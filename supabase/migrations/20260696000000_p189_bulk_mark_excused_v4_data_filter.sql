@@ -101,7 +101,11 @@ BEGIN
   END IF;
 
   -- Diagnostic count: how many events match criteria but already have non-excused attendance
-  -- (would be skipped unless override=true)
+  -- (would be skipped unless override=true). When p_override_existing=true,
+  -- v_skipped stays at 0 (initialized at decl) — semantically "N/A in override
+  -- mode" because override forces upsert of ALL matching events without skipping.
+  -- Callers that display events_skipped should interpret 0 in override mode
+  -- as informational-only, not as "nothing was skipped".
   IF NOT p_override_existing THEN
     SELECT COUNT(*) INTO v_skipped
     FROM public.events e
