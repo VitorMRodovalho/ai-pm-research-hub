@@ -713,14 +713,37 @@ const SEL_I18N = {
   // is delegated globally (see bindEvents → resume-link delegated listener).
   // If only resume_url (Azure SAS) → fallback link with warning (may be expired).
   // If neither → empty string.
+  //
+  // p195 staleness badge: visual color shifts based on resume_synced_at age:
+  //   < 14d (fresh)        → purple (current)
+  //   14-29d (stale)       → amber + "Nd" age suffix
+  //   ≥ 30d (very stale)   → red + "Nd⚠" age suffix
+  //   no sync timestamp    → purple (assume just-synced, no signal)
   function resumeLinkHtml(row: any): string {
     const path = row?.resume_storage_path;
     const fallback = row?.resume_url;
     if (path) {
       const synced = row?.resume_synced_at;
+      const ageDays = synced ? Math.floor((Date.now() - new Date(synced).getTime()) / 86400000) : null;
       const syncedLabel = synced ? new Date(synced).toLocaleDateString('pt-BR') : '';
-      const title = syncedLabel ? `CV sincronizado (${syncedLabel})` : 'CV';
-      return `<button type="button" data-resume-path="${esc(path)}"${fallback ? ` data-resume-fallback="${esc(fallback)}"` : ''} title="${esc(title)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-[11px] font-semibold no-underline hover:bg-purple-100 border-0 cursor-pointer">📦 CV</button>`;
+
+      // Bucket the visual state by age.
+      let bgClass = 'bg-purple-50 text-purple-700 hover:bg-purple-100';
+      let ageSuffix = '';
+      let titleSuffix = '';
+      if (ageDays !== null && ageDays >= 30) {
+        bgClass = 'bg-red-50 text-red-700 hover:bg-red-100';
+        ageSuffix = ` <span class="text-[9px] opacity-80">${ageDays}d⚠</span>`;
+        titleSuffix = ' — desatualizado, re-importe o JSON do VEP';
+      } else if (ageDays !== null && ageDays >= 14) {
+        bgClass = 'bg-amber-50 text-amber-700 hover:bg-amber-100';
+        ageSuffix = ` <span class="text-[9px] opacity-80">${ageDays}d</span>`;
+        titleSuffix = ' — considere re-importar o JSON do VEP';
+      }
+      const title = syncedLabel
+        ? `CV sincronizado em ${syncedLabel}${titleSuffix}`
+        : 'CV';
+      return `<button type="button" data-resume-path="${esc(path)}"${fallback ? ` data-resume-fallback="${esc(fallback)}"` : ''} title="${esc(title)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${bgClass} text-[11px] font-semibold no-underline border-0 cursor-pointer">📦 CV${ageSuffix}</button>`;
     }
     if (fallback) {
       return `<a href="${esc(fallback)}" target="_blank" rel="noopener" title="CV link VEP (Azure SAS — pode estar expirado; re-importe para sincronizar)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold no-underline hover:bg-amber-100">⚠️ CV</a>`;
