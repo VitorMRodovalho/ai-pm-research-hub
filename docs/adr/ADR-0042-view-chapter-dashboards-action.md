@@ -90,8 +90,9 @@ END IF;
 | # | Fn | Type | Notes |
 |---|---|---|---|
 | 1 | `exec_all_tribes_summary` | reader | All-tribes summary metrics |
-| 2 | `get_cross_tribe_comparison` | reader | Cross-tribe metrics summary |
-| 3 | `exec_cross_tribe_comparison` | reader | Cross-tribe comparison v2 |
+| 2 | ~~`get_cross_tribe_comparison`~~ | ~~reader~~ | **DROPPED p194 (migration 20260701000000) — superseded by `exec_cross_initiative_comparison` (p192)** |
+| 3 | ~~`exec_cross_tribe_comparison`~~ | ~~reader~~ | **DROPPED p192 (migration 20260700000000) — superseded by `exec_cross_initiative_comparison`** |
+| 3a | `exec_cross_initiative_comparison` | reader | Initiative-centric cross-kind comparison (p_kind dispatch); replaces #2 + #3 |
 | 4 | `exec_cycle_report` | reader | Cycle-level dashboard |
 | 5 | `get_admin_dashboard` | reader | Admin home KPIs + alerts |
 | 6 | `get_adoption_dashboard` | reader | Platform adoption metrics |

@@ -200,10 +200,10 @@ Aplicados em 2 migrations atomic:
 | `detect_operational_alerts` | 20260428050000 |
 | `send_attendance_reminders` | 20260428050000 |
 | `exec_all_tribes_summary` | 20260428050000 |
-| `get_cross_tribe_comparison` | 20260428050000 |
+| `get_cross_tribe_comparison` | 20260428050000 — **DROPPED p194 (migration 20260701000000); superseded by `exec_cross_initiative_comparison` (p192)** |
 | `exec_cycle_report` | 20260428100000 |
 | `get_admin_dashboard` | 20260428130000 |
-| `exec_cross_tribe_comparison` | 20260428140000 |
+| `exec_cross_tribe_comparison` | 20260428140000 — **DROPPED p192 (migration 20260700000000); superseded by `exec_cross_initiative_comparison`** |
 | `get_adoption_dashboard` | 20260428140000 |
 | `get_campaign_analytics` | 20260428140000 |
 
