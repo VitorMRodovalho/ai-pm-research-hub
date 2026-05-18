@@ -28,7 +28,7 @@ export default function BoardFilters({
           type="text"
           value={filters.search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder={i18n.search || 'Buscar...'}
+          placeholder={i18n?.search || 'Buscar...'}
           className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px]
             text-[var(--text-primary)] outline-none focus:border-blue-400 transition-all pl-8"
         />
