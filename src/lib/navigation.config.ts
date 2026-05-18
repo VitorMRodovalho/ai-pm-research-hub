@@ -94,6 +94,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'boards', labelKey: 'nav.boards', href: '/boards', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'meu-espaco', navSlot: 'primary' },
   { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
+  { key: 'cpmai',      labelKey: 'nav.cpmai',      href: '/cpmai',      minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
+  { key: 'docs-mcp',   labelKey: 'nav.docsMcp',    href: '/docs/mcp',   minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
   { key: 'admin-governance-v2', labelKey: 'nav.adminBoardGovernance', href: '/admin/governance-v2', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['curator', 'co_gp'] },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' },
   { key: 'admin-partnerships', labelKey: 'nav.adminPartnerships', href: '/admin/partnerships', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
