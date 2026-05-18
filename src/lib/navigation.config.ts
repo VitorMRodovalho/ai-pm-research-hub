@@ -88,7 +88,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'chapter_board'] },
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['comms_leader', 'comms_member'], lgpdSensitive: true },
   { key: 'admin-comms-ops', labelKey: 'nav.adminCommsOps',  href: '/admin/comms-ops', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_leader', 'comms_member'], lgpdSensitive: true },
-  { key: 'stakeholder-dashboard', labelKey: 'nav.stakeholder', href: '/stakeholder', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'chapter_board'] },
+  { key: 'stakeholder-dashboard', labelKey: 'nav.stakeholder', href: '/stakeholder', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'chapter_board'] },
   { key: 'admin-portfolio', labelKey: 'nav.adminPortfolio', href: '/admin/portfolio', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'chapter_board'] },
   { key: 'admin-cycle-report', labelKey: 'nav.adminCycleReport', href: '/report', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
@@ -115,6 +115,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'certificates',        labelKey: 'nav.certificates',  href: '/certificates',        minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
   { key: 'volunteer-agreement', labelKey: 'nav.volunteer',     href: '/volunteer-agreement', minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
   { key: 'changelog',           labelKey: 'nav.changelog',     href: '/changelog',           minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools',   drawerSection: 'explorar' },
+  { key: 'my-pending',          labelKey: 'nav.myPending',     href: '/governance/my-pending', minTier: 'member', requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
 ];
 
 export function getItemAccessibility(
