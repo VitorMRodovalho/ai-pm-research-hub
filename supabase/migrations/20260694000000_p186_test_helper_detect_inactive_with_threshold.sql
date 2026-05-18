@@ -45,7 +45,10 @@ BEGIN
      SET value = to_jsonb(p_threshold)
    WHERE key = 'inactivity_threshold_days';
 
-  -- Run real function inside a savepoint so we can restore site_config even on raise
+  -- Run real function inside a nested PL/pgSQL exception block so we can restore
+  -- site_config even if detect_inactive_members raises. (This is a BEGIN/EXCEPTION
+  -- frame, not a SQL SAVEPOINT statement — PG implicitly creates a subtransaction
+  -- savepoint for the frame, but the SAVEPOINT/RELEASE keywords are not issued.)
   BEGIN
     v_result := public.detect_inactive_members(p_dry_run := false);
   EXCEPTION WHEN OTHERS THEN
