@@ -125,6 +125,12 @@ export interface SelectionApplicationUpsert {
   phone: string | null;
   linkedin_url: string | null;
   resume_url: string | null;
+  // p195 Opção B+: sustainable resume extraction (PDF mirrored to Supabase Storage).
+  // resume_storage_path = "cycle-{cycle_code}/{applicantId}.pdf" when Worker
+  // successfully downloaded from Azure SAS + uploaded to selection-resumes bucket.
+  // NULL when download failed/skipped → frontend falls back to resume_url Azure link.
+  resume_storage_path?: string | null;
+  resume_synced_at?: string | null;
   chapter: string | null;
   membership_status: string | null;
   certifications: string | null;
@@ -426,4 +432,9 @@ export interface IngestSummary {
   phase_b_skipped_private?: number;          // Decision 5 — profilePrivate=true
   pmi_chapter_memberships_upserted?: number;
   service_history_inserted?: number;
+
+  // p195 Opção B+: resume binary mirror to Supabase Storage
+  resumes_synced?: number;                   // PDFs downloaded from Azure + uploaded to bucket
+  resumes_skipped_no_url?: number;           // applications with null resumeUrl (qualified bucket)
+  resumes_failed?: number;                   // download or upload error — see errors[].scope='resume_sync_failed'
 }
