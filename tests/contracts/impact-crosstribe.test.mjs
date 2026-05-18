@@ -175,6 +175,18 @@ test('exec_cross_initiative_comparison total_hours is strict-scoped to initiativ
     'Without this filter, workgroups/committees show inflated hours from members attending other initiatives\' events.');
 });
 
+test('exec_cross_initiative_comparison members_inactive_30d is strict-scoped to initiative (p194 GAP-194.A)', () => {
+  const body = findFunctionBody('exec_cross_initiative_comparison');
+  assert.ok(body);
+  // Find the members_inactive_30d subquery block and assert ev.initiative_id = i.id present
+  // inside the NOT IN attendance subquery. Anchors: 'members_inactive_30d' label + next field 'total_cards'.
+  const inactiveMatch = body.match(/'members_inactive_30d',\s*\([\s\S]*?'total_cards'/);
+  assert.ok(inactiveMatch, 'Must locate members_inactive_30d subquery block');
+  assert.ok(/AND\s+ev\.initiative_id\s*=\s*i\.id/i.test(inactiveMatch[0]),
+    'members_inactive_30d NOT IN attendance subquery must filter by `ev.initiative_id = i.id` (GAP-194.A strict scope). ' +
+    'Without this filter, workgroups/committees show deflated inactive counts from members attending other initiatives\' events.');
+});
+
 test('detect_operational_alerts RPC exists', () => {
   const body = findFunctionBody('detect_operational_alerts');
   assert.ok(body, 'detect_operational_alerts not found');
