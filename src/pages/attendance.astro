@@ -1560,10 +1560,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── AUDIENCE HELPER (legacy) ──
+  // p184 hotfix (Fixes AI-PM-RESEARCH-HUB-1K): null-guard both element lookups. Triggered when
+  // the change handler on ev-type fires but the audience field isn't yet mounted in the DOM
+  // (e.g., during modal initialization or DOM reflow). Without guards, TypeError "Cannot set
+  // properties of null (setting 'value')" thrown.
   function updateAudienceFromType(audienceId: string, typeId: string) {
-    const type = (document.getElementById(typeId) as HTMLSelectElement).value;
+    const typeEl = document.getElementById(typeId) as HTMLSelectElement | null;
+    const audienceEl = document.getElementById(audienceId) as HTMLSelectElement | null;
+    if (!typeEl || !audienceEl) return;
+    const type = typeEl.value;
     const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all', webinar: 'all', other: 'all' };
-    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all';
+    audienceEl.value = map[type] || 'all';
   }
 
   // ── NEW EVENT ──

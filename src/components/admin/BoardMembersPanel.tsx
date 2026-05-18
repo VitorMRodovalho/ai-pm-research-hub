@@ -50,8 +50,13 @@ export default function BoardMembersPanel() {
     setTimeout(check, 300);
   }, []);
 
+  // p184 hotfix (Fixes AI-PM-RESEARCH-HUB-1F/1G/1N): all hooks MUST be called before any
+  // conditional return per React rules. Moved early `if (!isGP && !loading) return null` from
+  // here to AFTER the hooks block below. Without this, the transition from initial loading
+  // (no early return → 5 callbacks/effects registered) to member-loaded-non-GP (early return
+  // → 5 hooks skipped) caused "Rendered fewer hooks than expected" — 16+ Sentry events
+  // 2026-04-19 → 2026-05-14.
   const isGP = member?.is_superadmin || member?.operational_role === 'manager' || (member?.designations || []).includes('deputy_manager');
-  if (!isGP && !loading) return null;
 
   const loadBoards = useCallback(async () => {
     const sb = getSb();
@@ -61,7 +66,7 @@ export default function BoardMembersPanel() {
       .eq('is_active', true).order('board_name');
     if (data) setBoards(data.map((b: any) => ({ ...b, tribe_id: b.initiative?.legacy_tribe_id ?? null })));
     setLoading(false);
-  }, [getSb]);
+  }, []);
 
   const loadBoardMembers = useCallback(async (boardId: string) => {
     const sb = getSb();
@@ -70,21 +75,29 @@ export default function BoardMembersPanel() {
     const { data } = await sb.rpc('get_board_members', { p_board_id: boardId });
     setMembers(Array.isArray(data) ? data : []);
     setLoadingMembers(false);
-  }, [getSb]);
+  }, []);
 
   const loadAllMembers = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
     const { data } = await sb.from('members').select('id, name').eq('is_active', true).order('name');
     if (data) setAllMembers(data);
-  }, [getSb]);
-
-  useEffect(() => { loadBoards(); loadAllMembers(); }, [loadBoards, loadAllMembers]);
+  }, []);
 
   useEffect(() => {
+    if (!isGP) return;
+    loadBoards();
+    loadAllMembers();
+  }, [isGP, loadBoards, loadAllMembers]);
+
+  useEffect(() => {
+    if (!isGP) return;
     if (selectedBoard) loadBoardMembers(selectedBoard);
     else setMembers([]);
-  }, [selectedBoard, loadBoardMembers]);
+  }, [isGP, selectedBoard, loadBoardMembers]);
+
+  // Early return AFTER all hooks (React rules-of-hooks compliance)
+  if (!isGP && !loading) return null;
 
   const handleAdd = async () => {
     if (!addMemberId || !selectedBoard || saving) return;
