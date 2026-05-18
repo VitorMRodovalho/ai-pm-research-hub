@@ -2273,6 +2273,8 @@ const ptBR: Record<string, string> = {
   'admin.comms.linkedinAwaitingApi': 'Aguardando aprovação da API',
   'admin.comms.topContentTitle': 'Top Content',
   'admin.comms.topContentSubtitle': 'Posts com melhor performance nos últimos 30 dias',
+  'admin.comms.topContentFilterAll': 'Todos',
+  'admin.comms.topContentEmpty': 'Sem conteúdo no período',
   'admin.comms.bestTimeTitle': 'Melhor Horário para Postar',
   'admin.comms.bestTimeSubtitle': 'Quando seus seguidores do Instagram estão online (por hora do dia)',
   'admin.comms.metricsTitle': 'Histórico de Métricas',

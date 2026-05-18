@@ -2268,6 +2268,8 @@ const esLATAM: Record<string, string> = {
   'admin.comms.linkedinAwaitingApi': 'Esperando aprobación de la API',
   'admin.comms.topContentTitle': 'Top Content',
   'admin.comms.topContentSubtitle': 'Posts con mejor performance en los últimos 30 días',
+  'admin.comms.topContentFilterAll': 'Todos',
+  'admin.comms.topContentEmpty': 'Sin contenido en el período',
   'admin.comms.bestTimeTitle': 'Mejor Hora para Publicar',
   'admin.comms.bestTimeSubtitle': 'Cuando tus seguidores de Instagram están en línea (por hora del día)',
   'admin.comms.metricsTitle': 'Histórico de Métricas',
