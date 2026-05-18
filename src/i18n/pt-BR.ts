@@ -5668,6 +5668,8 @@ const ptBR: Record<string, string> = {
   'comp.crossTribe.lastMeeting': 'Última Reunião',
   'comp.crossTribe.initiative': 'Iniciativa',
   'comp.crossTribe.inactiveShort': 'inat.',
+  'comp.crossTribe.noOwnEventsShort': '(s/ eventos)',
+  'comp.crossTribe.noOwnEventsTooltip': 'Iniciativa sem eventos próprios — métrica de presença não aplicável',
   'comp.crossTribe.visualComparison': 'Comparativo Visual',
   'comp.impact.consentRequired': 'O consentimento é obrigatório.',
   'comp.errorBoundary.message': 'Erro ao carregar componente. Tente recarregar a página.',
