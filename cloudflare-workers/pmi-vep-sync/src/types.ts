@@ -437,4 +437,10 @@ export interface IngestSummary {
   resumes_synced?: number;                   // PDFs downloaded from Azure + uploaded to bucket
   resumes_skipped_no_url?: number;           // applications with null resumeUrl (qualified bucket)
   resumes_failed?: number;                   // download or upload error — see errors[].scope='resume_sync_failed'
+
+  // p195 BUG-195.B fix: count of applications redirected to a different cycle
+  // based on application_date falling in a closed cycle's [open, close] window.
+  // Closes the misassignment pattern where late-imported apps landed in current
+  // open cycle when they semantically belonged to a prior closed cycle.
+  applications_cycle_redirected?: number;
 }
