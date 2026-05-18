@@ -1,0 +1,24 @@
+-- ============================================================
+-- p194 OPP-194.X: DROP public.get_cross_tribe_comparison() V3 reader
+-- ============================================================
+-- WHAT: DROP public.get_cross_tribe_comparison() (returns json, no args).
+--
+-- WHY:
+-- The V3 reader has zero callers post-p194:
+--   - Frontend CrossTribeWidget.tsx migrated to V4 in commit 2e793e5 (p194)
+--   - Frontend CrossTribeIsland.tsx migrated to V4 in commit 64e887c (p192)
+--   - MCP tool get_tribes_comparison migrated to V4 in commit 6ec0894 (p193 v2.71.0)
+--   - Tests impact-crosstribe.test.mjs migrated to V4 in commit 64e887c (p192)
+--   - DB pg_proc callers: zero (verified via prosrc ILIKE '%get_cross_tribe_comparison%')
+--
+-- The V4 successor exec_cross_initiative_comparison(text, text) (p192 migration
+-- 20260700000000) supersedes this function with the same authority gate
+-- (ADR-0042: can_by_member(manage_platform | view_chapter_dashboards)) and wider
+-- scope (filtered via p_kind param), homogeneous initiative-centric semantics.
+--
+-- ROLLBACK: re-apply the body from migration
+-- 20260682000000_p176_phase_b_drift_capture_2_touch_28fns.sql lines 839+
+-- (last canonical capture; matches live state pre-DROP).
+-- ============================================================
+
+DROP FUNCTION IF EXISTS public.get_cross_tribe_comparison();
