@@ -707,6 +707,49 @@ const SEL_I18N = {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // p195 Opção B+: Resume CV link renderer.
+  // If row has resume_storage_path → render button that opens 7-day signed URL
+  // from selection-resumes bucket (sustainable, controlled TTL). Click handler
+  // is delegated globally (see bindEvents → resume-link delegated listener).
+  // If only resume_url (Azure SAS) → fallback link with warning (may be expired).
+  // If neither → empty string.
+  function resumeLinkHtml(row: any): string {
+    const path = row?.resume_storage_path;
+    const fallback = row?.resume_url;
+    if (path) {
+      const synced = row?.resume_synced_at;
+      const syncedLabel = synced ? new Date(synced).toLocaleDateString('pt-BR') : '';
+      const title = syncedLabel ? `CV sincronizado (${syncedLabel})` : 'CV';
+      return `<button type="button" data-resume-path="${esc(path)}"${fallback ? ` data-resume-fallback="${esc(fallback)}"` : ''} title="${esc(title)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-[11px] font-semibold no-underline hover:bg-purple-100 border-0 cursor-pointer">📦 CV</button>`;
+    }
+    if (fallback) {
+      return `<a href="${esc(fallback)}" target="_blank" rel="noopener" title="CV link VEP (Azure SAS — pode estar expirado; re-importe para sincronizar)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold no-underline hover:bg-amber-100">⚠️ CV</a>`;
+    }
+    return '';
+  }
+
+  // Delegated click handler for resume buttons (data-resume-path).
+  // Lazy-resolves Supabase Storage signed URL on click (7-day TTL).
+  // Falls back to Azure SAS link if storage createSignedUrl fails.
+  // Attached once at boot — survives all subsequent re-renders.
+  async function openResumeFromStorage(path: string, fallback: string | null) {
+    if (!sb) { toast('Aguarde — Supabase carregando...', 'error'); return; }
+    try {
+      const { data, error } = await sb.storage
+        .from('selection-resumes')
+        .createSignedUrl(path, 7 * 24 * 3600);
+      if (error || !data?.signedUrl) {
+        if (fallback) { window.open(fallback, '_blank', 'noopener'); return; }
+        toast(`CV indisponível: ${error?.message ?? 'sem URL'}`, 'error');
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener');
+    } catch (e: any) {
+      if (fallback) { window.open(fallback, '_blank', 'noopener'); return; }
+      toast(`CV erro: ${e?.message ?? 'unknown'}`, 'error');
+    }
+  }
+
   function toast(msg: string, type: 'success' | 'error' = 'success') {
     const el = document.getElementById('toast-container');
     if (!el) return;
@@ -1480,7 +1523,7 @@ const SEL_I18N = {
             <div class="flex flex-wrap gap-2 items-center text-[13px]">
               ${row.phone ? `<a href="https://wa.me/${row.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold no-underline hover:bg-emerald-100">WhatsApp ${esc(row.phone)}</a>` : ''}
               ${row.linkedin_url ? `<a href="${esc(row.linkedin_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : ''}
-              ${row.resume_url ? `<a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-[11px] font-semibold no-underline hover:bg-purple-100">CV</a>` : ''}
+              ${resumeLinkHtml(row)}
               ${row.member_credly_url ? `<a href="${esc(row.member_credly_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold no-underline hover:bg-amber-100">Credly</a>` : ''}
             </div>
             <!-- Inline edit: add phone/linkedin if missing -->
@@ -2862,7 +2905,9 @@ const SEL_I18N = {
       const contactLinks = [
         appRow?.phone ? `<a href="https://wa.me/${appRow.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold no-underline hover:bg-emerald-100">WhatsApp</a>` : '',
         appRow?.linkedin_url ? `<a href="${esc(appRow.linkedin_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : '',
-        app.resume_url ? `<a href="${esc(app.resume_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-purple-50 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-100">CV</a>` : '',
+        // p195 Opção B+: pass through storage_path + synced_at from appRow (allRows has full row);
+        // app object from /admin/selection/eval RPC may only have resume_url. Prefer appRow when available.
+        resumeLinkHtml({ resume_storage_path: appRow?.resume_storage_path, resume_synced_at: appRow?.resume_synced_at, resume_url: app.resume_url ?? appRow?.resume_url }),
         appRow?.member_credly_url ? `<a href="${esc(appRow.member_credly_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-100">Credly</a>` : '',
       ].filter(Boolean).join(' ');
 
@@ -4131,6 +4176,18 @@ const SEL_I18N = {
           if (tab === 'import') loadOpportunities();
         }
       });
+    });
+
+    // p195 Opção B+: delegated resume click handler.
+    // Listens at document level so all dynamically-rendered CV buttons
+    // (modals, panels, lists) work without rebinding per render.
+    document.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement)?.closest?.('[data-resume-path]') as HTMLElement | null;
+      if (!target) return;
+      e.preventDefault();
+      const path = target.getAttribute('data-resume-path');
+      const fallback = target.getAttribute('data-resume-fallback');
+      if (path) openResumeFromStorage(path, fallback);
     });
 
     // Cycle picker

@@ -52,6 +52,7 @@ import {
   mapPmiChapterMemberships,
   mapServiceHistory
 } from './script-mapper';
+import { syncResumesParallel, type ResumeSyncResult } from './resume-sync';
 
 const WORKER_NAME = 'pmi-vep-sync';
 const ALLOWED_ORIGIN = 'https://volunteer.pmi.org';
@@ -219,11 +220,56 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     phase_b_processed: 0,
     phase_b_skipped_private: 0,
     pmi_chapter_memberships_upserted: 0,
-    service_history_inserted: 0
+    service_history_inserted: 0,
+    // p195 Opção B+: resume binary mirror to Supabase Storage
+    resumes_synced: 0,
+    resumes_skipped_no_url: 0,
+    resumes_failed: 0
   };
 
   const allQRs = body.questionResponses ?? [];
   const allHistory = body.serviceHistory ?? [];  // p126 E2 — 1:N service history rows
+
+  // p195 Opção B+: pre-flight resume mirror to Supabase Storage.
+  // Done BEFORE the per-app upsert loop because (a) Azure SAS URL is what we
+  // received in the JSON and we want to act on it while still fresh (PM may
+  // wait minutes between JSON download and Apply click), (b) parallelism (5
+  // concurrent downloads) compresses 33 candidate CVs to ~10-15s total.
+  // Skip apps without resumeUrl (qualified bucket — VEP doesn't expose
+  // resume_url after candidate enters onboarding stage). dry_run mode skips
+  // the entire sync to keep preview cheap.
+  const resumeSyncResults = new Map<string, ResumeSyncResult>();
+  if (body.dry_run !== true) {
+    const appsWithResume = body.applications.filter(a => a.resumeUrl && a.applicantId);
+    if (appsWithResume.length > 0) {
+      const startedAt = Date.now();
+      const syncMap = await syncResumesParallel(
+        env.SUPABASE_URL,
+        env.SUPABASE_SERVICE_ROLE_KEY,
+        appsWithResume,
+        cycle.cycle_code
+      );
+      for (const [app, result] of syncMap.entries()) {
+        // Index by applicationId so per-app loop downstream can lookup quickly
+        resumeSyncResults.set(String(app.applicationId), result);
+        if (result.storage_path) {
+          summary.resumes_synced = (summary.resumes_synced ?? 0) + 1;
+        } else {
+          summary.resumes_failed = (summary.resumes_failed ?? 0) + 1;
+          summary.errors.push({
+            scope: 'resume_sync_failed',
+            ref: String(app.applicationId),
+            error: result.error ?? 'unknown',
+          });
+        }
+      }
+      summary.resumes_skipped_no_url = body.applications.length - appsWithResume.length;
+      const elapsed = Date.now() - startedAt;
+      console.log(`[resume-sync] ${syncMap.size} apps, ${summary.resumes_synced} ok, ${summary.resumes_failed} failed, ${elapsed}ms`);
+    } else {
+      summary.resumes_skipped_no_url = body.applications.length;
+    }
+  }
 
   // p151 C: dry-run preview mode — compute diff WITHOUT DML.
   // Returns IngestDryRunSummary with will_insert/will_update/will_skip arrays.
@@ -330,6 +376,14 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       }
 
       const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, cycle.cycle_code, env.ORG_ID);
+
+      // p195 Opção B+: stamp storage mirror result if pre-flight sync succeeded.
+      // Mapper defaults both fields to null, so this is purely additive.
+      const resumeResult = resumeSyncResults.get(String(app.applicationId));
+      if (resumeResult?.storage_path) {
+        mapped.resume_storage_path = resumeResult.storage_path;
+        mapped.resume_synced_at = resumeResult.synced_at;
+      }
 
       if (!mapped.email || !mapped.applicant_name) {
         summary.applications_skipped++;

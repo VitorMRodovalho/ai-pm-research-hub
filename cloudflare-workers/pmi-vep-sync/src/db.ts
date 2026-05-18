@@ -155,6 +155,11 @@ export async function upsertSelectionApplication(
       phone: payload.phone,
       linkedin_url: payload.linkedin_url,
       resume_url: payload.resume_url,
+      // p195 Opção B+: include storage mirror path + sync timestamp in commonRefresh
+      // so cross-cycle partial refresh also updates these (each new SAS rotation may
+      // bring a fresh storage upload if Worker download succeeded).
+      resume_storage_path: payload.resume_storage_path ?? null,
+      resume_synced_at: payload.resume_synced_at ?? null,
       chapter: payload.chapter,
       membership_status: payload.membership_status,
       certifications: payload.certifications,

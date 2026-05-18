@@ -144,6 +144,11 @@ export function mapScriptToNucleo(
     phone: null,  // PMI doesn't surface phone via /api/applications/{id}
     linkedin_url: extractLinkedinFromText(coverLetterText) ?? phaseBLinkedin ?? null,
     resume_url: app.resumeUrl ?? null,
+    // p195 Opção B+: storage mirror fields populated by Worker AFTER mapper
+    // (see syncResumeToStorage call in index.ts /ingest handler). Default null
+    // here so insert path doesn't require Worker to mutate the mapped payload.
+    resume_storage_path: null,
+    resume_synced_at: null,
     chapter: parseChapterFromAffiliation(
       responses.chapter_affiliation ?? '',
       app.applicantState ?? '',
