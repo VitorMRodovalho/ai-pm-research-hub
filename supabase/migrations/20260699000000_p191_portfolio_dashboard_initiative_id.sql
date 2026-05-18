@@ -190,4 +190,8 @@ BEGIN
 END;
 $function$;
 
+-- Self-contained GRANT (council review LOW-191.E migration auditability pattern):
+-- Postgres preserves ACL on CREATE OR REPLACE but file should be auditable in isolation.
+GRANT EXECUTE ON FUNCTION public.get_portfolio_dashboard(integer) TO authenticated;
+
 NOTIFY pgrst, 'reload schema';
