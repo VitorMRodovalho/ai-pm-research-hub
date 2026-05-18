@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface AnomalyItem {
@@ -138,11 +138,27 @@ export default function DataHealthIsland() {
     fetchReport();
   }, [getSb, t, toast]);
 
+  // p190 BUG-190.B: useEffect must run once on mount. fetchReport identity changes
+  // every render (usePageI18n returns a new `t` closure) — using fetchReport directly
+  // in deps caused listener accumulation + retry storm (ERR_INSUFFICIENT_RESOURCES).
+  // Fix: stable effect via ref + cleanup on unmount.
+  const fetchReportRef = useRef(fetchReport);
+  fetchReportRef.current = fetchReport;
   useEffect(() => {
-    const boot = () => { if (getSb()) fetchReport(); else setTimeout(boot, 300); };
+    let cancelled = false;
+    const boot = () => {
+      if (cancelled) return;
+      if (getSb()) fetchReportRef.current();
+      else setTimeout(boot, 300);
+    };
     boot();
-    window.addEventListener('nav:member', () => fetchReport());
-  }, [getSb, fetchReport]);
+    const handler = () => fetchReportRef.current();
+    window.addEventListener('nav:member', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('nav:member', handler);
+    };
+  }, [getSb]);
 
   const handleDetect = async (autoFix: boolean) => {
     const sb = getSb();
