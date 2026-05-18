@@ -133,6 +133,113 @@ export function pickCycleForApplicationDate(
   return matches[0];
 }
 
+// p195 OPP-196.A heuristic: per-cycle app_id sequence stats for fallback
+// cycle assignment when application_date is null (VEP "Active" / legacy
+// historical imports).
+//
+// Returns each cycle's existing applicationId stats:
+//   { cycle_id, min_app_id, max_app_id, sample_count }
+// Only cycles with ≥1 numeric vep_application_id are returned (bootstrap
+// cycles with 0 apps fall back to default open-cycle behavior).
+export interface CycleAppIdStats {
+  cycle_id: string;
+  cycle_code: string;
+  min_app_id: number;
+  max_app_id: number;
+  sample_count: number;
+}
+
+export async function getCycleAppIdStats(db: SupabaseClient): Promise<CycleAppIdStats[]> {
+  // Aggregate via SQL — single query, indexed (selection_applications.cycle_id
+  // has an index). vep_application_id is text but always numeric in practice;
+  // filter via regex to skip any non-numeric defensively.
+  const { data, error } = await db.rpc('_pmi_vep_sync_cycle_app_id_stats');
+  if (error) {
+    // Fallback to client-side aggregation if helper RPC not yet deployed.
+    console.warn('getCycleAppIdStats RPC unavailable, falling back to client agg:', error.message);
+    const { data: rows, error: rowsErr } = await db
+      .from('selection_applications')
+      .select('cycle_id, vep_application_id')
+      .not('vep_application_id', 'is', null);
+    if (rowsErr) {
+      console.error('getCycleAppIdStats fallback failed:', rowsErr.message);
+      return [];
+    }
+    const cycleMap = new Map<string, { min: number; max: number; count: number }>();
+    for (const row of (rows ?? []) as Array<{ cycle_id: string; vep_application_id: string }>) {
+      const appId = parseInt(row.vep_application_id, 10);
+      if (!Number.isFinite(appId)) continue;
+      const cur = cycleMap.get(row.cycle_id);
+      if (!cur) cycleMap.set(row.cycle_id, { min: appId, max: appId, count: 1 });
+      else { cur.min = Math.min(cur.min, appId); cur.max = Math.max(cur.max, appId); cur.count++; }
+    }
+    // Need cycle_code — fetch separately
+    const cycleIds = [...cycleMap.keys()];
+    if (cycleIds.length === 0) return [];
+    const { data: cycles } = await db
+      .from('selection_cycles')
+      .select('id, cycle_code')
+      .in('id', cycleIds);
+    const codeMap = new Map((cycles ?? []).map((c: any) => [c.id, c.cycle_code as string]));
+    return cycleIds.map(id => ({
+      cycle_id: id,
+      cycle_code: codeMap.get(id) ?? '',
+      min_app_id: cycleMap.get(id)!.min,
+      max_app_id: cycleMap.get(id)!.max,
+      sample_count: cycleMap.get(id)!.count,
+    }));
+  }
+  return (data ?? []) as CycleAppIdStats[];
+}
+
+// Pure function — picks the cycle whose existing app_id range [min, max]
+// contains the new appId. Falls back to nearest range (smallest delta) if
+// no exact containment. Returns null if no cycles have any apps yet
+// (bootstrap edge — caller falls back to open-cycle default).
+//
+// Use case (PM p195 follow-up): importing historical cycle 2 candidates
+// who are now Active in VEP (no application_date) — app_ids predate
+// cycle 3 (268xxx-277xxx) so heuristic assigns them to cycle 2 once
+// at least 1 cycle 2 app has been imported.
+//
+// Tolerance: ±5000 buffer expands "contains" range to handle near-edge
+// app_ids (PMI app_ids increase ~3000-5000 between cycle waves; the buffer
+// captures border-case applications).
+export function pickCycleByAppIdSequence(
+  appId: number | null | undefined,
+  stats: CycleAppIdStats[]
+): CycleAppIdStats | null {
+  if (appId == null || !Number.isFinite(appId) || stats.length === 0) return null;
+  const BUFFER = 5000;
+
+  // First pass: exact containment (within [min-BUFFER, max+BUFFER]).
+  const contained = stats.filter(s =>
+    appId >= s.min_app_id - BUFFER && appId <= s.max_app_id + BUFFER
+  );
+  if (contained.length === 1) return contained[0];
+  if (contained.length > 1) {
+    // Multiple matches (cycles with overlapping ranges) → prefer cycle with
+    // strictest containment (smallest range that still includes appId).
+    contained.sort((a, b) => (a.max_app_id - a.min_app_id) - (b.max_app_id - b.min_app_id));
+    return contained[0];
+  }
+
+  // No containment → return cycle whose range edge is closest to appId.
+  // Computes min distance to either edge of each cycle's range.
+  const ranked = stats.map(s => ({
+    stats: s,
+    delta: Math.min(
+      Math.abs(appId - s.min_app_id),
+      Math.abs(appId - s.max_app_id)
+    ),
+  }));
+  ranked.sort((a, b) => a.delta - b.delta);
+  // Reject if best match is too far (> 20k delta is likely a totally
+  // different era — better to fall back to open cycle than misassign).
+  if (ranked[0].delta > 20000) return null;
+  return ranked[0].stats;
+}
+
 // =====================================================================
 // VEP opportunity helpers
 // =====================================================================
