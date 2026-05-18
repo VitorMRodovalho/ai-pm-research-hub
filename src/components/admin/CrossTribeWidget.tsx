@@ -18,20 +18,31 @@ interface TribeRow {
   last_meeting: string | null;
 }
 
+// p195 LOW-194.B: exhaustive shape mirroring V4 RPC return.
+// 6 fields (quadrant, members_inactive_30d, articles_submitted, total_xp,
+// avg_xp, days_since_last_meeting) are not consumed by this compact widget
+// but documented here so future readers see the full envelope at the
+// type-as-documentation level.
 interface V4InitiativeRow {
   initiative_id: string;
   initiative_kind: string;
   initiative_title: string;
   tribe_id: number | null;
   tribe_name: string | null;
+  quadrant: string | null;
   leader: string | null;
   member_count: number;
-  attendance_rate: number;
+  members_inactive_30d: number;
   total_cards: number;
   cards_completed: number;
+  articles_submitted: number;
+  attendance_rate: number;
   total_hours: number;
   meetings_count: number;
+  total_xp: number;
+  avg_xp: number;
   last_meeting_date: string | null;
+  days_since_last_meeting: number | null;
 }
 
 interface Props { lang?: string; }
@@ -81,7 +92,10 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
         tribe_name: it.tribe_name as string,
         leader_name: it.leader,
         member_count: it.member_count,
-        attendance_rate: Math.round(it.attendance_rate * 100),
+        // p195 LOW-194.C: clamp at 100 defensively in case of upstream data anomaly
+        // (numerator/(members×events) could exceed 1.0 if attendance > expected slots).
+        // rateColor thresholds (75/50) still work but UI no longer shows e.g. "130%".
+        attendance_rate: Math.min(Math.round(it.attendance_rate * 100), 100),
         cards_done: it.cards_completed,
         cards_total: it.total_cards,
         impact_hours: Math.round(it.total_hours),
