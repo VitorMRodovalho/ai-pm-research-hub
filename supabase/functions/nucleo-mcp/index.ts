@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.70.0 — 289 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.71.0 — 289 tools + 4 prompts + 3 resources + usage logging
+// v2.71.0 (p193 OPP-192.D): get_tribes_comparison upgraded to V4 — wraps
+//   exec_cross_initiative_comparison(p_kind) instead of V3 get_cross_tribe_comparison.
+//   Tool name preserved for AI agent backward compat; response shape upgraded to
+//   V4 envelope { initiatives, kinds_present, generated_at }. Optional `kind`
+//   param filters by initiative kind ('research_tribe' default, 'all' cross-kind).
 // v2.70.0 (p172): meeting_close tool extended (p171 #9 Track B) — accepts
 //   suggested_champion_ids[] param. Persists pra events.suggested_champion_ids.
 //   UI /admin/gamification deep-link reads via get_event_champion_suggestions.
@@ -434,7 +439,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 67 | search_members | query?, tribe_id?, tier?, status? | manage_member | Buscar membros |
 | 68 | get_chapter_kpis | chapter? | manage_member \\| manage_partner (cross-chapter) | KPIs por capítulo |
 | 69 | get_chapter_needs | chapter? | — | Necessidades do capítulo |
-| 70 | get_tribes_comparison | — | — | Comparação cross-tribe |
+| 70 | get_tribes_comparison | kind? | view_chapter_dashboards \| manage_platform | Comparação cross-initiative V4 (default research_tribe; 'all' cross-kind) |
 | 71 | get_research_pipeline | — | — | Pipeline de pesquisa global |
 | 72 | get_selection_rankings | cycle_code?, track? | manage_member | Rankings de seleção (CR-047) |
 | 73 | get_application_score_breakdown | application_id | manage_member | Breakdown de scores individuais |
@@ -2301,17 +2306,31 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 63: get_tribes_comparison — Returns cross-tribe comparison for GP/admin
-  mcp.tool("get_tribes_comparison", "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.", {}, async () => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_tribes_comparison", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_cross_tribe_comparison");
-    if (error) { await logUsage(sb, member.id, "get_tribes_comparison", false, error.message, start); return err(error.message); }
-    if (data?.error) { await logUsage(sb, member.id, "get_tribes_comparison", false, data.error, start); return err(data.error); }
-    await logUsage(sb, member.id, "get_tribes_comparison", true, undefined, start);
-    return ok(data);
-  });
+  // TOOL 63: get_tribes_comparison — V4 cross-initiative comparison (p193 OPP-192.D)
+  // Wraps exec_cross_initiative_comparison(p_kind, p_cycle). Tool name preserved
+  // for backward compat with AI agents; response shape upgraded from V3 row array
+  // to V4 envelope { initiatives: [...], kinds_present: [...], generated_at }.
+  mcp.tool(
+    "get_tribes_comparison",
+    "Returns cross-initiative comparison (research_tribes by default; supports all kinds via `kind` param): attendance rate, cards done/total, impact hours, events, last meeting, member count, members_inactive_30d, XP. Pass kind = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' to filter, or kind = 'all' for cross-kind. Omit for research_tribe (preserves V3 behavior). Returns JSONB { initiatives: [...], kinds_present: [...], generated_at }. Admin/GP only (manage_platform OR view_chapter_dashboards).",
+    {
+      kind: z.string().optional().describe("Optional initiative kind filter: 'research_tribe' (default) | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all' (cross-kind). Omit for research_tribe."),
+    },
+    async (params) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "get_tribes_comparison", false, "Not authenticated", start); return err("Not authenticated"); }
+      const rpcArgs: { p_kind?: string | null } = {};
+      if (params.kind === 'all') rpcArgs.p_kind = null;
+      else if (params.kind) rpcArgs.p_kind = params.kind;
+      // omitted → RPC DEFAULT 'research_tribe' applies (preserves V3 surface)
+      const { data, error } = await sb.rpc("exec_cross_initiative_comparison", rpcArgs);
+      if (error) { await logUsage(sb, member.id, "get_tribes_comparison", false, error.message, start); return err(error.message); }
+      if (data?.error) { await logUsage(sb, member.id, "get_tribes_comparison", false, data.error, start); return err(data.error); }
+      await logUsage(sb, member.id, "get_tribes_comparison", true, undefined, start);
+      return ok(data);
+    }
+  );
 
   // TOOL 64: get_research_pipeline — Returns global research pipeline (in_progress + review cards)
   mcp.tool("get_research_pipeline", "Returns all research cards in progress or review across all tribes, with authors and status. Admin/GP only.", {}, async () => {
@@ -6339,7 +6358,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.70.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.71.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6359,6 +6378,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.70.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.71.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

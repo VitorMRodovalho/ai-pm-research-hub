@@ -3,10 +3,10 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.70.0)
+# MCP Server Rules (nucleo-mcp v2.71.0)
 
 ## Current State
-- **289 tools + 4 prompts + 3 resources** (p172 v2.70.0 — meeting_close tool extended em p171 #9 Track B aceita suggested_champion_ids[] param; tool count unchanged 289; was v2.69.0 p165 — same 289 count; was 284 at p133 close; was 283 post p117 +get_extraction_health for ADR-0075; was 266 post p106 #97 W3 G4; was 217 = 141R + 76W at p77 marathon close — R/W split tracking dropped p106 since heuristic unreliable; total + canonical commit log replaces it)
+- **289 tools + 4 prompts + 3 resources** (p193 v2.71.0 — get_tribes_comparison upgraded to V4 wrapping exec_cross_initiative_comparison instead of V3 get_cross_tribe_comparison; tool name preserved + new optional `kind` param + response shape upgraded to V4 envelope; tool count unchanged 289; was v2.70.0 p172 — meeting_close tool extended em p171 #9 Track B aceita suggested_champion_ids[] param; tool count unchanged 289; was v2.69.0 p165 — same 289 count; was 284 at p133 close; was 283 post p117 +get_extraction_health for ADR-0075; was 266 post p106 #97 W3 G4; was 217 = 141R + 76W at p77 marathon close — R/W split tracking dropped p106 since heuristic unreliable; total + canonical commit log replaces it)
 - Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
