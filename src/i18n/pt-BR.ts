@@ -387,6 +387,8 @@ const ptBR: Record<string, string> = {
   'partnerships.file_too_large': 'Arquivo excede 5MB',
   'nav.adminCycleReport': '📄 Relatório do Ciclo',
   'nav.governance': '⚖️ Governança',
+  'nav.cpmai': '🎓 CPMAI',
+  'nav.docsMcp': '🔌 Docs MCP',
   'nav.boards': '📋 Quadros',
   'nav.meetings': '📝 Atas',
   'nav.myInitiatives': '🚀 Iniciativas',

@@ -387,6 +387,8 @@ const esLATAM: Record<string, string> = {
   'partnerships.file_too_large': 'Archivo excede 5MB',
   'nav.adminCycleReport': '📄 Informe del Ciclo',
   'nav.governance': '⚖️ Gobernanza',
+  'nav.cpmai': '🎓 CPMAI',
+  'nav.docsMcp': '🔌 Docs MCP',
   'nav.boards': '📋 Tableros',
   'nav.meetings': '📝 Actas',
   'nav.myInitiatives': '🚀 Iniciativas',
