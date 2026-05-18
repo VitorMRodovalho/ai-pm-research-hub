@@ -2314,12 +2314,22 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     "get_tribes_comparison",
     "Returns cross-initiative comparison (research_tribes by default; supports all kinds via `kind` param): attendance rate, cards done/total, impact hours, events, last meeting, member count, members_inactive_30d, XP. Pass kind = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' to filter, or kind = 'all' for cross-kind. Omit for research_tribe (preserves V3 behavior). Returns JSONB { initiatives: [...], kinds_present: [...], generated_at }. Admin/GP only (manage_platform OR view_chapter_dashboards).",
     {
-      kind: z.string().optional().describe("Optional initiative kind filter: 'research_tribe' (default) | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all' (cross-kind). Omit for research_tribe."),
+      kind: z.enum(['research_tribe', 'workgroup', 'committee', 'study_group', 'congress', 'all'])
+        .optional()
+        .describe("Optional initiative kind filter: 'research_tribe' (default) | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all' (cross-kind). Omit for research_tribe."),
     },
     async (params) => {
       const start = Date.now();
       const member = await getMember(sb);
       if (!member) { await logUsage(sb, null, "get_tribes_comparison", false, "Not authenticated", start); return err("Not authenticated"); }
+      // JS-side gate parity with sibling admin tools (reviewer MED p193 close); RPC itself
+      // re-enforces same gate, but this normalizes UX (clean err() vs raw RAISE).
+      const authorized = (await canV4(sb, member.id, 'manage_platform'))
+        || (await canV4(sb, member.id, 'view_chapter_dashboards'));
+      if (!authorized) {
+        await logUsage(sb, member.id, "get_tribes_comparison", false, "Unauthorized", start);
+        return err("Unauthorized: requires manage_platform or view_chapter_dashboards.");
+      }
       const rpcArgs: { p_kind?: string | null } = {};
       if (params.kind === 'all') rpcArgs.p_kind = null;
       else if (params.kind) rpcArgs.p_kind = params.kind;
