@@ -50,9 +50,13 @@ const MIGRATIONS_DIR = resolve(process.cwd(), 'supabase/migrations');
 // REPLACE FUNCTION). Add a row per (file, fn_name, superseded_by) when a
 // fix migration lands.
 const KNOWN_SUPERSEDED_VIOLATIONS = new Set([
-  // p179 introduced detect_inactive_members with INSERT (..., NULL, ...).
-  // Superseded by p180 fix migration 20260690000000 (NULL → 'system_event').
-  '20260687000000_p179_arm9_detect_inactive_members_v4_auth.sql::detect_inactive_members',
+  // detect_inactive_members chain — all 3 historical bodies passed explicit NULL
+  // for target_type. Superseded by p180 fix migration 20260690000000 which set
+  // target_type='system_event' explicit. Live function body (verified via
+  // pg_get_functiondef p185) carries the fix.
+  '20260516870000_arm9_features_g4_inactivity_detection_cron.sql::detect_inactive_members',
+  '20260684000000_p178_phase_b_drift_capture_1_touch_a_g_69fns.sql::detect_inactive_members',
+  '20260687000000_p179_adr_0011_governance_admin_notification_v4.sql::detect_inactive_members',
 ]);
 
 function splitArgs(s) {
