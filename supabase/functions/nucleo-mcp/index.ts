@@ -2266,7 +2266,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 60: bulk_mark_excused — Mark a member excused for all events in a date range
-  mcp.tool("bulk_mark_excused", "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Tribe leaders can mark own tribe. Admins can mark anyone.", { member_id: z.string().describe("UUID of the member"), date_from: z.string().describe("Start date YYYY-MM-DD"), date_to: z.string().describe("End date YYYY-MM-DD"), reason: z.string().optional().describe("Reason for the absence") }, async (params: any) => {
+  mcp.tool("bulk_mark_excused", "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Initiative leaders can mark members of shared initiatives. Org-scope admins (manage_event globally) can mark anyone.", { member_id: z.string().describe("UUID of the member"), date_from: z.string().describe("Start date YYYY-MM-DD"), date_to: z.string().describe("End date YYYY-MM-DD"), reason: z.string().optional().describe("Reason for the absence") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "bulk_mark_excused", false, "Not authenticated", start); return err("Not authenticated"); }
