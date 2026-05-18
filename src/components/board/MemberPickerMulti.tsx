@@ -118,7 +118,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                 <Command.Input
                   value={search}
                   onValueChange={setSearch}
-                  placeholder={i18n.searchMember || "Search member..."}
+                  placeholder={i18n?.searchMember || "Search member..."}
                   className="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-input)] px-2 py-1.5 text-[12px] text-[var(--text-primary)]
                     outline-none focus:border-blue-400 placeholder:text-[var(--text-muted)]"
                   autoFocus

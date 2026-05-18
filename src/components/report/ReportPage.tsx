@@ -368,7 +368,7 @@ export default function ReportPage() {
 
       {/* ── FOOTER ── */}
       <footer className="report-section text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-default)]">
-        <p>{config.subtitle} · Ciclo {data.cycle} ({data.period.start} — {data.period.end})</p>
+        <p>{config.subtitle} · Ciclo {data.cycle} ({data.period?.start ?? '—'} — {data.period?.end ?? '—'})</p>
         <p>GP: Vitor Maia Rodovalho · Deputy: Fabricio Costa</p>
       </footer>
     </div>
