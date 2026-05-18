@@ -13,17 +13,17 @@
 O sistema usa um modelo de 6 níveis (tiers) hierárquicos, onde cada tier
 herda todas as permissões dos tiers inferiores.
 
-| Rank | Tier        | Quem é                                         | Função `has_min_tier()` |
-|------|-------------|-------------------------------------------------|------------------------|
-| 5    | superadmin  | `is_superadmin = true`                          | `has_min_tier(5)`      |
-| 4    | admin       | `manager`, `deputy_manager`, ou `co_gp`         | `has_min_tier(4)`      |
-| 3    | leader      | `tribe_leader`                                   | `has_min_tier(3)`      |
-| 2    | observer    | `sponsor`, `curator`, `chapter_liaison`           | `has_min_tier(2)`      |
-| 1    | member      | `researcher`, `facilitator`, `communicator`       | `has_min_tier(1)`      |
-| 0    | visitor     | Sem role, sem designação, ou não autenticado       | —                      |
+| Rank | Tier        | Quem é                                         | V4 capability                          |
+|------|-------------|-------------------------------------------------|----------------------------------------|
+| 5    | superadmin  | `is_superadmin = true`                          | `rls_is_superadmin()` (no V4 catalog)  |
+| 4    | admin       | `manager`, `deputy_manager`, ou `co_gp`         | `can_by_member('manage_platform')`     |
+| 3    | leader      | `tribe_leader`                                   | scope-aware via `canFor()` (ADR-0083) |
+| 2    | observer    | `sponsor`, `curator`, `chapter_liaison`           | designation-based per capability       |
+| 1    | member      | `researcher`, `facilitator`, `communicator`       | engagement-based per capability        |
+| 0    | visitor     | Sem role, sem designação, ou não autenticado       | —                                      |
 
-**Implementação backend**: `get_my_member_record()` → `has_min_tier(N)` (SECURITY DEFINER).
-**Implementação frontend**: `resolveTierFromMember(member)` → `hasMinimumTier(tier, required)`.
+**Implementação backend (V4 — ADR-0011)**: `can_by_member(member_id, action)` / `rls_can(action)` / `rls_is_superadmin()` são as gates canônicas. Helper `has_min_tier(integer)` foi DEPRECATED p181 e DROPPED p182 (2026-05-17) após todos 4 callers (3 RLS policies + `exec_cert_timeline`) migrarem para V4 native.
+**Implementação frontend**: `resolveTierFromMember(member)` → `hasMinimumTier(tier, required)` (UI gates) ou `canFor(member, action, scope)` (capability cache p163, ADR-0083).
 
 ---
 
