@@ -4734,6 +4734,7 @@ const ptBR: Record<string, string> = {
   'volunteer.error': 'Erro ao assinar. Tente novamente.',
   'nav.volunteer': 'Termo de Voluntariado',
   'nav.certificates': 'Meus Certificados',
+  'nav.myPending': '✍️ Minhas pendências',
 
   // Certificates page
   'certificates.title': 'Meus Certificados',

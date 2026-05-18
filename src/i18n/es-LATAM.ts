@@ -4729,6 +4729,7 @@ const esLATAM: Record<string, string> = {
   'volunteer.error': 'Error al firmar. Intente nuevamente.',
   'nav.volunteer': 'Acuerdo de Voluntariado',
   'nav.certificates': 'Mis Certificados',
+  'nav.myPending': '✍️ Mis firmas pendientes',
 
   // Certificates page
   'certificates.title': 'Mis Certificados',

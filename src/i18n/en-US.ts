@@ -4728,6 +4728,7 @@ const enUS: Record<string, string> = {
   'volunteer.error': 'Error signing. Please try again.',
   'nav.volunteer': 'Volunteer Agreement',
   'nav.certificates': 'My Certificates',
+  'nav.myPending': '✍️ My pending signatures',
 
   // Certificates page
   'certificates.title': 'My Certificates',
