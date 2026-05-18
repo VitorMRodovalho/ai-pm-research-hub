@@ -335,12 +335,16 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes('id="analytics-filter-cycle"'), true);
   assert.equal(analytics.includes('id="analytics-filter-tribe"'), true);
   assert.equal(analytics.includes('id="analytics-filter-chapter"'), true);
-  assert.equal(analytics.includes("safeRpc('exec_funnel_summary')"), true);
-  assert.equal(analytics.includes("safeRpc('exec_impact_hours_v2')"), true);
-  assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), true);
-  assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), true);
+  // p190 BUG-190.B: 5 of 6 analytics RPCs dropped p59 (migration
+  // 20260426171855_drop_dead_analytics_chain_p59.sql). Frontend now uses null
+  // placeholders for the dropped calls; only exec_role_transitions remains alive.
   assert.equal(analytics.includes("safeRpc('exec_role_transitions')"), true);
-  assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), true);
+  assert.equal(analytics.includes("BUG-190.B"), true);
+  assert.equal(analytics.includes("safeRpc('exec_funnel_summary')"), false);
+  assert.equal(analytics.includes("safeRpc('exec_impact_hours_v2')"), false);
+  assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), false);
+  assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), false);
+  assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), false);
   assert.equal(analytics.includes('id="analytics-quality-banner"'), true);
   assert.equal(analytics.includes('id="analytics-interpretation-card"'), true);
   assert.equal(analytics.includes('id="analytics-copy-summary"'), true);

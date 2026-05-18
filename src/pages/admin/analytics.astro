@@ -890,13 +890,19 @@ const ANALYTICS_I18N = {
 
   async function loadAnalyticsV2() {
     setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
+    // p190 BUG-190.B: 5/6 analytics RPCs dropped p59 (migration
+    // 20260426171855_drop_dead_analytics_chain_p59.sql — "dead chain" cleanup
+    // missed safeRpc('NAME') wrapper in frontend audit). Null placeholders avoid
+    // 404 + 5 toast errors per page load. Render code below already handles
+    // null gracefully via `if (funnel) renderFunnelChart(...)` pattern.
+    // Layout refresh tracked in OPP-190.I (V4 maturity dedicated session).
     const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
-      safeRpc('exec_funnel_summary'),
-      safeRpc('exec_impact_hours_v2'),
-      safeRpc('exec_certification_delta'),
-      safeRpc('exec_chapter_roi'),
+      Promise.resolve(null),
+      Promise.resolve(null),
+      Promise.resolve(null),
+      Promise.resolve(null),
       safeRpc('exec_role_transitions'),
-      safeRpc('exec_analytics_v2_quality'),
+      Promise.resolve(null),
     ]);
 
     // Render whatever data succeeded — don't block everything if one RPC fails
