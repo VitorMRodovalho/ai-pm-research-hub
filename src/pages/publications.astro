@@ -262,9 +262,9 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
           <div class="mt-auto pt-2 flex items-center gap-2 border-t border-[var(--border-subtle)]">
             <span class="text-[.65rem] text-[var(--text-muted)]">\u{1F441} ${p.view_count || 0} ${escHtml(viewsLabel)}</span>
             <span class="flex-1"></span>
-            ${p.external_url ? `<a href="${escHtml(p.external_url)}" target="_blank" rel="noopener" class="text-[.68rem] text-teal font-semibold no-underline hover:underline">${escHtml(readLabel)}</a>` : ''}
+            ${p.external_url ? `<a href="${escHtml(p.external_url)}" target="_blank" rel="noopener" data-track-pub-view data-pub-view-id="${escHtml(p.id)}" class="text-[.68rem] text-teal font-semibold no-underline hover:underline">${escHtml(readLabel)}</a>` : ''}
             <button onclick="window.__copyBibtex(${pubs.indexOf(p)})" class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)] font-medium cursor-pointer border-0 hover:bg-[var(--surface-hover)]">BibTeX</button>
-            ${p.pdf_url ? `<a href="${escHtml(p.pdf_url)}" target="_blank" rel="noopener" class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)] font-medium no-underline hover:bg-[var(--surface-hover)]">PDF</a>` : ''}
+            ${p.pdf_url ? `<a href="${escHtml(p.pdf_url)}" target="_blank" rel="noopener" data-track-pub-view data-pub-view-id="${escHtml(p.id)}" class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)] font-medium no-underline hover:bg-[var(--surface-hover)]">PDF</a>` : ''}
           </div>
         </div>
       `;
@@ -461,7 +461,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
       p_target_name: fd.get('target_name') || null,
       p_primary_author_id: member.id,
       p_tribe_id: member.tribe_id || null,
-      p_estimated_cost: fd.get('estimated_cost') ? Number(fd.get('estimated_cost')) : null,
+      p_estimated_cost_brl: fd.get('estimated_cost') ? Number(fd.get('estimated_cost')) : 0,
     });
 
     if (error) {
@@ -486,6 +486,18 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     const pub = (window as any).__pubsData?.[idx];
     if (pub) copyBibtex(pub);
   };
+
+  // View tracking: increment view_count when user click-throughs to external_url or pdf_url
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof HTMLElement)) return;
+    const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-track-pub-view]');
+    if (!link) return;
+    const pubId = link.getAttribute('data-pub-view-id');
+    if (!pubId) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    sb.rpc('increment_publication_view', { p_id: pubId }).catch(() => {});
+  });
 
   // Debounced filter
   let filterTimer: ReturnType<typeof setTimeout>;
