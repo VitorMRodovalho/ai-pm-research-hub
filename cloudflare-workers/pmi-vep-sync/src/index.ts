@@ -40,6 +40,8 @@ import {
   getOpenSelectionCycle,
   getRecentCycles,
   pickCycleForApplicationDate,
+  getCycleAppIdStats,
+  pickCycleByAppIdSequence,
   getActiveOpportunities,
   upsertSelectionApplication,
   findPersonIdByEmail,
@@ -211,6 +213,13 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
   // 5 apps applied during c3 were imported into b2 because b2 was open at
   // import time. Now logged via summary.applications_cycle_redirected.
   const recentCycles = await getRecentCycles(db);
+
+  // p195 OPP-196.A heuristic: per-cycle app_id stats fallback for apps
+  // without application_date (VEP "Active" status / historical legacy
+  // import). Use case: PM importing cycle 2 candidates whose VEP status
+  // is now Active (no submittedDate exposed) — app_id sequence places them
+  // in the correct historical cycle once at least 1 cycle 2 app exists.
+  const cycleAppIdStats = await getCycleAppIdStats(db);
 
   const ttlDays = parseInt(env.ONBOARDING_TOKEN_TTL_DAYS, 10) || 7;
 
@@ -398,9 +407,24 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       if (dateMatched && dateMatched.id !== cycle.id) {
         // Track the redirect for observability + audit
         summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
-        console.log(`[cycle-redirect] app=${app.applicationId} date=${mapped.application_date} ` +
+        console.log(`[cycle-redirect:date] app=${app.applicationId} date=${mapped.application_date} ` +
           `default=${cycle.cycle_code} → matched=${dateMatched.cycle_code}`);
         mapped.cycle_id = dateMatched.id;
+      } else if (!mapped.application_date) {
+        // p195 OPP-196.A fallback: application_date is null (VEP Active /
+        // historical legacy). Try app_id sequence heuristic to infer the
+        // semantically-correct cycle before defaulting to current open.
+        const appIdNum = Number(app.applicationId);
+        const seqMatched = Number.isFinite(appIdNum)
+          ? pickCycleByAppIdSequence(appIdNum, cycleAppIdStats)
+          : null;
+        if (seqMatched && seqMatched.cycle_id !== cycle.id) {
+          summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
+          console.log(`[cycle-redirect:seq] app=${app.applicationId} (no date) ` +
+            `default=${cycle.cycle_code} → matched=${seqMatched.cycle_code} ` +
+            `(in range ${seqMatched.min_app_id}-${seqMatched.max_app_id})`);
+          mapped.cycle_id = seqMatched.cycle_id;
+        }
       }
 
       // p195 Opção B+: stamp storage mirror result if pre-flight sync succeeded.
