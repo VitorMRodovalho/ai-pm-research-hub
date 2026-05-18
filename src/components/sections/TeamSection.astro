@@ -265,17 +265,22 @@ const ROLE_COLORS: Record<string, string> = {
     if (!gp.length && !commsTeam.length) return '';
     let inner = '';
 
-    // GP sub-section — original GP (founder + manager since pilot) first, then Co-GP
+    // GP sub-section — main GP (volunteer:manager, no co_gp/deputy designation) first, then Co-GP/Vice
+    // p189-followup: V4 trigger collapses volunteer:co_gp → operational_role='manager' for AUTHORITY
+    // bucketing (Co-GP has full GP-equivalent permissions). Display title (GP vs Vice GP) must
+    // disambiguate via designations to avoid showing Co-GP as "GP".
+    const isMainGPMember = (m: Member) =>
+      getOpRole(m) === 'manager' && !hasDesig(m, 'co_gp') && !hasDesig(m, 'deputy_manager');
     if (gp.length) {
       const sorted = [...gp].sort((a, b) => {
-        // manager (GP) before deputy_manager/co_gp (Co-GP)
-        const aIsGP = getOpRole(a) === 'manager' ? 0 : 1;
-        const bIsGP = getOpRole(b) === 'manager' ? 0 : 1;
+        // main GP (operational_role=manager, no co_gp/deputy designation) before Co-GP/Vice
+        const aIsGP = isMainGPMember(a) ? 0 : 1;
+        const bIsGP = isMainGPMember(b) ? 0 : 1;
         return aIsGP - bIsGP || a.name.localeCompare(b.name);
       });
       let gpIdx = 0;
       const gpCards = sorted.map(m => {
-        const isMainGP = getOpRole(m) === 'manager';
+        const isMainGP = isMainGPMember(m);
         const label = isMainGP ? (i18n.gpLabel || 'GP') + ' · ' + (m.chapter || '') : (i18n.deputyPmLabel || 'Deputy PM') + ' · ' + (m.chapter || '');
         gpIdx++;
         return memberCard(m, label);
