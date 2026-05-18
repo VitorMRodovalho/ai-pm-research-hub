@@ -10,8 +10,9 @@ export interface Artifact {
   actual_completion_date: string | null;
   variance_days: number | null;
   health: 'completed' | 'on_track' | 'at_risk' | 'delayed' | 'no_baseline';
-  tribe_id: number;
+  tribe_id: number | null;
   initiative_id: string | null;
+  initiative_kind: string | null;
   tribe_name: string;
   leader_name: string;
   legacy_tags: string[];
@@ -23,8 +24,9 @@ export interface Artifact {
 }
 
 export interface TribeSummary {
-  tribe_id: number;
+  tribe_id: number | null;
   initiative_id: string | null;
+  initiative_kind: string | null;
   tribe_name: string;
   leader: string;
   total: number;
