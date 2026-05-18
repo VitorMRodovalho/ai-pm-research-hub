@@ -156,6 +156,13 @@ test('exec_cross_initiative_comparison returns homogeneous initiative metrics', 
   }
 });
 
+test('exec_cross_initiative_comparison dispatches p_kind filter (p192 OPP-191.A close council LOW)', () => {
+  const body = findFunctionBody('exec_cross_initiative_comparison');
+  assert.ok(body);
+  assert.ok(/p_kind\s+IS\s+NULL\s+OR\s+i\.kind\s*=\s*p_kind/i.test(body),
+    'Must dispatch p_kind filter via "p_kind IS NULL OR i.kind = p_kind" WHERE clause');
+});
+
 test('detect_operational_alerts RPC exists', () => {
   const body = findFunctionBody('detect_operational_alerts');
   assert.ok(body, 'detect_operational_alerts not found');
