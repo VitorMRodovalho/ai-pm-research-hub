@@ -127,16 +127,15 @@ test('ImpactPageIsland supports i18n (pt-BR, en-US, es-LATAM)', () => {
 // W119: Cross-Tribe Comparison
 // ═══════════════════════════════════════════════════
 
-test('exec_cross_tribe_comparison RPC exists', () => {
-  const body = findFunctionBody('exec_cross_tribe_comparison');
-  assert.ok(body, 'exec_cross_tribe_comparison not found');
+test('exec_cross_initiative_comparison RPC exists (p192 OPP-191.A — renamed from exec_cross_tribe_comparison)', () => {
+  const body = findFunctionBody('exec_cross_initiative_comparison');
+  assert.ok(body, 'exec_cross_initiative_comparison not found');
 });
 
-test('exec_cross_tribe_comparison gated via can_by_member(manage_platform)', () => {
-  // V4 (ADR-0011 cleanup 2026-04-26): replaces V3 role-list assertion.
-  // can_by_member() respects is_superadmin and grants manage_platform to
-  // volunteer × {manager, deputy_manager, co_gp} — original V3 audience.
-  const body = findFunctionBody('exec_cross_tribe_comparison');
+test('exec_cross_initiative_comparison gated via can_by_member(manage_platform|view_chapter_dashboards)', () => {
+  // V4 (ADR-0042): manage_platform (writers) OR view_chapter_dashboards (readers).
+  // p192: renamed from exec_cross_tribe_comparison; gate preserved verbatim.
+  const body = findFunctionBody('exec_cross_initiative_comparison');
   assert.ok(body);
   assert.ok(/auth\.uid\(\)/i.test(body), 'Must check auth.uid()');
   assert.ok(/RAISE\s+EXCEPTION/i.test(body), 'Must RAISE EXCEPTION on unauthorized');
@@ -144,12 +143,16 @@ test('exec_cross_tribe_comparison gated via can_by_member(manage_platform)', () 
     'Must call can_by_member with manage_platform action');
 });
 
-test('exec_cross_tribe_comparison returns tribe metrics', () => {
-  const body = findFunctionBody('exec_cross_tribe_comparison');
+test('exec_cross_initiative_comparison returns homogeneous initiative metrics', () => {
+  const body = findFunctionBody('exec_cross_initiative_comparison');
   assert.ok(body);
   const metrics = ['member_count', 'attendance_rate', 'total_cards', 'cards_completed', 'total_xp', 'total_hours', 'meetings_count', 'days_since_last_meeting'];
   for (const m of metrics) {
     assert.ok(body.includes(`'${m}'`), `Must include ${m} metric`);
+  }
+  // p192 OPP-191.A — new V4 envelope fields
+  for (const f of ['initiative_id', 'initiative_kind', 'initiative_title']) {
+    assert.ok(body.includes(`'${f}'`), `Must include ${f} envelope field`);
   }
 });
 
@@ -200,7 +203,7 @@ test('CrossTribeIsland has ranking charts and sortable table', () => {
   assert.ok(content.includes('BarChart'), 'Must have BarChart for rankings');
   assert.ok(content.includes('sortBy') || content.includes('SortHeader'), 'Must have sortable table');
   assert.ok(content.includes('detect_operational_alerts'), 'Must load alerts');
-  assert.ok(content.includes('exec_cross_tribe_comparison'), 'Must load cross-tribe data');
+  assert.ok(content.includes('exec_cross_initiative_comparison'), 'Must load cross-initiative data (p192 OPP-191.A)');
 });
 
 test('AdminNav has cross-tribes entry', () => {

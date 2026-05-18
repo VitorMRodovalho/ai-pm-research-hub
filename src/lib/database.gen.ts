@@ -13370,7 +13370,10 @@ export type Database = {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
       }
-      exec_cross_tribe_comparison: { Args: { p_cycle?: string }; Returns: Json }
+      exec_cross_initiative_comparison: {
+        Args: { p_cycle?: string; p_kind?: string }
+        Returns: Json
+      }
       exec_cycle_report: { Args: { p_cycle_code?: string }; Returns: Json }
       exec_funnel_summary: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }

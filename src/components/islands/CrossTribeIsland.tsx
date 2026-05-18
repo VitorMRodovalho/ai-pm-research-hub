@@ -1,12 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-interface TribeMetrics {
-  tribe_id: number;
-  tribe_name: string;
-  quadrant: string;
-  leader: string;
+interface InitiativeMetrics {
+  initiative_id: string;
+  initiative_kind: string;
+  initiative_title: string;
+  tribe_id: number | null;
+  tribe_name: string | null;
+  quadrant: string | null;
+  leader: string | null;
   member_count: number;
   members_inactive_30d: number;
   total_cards: number;
@@ -35,23 +38,31 @@ interface AlertsData {
   by_severity: { high: number; medium: number; low: number };
 }
 
-type SortKey = 'tribe_name' | 'member_count' | 'attendance_rate' | 'cards_completed' | 'total_xp' | 'total_hours' | 'days_since_last_meeting';
+type SortKey = 'initiative_title' | 'member_count' | 'attendance_rate' | 'cards_completed' | 'total_xp' | 'total_hours' | 'days_since_last_meeting';
 type RankingMetric = 'attendance' | 'production' | 'xp' | 'hours';
+type KindFilter = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all';
 
-const TRIBE_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
+const ROW_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
 const SEVERITY_COLORS = { high: '#ef4444', medium: '#f59e0b', low: '#3b82f6' };
 const SEVERITY_ICONS = { high: '🔴', medium: '⚠️', low: 'ℹ️' };
 
-function getCellColor(value: number, sorted: number[], isPercent = false): string {
-  const rank = sorted.indexOf(value);
-  if (rank < 3) return '#dcfce7'; // green top 3
-  if (rank >= sorted.length - 2) return '#fef2f2'; // red bottom 2
-  return '#fffbeb'; // amber middle
+const KIND_PREFIX: Record<string, string> = {
+  research_tribe: 'T',
+  workgroup: 'WG',
+  committee: 'C',
+  study_group: 'SG',
+  congress: 'CG',
+};
+
+function rowLabel(it: InitiativeMetrics): string {
+  if (it.tribe_id != null) return `T${String(it.tribe_id).padStart(2, '0')}`;
+  const prefix = KIND_PREFIX[it.initiative_kind] || it.initiative_kind.slice(0, 2).toUpperCase();
+  return prefix + (it.initiative_id ? it.initiative_id.slice(0, 4) : '');
 }
 
 export default function CrossTribeIsland() {
   const t = usePageI18n();
-  const [tribes, setTribes] = useState<TribeMetrics[]>([]);
+  const [items, setItems] = useState<InitiativeMetrics[]>([]);
   const [alerts, setAlerts] = useState<AlertsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,20 +70,23 @@ export default function CrossTribeIsland() {
   const [sortAsc, setSortAsc] = useState(false);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
   const [trendMetric, setTrendMetric] = useState<RankingMetric>('attendance');
+  const [selectedKind, setSelectedKind] = useState<KindFilter>('research_tribe');
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(load, 300); return; }
+      setLoading(true);
       try {
+        const p_kind = selectedKind === 'all' ? null : selectedKind;
         const [compRes, alertRes] = await Promise.all([
-          sb.rpc('exec_cross_tribe_comparison'),
+          sb.rpc('exec_cross_initiative_comparison', { p_kind }),
           sb.rpc('detect_operational_alerts'),
         ]);
         if (!cancelled) {
           if (compRes.error) throw new Error(compRes.error.message);
-          setTribes(compRes.data?.tribes || []);
+          setItems(compRes.data?.initiatives || []);
           setAlerts(alertRes.data || null);
         }
       } catch (e: any) {
@@ -82,10 +96,10 @@ export default function CrossTribeIsland() {
     };
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [selectedKind]);
 
-  const sortedTribes = useMemo(() => {
-    const copy = [...tribes];
+  const sortedItems = useMemo(() => {
+    const copy = [...items];
     copy.sort((a, b) => {
       const av = a[sortBy] ?? 0;
       const bv = b[sortBy] ?? 0;
@@ -93,15 +107,15 @@ export default function CrossTribeIsland() {
       return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return copy;
-  }, [tribes, sortBy, sortAsc]);
+  }, [items, sortBy, sortAsc]);
 
   const rankings = useMemo(() => {
-    const byAttendance = [...tribes].sort((a, b) => b.attendance_rate - a.attendance_rate);
-    const byProduction = [...tribes].sort((a, b) => b.cards_completed - a.cards_completed);
-    const byXp = [...tribes].sort((a, b) => b.total_xp - a.total_xp);
-    const byHours = [...tribes].sort((a, b) => b.total_hours - a.total_hours);
+    const byAttendance = [...items].sort((a, b) => b.attendance_rate - a.attendance_rate);
+    const byProduction = [...items].sort((a, b) => b.cards_completed - a.cards_completed);
+    const byXp = [...items].sort((a, b) => b.total_xp - a.total_xp);
+    const byHours = [...items].sort((a, b) => b.total_hours - a.total_hours);
     return { attendance: byAttendance, production: byProduction, xp: byXp, hours: byHours };
-  }, [tribes]);
+  }, [items]);
 
   const handleSort = (key: SortKey) => {
     if (sortBy === key) setSortAsc(!sortAsc);
@@ -115,18 +129,51 @@ export default function CrossTribeIsland() {
     </th>
   );
 
-  if (loading) return <div className="text-center py-20 text-[var(--text-muted)]">{t('comp.crossTribe.loading', 'Loading comparison...')}</div>;
-  if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
+  const KIND_OPTIONS: { value: KindFilter; key: string; fallback: string }[] = [
+    { value: 'research_tribe', key: 'comp.crossTribe.kindResearchTribe', fallback: 'Tribos de Pesquisa' },
+    { value: 'workgroup', key: 'comp.crossTribe.kindWorkgroup', fallback: 'Grupos de Trabalho' },
+    { value: 'committee', key: 'comp.crossTribe.kindCommittee', fallback: 'Comitês' },
+    { value: 'study_group', key: 'comp.crossTribe.kindStudyGroup', fallback: 'Grupos de Estudo' },
+    { value: 'congress', key: 'comp.crossTribe.kindCongress', fallback: 'Congressos' },
+    { value: 'all', key: 'comp.crossTribe.kindAll', fallback: 'Todas as Iniciativas' },
+  ];
 
-  const rankingConfig: Record<RankingMetric, { label: string; key: keyof TribeMetrics; suffix: string }> = {
-    attendance: { label: 'Presença', key: 'attendance_rate', suffix: '%' },
-    production: { label: 'Produção', key: 'cards_completed', suffix: '' },
-    xp: { label: 'XP Total', key: 'total_xp', suffix: '' },
-    hours: { label: 'Horas', key: 'total_hours', suffix: 'h' },
+  const FilterBar = (
+    <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-3 flex items-center gap-3 flex-wrap">
+      <label htmlFor="initiative-kind-filter" className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+        {t('comp.crossTribe.filterKindLabel', 'Tipo de iniciativa:')}
+      </label>
+      <select
+        id="initiative-kind-filter"
+        value={selectedKind}
+        onChange={(e) => setSelectedKind(e.target.value as KindFilter)}
+        className="text-sm px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)]"
+      >
+        {KIND_OPTIONS.map(opt => (
+          <option key={opt.value} value={opt.value}>{t(opt.key, opt.fallback)}</option>
+        ))}
+      </select>
+      <span className="text-[11px] text-[var(--text-muted)]">{items.length} {t('comp.crossTribe.itemsLabel', 'itens')}</span>
+    </div>
+  );
+
+  if (loading) return <div className="space-y-4">{FilterBar}<div className="text-center py-20 text-[var(--text-muted)]">{t('comp.crossTribe.loading', 'Loading comparison...')}</div></div>;
+  if (error) return <div className="space-y-4">{FilterBar}<div className="text-center py-20 text-red-500">{error}</div></div>;
+  if (items.length === 0) {
+    return <div className="space-y-4">{FilterBar}<div className="text-center py-20 text-[var(--text-muted)]">{t('comp.crossTribe.empty', 'Nenhuma iniciativa neste tipo no ciclo atual.')}</div></div>;
+  }
+
+  const rankingConfig: Record<RankingMetric, { label: string; key: keyof InitiativeMetrics; suffix: string }> = {
+    attendance: { label: t('comp.tribe.attendance', 'Presença'), key: 'attendance_rate', suffix: '%' },
+    production: { label: t('comp.crossTribe.rankingProduction', 'Produção'), key: 'cards_completed', suffix: '' },
+    xp: { label: t('comp.crossTribe.rankingXp', 'XP Total'), key: 'total_xp', suffix: '' },
+    hours: { label: t('comp.crossTribe.rankingHours', 'Horas'), key: 'total_hours', suffix: 'h' },
   };
 
   return (
     <div className="space-y-8">
+      {FilterBar}
+
       {/* Alerts Banner */}
       {alerts && alerts.total > 0 && (
         <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
@@ -134,7 +181,7 @@ export default function CrossTribeIsland() {
                   className="w-full flex items-center justify-between bg-transparent border-0 cursor-pointer p-0">
             <div className="flex items-center gap-3">
               <span className="text-lg">🚨</span>
-              <span className="font-bold text-sm text-[var(--text-primary)]">Alertas Operacionais</span>
+              <span className="font-bold text-sm text-[var(--text-primary)]">{t('comp.crossTribe.alertsTitle', 'Alertas Operacionais')}</span>
               <div className="flex gap-2">
                 {alerts.by_severity.high > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{SEVERITY_ICONS.high} {alerts.by_severity.high}</span>}
                 {alerts.by_severity.medium > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{SEVERITY_ICONS.medium} {alerts.by_severity.medium}</span>}
@@ -161,20 +208,20 @@ export default function CrossTribeIsland() {
         {(['attendance', 'production', 'xp', 'hours'] as RankingMetric[]).map(metric => {
           const cfg = rankingConfig[metric];
           const ranked = rankings[metric];
-          const maxVal = Math.max(...ranked.map(t => Number(t[cfg.key]) || 0), 1);
+          const maxVal = Math.max(...ranked.map(it => Number(it[cfg.key]) || 0), 1);
           return (
             <div key={metric} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
               <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">{cfg.label}</h3>
               <div className="space-y-2">
-                {ranked.map((t, i) => {
-                  const val = Number(t[cfg.key]) || 0;
+                {ranked.map((it, i) => {
+                  const val = Number(it[cfg.key]) || 0;
                   const pct = (val / maxVal) * 100;
                   const display = metric === 'attendance' ? `${Math.round(val * 100)}%` : `${Math.round(val)}${cfg.suffix}`;
                   return (
-                    <div key={t.tribe_id} className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold w-10 text-right text-[var(--text-secondary)]">T{String(t.tribe_id).padStart(2, '0')}</span>
+                    <div key={it.initiative_id} className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold w-10 text-right text-[var(--text-secondary)]">{rowLabel(it)}</span>
                       <div className="flex-1 h-5 rounded bg-[var(--border-subtle)] overflow-hidden">
-                        <div className="h-full rounded transition-all" style={{ width: `${pct}%`, background: TRIBE_COLORS[i % 8] }} />
+                        <div className="h-full rounded transition-all" style={{ width: `${pct}%`, background: ROW_COLORS[i % 8] }} />
                       </div>
                       <span className="text-[11px] font-bold w-12 text-[var(--text-primary)]">{display}</span>
                     </div>
@@ -192,45 +239,52 @@ export default function CrossTribeIsland() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--surface-hover)]">
               <tr>
-                <SortHeader label={t('comp.cross.tribe', 'Tribo')} sKey="tribe_name" />
+                <SortHeader label={t('comp.crossTribe.initiative', 'Iniciativa')} sKey="initiative_title" />
                 <SortHeader label={t('comp.tribe.members', 'Membros')} sKey="member_count" />
                 <SortHeader label={t('comp.tribe.attendance', 'Presença')} sKey="attendance_rate" />
                 <SortHeader label="Cards" sKey="cards_completed" />
                 <SortHeader label="XP" sKey="total_xp" />
-                <SortHeader label="Horas" sKey="total_hours" />
-                <SortHeader label="Última Reunião" sKey="days_since_last_meeting" />
+                <SortHeader label={t('comp.crossTribe.rankingHours', 'Horas')} sKey="total_hours" />
+                <SortHeader label={t('comp.crossTribe.lastMeeting', 'Última Reunião')} sKey="days_since_last_meeting" />
               </tr>
             </thead>
             <tbody>
-              {sortedTribes.map((t, i) => (
-                <tr key={t.tribe_id} className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
-                  <td className="px-3 py-2.5">
-                    <a href={`/admin/tribe/${t.tribe_id}`} className="no-underline hover:underline">
-                      <span className="font-bold text-xs mr-1" style={{ color: TRIBE_COLORS[i % 8] }}>T{String(t.tribe_id).padStart(2, '0')}</span>
-                      <span className="font-semibold text-[var(--text-primary)]">{t.tribe_name}</span>
-                    </a>
-                    <div className="text-[11px] text-[var(--text-muted)]">{t.leader}</div>
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <span className="font-bold">{t.member_count}</span>
-                    {t.members_inactive_30d > 0 && <span className="text-red-500 text-xs ml-1">({t.members_inactive_30d} inat.)</span>}
-                  </td>
-                  <td className="px-3 py-2.5 text-center font-bold">{Math.round(t.attendance_rate * 100)}%</td>
-                  <td className="px-3 py-2.5 text-center">
-                    <span className="font-bold">{t.cards_completed}</span>
-                    <span className="text-[var(--text-muted)]">/{t.total_cards}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center font-bold">{t.total_xp}</td>
-                  <td className="px-3 py-2.5 text-center font-bold">{Math.round(t.total_hours)}h</td>
-                  <td className="px-3 py-2.5 text-center">
-                    {t.days_since_last_meeting != null ? (
-                      <span className={`font-bold ${t.days_since_last_meeting > 14 ? 'text-red-500' : t.days_since_last_meeting > 7 ? 'text-amber-500' : 'text-green-600'}`}>
-                        {t.days_since_last_meeting}d
-                      </span>
-                    ) : <span className="text-[var(--text-muted)]">—</span>}
-                  </td>
-                </tr>
-              ))}
+              {sortedItems.map((it, i) => {
+                const isTribe = it.tribe_id != null;
+                const linkHref = isTribe ? `/admin/tribe/${it.tribe_id}` : null;
+                const nameNode = (
+                  <>
+                    <span className="font-bold text-xs mr-1" style={{ color: ROW_COLORS[i % 8] }}>{rowLabel(it)}</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{it.tribe_name || it.initiative_title}</span>
+                  </>
+                );
+                return (
+                  <tr key={it.initiative_id} className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+                    <td className="px-3 py-2.5">
+                      {linkHref ? <a href={linkHref} className="no-underline hover:underline">{nameNode}</a> : <span>{nameNode}</span>}
+                      <div className="text-[11px] text-[var(--text-muted)]">{it.leader || '—'}</div>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="font-bold">{it.member_count}</span>
+                      {it.members_inactive_30d > 0 && <span className="text-red-500 text-xs ml-1">({it.members_inactive_30d} {t('comp.crossTribe.inactiveShort', 'inat.')})</span>}
+                    </td>
+                    <td className="px-3 py-2.5 text-center font-bold">{Math.round(it.attendance_rate * 100)}%</td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="font-bold">{it.cards_completed}</span>
+                      <span className="text-[var(--text-muted)]">/{it.total_cards}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center font-bold">{it.total_xp}</td>
+                    <td className="px-3 py-2.5 text-center font-bold">{Math.round(it.total_hours)}h</td>
+                    <td className="px-3 py-2.5 text-center">
+                      {it.days_since_last_meeting != null ? (
+                        <span className={`font-bold ${it.days_since_last_meeting > 14 ? 'text-red-500' : it.days_since_last_meeting > 7 ? 'text-amber-500' : 'text-green-600'}`}>
+                          {it.days_since_last_meeting}d
+                        </span>
+                      ) : <span className="text-[var(--text-muted)]">—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -239,7 +293,7 @@ export default function CrossTribeIsland() {
       {/* Trend Overlay Chart */}
       <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[var(--text-primary)]">Comparativo Visual</h3>
+          <h3 className="font-bold text-[var(--text-primary)]">{t('comp.crossTribe.visualComparison', 'Comparativo Visual')}</h3>
           <div className="flex gap-2">
             {(['attendance', 'production', 'xp', 'hours'] as RankingMetric[]).map(m => (
               <button key={m} onClick={() => setTrendMetric(m)}
@@ -252,18 +306,18 @@ export default function CrossTribeIsland() {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={rankings[trendMetric].map((t, i) => ({
-            name: `T${String(t.tribe_id).padStart(2, '0')}`,
-            value: trendMetric === 'attendance' ? Math.round(Number(t[rankingConfig[trendMetric].key]) * 100) : Number(t[rankingConfig[trendMetric].key]),
-            fill: TRIBE_COLORS[tribes.findIndex(tr => tr.tribe_id === t.tribe_id) % 8],
+          <BarChart data={rankings[trendMetric].map((it) => ({
+            name: rowLabel(it),
+            value: trendMetric === 'attendance' ? Math.round(Number(it[rankingConfig[trendMetric].key]) * 100) : Number(it[rankingConfig[trendMetric].key]),
+            fill: ROW_COLORS[items.findIndex(t2 => t2.initiative_id === it.initiative_id) % 8],
           }))}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {rankings[trendMetric].map((t, i) => (
-                <Cell key={t.tribe_id} fill={TRIBE_COLORS[tribes.findIndex(tr => tr.tribe_id === t.tribe_id) % 8]} />
+              {rankings[trendMetric].map((it) => (
+                <Cell key={it.initiative_id} fill={ROW_COLORS[items.findIndex(t2 => t2.initiative_id === it.initiative_id) % 8]} />
               ))}
             </Bar>
           </BarChart>
