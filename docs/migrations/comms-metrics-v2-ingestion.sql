@@ -1,6 +1,17 @@
 -- COMMS_METRICS_V2
 -- Date: 2026-03-08
 -- Purpose: add ingestion observability and channel-level KPI read model.
+--
+-- HISTORICAL NOTE (p195 annotation, GAP-182.C):
+-- This file is a *historical reference snippet* under `docs/migrations/` —
+-- it is NOT a registered migration in `supabase/migrations/`. The
+-- `to_regprocedure('public.has_min_tier(integer)') is not null` guard at
+-- lines 36-37 was correct at the time of authoring (2026-03-08) but is
+-- now dead branch in production: `has_min_tier` was DROPPED p182 via
+-- migration `20260693000000` (V4 sweep closure). Live production behaves
+-- as the post-guard fallback. Kept as historical artifact; if a similar
+-- function is ever re-implemented, this snippet should be rewritten or
+-- removed to avoid future-reader confusion.
 
 begin;
 
