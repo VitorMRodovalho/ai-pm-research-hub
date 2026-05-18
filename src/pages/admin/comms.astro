@@ -30,6 +30,7 @@ const COMMS_I18N = {
   perfReach: t('admin.comms.reach', lang),
   noRecentData: t('admin.comms.noRecentData', lang),
   noCaption: t('admin.comms.noCaption', lang),
+  topContentEmpty: t('admin.comms.topContentEmpty', lang),
   viewPost: t('admin.comms.viewPost', lang),
   expired: t('admin.comms.expired', lang),
   daysRemaining: t('admin.comms.daysRemaining', lang),
@@ -168,11 +169,19 @@ const COMMS_I18N = {
         </div>
       </section>
 
-      <!-- S4: Top Content (populated in Phase 3) -->
+      <!-- S4: Top Content (populated in Phase 3 — p191 OPP-190.H: network filter) -->
       <section id="top-content-section" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.topContentTitle', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.topContentSubtitle', lang)}</p>
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.topContentTitle', lang)}</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.topContentSubtitle', lang)}</p>
+          </div>
+          <div id="top-content-filter" class="flex gap-1 text-[.65rem] font-semibold flex-wrap" role="tablist">
+            <button data-channel="" class="top-filter-btn active px-2.5 py-1 rounded-lg border border-teal bg-teal text-white cursor-pointer">{t('admin.comms.topContentFilterAll', lang)}</button>
+            <button data-channel="instagram" class="top-filter-btn px-2.5 py-1 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)]">Instagram</button>
+            <button data-channel="youtube" class="top-filter-btn px-2.5 py-1 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)]">YouTube</button>
+            <button data-channel="linkedin" class="top-filter-btn px-2.5 py-1 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)]">LinkedIn</button>
+          </div>
         </div>
         <div id="top-content-body" class="p-4"></div>
       </section>
@@ -689,15 +698,19 @@ const COMMS_I18N = {
 
   // ── S4: Top Content ──
 
-  async function loadTopContent() {
+  async function loadTopContent(channel: string | null = null) {
     const section = document.getElementById('top-content-section');
     const body = document.getElementById('top-content-body');
     if (!section || !body) return;
     try {
-      const { data, error } = await sb.rpc('comms_top_media', { p_days: 30, p_limit: 6 });
+      const { data, error } = await sb.rpc('comms_top_media', { p_channel: channel, p_days: 30, p_limit: 6 });
       if (error) return;
       const items = Array.isArray(data) ? data : (typeof data === 'string' ? JSON.parse(data) : []);
-      if (!items.length) return;
+      section.classList.remove('hidden');
+      if (!items.length) {
+        body.innerHTML = `<div class="text-[.72rem] text-[var(--text-muted)] text-center py-6">${T.topContentEmpty || 'Sem conteúdo no período'}</div>`;
+        return;
+      }
 
       body.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${items.map((m: any) => {
         const channelColor: Record<string, string> = { instagram: 'text-pink-600', youtube: 'text-red-600', linkedin: 'text-blue-700' };
@@ -721,8 +734,24 @@ const COMMS_I18N = {
           </div>
         </article>`;
       }).join('')}</div>`;
-      section.classList.remove('hidden');
     } catch (e) { console.warn('Top content:', e); }
+  }
+
+  // OPP-190.H: network filter wiring
+  function wireTopContentFilter() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('#top-content-filter .top-filter-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => {
+          b.classList.remove('active', 'bg-teal', 'text-white', 'border-teal');
+          b.classList.add('bg-transparent', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
+        });
+        btn.classList.add('active', 'bg-teal', 'text-white', 'border-teal');
+        btn.classList.remove('bg-transparent', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
+        const channel = btn.dataset.channel || null;
+        loadTopContent(channel);
+      });
+    });
   }
 
   // ── Channel Admin (leader+ only) ──
@@ -1000,6 +1029,7 @@ const COMMS_I18N = {
     loadMetricsTable();
     loadBestTimeToPost();
     loadTopContent();
+    wireTopContentFilter();  // OPP-190.H
     loadCommsCalendar();  // p159 S#1 T7 / Q4
     loadCommsFunnel();    // p159 S#2 Q2 MP-1 Phase A
 
