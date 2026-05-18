@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Tag {
@@ -37,11 +37,24 @@ export default function TagManagementIsland() {
     setLoading(false);
   }, [getSb, toast]);
 
+  // p190 BUG-190.B sweep: ref pattern + cleanup to avoid listener accumulation.
+  const fetchTagsRef = useRef(fetchTags);
+  fetchTagsRef.current = fetchTags;
   useEffect(() => {
-    const boot = () => { if (getSb()) fetchTags(); else setTimeout(boot, 300); };
+    let cancelled = false;
+    const boot = () => {
+      if (cancelled) return;
+      if (getSb()) fetchTagsRef.current();
+      else setTimeout(boot, 300);
+    };
     boot();
-    window.addEventListener('nav:member', () => fetchTags());
-  }, [getSb, fetchTags]);
+    const handler = () => fetchTagsRef.current();
+    window.addEventListener('nav:member', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('nav:member', handler);
+    };
+  }, [getSb]);
 
   const handleCreate = async () => {
     const sb = getSb();

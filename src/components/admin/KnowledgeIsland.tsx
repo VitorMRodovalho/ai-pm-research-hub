@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface HubResource {
@@ -44,11 +44,24 @@ export default function KnowledgeIsland() {
     setLoading(false);
   }, [getSb]);
 
+  // p190 BUG-190.B sweep: ref pattern + cleanup to avoid listener accumulation.
+  const fetchItemsRef = useRef(fetchItems);
+  fetchItemsRef.current = fetchItems;
   useEffect(() => {
-    const boot = () => { if (getSb()) fetchItems(); else setTimeout(boot, 300); };
+    let cancelled = false;
+    const boot = () => {
+      if (cancelled) return;
+      if (getSb()) fetchItemsRef.current();
+      else setTimeout(boot, 300);
+    };
     boot();
-    window.addEventListener('nav:member', () => fetchItems());
-  }, [getSb, fetchItems]);
+    const handler = () => fetchItemsRef.current();
+    window.addEventListener('nav:member', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('nav:member', handler);
+    };
+  }, [getSb]);
 
   const resetForm = () => {
     setForm({ title: '', description: '', url: '', asset_type: 'course', tribe_id: '' });
