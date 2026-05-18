@@ -29,6 +29,12 @@
  *   candidates>0 by lowering the threshold within a tx=rollback request. Test #3
  *   below uses it to deterministically exercise the INSERT branch in CI.
  *
+ * Misuse-path defensive restore (p187 LOW-186.E):
+ *   Test #4 below verifies that even when the caller forgets Prefer: tx=rollback,
+ *   the helper's defensive site_config restore at end-of-function body fires and
+ *   the inactivity_threshold_days override does not leak into prod state. Uses
+ *   threshold=10000 (no candidates → no INSERTs) so no cleanup is needed.
+ *
  * What this test does:
  *   1. Calls detect_inactive_members(p_dry_run := true) via service_role:
  *      validates response shape (candidates array, counters, no errors).
@@ -40,7 +46,12 @@
  *      forces candidates>0 so the INSERT branch executes deterministically in CI.
  *      Asserts managers_notified>0 and candidates_count>0 — hermetic INSERT-path
  *      coverage that doesn't depend on prod state at test time.
- *   In all three cases, if the contract breaks at runtime the test fails BEFORE
+ *   4. Calls _test_detect_inactive_with_threshold(10000) WITHOUT tx=rollback so
+ *      the request runs in PostgREST commit mode. Asserts threshold_days echoes
+ *      10000 (override active) and post-call site_config.inactivity_threshold_days
+ *      = 180 (defensive restore worked). threshold=10000 keeps candidates=0 so
+ *      the INSERT branch never fires and no cleanup is needed.
+ *   In all four cases, if the contract breaks at runtime the test fails BEFORE
  *   the next scheduled cron run (no 23502, no other constraint violation, no
  *   Unauthorized given service_role bypass).
  *
@@ -85,17 +96,20 @@ async function callDetectInactive(dryRun, options = {}) {
   return await res.json();
 }
 
-async function callTestHelperWithThreshold(threshold) {
+async function callTestHelperWithThreshold(threshold, options = {}) {
   // p186 OPP-185.A: helper RPC that forces candidates>0 by temporarily
-  // overriding site_config.inactivity_threshold_days. Must be invoked with
+  // overriding site_config.inactivity_threshold_days. Default: invoke with
   // Prefer: tx=rollback to guarantee zero persisted side effects.
+  // Pass `{ rollback: false }` to test the misuse path (p187 LOW-186.E).
+  const rollback = options.rollback !== false;
   const url = `${SUPABASE_URL}/rest/v1/rpc/_test_detect_inactive_with_threshold`;
   const headers = {
     'Content-Type': 'application/json',
     'apikey': SERVICE_ROLE_KEY,
     'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-    'Prefer': 'tx=rollback',
   };
+  if (rollback) headers['Prefer'] = 'tx=rollback';
+
   const res = await fetch(url, {
     method: 'POST',
     headers,
@@ -103,9 +117,29 @@ async function callTestHelperWithThreshold(threshold) {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Helper RPC failed (threshold=${threshold}): HTTP ${res.status} — ${text}`);
+    throw new Error(`Helper RPC failed (threshold=${threshold}, rollback=${rollback}): HTTP ${res.status} — ${text}`);
   }
   return await res.json();
+}
+
+async function readInactivityThreshold() {
+  // Read site_config.inactivity_threshold_days via PostgREST as service_role.
+  const url = `${SUPABASE_URL}/rest/v1/site_config?key=eq.inactivity_threshold_days&select=value`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Read site_config failed: HTTP ${res.status} — ${text}`);
+  }
+  const rows = await res.json();
+  if (!rows || rows.length !== 1) {
+    throw new Error(`Expected exactly 1 site_config row for inactivity_threshold_days, got ${rows.length}`);
+  }
+  return rows[0].value;
 }
 
 test(
@@ -179,5 +213,44 @@ test(
       '1 row with manage_platform capability before treating this as a notifications ' +
       'INSERT branch regression.'
     );
+  }
+);
+
+test(
+  canRun
+    ? '_test_detect_inactive_with_threshold defensive site_config restore (misuse path: no tx=rollback)'
+    : skipMsg,
+  { skip: !canRun },
+  async () => {
+    // p187 LOW-186.E: misuse-path coverage. The helper documents that callers
+    // MUST use Prefer: tx=rollback to avoid persisting notifications +
+    // admin_audit_log INSERTs. The defensive restore of site_config at the
+    // end of the function body is belt+suspenders that runs regardless of
+    // whether the caller used tx=rollback. This test exercises that path:
+    //   1. Choose threshold=10000 (no member is >27 years old → 0 candidates →
+    //      no INSERTs into notifications/admin_audit_log → no cleanup needed).
+    //   2. Call the helper WITHOUT Prefer: tx=rollback so the request runs in
+    //      PostgREST commit mode.
+    //   3. Verify result.threshold_days = 10000 (proves the override was
+    //      active during the call).
+    //   4. Verify site_config.inactivity_threshold_days = 180 post-call
+    //      (proves the defensive restore at end of function body fired and
+    //      the override didn't leak into prod state).
+    // If the defensive restore is removed in a future refactor, this test
+    // fails by surfacing site_config still at 10000.
+    const PROBE_THRESHOLD = 10000;
+    const result = await callTestHelperWithThreshold(PROBE_THRESHOLD, { rollback: false });
+
+    assert.equal(result.success, true, 'helper should succeed even without tx=rollback');
+    assert.equal(result.threshold_days, PROBE_THRESHOLD, 'override should be active during call');
+    assert.equal(result.candidates_count, 0,
+      'threshold=10000 should produce 0 candidates (no member is >27 years old) — ' +
+      'if this fails, the test threshold no longer prevents INSERTs and needs cleanup logic');
+
+    const restoredValue = await readInactivityThreshold();
+    assert.equal(restoredValue, 180,
+      `defensive restore failed: site_config.inactivity_threshold_days = ${restoredValue}, ` +
+      'expected 180 (prod default). The helper function body MUST restore the prior value ' +
+      'before return so misuse (forgotten tx=rollback) does not leak the override into prod state.');
   }
 );
