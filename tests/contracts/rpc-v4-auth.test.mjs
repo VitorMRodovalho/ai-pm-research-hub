@@ -54,9 +54,16 @@ function hasAuthGate(body) {
   // `Admin only` (create_pilot, update_pilot). After ADR-0015 writer refactor,
   // all these 5 RPCs will use `Unauthorized` prefix — matcher stays catching
   // anything that LOOKS like an auth gate.
-  return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only)/i.test(body)
-      || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied|access_denied)/i.test(body)
-      || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*[Uu]nauthor/i.test(body);
+  //
+  // Extended p181 (2026-05-17) to catch `Not authorized` phrasing in jsonb
+  // returns. Previously resolve_whatsapp_link was invisible to this test
+  // because the matcher only recognized `unauthor` substring; its gate uses
+  // `'Not authorized'` (two words). Same extension applied to RAISE/RETURN
+  // alternations for symmetry, and `[Aa]ccess\s+denied` added to jsonb
+  // matcher to mirror the RAISE/RETURN coverage.
+  return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only|Not\s+authorized)/i.test(body)
+      || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied|access_denied|Not\s+authorized)/i.test(body)
+      || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*([Uu]nauthor|[Nn]ot\s+author|[Aa]ccess\s+denied)/i.test(body);
 }
 
 function usesV4Can(body) {
