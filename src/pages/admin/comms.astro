@@ -708,7 +708,10 @@ const COMMS_I18N = {
       const items = Array.isArray(data) ? data : (typeof data === 'string' ? JSON.parse(data) : []);
       section.classList.remove('hidden');
       if (!items.length) {
-        body.innerHTML = `<div class="text-[.72rem] text-[var(--text-muted)] text-center py-6">${T.topContentEmpty || 'Sem conteúdo no período'}</div>`;
+        // p195 LOW-191.D: neutral '—' fallback (was PT-BR hardcoded).
+        // i18n key is present in all 3 dicts so fallback should never trigger,
+        // but EN/ES users would see PT text on the off-chance of dict gap.
+        body.innerHTML = `<div class="text-[.72rem] text-[var(--text-muted)] text-center py-6">${T.topContentEmpty || '—'}</div>`;
         return;
       }
 

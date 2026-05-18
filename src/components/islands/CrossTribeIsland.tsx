@@ -277,7 +277,14 @@ export default function CrossTribeIsland() {
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span className="font-bold">{it.member_count}</span>
-                      {it.members_inactive_30d > 0 && <span className="text-red-500 text-xs ml-1">({it.members_inactive_30d} {t('comp.crossTribe.inactiveShort', 'inat.')})</span>}
+                      {/* p195 OPP-194.F: suppress red inactive indicator when initiative has no own events.
+                          Post-GAP-194.A (strict scope), kinds with meetings_count=0 always show 100% inactive
+                          (tautologically — no events means no attendance possible). Showing red is visually
+                          alarming + uninformative for async-work kinds (workgroups/committees/congress). */}
+                      {it.meetings_count === 0
+                        ? <span className="text-[var(--text-muted)] text-xs ml-1" title={t('comp.crossTribe.noOwnEventsTooltip', 'Iniciativa sem eventos próprios — métrica de presença não aplicável')}>{t('comp.crossTribe.noOwnEventsShort', '(s/ eventos)')}</span>
+                        : it.members_inactive_30d > 0 && <span className="text-red-500 text-xs ml-1">({it.members_inactive_30d} {t('comp.crossTribe.inactiveShort', 'inat.')})</span>
+                      }
                     </td>
                     <td className="px-3 py-2.5 text-center font-bold">{Math.round(it.attendance_rate * 100)}%</td>
                     <td className="px-3 py-2.5 text-center">
