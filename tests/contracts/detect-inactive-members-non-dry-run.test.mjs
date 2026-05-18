@@ -173,8 +173,11 @@ test(
     assert.ok(Array.isArray(result.candidates), 'candidates should be array');
     assert.ok(
       result.managers_notified > 0,
-      `INSERT path coverage requires managers_notified > 0 (got ${result.managers_notified}) — ` +
-      'either manage_platform capability is missing or notifications INSERT branch silently failed'
+      `INSERT path coverage requires managers_notified > 0 (got ${result.managers_notified}). ` +
+      'On prod this is invariant (manage_platform is required for the platform to be ' +
+      'operational). On CI/seed DBs: verify engagement_kind_permissions seeds at least ' +
+      '1 row with manage_platform capability before treating this as a notifications ' +
+      'INSERT branch regression.'
     );
   }
 );
