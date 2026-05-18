@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, TrendingUp, Package, Clock, Award, Building, AlertTriangle, AlertCircle, CheckCircle, Activity, Loader2 } from 'lucide-react';
 import { usePageI18n } from '../../../i18n/usePageI18n';
 
@@ -70,14 +70,26 @@ export default function AdminDashboardIsland() {
     setLoading(false);
   }, [getSb]);
 
+  // p190 BUG-190.B sweep: listener-leak pattern — addEventListener without
+  // cleanup accumulates on SPA navigation. Ref pattern keeps latest closure
+  // without depending on its identity.
+  const fetchDashboardRef = useRef(fetchDashboard);
+  fetchDashboardRef.current = fetchDashboard;
   useEffect(() => {
+    let cancelled = false;
     const boot = () => {
-      if (getSb()) fetchDashboard();
+      if (cancelled) return;
+      if (getSb()) fetchDashboardRef.current();
       else setTimeout(boot, 300);
     };
     boot();
-    window.addEventListener('nav:member', () => fetchDashboard());
-  }, []);
+    const handler = () => fetchDashboardRef.current();
+    window.addEventListener('nav:member', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('nav:member', handler);
+    };
+  }, [getSb]);
 
   /* ── Loading state ── */
   if (loading && !data) {

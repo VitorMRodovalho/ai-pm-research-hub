@@ -905,8 +905,11 @@ const ANALYTICS_I18N = {
       Promise.resolve(null),
     ]);
 
-    // Render whatever data succeeded — don't block everything if one RPC fails
-    if (!funnel && !impact && !cert && !roi && !leadership) {
+    // p190 BUG-190.B council follow-up: post-p59 only `leadership` is a live RPC.
+    // Previous guard `!funnel && !impact && !cert && !roi && !leadership` is now
+    // equivalent to `!leadership` (the 4 null literals always evaluate to !null=true).
+    // Simplified to make intent explicit.
+    if (!leadership) {
       setText('analytics-scope-summary', L.chartError || 'Analytics error');
       renderQuality(quality);
       return;
