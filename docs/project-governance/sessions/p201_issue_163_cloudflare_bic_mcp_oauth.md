@@ -1,0 +1,130 @@
+---
+issue: 163
+title: infra/security - Cloudflare BIC blocks MCP OAuth bootstrap
+lane: Infra/Security
+priority: P1
+effort: S (rule + verification)
+status: ready
+opened: 2026-05-19
+github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/163
+---
+
+# p201 Session Brief - Issue #163: Cloudflare BIC vs MCP/OAuth Bootstrap
+
+## Why this matters
+
+Cloudflare Browser Integrity Check (BIC) returns `403 Error 1010
+browser_signature_banned` on `nucleoia.vitormr.dev/mcp`,
+`/.well-known/oauth-*`, and `/oauth/*` for some programmatic client
+signatures (default Python `urllib`). Blocked requests never reach the
+Worker, so they do not appear in Worker Observability or
+`mcp_usage_log`. Real Claude.ai connector failures are therefore
+invisible to app-side telemetry, and the only diagnostic path is
+Cloudflare Security Events filtered by Ray ID + path.
+
+## Evidence (collected during p201 audit)
+
+- `urllib`/Python signature -> `403 Error 1010` on `/mcp`,
+  `/.well-known/oauth-protected-resource`,
+  `/.well-known/oauth-authorization-server`, `/oauth/authorize`.
+- Browser-like and synthetic `Claude-User/1.0` user-agents PASS: `/mcp`
+  returns `401 + WWW-Authenticate`, `/.well-known/oauth-*` returns
+  `200`, `/oauth/register` returns `201`, `/oauth/authorize` renders
+  consent at `200`.
+- Worker Observability only logs requests that pass the edge.
+- Repeated retests during p201 (Rays `9fe60dc55ef31516`,
+  `9fe60dc61b331826`, `9fe612d38c4b1514`) confirmed the block
+  reproduces on every synthetic request without browser-like signature.
+- Cloudflare docs: official Error 1010 cause is access denied based on
+  browser signature; owner-side resolution is to disable BIC for the
+  path or skip it via WAF custom rule.
+
+## Lane and gates
+
+- Lane: Infra/Security (Cloudflare dashboard / Terraform, no app code)
+- Can touch: Cloudflare WAF custom rules, Bot Fight Mode scope, BIC
+  scope, rate limits for `/mcp*`
+- Can't touch: app source code, Worker behaviour, OAuth flow
+  semantics
+- Gates: Cloudflare Security Events before/after with Ray IDs, smoke
+  on real Claude connector path, compensating rate limit so the skip
+  rule does not become an abuse vector
+
+## In scope
+
+1. Inspect Cloudflare Security Events filtered by path
+   `/mcp`, `/.well-known/oauth-*`, `/oauth/*` and action
+   `browser_signature_banned` to capture the real Claude connector
+   Ray ID (if available).
+2. Create a Cloudflare WAF custom rule:
+   - Match: hostname `nucleoia.vitormr.dev` AND path matches
+     `^/(mcp|\.well-known/oauth-|oauth/)`.
+   - Action: Skip > Bot Fight Mode + Browser Integrity Check + Managed
+     Challenge (whichever components are blocking).
+   - Order: above default Bot Fight rule.
+3. Add compensating rate limit for `/mcp*` (e.g., 100 req/min per IP
+   with `429` on excess).
+4. Document the rule in `docs/MCP_SETUP_GUIDE.md` or a new
+   `docs/infra/CLOUDFLARE_MCP_RULES.md`.
+5. Record the decision in `docs/GOVERNANCE_CHANGELOG.md` (new GC
+   entry).
+
+## Out of scope
+
+- Switching to a different origin or hostname.
+- Implementing JWT-level abuse detection beyond rate limit.
+- Touching the OAuth flow code in the Worker.
+
+## Files likely to touch
+
+- `docs/MCP_SETUP_GUIDE.md` (or new `docs/infra/CLOUDFLARE_MCP_RULES.md`)
+- `docs/GOVERNANCE_CHANGELOG.md` (new GC entry)
+- `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` (close item #40)
+- Cloudflare dashboard config (no repo file unless we maintain
+  Terraform)
+
+## Validation
+
+- Before/after Security Events comparison: blocked Ray IDs disappear
+  for the test signature.
+- Synthetic smoke after rule:
+  ```bash
+  curl -sS -i https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
+  # expect HTTP/2 200
+
+  curl -sS -i https://nucleoia.vitormr.dev/mcp -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+  # expect HTTP/2 401 + WWW-Authenticate: Bearer resource_metadata=...
+  ```
+- Real Claude connector reconnect succeeds end-to-end.
+- Rate limit triggers `429` at the documented threshold.
+
+## Rollback
+
+- Disable the WAF custom rule (single click in Cloudflare UI) - all
+  traffic goes back to BIC default.
+- Rate limit can stay enabled even if skip rule is rolled back.
+
+## Cross-references
+
+- `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #40 (full evidence)
+- `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` §3.3
+- CLAUDE.md decision #2 (custom domain to avoid `.workers.dev` BIC)
+- `.claude/rules/mcp.md` (pre-deploy + smoke after deploy)
+
+## Handoff (fill on completion)
+
+```md
+## Handoff
+Issue: #163
+Branch:
+Cloudflare rule ID:
+Rate limit configured:
+Security Events before/after:
+Smoke results:
+Riscos:
+Rollback:
+Docs:
+Proximo passo:
+```
