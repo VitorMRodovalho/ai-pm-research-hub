@@ -1434,6 +1434,7 @@ const enUS: Record<string, string> = {
   'attendance.roster.loading': 'Loading...',
   'attendance.roster.noParticipants': 'No participants found.',
   'attendance.roster.count': '✅ {present}/{total} present',
+  'attendance.roster.cancelled': '🚫 Meeting cancelled — no attendance tracking',
   'attendance.ranking.noData': 'No ranking data yet',
   'attendance.ranking.noDataHint': 'When events have registered attendance, the ranking will appear here.',
 
