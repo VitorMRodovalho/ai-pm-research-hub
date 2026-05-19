@@ -5,7 +5,7 @@
 | Status | Accepted |
 | Date | 2026-05-19 (sessão p200) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `20260519180000` (seed) · `20260519180100` (batch A board) · `20260519180200` (batch B cert) · `20260519180300` (batch C governance) · `20260519180400` (batch D gate+reviewer) |
+| Migrations | `20260519182455` (seed) · `20260519182828` (scope='organization' correction) · `20260519183234` (batch A board) · `20260519183819` (batch B cert) · `20260519183955` (batch C governance) · `20260519184046` (batch D gate+reviewer) |
 | Cross-ref | [ADR-0011](./ADR-0011-v4-auth-pattern-rpcs-mcp.md) (V4 auth pattern) · [ADR-0086](./ADR-0086-curation-manual-structured-review-pattern.md) (curation pipeline) · [ADR-0041](./ADR-0041-governance-review-action.md) (participate_in_governance_review precedent) |
 | Closes | OPP-196.E (this ADR + 5 batched migrations) |
 
@@ -57,6 +57,8 @@ Agrupadas em 4 batches por purpose:
 **Batch B — Certificate ops (3 fns)**: `get_all_certificates`, `issue_certificate`, `update_certificate`. Padrão inverso: `AND NOT ('curator' = ANY(designations))` (curator é exception ao gate manager-only). Swap preserva inversão lógica: `AND NOT can_by_member('curate_content')`.
 
 **Batch C — Governance/curation ops (4 fns)**: `review_change_request`, `submit_change_request`, `get_application_score_breakdown`, `upsert_publication_submission_event`. Mix de OR chains e standalone checks.
+
+**Nota PII (Batch C `get_application_score_breakdown`)**: a fn já chama `_log_application_pii_access` com lista de 14 campos PII expostos a callers autorizados (linha ~49 da migration `20260519183955`). O `curate_content` gate (Batch C) **mantém o mesmo set de callers autorizados** que o V3 `designations && ARRAY['curator']`, então não há scope expansion. Auditoria via PII log preserved. (Council code-reviewer HIGH #1 — note tracking; nenhuma mudança de código necessária.)
 
 **Batch D — Special semantics (2 fns)**:
 - `_can_sign_gate`: gate kind 'curator' retorna `'curator' = ANY(v_member.designations)`. Swap direto.
