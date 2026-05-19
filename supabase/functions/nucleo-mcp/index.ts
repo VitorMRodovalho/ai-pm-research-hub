@@ -1,5 +1,13 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.74.0 — 291 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.75.0 — 292 tools + 4 prompts + 3 resources + usage logging
+// v2.75.0 (p197c C1+C2): +1 tool list_ai_suggestions (consumer surface for ai_suggestion_id —
+//   producer→consumer loop closed; selection_evaluation_ai_suggestions table currently empty,
+//   awaiting analyze_application output). C2 server-side: compute_pert_cutoff refactored into
+//   _compute_pert_cutoff_core (no auth) + thin auth wrapper; new recompute_all_active_pert_cutoffs
+//   helper + pg_cron weekly job 'recompute-pert-cutoffs-weekly' (Monday 13:00 UTC) + trigger on
+//   cycle phase→evaluating. Smoke run live: cycle3-2026-b2 went from NULL pert to target=155.78,
+//   cycle4-2026 refreshed to target=155.42 (cohort_n=19 after filter_active_only). Tool count
+//   291 → 292.
 // v2.74.0 (p197c B1+B2+B3): submit_interview_scores upgraded to rich preview parity with
 //   submit_evaluation (criteria_with_weights + weighted_subtotal_preview + pert_cutoff +
 //   cohort_position + validation; resolves application_id from interview_id and calls
@@ -2950,6 +2958,27 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "compute_pert_cutoff", false, error.message, start); return err(error.message); }
     if ((data as any)?.error) { await logUsage(sb, member.id, "compute_pert_cutoff", false, (data as any).error, start); return err((data as any).error); }
     await logUsage(sb, member.id, "compute_pert_cutoff", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_ai_suggestions — consumer surface for ai_suggestion_id (p197c C1)
+  mcp.tool("list_ai_suggestions", "Returns AI-generated evaluation suggestions for an application (from selection_evaluation_ai_suggestions). Closes the producer→consumer loop: analyze_application generates, submit_evaluation accepts via ai_suggestion_id. Filter by evaluation_type ('objective'|'interview'|'leader_extra') and/or only_pending=true (excludes already-consumed or superseded). Each suggestion includes suggested_scores + suggested_criterion_notes + suggested_weighted_subtotal + suggested_overall_summary + model_provider/name + is_pending flag. Auth: committee membership of the cycle OR manage_member. Logs PII access.", {
+    application_id: z.string().describe("Application UUID"),
+    evaluation_type: z.enum(["objective","interview","leader_extra"]).optional().describe("Optional filter — default: all types"),
+    only_pending: z.boolean().optional().describe("If true, return only suggestions not yet consumed or superseded. Default: false")
+  }, async (params: { application_id: string; evaluation_type?: "objective"|"interview"|"leader_extra"; only_pending?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_ai_suggestions", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "list_ai_suggestions", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_ai_suggestions", {
+      p_application_id: params.application_id,
+      p_evaluation_type: params.evaluation_type ?? null,
+      p_only_pending: params.only_pending ?? false
+    });
+    if (error) { await logUsage(sb, member.id, "list_ai_suggestions", false, error.message, start); return err(error.message); }
+    if ((data as any)?.error) { await logUsage(sb, member.id, "list_ai_suggestions", false, (data as any).error, start); return err((data as any).error); }
+    await logUsage(sb, member.id, "list_ai_suggestions", true, undefined, start);
     return ok(data);
   });
 
@@ -6549,7 +6578,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.74.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.75.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6569,6 +6598,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.74.0", tools: 291, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.75.0", tools: 292, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
