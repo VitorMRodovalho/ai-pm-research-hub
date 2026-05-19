@@ -13,11 +13,19 @@
 -- on candidate) / enrichment (PMI/LinkedIn). Adding it preserves the existing audit trail
 -- + analytics breakdowns by purpose.
 --
--- ROLLBACK:
---   ALTER TABLE public.ai_processing_log DROP CONSTRAINT ai_processing_log_purpose_check;
---   ALTER TABLE public.ai_processing_log ADD CONSTRAINT ai_processing_log_purpose_check
---     CHECK (purpose = ANY (ARRAY['triage','briefing','qualitative','enrichment','other']));
---   (rollback only safe if no rows have purpose='video_screening' yet)
+-- ROLLBACK (DESTRUCTIVE — read carefully):
+--   This migration has produced live rows. Post-deploy smoke (2026-05-19 13:53 UTC)
+--   inserted ai_processing_log row 'fd8d32df-2a23-474e-9d79-3ea0c4e5e3f6' with
+--   purpose='video_screening' (status='failed', whisper 429 quota). Any subsequent
+--   smoke or real run will add more. Rollback below is NOT idempotent:
+--     STEP 1 (mandatory — otherwise CHECK addition will REJECT):
+--       DELETE FROM public.ai_processing_log WHERE purpose = 'video_screening';
+--     STEP 2:
+--       ALTER TABLE public.ai_processing_log DROP CONSTRAINT ai_processing_log_purpose_check;
+--       ALTER TABLE public.ai_processing_log ADD CONSTRAINT ai_processing_log_purpose_check
+--         CHECK (purpose = ANY (ARRAY['triage','briefing','qualitative','enrichment','other']));
+--   Confirm with PM before STEP 1 — those rows are part of the LGPD audit trail (Art. 37 §3
+--   data processing record). DELETE destroys evidence of failed AI runs.
 --
 ALTER TABLE public.ai_processing_log DROP CONSTRAINT ai_processing_log_purpose_check;
 

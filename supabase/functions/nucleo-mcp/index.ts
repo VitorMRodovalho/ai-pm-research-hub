@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.76.0 — 293 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.76.1 — 293 tools + 4 prompts + 3 resources + usage logging
+// v2.76.1 (p199-a council fix bundle): analyze_application_video gains JS-layer canV4('view_pii')
+//   guard (defense-in-depth, was relying solely on RPC SQL gate — convention match with sibling
+//   analyze_application + generate_interview_briefing). Docstring clarified: returns dispatch
+//   envelope from RPC (dispatched, application_id, pillar, force, dispatch_id), not a bare
+//   dispatch_id; force param wording fixed ("Default: false; idempotent skips existing pending"
+//   replacing the inverted "Default: false (idempotent)").
 // v2.76.0 (p197d D1): +1 tool analyze_application_video — triggers Whisper transcription
 //   (OpenAI) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail) per pillar
 //   (5 pillars: background + communication + culture_alignment + proactivity + teamwork).
@@ -6374,14 +6380,15 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: analyze_application_video — Phase 4 D1 (p197d, ADR-0086 successor for video pillar)
-  mcp.tool("analyze_application_video", "p197d D1 (2026-05-19): triggers AI video analysis for an application. For each uploaded pmi_video_screening row, generates a suggestion in selection_evaluation_ai_suggestions (evaluation_type='video') via Whisper (transcription) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail → score per pillar). NON-BINDING per LGPD Art. 20 — humano evaluator decides via submit_evaluation(ai_suggestion_id=...). Idempotent (skips pillars with pending suggestion unless force=true). Auth: committee membership of cycle OR manage_member. Returns dispatch_id; analysis runs async — re-call list_ai_suggestions after ~30-60s to see results.", {
+  mcp.tool("analyze_application_video", "p197d D1 (2026-05-19): triggers AI video analysis for an application. For each uploaded pmi_video_screening row, generates a suggestion in selection_evaluation_ai_suggestions (evaluation_type='video') via Whisper (transcription) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail → score per pillar). NON-BINDING per LGPD Art. 20 — humano evaluator decides via submit_evaluation(ai_suggestion_id=...). Skips pillars with pending suggestion unless force=true. Auth: committee membership of cycle OR manage_member (gated at JS via view_pii + at RPC via cycle-scoped committee check). Returns dispatch envelope {dispatched, application_id, pillar, force, dispatch_id}; analysis runs async — re-call list_ai_suggestions after ~30-60s to see results.", {
     application_id: z.string().describe("Application UUID"),
     pillar: z.enum(["background","communication","culture_alignment","proactivity","teamwork"]).optional().describe("Optional pillar filter — default: all 5 pillars (one suggestion per pillar)"),
-    force: z.boolean().optional().describe("Regenerate even if pending suggestion exists. Default: false (idempotent)")
+    force: z.boolean().optional().describe("Regenerate even if pending suggestion exists. Default: false; when false, skips pillars that already have a pending suggestion.")
   }, async (params: { application_id: string; pillar?: string; force?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "analyze_application_video", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'view_pii'))) { await logUsage(sb, member.id, "analyze_application_video", false, "Unauthorized", start); return err("Unauthorized: committee/admin only (view_pii)"); }
     if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "analyze_application_video", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
     const { data, error } = await sb.rpc("analyze_application_video", {
       p_application_id: params.application_id,
@@ -6606,7 +6613,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.76.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.76.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6626,6 +6633,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.76.0", tools: 293, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.76.1", tools: 293, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
