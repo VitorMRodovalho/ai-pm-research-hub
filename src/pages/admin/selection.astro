@@ -33,6 +33,12 @@ const SEL_I18N = {
   pertCutoffLabel: t('admin.selection.pertCutoffLabel', lang),
   pertCutoffTooltip: t('admin.selection.pertCutoffTooltip', lang),
   pertCutoffEmpty: t('admin.selection.pertCutoffEmpty', lang),
+  consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
+  consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
+  consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
+  consentRevokedTooltip: t('admin.selection.consentRevokedTooltip', lang),
+  pdfInvalidBadge: t('admin.selection.pdfInvalidBadge', lang),
+  pdfInvalidTooltip: t('admin.selection.pdfInvalidTooltip', lang),
   statusGroups: {
     submitted: t('admin.selection.statusGroupSubmitted', lang),
     evaluation: t('admin.selection.statusGroupEvaluation', lang),
@@ -569,6 +575,12 @@ const SEL_I18N = {
     pertCutoffLabel: 'Corte',
     pertCutoffTooltip: 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores.',
     pertCutoffEmpty: 'Corte não calculado (cohort < 10)',
+    consentPendingBadge: 'sem consent IA',
+    consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
+    consentRevokedBadge: 'consent revogado',
+    consentRevokedTooltip: 'Consent IA revogado pelo candidato.',
+    pdfInvalidBadge: '⚠ PDF inválido',
+    pdfInvalidTooltip: 'Arquivo no storage tem menos de 1000 bytes — provavelmente erro Azure SAS ou link placeholder.',
     statusGroups: {
       submitted: 'Submetidos', evaluation: 'Avaliação', interview: 'Entrevista',
       approved: 'Aprovados', rejected: 'Rejeitados',
@@ -1469,7 +1481,7 @@ const SEL_I18N = {
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
+        <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.research_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${researchScore}</td>
