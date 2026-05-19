@@ -1,5 +1,12 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.75.0 — 292 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.76.0 — 293 tools + 4 prompts + 3 resources + usage logging
+// v2.76.0 (p197d D1): +1 tool analyze_application_video — triggers Whisper transcription
+//   (OpenAI) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail) per pillar
+//   (5 pillars: background + communication + culture_alignment + proactivity + teamwork).
+//   Generates selection_evaluation_ai_suggestions(evaluation_type='video') consumable via
+//   submit_evaluation(ai_suggestion_id=...). Idempotent + LGPD-gated via consent_ai_analysis_at.
+//   Backed by trigger trg_video_ai_analysis_on_upload (auto on status='uploaded') + manual
+//   override via this tool. Decisions ratified by PM 2026-05-19 (D1.1-7).
 // v2.75.0 (p197c C1+C2): +1 tool list_ai_suggestions (consumer surface for ai_suggestion_id —
 //   producer→consumer loop closed; selection_evaluation_ai_suggestions table currently empty,
 //   awaiting analyze_application output). C2 server-side: compute_pert_cutoff refactored into
@@ -6366,6 +6373,27 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(efData);
   });
 
+  // TOOL: analyze_application_video — Phase 4 D1 (p197d, ADR-0086 successor for video pillar)
+  mcp.tool("analyze_application_video", "p197d D1 (2026-05-19): triggers AI video analysis for an application. For each uploaded pmi_video_screening row, generates a suggestion in selection_evaluation_ai_suggestions (evaluation_type='video') via Whisper (transcription) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail → score per pillar). NON-BINDING per LGPD Art. 20 — humano evaluator decides via submit_evaluation(ai_suggestion_id=...). Idempotent (skips pillars with pending suggestion unless force=true). Auth: committee membership of cycle OR manage_member. Returns dispatch_id; analysis runs async — re-call list_ai_suggestions after ~30-60s to see results.", {
+    application_id: z.string().describe("Application UUID"),
+    pillar: z.enum(["background","communication","culture_alignment","proactivity","teamwork"]).optional().describe("Optional pillar filter — default: all 5 pillars (one suggestion per pillar)"),
+    force: z.boolean().optional().describe("Regenerate even if pending suggestion exists. Default: false (idempotent)")
+  }, async (params: { application_id: string; pillar?: string; force?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "analyze_application_video", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "analyze_application_video", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("analyze_application_video", {
+      p_application_id: params.application_id,
+      p_pillar: params.pillar ?? null,
+      p_force: params.force ?? false
+    });
+    if (error) { await logUsage(sb, member.id, "analyze_application_video", false, error.message, start); return err(error.message); }
+    if ((data as any)?.error) { await logUsage(sb, member.id, "analyze_application_video", false, (data as any).error, start); return err((data as any).error); }
+    await logUsage(sb, member.id, "analyze_application_video", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: generate_interview_briefing — Anthropic Haiku 4.5 inline
   mcp.tool("generate_interview_briefing", "ARM-5 Onda 3 (ADR-0074): generates 3 personalized interview questions + áreas de atenção for a candidate via Claude Haiku 4.5. Uses application data + ai_analysis snapshot (Gemini qualitative) + ai_triage_* if present. Sync, latency ~1-3s. Auth: view_pii (committee + admin). Logs to ai_processing_log. NOT persisted — generated on-demand per click.", {
     application_id: z.string().describe("Selection application UUID")
@@ -6578,7 +6606,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.75.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.76.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6598,6 +6626,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.75.0", tools: 292, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.76.0", tools: 293, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
