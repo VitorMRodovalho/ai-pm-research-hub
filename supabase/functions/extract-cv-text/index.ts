@@ -48,6 +48,12 @@ const USER_AGENT =
 interface AppRow {
   id: string;
   resume_url: string | null;
+  // p197c E1 (2026-05-19): post-p195 VEP sync writes PDFs to private storage bucket
+  // selection-resumes. resume_url stays NULL for cycle4-2026+ apps because the legacy
+  // Azure SAS link is no longer the primary source. Without reading from storage, the
+  // batch job silently skipped 40% of cycle4 PDFs. Now we prefer storage_path; fall
+  // back to resume_url for legacy rows that pre-date p195.
+  resume_storage_path: string | null;
   cv_extracted_text: string | null;
   consent_ai_analysis_at: string | null;
   consent_ai_analysis_revoked_at: string | null;
@@ -85,6 +91,22 @@ async function fetchResume(url: string): Promise<{ bytes: Uint8Array; contentTyp
   } finally {
     clearTimeout(timer);
   }
+}
+
+// p197c E1 (2026-05-19): download from private storage bucket. Post-p195 VEP sync
+// writes PDFs to selection-resumes/cycle-{cycle_code}/{vep_app_id}.pdf. service_role
+// has read access — no signed URL needed for server-side fetch.
+async function fetchResumeFromStorage(
+  sb: ReturnType<typeof createClient>,
+  path: string
+): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const { data, error } = await sb.storage.from("selection-resumes").download(path);
+  if (error || !data) {
+    throw new Error(`storage_download_failed: ${error?.message ?? "no_data"}`);
+  }
+  const contentType = (data.type ?? "application/pdf").toLowerCase();
+  const bytes = new Uint8Array(await data.arrayBuffer());
+  return { bytes, contentType };
 }
 
 async function extractFromBytes(bytes: Uint8Array, contentType: string): Promise<{
@@ -151,10 +173,10 @@ Deno.serve(async (req) => {
   const t0 = Date.now();
   let logId: string | null = null;
 
-  // 1. Load application
+  // 1. Load application (p197c E1: include resume_storage_path)
   const { data: app, error: appErr } = await sb
     .from("selection_applications")
-    .select("id, resume_url, cv_extracted_text, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
+    .select("id, resume_url, resume_storage_path, cv_extracted_text, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
     .eq("id", application_id)
     .single<AppRow>();
   if (appErr || !app) {
@@ -165,8 +187,11 @@ Deno.serve(async (req) => {
   if (!app.consent_ai_analysis_at || app.consent_ai_analysis_revoked_at) {
     return json({ application_id, noop_reason: "consent_missing" }, 200);
   }
-  if (!app.resume_url) {
-    return json({ application_id, noop_reason: "no_resume_url" }, 200);
+  // p197c E1: prefer storage_path (post-p195 sync), fallback resume_url (legacy)
+  const hasStoragePath = !!app.resume_storage_path;
+  const hasResumeUrl = !!app.resume_url;
+  if (!hasStoragePath && !hasResumeUrl) {
+    return json({ application_id, noop_reason: "no_resume_source" }, 200);
   }
   if (app.cv_extracted_text && app.cv_extracted_text.trim().length > 0) {
     return json({
@@ -177,7 +202,8 @@ Deno.serve(async (req) => {
   }
 
   // 3. Insert log row (status=running)
-  const promptHash = await sha256Hex(app.resume_url);
+  const sourceIdentifier = app.resume_storage_path ?? app.resume_url ?? "";
+  const promptHash = await sha256Hex(sourceIdentifier);
   const { data: logRow, error: logErr } = await sb
     .from("ai_processing_log")
     .insert({
@@ -194,8 +220,10 @@ Deno.serve(async (req) => {
   if (!logErr) logId = logRow?.id ?? null;
 
   try {
-    // 4. Fetch resume
-    const { bytes, contentType } = await fetchResume(app.resume_url);
+    // 4. Fetch resume — prefer storage_path (post-p195), fallback to resume_url (legacy)
+    const { bytes, contentType } = app.resume_storage_path
+      ? await fetchResumeFromStorage(sb, app.resume_storage_path)
+      : await fetchResume(app.resume_url!);
 
     // 5. Extract
     const { text, source_format } = await extractFromBytes(bytes, contentType);
