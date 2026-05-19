@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
+import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import { canFor } from '../../lib/permissions';
 import MemberPicker from './MemberPicker';
@@ -804,7 +804,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             />
 
             {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
-            {(['draft', 'peer_review', 'leader_review'] as string[]).includes(item.curation_status || 'draft') && (
+            {(['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
               <div className="mb-3 border-l-4 border-purple-400 pl-3 py-2 bg-purple-50/40 rounded-r-lg">
                 <label className="text-[11px] font-semibold text-purple-900 mb-2 block">
                   {i18n.preCurationReview || 'Revisão Pré-Curadoria (Manual §4.2)'}
