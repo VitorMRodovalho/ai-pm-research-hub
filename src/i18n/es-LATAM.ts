@@ -1434,6 +1434,7 @@ const esLATAM: Record<string, string> = {
   'attendance.roster.loading': 'Cargando...',
   'attendance.roster.noParticipants': 'Ningún participante encontrado.',
   'attendance.roster.count': '✅ {present}/{total} presentes',
+  'attendance.roster.cancelled': '🚫 Reunión cancelada — sin registro de asistencia',
   'attendance.ranking.noData': 'Sin datos de ranking aún',
   'attendance.ranking.noDataHint': 'Cuando los eventos tengan asistencia registrada, el ranking aparecerá aquí.',
 
