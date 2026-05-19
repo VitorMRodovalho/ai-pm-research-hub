@@ -79,7 +79,7 @@ type I18n = Record<string, string>;
 
 import { getSb, waitForSb } from '../../hooks/useBoard';
 import { useMemberContext } from '../../hooks/useBoardPermissions';
-import { canFor, hasPermission } from '../../lib/permissions';
+import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 function daysUntilDue(dueAt: string | null | undefined): number | null {
@@ -463,13 +463,19 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   const [filter, setFilter] = useState<'all' | 'artifacts' | 'hub_resources'>('all');
   const [search, setSearch] = useState('');
 
-  // Derive curation access from shared member context
+  // Derive curation access from shared member context.
+  // V4 canFor() fallback is gated on !isSimulating to keep parity with
+  // AdminNav: when a superadmin simulates a tier without curation access,
+  // the V4 capability cache still reflects the real user, so without this
+  // guard the curatorship UI would render while hasPermission correctly
+  // returns false. Legacy hasPermission already honours simulation via
+  // getSimulation() internally.
   const canCurate = useMemo(() => {
     if (!authMember) return false;
+    const isSimulating = getSimulation().active;
     return (
       hasPermission(authMember, 'admin.curation')
-      || canFor('curate_content')
-      || canFor('participate_in_governance_review')
+      || (!isSimulating && (canFor('curate_content') || canFor('participate_in_governance_review')))
     );
   }, [authMember]);
 
