@@ -20,8 +20,8 @@ Predecessor: `refactor-guardian.md` (LEGACY — cobria apenas V4 em curso). Para
 
 ## Invariantes que NUNCA podem ser violados
 
-1. **`check_schema_invariants()` retorna 15 invariantes em 0 violations** (A1/A2/A3/B/C/D/E/F/J/K/L/M/N/O/P — sediment p162 Track B' G2b). Se alguma ≠ 0, **BLOQUEIE** — significa drift silenciosa em produção. Drift carry conhecido (handoff p166): A3=1 (Eder edge case), J=1 (pre-existing). Qualquer drift diferente desses dois exige decisão humana.
-2. **`npm test` passa em 100%** (baseline atual: 1434 pass, 0 fail, 38 skipped; 1472 total com `SUPABASE_SERVICE_ROLE_KEY` env — fonte: `.claude/rules/deploy.md`)
+1. **`check_schema_invariants()` retorna 16 invariantes em 0 violations** (A1/A2/A3/B/C/D/E/F/J/K/L/M/N/O/P/Q — Q added p170 via VEP→engagement FK hardening). Se alguma ≠ 0, **BLOQUEIE** — significa drift silenciosa em produção.
+2. **`npm test` passa em 100%** (baseline atual offline: 1449 pass, 0 fail, 46 skipped; DB-aware: ~1501 pass, 0 fail, 5 skipped — fonte: deploy/session audit p198-p201)
 3. **`npx astro build` passa sem novos erros**
 4. **Nenhuma RPC nova (migration ≥ 20260424040000) usa role list hardcoded** — deve usar `can()`/`can_by_member()`/`rls_can()` (ADR-0011). Contract test `tests/contracts/rpc-v4-auth.test.mjs` enforça.
 5. **Nenhuma cache column nova sem trigger de sync** (ADR-0012). Cache columns: colunas que duplicam info derivável (ex: `operational_role` derivado de `engagements`). Se nova migration adiciona cache sem trigger, alerte.
@@ -34,14 +34,14 @@ Se qualquer invariante ≠ OK, **pare e reporte imediatamente**.
 
 ### 1. Live DB invariants (crítico)
 - Via MCP `execute_sql`: `SELECT * FROM public.check_schema_invariants() ORDER BY invariant_name;`
-- Esperado: 15 rows, violation_count = 0 em todas (drift carry conhecido p166: A3=1 Eder edge case, J=1 pre-existing — confirmar com handoff antes de bloquear)
-- Se qualquer > 0 e ≠ drift carry conhecido, reportar invariant_name, severity, sample_ids; NÃO tentar corrigir sem decisão humana
+- Esperado: 16 rows, violation_count = 0 em todas.
+- Se qualquer > 0, reportar invariant_name, severity, sample_ids; NÃO tentar corrigir sem decisão humana
 - Atalho: skill `/invariants` roda a verificação e interpreta o resultado
 
 ### 2. Build & tests
 - Listar comando `npm test` para o humano rodar (você não roda)
 - Listar `npx astro build` idem
-- Baseline atual: 1434 pass, 0 fail, 38 skipped (1472 total com `SUPABASE_SERVICE_ROLE_KEY` env; schema-invariants.test.mjs entre os skipped sem a env). Fonte canônica: `.claude/rules/deploy.md`.
+- Baseline atual offline: 1449 pass, 0 fail, 46 skipped. DB-aware: ~1501 pass, 0 fail, 5 skipped. Fonte canônica: deploy/session audit p198-p201.
 
 ### 3. ADR-0011 compliance (static analysis)
 - Grep em migrations recentes (≥ 20260424040000) por padrões bloqueados:
@@ -56,10 +56,10 @@ Se qualquer invariante ≠ OK, **pare e reporte imediatamente**.
 
 ### 5. Drift docs vs código
 CLAUDE.md (p133+ Anthropic guidance) **NÃO pina counts mutáveis**. Pins canônicos vivem em `.claude/rules/*.md` e em `docs/adr/README.md`. Auditar:
-- **MCP tools**: `grep -c 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts` vs `.claude/rules/mcp.md` (pin atual: "289 tools + 4 prompts + 3 resources" — p165 v2.69.0)
+- **MCP tools**: `grep -c 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts` vs `.claude/rules/mcp.md` (pin atual: "293 tools + 4 prompts + 3 resources" — p199-a v2.76.1)
 - **Edge functions**: `ls supabase/functions/ | wc -l` (lembre que `_shared` não é função). Sem pin em rules — referência canônica é git ls-tree
-- **Tests**: baseline em `.claude/rules/deploy.md` (pin atual: "1434 pass, 0 fail, 38 skip; 1472 com DB env")
-- **ADRs**: `ls docs/adr/ADR-*.md | wc -l` vs `docs/adr/README.md` index (pin atual: 83 ADRs, ADR-0082 skip intentional documented p165)
+- **Tests**: baseline em deploy/session audit (pin atual offline: "1449 pass, 0 fail, 46 skip"; DB-aware: "~1501 pass, 0 fail, 5 skip")
+- **ADRs**: `ls docs/adr/ADR-*.md | wc -l` vs `docs/adr/README.md` index (pin atual: 86 ADR files, ADR-0082 skip intentional documented in index)
 - **Migrations head**: `ls supabase/migrations/ | tail -1` vs último handoff (`memory/handoff_p*_post_*.md`)
 
 Qualquer drift > 5% ou pin mudou → propor diff para a rule canônica + audit cleanup commit (padrão p165 `f3f2c74`).
@@ -67,14 +67,18 @@ Qualquer drift > 5% ou pin mudou → propor diff para a rule canônica + audit c
 ### 6. ADR coverage de mudanças arquiteturais
 - Listar migrations desde a última sessão: `git diff HEAD~5 HEAD -- supabase/migrations/ | grep -E '^\+\+\+ b/supabase/migrations/'`
 - Para cada, perguntar: existe ADR que cobre a decisão? Se não e a mudança é estrutural (nova tabela, novo conceito, inversão de autoridade), **alerte que precisa ADR novo**
-- ADRs cobertos hoje: 0001-0083 (ADR-0082 skip intentional, documented p165). Source-of-truth: `docs/adr/README.md`. Famílias:
+- ADRs cobertos hoje: 0001-0087 (ADR-0082 skip intentional, documented in index). Source-of-truth: `docs/adr/README.md`. Famílias:
   - 0001-0003 fundacionais
   - 0004-0009 refactor Domain Model V4 (concluído 2026-04-13)
   - 0010 wiki · 0011 V4 auth · 0012 schema consolidation
-  - 0013-0079 pós-V4 (comms, partners, gamification, capability cache, etc.)
-  - 0080 V4-engagement-canonical (deprecate `members.initiative_id`) — PROPOSED, ainda sem test contract (Item #11)
+  - 0013-0079 pós-V4 (comms, partners, gamification, AI/video selection, capability cache, etc.)
+  - 0080 V4-engagement-canonical (deprecate `members.initiative_id`) — PROPOSED
   - 0081 gamification config-driven + champions ledger — Amendment A p165
   - 0083 capability cache UI gates V4
+  - 0084 showcase→Champion eligibility nudge
+  - 0085 cross-initiative metric scoping
+  - 0086 curation manual structured review pattern
+  - 0087 V4 `curate_content` action
 
 ### 7. Inventário de drift + backlog opportunity
 - Grep por `TODO:`, `FIXME:`, `HACK:`, `XXX:` em src/ e supabase/
@@ -107,6 +111,7 @@ Qualquer drift > 5% ou pin mudou → propor diff para a rule canônica + audit c
 - [✅/❌] N terminal_status_offboarded_at_present — N (medium)
 - [✅/❌] O meeting_artifact_event_orphan — N (medium; sediment p162 Track B' G2b)
 - [✅/❌] P tribe_initiative_bridge_complete — N (medium; sediment p162 Track B' G2b)
+- [✅/❌] Q expired_engagement_end_date — N (medium; p170 VEP→engagement FK hardening)
 
 ## 2. Build & tests — comandos que o humano deve rodar
 <lista>

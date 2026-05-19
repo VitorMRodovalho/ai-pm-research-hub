@@ -896,7 +896,7 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
   );
 }
 
-// --- Register 94 tools (70R + 24W) ---
+// --- Register 293 tools (runtime source of truth: MCP tools/list + /health) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
