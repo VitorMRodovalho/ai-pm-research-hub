@@ -1,5 +1,17 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.71.0 — 289 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.73.0 — 291 tools + 4 prompts + 3 resources + usage logging
+// v2.73.0 (p197b): +2 tools surfacing PERT cutoff metric to evaluators/admins via MCP —
+//   get_pert_cutoff_summary (read distribution + target + band) + compute_pert_cutoff (admin
+//   trigger to recompute against approved active members in prior cycles). Pairs with frontend
+//   p197b /admin/selection cutoff chip + ranking color-code (red/amber/green per band) wiring
+//   that consumed cycle.pert_cutoff already added to get_selection_dashboard payload.
+// v2.72.0 (p197): submit_evaluation rich preview (criteria_with_weights + weighted_subtotal_preview
+//   + pert_cutoff + cohort_position + validation) + new params criterion_notes_json/ai_suggestion_id;
+//   get_evaluation_form description updated to reflect p197 SQL-side payload enrichment (cv_extracted_text,
+//   profile_*, service_history_*, pmi_memberships, returning_member_match, criteria_with_weights,
+//   pert_cutoff). Motivated by Fabricio MCP submit anomaly 2026-05-19 (Luíse Quintana, diff -52 vs first
+//   evaluator) — evaluator lacked semantic context to validate score scale before submitting. Tool count
+//   unchanged 289 (only descriptions/params/handlers enriched).
 // v2.71.0 (p193 OPP-192.D): get_tribes_comparison upgraded to V4 — wraps
 //   exec_cross_initiative_comparison(p_kind) instead of V3 get_cross_tribe_comparison.
 //   Tool name preserved for AI agent backward compat; response shape upgraded to
@@ -2894,6 +2906,45 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_pert_cutoff_summary — read PERT cutoff state for a cycle (p197b)
+  mcp.tool("get_pert_cutoff_summary", "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Use to assess whether candidates land within the calibration band of approved members. Admin/curator (manage_member).", {
+    cycle_id: z.string().describe("Cycle UUID (from get_selection_cycles output)"),
+    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Which score column to summarize. Default: objective_score_avg")
+  }, async (params: { cycle_id: string; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_pert_cutoff_summary", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cycle_id)) { await logUsage(sb, member.id, "get_pert_cutoff_summary", false, "Invalid UUID", start); return err("cycle_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_pert_cutoff_summary", { p_cycle_id: params.cycle_id, p_score_column: params.score_column ?? "objective_score_avg" });
+    if (error) { await logUsage(sb, member.id, "get_pert_cutoff_summary", false, error.message, start); return err(error.message); }
+    if ((data as any)?.error) { await logUsage(sb, member.id, "get_pert_cutoff_summary", false, (data as any).error, start); return err((data as any).error); }
+    await logUsage(sb, member.id, "get_pert_cutoff_summary", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: compute_pert_cutoff — admin trigger to recompute PERT cutoff for a cycle (p197b)
+  mcp.tool("compute_pert_cutoff", "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists pert_target_score/pert_band_lower/upper/cohort_n on every application in the cycle. Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Use BEFORE committee final decision to refresh the cutoff band against the current pool of active members.", {
+    cycle_id: z.string().describe("Cycle UUID"),
+    role: z.enum(["researcher","leader"]).optional().describe("Track being cut. Default: researcher"),
+    filter_active_only: z.boolean().optional().describe("Only count active engagements in cohort. Default: true"),
+    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Cohort score column. Default: objective_score_avg")
+  }, async (params: { cycle_id: string; role?: "researcher"|"leader"; filter_active_only?: boolean; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "compute_pert_cutoff", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cycle_id)) { await logUsage(sb, member.id, "compute_pert_cutoff", false, "Invalid UUID", start); return err("cycle_id must be a UUID"); }
+    const { data, error } = await sb.rpc("compute_pert_cutoff", {
+      p_cycle_id: params.cycle_id,
+      p_role: params.role ?? "researcher",
+      p_filter_active_only: params.filter_active_only ?? true,
+      p_score_column: params.score_column ?? "objective_score_avg"
+    });
+    if (error) { await logUsage(sb, member.id, "compute_pert_cutoff", false, error.message, start); return err(error.message); }
+    if ((data as any)?.error) { await logUsage(sb, member.id, "compute_pert_cutoff", false, (data as any).error, start); return err((data as any).error); }
+    await logUsage(sb, member.id, "compute_pert_cutoff", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_selection_pipeline_metrics — funnel stats
   mcp.tool("get_selection_pipeline_metrics", "Returns selection pipeline funnel metrics for a cycle (default: latest): total applications, by status, by chapter, conversion rates. Optional chapter filter. Admin/curator scope.", {
     cycle_id: z.string().optional().describe("Optional cycle UUID. Defaults to latest."),
@@ -2961,7 +3012,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: get_evaluation_form — criteria + draft for an evaluation type
-  mcp.tool("get_evaluation_form", "Returns the evaluation form template for an application: cycle's criteria + your existing draft (if any). evaluation_type: 'objective' | 'interview' | 'leader_extra'. Use BEFORE submit_evaluation/submit_interview_scores to discover the rubric.", {
+  mcp.tool("get_evaluation_form", "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of approved active members from prior cycles), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.", {
     application_id: z.string().describe("Application UUID"),
     evaluation_type: z.enum(["objective","interview","leader_extra"]).describe("Form type")
   }, async (params: { application_id: string; evaluation_type: "objective"|"interview"|"leader_extra" }) => {
@@ -3516,43 +3567,105 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: submit_evaluation (ux Pareto #3 — confirm gate ADR-0018 W1 + application_summary preview)
-  mcp.tool("submit_evaluation", "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context. With confirm=true: writes to selection_evaluations (irreversible after phase closes).", {
+  mcp.tool("submit_evaluation", "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of approved active members from prior cycles) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.", {
     application_id: z.string().describe("Application UUID"),
     evaluation_type: z.string().describe("'objective' | 'interview' | 'leader_extra'"),
     scores_json: z.string().describe("JSON string com scores object keyed by criterion_id. Schema depends on evaluation_type — call get_evaluation_form first to discover."),
-    notes: z.string().optional().describe("Free-text notes about your evaluation reasoning"),
-    confirm: z.boolean().optional().describe("true = execute submit. false (or omitted) = return preview with application_summary for verification.")
-  }, async (params: { application_id: string; evaluation_type: string; scores_json: string; notes?: string; confirm?: boolean }) => {
+    notes: z.string().optional().describe("Free-text notes about your overall evaluation reasoning"),
+    criterion_notes_json: z.string().optional().describe("p197: JSON string mapping criterion_key → short justification text. Optional but recommended for audit trail and calibration."),
+    ai_suggestion_id: z.string().optional().describe("p197: UUID linking your submit to an AI suggestion you reviewed/accepted/adjusted (from selection_evaluation_ai_suggestions). Optional."),
+    confirm: z.boolean().optional().describe("true = execute submit. false (or omitted) = return rich preview with criteria_with_weights + weighted_subtotal_preview + pert_cutoff + cohort_position.")
+  }, async (params: { application_id: string; evaluation_type: string; scores_json: string; notes?: string; criterion_notes_json?: string; ai_suggestion_id?: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_evaluation", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "submit_evaluation", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    if (params.ai_suggestion_id && !isUUID(params.ai_suggestion_id)) {
+      await logUsage(sb, member.id, "submit_evaluation", false, "Invalid ai_suggestion_id", start);
+      return err("ai_suggestion_id must be a UUID");
+    }
     let scores_obj: Record<string, any>;
     try { scores_obj = JSON.parse(params.scores_json); }
     catch { return err("scores_json must be valid JSON object"); }
+    let criterion_notes_obj: Record<string, any> | null = null;
+    if (params.criterion_notes_json) {
+      try { criterion_notes_obj = JSON.parse(params.criterion_notes_json); }
+      catch { return err("criterion_notes_json must be valid JSON object"); }
+    }
     if (!params.confirm) {
-      const { data: appData, error: appErr } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
-      if (appErr) { await logUsage(sb, member.id, "submit_evaluation", false, appErr.message, start); return err(appErr.message); }
+      // p197: rich preview using enriched get_evaluation_form (criteria_with_weights + pert_cutoff)
+      const { data: formData, error: formErr } = await sb.rpc("get_evaluation_form", {
+        p_application_id: params.application_id,
+        p_evaluation_type: params.evaluation_type
+      });
+      if (formErr) { await logUsage(sb, member.id, "submit_evaluation", false, formErr.message, start); return err(formErr.message); }
+      const form = formData as any;
+      const criteria = (form?.criteria_with_weights ?? []) as Array<{key:string; label?:string; weight:number; max:number; max_weighted_contribution:number}>;
+      // Compute weighted_subtotal_preview from intended scores
+      let weighted_subtotal_preview = 0;
+      const missing_scores: string[] = [];
+      const out_of_range: string[] = [];
+      const preview_breakdown = criteria.map(c => {
+        const s = scores_obj[c.key];
+        if (s === undefined || s === null) missing_scores.push(c.key);
+        if (typeof s === 'number' && (s < 0 || s > c.max)) out_of_range.push(`${c.key} (got ${s}, max ${c.max})`);
+        const contribution = typeof s === 'number' ? s * c.weight : null;
+        if (contribution !== null) weighted_subtotal_preview += contribution;
+        return {
+          key: c.key,
+          label: c.label,
+          weight: c.weight,
+          max: c.max,
+          your_score: s ?? null,
+          weighted_contribution: contribution,
+          max_weighted_contribution: c.max_weighted_contribution,
+        };
+      });
+      const max_weighted = form?.max_weighted_subtotal ?? null;
+      const pert = form?.pert_cutoff ?? {};
+      let cohort_position: string | null = null;
+      if (pert.band_lower != null && pert.band_upper != null) {
+        if (weighted_subtotal_preview < pert.band_lower) cohort_position = `BELOW band (${weighted_subtotal_preview} < band_lower ${pert.band_lower})`;
+        else if (weighted_subtotal_preview > pert.band_upper) cohort_position = `ABOVE band (${weighted_subtotal_preview} > band_upper ${pert.band_upper})`;
+        else cohort_position = `WITHIN band (${pert.band_lower} ≤ ${weighted_subtotal_preview} ≤ ${pert.band_upper})`;
+      }
       await logUsage(sb, member.id, "submit_evaluation", true, "preview", start);
       return ok({
         preview: true,
         application_summary: {
-          applicant_name: (appData as any)?.applicant_name,
-          role_applied: (appData as any)?.role_applied,
-          promotion_path: (appData as any)?.promotion_path,
-          blind_review_active: (appData as any)?.blind_review_active,
+          applicant_name: form?.application?.applicant_name,
+          role_applied: form?.application?.role_applied,
+          promotion_path: form?.application?.promotion_path,
+          status: form?.application?.status,
+          is_returning_member: form?.application?.is_returning_member,
+          ai_triage_score: form?.application?.ai_triage_score,
+          ai_triage_confidence: form?.application?.ai_triage_confidence,
         },
-        intended_scores: scores_obj,
+        criteria_with_weights: preview_breakdown,
+        weighted_subtotal_preview,
+        max_weighted_subtotal: max_weighted,
+        pert_cutoff: pert,
+        cohort_position,
+        validation: {
+          missing_scores: missing_scores.length > 0 ? missing_scores : null,
+          out_of_range: out_of_range.length > 0 ? out_of_range : null,
+        },
         intended_evaluation_type: params.evaluation_type,
         intended_notes: params.notes ?? null,
-        next_step: "Re-call submit_evaluation with confirm=true to execute. Verify applicant_name + scores schema first."
+        intended_criterion_notes: criterion_notes_obj,
+        intended_ai_suggestion_id: params.ai_suggestion_id ?? null,
+        next_step: missing_scores.length || out_of_range.length
+          ? "Fix validation errors above, then re-call with confirm=true."
+          : "Re-call submit_evaluation with confirm=true to execute. Verify weighted_subtotal_preview vs pert_cutoff band before confirming."
       });
     }
     const { data, error } = await sb.rpc("submit_evaluation", {
       p_application_id: params.application_id,
       p_evaluation_type: params.evaluation_type,
       p_scores: scores_obj,
-      p_notes: params.notes ?? null
+      p_notes: params.notes ?? null,
+      p_criterion_notes: criterion_notes_obj,
+      p_ai_suggestion_id: params.ai_suggestion_id ?? null
     });
     if (error) { await logUsage(sb, member.id, "submit_evaluation", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "submit_evaluation", true, undefined, start);
@@ -6372,7 +6485,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.71.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.73.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6392,6 +6505,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.71.0", tools: 289, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.73.0", tools: 291, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

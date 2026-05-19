@@ -30,6 +30,9 @@ const SEL_I18N = {
   inlineRejectToast: t('admin.selection.inlineRejectToast', lang),
   bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
   allChaptersOption: t('admin.selection.allChapters', lang),
+  pertCutoffLabel: t('admin.selection.pertCutoffLabel', lang),
+  pertCutoffTooltip: t('admin.selection.pertCutoffTooltip', lang),
+  pertCutoffEmpty: t('admin.selection.pertCutoffEmpty', lang),
   statusGroups: {
     submitted: t('admin.selection.statusGroupSubmitted', lang),
     evaluation: t('admin.selection.statusGroupEvaluation', lang),
@@ -245,9 +248,11 @@ const SEL_I18N = {
         <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"></div>
 
         <!-- Action buttons -->
-        <div class="flex flex-wrap gap-3 mb-4">
+        <div class="flex flex-wrap gap-3 mb-4 items-center">
           <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.recalcRankings', lang)}</button>
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
+          <!-- p197b: PERT cutoff chip (cohort of approved active members in prior cycles) -->
+          <div id="pert-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold cursor-help" title=""></div>
         </div>
         <!-- p152 W4 OPP-152.6: alert when most rows have rank null (closed cycle reopened com legacy) -->
         <div id="rank-empty-alert" class="hidden mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
@@ -561,6 +566,9 @@ const SEL_I18N = {
     noCandidates: 'Nenhum candidato', errorPrefix: 'Erro',
     detailsBtn: 'Detalhes', bulkSelectedSuffix: 'selecionados',
     allChaptersOption: 'Todos os Capítulos',
+    pertCutoffLabel: 'Corte',
+    pertCutoffTooltip: 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores.',
+    pertCutoffEmpty: 'Corte não calculado (cohort < 10)',
     statusGroups: {
       submitted: 'Submetidos', evaluation: 'Avaliação', interview: 'Entrevista',
       approved: 'Aprovados', rejected: 'Rejeitados',
@@ -693,6 +701,20 @@ const SEL_I18N = {
   let filterSearch = '';
   let sortCol = 'final_score';
   let sortAsc = false;
+
+  // p197b: color-code score TDs against the PERT cutoff band. Returns Tailwind classes to
+  // be merged into the TD className. Returns '' when there is no cutoff or no score so the
+  // existing font-weight classes remain.
+  function bandColorClass(score: any, cutoff: any): string {
+    if (score == null || !cutoff || cutoff.band_lower == null || cutoff.band_upper == null) return '';
+    const s = Number(score);
+    if (!Number.isFinite(s)) return '';
+    const lower = Number(cutoff.band_lower);
+    const upper = Number(cutoff.band_upper);
+    if (s < lower) return 'bg-red-50 text-red-700';
+    if (s > upper) return 'bg-emerald-50 text-emerald-700';
+    return 'bg-amber-50 text-amber-700';
+  }
   // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
   // o que ainda falta avaliar e o que já foi decidido.
   let filterHideDecided = true;       // default ON — esconde approved/rejected/etc
@@ -1112,6 +1134,23 @@ const SEL_I18N = {
         // Sync cycle picker
         const picker = document.getElementById('sel-cycle-picker') as HTMLSelectElement;
         if (picker) picker.value = cycle.id;
+        // p197b: populate PERT cutoff chip (cohort of approved active members)
+        const cutoffEl = document.getElementById('pert-cutoff-chip');
+        if (cutoffEl) {
+          const pc = cycle.pert_cutoff || {};
+          if (pc.target_score != null && pc.band_lower != null && pc.band_upper != null) {
+            const target = Number(pc.target_score).toFixed(1);
+            const lower = Number(pc.band_lower).toFixed(1);
+            const upper = Number(pc.band_upper).toFixed(1);
+            cutoffEl.textContent = `${T.pertCutoffLabel}: ${target} (${lower}–${upper}, n=${pc.cohort_n}, ${pc.method})`;
+            cutoffEl.title = T.pertCutoffTooltip;
+            cutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold cursor-help';
+          } else {
+            cutoffEl.textContent = T.pertCutoffEmpty;
+            cutoffEl.title = T.pertCutoffTooltip;
+            cutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 font-semibold cursor-help';
+          }
+        }
       }
 
       allRows = applications;
@@ -1433,8 +1472,8 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${researchScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.research_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${researchScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? `font-bold ${bandColorClass(r.leader_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.leader_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${leaderScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
