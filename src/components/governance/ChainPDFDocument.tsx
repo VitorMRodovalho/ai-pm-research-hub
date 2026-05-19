@@ -200,10 +200,18 @@ function parseInlineSegments(html: string): Segment[] {
   // 1. Strip nested block tags (p/div/span/section/article) preservando conteúdo —
   //    fix §4.5.4 royalties onde <li><p>(a) text</p></li> vazava "p>(a)/p>" para o output.
   // 2. <br> → newline
+  // 3. p195: strip ANY OTHER non-whitelisted HTML tag. tokenRegex below only
+  //    recognizes strong/b/em/i/a; tags like <code>, <pre>, <u>, <mark>, <hr>,
+  //    <img> would otherwise have their `<` ignored by the tokenizer and the
+  //    rest of the tag (e.g. "code>URL/code>") would leak as literal text into
+  //    the PDF output. Inner content is preserved.
   let normalized = html
     .replace(/<\/(p|div|span|section|article)\s*>/gi, ' ')
     .replace(/<(p|div|span|section|article)[^>]*>/gi, ' ')
-    .replace(/<br\s*\/?>/gi, '\n');
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (full, tagName: string) => {
+      return ['strong', 'b', 'em', 'i', 'a'].includes(tagName.toLowerCase()) ? full : '';
+    });
   const segments: Segment[] = [];
   // Stack-based: track current bold/italic/href as we encounter open/close tags
   const stack: { bold?: boolean; italic?: boolean; href?: string }[] = [{}];
