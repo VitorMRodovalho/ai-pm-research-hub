@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-284%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![MCP](https://img.shields.io/badge/MCP-293%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -44,12 +44,12 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | Events held | 209 |
 | Governance entries | 141+ (GC-001 → GC-141+) |
 | Blog posts | 9 |
-| MCP tools | 284 |
-| Edge Functions | 35 |
+| MCP tools | 293 |
+| Edge Functions | 37 |
 | pg_cron jobs | 34 |
 | RPCs (SECURITY DEFINER + helpers) | 795 |
 | i18n keys | 4,000+ (3 locales) |
-| Tests | 1,383 passing (1,415 with service-role env) |
+| Tests | 1,449 passing (1,501 with service-role env) |
 | Monthly cost | $0 |
 
 ---
@@ -84,7 +84,7 @@ graph LR
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
         E --> I[PostgreSQL<br/>795 RPC · RLS]
-        F --> J[Edge Functions<br/>35 deployed]
+        F --> J[Edge Functions<br/>37 deployed]
         I --> K[pg_cron<br/>34 jobs]
     end
 
@@ -111,8 +111,8 @@ graph LR
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
 | **Database** | Supabase PostgreSQL | 200+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (284 tools) | AI assistants query platform via natural language |
-| **Server Logic** | Supabase Edge Functions (35) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy, AI triage |
+| **MCP** | Custom server (293 tools) | AI assistants query platform via natural language |
+| **Server Logic** | Supabase Edge Functions (37) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy, AI triage |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
 | **Cron** | pg_cron (34 jobs) | Credly sync, attendance batch, detractor alerts, weekly digests (member · leader · tribe), MCP anomaly detection, LGPD anonymize, log retention, R2 backup, AI retry queues, Artia sync, drive-discover-atas, V4 engagement expiry/anonymize |
@@ -123,7 +123,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 284 tools authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 293 tools authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -160,7 +160,7 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Verified (284 tools) |
+| Claude.ai | Verified (293 tools) |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |

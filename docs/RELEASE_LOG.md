@@ -1,5 +1,52 @@
 # Release Log
 
+## 2026-05-19 — p201 hotfix: Attendance grid + curatorship access
+
+### Scope
+Hotfixes para `/attendance` e `/admin/curatorship`: `get_attendance_grid` retornava HTTP 400 no PostgREST; `get_tribe_attendance_grid` mostrava N/A para reunião de tribo sem linhas de presença; a ilha de curadoria ignorava capacidades V4 `curate_content`.
+
+### Delivered
+- Migration `20260722010000_p201_fix_attendance_grid_status_ambiguity.sql` qualifica `status` como `cs2.status` / `cs3.status` em `detractor_calc`, sem mudar assinatura da RPC.
+- Migration `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql` remove a branch `row_count=0 -> na` em `get_tribe_attendance_grid`, para que evento elegível de hoje/passado sem marcação apareça como `absent`.
+- `src/components/boards/CuratorshipBoardIsland.tsx` e `src/components/nav/AdminNav.astro` passam a aceitar `canFor('curate_content')` e `canFor('participate_in_governance_review')` além do gate legado `admin.curation`.
+- SQL aplicado diretamente via Supabase MCP porque `supabase db push` está bloqueado por drift antigo de migration history; migration marcada como aplicada com `supabase migration repair --status applied 20260722010000`.
+- Segunda migration marcada como aplicada com `supabase migration repair --status applied 20260722020000`.
+
+### Validation
+- API log confirmou o 400 em `POST /rest/v1/rpc/get_attendance_grid`; Postgres log no mesmo timestamp confirmou `column reference "status" is ambiguous`.
+- `pg_get_functiondef` confirmou a função live com `cs2.status` e `cs3.status`.
+- Chamada SQL simulando usuário autenticado retornou JSON com `summary`, `events` e `tribes`.
+- Simulação de Marcos Klemz na Tribo 7 para o evento `4b31e97d-2b63-4548-91af-65adbec6fb46` retorna `today_status='absent'`.
+- DB confirma Roberto Macêdo e Sarah Faria com `curate_content=true` e `participate_in_governance_review=true`.
+- `check_schema_invariants()` permaneceu 16/16 em 0 violações.
+
+### Rollback
+Restaurar o corpo anterior de `get_attendance_grid(integer, text)` a partir de `20260722000000_p201_bug_201_a_cancelled_event_attendance_display.sql`. Para `get_tribe_attendance_grid`, reinserir a branch `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'` antes do `ELSE CASE`. Para curadoria, reverter `CuratorshipBoardIsland` e `AdminNav` ao gate legado `hasPermission(..., 'admin.curation')`. Usar somente para bisect emergencial, pois os rollbacks reintroduzem os bugs reportados.
+
+## 2026-05-19 — p40-p201 release backfill: structural milestones
+
+### Scope
+Backfill resumido das principais entregas entre o baseline pós-V4 (`2026-04-17`) e os hotfixes p201. Este bloco não substitui o histórico detalhado em ADRs/migrations/git log; serve como ponte auditável para release governance.
+
+### Milestones
+- **p40-p64 — V4 RPC/RLS hardening + subsystem retirement:** Phase B'' conversions, service-role adapter pattern, ingestion/release-readiness/governance-bundle retirement. ADRs 0025-0040 e GC-141.
+- **p65-p106 — MCP expansion + threat model + meeting traceability:** ADR-0018 mitigations, confirmation gates, rate limits/anomaly detection, meeting-board traceability closure. ADRs 0045-0049 e 0053-0058.
+- **p116-p126 — PMI Journey + CV extraction + LGPD substrate:** portal/token substrate, CV text extraction, consent/legal-basis work and retention/anonymization extensions. ADRs 0075-0076 and related migrations.
+- **p150-p159 — Selection AI/video + dual-track onboarding:** subjective/video scoring, interview automation, dual-track application/onboarding data and dashboard metadata.
+- **p160-p166 — Gamification config + Champions + capability cache:** ADR-0081, ADR-0083, XP pillar/rules refactors, Champion ledger, V4 UI gates.
+- **p168-p173 — Attendance/selection sync + VEP linkage + multi-leader digest:** ATT-1/2/3, canonical impact hours, VEP→engagement FK, invariant Q, leader digest expansion.
+- **p176-p181 — RPC drift capture and tier cleanup:** broad RPC body drift sweeps, LGPD gates, `has_min_tier` V4 replacement and removal.
+- **p190-p195 — Cross-initiative metrics and selection storage:** ADR-0085 metric scoping, governance-review carve-outs, selection resume/profile storage improvements.
+- **p196-p198 — Curation FSM and committee workspace:** ADR-0086, peer/leader review flow, Curadoria workspace seed and live Débora case.
+- **p200-p201 — Curator V4 action and p201 hardening:** ADR-0087 `curate_content` sweep, document_* RLS carry identified, MCP/docs audit, Cloudflare 1010 diagnosis, attendance/curatorship hotfixes.
+
+### Validation
+- p201 audit confirmed MCP runtime `tools/list=293`, `nucleo-mcp /health=293`, and `check_schema_invariants()` 16/16 with 0 violations.
+- Hotfix-specific validation lives in the p201 hotfix entry above.
+
+### Follow-up
+- Full per-session release reconstruction remains open as governance debt; see `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #31 and `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`.
+
 ## 2026-04-17 — v3.2.1: Post-V4 Structural Quality — ADR-0011/0012/0013 + Governance Baseline + Advisor CI
 
 ### Scope
