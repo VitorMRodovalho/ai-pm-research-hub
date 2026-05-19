@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-266%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
+[![MCP](https://img.shields.io/badge/MCP-293%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -43,8 +43,8 @@ Fundado en 2024 como piloto en PMI Goias, el proyecto evoluciono hacia una alian
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de gobernanza | 160+ |
 | Posts en el blog | 9 |
-| Herramientas MCP | 266 |
-| Edge Functions | 32 |
+| Herramientas MCP | 293 |
+| Edge Functions | 37 |
 | Claves i18n | 4.000+ (3 idiomas) |
 | Tests | 1.418 pasando (1.456 con service-role) |
 | Costo mensual | $0 |
@@ -80,9 +80,9 @@ graph LR
 
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
-        E --> I[PostgreSQL<br/>189+ RPC · RLS]
-        F --> J[Edge Functions<br/>19 deployed]
-        I --> K[pg_cron<br/>4 jobs]
+        E --> I[PostgreSQL<br/>795 RPC · RLS]
+        F --> J[Edge Functions<br/>37 deployed]
+        I --> K[pg_cron<br/>34 jobs]
     end
 
     subgraph "Observability"
@@ -106,13 +106,13 @@ graph LR
 |------|-----------|---------|
 | **Frontend** | Astro 6 + React 19 + Tailwind 4 | SSR con island architecture, trilingue |
 | **Hospedaje** | Cloudflare Workers | SSR en el edge, proxy OAuth, proxy MCP |
-| **Base de Datos** | Supabase PostgreSQL | 189+ funciones SECURITY DEFINER, RLS |
+| **Base de Datos** | Supabase PostgreSQL | 795 RPCs y helpers SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor personalizado (64 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
-| **Logica Server** | Supabase Edge Functions (32) | Sync Credly, asistencia, MCP, campañas, PostHog proxy |
+| **MCP** | Servidor personalizado (293 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
+| **Logica Server** | Supabase Edge Functions (37) | Sync Credly, asistencia, MCP, campañas, PostHog proxy, AI/video |
 | **Analytics** | PostHog | Analytics de producto, session replay |
 | **Errores** | Sentry | Monitoreo de errores en tiempo real |
-| **Cron** | pg_cron (4 jobs) | Sync Credly, asistencia, alertas detractores, recordatorios |
+| **Cron** | pg_cron (34 jobs) | Sync Credly, asistencia, alertas detractores, recordatorios, LGPD, AI/video y digests |
 | **DnD** | @dnd-kit | BoardEngine Kanban |
 | **Rich Text** | TipTap | Actas de reunion, editor de blog |
 
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracion con IA
 
-Cualquier miembro puede conectar Claude, ChatGPT, Perplexity, Cursor o VS Code a la plataforma via Model Context Protocol. 64 herramientas (51 lectura + 13 escritura) autenticadas via OAuth 2.1 con Row Level Security. Auto-refresh server-side mantiene sesiones activas por hasta 30 dias sin reconexion manual. Capa de conocimiento dinamica adapta orientaciones al rol y permisos de cada miembro.
+Cualquier miembro puede conectar Claude, ChatGPT, Perplexity, Cursor o VS Code a la plataforma via Model Context Protocol. 293 herramientas autenticadas via OAuth 2.1 con Row Level Security. Auto-refresh server-side mantiene sesiones activas por hasta 30 dias sin reconexion manual. Capa de conocimiento dinamica adapta orientaciones al rol y permisos de cada miembro.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,7 +151,7 @@ sequenceDiagram
 
 | Compatibilidad | Estado |
 |----------------|--------|
-| Claude.ai | Verificado (64 herramientas) |
+| Claude.ai | Verificado (293 herramientas) |
 | Claude Code | Verificado |
 | ChatGPT | Verificado (beta) |
 | Perplexity | Verificado |
@@ -190,7 +190,7 @@ sequenceDiagram
 
 Este proyecto opera bajo un modelo formal de gobernanza con niveles jerarquicos de acceso, un comite de revision por pares (*Comite de Curadoria*), y procesos selectivos basados en merito. Todas las decisiones se rastrean en el changelog.
 
-- [Changelog de Gobernanza](docs/GOVERNANCE_CHANGELOG.md) — 135+ entradas (GC-001 a GC-135+)
+- [Changelog de Gobernanza](docs/GOVERNANCE_CHANGELOG.md) — 141+ entradas (GC-001 a GC-141+)
 - [Board de Sprints](https://github.com/users/VitorMRodovalho/projects/1/)
 - [Guia de Contribucion](CONTRIBUTING.md)
 
@@ -227,7 +227,7 @@ npm test
 │   ├── lib/            # Cliente Supabase, auth, utilitarios
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 32 Edge Functions
+│   ├── functions/      # 37 Edge Functions
 │   └── migrations/     # Migraciones de base de datos
 ├── tests/              # 1.418 tests pasando
 ├── docs/               # Gobernanza, guias, specs

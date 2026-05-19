@@ -12,7 +12,7 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Log a release         | docs/RELEASE_LOG.md |
 | Member fields         | `operational_role`, `designations` (`role`/`roles` dropped in Wave 8) |
 | History               | `member_cycle_history` |
-| Edge functions        | supabase/functions/ (19 deployed, 4 with --no-verify-jwt) |
+| Edge functions        | supabase/functions/ (~37 deployed, 4 with --no-verify-jwt) |
 | DB schema / types     | `src/lib/database.gen.ts` (run `npm run db:types` to refresh) |
 | Data import scripts   | `scripts/` (trello, calendar, volunteer CSV, miro importers) |
 | Pre-push              | `npm test` + `npm run build` |
@@ -40,10 +40,10 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Charts    | Chart.js v4 (native)           |
 | Hosting   | Cloudflare Workers SSR         |
 | Database  | Supabase (PostgreSQL, auth, RLS) |
-| Backend   | Supabase Edge Functions (20 deployed) |
+| Backend   | Supabase Edge Functions (~37 deployed) |
 | Auth      | Google + LinkedIn (OIDC) + Microsoft (Azure) |
 | Env access | `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`) |
-| MCP       | 64 tools (51R + 13W), OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
+| MCP       | 293 tools, OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
 | Observability | PostHog (custom events) + Sentry (global handlers) |
 | i18n      | PT-BR, EN, ES (keys in `src/i18n/`) |
 
@@ -92,7 +92,7 @@ Before changing behavior or schema, check these for constraints and current stat
    See CLAUDE.md for mandatory validation rules before any commit (SQL/RPC, i18n, routes, RPC signatures).
 
 10. **Database patterns**
-    ~189+ SECURITY DEFINER functions, RLS recursion pattern (queries via RPCs, not `.from()`). 12 tables have `rpc_only_deny_all` policies. 4 pg_cron jobs active.
+    ~795 RPCs / SECURITY DEFINER helpers, RLS recursion pattern (queries via RPCs, not `.from()` when possible). 12 tables have `rpc_only_deny_all` policies. ~34 pg_cron jobs active.
 
 ## Local workflow
 
@@ -123,7 +123,7 @@ See `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` for the full De
 - **Pages**: `src/pages/` (including `en/`, `es/`, `admin/`).
 - **Components**: `src/components/` (sections, UI, nav, attendance).
 - **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants, navigation config).
-- **Edge functions**: `supabase/functions/` — 17 deployed (verify-credly, sync-comms-metrics, sync-knowledge-insights, sync-credly-all, sync-attendance-points, send-campaign, send-global-onboarding, send-allocation-notify, nucleo-mcp, etc.); 4 with `--no-verify-jwt`.
+- **Edge functions**: `supabase/functions/` — ~37 deployed (verify-credly, sync-comms-metrics, sync-knowledge-insights, sync-credly-all, sync-attendance-points, send-campaign, send-global-onboarding, send-allocation-notify, nucleo-mcp, AI/video functions, etc.); 4 with `--no-verify-jwt`.
 - **Migrations**: `supabase/migrations/` (tracked in repo / linked project schema refreshed), with supporting SQL in `docs/migrations/` (archived).
 - **Scripts**: `scripts/` — data importers (Trello boards, Google Calendar ICS, PMI volunteer CSVs, Miro links), knowledge file detective, WhatsApp NLP analysis.
 - **Data staging**: `data/` — staging area for knowledge assets and ETL pipeline.

@@ -271,3 +271,134 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - Open count corrected: 12 → 10.
 - Migrations head corrected: `20260674800000` → `20260675300000`.
 - Commits/deploys corrected: 9 → 15 / `ba764141` → `5f6619cc`.
+
+---
+
+## Onda 4 — p201 MCP + guardian QA/QC audit (2026-05-19)
+
+**Runtime evidence collected:** Supabase Edge Function logs show recent `nucleo-mcp/mcp` calls returning HTTP `200/202`; live `tools/list` returns **293 tools**; `check_schema_invariants()` returns **16/16 invariants with 0 violations**; `mcp_usage_log` has **0 failures in the last 14 days**. Historical MCP failures confirm the expected post-migration drift class (`tribe_id`, `member_status_transitions`, `cpmai_sessions`) but no active recurrence.
+
+### 29. GAP — `document_*` RLS policies retêm V3 gates sem backlog formal
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Migration `20260721000000_p201_gap_200_a_v4_curator_rls_swap.sql` explicitly preserves three `document_*` policies with `operational_role IN ('manager','deputy_manager','tribe_leader')` and `chapter_board` / `chapter_witness` designation checks, marked as out of scope for ADR-0087 and "tracked separately".
+- **Impact:** When chapter-board style authority is granted only through V4 engagements, these governance document policies can silently deny access.
+- **Proposta:** Create ADR-0088 or an equivalent backlog item for the final document-permissions V4 sweep; include smoke tests proving V4 chapter-board access before removing the carry gates.
+- **Cross-ref:** ADR-0011, ADR-0087, migration `20260721000000`.
+
+### 30. GAP — Platform Guardian spec desatualizado: 15 invariantes / 83 ADRs / 289 tools
+- **Tipo:** gap · **Severity:** MEDIUM · **Effort:** XS
+- **Trigger:** `.claude/agents/platform-guardian.md` still expects 15 invariants, 83 ADRs, and 289 MCP tools. Runtime/code reality is 16 invariants, 86 ADR files plus ADR-0082 reserved, and 293 MCP tools.
+- **Impact:** Future guardian runs can produce false-positive drift reports or miss invariant Q in the expected set.
+- **Fix:** Update the guardian spec pins to: 16 invariants (A1-A3, B-F, J-Q), MCP 293 tools, ADR coverage through ADR-0087.
+
+### 31. ISSUE — `docs/RELEASE_LOG.md` sem backfill pós-Sprint 34
+- **Tipo:** issue · **Severity:** HIGH · **Effort:** L for backfill / XS for process
+- **Trigger:** Guardian p201 audit found release history not reflecting the V4 refactor era, MCP v2.x growth, LGPD cycle, selection AI/video screening, curation pipeline, and recent ADR/invariant additions.
+- **Impact:** External auditability and internal onboarding depend on scattered git history instead of the formal release channel required by project rules.
+- **Proposta:** Backfill 5-10 milestone entries, then restore sprint-closure discipline for release entries after production-impacting changes.
+
+### 32. GAP — Missing contract tests for curation review RPCs
+- **Tipo:** gap · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** `complete_peer_review` and `complete_leader_review` shipped as part of the curation FSM work but remain without focused DB contract tests.
+- **Impact:** Regressions in ADR-0086 curation state transitions can pass unnoticed.
+- **Proposta:** Add contract tests for invalid assignee, leader approval transition to `curation_pending`, and invariant preservation after review workflow operations.
+
+### 33. OPPORTUNITY — Comitê Curadoria workspace full scope still deferred
+- **Tipo:** opportunity · **Severity:** LOW · **Effort:** L
+- **Trigger:** Curadoria workspace board exists, but the broader OPP-196.D cross-pipeline RPC/UI tabs scope remains deferred.
+- **Impact:** Curators still lack a unified queue across governance docs, manuals, webinars, and board items.
+- **Proposta:** Prioritize only after curator feedback confirms the workspace board is being used.
+
+### 34. GAP — `gamification_points` lacks `initiative_id` for strict semantic scoping
+- **Tipo:** gap · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** ADR-0085 documents that XP metrics in `exec_cross_initiative_comparison` remain cohort-scoped because `gamification_points` has no `initiative_id`.
+- **Impact:** Initiative/tribe gamification can overstate or misattribute XP across initiatives.
+- **Proposta:** Add `initiative_id uuid` to `gamification_points` with backfill/trigger strategy from event or award context; create ADR if this becomes a semantic contract change.
+- **Cross-ref:** ADR-0085, GAP-194.B.
+
+### 35. GAP — User-facing MCP docs drift from runtime tool inventory
+- **Tipo:** gap · **Severity:** MEDIUM · **Effort:** XS
+- **Trigger:** Runtime `tools/list` returns 293 tools and `/health` reports 293. `README.md` still says 284, while `docs/MCP_SETUP_GUIDE.md` still says 68 tools and "Available Tools (29 total)".
+- **Impact:** AI/client onboarding docs understate capability and confuse QA baselines.
+- **Fix:** Update `README.md` and `docs/MCP_SETUP_GUIDE.md`; avoid manually maintained exhaustive counts where possible and point to runtime `tools/list` as the source of truth.
+- **Resolution p201 audit follow-up:** `README.md` and `docs/MCP_SETUP_GUIDE.md` updated to 293 tools; MCP guide now labels the table as representative examples and names `tools/list` as runtime source of truth.
+
+### 36. GAP — MCP tool inventory source is manual and duplicated
+- **Tipo:** gap · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** Runtime is 293 tools, `.claude/rules/mcp.md` is current, but README/MCP guide and old comments drifted. `supabase/functions/nucleo-mcp/index.ts` also still has a stale comment `Register 94 tools`.
+- **Impact:** Audits rely on grep/manual counts and stale docs instead of a single canonical generated inventory.
+- **Proposta:** Add a small QA script that calls `tools/list` and compares against `/health`, `.claude/rules/mcp.md`, README, and MCP setup docs.
+- **Partial resolution p201 audit follow-up:** stale `Register 94 tools` comment updated to 293. QA script remains open.
+
+### 37. ISSUE — Debug instrumentation residue in `nucleo-mcp/index.ts` must not ship
+- **Tipo:** issue · **Severity:** HIGH before deploy · **Effort:** XS
+- **Trigger:** Debug-mode instrumentation introduced `agentDebugLog(...)` calls posting to local session endpoint `127.0.0.1:7888` with session `edf848`.
+- **Impact:** The fetch is fail-silent in production-like runtimes but is still debug residue, adds unnecessary request attempts, and leaks implementation detail into production code if deployed.
+- **Status:** Intentionally left in place during active debug mode until the current reproduction/verification loop is closed. Must be removed before commit/deploy unless explicitly retained for a local-only debug run.
+- **Guardrail:** Add pre-deploy grep/check for `agentDebugLog`, `X-Debug-Session-Id`, and `.cursor/debug-*.log` references in source.
+
+### 38. OPPORTUNITY — Semantic layer contracts for MCP domains
+- **Tipo:** opportunity · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** `nucleo-mcp/index.ts` exposes 293 tools from a monolithic file and mixes direct table reads (`members`, `public_members`, `events`, `project_boards`, `board_items`) with RPC-backed semantic operations. Runtime is healthy, but schema drift history shows failures occur when domain primitives migrate faster than MCP callsites.
+- **Impact:** Future migrations can break MCP behavior while HTTP still returns 200, making failures visible only inside tool payloads or `mcp_usage_log`.
+- **Proposta:** Define domain-level semantic contracts for `member`, `initiative`, `board`, `selection`, `governance`, `curation`, and `gamification`; prefer stable RPC/view envelopes for AI-facing tools; add smoke tests that call a representative tool per domain and assert envelope shape plus no `mcp_usage_log.success=false`.
+- **Cross-ref:** ADR-0005, ADR-0007, ADR-0011, ADR-0012, ADR-0015, ADR-0085.
+
+### 39. ISSUE — Local Supabase stack cannot start from migrations
+- **Tipo:** issue · **Severity:** HIGH for local debug/QA · **Effort:** M
+- **Trigger:** `supabase start` during p201 MCP debug failed while applying `00000000_baseline_rpcs.sql` with `ERROR: type "public.members" does not exist (SQLSTATE 42704)`. The failing statement creates `get_member_by_auth()` returning `SETOF public.members` before the `members` table exists in the local migration order.
+- **Impact:** Local Edge Function debugging via `supabase functions serve` is blocked, forcing QA to rely on production/remoto logs and making debug instrumentation hard to verify before deployment.
+- **Proposta:** Rework the local baseline migration order or split baseline RPCs so table types exist before functions returning table row types. Add a local-stack smoke check to pre-QA runbooks.
+- **Extra evidence:** Direct Deno fallback also failed because `deno` is not installed in the local PATH, so the Supabase CLI local stack is currently the only intended path for Edge Function local execution.
+
+### 40. ISSUE — Cloudflare Browser Integrity blocks MCP/OAuth discovery for banned client signatures
+- **Tipo:** issue · **Severity:** HIGH for MCP client onboarding · **Effort:** S
+- **Trigger:** p201 MCP connection debug reproduced against production domain. Requests to `https://nucleoia.vitormr.dev/mcp`, `/.well-known/oauth-protected-resource`, and `/.well-known/oauth-authorization-server` with a default Python client signature returned Cloudflare `403` / `Error 1010: browser_signature_banned` before reaching Astro. The same protected-resource endpoint returned `200` with browser/Claude-like/curl user-agents; `/mcp` with a Claude-like user-agent returned the expected `401` plus `WWW-Authenticate: Bearer resource_metadata="https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource"`.
+- **Impact:** Some AI clients can fail during initial MCP connection/discovery without any `mcp_usage_log` entry, because Cloudflare blocks them before the request reaches `/mcp` or OAuth routes.
+- **Proposta:** Add Cloudflare WAF/Bot/BIC skip rule for MCP/OAuth bootstrap routes (`/mcp`, `/.well-known/oauth-*`, `/oauth/*`) or otherwise allow known MCP client signatures. Re-test with the exact Claude.ai connector user-agent/fingerprint after rule change.
+- **Cross-ref:** ADR-0018 MCP threat model, CLAUDE.md decision #2 (custom domain used to avoid `.workers.dev` Bot Fight Mode issues).
+- **Follow-up p201 21:01Z:** Rule not yet effective for the blocked signature. Retest without user-agent still returned `403 Error 1010` for `GET /mcp` (Ray `9fe609cc68361518`), `GET /.well-known/oauth-protected-resource` (Ray `9fe609ccdfea7bf3`), `GET /.well-known/oauth-authorization-server` (Ray `9fe609cd4f7b6ac3`), and `POST /mcp` initialize (Ray `9fe609cdbc83181e`). Expected post-fix behavior: `/.well-known/*` returns `200`; unauthenticated `/mcp` returns `401` with `WWW-Authenticate`.
+- **Follow-up p201 21:02Z:** Still blocked. Retest without user-agent returned `403 Error 1010` for `GET /mcp` (Ray `9fe60b21aeaf181c`), `POST /mcp` initialize (Ray `9fe60b220e7d1824`), `GET /.well-known/oauth-protected-resource` (Ray `9fe60b229ebf1820`), `GET /.well-known/oauth-authorization-server` (Ray `9fe60b22f8d41521`), and `GET /oauth/authorize?...` (Ray `9fe60b236fc71818`). This confirms the skip/allow rule must include both `.well-known` and `/oauth/*`, and must skip Browser Integrity/Bot checks, not only WAF custom rules.
+- **Cloudflare docs check:** Official Error 1010 docs state the cause is access denied based on browser signature and the owner-side resolution is to turn off Browser Integrity Check in Security settings. Cloudflare WAF docs also confirm custom rules can use `Skip`, but the selected skip options must include the relevant security features (Bot/BIC/managed challenge as applicable).
+- **Follow-up p201 21:04Z:** Still blocked after another reproduction. Retest without user-agent returned `403 Error 1010` for `GET /mcp` (Ray `9fe60dc55ef31516`), `POST /mcp` initialize (Ray `9fe60dc61b331826`), `GET /.well-known/oauth-protected-resource` (Ray `9fe60dc69abc151c`), `GET /.well-known/oauth-authorization-server` (Ray `9fe60dc71aec1518`), and `GET /oauth/authorize?...` (Ray `9fe60dc7a8ad151e`). No request reaches Astro, so no `mcp_usage_log` or app-side debug log is expected.
+- **Follow-up p201 21:05Z:** Browser-like and `Claude-User/1.0` user-agents pass the bootstrap chain: `GET /mcp` returns expected `401 + WWW-Authenticate`, `/.well-known/oauth-*` returns `200`, `POST /oauth/register` returns `201`, and `/oauth/authorize` renders consent `200`. `Python-urllib` default signature remains blocked by `1010`. If the real Claude connector still fails, capture its exact error/Ray ID because its production fingerprint may differ from the synthetic `Claude-User/1.0` test.
+- **Follow-up p201 21:07Z:** App-side telemetry still empty (`mcp_usage_log` last 5 min = 0 rows). Synthetic comparison unchanged: blocked default signature receives `403 Error 1010` on `/mcp` (Ray `9fe612d38c4b1514`), while `Claude-User/1.0` receives expected `401 + WWW-Authenticate`. Next required artifact is the Ray ID/error from the real Claude connector or Cloudflare Security Events filtered by path `/mcp` and action `browser_signature_banned`.
+- **Follow-up p201 21:08Z:** Cloudflare Worker Observability confirms only requests that pass the edge reach Worker `platform`: `/mcp` appears as `401` (for allowed synthetic signatures), `/.well-known/oauth-*` as `200`, `/oauth/authorize` as `302`, `/oauth/consent` as `200`. The blocked synthetic Ray `9fe6142a0c891518` does not appear in Worker logs, confirming the `1010` decision happens before Worker execution. Real Claude connector failures must be found in Cloudflare Security Events, not Worker Observability or `mcp_usage_log`.
+
+### 41. ISSUE — `/rest/v1/rpc/get_attendance_grid` returns HTTP 400
+- **Tipo:** issue · **Severity:** HIGH user-facing attendance page · **Effort:** S/M
+- **Trigger:** Browser/runtime console reported `ldrfrvwhxsmgaabwmaik.supabase.co/rest/v1/rpc/get_attendance_grid:1 Failed to load resource: the server responded with a status of 400 ()`.
+- **Runtime evidence:** Live DB contract check confirms function exists as `public.get_attendance_grid(p_tribe_id integer, p_event_type text) RETURNS jsonb`. Supabase API log confirms `POST /rest/v1/rpc/get_attendance_grid` returned 400 at `2026-05-19T21:08:09.148Z` (request id `8ccdde21-432b-4b57-be92-0d85bf1b0a13`). Postgres log at the same timestamp reports `ERROR: column reference "status" is ambiguous`.
+- **Root cause:** Migration `20260722000000_p201_bug_201_a_cancelled_event_attendance_display.sql` added `e.status` to `grid_events` while `cell_status` already emitted a `status` column. Nested `detractor_calc` subqueries still selected bare `status` after joining `cell_status` and `grid_events`.
+- **Impact:** Attendance grid can fail to load for affected authenticated users/routes even though the RPC exists.
+- **Fix:** Migration `20260722010000_p201_fix_attendance_grid_status_ambiguity.sql` qualifies nested selectors as `cs2.status` and `cs3.status` without changing the RPC signature.
+- **Resolution p201 live fix:** SQL applied directly via Supabase MCP because `supabase db push` is blocked by older remote-only migration history drift; migration history repaired with `supabase migration repair --status applied 20260722010000`.
+- **Validation:** `pg_get_functiondef` confirms both `SELECT cs2.status` and `SELECT cs3.status` are live; simulated authenticated SQL call returns a JSON object with `summary`, `events`, and `tribes`; `check_schema_invariants()` remains 16/16 with 0 violations. Post-fix browser reproduction still required to confirm no new PostgREST 400 in API logs.
+- **Follow-up p201 21:34Z:** After user reproduction, Supabase API logs contained no new `POST /rest/v1/rpc/get_attendance_grid` 400 entries and Postgres logs contained no new ambiguous `status` error. Function body still confirmed live with `cs2.status`/`cs3.status`. Visual/browser confirmation still pending.
+
+### 42. ISSUE — Tribe attendance grid shows N/A for empty same-day tribe meeting
+- **Tipo:** issue · **Severity:** HIGH user-facing tribe leader attendance · **Effort:** S
+- **Trigger:** Marcos Klemz reported that the 2026-05-19 Tribe 7 meeting showed `—`/N/A for all participants, including himself, while the global/admin view showed `X`/absence until attendance is marked.
+- **Runtime evidence:** Event `4b31e97d-2b63-4548-91af-65adbec6fb46` (`Governança & Trustworthy AI — Reunião Semanal`) is `type='tribo'`, `status='scheduled'`, initiative `legacy_tribe_id=7`. Marcos and active Tribe 7 members are eligible and have no attendance rows. Before fix, `get_tribe_attendance_grid(7, NULL)` returned `na` for Marcos/Antonio Marcos because `cell_status` had `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'`.
+- **Root cause:** Tribe-specific RPC treated an event with zero attendance rows as not applicable. For same-day/past eligible events, zero rows means "not marked yet" and should render as `absent`; future events are already handled by the `ge.date > CURRENT_DATE` branch.
+- **Fix:** Migration `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql` removes the empty-event `na` branch from `get_tribe_attendance_grid`.
+- **Validation:** `pg_get_functiondef` confirms the branch is gone; simulated Marcos auth returns `today_status='absent'` for the Tribe 7 event; `check_schema_invariants()` remains 16/16 with 0 violations.
+- **Rollback:** Reinsert `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'` before the final `ELSE CASE` in `cell_status` of `get_tribe_attendance_grid`.
+
+### 43. ISSUE — Curatorship UI gate ignores V4 `curate_content`
+- **Tipo:** issue · **Severity:** HIGH for curator access · **Effort:** XS
+- **Trigger:** Roberto reported inability to access admin curatorship. Live DB confirms Roberto and Sarah both have `can_by_member(..., 'curate_content') = true` and `participate_in_governance_review = true` via active Curadoria engagements.
+- **Root cause:** `CuratorshipBoardIsland` derived access only from legacy `hasPermission(authMember, 'admin.curation')`, which depends on local role/designation permission maps. It did not check the V4 capability cache populated by `get_caller_capabilities()`.
+- **Fix:** `src/components/boards/CuratorshipBoardIsland.tsx` now accepts `canFor('curate_content')` or `canFor('participate_in_governance_review')` in addition to the legacy `hasPermission` check. `src/components/nav/AdminNav.astro` now applies the same V4 curatorship exception for the admin subnav link.
+- **Validation:** `ReadLints` clean. DB evidence: Roberto/Sarah have V4 curation actions. Browser confirmation pending.
+- **Follow-up:** `AdminNav` fallback is disabled during superadmin simulation (`!isSimulating`) so simulated profiles do not inherit the real user's capability cache.
+- **Rollback:** Revert the import/use of `canFor` and restore `return hasPermission(authMember, 'admin.curation')` plus the legacy AdminNav permission map only; this would reintroduce the V4 access bug for curators whose UI permission map is stale.
+
+### 44. GAP — Herlon `study_group_owner/leader` active but non-authoritative
+- **Tipo:** gap · **Severity:** MEDIUM/HIGH permission architecture · **Effort:** M
+- **Trigger:** Herlon appears as `operational_role='observer'` with no V4 capabilities, despite active engagement `study_group_owner` / `leader` in `Preparatório CPMAI — Ciclo 3 (2026)`.
+- **Runtime evidence:** `engagement_kind_permissions` grants `study_group_owner/leader` actions (`manage_event`, `manage_member`, `write`, `write_board`, `participate_in_governance_review`, etc.), but `auth_engagements` shows Herlon's `study_group_owner/leader` row as `requires_agreement=true`, `agreement_certificate_id=NULL`, `is_authoritative=false`. Therefore `get_caller_capabilities()` returns empty `org_actions`, `tribe_actions`, and `initiative_actions`.
+- **Impact:** Herlon is visibly a leader of a study group but receives no operational capabilities, and the single-value `operational_role` cache remains `observer`.
+- **Decision needed:** Either (a) issue/sign the required agreement/certificate for the study group owner engagement; (b) amend `engagement_kind_permissions` / agreement requirements for `study_group_owner`; or (c) treat this as intentional pending-authority state and add UX explaining "leadership pending agreement".
+- **Cross-ref:** Existing Item #4 Track E root and ADR-0080 pending cutover.
+- **Cross-ref:** Recent migration `20260722000000_p201_bug_201_a_cancelled_event_attendance_display.sql` touched `get_attendance_grid`; regression check should compare before/after payload shape and function signature.
