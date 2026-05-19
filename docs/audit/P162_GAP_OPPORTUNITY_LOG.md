@@ -285,11 +285,12 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Proposta:** Create ADR-0088 or an equivalent backlog item for the final document-permissions V4 sweep; include smoke tests proving V4 chapter-board access before removing the carry gates.
 - **Cross-ref:** ADR-0011, ADR-0087, migration `20260721000000`.
 
-### 30. GAP — Platform Guardian spec desatualizado: 15 invariantes / 83 ADRs / 289 tools
+### 30. GAP — Platform Guardian spec desatualizado: 15 invariantes / 83 ADRs / 289 tools — RESOLVED
 - **Tipo:** gap · **Severity:** MEDIUM · **Effort:** XS
 - **Trigger:** `.claude/agents/platform-guardian.md` still expects 15 invariants, 83 ADRs, and 289 MCP tools. Runtime/code reality is 16 invariants, 86 ADR files plus ADR-0082 reserved, and 293 MCP tools.
 - **Impact:** Future guardian runs can produce false-positive drift reports or miss invariant Q in the expected set.
 - **Fix:** Update the guardian spec pins to: 16 invariants (A1-A3, B-F, J-Q), MCP 293 tools, ADR coverage through ADR-0087.
+- **Resolution p201 coordinator (2026-05-19):** Fixed in commit `bc14694f`. Guardian spec now pinned to 16 invariants, 293 tools, ADR-0087 coverage; subsequent guardian run (this session close) confirmed no drift.
 
 ### 31. ISSUE — `docs/RELEASE_LOG.md` sem backfill pós-Sprint 34
 - **Tipo:** issue · **Severity:** HIGH · **Effort:** L for backfill / XS for process
@@ -330,12 +331,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Proposta:** Add a small QA script that calls `tools/list` and compares against `/health`, `.claude/rules/mcp.md`, README, and MCP setup docs.
 - **Partial resolution p201 audit follow-up:** stale `Register 94 tools` comment updated to 293. QA script remains open.
 
-### 37. ISSUE — Debug instrumentation residue in `nucleo-mcp/index.ts` must not ship
+### 37. ISSUE — Debug instrumentation residue in `nucleo-mcp/index.ts` must not ship — RESOLVED
 - **Tipo:** issue · **Severity:** HIGH before deploy · **Effort:** XS
 - **Trigger:** Debug-mode instrumentation introduced `agentDebugLog(...)` calls posting to local session endpoint `127.0.0.1:7888` with session `edf848`.
 - **Impact:** The fetch is fail-silent in production-like runtimes but is still debug residue, adds unnecessary request attempts, and leaks implementation detail into production code if deployed.
 - **Status:** Intentionally left in place during active debug mode until the current reproduction/verification loop is closed. Must be removed before commit/deploy unless explicitly retained for a local-only debug run.
 - **Guardrail:** Add pre-deploy grep/check for `agentDebugLog`, `X-Debug-Session-Id`, and `.cursor/debug-*.log` references in source.
+- **Resolution p201 coordinator (2026-05-19):** Removed before `bc14694f`. Pre-commit grep for `agentDebugLog|X-Debug-Session-Id|127\.0\.0\.1:7888|edf848` against `supabase/functions/nucleo-mcp/index.ts` returned 0 hits; instrumentation never reached `origin/main`. Guardrail (pre-deploy grep) remains a backlog item for `.claude/rules/mcp.md`.
 
 ### 38. OPPORTUNITY — Semantic layer contracts for MCP domains
 - **Tipo:** opportunity · **Severity:** MEDIUM · **Effort:** M
@@ -365,7 +367,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Follow-up p201 21:07Z:** App-side telemetry still empty (`mcp_usage_log` last 5 min = 0 rows). Synthetic comparison unchanged: blocked default signature receives `403 Error 1010` on `/mcp` (Ray `9fe612d38c4b1514`), while `Claude-User/1.0` receives expected `401 + WWW-Authenticate`. Next required artifact is the Ray ID/error from the real Claude connector or Cloudflare Security Events filtered by path `/mcp` and action `browser_signature_banned`.
 - **Follow-up p201 21:08Z:** Cloudflare Worker Observability confirms only requests that pass the edge reach Worker `platform`: `/mcp` appears as `401` (for allowed synthetic signatures), `/.well-known/oauth-*` as `200`, `/oauth/authorize` as `302`, `/oauth/consent` as `200`. The blocked synthetic Ray `9fe6142a0c891518` does not appear in Worker logs, confirming the `1010` decision happens before Worker execution. Real Claude connector failures must be found in Cloudflare Security Events, not Worker Observability or `mcp_usage_log`.
 
-### 41. ISSUE — `/rest/v1/rpc/get_attendance_grid` returns HTTP 400
+### 41. ISSUE — `/rest/v1/rpc/get_attendance_grid` returns HTTP 400 — RESOLVED
 - **Tipo:** issue · **Severity:** HIGH user-facing attendance page · **Effort:** S/M
 - **Trigger:** Browser/runtime console reported `ldrfrvwhxsmgaabwmaik.supabase.co/rest/v1/rpc/get_attendance_grid:1 Failed to load resource: the server responded with a status of 400 ()`.
 - **Runtime evidence:** Live DB contract check confirms function exists as `public.get_attendance_grid(p_tribe_id integer, p_event_type text) RETURNS jsonb`. Supabase API log confirms `POST /rest/v1/rpc/get_attendance_grid` returned 400 at `2026-05-19T21:08:09.148Z` (request id `8ccdde21-432b-4b57-be92-0d85bf1b0a13`). Postgres log at the same timestamp reports `ERROR: column reference "status" is ambiguous`.
@@ -375,8 +377,9 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Resolution p201 live fix:** SQL applied directly via Supabase MCP because `supabase db push` is blocked by older remote-only migration history drift; migration history repaired with `supabase migration repair --status applied 20260722010000`.
 - **Validation:** `pg_get_functiondef` confirms both `SELECT cs2.status` and `SELECT cs3.status` are live; simulated authenticated SQL call returns a JSON object with `summary`, `events`, and `tribes`; `check_schema_invariants()` remains 16/16 with 0 violations. Post-fix browser reproduction still required to confirm no new PostgREST 400 in API logs.
 - **Follow-up p201 21:34Z:** After user reproduction, Supabase API logs contained no new `POST /rest/v1/rpc/get_attendance_grid` 400 entries and Postgres logs contained no new ambiguous `status` error. Function body still confirmed live with `cs2.status`/`cs3.status`. Visual/browser confirmation still pending.
+- **Resolution p201 coordinator (2026-05-19):** Migration `20260722010000` committed in `9c4a01db`; live function body confirmed with `cs2.status`/`cs3.status` qualifiers; `check_schema_invariants()` 16/16 with 0 violations at session close.
 
-### 42. ISSUE — Tribe attendance grid shows N/A for empty same-day tribe meeting
+### 42. ISSUE — Tribe attendance grid shows N/A for empty same-day tribe meeting — RESOLVED
 - **Tipo:** issue · **Severity:** HIGH user-facing tribe leader attendance · **Effort:** S
 - **Trigger:** Marcos Klemz reported that the 2026-05-19 Tribe 7 meeting showed `—`/N/A for all participants, including himself, while the global/admin view showed `X`/absence until attendance is marked.
 - **Runtime evidence:** Event `4b31e97d-2b63-4548-91af-65adbec6fb46` (`Governança & Trustworthy AI — Reunião Semanal`) is `type='tribo'`, `status='scheduled'`, initiative `legacy_tribe_id=7`. Marcos and active Tribe 7 members are eligible and have no attendance rows. Before fix, `get_tribe_attendance_grid(7, NULL)` returned `na` for Marcos/Antonio Marcos because `cell_status` had `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'`.
@@ -384,8 +387,9 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Fix:** Migration `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql` removes the empty-event `na` branch from `get_tribe_attendance_grid`.
 - **Validation:** `pg_get_functiondef` confirms the branch is gone; simulated Marcos auth returns `today_status='absent'` for the Tribe 7 event; `check_schema_invariants()` remains 16/16 with 0 violations.
 - **Rollback:** Reinsert `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'` before the final `ELSE CASE` in `cell_status` of `get_tribe_attendance_grid`.
+- **Resolution p201 coordinator (2026-05-19):** Migration `20260722020000` committed in `9c4a01db`; live function body confirmed via `pg_get_functiondef` with the empty-event `na` branch removed. See LOW-201.A for an idempotence note on the DO-block text-patch approach.
 
-### 43. ISSUE — Curatorship UI gate ignores V4 `curate_content`
+### 43. ISSUE — Curatorship UI gate ignores V4 `curate_content` — RESOLVED
 - **Tipo:** issue · **Severity:** HIGH for curator access · **Effort:** XS
 - **Trigger:** Roberto reported inability to access admin curatorship. Live DB confirms Roberto and Sarah both have `can_by_member(..., 'curate_content') = true` and `participate_in_governance_review = true` via active Curadoria engagements.
 - **Root cause:** `CuratorshipBoardIsland` derived access only from legacy `hasPermission(authMember, 'admin.curation')`, which depends on local role/designation permission maps. It did not check the V4 capability cache populated by `get_caller_capabilities()`.
@@ -393,6 +397,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation:** `ReadLints` clean. DB evidence: Roberto/Sarah have V4 curation actions. Browser confirmation pending.
 - **Follow-up:** `AdminNav` fallback is disabled during superadmin simulation (`!isSimulating`) so simulated profiles do not inherit the real user's capability cache.
 - **Rollback:** Revert the import/use of `canFor` and restore `return hasPermission(authMember, 'admin.curation')` plus the legacy AdminNav permission map only; this would reintroduce the V4 access bug for curators whose UI permission map is stale.
+- **Resolution p201 coordinator (2026-05-19):** Shipped in commits `a6f10cdb` (initial V4 fallback) + `<HEAD>` (MED-201.A guard for superadmin simulation). See MED-201.A (item #45) for the followon.
 
 ### 44. GAP — Herlon `study_group_owner/leader` active but non-authoritative
 - **Tipo:** gap · **Severity:** MEDIUM/HIGH permission architecture · **Effort:** M
@@ -402,3 +407,26 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Decision needed:** Either (a) issue/sign the required agreement/certificate for the study group owner engagement; (b) amend `engagement_kind_permissions` / agreement requirements for `study_group_owner`; or (c) treat this as intentional pending-authority state and add UX explaining "leadership pending agreement".
 - **Cross-ref:** Existing Item #4 Track E root and ADR-0080 pending cutover.
 - **Cross-ref:** Recent migration `20260722000000_p201_bug_201_a_cancelled_event_attendance_display.sql` touched `get_attendance_grid`; regression check should compare before/after payload shape and function signature.
+
+### 45. MED-201.A — CuratorshipBoardIsland canFor() inconsistent with AdminNav under superadmin simulation — RESOLVED
+- **Tipo:** issue (UX inconsistency) · **Severity:** MEDIUM · **Effort:** XS
+- **Trigger:** Council code-reviewer p201 close (commit `a6f10cdb` introduced `canFor('curate_content')` fallback in CuratorshipBoardIsland without the `!isSimulating` guard that AdminNav already had). The capability cache is module-level and reflects the real user, so when a superadmin simulated a tier without curation access the legacy `hasPermission` correctly returned false but the V4 fallback returned true, rendering the curatorship UI inconsistently with the simulated tier.
+- **Impact:** UX-only inconsistency (no security breach — DB RLS still uses real `auth.uid()`). Confuses simulation-based QA for any tier below curator.
+- **Fix:** Add `getSimulation().active` gate around the `canFor` branch, mirroring `AdminNav.astro` line 122. Legacy `hasPermission(authMember, 'admin.curation')` already honours simulation via `getSimulation()` internally.
+- **Resolution p201 coordinator (2026-05-19):** Shipped in `<HEAD>` together with the lane-naming cleanup and the housekeeping resolutions in this section.
+
+### 46. MED-201.B — get_attendance_grid eligibility CTE preserves V3 operational_role hardcoded lists
+- **Tipo:** gap (ADR-0011 carry) · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** Council platform-guardian + code-reviewer p201 close both flagged that `eligibility` CTE in `get_attendance_grid` (lines 90-92 of `20260722010000`) preserves V3-style hardcoded role lists: `m.operational_role IN ('manager','deputy_manager')`, `m.operational_role IN ('manager','deputy_manager','tribe_leader')`, `m.designations && ARRAY['comms_team','comms_leader','comms_member']`.
+- **Classification:** Pre-existing carry, not a regression introduced by p201. The hotfix migration only fixed `status` ambiguity; the eligibility logic was identical to migration `20260722000000`. The predicates are event eligibility classification (who should appear on the grid), not authority gates — caller authority uses `can_by_member()` correctly. ADR-0011 spirit (no hardcoded role lists in SECURITY DEFINER) applies more directly to auth gates than to eligibility filters, but the inconsistency remains.
+- **Impact:** When V4 grants `manage_event` / `tribe_leader` capabilities through engagements without flipping the cached `operational_role`, eligibility classification may understate or misattribute. Limited blast radius because the cache trigger `sync_operational_role_cache` keeps role aligned in typical paths.
+- **Proposta:** Refactor eligibility to derive from `auth_engagements` (or designations source-of-truth) instead of cached `operational_role`. Header of any future migration that touches this function should reference this item.
+- **Cross-ref:** ADR-0011 (V4 cutover invariants), migration `20260722010000` lines 90-92.
+
+### 47. LOW-201.A — get_tribe_attendance_grid DO-block text-patch idempotence is whitespace-sensitive
+- **Tipo:** opportunity (migration robustness) · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council code-reviewer flagged that `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql` uses `pg_get_functiondef` + `LIKE` + `replace()` to remove a single line from the live function body. The `LIKE` precondition guards against re-apply, but the `replace()` is whitespace-sensitive (exact string `'        WHEN COALESCE(erc.row_count, 0) = 0 THEN \'na\'\n        ELSE CASE'`). If the live body's indentation drifts (tab vs spaces, trailing whitespace), the `LIKE` may still match while `replace()` silently fails, leaving the bug in place with no error raised.
+- **Impact:** Low for this specific migration (live body is known and matches), but the pattern is fragile if reused.
+- **Proposta:** Prefer full `CREATE OR REPLACE FUNCTION` (the pattern used by `20260722010000`) for future similar fixes; or add a post-patch assertion that confirms the new body no longer contains the removed string.
+- **Cross-ref:** Migration `20260722020000` lines 45-53.
+
