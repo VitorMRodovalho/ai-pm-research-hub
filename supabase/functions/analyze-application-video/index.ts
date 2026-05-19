@@ -26,6 +26,14 @@
 // - OPENAI_API_KEY missing → skip Whisper, use existing pmi_video_screenings.transcription or "(no transcription)"
 // - Drive thumbnail unreachable → text-only analysis
 // - Claude error → log + skip pillar
+//
+// p199-a hotfix (2026-05-19 post-quota re-smoke): include organization_id explicitly
+// in selection_evaluation_ai_suggestions INSERT. Table default is auth_org() which
+// returns NULL under service_role (no auth.uid()), causing NOT NULL violation
+// observed in re-smoke (ai_processing_log row 5414b444 — Whisper+Claude succeeded
+// 20.8s, only the final insert failed). Pulled from app.organization_id (NOT NULL
+// on selection_applications). ai_processing_log has a hardcoded org_id default so
+// is unaffected — asymmetric design preserved intentionally.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -211,7 +219,7 @@ async function processVideosBackground(
   try {
     const { data: app, error: appErr } = await sb
       .from("selection_applications")
-      .select("id, applicant_name, cycle_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
+      .select("id, applicant_name, cycle_id, organization_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
       .eq("id", application_id).single();
     if (appErr || !app) { console.error("app_not_found:", appErr?.message); return; }
     if (!app.consent_ai_analysis_at || app.consent_ai_analysis_revoked_at) {
@@ -280,8 +288,12 @@ async function processVideosBackground(
         });
 
         stage = "suggestion_insert";
+        // organization_id explicit — table default auth_org() returns NULL under
+        // service_role (no auth.uid()), causing NOT NULL violation. Pull from
+        // selection_applications.organization_id (NOT NULL) for tenant alignment.
         const { error: sugErr } = await sb.from("selection_evaluation_ai_suggestions").insert({
-          application_id, evaluation_type: "video",
+          application_id, organization_id: app.organization_id,
+          evaluation_type: "video",
           suggested_scores: { [v.pillar]: analysis.score },
           suggested_criterion_notes: { [v.pillar]: analysis.criterion_notes },
           suggested_overall_summary: analysis.reasoning,
