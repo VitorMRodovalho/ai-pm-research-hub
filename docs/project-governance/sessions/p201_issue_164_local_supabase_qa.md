@@ -1,7 +1,7 @@
 ---
 issue: 164
 title: infra - restore local Supabase QA stack or document remote-only workflow
-lane: Infra/QA
+lane: Infra/Security + QA
 priority: P1
 effort: M (decide + implement + document)
 status: ready
@@ -33,7 +33,9 @@ remote-linked DB. This is what made p201 MCP debugging slow.
 
 ## Lane and gates
 
-- Lane: Infra/QA (`supabase/migrations/`, runbooks, CI workflow)
+- Lane: Infra/Security + QA composite (`supabase/migrations/` baseline
+  ordering is Infra/Security per roadmap §3; runbook + workflow
+  documentation is QA per §3)
 - Can touch: migration ordering for baseline, new bootstrap migration,
   `supabase/` config, `docs/` runbooks, CI workflow if needed
 - Can't touch: business logic; do not rewrite RPCs to satisfy local
