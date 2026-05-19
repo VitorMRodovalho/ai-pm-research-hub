@@ -1,5 +1,13 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.73.0 — 291 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.74.0 — 291 tools + 4 prompts + 3 resources + usage logging
+// v2.74.0 (p197c B1+B2+B3): submit_interview_scores upgraded to rich preview parity with
+//   submit_evaluation (criteria_with_weights + weighted_subtotal_preview + pert_cutoff +
+//   cohort_position + validation; resolves application_id from interview_id and calls
+//   get_evaluation_form). get_selection_rankings + get_application_score_breakdown RPCs
+//   enriched server-side (B2: pert_cutoff top-level + pert_band_position per row; B3:
+//   decision pack — evaluations[] now include notes/criterion_notes [164/233 had notes],
+//   +ai_triage +briefing +pert_cutoff +returning_context +profile_lite +pmi_history).
+//   Tool count unchanged 291 (description bumps only).
 // v2.73.0 (p197b): +2 tools surfacing PERT cutoff metric to evaluators/admins via MCP —
 //   get_pert_cutoff_summary (read distribution + target + band) + compute_pert_cutoff (admin
 //   trigger to recompute against approved active members in prior cycles). Pairs with frontend
@@ -3096,13 +3104,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: submit_interview_scores — final interview rubric scores (confirm gate)
-  mcp.tool("submit_interview_scores", "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview. With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.", {
+  mcp.tool("submit_interview_scores", "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of approved active members) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.", {
     interview_id: z.string().describe("Interview UUID"),
     scores_json: z.string().describe("JSON string com object mapping criterion key -> numeric score (ex: '{\"depth\":4.5,\"clarity\":3.8}'). Per cycle.interview_criteria rubric"),
     theme: z.string().optional().describe("Optional theme/topic discussed"),
     notes: z.string().optional().describe("Optional general notes about the interview"),
     criterion_notes_json: z.string().optional().describe("Optional JSON string com per-criterion notes (ex: '{\"depth\":\"deep technical knowledge\"}'"),
-    confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview only.")
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: rich preview with weighted_subtotal_preview + pert_cutoff + cohort_position.")
   }, async (params: { interview_id: string; scores_json: string; theme?: string; notes?: string; criterion_notes_json?: string; confirm?: boolean }) => {
     let scores: Record<string, number>;
     let criterion_notes: Record<string, string> = {};
@@ -3121,13 +3129,69 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       return err("scores_json must contain non-empty object {criterion_key: number}");
     }
     if (params.confirm !== true) {
-      await logUsage(sb, member.id, "submit_interview_scores", true, undefined, start, "preview");
+      // p197c B1: rich preview — resolve application_id from interview_id, then use get_evaluation_form
+      const { data: ivData, error: ivErr } = await sb.from("selection_interviews").select("application_id, status, scheduled_at").eq("id", params.interview_id).maybeSingle();
+      if (ivErr || !ivData) { await logUsage(sb, member.id, "submit_interview_scores", false, ivErr?.message ?? "Interview not found", start); return err(ivErr?.message ?? "Interview not found"); }
+      const { data: formData, error: formErr } = await sb.rpc("get_evaluation_form", {
+        p_application_id: ivData.application_id,
+        p_evaluation_type: "interview"
+      });
+      if (formErr) { await logUsage(sb, member.id, "submit_interview_scores", false, formErr.message, start); return err(formErr.message); }
+      const form = formData as any;
+      const criteria = (form?.criteria_with_weights ?? []) as Array<{key:string; label?:string; weight:number; max:number; max_weighted_contribution:number}>;
+      let weighted_subtotal_preview = 0;
+      const missing_scores: string[] = [];
+      const out_of_range: string[] = [];
+      const preview_breakdown = criteria.map(c => {
+        const s = scores[c.key];
+        if (s === undefined || s === null) missing_scores.push(c.key);
+        if (typeof s === 'number' && (s < 0 || s > c.max)) out_of_range.push(`${c.key} (got ${s}, max ${c.max})`);
+        const contribution = typeof s === 'number' ? s * c.weight : null;
+        if (contribution !== null) weighted_subtotal_preview += contribution;
+        return {
+          key: c.key, label: c.label, weight: c.weight, max: c.max,
+          your_score: s ?? null,
+          weighted_contribution: contribution,
+          max_weighted_contribution: c.max_weighted_contribution,
+        };
+      });
+      const max_weighted = form?.max_weighted_subtotal ?? null;
+      const pert = form?.pert_cutoff ?? {};
+      let cohort_position: string | null = null;
+      if (pert.band_lower != null && pert.band_upper != null) {
+        if (weighted_subtotal_preview < pert.band_lower) cohort_position = `BELOW band (${weighted_subtotal_preview} < band_lower ${pert.band_lower})`;
+        else if (weighted_subtotal_preview > pert.band_upper) cohort_position = `ABOVE band (${weighted_subtotal_preview} > band_upper ${pert.band_upper})`;
+        else cohort_position = `WITHIN band (${pert.band_lower} ≤ ${weighted_subtotal_preview} ≤ ${pert.band_upper})`;
+      }
+      await logUsage(sb, member.id, "submit_interview_scores", true, "preview", start);
       return ok({
-        action: "submit_interview_scores",
         preview: true,
-        target: { interview_id: params.interview_id, scores, theme: params.theme, notes: params.notes },
-        warning: "State-changing action — writes selection_evaluation. Irreversible after phase closes. Verify scores carefully then pass confirm=true.",
-        next_call: { ...params, confirm: true }
+        action: "submit_interview_scores",
+        interview: { id: params.interview_id, application_id: ivData.application_id, status: ivData.status, scheduled_at: ivData.scheduled_at },
+        application_summary: {
+          applicant_name: form?.application?.applicant_name,
+          role_applied: form?.application?.role_applied,
+          promotion_path: form?.application?.promotion_path,
+          status: form?.application?.status,
+          is_returning_member: form?.application?.is_returning_member,
+          ai_triage_score: form?.application?.ai_triage_score,
+          ai_triage_confidence: form?.application?.ai_triage_confidence,
+        },
+        criteria_with_weights: preview_breakdown,
+        weighted_subtotal_preview,
+        max_weighted_subtotal: max_weighted,
+        pert_cutoff: pert,
+        cohort_position,
+        validation: {
+          missing_scores: missing_scores.length > 0 ? missing_scores : null,
+          out_of_range: out_of_range.length > 0 ? out_of_range : null,
+        },
+        intended_theme: params.theme ?? null,
+        intended_notes: params.notes ?? null,
+        intended_criterion_notes: criterion_notes,
+        next_step: missing_scores.length || out_of_range.length
+          ? "Fix validation errors above, then re-call with confirm=true."
+          : "Re-call submit_interview_scores with confirm=true to execute. Verify weighted_subtotal_preview vs pert_cutoff band before confirming."
       });
     }
     const { data, error } = await sb.rpc("submit_interview_scores", {
@@ -6485,7 +6549,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.73.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.74.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6505,6 +6569,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.73.0", tools: 291, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.74.0", tools: 291, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
