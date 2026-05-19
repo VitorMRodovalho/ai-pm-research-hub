@@ -56,6 +56,15 @@ export interface BoardItem {
   assignments?: ItemAssignment[];
   is_portfolio_item?: boolean;
   baseline_locked_at?: string | null;
+  // p197: Manual de Governança §4.2 etapas 5 + 6 structured fields
+  peer_review_completed_at?: string | null;
+  peer_review_summary?: string | null;
+  peer_review_waived?: boolean;
+  peer_review_waived_reason?: string | null;
+  leader_review_completed_at?: string | null;
+  leader_review_decision?: 'approved' | 'returned' | 'waived' | null;
+  leader_review_notes?: string | null;
+  leader_reviewer_id?: string | null;
 }
 
 export type AssignmentRole = 'author' | 'reviewer' | 'contributor' | 'curation_reviewer';
@@ -321,6 +330,47 @@ export interface BoardI18n {
   rubricAdherence?: string;
   rubricRelevance?: string;
   rubricEthics?: string;
+  // p197 — Pre-curation review (Manual §4.2 etapas 5 + 6)
+  preCurationReview?: string;
+  pending?: string;
+  peerReviewTitle?: string;
+  peerReviewColegiado?: string;
+  peerReviewDone?: string;
+  peerReviewWaived?: string;
+  peerReviewSummary?: string;
+  peerReviewWaiverReason?: string;
+  peerReviewCompleteAction?: string;
+  peerReviewSummaryPlaceholder?: string;
+  peerReviewWaiveCheckbox?: string;
+  peerReviewWaiverReasonPlaceholder?: string;
+  peerReviewWaiverReasonRequired?: string;
+  peerReviewCompleted?: string;
+  peerReviewWaitingTribe?: string;
+  leaderReviewTitle?: string;
+  leaderReviewNominal?: string;
+  leaderReviewReturnedBadge?: string;
+  leaderReviewWaivedBadge?: string;
+  leaderReviewApprovedBadge?: string;
+  leaderReviewAwaitPeer?: string;
+  leaderReviewNotes?: string;
+  leaderReviewAction?: string;
+  leaderReviewApproveOption?: string;
+  leaderReviewReturnOption?: string;
+  leaderReviewWaiveOption?: string;
+  leaderReviewNotesPlaceholder?: string;
+  leaderReviewNotesRequiredPlaceholder?: string;
+  leaderReviewNotesRequired?: string;
+  leaderReviewSubmitAction?: string;
+  leaderReviewWaitsPeer?: string;
+  leaderReviewWaitsLeader?: string;
+  leaderReviewApproved?: string;
+  leaderReviewReturned?: string;
+  leaderReviewWaived?: string;
+  curationSubmitButton?: string;
+  curationSubmitConfirm?: string;
+  curationSubmitSuccess?: string;
+  curationSubmitShortcutHint?: string;
+  curationPipeline?: string;
   // Source badges
   fromTrello?: string;
   fromNotion?: string;
@@ -391,4 +441,45 @@ export const DEFAULT_I18N: BoardI18n = {
   fromTrello: 'Trello',
   fromNotion: 'Notion',
   fromManual: 'Manual',
+  // p197 — Pre-curation review (Manual §4.2 etapas 5 + 6)
+  preCurationReview: 'Revisão Pré-Curadoria (Manual §4.2)',
+  pending: 'Pendente',
+  peerReviewTitle: 'Peer Review',
+  peerReviewColegiado: 'Colegiado da tribo',
+  peerReviewDone: 'Concluído',
+  peerReviewWaived: 'Dispensado',
+  peerReviewSummary: 'Resumo',
+  peerReviewWaiverReason: 'Motivo da dispensa',
+  peerReviewCompleteAction: 'Concluir Peer Review',
+  peerReviewSummaryPlaceholder: 'Resumo do feedback coletivo da tribo (opcional)',
+  peerReviewWaiveCheckbox: 'Dispensar peer review (artigo colaborativo da tribo)',
+  peerReviewWaiverReasonPlaceholder: 'Motivo da dispensa (obrigatório)',
+  peerReviewWaiverReasonRequired: 'Informe o motivo da dispensa',
+  peerReviewCompleted: 'Peer review concluído',
+  peerReviewWaitingTribe: 'Aguardando colaboração da tribo.',
+  leaderReviewTitle: 'Revisão do Líder',
+  leaderReviewNominal: 'Gate nominal',
+  leaderReviewReturnedBadge: 'Devolvido',
+  leaderReviewWaivedBadge: 'Dispensado',
+  leaderReviewApprovedBadge: 'Aprovado',
+  leaderReviewAwaitPeer: 'Aguarda Peer',
+  leaderReviewNotes: 'Notas',
+  leaderReviewAction: 'Avaliar como Líder',
+  leaderReviewApproveOption: 'Aprovar',
+  leaderReviewReturnOption: 'Devolver',
+  leaderReviewWaiveOption: 'Dispensar (já colaborativo)',
+  leaderReviewNotesPlaceholder: 'Notas / feedback (opcional)',
+  leaderReviewNotesRequiredPlaceholder: 'Explique o motivo da devolução (obrigatório)',
+  leaderReviewNotesRequired: 'Devoluções exigem notas explicando o motivo',
+  leaderReviewSubmitAction: 'Registrar Avaliação',
+  leaderReviewWaitsPeer: 'Conclua o peer review primeiro.',
+  leaderReviewWaitsLeader: 'Aguardando revisão do líder da tribo.',
+  leaderReviewApproved: 'Aprovado e submetido à curadoria',
+  leaderReviewReturned: 'Devolvido ao autor',
+  leaderReviewWaived: 'Dispensado e submetido',
+  curationSubmitButton: 'Submeter para Curadoria',
+  curationSubmitConfirm: 'Submeter este card para o Comitê de Curadoria?',
+  curationSubmitSuccess: 'Submetido ao Comitê de Curadoria',
+  curationSubmitShortcutHint: 'Atalho: pula peer/leader review e vai direto ao Comitê',
+  curationPipeline: 'Pipeline de Curadoria',
 };
