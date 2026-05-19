@@ -108,7 +108,11 @@ export interface ChecklistItem {
   completed_by_name?: string | null;
 }
 
-export type CurationStatus = 'draft' | 'review' | 'approved' | 'rejected';
+// p197 fix B2: aligned with DB CHECK constraint on board_items.curation_status.
+// Previous values 'review'/'approved'/'rejected' were aspirational/legacy and never
+// existed in the DB schema. The actual FSM is draft → peer_review → leader_review →
+// curation_pending → published, per migrations 20260315000007 + 20260316140000.
+export type CurationStatus = 'draft' | 'peer_review' | 'leader_review' | 'curation_pending' | 'published';
 
 // ─── Lifecycle Event ────────────────────────────────────────────────────────
 
@@ -138,7 +142,9 @@ export interface CurationReview {
   id: string;
   curator_name: string;
   curator_id: string;
-  decision: 'approved' | 'returned_for_revision' | 'rejected';
+  // p197 fix B2: aligned with curation_review_log.decision CHECK constraint.
+  // Was 'returned_for_revision' but actual DB enum uses 'returned'.
+  decision: 'approved' | 'returned' | 'rejected';
   criteria_scores: RubricScore;
   feedback_notes: string | null;
   completed_at: string;
