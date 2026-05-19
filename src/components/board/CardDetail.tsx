@@ -71,6 +71,18 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [submittingReview, setSubmittingReview] = useState(false);
   const [itemAssignments, setItemAssignments] = useState<ItemAssignment[]>(safeArray(item.assignments));
 
+  // p197 — Peer Review + Leader Review + Submit to Curation state
+  const [submittingToCuration, setSubmittingToCuration] = useState(false);
+  const [showPeerReviewForm, setShowPeerReviewForm] = useState(false);
+  const [peerSummary, setPeerSummary] = useState('');
+  const [peerWaived, setPeerWaived] = useState(false);
+  const [peerWaiverReason, setPeerWaiverReason] = useState('');
+  const [submittingPeerReview, setSubmittingPeerReview] = useState(false);
+  const [showLeaderReviewForm, setShowLeaderReviewForm] = useState(false);
+  const [leaderDecision, setLeaderDecision] = useState<'approved' | 'returned' | 'waived'>('approved');
+  const [leaderNotes, setLeaderNotes] = useState('');
+  const [submittingLeaderReview, setSubmittingLeaderReview] = useState(false);
+
   const isCardAssignee = permissions.member?.id && (
     item.assignee_id === permissions.member.id ||
     safeArray(item.assignments).some((a: any) => a.member_id === permissions.member.id)
@@ -379,6 +391,80 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setSubmittingReview(false);
     }
   }, [item.id, reviewVerdict, reviewScores, reviewNotes]);
+
+  // p197 — Submit to Curation (Fase A canonical button)
+  const handleSubmitToCuration = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    if (!confirm(i18n.curationSubmitConfirm || 'Submeter este card para o Comitê de Curadoria?')) return;
+    setSubmittingToCuration(true);
+    try {
+      const { error } = await sb.rpc('submit_for_curation', { p_item_id: item.id });
+      if (error) throw error;
+      (window as any).toast?.(i18n.curationSubmitSuccess || 'Submetido ao Comitê de Curadoria', 'success');
+      setTimeout(() => window.location.reload(), 600);
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao submeter', 'error');
+    } finally {
+      setSubmittingToCuration(false);
+    }
+  }, [item.id, i18n]);
+
+  // p197 — Complete Peer Review (Fase B etapa 5)
+  const handleCompletePeerReview = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    if (peerWaived && !peerWaiverReason.trim()) {
+      (window as any).toast?.(i18n.peerReviewWaiverReasonRequired || 'Informe o motivo da dispensa', 'error');
+      return;
+    }
+    setSubmittingPeerReview(true);
+    try {
+      const { error } = await sb.rpc('complete_peer_review', {
+        p_item_id: item.id,
+        p_summary: peerSummary || null,
+        p_waived: peerWaived,
+        p_waiver_reason: peerWaived ? peerWaiverReason : null,
+      });
+      if (error) throw error;
+      (window as any).toast?.(i18n.peerReviewCompleted || 'Peer review concluído', 'success');
+      setShowPeerReviewForm(false);
+      setTimeout(() => window.location.reload(), 600);
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro no peer review', 'error');
+    } finally {
+      setSubmittingPeerReview(false);
+    }
+  }, [item.id, peerSummary, peerWaived, peerWaiverReason, i18n]);
+
+  // p197 — Complete Leader Review (Fase B etapa 6)
+  const handleCompleteLeaderReview = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    if (leaderDecision === 'returned' && !leaderNotes.trim()) {
+      (window as any).toast?.(i18n.leaderReviewNotesRequired || 'Devoluções exigem notas explicando o motivo', 'error');
+      return;
+    }
+    setSubmittingLeaderReview(true);
+    try {
+      const { error } = await sb.rpc('complete_leader_review', {
+        p_item_id: item.id,
+        p_decision: leaderDecision,
+        p_notes: leaderNotes || null,
+      });
+      if (error) throw error;
+      const msg = leaderDecision === 'returned' ? (i18n.leaderReviewReturned || 'Devolvido ao autor')
+                : leaderDecision === 'waived' ? (i18n.leaderReviewWaived || 'Dispensado e submetido')
+                : (i18n.leaderReviewApproved || 'Aprovado e submetido à curadoria');
+      (window as any).toast?.(msg, 'success');
+      setShowLeaderReviewForm(false);
+      setTimeout(() => window.location.reload(), 600);
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro no leader review', 'error');
+    } finally {
+      setSubmittingLeaderReview(false);
+    }
+  }, [item.id, leaderDecision, leaderNotes, i18n]);
 
   // ── Checklist helpers (always DB-backed via board_item_checklists table) ──
   const addCheckItem = async () => {
@@ -716,6 +802,187 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               currentMemberIsAdmin={!!permissions.canEditAny}
               members={members.map((m) => ({ id: m.id, name: m.name }))}
             />
+
+            {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
+            {(['draft', 'peer_review', 'leader_review'] as string[]).includes(item.curation_status || 'draft') && (
+              <div className="mb-3 border-l-4 border-purple-400 pl-3 py-2 bg-purple-50/40 rounded-r-lg">
+                <label className="text-[11px] font-semibold text-purple-900 mb-2 block">
+                  {i18n.preCurationReview || 'Revisão Pré-Curadoria (Manual §4.2)'}
+                </label>
+
+                {/* Peer Review — etapa 5 colegiado */}
+                <div className="mb-2 bg-white rounded-lg p-2.5 border border-purple-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[12px] font-bold text-[var(--text-primary)]">
+                      5️⃣ {i18n.peerReviewTitle || 'Peer Review'} <span className="font-normal text-[10px] text-[var(--text-muted)]">({i18n.peerReviewColegiado || 'Colegiado da tribo'})</span>
+                    </span>
+                    {item.peer_review_completed_at ? (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">
+                        {item.peer_review_waived ? (i18n.peerReviewWaived || 'Dispensado') : (i18n.peerReviewDone || 'Concluído')}
+                        {' '}{new Date(item.peer_review_completed_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">{i18n.pending || 'Pendente'}</span>
+                    )}
+                  </div>
+
+                  {item.peer_review_completed_at ? (
+                    <div className="text-[11px] text-[var(--text-secondary)] space-y-1">
+                      {item.peer_review_summary && <p><b>{i18n.peerReviewSummary || 'Resumo'}:</b> {item.peer_review_summary}</p>}
+                      {item.peer_review_waived && item.peer_review_waived_reason && (
+                        <p className="italic"><b>{i18n.peerReviewWaiverReason || 'Motivo da dispensa'}:</b> {item.peer_review_waived_reason}</p>
+                      )}
+                    </div>
+                  ) : canEdit && !showPeerReviewForm ? (
+                    <button
+                      onClick={() => setShowPeerReviewForm(true)}
+                      className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline">
+                      ▶ {i18n.peerReviewCompleteAction || 'Concluir Peer Review'}
+                    </button>
+                  ) : canEdit && showPeerReviewForm ? (
+                    <div className="space-y-2 mt-2">
+                      <textarea
+                        value={peerSummary}
+                        onChange={(e) => setPeerSummary(e.target.value)}
+                        placeholder={i18n.peerReviewSummaryPlaceholder || 'Resumo do feedback coletivo da tribo (opcional)'}
+                        className="w-full text-[11px] px-2 py-1.5 border border-[var(--border-subtle)] rounded resize-y min-h-[60px]"
+                        disabled={submittingPeerReview}
+                      />
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+                        <input
+                          type="checkbox"
+                          checked={peerWaived}
+                          onChange={(e) => setPeerWaived(e.target.checked)}
+                          disabled={submittingPeerReview}
+                        />
+                        {i18n.peerReviewWaiveCheckbox || 'Dispensar peer review (artigo colaborativo da tribo)'}
+                      </label>
+                      {peerWaived && (
+                        <input
+                          value={peerWaiverReason}
+                          onChange={(e) => setPeerWaiverReason(e.target.value)}
+                          placeholder={i18n.peerReviewWaiverReasonPlaceholder || 'Motivo da dispensa (obrigatório)'}
+                          className="w-full text-[11px] px-2 py-1.5 border border-amber-300 bg-amber-50 rounded"
+                          disabled={submittingPeerReview}
+                        />
+                      )}
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => { setShowPeerReviewForm(false); setPeerSummary(''); setPeerWaived(false); setPeerWaiverReason(''); }}
+                          className="px-2 py-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                          disabled={submittingPeerReview}>
+                          {i18n.cancel || 'Cancelar'}
+                        </button>
+                        <button
+                          onClick={handleCompletePeerReview}
+                          disabled={submittingPeerReview}
+                          className="px-3 py-1 text-[11px] bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 disabled:opacity-50">
+                          {submittingPeerReview ? '...' : (i18n.peerReviewCompleteAction || 'Concluir')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[var(--text-muted)]">{i18n.peerReviewWaitingTribe || 'Aguardando colaboração da tribo.'}</p>
+                  )}
+                </div>
+
+                {/* Leader Review — etapa 6 nominal */}
+                <div className="mb-2 bg-white rounded-lg p-2.5 border border-purple-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[12px] font-bold text-[var(--text-primary)]">
+                      6️⃣ {i18n.leaderReviewTitle || 'Revisão do Líder'} <span className="font-normal text-[10px] text-[var(--text-muted)]">({i18n.leaderReviewNominal || 'Gate nominal'})</span>
+                    </span>
+                    {item.leader_review_completed_at ? (
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                        item.leader_review_decision === 'returned' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {item.leader_review_decision === 'returned' ? (i18n.leaderReviewReturnedBadge || 'Devolvido')
+                          : item.leader_review_decision === 'waived' ? (i18n.leaderReviewWaivedBadge || 'Dispensado')
+                          : (i18n.leaderReviewApprovedBadge || 'Aprovado')}
+                        {' '}{new Date(item.leader_review_completed_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    ) : item.peer_review_completed_at ? (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">{i18n.pending || 'Pendente'}</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[var(--surface-hover)] text-[var(--text-muted)]">{i18n.leaderReviewAwaitPeer || 'Aguarda Peer'}</span>
+                    )}
+                  </div>
+
+                  {item.leader_review_completed_at ? (
+                    <div className="text-[11px] text-[var(--text-secondary)] space-y-1">
+                      {item.leader_review_notes && <p><b>{i18n.leaderReviewNotes || 'Notas'}:</b> {item.leader_review_notes}</p>}
+                    </div>
+                  ) : item.peer_review_completed_at && isLeader && !showLeaderReviewForm ? (
+                    <button
+                      onClick={() => setShowLeaderReviewForm(true)}
+                      className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline">
+                      ▶ {i18n.leaderReviewAction || 'Avaliar como Líder'}
+                    </button>
+                  ) : item.peer_review_completed_at && isLeader && showLeaderReviewForm ? (
+                    <div className="space-y-2 mt-2">
+                      <div className="flex gap-2 flex-wrap text-[11px]">
+                        {(['approved', 'returned', 'waived'] as const).map((d) => (
+                          <label key={d} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="leader-decision"
+                              checked={leaderDecision === d}
+                              onChange={() => setLeaderDecision(d)}
+                              disabled={submittingLeaderReview}
+                            />
+                            {d === 'approved' ? (i18n.leaderReviewApproveOption || 'Aprovar')
+                              : d === 'returned' ? (i18n.leaderReviewReturnOption || 'Devolver')
+                              : (i18n.leaderReviewWaiveOption || 'Dispensar (já colaborativo)')}
+                          </label>
+                        ))}
+                      </div>
+                      <textarea
+                        value={leaderNotes}
+                        onChange={(e) => setLeaderNotes(e.target.value)}
+                        placeholder={leaderDecision === 'returned'
+                          ? (i18n.leaderReviewNotesRequiredPlaceholder || 'Explique o motivo da devolução (obrigatório)')
+                          : (i18n.leaderReviewNotesPlaceholder || 'Notas / feedback (opcional)')}
+                        className="w-full text-[11px] px-2 py-1.5 border border-[var(--border-subtle)] rounded resize-y min-h-[60px]"
+                        disabled={submittingLeaderReview}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => { setShowLeaderReviewForm(false); setLeaderDecision('approved'); setLeaderNotes(''); }}
+                          className="px-2 py-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                          disabled={submittingLeaderReview}>
+                          {i18n.cancel || 'Cancelar'}
+                        </button>
+                        <button
+                          onClick={handleCompleteLeaderReview}
+                          disabled={submittingLeaderReview}
+                          className="px-3 py-1 text-[11px] bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 disabled:opacity-50">
+                          {submittingLeaderReview ? '...' : (i18n.leaderReviewSubmitAction || 'Registrar Avaliação')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : !item.peer_review_completed_at ? (
+                    <p className="text-[11px] text-[var(--text-muted)]">{i18n.leaderReviewWaitsPeer || 'Conclua o peer review primeiro.'}</p>
+                  ) : (
+                    <p className="text-[11px] text-[var(--text-muted)]">{i18n.leaderReviewWaitsLeader || 'Aguardando revisão do líder da tribo.'}</p>
+                  )}
+                </div>
+
+                {/* Fase A — Direct Submit (canonical shortcut for tribe leaders) */}
+                {item.curation_status === 'draft' && (isLeader || isCardAssignee) && (
+                  <div className="mt-2 flex justify-between items-center gap-2">
+                    <span className="text-[10px] text-purple-700 italic">
+                      {i18n.curationSubmitShortcutHint || 'Atalho: pula peer/leader review e vai direto ao Comitê'}
+                    </span>
+                    <button
+                      onClick={handleSubmitToCuration}
+                      disabled={submittingToCuration}
+                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[11px] font-semibold hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap">
+                      {submittingToCuration ? '...' : `📤 ${i18n.curationSubmitButton || 'Submeter para Curadoria'}`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Curation Pipeline Visual ── */}
             {item.curation_status && item.curation_status !== 'draft' && (
