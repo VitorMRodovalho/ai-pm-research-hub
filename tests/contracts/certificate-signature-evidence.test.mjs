@@ -83,10 +83,29 @@ test('counter_sign_certificate safely parses signer IP via inet cast', () => {
   const body = latestFunctionBody('counter_sign_certificate');
   assert.match(body, /v_ip\s+inet\s*:=\s*NULL/i, 'v_ip should be declared as NULL inet');
   assert.match(body, /p_signed_ip::inet/i, 'should attempt p_signed_ip::inet cast');
+  // Tighter regex per code-reviewer LOW: no [\s\S]*? gap between EXCEPTION and v_ip := NULL.
   assert.match(
     body,
-    /EXCEPTION\s+WHEN\s+OTHERS\s+THEN[\s\S]*?v_ip\s*:=\s*NULL/i,
+    /EXCEPTION\s+WHEN\s+OTHERS\s+THEN\s+v_ip\s*:=\s*NULL/i,
     'should swallow inet-cast failure to NULL (do not break counter-sign on malformed IP)'
+  );
+});
+
+test('both RPCs cap p_signed_user_agent to 500 chars server-side (defense vs direct PostgREST/MCP)', () => {
+  // Frontend already trims via navigator.userAgent.substring(0, 500), but a direct
+  // RPC call (PostgREST or MCP) can bypass that cap. Per code-reviewer GAP-181.B HIGH,
+  // both RPC bodies enforce the cap as `p_signed_user_agent := left(p_signed_user_agent, 500)`.
+  const counterBody = latestFunctionBody('counter_sign_certificate');
+  assert.match(
+    counterBody,
+    /p_signed_user_agent\s*:=\s*left\(\s*p_signed_user_agent\s*,\s*500\s*\)/i,
+    'counter_sign_certificate must cap p_signed_user_agent to 500 chars'
+  );
+  const signBody = latestFunctionBody('sign_volunteer_agreement');
+  assert.match(
+    signBody,
+    /p_signed_user_agent\s*:=\s*left\(\s*p_signed_user_agent\s*,\s*500\s*\)/i,
+    'sign_volunteer_agreement must cap p_signed_user_agent to 500 chars'
   );
 });
 
