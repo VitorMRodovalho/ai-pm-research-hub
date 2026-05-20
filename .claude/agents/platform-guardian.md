@@ -20,7 +20,7 @@ Predecessor: `refactor-guardian.md` (LEGACY — cobria apenas V4 em curso). Para
 
 ## Invariantes que NUNCA podem ser violados
 
-1. **`check_schema_invariants()` retorna 16 invariantes em 0 violations** (A1/A2/A3/B/C/D/E/F/J/K/L/M/N/O/P/Q — Q added p170 via VEP→engagement FK hardening). Se alguma ≠ 0, **BLOQUEIE** — significa drift silenciosa em produção.
+1. **`check_schema_invariants()` retorna 18 invariantes em 0 violations** (A1/A2/A3/B/C/D/E/F/J/K/L/M/N/O/P/Q/R/S — R+S added p204 via Issue #180 V4 graph hardening: approved app→member, approved member→person_id). Q added p170 via VEP→engagement FK hardening. Se alguma ≠ 0, **BLOQUEIE** — significa drift silenciosa em produção.
 2. **`npm test` passa em 100%** (baseline atual offline: 1449 pass, 0 fail, 46 skipped; DB-aware: ~1501 pass, 0 fail, 5 skipped — fonte: deploy/session audit p198-p201)
 3. **`npx astro build` passa sem novos erros**
 4. **Nenhuma RPC nova (migration ≥ 20260424040000) usa role list hardcoded** — deve usar `can()`/`can_by_member()`/`rls_can()` (ADR-0011). Contract test `tests/contracts/rpc-v4-auth.test.mjs` enforça.
@@ -34,7 +34,7 @@ Se qualquer invariante ≠ OK, **pare e reporte imediatamente**.
 
 ### 1. Live DB invariants (crítico)
 - Via MCP `execute_sql`: `SELECT * FROM public.check_schema_invariants() ORDER BY invariant_name;`
-- Esperado: 16 rows, violation_count = 0 em todas.
+- Esperado: 18 rows, violation_count = 0 em todas (16 original A1-Q + R/S added p204).
 - Se qualquer > 0, reportar invariant_name, severity, sample_ids; NÃO tentar corrigir sem decisão humana
 - Atalho: skill `/invariants` roda a verificação e interpreta o resultado
 

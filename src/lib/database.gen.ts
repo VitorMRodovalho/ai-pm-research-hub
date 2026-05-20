@@ -13057,7 +13057,7 @@ export type Database = {
       }
       count_tribe_slots: { Args: never; Returns: Json }
       counter_sign_certificate: {
-        Args: { p_certificate_id: string }
+        Args: { p_certificate_id: string; p_signed_ip?: string | null; p_signed_user_agent?: string | null }
         Returns: Json
       }
       create_board_item: {
@@ -15048,7 +15048,7 @@ export type Database = {
         }
         Returns: Json
       }
-      sign_volunteer_agreement: { Args: { p_language?: string }; Returns: Json }
+      sign_volunteer_agreement: { Args: { p_language?: string; p_signed_ip?: string | null; p_signed_user_agent?: string | null }; Returns: Json }
       submit_change_request: {
         Args: {
           p_cr_type: string

@@ -84,7 +84,7 @@ Capacidades dos 3 curadores V4:
 
 ### C-001 — Backend da fila ainda exige `write_board`, não `curate_content`
 
-**Severidade:** HIGH  
+**Severidade:** HIGH
 **Camada:** SQL/RPC + frontend access
 **GitHub:** #185
 
@@ -105,7 +105,7 @@ Próxima ação:
 
 ### C-002 — Caminho canônico de submissão não notifica o Comitê
 
-**Severidade:** HIGH  
+**Severidade:** HIGH
 **Camada:** SQL/RPC + notification/email
 **GitHub:** #186
 
@@ -177,7 +177,7 @@ Próxima ação:
 
 ### C-005 — Pipeline visual usa estados aspiracionais que não batem com DB
 
-**Severidade:** MEDIUM  
+**Severidade:** MEDIUM
 **Camada:** frontend UX
 **GitHub:** #189
 
@@ -216,7 +216,7 @@ Continuam sem testes de contrato focados para autorização, transições, reset
 
 ### C-007 — API legada `advance_card_curation` não representa o fluxo p197
 
-**Severidade:** MEDIUM/HIGH  
+**Severidade:** MEDIUM/HIGH
 **Camada:** MCP/backend compatibility
 **GitHub:** #191
 
@@ -304,6 +304,38 @@ Próxima ação:
 
 - Remover trigger morto ou alinhar com `published`/`curation_pending`.
 
+### C-012 — Modal de curadoria não exibe links/artefatos submetidos
+
+**Severidade:** HIGH
+**Camada:** frontend UX / semantic envelope
+**GitHub:** #201
+
+Fabricio reportou que o item submetido por Débora/Agentes Autônomos aparece em `/admin/curatorship`, mas o modal de avaliação não mostra o link do artigo nem a pasta/contexto da submissão.
+
+Evidência live do item `642fe90f-20ad-4ba4-a9e7-05470ed7c5de`:
+
+- `board_items.attachments` contém o link do Google Doc do artigo:
+  - `name='Artigo'`
+  - `kind='link'`
+  - `embed='drive'`
+  - `url=<Google Docs>`
+- `get_curation_dashboard()` já inclui `attachments` no payload do item.
+- `board_item_checklists` contém evidência de escopo/redação e conclusão.
+- `initiative_drive_links` contém pasta workspace de `T2 Agentes Autônomos` e pasta de atas.
+- `ReviewRubricDialog` renderiza título, tribo, SLA, assignee e descrição, mas não renderiza `attachments`, arquivos, Drive links, checklist, timeline ou contexto de origem.
+
+Interpretação:
+
+- O link do artigo não se perdeu no backend.
+- O gap atual é UI/contrato semântico: a fila de curadoria não apresenta o pacote completo de evidências para o curador.
+
+Próxima ação:
+
+- Renderizar `attachments` como links clicáveis no modal.
+- Mostrar contexto de origem: board, iniciativa/tribo, autor/assignee, tags e checklist/evidência.
+- Incluir Drive links quando disponíveis.
+- Adicionar flags de contexto ausente (`missing_artifact_link`) na futura `curation_queue_state`.
+
 ---
 
 ## 5. Gaps de Semantic Layer
@@ -326,6 +358,9 @@ Criar uma view/RPC `curation_queue_state` que normalize:
 
 - item;
 - origem (`tribe_board`, `governance_document`, `manual`, `webinar`, `article`, `hub_resource`);
+- links do artefato submetido (`attachments`, `board_item_files`);
+- links de Drive relevantes (`initiative_drive_links`, `board_drive_links`);
+- resumo de checklist/evidência de conclusão;
 - estado;
 - SLA;
 - review_count;
@@ -347,7 +382,193 @@ Isso vira fonte para:
 
 ---
 
-## 6. Próximas Ações Recomendadas
+## 6. Wave 2 — Email, Digest e Pipelines Paralelos
+
+### 6.1 Evidência Email/Digest — 2026-05-19
+
+Consulta live em `notifications`, `_delivery_mode_for()` e `cron.job`:
+
+| Evidência | Resultado |
+|---|---:|
+| `_delivery_mode_for('assignment_new')` | `digest_weekly` |
+| `_delivery_mode_for('card_assigned')` | `digest_weekly` |
+| `_delivery_mode_for('card_moved')` | `digest_weekly` |
+| `_delivery_mode_for('curation_submitted')` | `digest_weekly` |
+| `assignment_new` total | 412 |
+| `assignment_new` com email enviado | 0 |
+| `card_assigned` total | 33 |
+| `card_assigned` com email enviado | 0 |
+| `card_moved` total | 4 |
+| `card_moved` com email enviado | 0 |
+| `send-notification-emails` cron | ativo a cada 5 min |
+| `send-weekly-member-digest` cron | ativo sábado 12:00 UTC |
+| `send-weekly-leader-digest` cron | ativo sábado 12:30 UTC |
+
+Interpretação:
+
+- A infraestrutura de email transacional existe e roda.
+- Os tipos usados pelo caso de curadoria (`assignment_new`, `card_assigned`, `card_moved`) são classificados como `digest_weekly`, então não passam pelo email transacional imediato.
+- Não existe tipo dedicado para "novo item submetido ao Comitê de Curadoria".
+- O digest semanal inclui `assignment_new`, mas isso é fraco para SLA de 7 dias quando a curadoria depende de ação do comitê.
+
+### 6.2 Evidência Cross-Pipeline — 2026-05-19
+
+Consulta live:
+
+| Pipeline | Estado | Contagem |
+|---|---|---:|
+| `board_items` | `curation_pending` + `done` | 1 |
+| `publication_submissions` | `under_review` | 21 |
+| `publication_submissions` | `submitted` | 8 |
+| `publication_submissions` | `published` | 6 |
+| `publication_ideas` | `approved` | 1 |
+| `governance_documents` | `under_review` | 6 |
+| `change_requests` | `submitted` | 14 |
+| `change_requests` | `pending_review` | 1 |
+
+Interpretação:
+
+- `/admin/curatorship` representa a fila de `board_items`, não uma fila institucional completa de curadoria.
+- Existem itens de publicação, docs e change requests em estados de revisão que não convergem para o Comitê.
+- O workspace do Comitê continua com 3 cards bootstrap e não consome essas filas.
+
+### 6.3 Achados Wave 2
+
+#### C-012 — Política de email de curadoria não existe como tipo próprio
+
+**Severidade:** HIGH
+**Camada:** notification catalog / Resend
+
+Os tipos atuais usados por curadoria são genéricos (`assignment_new`, `card_assigned`, `card_moved`) e caem em `digest_weekly`. Isso explica `email_sent_at=NULL` no caso live.
+
+Próxima ação:
+
+- Criar tipo explícito, por exemplo `curation_item_submitted`, com política decidida no catálogo.
+- Se o objetivo é SLA rápido, mapear para `transactional_immediate`.
+- Se o objetivo é reduzir ruído, manter digest mas criar seção específica de curadoria no weekly digest.
+
+#### C-013 — Curadoria cross-pipeline ainda é promessa, não entrega
+
+**Severidade:** HIGH
+**Camada:** produto/semantic layer
+
+Há filas paralelas relevantes:
+
+- board items em curadoria;
+- publication submissions em `submitted`/`under_review`;
+- publication ideas aprovadas;
+- governance docs em `under_review`;
+- change requests pendentes.
+
+Nenhuma delas compõe uma fila única do Comitê.
+
+Próxima ação:
+
+- Tratar `curation_queue_state` como cross-pipeline, não apenas wrapper de `board_items`.
+- Definir `origin_type` e `origin_id` para `board_item`, `publication_submission`, `publication_idea`, `governance_document`, `change_request`, `webinar_proposal`.
+
+#### C-014 — Digest semanal moderno e Edge Function legada divergem
+
+**Severidade:** MEDIUM
+**Camada:** email/digest implementation
+**GitHub:** #195
+
+Há duas superfícies:
+
+- `get_weekly_member_digest()` rico, com `consumed_notification_ids`, seções e `weekly_member_digest`;
+- Edge Function `send-notification-digest`, que consulta notificações diretamente e monta HTML próprio.
+
+Risco:
+
+- Um caminho pode consumir/mostrar notificações de curadoria e o outro não.
+- A correção de curadoria deve escolher o caminho canônico de digest para não duplicar lógica.
+
+Próxima ação:
+
+- Confirmar qual job é canônico para membros.
+- Se usar `get_weekly_member_digest()`, adicionar seção `curation_pending`.
+- Se usar EF direta, adicionar agrupamento explícito de tipos de curadoria.
+
+### 6.4 Docs e Testes
+
+#### C-015 — `PERMISSIONS_MATRIX.md` / `SITE_MAP.md` estão defasados para curadoria V4
+
+**Severidade:** MEDIUM/HIGH
+**Camada:** docs/governance
+**GitHub:** #196
+
+Achados:
+
+- `PERMISSIONS_MATRIX.md` tem última atualização 2026-03-15 e ainda descreve curadoria como tier/designation (`curator`) em vez de V4 `curate_content`.
+- `SITE_MAP.md` lista `/admin/curatorship` como `observer` sem designations, e a arquitetura ainda cita MCP `64 tools`, Edge Functions `21`, pg_cron `4`.
+- Isso conflita com ADR-0087 e com os números/runtime p201 já corrigidos em outros documentos.
+
+Próxima ação:
+
+- Atualizar `PERMISSIONS_MATRIX.md` e `SITE_MAP.md` para refletir `curate_content`, `participate_in_governance_review`, contagens runtime atuais e a diferença entre discoverability e gate real.
+
+#### C-016 — Testes estáticos ainda validam V3/`write_board` em curadoria
+
+**Severidade:** HIGH
+**Camada:** QA
+
+Achados:
+
+- `tests/contracts/rpc-acl.test.mjs` ainda espera "curator designation or admin role" para RPCs de curadoria.
+- `tests/contracts/rls-v4-phase4-1.test.mjs` valida `curation_review_log_write` com `write_board`, enquanto a direção de #185 é separar leitura/curadoria V4 de board-write amplo.
+- `tests/ui-stabilization.test.mjs` cobre wiring básico de `CuratorshipBoardIsland`, mas não garante persona Roberto/Sarah nem bloqueia regressão de gates V4.
+
+Próxima ação:
+
+- Incluir esses ajustes em #194.
+- Atualizar testes para `curate_content` / `participate_in_governance_review` onde for o contrato aceito.
+- Adicionar teste estático que falha se reader queue voltar a `write_board`-only.
+
+---
+
+## 7. Wave 3 — QA/QC Operacional
+
+### 7.1 Route Smoke — Produção
+
+`curl -L` anônimo retornou `200` para:
+
+| Rota | HTTP |
+|---|---:|
+| `/admin/curatorship` | 200 |
+| `/initiative/6a93cc94-c4a0-4280-8ea7-452ec6ec48a5` | 200 |
+| `/publications` | 200 |
+| `/notifications` | 200 |
+
+Interpretação:
+
+- Não há falha de roteamento/SSR básica nas superfícies principais.
+- Esse smoke não valida acesso autenticado nem RPCs da ilha; os gaps de autorização permanecem em #185/#186.
+
+### 7.2 Logs Supabase — Últimas 24h
+
+Evidência:
+
+- API logs recentes mostram RPCs de board/card/notifications retornando `200`.
+- Edge Function `send-notification-email` executa com `200` em cron a cada 5 min.
+- `nucleo-mcp` aparece com `200/202` e um `406` isolado, sem correlação direta com curadoria.
+- Postgres logs mostram alguns `permission denied for function get_pending_ratifications` / `401` em API, fora do fluxo de curadoria.
+
+Interpretação:
+
+- Infra de email transacional está viva; o problema de curadoria é catálogo/tipo/destinatário, não outage da Edge Function.
+- Nenhum blocker novo de rota/log foi identificado para a auditoria p203.
+
+### 7.3 Supabase Advisors
+
+Rodado advisor de segurança como smoke geral. O output inclui achados existentes como `security_definer_view` e `rls_enabled_no_policy` em superfícies não relacionadas diretamente à curadoria. Como esta wave não alterou DDL/RLS, eles não foram abertos como novos blockers p203.
+
+Próxima ação se for aprofundar segurança:
+
+- Rodar uma auditoria dedicada de advisors/security drift e reconciliar com o baseline aceito do projeto.
+
+---
+
+## 8. Próximas Ações Recomendadas
 
 1. Corrigir gates das reader RPCs da fila (`get_curation_dashboard`, `list_curation_pending_board_items`) para `curate_content`.
 2. Criar notificação/broadcast transacional ou digest explícito para o Comitê quando item entra em `curation_pending`.
@@ -359,4 +580,9 @@ Isso vira fonte para:
 8. Deprecar/reconciliar `advance_card_curation` e `TribeKanbanIsland` com o fluxo p197.
 9. Adicionar guard/constraint contra review duplicada do mesmo curador por rodada.
 10. Resolver `revision_requested` e `auto_publish_approved_article` como drift de vocabulário.
+11. Criar tipo de notificação/email específico para curadoria ou seção dedicada no digest.
+12. Expandir `curation_queue_state` para pipelines paralelos, não só `board_items`.
+13. Atualizar permissões/docs públicas para curadoria V4 e contagens runtime atuais.
+14. Ajustar testes que ainda cristalizam V3/designation/`write_board` como contrato de curadoria.
+15. Exibir no modal da curadoria o link do artefato, arquivos, Drive/contexto da iniciativa e checklist de evidências.
 
