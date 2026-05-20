@@ -99,10 +99,26 @@ test('get_pending_agreement_engagements next_action routes volunteer vs special 
 
 test('get_pending_agreement_engagements is visibility-only — no INSERT/UPDATE/DELETE side effects', () => {
   const body = latestFunctionBody('get_pending_agreement_engagements');
+  // Visibility RPCs intentionally do NOT write to admin_audit_log — saves noise.
+  assert.doesNotMatch(body, /\bINSERT\s+INTO\s+(?:public\.)?admin_audit_log\b/i,
+    'must NOT INSERT audit log rows from a visibility-only queue');
   assert.doesNotMatch(body, /\bINSERT\s+INTO\b/i, 'must NOT issue agreements or notifications');
   assert.doesNotMatch(body, /\bUPDATE\s+(?:public\.)?(?:certificates|engagements|auth_engagements|notifications|admin_audit_log)\b/i,
     'must NOT mutate state');
   assert.doesNotMatch(body, /\bDELETE\s+FROM\b/i, 'must NOT delete rows');
+});
+
+test('get_pending_agreement_engagements wraps has_agreement_notification EXISTS in NULL-member guard', () => {
+  // Per code-reviewer BLOCKER: when LEFT JOIN to members yields NULL member.id,
+  // EXISTS (SELECT WHERE recipient_id = NULL) silently returns false. Wrapping
+  // in CASE WHEN m.id IS NULL THEN false makes the intent explicit and protects
+  // against future EXISTS-rewrite mistakes.
+  const body = latestFunctionBody('get_pending_agreement_engagements');
+  assert.match(
+    body,
+    /'has_agreement_notification'\s*,\s*CASE\s+WHEN\s+m\.id\s+IS\s+NULL\s+THEN\s+false/i,
+    'has_agreement_notification must short-circuit to false when member row is NULL'
+  );
 });
 
 test('get_pending_agreement_engagements has GRANT EXECUTE TO authenticated', () => {
