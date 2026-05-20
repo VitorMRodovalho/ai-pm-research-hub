@@ -92,6 +92,18 @@ Docs:
 Proximo passo:
 ```
 
+## Post-p201 task briefs
+
+The p201 program ratified the parallel-agent operating model. Subsequent sessions
+file task briefs into this same directory using the prefix `p<session>_issue_<N>_<slug>.md`
+and the same self-contained format. They are NOT part of the p201 closure checklist
+but reuse the lane + gates + handoff conventions defined in
+`../P201_PARALLEL_AGENT_ROADMAP.md`.
+
+| Brief | Issue | Lane | Priority | Status | Notes |
+|---|---|---|---|---|---|
+| [p207_issue_216_profile_ts_annotation_minify.md](p207_issue_216_profile_ts_annotation_minify.md) | [#216](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/216) | Frontend | P1 | ready | 3rd recurrence of TS-annotation × Vite minify trap; ~22 module-level annotations to strip in profile.astro + EN/ES variants + forward-defense backlog entry |
+
 ## Closing the program
 
 The p201 program is done when:
