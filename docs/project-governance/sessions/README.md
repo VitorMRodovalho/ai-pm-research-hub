@@ -36,7 +36,7 @@ mandatory handoff format defined in §4 of `P201_PARALLEL_AGENT_ROADMAP.md`.
 | [p201_issue_163_cloudflare_bic_mcp_oauth.md](p201_issue_163_cloudflare_bic_mcp_oauth.md) | [#163](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/163) | Infra/Security | P1 | done | Resolved 2026-05-19 (p202) — Rule 1 skip-BIC + Rule 2 rate limit live; 4-path smoke + 120-req burst test PASS |
 | [p201_issue_164_local_supabase_qa.md](p201_issue_164_local_supabase_qa.md) | [#164](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/164) | Infra/Security + QA | P1 | ready | Decision A/B/C/D required |
 | [p201_issue_165_release_backfill.md](p201_issue_165_release_backfill.md) | [#165](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/165) | Governance | P1 (docs) | partial-done | Minimal backfill shipped; richer reconstruction remains |
-| [p201_issue_166_semantic_layer_roadmap.md](p201_issue_166_semantic_layer_roadmap.md) | [#166](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/166) | Foundation + Governance | P2 | ready (depends on #162) | Roadmap + ADRs only; no schema changes |
+| [p201_issue_166_semantic_layer_roadmap.md](p201_issue_166_semantic_layer_roadmap.md) | [#166](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/166) | Foundation + Governance | P2 | done | Resolved 2026-05-19 (p202) — roadmap Adopted + 5 ADRs scaffolded (0088-0092 Proposed); zero schema/RPC; GC-147 + audit #29/#34/#38 closed |
 
 ## Suggested execution order (low coupling first)
 
