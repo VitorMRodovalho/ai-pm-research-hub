@@ -102,6 +102,8 @@ Próximo passo:
 
 ### P0 — Volunteer Lifecycle Orchestration
 
+- Executar a spec `docs/project-governance/P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC.md`.
+- Usar o pack `docs/audit/P202_VOLUNTEER_LIFECYCLE_SQL_AUDIT.md` como baseline read-only antes/depois.
 - Unificar aprovação de candidatos em uma RPC canônica usada por UI, bulk actions e MCP.
 - Garantir que aprovação gere `members`, `persons`, `engagements`, onboarding, notification e agreement queue.
 - Persistir prova de contra-assinatura (`counter_signature_hash`) e corrigir evidências do termo antes de claims formais de não-repúdio.
