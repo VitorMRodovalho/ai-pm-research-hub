@@ -329,10 +329,13 @@ BEGIN
   -- S (p204, #180): Approved members must have person_id (V4 graph anchor).
   -- The canonical RPC always links person_id post-approval; any approved member
   -- without person_id indicates a legacy/manual creation path that skipped V4.
+  --
+  -- Council fix: DISTINCT in drift CTE — a member with multiple approved
+  -- applications across cycles would otherwise be counted N times.
   -- ─────────────────────────────────────────────────────────────────────────
   RETURN QUERY
   WITH drift AS (
-    SELECT m.id AS member_id
+    SELECT DISTINCT m.id AS member_id
     FROM public.selection_applications a
     JOIN public.members m ON lower(m.email) = lower(a.email)
     WHERE a.status = 'approved' AND m.person_id IS NULL
