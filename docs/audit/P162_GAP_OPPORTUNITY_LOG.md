@@ -756,6 +756,14 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Policy doc + pre-commit grep added.
 - **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
 
+### 87. GAP-204.B — Behavioural DB-aware tests for invariants R + S forward-defense [RESOLVED p206 PR #213]
+- **Tipo:** test gap · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** p204 council Tier 1 close (PR #199 / Issue #180) carried this item: R + S invariants added to `check_schema_invariants()` were validated only via static contract tests (text-matching the migration SQL) — no behavioural exercise of (a) R=0/S=0 at deploy or (b) synthetic-breach detection.
+- **Impact:** Silent CTE drift in either invariant would pass static tests. Forward-defense regression catcher missing.
+- **Resolution (p206):** Migration `20260731000000_p206_gap_204_b_invariant_breach_helper.sql` adds `_test_invariants_with_synthetic_breach(text)` SECURITY DEFINER + GRANT EXECUTE TO service_role only. Mirror of p186 `_test_detect_inactive_with_threshold` pattern (Prefer: tx=rollback hermetic seeding). 4 behavioural tests at `tests/contracts/volunteer-authority-invariants-behavioural.test.mjs` cover R=0+S=0 deploy state AND R/S synthetic-breach detection. Live verification via MCP DO-block with subtransaction-savepoint pattern confirmed: R breach → R.count=1, S.count=0; S breach → R.count=0, S.count=1; post-state clean (R=0, S=0).
+- **Validation gate:** `node --test tests/contracts/volunteer-authority-invariants-behavioural.test.mjs` returns 4 pass when `SUPABASE_SERVICE_ROLE_KEY` env set; 4 skip cleanly otherwise.
+- **Cross-ref:** PR #213 (this); PRs #198 + #199 (V4 lifecycle backbone in QA); p186 OPP-185.A pattern source; `feedback_contract_test_ci_skip_silent` for the CI skip class.
+
 ### 92. BUG-207.A — /profile ReferenceError "t is not defined" — **RESOLVED p207 (PR #223 bb95bb03), DIAGNOSIS REVISED**
 - **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** XS (1-line import — real fix; spec scoping was wrong)
 - **Trigger:** PM reported live error on `/profile` at p207 boot 2026-05-20.
