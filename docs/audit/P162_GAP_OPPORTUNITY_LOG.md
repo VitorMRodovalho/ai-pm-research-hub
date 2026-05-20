@@ -788,3 +788,11 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** PRs pós-fix passam CI sem --admin; --admin merges são raros e justificados.
 - **Cross-ref:** BUG-207.C #94 above; Issue #220; sediment desde PR #199 (c191254e p207).
 
+### 96. WATCH-207.E — Test files wiring follow-on recurrence (4/4 lifecycle PRs)
+- **Tipo:** watch / forward defense · **Severity:** MED · **Effort:** S
+- **Trigger:** P207 close revealed that **4 of 4 lifecycle PRs** (#199 + #184 + #197 + #198) shipped contract test files without wiring them into `package.json` `test` + `test:contracts` scripts. Each required a separate follow-on commit on main (`a1fc43ce` for #199, `158a7ebd` for the consolidated #184/#197/#198 wiring). Pattern first identified as WATCH-213.C (HIGH carry for #199); now recurrence-of-4 confirms it's a class issue not a one-off.
+- **Impact:** Without wiring, the contract tests land as dead files: CI doesn't invoke them, regressions slip through, PR description's "10 new tests added" claim is silently false. Forward-defense gap.
+- **Proposta:** Either (a) Add a contract test in `tests/contracts/rpc-migration-coverage.test.mjs` (or sibling) that asserts every `*.test.mjs` file in `tests/contracts/` IS in `package.json` `test` script — fail CI if any new file is unwired. Or (b) Replace both scripts with glob: `node --test 'tests/contracts/*.test.mjs'` (requires handling `--experimental-strip-types` asymmetry). Or (c) Add a pre-commit hook that lints the same. Recommended: (a) since it's contract-style and matches existing patterns.
+- **Validation gate:** Adding an unwired test file to tests/contracts/ causes CI to fail with clear message.
+- **Cross-ref:** WATCH-213.C (resolved); a1fc43ce (PR #199 wiring); 158a7ebd (PRs #184/#197/#198 wiring); OPP-213.D (related test:contracts script missing 4 pre-existing files).
+
