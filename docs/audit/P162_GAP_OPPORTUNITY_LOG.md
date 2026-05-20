@@ -641,6 +641,14 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Tests fail on `write_board`-only reader queue and on V3 `designations.includes('curator')` as sole eligibility source.
 - **Cross-ref:** GitHub #194; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-016.
 
+### 70.1 P1 — Curadoria modal hides submitted artifact links and source context
+- **Tipo:** bug / UX gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Fabricio reported the Débora/Agentes Autônomos item in `/admin/curatorship` does not show the article link or source folder/context needed for review. Live DB confirmed the item has `board_items.attachments` with a Google Doc link and `get_curation_dashboard()` includes `attachments`, but `ReviewRubricDialog` renders only title, tribe, SLA, assignee and description.
+- **Impact:** Curators cannot review the actual artifact without hunting in the tribe board/Drive. This breaks the "one place" curation promise and can recur for any item whose key context lives in `attachments`, `board_item_files`, checklist, Drive folder links or lifecycle history.
+- **Proposta:** Render submitted artifact links and context in the curation modal; extend future `curation_queue_state` to include `artifact_links`, `drive_links`, `checklist_summary`, source board/initiative/tribe and missing-context flags.
+- **Validation gate:** The live Débora card shows the Google Doc link in `/admin/curatorship`; an item without artifact link shows an explicit "no artifact link attached" warning.
+- **Cross-ref:** GitHub #201, #190, #188; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-012.
+
 ### 71. OPP-181.A — sign_volunteer_agreement re-emits is_superadmin + hardcoded operational_role
 - **Tipo:** opportunity / ADR-0011 carry · **Severity:** MEDIUM · **Effort:** S
 - **Trigger:** Council code-reviewer audit of PR #184 found that `sign_volunteer_agreement` notification fan-out uses `m.is_superadmin = true` and `m.operational_role = 'manager'` predicates plus an issuer-fallback `operational_role IN ('manager','tribe_leader')` block, all of which violate ADR-0011 (no hardcoded role lists; emergency-break `is_superadmin` outside its narrow scope). The body in this migration is byte-equivalent to the prior `20260513070000_adr0022_w1_producer_updates.sql` capture — pre-existing carry, NOT introduced by p203 #181 — but the DROP+CREATE in `20260724000000` re-emits and implicitly endorses the legacy pattern.
