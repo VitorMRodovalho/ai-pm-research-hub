@@ -1,0 +1,130 @@
+name: Parallel-Agent Task (p201)
+description: Tarefa para execução por agente em worktree isolada — modelo p201 (lane + acceptance + DoD + handoff)
+title: "[Task]: "
+labels: ["type:task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use este template para tarefas que serão trabalhadas em worktree/branch separada por agente
+        (Claude Code, Cursor, Codex, etc.), seguindo o modelo p201 em
+        `docs/project-governance/P201_PARALLEL_AGENT_ROADMAP.md`.
+
+        - Lanes (§3 do roadmap): cada agente trabalha dentro de uma lane.
+        - Handoff obrigatório (§4): preencher na conclusão.
+        - Gates antes de merge (§5): variam por tipo de mudança.
+
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Lane
+      description: Qual lane do roadmap §3 esta task ocupa? Selecione apenas uma.
+      options:
+        - Foundation (DB, RPC, RLS, migrations, invariants)
+        - Frontend (Astro/React/i18n/navigation)
+        - MCP/AI (MCP tools, prompts, AI Edge Functions)
+        - Governance (docs, ADRs, release log, runbooks)
+        - Infra/Security (Cloudflare, CI, Supabase local, WAF)
+        - QA (smoke, tests, contracts, route inventory)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridade
+      description: Veja §6 do roadmap para a definição de P1/P2.
+      options:
+        - P1 — bloqueia funcionalidade ou compliance
+        - P2 — necessário mas não imediato
+        - P3 — nice-to-have / oportunidade
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: O que esta task entrega (1-2 frases).
+    validations:
+      required: true
+
+  - type: textarea
+    id: in-scope
+    attributes:
+      label: Em escopo
+      description: Arquivos, diretórios ou áreas que podem ser tocadas.
+      placeholder: |
+        - src/components/...
+        - docs/...
+        - supabase/functions/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Fora de escopo
+      description: Listar explicitamente o que NÃO deve ser tocado (evita escopo creep e merge conflicts entre agentes paralelos).
+      placeholder: |
+        - Não tocar em SQL/RPC
+        - Não modificar Cloudflare config
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceitação
+      description: Checklist testável de quando esta task está done. Cada critério deve ser verificável.
+      placeholder: |
+        - [ ] Critério 1
+        - [ ] Critério 2
+        - [ ] Critério 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done (DoD)
+      description: Mandatório por todos os parallel-agent tasks. Derivado dos gates §5 do roadmap p201.
+      value: |
+        - [ ] Critérios de aceitação acima todos marcados
+        - [ ] Lane gate executado (§5 do roadmap): SQL → `check_schema_invariants()` + rollback documentado + `NOTIFY pgrst` quando assinatura muda; Frontend → lint + `npm run build` + route smoke; MCP → `tools/list` + `/health` + smoke de tool; Cloudflare → Security Events antes/depois + Ray ID + regra documentada; i18n → 3 dicionários (pt-BR, en-US, es-LATAM); Docs → links válidos + sem count drift contra pins canônicos
+        - [ ] `npm test` 0 fail (counts atualizados em `.claude/rules/deploy.md` se aplicável)
+        - [ ] Handoff block preenchido no PR description (formato §4 do roadmap)
+        - [ ] Backlog log atualizado se introduz GAP/OPP/WATCH (`docs/audit/P162_GAP_OPPORTUNITY_LOG.md`)
+        - [ ] Docs canonical pins verificados sem drift (CLAUDE.md, `.claude/rules/mcp.md`)
+    validations:
+      required: true
+
+  - type: textarea
+    id: handoff
+    attributes:
+      label: Handoff (preencher ao concluir)
+      description: Mandatório por todos os parallel-agent tasks (§4 do roadmap). Copiar este bloco para o PR description quando completar.
+      value: |
+        ```md
+        ## Handoff
+
+        Issue: #
+        Branch:
+        Escopo:
+        Arquivos:
+        Validação:
+        Riscos:
+        Rollback:
+        Docs:
+        Próximo passo:
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Links, ADRs, audit reports, dependências entre issues, conflitos potenciais com outras lanes.
+    validations:
+      required: false

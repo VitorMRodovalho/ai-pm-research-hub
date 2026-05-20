@@ -151,6 +151,10 @@ Specialized agents operate within strict boundaries. An agent must NOT work outs
 5. **Gate checks before merge:** `npm test` + `npm run build` + `npm run smoke:routes` must pass.
 6. **Sprint closure is mandatory:** Every sprint must complete the 5-phase closure routine before the next sprint begins.
 
+### Parallel-agent operating model (p201)
+
+Para trabalho paralelo de múltiplos agentes/modelos (Claude Code, Cursor, Codex, Gemini, etc.) em worktrees isoladas, o modelo canônico é `docs/project-governance/P201_PARALLEL_AGENT_ROADMAP.md` (Adopted em 2026-05-19 via issue #159). Ele formaliza 6 lanes (Foundation, Frontend, MCP/AI, Governance, Infra/Security, QA), o handoff mínimo (§4) e os gates por tipo de mudança (§5). O template `.github/ISSUE_TEMPLATE/parallel_agent_task.yml` exige lane + acceptance criteria + DoD checklist em toda issue desse programa. A tabela "Agent team structure" acima continua válida; o roadmap p201 a estende para execução paralela e isolada.
+
 ## Interação com agentes (obrigatório)
 
 ### Ao iniciar trabalho
