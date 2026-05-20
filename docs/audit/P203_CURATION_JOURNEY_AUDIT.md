@@ -304,6 +304,38 @@ Próxima ação:
 
 - Remover trigger morto ou alinhar com `published`/`curation_pending`.
 
+### C-012 — Modal de curadoria não exibe links/artefatos submetidos
+
+**Severidade:** HIGH
+**Camada:** frontend UX / semantic envelope
+**GitHub:** #201
+
+Fabricio reportou que o item submetido por Débora/Agentes Autônomos aparece em `/admin/curatorship`, mas o modal de avaliação não mostra o link do artigo nem a pasta/contexto da submissão.
+
+Evidência live do item `642fe90f-20ad-4ba4-a9e7-05470ed7c5de`:
+
+- `board_items.attachments` contém o link do Google Doc do artigo:
+  - `name='Artigo'`
+  - `kind='link'`
+  - `embed='drive'`
+  - `url=<Google Docs>`
+- `get_curation_dashboard()` já inclui `attachments` no payload do item.
+- `board_item_checklists` contém evidência de escopo/redação e conclusão.
+- `initiative_drive_links` contém pasta workspace de `T2 Agentes Autônomos` e pasta de atas.
+- `ReviewRubricDialog` renderiza título, tribo, SLA, assignee e descrição, mas não renderiza `attachments`, arquivos, Drive links, checklist, timeline ou contexto de origem.
+
+Interpretação:
+
+- O link do artigo não se perdeu no backend.
+- O gap atual é UI/contrato semântico: a fila de curadoria não apresenta o pacote completo de evidências para o curador.
+
+Próxima ação:
+
+- Renderizar `attachments` como links clicáveis no modal.
+- Mostrar contexto de origem: board, iniciativa/tribo, autor/assignee, tags e checklist/evidência.
+- Incluir Drive links quando disponíveis.
+- Adicionar flags de contexto ausente (`missing_artifact_link`) na futura `curation_queue_state`.
+
 ---
 
 ## 5. Gaps de Semantic Layer
@@ -326,6 +358,9 @@ Criar uma view/RPC `curation_queue_state` que normalize:
 
 - item;
 - origem (`tribe_board`, `governance_document`, `manual`, `webinar`, `article`, `hub_resource`);
+- links do artefato submetido (`attachments`, `board_item_files`);
+- links de Drive relevantes (`initiative_drive_links`, `board_drive_links`);
+- resumo de checklist/evidência de conclusão;
 - estado;
 - SLA;
 - review_count;
@@ -549,4 +584,5 @@ Próxima ação se for aprofundar segurança:
 12. Expandir `curation_queue_state` para pipelines paralelos, não só `board_items`.
 13. Atualizar permissões/docs públicas para curadoria V4 e contagens runtime atuais.
 14. Ajustar testes que ainda cristalizam V3/designation/`write_board` como contrato de curadoria.
+15. Exibir no modal da curadoria o link do artefato, arquivos, Drive/contexto da iniciativa e checklist de evidências.
 
