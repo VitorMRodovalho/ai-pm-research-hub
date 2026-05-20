@@ -17,6 +17,19 @@
 --   - ambassador/study_*    → decide_template_for_kind_then_issue (needs PM input)
 --   - inactive/missing mem  → investigate / reactivate
 --
+-- has_agreement_notification heuristic: substring match against notification
+-- type/title/body for 'agreement|certificate|termo'. This is a routing hint,
+-- NOT authoritative — false positives are possible if an unrelated notification
+-- mentions 'termo'. Display copy in the admin UI labels it as "already notified"
+-- (advisory chip), not a hard signal.
+--
+-- Note on requires_agreement seed for special kinds: the original engagement_kinds
+-- seed (20260319xxxxxx) marked ambassador and study_group_* with
+-- requires_agreement=false. Migration 20260419010000_fix_engagement_kinds_lgpd_consent
+-- later toggled requires_agreement=true for kinds with legal_basis='consent'. The
+-- 16 cases this RPC surfaces reflect the post-fix seed; if that migration is ever
+-- reverted, ambassador/study_* silently drop out of the queue.
+--
 -- Out of scope:
 --   - Auto-issuance (waits on PM template decision for ambassador/study_*)
 --   - Notification dispatch (next-action label only; no side effects)
@@ -82,17 +95,20 @@ BEGIN
         'start_date', ae.start_date,
         'is_authoritative', ae.is_authoritative,
         'agreement_certificate_id', ae.agreement_certificate_id,
-        'has_agreement_notification', EXISTS (
-          SELECT 1 FROM public.notifications n
-          WHERE n.recipient_id = m.id
-            AND n.created_at >= COALESCE(ae.start_date::timestamptz, now() - interval '365 days')
-            AND (
-              lower(coalesce(n.type, '')) LIKE '%agreement%'
-              OR lower(coalesce(n.type, '')) LIKE '%certificate%'
-              OR lower(coalesce(n.title, '')) LIKE '%termo%'
-              OR lower(coalesce(n.body, '')) LIKE '%termo%'
-            )
-        ),
+        'has_agreement_notification', CASE
+          WHEN m.id IS NULL THEN false
+          ELSE EXISTS (
+            SELECT 1 FROM public.notifications n
+            WHERE n.recipient_id = m.id
+              AND n.created_at >= COALESCE(ae.start_date::timestamptz, now() - interval '365 days')
+              AND (
+                lower(coalesce(n.type, '')) LIKE '%agreement%'
+                OR lower(coalesce(n.type, '')) LIKE '%certificate%'
+                OR lower(coalesce(n.title, '')) LIKE '%termo%'
+                OR lower(coalesce(n.body, '')) LIKE '%termo%'
+              )
+          )
+        END,
         'next_action', CASE
           WHEN m.id IS NULL THEN 'investigate_missing_member'
           WHEN m.is_active IS NOT TRUE THEN 'reactivate_member_or_close_engagement'

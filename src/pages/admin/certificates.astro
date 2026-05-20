@@ -88,68 +88,75 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       // Pending Agreement Engagements (issue #177) — visibility-only queue
       const { data: pendingAgreements } = await sb.rpc('get_pending_agreement_engagements');
       if (pendingAgreementsEl && pendingAgreements?.success && Array.isArray(pendingAgreements.pending) && pendingAgreements.pending.length > 0) {
-        const nextActionLabel = (action: string): string => {
-          const labels: Record<string, Record<string, string>> = {
-            'pt-BR': {
-              notify_member_to_sign_volunteer_term: 'Notificar membro a assinar Termo de Voluntariado',
-              decide_template_for_kind_then_issue: 'Decidir template para este kind e emitir',
-              investigate_missing_member: 'Investigar — membro ausente',
-              reactivate_member_or_close_engagement: 'Reativar membro ou encerrar engagement',
-              review_special_kind_engagement: 'Revisar engagement de kind especial',
-            },
-            'en-US': {
-              notify_member_to_sign_volunteer_term: 'Notify member to sign Volunteer Term',
-              decide_template_for_kind_then_issue: 'Decide template for this kind, then issue',
-              investigate_missing_member: 'Investigate — missing member',
-              reactivate_member_or_close_engagement: 'Reactivate member or close engagement',
-              review_special_kind_engagement: 'Review special-kind engagement',
-            },
-            'es-LATAM': {
-              notify_member_to_sign_volunteer_term: 'Notificar al miembro a firmar el Término de Voluntariado',
-              decide_template_for_kind_then_issue: 'Decidir plantilla para este kind y emitir',
-              investigate_missing_member: 'Investigar — miembro ausente',
-              reactivate_member_or_close_engagement: 'Reactivar miembro o cerrar engagement',
-              review_special_kind_engagement: 'Revisar engagement de kind especial',
-            },
-          };
-          return labels[lang]?.[action] || action;
+        const PA_LABELS: Record<string, Record<string, string>> = {
+          'pt-BR': {
+            notify_member_to_sign_volunteer_term: 'Notificar membro a assinar Termo de Voluntariado',
+            decide_template_for_kind_then_issue: 'Decidir template para este kind e emitir',
+            investigate_missing_member: 'Investigar — membro ausente',
+            reactivate_member_or_close_engagement: 'Reativar membro ou encerrar engagement',
+            review_special_kind_engagement: 'Revisar engagement de kind especial',
+            chip_already_notified: 'já notificado',
+            chip_no_notification: 'sem notificação',
+            chip_authoritative: 'autoritativo',
+            chip_pending_authority: 'autoridade pendente',
+            heading: 'Acordos pendentes',
+            subheading: 'Engagements ativos que exigem acordo mas não têm certificado. Apenas visibilidade — nenhuma ação automática.',
+          },
+          'en-US': {
+            notify_member_to_sign_volunteer_term: 'Notify member to sign Volunteer Term',
+            decide_template_for_kind_then_issue: 'Decide template for this kind, then issue',
+            investigate_missing_member: 'Investigate — missing member',
+            reactivate_member_or_close_engagement: 'Reactivate member or close engagement',
+            review_special_kind_engagement: 'Review special-kind engagement',
+            chip_already_notified: 'already notified',
+            chip_no_notification: 'no notification',
+            chip_authoritative: 'authoritative',
+            chip_pending_authority: 'pending authority',
+            heading: 'Pending agreements',
+            subheading: 'Active engagements that require an agreement but have no certificate. Visibility only — no action issued automatically.',
+          },
+          'es-LATAM': {
+            notify_member_to_sign_volunteer_term: 'Notificar al miembro a firmar el Término de Voluntariado',
+            decide_template_for_kind_then_issue: 'Decidir plantilla para este kind y emitir',
+            investigate_missing_member: 'Investigar — miembro ausente',
+            reactivate_member_or_close_engagement: 'Reactivar miembro o cerrar engagement',
+            review_special_kind_engagement: 'Revisar engagement de kind especial',
+            chip_already_notified: 'ya notificado',
+            chip_no_notification: 'sin notificación',
+            chip_authoritative: 'autoritativo',
+            chip_pending_authority: 'autoridad pendiente',
+            heading: 'Acuerdos pendientes',
+            subheading: 'Engagements activos que requieren acuerdo pero no tienen certificado. Solo visibilidad — sin acción automática.',
+          },
         };
-        const heading = lang === 'en-US'
-          ? `Pending agreements (${pendingAgreements.total})`
-          : lang === 'es-LATAM'
-          ? `Acuerdos pendientes (${pendingAgreements.total})`
-          : `Acordos pendentes (${pendingAgreements.total})`;
-        const subheading = lang === 'en-US'
-          ? 'Active engagements that require an agreement but have no certificate. Visibility only — no action issued automatically.'
-          : lang === 'es-LATAM'
-          ? 'Engagements activos que requieren acuerdo pero no tienen certificado. Solo visibilidad — sin acción automática.'
-          : 'Engagements ativos que exigem acordo mas não têm certificado. Apenas visibilidade — nenhuma ação automática.';
+        const paT = (key: string): string => PA_LABELS[lang]?.[key] || PA_LABELS['pt-BR'][key] || key;
+        const total = pendingAgreements.total ?? pendingAgreements.pending.length;
         pendingAgreementsEl.innerHTML = `
           <div class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl overflow-hidden">
             <div class="px-5 py-3 border-b border-rose-200 dark:border-rose-800">
-              <h3 class="text-sm font-bold text-rose-800 dark:text-rose-300">${esc(heading)}</h3>
-              <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1">${esc(subheading)}</div>
+              <h3 class="text-sm font-bold text-rose-800 dark:text-rose-300">${esc(paT('heading'))} (${total})</h3>
+              <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1">${esc(paT('subheading'))}</div>
             </div>
             <div class="divide-y divide-rose-100 dark:divide-rose-800/50">
-              ${pendingAgreements.pending.map((p: any) => `
+              ${pendingAgreements.pending.map((row: any) => `
                 <div class="px-5 py-3 flex items-start gap-3 flex-wrap">
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-[var(--text-primary)]">${esc(p.member_name || '—')}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)]">${esc(row.member_name || '—')}</div>
                     <div class="text-xs text-[var(--text-muted)]">
-                      <span class="font-semibold">${esc(p.kind)} / ${esc(p.role)}</span>
-                      ${p.initiative_title ? ' · ' + esc(p.initiative_title) : ''}
-                      ${p.chapter ? ' · ' + esc(p.chapter) : ''}
+                      <span class="font-semibold">${esc(row.kind)} / ${esc(row.role)}</span>
+                      ${row.initiative_title ? ' · ' + esc(row.initiative_title) : ''}
+                      ${row.chapter ? ' · ' + esc(row.chapter) : ''}
                     </div>
-                    <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1">→ ${esc(nextActionLabel(p.next_action))}</div>
+                    <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1">→ ${esc(paT(row.next_action))}</div>
                   </div>
                   <div class="flex flex-col items-end gap-1">
-                    ${p.has_agreement_notification
-                      ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">already notified</span>'
-                      : '<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">no notification</span>'
+                    ${row.has_agreement_notification
+                      ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">${esc(paT('chip_already_notified'))}</span>`
+                      : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">${esc(paT('chip_no_notification'))}</span>`
                     }
-                    ${p.is_authoritative
-                      ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">authoritative</span>'
-                      : '<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">pending authority</span>'
+                    ${row.is_authoritative
+                      ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">${esc(paT('chip_authoritative'))}</span>`
+                      : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${esc(paT('chip_pending_authority'))}</span>`
                     }
                   </div>
                 </div>
