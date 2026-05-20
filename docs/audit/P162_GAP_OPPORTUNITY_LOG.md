@@ -697,3 +697,12 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** `npm test` returns 1449+ pass / 0 fail / 46 skip offline.
 - **Cross-ref:** PR #184, #197 council close; p199-b/c handoff (Paulo Alves attendance fix).
 
+### 78. OPP-204.A — Cloudflare traffic analytics tab for `nucleoia.vitormr.dev`
+- **Tipo:** opportunity / feature · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** PM noted Cloudflare Analytics is collected at the `vitormr.dev` zone level and should contain traffic for the Hub subdomain. The personal site project (`~/Documents/vitormr-site`) already has a reference admin metrics surface at `vitormr.dev/admin/metrics`.
+- **Impact:** `/admin/analytics` currently covers platform/product analytics but lacks web traffic visibility: requests/pageviews over time, top paths, referrers, countries/devices and period-over-period deltas for the public Hub. Without this, public interest in `nucleoia.vitormr.dev` is invisible to governance decisions.
+- **Proposta:** Add a Cloudflare traffic tab/section under `/admin/analytics` (not `/admin/adoption`). Filter Cloudflare data by `hostname = nucleoia.vitormr.dev`; show aggregate cards, overtime chart, period comparison, top paths/referrers/countries/devices/status codes. Keep data aggregate-only and cache server-side via RPC/Edge Function/table; never expose Cloudflare tokens in frontend.
+- **Non-goal:** Do not merge anonymous Cloudflare traffic with member identities in MVP. Keep `/admin/adoption` focused on authenticated product usage.
+- **Validation gate:** `/admin/analytics` shows traffic data filtered to the Hub hostname, with no zone-wide `vitormr.dev` mixing and no Cloudflare secret in client code.
+- **Cross-ref:** GitHub #200; reference project `~/Documents/vitormr-site` (`/admin/metrics`) for implementation pattern only.
+
