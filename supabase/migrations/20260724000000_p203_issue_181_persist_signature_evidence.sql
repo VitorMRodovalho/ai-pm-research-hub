@@ -66,6 +66,10 @@ DECLARE
   v_signed_at timestamptz := now();
   v_ip inet := NULL;
 BEGIN
+  -- Server-side cap on UA length to prevent storage abuse via direct PostgREST
+  -- or MCP callers that bypass the frontend's 500-char trim.
+  p_signed_user_agent := left(p_signed_user_agent, 500);
+
   SELECT m.id, m.chapter, m.person_id
     INTO v_caller_id, v_caller_chapter, v_caller_person_id
   FROM public.members m WHERE m.auth_id = auth.uid();
@@ -179,6 +183,10 @@ DECLARE
   v_chapter_cnpj text; v_chapter_legal_name text;
   v_ip inet := NULL;
 BEGIN
+  -- Server-side cap on UA length to prevent storage abuse via direct PostgREST
+  -- or MCP callers that bypass the frontend's 500-char trim.
+  p_signed_user_agent := left(p_signed_user_agent, 500);
+
   SELECT m.id, m.name, m.email, m.operational_role, m.pmi_id, m.chapter,
     m.phone, m.address, m.city, m.state, m.country, m.birth_date,
     t.name as tribe_name
