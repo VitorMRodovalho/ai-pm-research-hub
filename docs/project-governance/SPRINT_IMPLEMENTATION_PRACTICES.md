@@ -26,6 +26,18 @@ Para considerar um item de Sprint ou Hotfix tecnicamente concluído, os seguinte
   - `npm run smoke:routes`
 - PRs de automação/dependências devem ser **mergeadas ou encerradas com justificativa** na sprint de higiene correspondente (sem backlog indefinido).
 
+## Execução Paralela por Agente (p201)
+
+Quando uma sprint envolve trabalho paralelo por múltiplos agentes/modelos (Claude Code, Cursor, Codex, etc.) em worktrees isoladas, o modelo operacional canônico é
+`docs/project-governance/P201_PARALLEL_AGENT_ROADMAP.md` (Adopted — issue #159, p202). Este documento define:
+
+- **§3 Lanes** — quem pode tocar o quê (Foundation, Frontend, MCP/AI, Governance, Infra/Security, QA).
+- **§4 Handoff obrigatório** — formato mínimo de PR description (Issue / Branch / Escopo / Arquivos / Validação / Riscos / Rollback / Docs / Próximo passo).
+- **§5 Gates antes de merge** — quais checks são obrigatórios por tipo de mudança (SQL, Frontend, i18n, MCP, Cloudflare, Docs).
+
+A rotina de encerramento de sprint abaixo continua válida para o conjunto da sprint; cada PR parallel-agent dentro da sprint herda o gate da sua lane.
+Template novo para issues p201 em `.github/ISSUE_TEMPLATE/parallel_agent_task.yml`.
+
 ---
 
 ## Rotina de Encerramento de Sprint (5 Fases)
