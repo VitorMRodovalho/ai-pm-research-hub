@@ -772,3 +772,19 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Script exists + pre-commit invokes it + CI workflow runs it. Output reproducible.
 - **Cross-ref:** Issue #216 spec § "Forward defense"; spec recommends Option B over Options A (custom ESLint rule, M effort) and C (Vite plugin, L effort, invasive).
 
+### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (workerd DNS strict post p173 deps bump)
+- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** S (Opção A pin) / M (Opção B mock fetch) / XS (Opção C /etc/hosts hack)
+- **Trigger:** PM perguntou em p207 (2026-05-20) por que browser_guards falha consistentemente. Investigação revelou: 75+ runs consecutivos failing desde 2026-05-18 02:20 UTC (último verde `37e86d98`). Erro: `kj/async-io-unix.c++:1298: failed: DNS lookup failed.; params.host = mock.supabase.co`. Causa provável: bumps em p173 (2026-05-17) — astro 6.1.3→6.3.3 + @astrojs/cloudflare 13.1.7→13.5.1 + wrangler — versão nova do workerd ficou estrita sobre DNS failures durante boot (antes tolerava `mock.supabase.co` fake URL do env CI).
+- **Impact:** `validate` workflow falha em todos os PRs + main pushes → `quality_gate` SKIPPED em cascade. Merges (#199 e fila atual #184/#197/#198) precisam `--admin` bypass. Cada bypass consolida o pattern como aceitável → erosão de gates. browser_guards efetivamente disabled como signal — regressões UI/SSR-side passam silenciosamente.
+- **Proposta:** Issue #220 filed com 3 opções (A: downgrade wrangler/ajustar compatibility_date — Recommended; B: mockar fetch no test — fix de fundo; C: /etc/hosts hack — pragma). Recomendar A primeiro (reabre CI em <30min) + B no backlog.
+- **Validation gate:** `gh run list --workflow=ci.yml --branch <X> --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin.
+- **Cross-ref:** Issue #220; runs falhos como `26167448636`; commits gatilho `ce980c81` + `d96c0c7d` (p173); PR #199 merge (`c191254e`) primeiro a usar --admin por este motivo.
+
+### 95. WATCH-207.D — --admin bypass pattern erosão (PRs #199/#184/#197/#198 em sequência)
+- **Tipo:** watch / governance debt · **Severity:** MED · **Effort:** XS (após CI fix)
+- **Trigger:** BUG-207.C força `--admin` bypass em série. Sediment risk: PMs/agents futuros podem normalizar bypass mesmo após fix do CI infra.
+- **Impact:** Branch protection serves to prevent regressões; bypass repetido (mesmo com causa identificada) cria precedente de "ignore o checkmark se incomodar". Confusão de governance.
+- **Proposta:** Após Issue #220 resolved (browser_guards ✓ verde), auditar: (a) listar quantos PRs subiram via --admin no intervalo (esperado ≥4); (b) confirmar que cada --admin tem justificativa documentada em PR comment; (c) revogar --admin merge permission a partir de X data como sinal explícito de "voltamos ao normal".
+- **Validation gate:** PRs pós-fix passam CI sem --admin; --admin merges são raros e justificados.
+- **Cross-ref:** BUG-207.C #94 above; Issue #220; sediment desde PR #199 (c191254e p207).
+
