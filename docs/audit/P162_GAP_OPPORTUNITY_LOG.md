@@ -601,3 +601,43 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Tests fail if reader gates revert to `write_board`-only or if canonical submit does not notify committee.
 - **Cross-ref:** GitHub #194; existing P162 #32; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-006/C-010.
 
+### 66. P1 — Curadoria email policy lacks dedicated notification type
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Wave 2 audit found `_delivery_mode_for('assignment_new')`, `card_assigned`, `card_moved`, and hypothetical `curation_submitted` all route to `digest_weekly`; live item notifications had `email_sent_at=NULL`.
+- **Impact:** Comitê may not receive timely email for a 7-day SLA item. Current notification semantics piggyback on generic card assignment/move types, not curation intent.
+- **Proposta:** Create a dedicated type (`curation_item_submitted` or equivalent) and decide its delivery policy (`transactional_immediate` vs digest). If digest, add a dedicated curation section to the canonical weekly digest.
+- **Validation gate:** Submitting a card creates a notification with explicit curation type and expected email/digest behavior.
+- **Cross-ref:** GitHub #186; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-012.
+
+### 67. P1 — Cross-pipeline curation queue omits publication/governance review states
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** L
+- **Trigger:** Wave 2 audit found `publication_submissions` has 21 `under_review` + 8 `submitted`, `publication_ideas` has 1 `approved`, `governance_documents` has 6 `under_review`, and `change_requests` has 15 pending-ish rows, but `/admin/curatorship` only surfaces `board_items`.
+- **Impact:** Curators still need to inspect multiple surfaces; the "one place" workspace remains a pointer board, not a unified operational queue.
+- **Proposta:** Make `curation_queue_state` cross-pipeline with `origin_type`/`origin_id` for `board_item`, `publication_submission`, `publication_idea`, `governance_document`, `change_request`, `webinar_proposal`.
+- **Validation gate:** Committee workspace and `/admin/curatorship` show at least board items + publication submissions + governance docs with consistent next actions.
+- **Cross-ref:** GitHub #190; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-013; OPP-196.D.
+
+### 68. P2 — Weekly digest implementations diverge for curation follow-up
+- **Tipo:** drift/opportunity · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** Repo has rich DB-driven `get_weekly_member_digest()` and a separate `send-notification-digest` Edge Function that queries unread notifications and renders its own grouped HTML.
+- **Impact:** Adding curation to one path may not affect the other; digest behavior can drift or duplicate logic.
+- **Proposta:** Ratify the canonical digest path for members. Then add a curation-specific section in the chosen path and deprecate/mark the other path if legacy.
+- **Validation gate:** One documented digest path owns curation weekly summaries; cron/job references match the chosen path.
+- **Cross-ref:** GitHub #195; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-014; ADR-0022.
+
+### 69. P1 — Curadoria permissions/docs drift from V4 reality
+- **Tipo:** docs/governance drift · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** p203 Wave 2 found `PERMISSIONS_MATRIX.md` still dated 2026-03-15 and describing curadoria via observer/designation, while `SITE_MAP.md` lists `/admin/curatorship` as observer-only and still has stale platform counts (MCP 64, Edge Functions 21, pg_cron 4).
+- **Impact:** Docs imply curator access is `curator` designation/tier-based, while runtime should be V4 `curate_content` / `participate_in_governance_review`. This can lead future agents/humans to reintroduce wrong gates.
+- **Proposta:** Update permissions/site docs to distinguish nav discoverability from backend authority and pin current runtime counts or point to runtime sources.
+- **Validation gate:** Docs mention `curate_content`, do not claim `/admin/curatorship` is generic observer access, and no stale 64-tool MCP count remains in current docs.
+- **Cross-ref:** GitHub #196; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-015; ADR-0087.
+
+### 70. P1 — Curadoria tests crystallize legacy access contracts
+- **Tipo:** test gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** `tests/contracts/rpc-acl.test.mjs` expects curation RPCs to check `curator`/`designations` or admin role; `tests/contracts/rls-v4-phase4-1.test.mjs` still asserts `curation_review_log_write` uses `write_board`.
+- **Impact:** Tests can pass while the desired V4 curator contract is broken, or fail once #185 correctly moves queue readers toward `curate_content`.
+- **Proposta:** Fold into #194: update static tests to assert V4 `curate_content` / `participate_in_governance_review` according to accepted reader/writer contract, plus persona smoke for Roberto/Sarah.
+- **Validation gate:** Tests fail on `write_board`-only reader queue and on V3 `designations.includes('curator')` as sole eligibility source.
+- **Cross-ref:** GitHub #194; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-016.
+
