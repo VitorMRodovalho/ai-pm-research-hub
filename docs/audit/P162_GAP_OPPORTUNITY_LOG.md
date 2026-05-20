@@ -519,3 +519,85 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** State machine covers at least: `candidate`, `approved_pending_member`, `approved_pending_person`, `agreement_pending`, `countersign_pending`, `authoritative`, `renewal_due`, `offboarded`, `reengagement_pending`.
 - **Cross-ref:** GitHub #166, #179, #180, #182, #183; `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` section 6.
 
+### 56. P0 — Curatorship queue RPC gates still require `write_board`, blocking V4 curators
+- **Tipo:** issue · **Severity:** CRITICAL for curator access · **Effort:** S/M
+- **Trigger:** p203 curadoria audit after Roberto reported "Sem acesso". Frontend gate was fixed in p201 to accept `canFor('curate_content')`, but live RPC bodies for `get_curation_dashboard()` and `list_curation_pending_board_items()` still require `can_by_member(v_member_id, 'write_board')`.
+- **Production evidence (2026-05-19):** Fabricio has `curate_content=true` and `write_board=true`; Roberto and Sarah have `curate_content=true` but `write_board=false`. Therefore the UI may allow access while the backend queue denies or errors.
+- **Impact:** Curators without broad board-write authority cannot reliably load `/admin/curatorship`, despite ADR-0087 making `curate_content` the canonical authority.
+- **Proposta:** Change reader RPC gates to `curate_content OR participate_in_governance_review OR manage_member` (or a narrower accepted contract), keeping write gates separate for mutations.
+- **Validation gate:** Roberto/Sarah persona smoke can load queue but cannot mutate outside allowed curation actions.
+- **Cross-ref:** GitHub #185; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-001; ADR-0087; issue #161.
+
+### 57. P0 — Canonical `submit_for_curation` does not notify the Comitê de Curadoria
+- **Tipo:** issue · **Severity:** CRITICAL for operational workflow · **Effort:** M
+- **Trigger:** ADR-0086 says tribe leaders should submit without naming curators. Live SQL/function audit shows `submit_for_curation(p_item_id)` only updates status and lifecycle events; notification trigger only notifies existing `board_item_assignments` rows.
+- **Production evidence (2026-05-19):** Live item `642fe90f` has 11 notifications, all tied to assignment/status triggers because curators were assigned. The three V4 curators each got digest/in-app notifications (`assignment_new`, `card_assigned`, `card_moved`), all `delivery_mode='digest_weekly'`, `email_sent_at=NULL`. If the canonical button is used without assignments, there may be zero curator recipients.
+- **Impact:** New submissions can silently enter `curation_pending` without curators receiving email or explicit committee broadcast, making SLA dependent on someone manually checking `/admin/curatorship`.
+- **Proposta:** Add idempotent committee broadcast when a card enters `curation_pending`, targeting active members with `can_by_member('curate_content')`; decide `transactional_immediate` vs digest explicitly.
+- **Validation gate:** Submitting via button creates notification rows for all active curators and expected delivery mode; no duplicate notifications on retry.
+- **Cross-ref:** GitHub #186; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-002; ADR-0086.
+
+### 58. P1 — `curation_reviewer` picker still filters by V3 `members.designations`
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** `MemberPickerMulti.tsx` filters `selectedRole === 'curation_reviewer'` with `m.designations?.includes('curator')`.
+- **Impact:** A new curator onboarded through V4 engagement permissions (`curate_content`) but without legacy designation will not appear as selectable reviewer in the card UI.
+- **Proposta:** Use V4 eligibility (`can_curate_content` payload, dedicated RPC, or semantic reviewer list) instead of raw designation filtering.
+- **Validation gate:** A member with `curate_content=true` and no `curator` designation appears in the picker; a non-curator does not.
+- **Cross-ref:** GitHub #187; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-003; ADR-0087.
+
+### 59. P1 — MCP curatorship surface is admin-only and lacks curation actions
+- **Tipo:** semantic-layer gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** MCP tool `get_curation_dashboard` is gated by `manage_member` and calls a reader RPC that currently requires `write_board`; MCP has no canonical tools for `submit_for_curation`, `submit_curation_review`, `complete_peer_review`, or `complete_leader_review`.
+- **Impact:** AI agents cannot assist curators with the real operational queue unless they have admin-style authority, and cannot perform or inspect the structured review flow through stable curation-native contracts.
+- **Proposta:** After SQL/RPC gates are corrected, add MCP tools for list queue, explain item state, submit review, return with feedback, and summarize SLA using a stable `curation_queue_state` envelope.
+- **Validation gate:** Curator persona can call MCP queue read; non-curator cannot; mutations use explicit V4 gates.
+- **Cross-ref:** GitHub #188, #162, #166; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-004.
+
+### 60. P2 — Card curation pipeline visual still uses aspirational states
+- **Tipo:** UX gap · **Severity:** MEDIUM · **Effort:** XS/S
+- **Trigger:** `CardDetail.tsx` renders visual pipeline states `ideation/research/drafting/author_review/peer_review/leader_review/curation/published`, while DB/type enum is `draft/peer_review/leader_review/curation_pending/published`.
+- **Impact:** Items in `curation_pending` may not mark the current visual stage correctly, confusing authors and leaders about where the card is in the process.
+- **Proposta:** Align visual states with DB or map `curation_pending -> curation` explicitly.
+- **Validation gate:** The live Débora-style item in `curation_pending` highlights the curadoria stage.
+- **Cross-ref:** GitHub #189; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-005; ADR-0086.
+
+### 61. P1 — Opportunity: canonical `curation_queue_state` semantic layer
+- **Tipo:** opportunity · **Severity:** HIGH · **Effort:** M
+- **Trigger:** p203 audit found curation state distributed across `board_items`, `curation_review_log`, `board_lifecycle_events`, `board_item_assignments`, `notifications`, `project_boards`, `engagements`, `engagement_kind_permissions`, MCP and the committee workspace.
+- **Impact:** `/admin/curatorship`, committee workspace, notifications, MCP and QA can disagree about queue state, notification coverage, required reviews and eligible actions.
+- **Proposta:** Create a view/RPC `curation_queue_state` with item, origin type, status, SLA, review counts, required review count, curators_notified, email_sent, next_action and caller-eligible actions.
+- **Validation gate:** `/admin/curatorship`, workspace queue and MCP read from the same envelope.
+- **Cross-ref:** GitHub #190, #166; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md`.
+
+### 62. P1 — Curadoria has parallel APIs/FSMs that can drift
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** p203 frontend/backend/MCP audit found active `CardDetail` path uses p197 RPCs, while `TribeKanbanIsland` and MCP `advance_card_curation` still point to legacy `advance_board_item_curation`.
+- **Impact:** Agents or future UI work can call outdated actions (`request_review`, `approve_peer`, `approve_leader`) or documented-but-invalid MCP actions, bypassing the structured ADR-0086 peer/leader review path.
+- **Proposta:** Deprecate legacy API/tool or rewrite them to delegate to `complete_peer_review`, `complete_leader_review`, `submit_for_curation`, and `submit_curation_review`.
+- **Validation gate:** No mounted UI or MCP tool advertises actions that do not exist in the target RPC; board curation tests exercise only the accepted path.
+- **Cross-ref:** GitHub #191; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-007/C-009.
+
+### 63. P1 — `curation_review_log` lacks duplicate-review guard
+- **Tipo:** data integrity gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Backend audit found consensus counts approvals in `curation_review_log`, but there is no documented UNIQUE guard for one review per curator per item/round.
+- **Impact:** A single curator could potentially submit repeated approvals and satisfy `reviewers_required`, weakening the two-reviewer governance model.
+- **Proposta:** Decide key (`board_item_id`, `curator_id`, `review_round`) and add DB constraint or RPC guard. Include backfill/dedup audit first.
+- **Validation gate:** Duplicate review attempt fails predictably; consensus count uses distinct curators.
+- **Cross-ref:** GitHub #192; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-010; ADR-0086.
+
+### 64. P2 — Curadoria vocabulary drift: `revision_requested` and `auto_publish_approved_article`
+- **Tipo:** drift/cleanup · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** `get_curation_dashboard()` filters `revision_requested`, which is not in the `board_items.curation_status` CHECK; ADR-0086 also notes `auto_publish_approved_article` expects `approved`, also absent from the CHECK.
+- **Impact:** Dead branches and phantom states confuse audits, agents and UI work. Devoluções currently become `curation_status='draft'` + `status='review'`.
+- **Proposta:** Remove phantom states or add explicit mapping in one semantic layer. Drop dead trigger if no longer part of the accepted FSM.
+- **Validation gate:** Static grep shows no unhandled phantom state in active reader/writer RPCs; live FSM states are exactly documented.
+- **Cross-ref:** GitHub #193; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-008/C-011; ADR-0086.
+
+### 65. P1 — Curadoria contract tests missing for accepted p197 flow
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Existing log item #32 covers `complete_peer_review`/`complete_leader_review`; p203 audit expands scope to include `submit_for_curation`, `submit_curation_review`, duplicate review prevention and curator notification side effects.
+- **Impact:** Critical governance flow can regress without breaking generic UI/build tests.
+- **Proposta:** Add DB-aware or static contract tests for authorization, state transitions, returned reset behavior, SLA creation, notification recipients, and consensus by distinct curators.
+- **Validation gate:** Tests fail if reader gates revert to `write_board`-only or if canonical submit does not notify committee.
+- **Cross-ref:** GitHub #194; existing P162 #32; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-006/C-010.
+
