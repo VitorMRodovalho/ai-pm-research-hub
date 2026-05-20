@@ -714,3 +714,45 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** `/admin/analytics` shows traffic data filtered to the Hub hostname, with no zone-wide `vitormr.dev` mixing and no Cloudflare secret in client code.
 - **Cross-ref:** GitHub #200; reference project `~/Documents/vitormr-site` (`/admin/metrics`) for implementation pattern only.
 
+<!-- NOTE: items 79-81 reserved for issue-182 PR (WATCH-182.A / GAP-182.B / WATCH-182.C). This worktree was branched before that PR; renumber at merge time if it merges first. -->
+
+### 82. WATCH-205.A — workgroup_coordinator not in congress.allowed_engagement_kinds
+- **Tipo:** watch · **Severity:** LOW (advisory only) · **Effort:** XS-S
+- **Trigger:** Council platform-guardian audit of PR #169 (Vassouras initiative seed). João Coelho's engagement uses `kind='workgroup_coordinator'` on a `kind='congress'` initiative, but `engagement_kinds.metadata.allowed_engagement_kinds` for congress only lists `{volunteer,speaker,guest,observer}` (per migration `20260413600000` line 41-43). Since `allowed_engagement_kinds` is **advisory only** (no DB trigger enforces it on INSERT), the seed succeeded. But this creates conceptual drift between the schema definition and actual usage.
+- **Impact:** Future kind-aware UI/tooling reading `allowed_engagement_kinds` will not show workgroup_coordinator as a valid option, even though the live DB has one. View_pii scope resolution at congress initiative scope may behave inconsistently with what `engagement_kind_permissions` seed implies.
+- **Proposta:** Either (a) add `workgroup_coordinator` to congress's `allowed_engagement_kinds` via follow-up migration (preferred — aligns schema with usage; ADR-0009 "config not code"); OR (b) ADR addendum documenting that `congress` kind can host workgroup coordinator engagements with `metadata.initiative_subtype='external_event_collaboration'` as discriminator; OR (c) accept drift and rely on `committee_coordinator` permissions inheritance.
+- **Validation gate:** PR title includes `congress` AC update OR ADR addendum committed.
+- **Cross-ref:** PR #169 council close; migration `20260728000000`; engagement_kinds + permissions cross-table.
+
+### 83. LOW-205.B — metadata.angle dual semantic (engagement-level vs initiative array element)
+- **Tipo:** doc drift · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council code-reviewer audit of PR #169. `metadata.angle` is used as a JSONB key in TWO different shapes: (1) at engagement-level (`engagements.metadata.angle` on Vitor + Sarah's speaker engagements), and (2) inside `initiatives.metadata.confirmed_speakers[].angle` array elements. No schema constraint; dual use is semantic.
+- **Impact:** Future queries joining both paths need to UNION two different shapes. Subtle gotcha.
+- **Proposta:** Document the dual usage in ADR-0093 or a short addendum.
+- **Validation gate:** ADR amendment committed.
+- **Cross-ref:** PR #169 council close.
+
+### 84. LOW-205.C — initiative.metadata.open_questions duplicates board cards
+- **Tipo:** opportunity · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit. `initiatives.metadata.open_questions` is a JSONB string array (5 entries for Vassouras). 3 of 5 map directly to existing board cards. Completing a card does not auto-clear the question. Mirror of LATAM LIM precedent.
+- **Impact:** Stale `open_questions` after cards are resolved; admin UI showing question alongside the card it duplicates.
+- **Proposta:** Either (a) periodic admin UI clear; OR (b) board card UUIDs as references in `open_questions`; OR (c) drop `open_questions` and rely on board cards.
+- **Validation gate:** Pattern decision documented.
+- **Cross-ref:** PR #169 council close.
+
+### 85. LOW-205.D — Board card 4 sub-tasks belong in board_item_checklists
+- **Tipo:** modeling · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit. Board card #169-104 ("Operação day-of") has 4 discrete sub-tasks (camisas + coffee-break + sorteio + bolsa-pós) in description free text. `board_item_checklists` table exists for this with assignment + completion semantics. Same applies to cards 1 + 3.
+- **Impact:** Student collaboration value (teaching scope) degrades when sub-tasks aren't trackable individually. Students can't claim "camisas" without claiming the whole operational card.
+- **Proposta:** Companion admin UI op or follow-up migration before T-5d (2026-05-28): create `board_item_checklists` rows for sub-tasks.
+- **Validation gate:** Sub-tasks split into checklist rows before student collaboration begins.
+- **Cross-ref:** PR #169 council close.
+
+### 86. WATCH-205.E — partner_entities.contact_email PII governance pattern
+- **Tipo:** watch / policy · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #169. Initial seed had `contact_email='j_coelho@id.uff.br'` in a public-repo migration. Fixed inline by removing the column from the INSERT (nullified live row). Raises broader question: what's the policy for `partner_entities.contact_email` in future seeds?
+- **Impact:** Without governance, future PRs may seed partner contacts with real emails. LGPD-adjacent risk even for external/institutional contacts (individual still identifiable).
+- **Proposta:** Document policy: "partner_entities.contact_email MUST be NULL in seed migrations; admin UI is the only entry point post-merge." Add contract test or pre-commit grep to enforce.
+- **Validation gate:** Policy doc + pre-commit grep added.
+- **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
+
