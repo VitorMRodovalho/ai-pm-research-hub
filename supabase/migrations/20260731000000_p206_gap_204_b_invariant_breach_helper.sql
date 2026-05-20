@@ -21,18 +21,37 @@
 --
 -- WHY THIS IS SAFE
 -- ────────────────
--- The helper inserts plausible-but-marker-named rows (applicant_name and
--- member name = '__test_invariant_synthetic__'; emails prefixed
--- '__test_invariant_*'). Any leak (helper called without tx=rollback) is
--- visually identifiable AND filterable via the email/name prefix. The
--- SECURITY DEFINER + service_role-only GRANT prevents authenticated callers
--- from poisoning prod data.
+-- Defense in depth:
+--   1. SECURITY DEFINER + REVOKE FROM PUBLIC/anon/authenticated + GRANT TO
+--      service_role only — PostgREST will return 403 for any authenticated
+--      JWT or anon call. PUBLIC revoke alone would cascade, but the explicit
+--      anon + authenticated revokes match the p186 sibling defensively.
+--   2. In-body runtime role guard (`current_setting('role')` check) — even if
+--      a future migration accidentally GRANTs to authenticated, the body
+--      raises Unauthorized at runtime. Belt-and-suspenders matching the
+--      p186 `_test_detect_inactive_with_threshold` pattern.
+--   3. Marker-named rows (applicant_name and member name =
+--      '__test_invariant_synthetic__'; emails prefixed '__test_invariant_*'
+--      on @invariant.test which is not a real TLD). Any leak (caller forgets
+--      Prefer: tx=rollback) is visually identifiable AND filterable.
+--   4. The next session boot will surface a leak via R or S invariant
+--      reporting violation_count > 0 — platform-guardian flags as BLOCKER.
+--
+-- LEAK CLEANUP (run only if Prefer: tx=rollback was forgotten by a caller)
+-- ──────────────────────────────────────────────────────────────────────
+-- The synthetic rows are filterable. To clean any leaked rows, run:
+--   DELETE FROM public.members WHERE email LIKE '\_\_test\_invariant\_%@invariant.test' ESCAPE '\';
+--   DELETE FROM public.selection_applications WHERE email LIKE '\_\_test\_invariant\_%@invariant.test' ESCAPE '\';
+-- The DELETEs MUST run in this order (members first, then applications) to
+-- avoid FK constraint violations on members.organization_id-derived rows.
+-- Re-run check_schema_invariants() afterwards to confirm R=0 + S=0.
 --
 -- ROLLBACK
 -- ────────
 -- DROP FUNCTION public._test_invariants_with_synthetic_breach(text);
 -- The behavioural tests SKIP cleanly when SUPABASE_SERVICE_ROLE_KEY is unset
 -- and treat a missing helper as a test runtime failure (catch + log clearly).
+-- If leaked rows exist before DROP, run the LEAK CLEANUP block above first.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 BEGIN;
@@ -49,6 +68,16 @@ DECLARE
   v_test_email text;
   v_result jsonb;
 BEGIN
+  -- Belt-and-suspenders runtime role guard. The GRANT/REVOKE pattern is the
+  -- primary defense, but if a future migration accidentally widens EXECUTE
+  -- (e.g., `GRANT EXECUTE ON FUNCTION ... TO authenticated`) this in-body
+  -- check fails closed. Mirrors p186 _test_detect_inactive_with_threshold
+  -- pattern parity (council Tier 1 platform-guardian F1, p206).
+  IF current_setting('role', true) NOT IN ('service_role', 'postgres')
+     AND current_user NOT IN ('postgres', 'supabase_admin') THEN
+    RAISE EXCEPTION 'Unauthorized: _test_invariants_with_synthetic_breach requires service_role';
+  END IF;
+
   IF p_breach NOT IN ('R', 'S') THEN
     RAISE EXCEPTION 'Invalid p_breach value: % (must be ''R'' or ''S'')', p_breach;
   END IF;

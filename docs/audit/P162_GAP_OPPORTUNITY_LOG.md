@@ -756,13 +756,45 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Policy doc + pre-commit grep added.
 - **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
 
-### 87. GAP-204.B — Behavioural DB-aware tests for invariants R + S forward-defense [RESOLVED p206 PR #213]
+### 87. GAP-204.B — Behavioural DB-aware tests for invariants R + S forward-defense [RESOLVED p206 PR #215]
 - **Tipo:** test gap · **Severity:** MEDIUM · **Effort:** M
 - **Trigger:** p204 council Tier 1 close (PR #199 / Issue #180) carried this item: R + S invariants added to `check_schema_invariants()` were validated only via static contract tests (text-matching the migration SQL) — no behavioural exercise of (a) R=0/S=0 at deploy or (b) synthetic-breach detection.
 - **Impact:** Silent CTE drift in either invariant would pass static tests. Forward-defense regression catcher missing.
 - **Resolution (p206):** Migration `20260731000000_p206_gap_204_b_invariant_breach_helper.sql` adds `_test_invariants_with_synthetic_breach(text)` SECURITY DEFINER + GRANT EXECUTE TO service_role only. Mirror of p186 `_test_detect_inactive_with_threshold` pattern (Prefer: tx=rollback hermetic seeding). 4 behavioural tests at `tests/contracts/volunteer-authority-invariants-behavioural.test.mjs` cover R=0+S=0 deploy state AND R/S synthetic-breach detection. Live verification via MCP DO-block with subtransaction-savepoint pattern confirmed: R breach → R.count=1, S.count=0; S breach → R.count=0, S.count=1; post-state clean (R=0, S=0).
 - **Validation gate:** `node --test tests/contracts/volunteer-authority-invariants-behavioural.test.mjs` returns 4 pass when `SUPABASE_SERVICE_ROLE_KEY` env set; 4 skip cleanly otherwise.
-- **Cross-ref:** PR #213 (this); PRs #198 + #199 (V4 lifecycle backbone in QA); p186 OPP-185.A pattern source; `feedback_contract_test_ci_skip_silent` for the CI skip class.
+- **Cross-ref:** PR #215 (this — Issue #213); PRs #198 + #199 (V4 lifecycle backbone in QA); p186 OPP-185.A pattern source; `feedback_contract_test_ci_skip_silent` for the CI skip class.
+
+### 88. WATCH-213.A — Behavioural test post-leak assertion depends on baseline ordering
+- **Tipo:** test design / doc · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council code-reviewer HIGH finding on PR #215. Tests #3 + #4 of `volunteer-authority-invariants-behavioural.test.mjs` re-read live invariants after the synthetic breach test and assert `postR.violation_count = 0`. This assertion correctly discriminates "tx=rollback failed" from "real prod violation" ONLY when tests #1 + #2 have run first and confirmed baseline=0. Resolved inline via test-file docstring noting the ordering dependency, but no runtime enforcement.
+- **Impact:** Future test runners that shuffle or run subsets (e.g., `--test-name-pattern='detects synthetic'`) may misidentify a pre-existing prod R/S violation as a helper leak.
+- **Proposta:** Either (a) add a `before()` hook to each forward-defense test that asserts baseline R=0+S=0 explicitly (belt-and-suspenders), OR (b) accept the ordering dependency and rely on the docstring (cheapest option already shipped).
+- **Validation gate:** Visual review of test file header note OR `before()` hook present.
+- **Cross-ref:** PR #215 council code-reviewer HIGH; test file lines 30-44 (docstring note).
+
+### 89. WATCH-213.B — `_test_*` helper RPC pattern uncodified
+- **Tipo:** doc drift / governance · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council platform-guardian F4 on PR #215. Two `_test_*` helpers now exist in `public` schema: `_test_detect_inactive_with_threshold` (p186) and `_test_invariants_with_synthetic_breach` (p206). No ADR or addendum codifies the canonical contract (naming `_test_*` prefix + GRANT scope service_role-only + in-body role guard + caller-side `Prefer: tx=rollback` expectation + LEAK CLEANUP query in migration header).
+- **Impact:** Future `_test_*` helpers may deviate from the established pattern. A `_test_*` function with `GRANT EXECUTE TO authenticated` would silently expand attack surface; no automated gate today.
+- **Proposta:** Either (a) ADR-0094 codifying `_test_*` helper RPC contract, OR (b) ADR-0028 Amendment D extending the service_role bypass section to cover the test-helper subclass, AND (c) extend `tests/contracts/rpc-migration-coverage.test.mjs` to verify each `_test_*` function has a corresponding `REVOKE FROM PUBLIC` and `GRANT TO service_role` clause in its capture.
+- **Validation gate:** ADR doc + contract test extension shipped together.
+- **Cross-ref:** PR #215 council platform-guardian F4 + F5; p186 migration `20260694000000`; p206 migration `20260731000000`.
+
+### 90. WATCH-213.C — Static volunteer-authority-invariants test not wired to npm test
+- **Tipo:** test infrastructure · **Severity:** HIGH (blocks coverage delivery) · **Effort:** XS
+- **Trigger:** Council platform-guardian F6 on PR #215. The static contract test `tests/contracts/volunteer-authority-invariants.test.mjs` exists on `agent/issue-180` branch but is NOT added to `package.json` `test` + `test:contracts` scripts. When PR #199 merges, the file will land in repo but be silently excluded from CI test runs.
+- **Impact:** Until corrected, the 10 static contract tests for invariants R+S coverage will not execute in CI. PR #199's claimed coverage (per its description) will be falsely advertised.
+- **Proposta:** When PR #199 merges, immediately add the test file path to both `test` and `test:contracts` in package.json — either as a sub-commit of the merged work or as a separate follow-up commit. Verify via `npm test 2>&1 | grep -c volunteer-authority-invariants` returning ≥1.
+- **Validation gate:** `npm test` output includes `volunteer-authority-invariants.test.mjs` execution.
+- **Cross-ref:** PR #215 council platform-guardian F6; PR #199; `agent/issue-180` branch HEAD.
+
+### 91. OPP-213.D — `test:contracts` script missing 4 pre-existing files
+- **Tipo:** test infrastructure / pre-existing · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council code-reviewer LOW on PR #215. Four contract test files are present in `npm test` but absent from `npm run test:contracts`: `ip-gate-templates`, `preview-gate-eligibles-cache-equivalence`, `weekly-card-digest`, `worker-mapper-db-update-coverage`. Pre-existing drift on main; PR #215 correctly adds the new file to both scripts (58/54 ratio after merge).
+- **Impact:** `test:contracts` reports a smaller suite than reality. Developers running only `test:contracts` may miss regressions in 4 contract files.
+- **Proposta:** Either (a) add the 4 files to `test:contracts`, OR (b) replace both scripts with a glob: `node --test 'tests/contracts/*.test.mjs'` (would also need to handle the `--experimental-strip-types` flag asymmetry).
+- **Validation gate:** Both scripts iterate the same file set (diff returns empty).
+- **Cross-ref:** PR #215 council code-reviewer LOW.
 
 ### 92. BUG-207.A — /profile ReferenceError "t is not defined" — **RESOLVED p207 (PR #223 bb95bb03), DIAGNOSIS REVISED**
 - **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** XS (1-line import — real fix; spec scoping was wrong)

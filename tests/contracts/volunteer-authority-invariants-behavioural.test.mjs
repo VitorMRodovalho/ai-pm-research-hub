@@ -29,6 +29,18 @@
  *
  * Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. Skipped otherwise.
  *
+ * Test ordering dependency (council Tier 1 code-reviewer HIGH, p206):
+ *   Tests #3 + #4 include a post-test "LEAK DETECTED" assertion that re-reads
+ *   the live invariants and expects R=0 + S=0. This assertion correctly
+ *   discriminates "tx=rollback failed (leak)" from "real prod violation"
+ *   ONLY IF tests #1 + #2 have run first and confirmed baseline=0. node:test
+ *   defaults to in-file declaration order, so the four tests in this file
+ *   run #1 → #2 → #3 → #4 sequentially. If a future runner shuffles them or
+ *   tests run in isolation (e.g., `--test-name-pattern`), the post-test
+ *   assertions may misidentify a pre-existing prod R/S violation as a
+ *   helper leak. Treat that as a discovery, not a leak — verify against
+ *   tests #1/#2 in the same session.
+ *
  * Related:
  *   - PR #199 / Issue #180: defined R + S in `check_schema_invariants()`.
  *   - PR #198 / Issue #179: canonical `approve_selection_application` whose
