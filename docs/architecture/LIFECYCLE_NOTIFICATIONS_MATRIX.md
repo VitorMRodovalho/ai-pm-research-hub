@@ -60,16 +60,16 @@ Each row covers one transition into the named state. `Idempotency key` is the tu
 | 4 | `agreement_pending` (post-approval) | `engagements` INSERT with `requires_agreement=true` AND no certificate | `engagements` + `engagement_kinds` | `selection_termo_due` | `pmi_welcome_with_token` (campaign) | `(recipient_id, type, source_id=engagement_id)` | `admin_audit_log(action='selection_approval_canonical')` | `approve_selection_application` (#179) one-shot | ✓ initial notification OK |
 | 4b | `agreement_pending` (recurring nudge) | engagement remains in `agreement_pending` for N days | `engagements` ∩ `certificates` (absent) | **`agreement_nudge_dN`** (proposed) | proposed: `agreement_nudge_d3`, `agreement_nudge_d7`, `agreement_nudge_d14_gp` | `(recipient_id, type, source_id=engagement_id, created_at > now()-7d)` | `admin_audit_log(action='agreement_nudge_sent')` | **proposed cron:** `nudge_pending_agreements_daily` @ 09:30 UTC | ✗ **GAP** |
 | 5 | `countersign_pending` (admin alert) | `certificates.signed_at` set, `counter_signed_at IS NULL`, > 24h | `certificates` | **`countersign_pending`** (proposed) | proposed: `countersign_pending_alert` | `(recipient_id, type, source_id=certificate_id, created_at > now()-3d)` | `admin_audit_log(action='countersign_pending_alert')` | **proposed cron:** `alert_pending_countersigns_daily` @ 09:00 UTC | ✗ **GAP** |
-| 6 | `authoritative` | `counter_sign_certificate` RPC sets `engagement.is_authoritative=true` | `engagements` UPDATE | `engagement_welcome` (existing) + `volunteer_agreement_signed` (existing) | `engagement_welcome` template (HTML) | `(recipient_id, type, source_id=engagement_id)` | `admin_audit_log(action='counter_signed')` + `mcp_usage_log` | `_trg_engagement_welcome_notify` (engagements AFTER INSERT/UPDATE) | ✓ OK (but trigger lacks `NOT EXISTS` guard — risk) |
-| 7 | `renewal_due` D-60 | `engagements.end_date - 60d` | `engagements` | `engagement_renewal_d60_gp_aggregate` (existing) | (inline body, no template slug) | `(recipient_id, type, source_id=engagement_id, created_at > now()-7d)` | (none today — gap) | `v4_notify_expiring_engagements` daily 08:00 UTC | ✓ OK (audit gap) |
-| 7b | `renewal_due` D-30 | `engagements.end_date - 30d` | `engagements` | `engagement_renewal_d30` (existing) | (inline body) | same shape | (none today) | `v4_notify_expiring_engagements` | ✓ OK (audit gap) |
-| 7c | `renewal_due` D-7 URGENT | `engagements.end_date - 7d` | `engagements` | `engagement_renewal_d7_urgent` (existing) | (inline body) | same shape | (none today) | `v4_notify_expiring_engagements` | ✓ OK (audit gap) |
-| 8 | `offboarded` | `offboarding_records` INSERT / `members.status='offboarded'` | `offboarding_records`, `members` | `member_deactivation` (template only — no notification type) + `arm9_inactivity_alert` (cron) | `member_deactivation` (communication_templates id=3) | — (no dedicated type today) | `admin_audit_log(action='offboard')` (exists) | `admin_offboard_member` + `notify_offboard_cascade` trigger | ⚠️ **PARTIAL** — template exists, notification type absent |
-| 9 | `reengagement_pending` | `invite_alumni_to_re_engage` RPC called | `re_engagement_invitations` | (none until accept) | — | — | `admin_audit_log(action='reengagement_invite')` | `invite_alumni_to_re_engage` one-shot | ⚠️ **PARTIAL** — no follow-up nudge if alumnus doesn't respond |
-| 9b | `reengagement_pending` (recurring nudge) | invitation > 7d / 14d / 30d without response | `re_engagement_invitations` | **`reengagement_nudge_dN`** (proposed) | proposed: 3 templates | `(recipient_id, type, source_id=invitation_id)` | `admin_audit_log(action='reengagement_nudge_sent')` | **proposed cron:** `nudge_pending_reengagement_weekly` | ✗ **GAP** |
-| 9c | `reengagement_accepted` | alumni responds yes to invitation | `re_engagement_invitations` UPDATE | `re_engagement_accepted` (existing) | — | `(recipient_id, type, source_id=invitation_id)` | `admin_audit_log` (exists) | `respond_re_engagement` | ✓ OK |
+| 6 | `authoritative` | `counter_sign_certificate` RPC sets `engagement.is_authoritative=true` | `engagements` UPDATE | `engagement_welcome` (existing) + `volunteer_agreement_signed` (existing) | (inline title/body — no template slug) | `(recipient_id, type, source_id=engagement_id)` | `admin_audit_log(action='counter_signed')` + `mcp_usage_log` | `_trg_engagement_welcome_notify` shim → `_enqueue_engagement_welcome(p_engagement_id)` | ⚠️ **PARTIAL** — `_enqueue_engagement_welcome` body lacks the `NOT EXISTS` guard |
+| 7 | `renewal_due` D-60 | `engagements.end_date - 60d` | `engagements` | `engagement_renewal_d60_gp_aggregate` (existing) | (inline body, no template slug) | `(recipient_id, type, source_id=engagement_id, created_at > now()-7d)` | aggregate JSON return (per §9 Q5) | `v4_notify_expiring_engagements` daily 08:00 UTC | ✓ OK |
+| 7b | `renewal_due` D-30 | `engagements.end_date - 30d` | `engagements` | `engagement_renewal_d30` (existing) | (inline body) | same shape | aggregate JSON return | `v4_notify_expiring_engagements` | ✓ OK |
+| 7c | `renewal_due` D-7 URGENT | `engagements.end_date - 7d` | `engagements` | `engagement_renewal_d7_urgent` (existing) | (inline body) | same shape | aggregate JSON return | `v4_notify_expiring_engagements` | ✓ OK |
+| 8 | `offboarded` | `offboarding_records` INSERT / `members.status='offboarded'` UPDATE | `offboarding_records`, `members` | `member_offboarded` (existing — migration `20260509040000`, ADR-0022 compliant via `20260513070000`) + `arm9_inactivity_alert` (cron) | (inline title/body — no template slug; recipients are GP/DM/leaders, not the offboarded member) | `(recipient_id, type, source_id=member_id)` | `admin_audit_log(action='offboard')` (exists) | `admin_offboard_member` + `trg_notify_offboard_cascade` trigger | ✓ OK |
+| 9 | `reengagement_pending` | `invite_alumni_to_re_engage` RPC called | `re_engagement_pipeline` | (none until accept) | — | — | `admin_audit_log(action='reengagement_invite')` | `invite_alumni_to_re_engage` one-shot | ⚠️ **PARTIAL** — no follow-up nudge if alumnus doesn't respond |
+| 9b | `reengagement_pending` (recurring nudge) | `re_engagement_pipeline.invited_at` > 7d / 14d / 30d without `responded_at` | `re_engagement_pipeline` | **`reengagement_nudge_dN`** (proposed) | proposed: 3 templates | `(recipient_id, type, source_id=pipeline_id)` | `admin_audit_log(action='reengagement_nudge_sent')` | **proposed cron:** `nudge_pending_reengagement_weekly` | ✗ **GAP** |
+| 9c | `reengagement_accepted` | alumni responds yes (`re_engagement_pipeline.responded_at` set) | `re_engagement_pipeline` UPDATE | `re_engagement_accepted` (existing) | — | `(recipient_id, type, source_id=pipeline_id)` | `admin_audit_log` (exists) | `respond_re_engagement` | ✓ OK |
 
-Totals at p205: **9 OK, 2 PARTIAL, 3 GAP** out of 14 transitions.
+Totals at p205: **8 OK, 3 PARTIAL, 3 GAP** out of 14 transitions.
 
 ---
 
@@ -102,7 +102,9 @@ P202 audit noted that beyond `kind='volunteer'`, several engagement kinds also n
 - New cron: `nudge_pending_agreements_daily` @ 09:30 UTC. Reads same surface as `get_pending_agreement_engagements()` (#177), filters by elapsed days, inserts notifications with the same `NOT EXISTS` 7-day guard pattern as `v4_notify_expiring_engagements`.
 - Templates land in `campaign_templates` (category=`onboarding` since they map to onboarding completion gating).
 
-**Effort estimate.** ~3-4h: 1 migration (3 new notification types accepted by `_delivery_mode_for`), 1 cron function, 3 campaign_templates rows, 2-3 contract tests.
+**PREREQ (hard).** Cron MUST launch with a `p_dry_run` parameter defaulting to `true`. Until #160 (special-kinds historical attestation) is resolved, scanning the pending-agreement set would surface ~16+60 candidates and notifying all in one run is a notification-storm risk (see §9 Q2). The first scheduled run must be dry-run with output to `admin_audit_log` for PM review before flipping `p_dry_run=false`.
+
+**Effort estimate.** ~3-4h: 1 migration (3 new notification types accepted by `_delivery_mode_for`), 1 cron function (with dry_run param), 3 campaign_templates rows, 2-3 contract tests.
 
 ### Gap 2 — countersign_pending admin alert (row 5)
 
@@ -125,17 +127,24 @@ P202 audit noted that beyond `kind='volunteer'`, several engagement kinds also n
 
 **Effort estimate.** ~3h: 1 migration, 1 cron with auto-expire logic, 3 templates, 2-3 tests.
 
-### Partial 1 — offboarded notification type (row 8)
+### Partial 1 — engagement_welcome helper lacks idempotency (row 6)
 
-**Problem.** `notify_offboard_cascade` trigger fires on `members.status='offboarded'` UPDATE, but it uses `info`/`system_alert` types rather than a dedicated `offboarded` type. This means admin can't filter the notification feed for offboard events, and the audit chain is harder to trace.
+**Problem.** The trigger `_trg_engagement_welcome_notify` is a thin shim that calls `PERFORM public._enqueue_engagement_welcome(NEW.id)`. The actual `INSERT INTO notifications` lives in `_enqueue_engagement_welcome(p_engagement_id uuid)` (latest body captured in migration `20260686000000_p178_phase_b_drift_capture_1_touch_q_z_underscore_63fns.sql` lines 233-244). That helper lacks the `NOT EXISTS` guard, so a counter-sign rolled back and re-applied would duplicate the welcome notification. Today's volume (4 notifications) makes this hypothetical, but post-#180 invariant S enforcement makes counter-sign retries plausible.
 
-**Proposed minimal shape.** Single notification type `member_offboarded` with the existing `member_deactivation` template body. Migration: 1 line type whitelist addition + update trigger to use new type. ~1h.
+**Proposed minimal shape.** Inside `_enqueue_engagement_welcome`, after resolving `v_member_id` (or the equivalent recipient variable), wrap the `INSERT INTO notifications` with:
 
-### Partial 2 — engagement_welcome trigger lacks idempotency (row 6)
+```sql
+INSERT INTO notifications (recipient_id, type, source_type, source_id, title, body, delivery_mode)
+SELECT v_member_id, 'engagement_welcome', 'engagement', p_engagement_id, ...
+WHERE NOT EXISTS (
+  SELECT 1 FROM notifications
+  WHERE recipient_id = v_member_id
+    AND type = 'engagement_welcome'
+    AND source_id = p_engagement_id
+);
+```
 
-**Problem.** `_trg_engagement_welcome_notify` is 162 chars (a thin shim) and lacks the `NOT EXISTS` guard. If a counter-sign is rolled back and re-applied, the welcome notification would duplicate. Today's volume (4 notifications) makes this hypothetical, but post-#180 invariant S enforcement makes counter-sign retries plausible.
-
-**Proposed minimal shape.** Add `NOT EXISTS (SELECT 1 FROM notifications WHERE recipient_id=NEW.person_id AND type='engagement_welcome' AND source_id=NEW.id)` guard. ~30min.
+Effort: ~30min for migration + 1 contract test. Fix lands in the helper, not the trigger shim — `NEW.person_id` / `NEW.id` are trigger-only variables and would not compile inside the helper.
 
 ---
 
@@ -157,7 +166,13 @@ WHERE NOT EXISTS (
 
 The 7-day window is the default established by `v4_notify_expiring_engagements` (rows 7, 7b, 7c). Urgent classes (D-7) use a 3-day window. One-shot transitions (rows 6, 9c) drop the time window entirely — `(recipient_id, type, source_id)` alone is the key.
 
-**Forward-defense rule:** any new notification creation point must include the guard. Code-reviewer should flag absent guards as MED finding (sediment from #198 council fix HIGH).
+**Forward-defense convention (aspirational until mechanized — see GAP-182.B).** Any new notification creation point must include the guard. A grep-based linter check that would catch violations:
+
+```bash
+grep -rn 'INSERT INTO notifications' supabase/migrations/ | grep -v 'NOT EXISTS' | grep -v '^-' | grep -v '\\-\\-'
+```
+
+Until this grep is wired into `npm test` or a CI step, the convention is enforced only by manual code review (sediment from #198 council fix HIGH). Backlog item `GAP-182.B` tracks the mechanization.
 
 ---
 
@@ -168,7 +183,7 @@ Every transition row must produce at least one of:
 - `data_anomaly_log` row (when an automation detected an anomaly)
 - `mcp_usage_log` row (when an MCP tool drove the transition)
 
-The matrix above marks 3 cron-driven rows (7, 7b, 7c) as having **audit gap** today — `v4_notify_expiring_engagements` returns a JSON summary (`notifications_d60/d30/d7`) but doesn't persist per-engagement provenance. Proposed: extend the cron to write an `admin_audit_log` row per engagement notified, with `actor_member_id=NULL` (system) and `action='engagement_renewal_notified'`. ~1h carry, can land with Gap 1 work.
+The matrix marks rows 7/7b/7c as ✓ OK because `v4_notify_expiring_engagements` returns a JSON summary (`notifications_d60/d30/d7/total_sent/run_at`) which is the agreed audit-log shape per §9 Q5 (aggregate-per-run, not per-engagement). New cron functions in Gaps 1/2/3 MUST follow the same shape: JSON return + 1 `admin_audit_log` row per cron run (not per engagement). Per-engagement provenance, if ever needed, is reconstructable from the `notifications` table itself filtered by `type` + `source_id` + `created_at`.
 
 ---
 
@@ -189,30 +204,37 @@ Effort: ~1h. Lands as a sibling RPC delta in the Gap 2 follow-up issue (so #177 
 
 ## 9. Open questions for PM
 
-1. **Cron frequency.** Daily nudges (Gaps 1, 2) vs. weekly (Gap 3)? Proposed: daily for agreement + countersign because the cost of a missed notification is a stuck member; weekly for reengagement because alumni response cadence is naturally slower. Confirm before implementation.
-2. **Initial nudge timing for special engagement kinds (#160).** When PM decides on Herlon-class historical attestation, does the new nudge cron apply retroactively? If yes, the cron would fire for ~16+60 cases at first run — potentially a notification storm. Suggest: 1-week dry-run mode flag, then enable.
-3. **Owner of countersign_pending alert.** GP only? Or also `voluntariado_director` designation? Affects template recipient list. Proposed: both (matches existing `v4_notify_expiring_engagements` D-7 pattern that cc's Lorena).
-4. **Notification storm protection.** If `nudge_pending_agreements_daily` and the agreement initial notification fire on the same day for a fresh approval, the recipient gets 2 emails. Proposed: cron filters `WHERE start_date < now() - interval '24 hours'` so day-0 is reserved for the canonical RPC.
-5. **Audit log batching.** Per-engagement `admin_audit_log` rows for renewal cron → at scale (~50 engagements), that's 50 rows per day. Acceptable, or prefer 1 aggregate row per cron run with JSONB payload? Existing pattern: 1 aggregate (matches `notifications_d60` summary shape). Recommend keep aggregate.
+Pre-resolved decisions (stated for transparency; PM may revise but no input needed to proceed):
+
+- **Cron frequency.** Daily nudges (Gaps 1, 2); weekly for reengagement (Gap 3). Daily for agreement + countersign because the cost of a missed notification is a stuck member; weekly for reengagement because alumni response cadence is naturally slower.
+- **Day-0 storm protection.** Cron 4b filters `WHERE start_date < now() - interval '24 hours'` so day-0 is reserved for the canonical RPC's `selection_termo_due`.
+- **Audit log shape.** Aggregate-per-run JSON return + 1 `admin_audit_log` row per cron invocation (matches `v4_notify_expiring_engagements` pattern; see §7).
+
+Genuinely open for PM:
+
+1. **Retroactive scope for special engagement kinds (#160).** When PM decides on Herlon-class historical attestation, does the new nudge cron apply retroactively? If yes, the first non-dry-run cron run would fire for ~16+60 cases — notification storm. Mitigation already in §5 Gap 1 PREREQ: cron ships with `p_dry_run=true` default; PM signs off before flipping. PM still needs to answer: should the dry-run window be 1 run, 1 week, or until #160 closes?
+2. **Owner of countersign_pending alert.** GP only? Or also `voluntariado_director` designation? Affects template recipient list. Proposed (matches existing `v4_notify_expiring_engagements` D-7 pattern that cc's Lorena): both.
 
 ---
 
 ## 10. Implementation sequencing (follow-up issues)
 
-The matrix is the contract; implementation lands in 3 separate issues so each can ship + QA independently:
+The matrix is the contract; implementation lands in separate issues so each can ship + QA independently. All 3 cron-based gaps can ship in parallel — they share a stylistic pattern (NOT EXISTS dedup + JSON aggregate return + dry-run param) but no technical dependency (distinct `cron.schedule()` job names, distinct notification types, distinct source tables).
 
-1. **Issue (proposed): `lifecycle: implement agreement-pending nudge cron (row 4b)`** — Gap 1 — ~3-4h. Blocks Gap 3 since the cron pattern is the template.
-2. **Issue (proposed): `lifecycle: implement countersign-pending admin alert (row 5)`** — Gap 2 — ~2h. Independent of #1.
-3. **Issue (proposed): `lifecycle: implement reengagement nudge + auto-expire (row 9b)`** — Gap 3 — ~3h. Depends on #1 (shared cron pattern).
-4. **Issue (proposed, minor): `lifecycle: dedicated offboarded notification type + welcome trigger guard`** — Partials 1 + 2 — ~1.5h. Independent.
+1. **Issue (proposed): `lifecycle: implement agreement-pending nudge cron (row 4b)`** — Gap 1 — ~3-4h. Recommended to ship first only as a style template for the others; not a blocker.
+2. **Issue (proposed): `lifecycle: implement countersign-pending admin alert (row 5)`** — Gap 2 — ~2h. Independent.
+3. **Issue (proposed): `lifecycle: implement reengagement nudge + auto-expire (row 9b)`** — Gap 3 — ~3h. Independent.
+4. **Issue (proposed, minor): `lifecycle: add NOT EXISTS guard to _enqueue_engagement_welcome (row 6 / Partial 1)`** — ~30min. Independent. (Row 8 PARTIAL removed at council review — `member_offboarded` type already exists.)
 
-Total estimated effort: ~10-11h across 4 issues. None require new tables, schema invariants, or MCP tool additions — pure cron + notification type + template work.
+Total estimated effort: ~8.5-9.5h across 4 issues. None require new tables, schema invariants, or MCP tool additions — pure cron + notification type + template work.
 
 ---
 
 ## 11. Drift watch
 
-When this matrix changes (states added/removed, new gaps surfaced), regenerate the table from these queries:
+**Owner:** `platform-guardian` (smoke check at session boot when any work touches notifications, certs, engagements, or selection RPCs). **Cadence:** quarterly minimum even when no relevant work happens (tracked as `WATCH-182.A` in the backlog log).
+
+Regenerate the §3 matrix from production state via these queries:
 
 ```sql
 -- 1. Distinct notification types in use
@@ -232,7 +254,7 @@ WHERE pronamespace='public'::regnamespace AND prosrc ILIKE '%create_notification
 SELECT category, count(*) FROM campaign_templates GROUP BY category;
 ```
 
-If the queries return rows not represented in §3 matrix, this doc is stale — open a `WATCH-` backlog item.
+If the queries return rows not represented in §3, this doc is stale — update the matrix in the same PR that introduces the drift, OR open a `WATCH-182.X` backlog item with the diff.
 
 ---
 
@@ -246,4 +268,4 @@ If the queries return rows not represented in §3 matrix, this doc is stale — 
 - Issue #181: certificate hash + IP/UA persistence (PR #184, in QA window)
 - Issue #160: special-kinds historical attestation decision (deferred PM team review)
 - ADR-0011: V4 authority gate (`can_by_member`)
-- ADR-0093: canonical RPC as facade pattern (p204, established by #179)
+- ADR-0093: canonical RPC as facade pattern (lives on PR #198 branch only — pending merge; once #198 lands on main this reference becomes resolvable)
