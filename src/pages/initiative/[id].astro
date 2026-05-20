@@ -165,27 +165,64 @@ const INIT_I18N = {
     committee: '#06B6D4', workgroup: '#0891B2', study_group: '#8B5CF6', book_club: '#10B981',
     congress: '#F59E0B', workshop: '#EF4444', research_tribe: '#4F17A8',
   };
+  // ── Two-dimensional model (p205 #169) ──
+  // FUNÇÃO (kind) = what the person DOES in the initiative (Palestrante, Voluntário, Observador, etc.)
+  //   Stored in engagements.kind. ~18 valid values from engagement_kinds.
+  // PAPEL / NÍVEL (role) = governance/capability tier within the initiative
+  //   Stored in engagements.role. Always one of 4 values: leader/coordinator/participant/observer.
+  // The two dimensions are INDEPENDENT: a person can be "Observador" function + "Coordenador" papel
+  // (e.g. curadoria coordenando review) or "Observador" function + "Observador" papel (passive).
+
+  // PAPEL / NÍVEL labels (4 governance tiers — same for ALL kinds, same as V3)
   const ROLE_LABELS: Record<string, string> = {
-    // V3-era flat roles (still in use)
-    leader: I18N.leader || 'Leader',
-    coordinator: I18N.coordinator || 'Coordinator',
-    participant: I18N.participant || 'Participant',
-    observer: I18N.observer || 'Observer',
-    // V4 kind-specific roles (added p205 #169 — congress + workshop + study_group + workgroup contexts)
+    leader: I18N.leader || 'Líder',
+    coordinator: I18N.coordinator || 'Coordenador(a)',
+    participant: I18N.participant || 'Participante',
+    observer: I18N.observer || 'Observador(a)',
+  };
+
+  // FUNÇÃO labels (kind display names — mirror engagement_kinds.display_name)
+  const ENGAGEMENT_KIND_LABELS: Record<string, string> = {
+    volunteer: 'Voluntário(a)',
     speaker: 'Palestrante',
-    moderator: 'Moderador(a)',
-    panelist: 'Panelista',
-    facilitator: 'Facilitador(a)',
     guest: 'Convidado(a)',
-    liaison: 'Ponto Focal',
-    reviewer: 'Revisor(a)',
-    signer: 'Signatário(a)',
-    sponsor: 'Patrocinador(a)',
-    owner: 'Owner',
-    member: 'Membro',
+    observer: 'Observador(a)',
+    workgroup_coordinator: 'Coordenador(a) de Equipe',
+    workgroup_member: 'Membro de Equipe',
+    committee_coordinator: 'Coordenador(a) de Comitê',
+    committee_member: 'Membro de Comitê',
+    partner_contact: 'Contato Parceiro',
     ambassador: 'Embaixador(a)',
-    president: 'Presidente',
-    director: 'Diretor(a)',
+    sponsor: 'Patrocinador(a)',
+    study_group_owner: 'GP Grupo de Estudos',
+    study_group_participant: 'Participante Grupo Estudos',
+    candidate: 'Candidato(a)',
+    alumni: 'Alumni',
+    chapter_board: 'Diretoria de Capítulo',
+    external_reviewer: 'Revisor(a) Externo(a)',
+    external_signer: 'Signatário(a) Externo(a)',
+  };
+
+  // FUNÇÃO colors (engagement kind palette for the prominent badge — distinct from initiative-kind KIND_COLORS above)
+  const ENGAGEMENT_KIND_COLORS: Record<string, string> = {
+    volunteer: '#0891B2',
+    speaker: '#7C3AED',
+    guest: '#64748B',
+    observer: '#94A3B8',
+    workgroup_coordinator: '#FF610F',
+    workgroup_member: '#06B6D4',
+    committee_coordinator: '#FF610F',
+    committee_member: '#06B6D4',
+    partner_contact: '#059669',
+    ambassador: '#7C2D12',
+    sponsor: '#CA8A04',
+    study_group_owner: '#8B5CF6',
+    study_group_participant: '#A78BFA',
+    candidate: '#2563EB',
+    alumni: '#9CA3AF',
+    chapter_board: '#991B1B',
+    external_reviewer: '#2563EB',
+    external_signer: '#1D4ED8',
   };
 
   let initData: any = null;
@@ -502,68 +539,35 @@ const INIT_I18N = {
   }
 
   // ── Members tab (via RPC — client queries blocked by RLS) ──
+  // ROLE_COLORS for the 4 governance tiers (papel/nível)
   const ROLE_COLORS: Record<string, string> = {
-    // V3 governance roles
     leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
-    // V4 kind-specific roles
-    speaker: '#7C3AED', moderator: '#DB2777', panelist: '#9333EA',
-    facilitator: '#0891B2', guest: '#64748B', liaison: '#059669',
-    reviewer: '#2563EB', signer: '#1D4ED8', sponsor: '#CA8A04',
-    owner: '#DC2626', member: '#06B6D4', ambassador: '#7C2D12',
-    president: '#991B1B', director: '#C2410C',
-  };
-  // V3-era fallback (used when kind has no specific role mapping or when rendering generic legend)
-  const AVAILABLE_ROLES_FALLBACK = ['leader', 'coordinator', 'participant', 'observer'];
-
-  // Kind-aware role mapping (p205 #169 — TODAS iniciativas, LATAM LIM incluída)
-  const ROLES_BY_KIND: Record<string, string[]> = {
-    workgroup_coordinator: ['leader', 'coordinator'],
-    workgroup_member: ['coordinator', 'participant', 'observer'],
-    committee_coordinator: ['leader', 'coordinator'],
-    committee_member: ['coordinator', 'participant', 'observer'],
-    speaker: ['panelist', 'moderator', 'speaker'],
-    volunteer: ['leader', 'coordinator', 'participant'],
-    observer: ['observer'],
-    guest: ['guest', 'facilitator'],
-    partner_contact: ['liaison', 'observer'],
-    study_group_owner: ['owner', 'leader'],
-    study_group_participant: ['participant'],
-    ambassador: ['ambassador', 'liaison'],
-    chapter_board: ['president', 'director', 'member'],
-    external_reviewer: ['reviewer'],
-    external_signer: ['signer'],
-    sponsor: ['sponsor'],
-    candidate: ['participant'],
-    alumni: ['observer'],
   };
 
-  function rolesForKind(kind: string): string[] {
-    return ROLES_BY_KIND[kind] || AVAILABLE_ROLES_FALLBACK;
-  }
-  function defaultRoleForKind(kind: string): string {
-    return rolesForKind(kind)[0] || 'participant';
-  }
+  // Always-4 governance tiers
+  const GOVERNANCE_LEVELS = ['leader', 'coordinator', 'participant', 'observer'];
 
   const ROLE_PERMISSIONS: Record<string, string> = {
-    leader: 'Gestao completa: criar eventos, gerenciar membros, usar quadro, ver contatos',
-    coordinator: 'Supervisao: criar/editar conteudo, usar quadro, ver contatos',
+    leader: 'Gestão completa: criar eventos, gerenciar membros, usar quadro, ver contatos',
+    coordinator: 'Supervisão: criar/editar conteúdo, usar quadro, ver contatos',
     participant: 'Colaborador: usar quadro, ver materiais',
-    observer: 'Somente leitura: acompanha atividades sem acoes',
-    speaker: 'Palestrante: apresenta conteudo no evento',
-    moderator: 'Moderador(a): conduz mesa redonda / Q&A',
-    panelist: 'Panelista: participa de mesa redonda',
-    facilitator: 'Facilitador(a): da suporte operacional sem ser palestrante',
-    guest: 'Convidado(a): presenca pontual sem capability',
-    liaison: 'Ponto Focal: representa parceiro / capítulo',
-    reviewer: 'Revisor(a): avalia submissoes / conteudo',
-    signer: 'Signatário(a): autoridade externa para assinatura',
-    sponsor: 'Patrocinador(a): financia / apoia material',
-    owner: 'Owner: criador / mantenedor da iniciativa',
-    member: 'Membro: participa de capítulo board',
-    ambassador: 'Embaixador(a): representa instituicao',
-    president: 'Presidente: lidera capítulo',
-    director: 'Diretor(a): lidera diretoria de capítulo',
+    observer: 'Somente leitura: acompanha atividades sem ações',
   };
+
+  // Sensible default papel/nível given a função (kind) — used as suggestion in add-member flow
+  function defaultRoleForKind(kind: string): string {
+    if (['workgroup_coordinator','committee_coordinator','study_group_owner','chapter_board'].includes(kind)) return 'coordinator';
+    if (kind === 'observer' || kind === 'alumni' || kind === 'external_reviewer') return 'observer';
+    return 'participant';
+  }
+
+  // Legacy role display fallback (Sarah's old 'speaker' → falls to 'participant' visually)
+  function displayRoleLabel(role: string): string {
+    return ROLE_LABELS[role] || ROLE_LABELS[defaultRoleForKind('')] || role;
+  }
+  function displayRoleColor(role: string): string {
+    return ROLE_COLORS[role] || ROLE_COLORS['observer'];
+  }
 
   async function loadMembersTab() {
     const el = document.getElementById('panel-members');
@@ -579,47 +583,72 @@ const INIT_I18N = {
       return;
     }
 
-    // Permissions legend
-    const legendHtml = `<div class="bg-[var(--surface-section-cool)] border border-[var(--border-default)] rounded-xl p-3 mb-3">
+    // Legend: 2 independent dimensions
+    // Section 1: Função (what the person DOES) — kinds allowed for this initiative
+    // Section 2: Papel / Nível (capability tier) — always the 4 governance levels
+    const allowedKinds: string[] = kindConfig?.allowed_engagement_kinds || [];
+    const funcoesHtml = allowedKinds.length ? `
+      <div class="bg-[var(--surface-section-cool)] border border-[var(--border-default)] rounded-xl p-3 mb-2">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold text-[var(--text-secondary)] uppercase">Funções</span>
+          <span class="text-[10px] text-[var(--text-muted)]">(o QUE a pessoa faz na iniciativa)</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          ${allowedKinds.map(k => `<div class="flex items-start gap-2">
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0 mt-0.5" style="background:${ENGAGEMENT_KIND_COLORS[k] || '#94A3B8'}">${ENGAGEMENT_KIND_LABELS[k] || k}</span>
+          </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    const papeisHtml = `<div class="bg-[var(--surface-section-cool)] border border-[var(--border-default)] rounded-xl p-3 mb-3">
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-xs font-bold text-[var(--text-secondary)] uppercase">Papeis e Permissoes</span>
-        <span class="text-[10px] text-[var(--text-muted)]">(governanca visivel)</span>
+        <span class="text-xs font-bold text-[var(--text-secondary)] uppercase">Papéis / Níveis</span>
+        <span class="text-[10px] text-[var(--text-muted)]">(capability na governança da iniciativa)</span>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        ${AVAILABLE_ROLES_FALLBACK.map(r => `<div class="flex items-start gap-2">
+        ${GOVERNANCE_LEVELS.map(r => `<div class="flex items-start gap-2">
           <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0 mt-0.5" style="background:${ROLE_COLORS[r]}">${ROLE_LABELS[r] || r}</span>
           <span class="text-[11px] text-[var(--text-muted)]">${ROLE_PERMISSIONS[r]}</span>
         </div>`).join('')}
       </div>
       <div class="mt-2 text-[10px] text-[var(--text-muted)] italic">
-        + papeis especificos por tipo de engagement (Palestrante, Facilitador, Ponto Focal, etc) aparecem ao adicionar/editar.
+        Função e Papel são independentes — ex: um(a) Observador(a) (função) pode ter Papel Coordenador (capability) se coordena revisão de curadoria.
       </div>
     </div>`;
+
+    const legendHtml = funcoesHtml + papeisHtml;
 
     el.innerHTML = legendHtml + `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
       ${data.map((eng: any) => {
         const name = eng.name || '?';
         const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
         const photoUrl = eng.photo_url;
-        const roleColor = ROLE_COLORS[eng.role] || '#94A3B8';
-        const roleLabel = ROLE_LABELS[eng.role] || eng.role;
+        // Função (kind) is the PRIMARY identifier — colors the avatar + name area
+        const kindColor = ENGAGEMENT_KIND_COLORS[eng.kind] || '#94A3B8';
+        const kindLabel = ENGAGEMENT_KIND_LABELS[eng.kind] || eng.kind_display || eng.kind.replace(/_/g, ' ');
+        // Papel/Nível (role) is the SECONDARY capability badge — always 4 governance tiers
+        const roleColor = displayRoleColor(eng.role);
+        const roleLabel = displayRoleLabel(eng.role);
         const startDate = eng.start_date ? new Date(eng.start_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '';
 
         const actionBtns = canManage ? `
           <button data-action="change-role" data-person-id="${eng.person_id}" data-current-role="${eng.role}" data-kind="${eng.kind}"
-            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar papel">✏️</button>
+            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar papel/nível">✏️</button>
           <button data-action="remove-member" data-person-id="${eng.person_id}" data-name="${escapeHtml(name)}"
             class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border-0 cursor-pointer hover:bg-red-100 transition-all" title="Remover">✕</button>` : '';
 
         return `<div class="flex items-center gap-3 px-4 py-3">
           ${photoUrl
             ? `<img src="${escapeHtml(photoUrl)}" class="w-9 h-9 rounded-xl object-cover" alt="">`
-            : `<div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:${roleColor}">${initials}</div>`}
+            : `<div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:${kindColor}">${initials}</div>`}
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(name)}</div>
-            <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind_display || eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
+            <div class="text-xs text-[var(--text-muted)]">
+              <span class="font-semibold px-1.5 py-0.5 rounded text-white text-[10px]" style="background:${kindColor}">${escapeHtml(kindLabel)}</span>
+              ${startDate ? `<span class="ml-1">· ${I18N.since || 'desde'} ${startDate}</span>` : ''}
+            </div>
           </div>
-          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white cursor-help" style="background:${roleColor}" title="${ROLE_PERMISSIONS[eng.role] || ''}">${escapeHtml(roleLabel)}</span>
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white cursor-help" style="background:${roleColor}" title="${ROLE_PERMISSIONS[eng.role] || 'Papel/nível de governança'}">${escapeHtml(roleLabel)}</span>
           ${actionBtns}
         </div>`;
       }).join('')}
@@ -1000,33 +1029,25 @@ const INIT_I18N = {
         const { data: pRow } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).maybeSingle();
         if (!pRow?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
 
-        // Select KIND first (was auto-picked to first allowed; now user chooses)
-        const KIND_LABELS_DISPLAY: Record<string, string> = {
-          volunteer: 'Voluntário', speaker: 'Palestrante', guest: 'Convidado(a)',
-          observer: 'Observador(a)', workgroup_coordinator: 'Coordenador(a) de Equipe',
-          workgroup_member: 'Membro de Equipe', committee_coordinator: 'Coordenador(a) de Comitê',
-          committee_member: 'Membro de Comitê', partner_contact: 'Contato Parceiro',
-          ambassador: 'Embaixador(a)', sponsor: 'Patrocinador(a)',
-          study_group_owner: 'GP Grupo de Estudos', study_group_participant: 'Participante Grupo Estudos',
-        };
-        const allowedKinds: string[] = kindConfig?.allowed_engagement_kinds || ['volunteer'];
+        // STEP 1: Select FUNÇÃO (kind) from initiative's allowed list
+        const allowedKindsAdd: string[] = kindConfig?.allowed_engagement_kinds || ['volunteer'];
         let kindChoice: string;
-        if (allowedKinds.length === 1) {
-          kindChoice = allowedKinds[0];
+        if (allowedKindsAdd.length === 1) {
+          kindChoice = allowedKindsAdd[0];
         } else {
-          const kindOptions = allowedKinds.map((k, i) => `${i + 1}. ${KIND_LABELS_DISPLAY[k] || k}`).join('\n');
-          const kindIdx = parseInt(prompt('Tipo de engagement:\n' + kindOptions) || '0', 10) - 1;
-          if (kindIdx < 0 || kindIdx >= allowedKinds.length) return;
-          kindChoice = allowedKinds[kindIdx];
+          const kindOptions = allowedKindsAdd.map((k, i) => `${i + 1}. ${ENGAGEMENT_KIND_LABELS[k] || k}`).join('\n');
+          const kindIdx = parseInt(prompt(`Função (o que ${selected.name} faz na iniciativa):\n` + kindOptions) || '0', 10) - 1;
+          if (kindIdx < 0 || kindIdx >= allowedKindsAdd.length) return;
+          kindChoice = allowedKindsAdd[kindIdx];
         }
 
-        // Select ROLE filtered by KIND
-        const rolesForChoice = rolesForKind(kindChoice);
-        const defaultRoleIdx = 0;
-        const roleOptions = rolesForChoice.map((r, i) => `${i + 1}. ${ROLE_LABELS[r] || r}${i === defaultRoleIdx ? ' (default)' : ''}`).join('\n');
-        const roleChoice = prompt(`Papel (para "${KIND_LABELS_DISPLAY[kindChoice] || kindChoice}"):\n` + roleOptions);
-        const roleIdx = parseInt(roleChoice || String(defaultRoleIdx + 1), 10) - 1;
-        const selectedRole = rolesForChoice[roleIdx >= 0 && roleIdx < rolesForChoice.length ? roleIdx : defaultRoleIdx];
+        // STEP 2: Select PAPEL / NÍVEL — always 4 governance tiers (independent of função)
+        const suggestedRole = defaultRoleForKind(kindChoice);
+        const suggestedIdx = GOVERNANCE_LEVELS.indexOf(suggestedRole);
+        const roleOptions = GOVERNANCE_LEVELS.map((r, i) => `${i + 1}. ${ROLE_LABELS[r]}${i === suggestedIdx ? ' (sugerido)' : ''}`).join('\n');
+        const roleChoice = prompt(`Papel / Nível na governança (capability):\n` + roleOptions);
+        const roleIdx = parseInt(roleChoice || String(suggestedIdx + 1), 10) - 1;
+        const selectedRole = GOVERNANCE_LEVELS[roleIdx >= 0 && roleIdx < GOVERNANCE_LEVELS.length ? roleIdx : suggestedIdx];
         const { data: result, error: engErr } = await sb.rpc('manage_initiative_engagement', {
           p_initiative_id: INITIATIVE_ID,
           p_person_id: pRow.id,
@@ -1036,7 +1057,7 @@ const INIT_I18N = {
         });
         if (engErr) { alert('Erro: ' + engErr.message); return; }
         if (result?.error) { alert(result.error); return; }
-        alert(`${selected.name} adicionado(a) como ${ROLE_LABELS[selectedRole] || selectedRole}!`);
+        alert(`${selected.name} adicionado(a) como ${ENGAGEMENT_KIND_LABELS[kindChoice] || kindChoice} · ${ROLE_LABELS[selectedRole]}!`);
         await loadMembersTab();
         switchTab('members');
       }
@@ -1048,13 +1069,13 @@ const INIT_I18N = {
         const engKind = btn.dataset.kind || '';
         if (!personId) return;
 
-        // Use kind-aware roles (was fixed AVAILABLE_ROLES list)
-        const rolesForCurrentKind = rolesForKind(engKind);
-        const roleOptions = rolesForCurrentKind.map((r, i) => `${i + 1}. ${ROLE_LABELS[r] || r}${r === currentRole ? ' (atual)' : ''}`).join('\n');
-        const roleChoice = prompt('Alterar papel para:\n' + roleOptions);
+        // Change-role only changes PAPEL / NÍVEL (4 governance tiers). To change FUNÇÃO (kind),
+        // remove the member + re-add with the new kind.
+        const roleOptions = GOVERNANCE_LEVELS.map((r, i) => `${i + 1}. ${ROLE_LABELS[r]}${r === currentRole ? ' (atual)' : ''}`).join('\n');
+        const roleChoice = prompt(`Alterar Papel / Nível (capability) — Função "${ENGAGEMENT_KIND_LABELS[engKind] || engKind}" não muda aqui:\n` + roleOptions);
         const roleIdx = parseInt(roleChoice || '0', 10) - 1;
-        if (roleIdx < 0 || roleIdx >= rolesForCurrentKind.length) return;
-        const newRole = rolesForCurrentKind[roleIdx];
+        if (roleIdx < 0 || roleIdx >= GOVERNANCE_LEVELS.length) return;
+        const newRole = GOVERNANCE_LEVELS[roleIdx];
         if (newRole === currentRole) return;
 
         const { data: result, error: roleErr } = await sb.rpc('manage_initiative_engagement', {
