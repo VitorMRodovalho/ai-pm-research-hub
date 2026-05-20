@@ -636,7 +636,7 @@ const INIT_I18N = {
             class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar Papel / Nível">✏️</button>
           <button data-action="change-kind" data-person-id="${eng.person_id}" data-current-kind="${eng.kind}" data-current-role="${eng.role}" data-name="${escapeHtml(name)}"
             class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Mudar Função">🔄</button>
-          <button data-action="remove-member" data-person-id="${eng.person_id}" data-name="${escapeHtml(name)}"
+          <button data-action="remove-member" data-person-id="${eng.person_id}" data-name="${escapeHtml(name)}" data-kind="${eng.kind}"
             class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border-0 cursor-pointer hover:bg-red-100 transition-all" title="Remover">✕</button>` : '';
 
         return `<div class="flex items-center gap-3 px-4 py-3">
@@ -1123,11 +1123,15 @@ const INIT_I18N = {
         // Confirm + execute remove + add
         if (!confirm(`Confirma mudar ${memberName}:\n  Função: ${ENGAGEMENT_KIND_LABELS[currentKind] || currentKind} → ${ENGAGEMENT_KIND_LABELS[newKind] || newKind}\n  Papel:  ${ROLE_LABELS[newRoleChange]}`)) return;
 
-        // 1. Remove (revoke) old engagement
+        // 1. Remove (revoke) old engagement.
+        // NOTE: RPC validates kind upfront before branching on action — must pass currentKind
+        // even for remove (would otherwise fail with "Engagement kind '' not allowed"). Same
+        // applies to remove-member handler below. RPC could skip kind check for remove;
+        // tracked as a separate backlog item.
         const { data: rmResult, error: rmErr } = await sb.rpc('manage_initiative_engagement', {
           p_initiative_id: INITIATIVE_ID,
           p_person_id: personId,
-          p_kind: '',
+          p_kind: currentKind,
           p_role: '',
           p_action: 'remove',
         });
@@ -1153,13 +1157,15 @@ const INIT_I18N = {
         const btn = (target.closest('[data-person-id]') || target) as HTMLElement;
         const personId = btn.dataset.personId;
         const memberName = btn.dataset.name || '';
+        const memberKind = btn.dataset.kind || '';
         if (!personId) return;
         if (!confirm(`Remover ${memberName} desta iniciativa?`)) return;
 
+        // RPC validates kind upfront; pass the member's current kind even for remove.
         const { data: result, error: rmErr } = await sb.rpc('manage_initiative_engagement', {
           p_initiative_id: INITIATIVE_ID,
           p_person_id: personId,
-          p_kind: '',
+          p_kind: memberKind,
           p_role: '',
           p_action: 'remove',
         });
