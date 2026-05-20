@@ -641,3 +641,59 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Tests fail on `write_board`-only reader queue and on V3 `designations.includes('curator')` as sole eligibility source.
 - **Cross-ref:** GitHub #194; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-016.
 
+### 71. OPP-181.A — sign_volunteer_agreement re-emits is_superadmin + hardcoded operational_role
+- **Tipo:** opportunity / ADR-0011 carry · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #184 found that `sign_volunteer_agreement` notification fan-out uses `m.is_superadmin = true` and `m.operational_role = 'manager'` predicates plus an issuer-fallback `operational_role IN ('manager','tribe_leader')` block, all of which violate ADR-0011 (no hardcoded role lists; emergency-break `is_superadmin` outside its narrow scope). The body in this migration is byte-equivalent to the prior `20260513070000_adr0022_w1_producer_updates.sql` capture — pre-existing carry, NOT introduced by p203 #181 — but the DROP+CREATE in `20260724000000` re-emits and implicitly endorses the legacy pattern.
+- **Impact:** Future contributors editing the body inherit the antipattern. Notification fan-out can fail to reach intended audience if `operational_role` cache lags V4 reality.
+- **Proposta:** Replace `is_superadmin` and `operational_role = 'manager'` predicates with `can_by_member(m.id, 'manage_member')` subquery or a `WITH has_perm AS (SELECT m.id FROM members m JOIN can_by_member …) `CTE pattern. Same for issuer-resolution lookup at lines 249-256.
+- **Validation gate:** New static contract test verifies no `is_superadmin` / no bare `operational_role = 'manager'` in sign_volunteer_agreement body.
+- **Cross-ref:** PR #184 council close; ADR-0011; `20260513070000_adr0022_w1_producer_updates.sql`.
+
+### 72. WATCH-181.B — search_path asymmetry between counter_sign_certificate and sign_volunteer_agreement
+- **Tipo:** watch · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council platform-guardian audit of PR #184: `counter_sign_certificate` uses `SET search_path TO ''` (fully qualified, explicit `public.` prefix on every object); `sign_volunteer_agreement` uses `SET search_path TO 'public', 'pg_temp'` (unqualified references like `members`, `sha256`, `convert_to`). Both preserved from prior bodies; intentional difference. But a future contributor "harmonizing" them to `''` would silently break sign-side unqualified refs.
+- **Impact:** Latent risk if a mechanical refactor harmonizes search_path without rewriting unqualified object references.
+- **Proposta:** Add `COMMENT ON FUNCTION public.sign_volunteer_agreement(text, text, text)` explaining the intentional `public, pg_temp` search_path. Optionally a paragraph in ADR-0039 Amendment A documenting the asymmetry.
+- **Validation gate:** Visual review only; no automated gate proposed.
+- **Cross-ref:** PR #184 council close; ADR-0039 Amendment A.
+
+### 73. LOW-181.C — Server-side UA cap rationale lacks data assertion
+- **Tipo:** test gap · **Severity:** LOW · **Effort:** XS
+- **Trigger:** PR #184 added `p_signed_user_agent := left(p_signed_user_agent, 500)` to both certificate-evidence RPCs. Static contract test asserts the line is present, but no DB-aware test passes a 600+ char UA and verifies the stored `signed_user_agent` is exactly 500 chars.
+- **Impact:** Future regression where the cap is bypassed (e.g. via `coalesce` rewrite or accidental removal) would not fail any test.
+- **Proposta:** Either (a) add a DB-aware test that signs a term with `'A'.repeat(600)` UA and asserts `length(signed_user_agent) = 500`, OR (b) add `COMMENT ON COLUMN public.certificates.signed_user_agent` documenting the 500-char ceiling.
+- **Validation gate:** Either DB-aware regression test or column COMMENT present.
+- **Cross-ref:** PR #184 council close.
+
+### 74. LOW-181.D — Migration rollback comment references ephemeral PR URL
+- **Tipo:** doc drift · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Migration `20260724000000` rollback note says "Re-create prior bodies from migration history (pg_get_functiondef capture preserved at issue #181 PR description)" — the PR description on GitHub is mutable and the URL may rot.
+- **Impact:** If rollback is ever needed, the canonical prior body location is not durable.
+- **Proposta:** Replace with explicit migration filename: `-- prior bodies in 20260513070000_adr0022_w1_producer_updates.sql (sign_volunteer_agreement) and original counter_sign_certificate definition`.
+- **Validation gate:** Visual review.
+- **Cross-ref:** PR #184 council close.
+
+### 75. WATCH-203.C — MCP tool list_pending_agreement_engagements deferred
+- **Tipo:** watch / planned · **Severity:** MEDIUM · **Effort:** S (when triggered)
+- **Trigger:** PR #197 (#177) implemented `get_pending_agreement_engagements()` RPC but per P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC §5, MCP tool exposure was deferred until lifecycle RPCs (#179, #180, #181) stabilize. No issue auto-tracks the eventual tool add — purely doc-tracked today.
+- **Impact:** When #179/#180/#181 close, the lifecycle MCP wrappers (per #183) need to include `list_pending_agreement_engagements`. Without explicit tracking, this can fall through the cracks.
+- **Proposta:** When closing #183, audit pending lifecycle RPCs (including `get_pending_agreement_engagements`) and add MCP tool wrappers for each. Update MCP_TOOL_MATRIX from 293 → 294+.
+- **Validation gate:** MCP matrix audit shows `get_pending_agreement_engagements` exposed via `list_pending_agreement_engagements` tool.
+- **Cross-ref:** GitHub #183; PR #197 council close; `P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC` §5.
+
+### 76. LOW-203.D — Triple-scan of auth_engagements in get_pending_agreement_engagements
+- **Tipo:** opportunity / perf · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #197: `total` count, `by_kind_role` aggregation, and `pending` list each re-execute the same WHERE clause (status='active' + requires_agreement IS TRUE + agreement_certificate_id IS NULL) against `auth_engagements`. At 16 rows today this is irrelevant; as the queue grows (or as PMI cycles produce more engagements requiring agreements), three full scans add up.
+- **Impact:** Latent perf bloat.
+- **Proposta:** Refactor to a single `WITH pending_base AS (SELECT … FROM auth_engagements WHERE …)` CTE feeding all three output fields.
+- **Validation gate:** Function still returns the same shape (tested via contract test) but only one CTE scan.
+- **Cross-ref:** PR #197 council close.
+
+### 77. BUG-203.A — 8 pre-existing test fails in security-lgpd.test.mjs not introduced by p203
+- **Tipo:** test drift · **Severity:** MEDIUM · **Effort:** S/M
+- **Trigger:** `npm test` returns 1441 pass / 8 fail / 46 skip offline (deploy.md baseline was 1449/0/46). The 8 fails are in `tests/contracts/security-lgpd.test.mjs` covering `mark_member_present` (4 assertions) and `create_event` (4 assertions). Both code-reviewer + platform-guardian audits of PRs #184 and #197 confirmed: NOT introduced by p203 PRs. Likely sediment from p199-b/c Paulo Alves attendance fix that refactored `mark_member_present` body without updating the anti-assertion in the test.
+- **Impact:** CI is silently red on offline baseline. Future PRs may not notice their own regressions over this noise.
+- **Proposta:** Dedicated cleanup session: (a) confirm `mark_member_present` + `create_event` body changes are intentional, (b) update test assertions to match current canonical auth pattern, OR (c) revert body changes if they introduced a regression.
+- **Validation gate:** `npm test` returns 1449+ pass / 0 fail / 46 skip offline.
+- **Cross-ref:** PR #184, #197 council close; p199-b/c handoff (Paulo Alves attendance fix).
+
