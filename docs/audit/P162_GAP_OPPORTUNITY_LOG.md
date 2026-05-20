@@ -324,12 +324,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Fix:** Update `README.md` and `docs/MCP_SETUP_GUIDE.md`; avoid manually maintained exhaustive counts where possible and point to runtime `tools/list` as the source of truth.
 - **Resolution p201 audit follow-up:** `README.md` and `docs/MCP_SETUP_GUIDE.md` updated to 293 tools; MCP guide now labels the table as representative examples and names `tools/list` as runtime source of truth.
 
-### 36. GAP — MCP tool inventory source is manual and duplicated
+### 36. GAP — MCP tool inventory source is manual and duplicated — RESOLVED (p202, 2026-05-19)
 - **Tipo:** gap · **Severity:** MEDIUM · **Effort:** S
 - **Trigger:** Runtime is 293 tools, `.claude/rules/mcp.md` is current, but README/MCP guide and old comments drifted. `supabase/functions/nucleo-mcp/index.ts` also still has a stale comment `Register 94 tools`.
 - **Impact:** Audits rely on grep/manual counts and stale docs instead of a single canonical generated inventory.
 - **Proposta:** Add a small QA script that calls `tools/list` and compares against `/health`, `.claude/rules/mcp.md`, README, and MCP setup docs.
 - **Partial resolution p201 audit follow-up:** stale `Register 94 tools` comment updated to 293. QA script remains open.
+- **Resolution p202 (issue #162 close):** `scripts/audit-mcp-tool-matrix.mjs` agora calls `tools/list` em runtime e cross-checks vs static parser de `index.ts`. Drift gate adicionado a `.claude/rules/mcp.md` §4 "Contract matrix drift". Output canonical em `docs/reference/MCP_TOOL_MATRIX.md` (markdown) + `docs/reference/mcp-tool-matrix.json` (structured). Re-run via `node scripts/audit-mcp-tool-matrix.mjs --runtime` antes de qualquer deploy ou após migrations que mudem RPC signatures. Drift atual: 0 (293 ≡ 293).
 
 ### 37. ISSUE — Debug instrumentation residue in `nucleo-mcp/index.ts` must not ship — RESOLVED
 - **Tipo:** issue · **Severity:** HIGH before deploy · **Effort:** XS
@@ -345,6 +346,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Impact:** Future migrations can break MCP behavior while HTTP still returns 200, making failures visible only inside tool payloads or `mcp_usage_log`.
 - **Proposta:** Define domain-level semantic contracts for `member`, `initiative`, `board`, `selection`, `governance`, `curation`, and `gamification`; prefer stable RPC/view envelopes for AI-facing tools; add smoke tests that call a representative tool per domain and assert envelope shape plus no `mcp_usage_log.success=false`.
 - **Cross-ref:** ADR-0005, ADR-0007, ADR-0011, ADR-0012, ADR-0015, ADR-0085.
+- **Follow-up p202 (issue #162 partial input ready):** `docs/reference/MCP_TOOL_MATRIX.md` agora documenta direct-table-access hotspots (24 tools, com `members`/`board_items`/`project_boards`/`events` no topo) + 83 canV4-gated + 4 external fetch + 4 service_role. Esse mapa é upstream para o semantic layer roadmap (issue #166). Próximo passo (issue #166): definir envelope contracts per-domain + smoke tests por domínio.
 
 ### 39. ISSUE — Local Supabase stack cannot start from migrations
 - **Tipo:** issue · **Severity:** HIGH for local debug/QA · **Effort:** M
