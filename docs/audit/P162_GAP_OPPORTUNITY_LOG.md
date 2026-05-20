@@ -454,6 +454,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Tipo:** issue/architecture · **Severity:** CRITICAL · **Effort:** L
 - **Trigger:** Lifecycle audit found `/admin/selection` approving via `admin_update_application`, while the richer `finalize_decisions` path is not referenced by the frontend.
 - **Impact:** Approval from the real admin UI can update application/member status without guaranteeing the complete side effects expected by the volunteer lifecycle: new `members`, canonical onboarding seed, V4 `persons`, `engagements`, notifications, agreement issuance and audit trace.
+- **Production evidence (2026-05-19):** 38 applications are `approved`/`converted`; 1 converted application has no matching `members` row by email. Among the 37 matched members, 0 are missing `person_id`.
 - **Proposta:** Introduce a canonical approval RPC (`approve_selection_application` or equivalent) and move UI/MCP/bulk actions to it. Deprecate or wrap `admin_update_application` and `finalize_decisions` so there is one source of truth.
 - **Validation gate:** Contract test for "candidate approved from UI" must assert `selection_applications`, `members`, `persons`, `engagements`, onboarding and notification effects.
 - **Cross-ref:** GitHub #179; `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` section 6; `tests/contracts/selection-interview-decision.test.mjs`.
@@ -462,6 +463,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Tipo:** gap · **Severity:** CRITICAL · **Effort:** M/L
 - **Trigger:** Lifecycle audit found approval paths that do not guarantee `members.person_id` and do not provision `engagements` linked to `selection_application_id`.
 - **Impact:** A member may look approved or active through legacy/cache fields while `can()` / `can_by_member()` returns no operational capability. Herlon is the visible instance of the broader pending-authority class, but this also affects future approvals and re-engagements.
+- **Production evidence (2026-05-19):** 52 active `auth_engagements` require agreement; 16 are missing `agreement_certificate_id` and are non-authoritative. Current pending mix: `ambassador/ambassador` (6), `ambassador/founder` (6), `study_group_owner/leader` (1), `study_group_participant/participant` (1), `volunteer/coordinator` (1), `volunteer/manager` (1).
 - **Proposta:** Add an invariant/backfill strategy for approved/converted applicants: ensure `person_id`, create scoped engagement from template, link `engagements.selection_application_id`, and surface explicit waivers where an engagement is intentionally non-authoritative.
 - **Validation gate:** Extend schema invariants or add DB-aware contract tests for approved applications without `person_id` / engagement.
 - **Cross-ref:** GitHub #180; ADR-0007, ADR-0011, p170 VEP engagement linkage, item #44.
@@ -470,22 +472,25 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Tipo:** security/auditability issue · **Severity:** CRITICAL for formal non-repudiation · **Effort:** S/M
 - **Trigger:** Certificate governance audit found `counter_sign_certificate()` computes a counter-signature hash but returns it to the caller without writing it to the certificate row.
 - **Impact:** The platform records who countersigned and when, but the cryptographic proof of the counter-signature is not persisted. Operational audit remains usable; formal non-repudiation claims should remain conditional until fixed.
+- **Production evidence (2026-05-19):** `certificates` has 42 rows, 33 with `counter_signed_at`, and no `counter_signature_hash` column. Function `counter_sign_certificate()` computes `v_hash`, updates only `counter_signed_by/counter_signed_at`, and returns the hash in JSON.
 - **Proposta:** Add/persist `counter_signature_hash` (or use existing column if present but unwritten), update `counter_sign_certificate()`, add audit log assertion and regression test.
 - **Validation gate:** Counter-sign a certificate in test and assert persisted hash, audit log row, notification, and unchanged member-facing certificate payload.
 - **Cross-ref:** GitHub #181; `docs/project-governance/P202_AGREEMENT_ISSUANCE_GAP.md`, certificates RPC cluster.
 
 ### 51. P1 — Volunteer agreement evidence fields are incomplete
 - **Tipo:** compliance gap · **Severity:** HIGH · **Effort:** M
-- **Trigger:** Certificate governance audit found `signed_ip` and `signed_user_agent` columns exist but are not populated by the Termo flow; `period_end` is hardcoded to 30-Jun, which breaks terms signed after July.
-- **Impact:** Evidence package for signature context is weaker than the schema suggests, and term validity periods can be wrong for later-cycle signatures or off-cycle engagements.
-- **Proposta:** Capture IP/user-agent through a safe server-side path, derive `period_end` from cycle/engagement/template rules, and update `get_my_signatures()` to expose a complete LGPD Art. 18-friendly view.
-- **Validation gate:** New signature test must assert IP/user-agent handling, period derivation and user export payload shape.
+- **Trigger:** Certificate governance audit found `signed_ip` and `signed_user_agent` columns exist but are not populated by the Termo flow. It also raised a period derivation concern that needed live verification.
+- **Production evidence (2026-05-19):** all 42 issued/signed certificates have `signed_ip IS NULL` and `signed_user_agent IS NULL`; 1 certificate is missing `signature_hash`. Live `sign_volunteer_agreement()` derives `period_end` from VEP/cycle/history rather than a simple 30-Jun hardcode, but 1 historical certificate still has `period_end='2026-06-30'`.
+- **Impact:** Evidence package for signature context is weaker than the schema suggests. Period derivation is mostly correct in the live function, but legacy data still needs review/backfill.
+- **Proposta:** Capture IP/user-agent through a safe server-side path or document these columns as intentionally unused; audit/backfill the residual certificate with missing hash and the historical 30-Jun period; keep tests for period derivation.
+- **Validation gate:** New signature test must assert IP/user-agent handling decision, period derivation and user export payload shape.
 - **Cross-ref:** GitHub #181; LGPD Art. 18 workflow, `sign_volunteer_agreement`, `get_my_signatures`.
 
 ### 52. P1 — Lifecycle cron/campaign coverage is incomplete for special kinds and renewals
 - **Tipo:** gap · **Severity:** HIGH · **Effort:** M
 - **Trigger:** Crons/campaigns audit mapped existing notification routines but found no consistent automation for special engagement agreement issuance, pending-authority reminders, renewal reminders and re-engagement communication.
 - **Impact:** Volunteers can be approved or assigned to leadership-like engagements without receiving the right agreement/onboarding communication. Failures appear as permission problems instead of lifecycle state problems.
+- **Production evidence (2026-05-19):** among 16 active pending-agreement engagements, 14 have a detectable term/agreement/certificate notification and 2 do not (`ambassador/founder` and `study_group_participant/participant`).
 - **Proposta:** Build a lifecycle transition matrix (`selected`, `approved`, `agreement_pending`, `signed`, `countersigned`, `authoritative`, `renewal_due`, `offboarded`) mapped to cron/campaign/RPC owners.
 - **Validation gate:** For each transition, define owner table, idempotency key, notification template and observable audit log.
 - **Cross-ref:** GitHub #182; `/admin/campaigns`, Resend send pipeline, p202 agreement issuance.
@@ -505,4 +510,281 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Proposta:** Add a shared pending-authority component or dashboard card sourced from `auth_engagements` / pending agreement query. Show next action, responsible role and link to certificate/term workflow.
 - **Validation gate:** Herlon-class fixture should show explicit pending agreement state in member detail/admin certificate surfaces, without granting capabilities before signature/countersign.
 - **Cross-ref:** Items #44, #177, #48-#53.
+
+### 55. P1 — Opportunity: canonical `volunteer_lifecycle_state` semantic layer
+- **Tipo:** opportunity · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Gap assessment showed the same lifecycle state is inferred separately from `selection_applications`, `members`, `persons`, `engagements`, `auth_engagements`, `certificates`, `notifications`, onboarding tables and offboarding records.
+- **Impact:** Admin UI, MCP tools, crons/campaigns and QA queries can disagree about whether a person is a candidate, approved, pending member creation, pending agreement, pending countersign, authoritative, renewal due, offboarded or re-engaging.
+- **Proposta:** Create a stable view/RPC such as `get_volunteer_lifecycle_state()` or `volunteer_lifecycle_state` with one row per person/application engagement context and an explicit enum-like state. Use it as the semantic source for admin dashboards, MCP summaries, notifications and smoke tests.
+- **Validation gate:** State machine covers at least: `candidate`, `approved_pending_member`, `approved_pending_person`, `agreement_pending`, `countersign_pending`, `authoritative`, `renewal_due`, `offboarded`, `reengagement_pending`.
+- **Cross-ref:** GitHub #166, #179, #180, #182, #183; `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` section 6.
+
+### 56. P0 — Curatorship queue RPC gates still require `write_board`, blocking V4 curators
+- **Tipo:** issue · **Severity:** CRITICAL for curator access · **Effort:** S/M
+- **Trigger:** p203 curadoria audit after Roberto reported "Sem acesso". Frontend gate was fixed in p201 to accept `canFor('curate_content')`, but live RPC bodies for `get_curation_dashboard()` and `list_curation_pending_board_items()` still require `can_by_member(v_member_id, 'write_board')`.
+- **Production evidence (2026-05-19):** Fabricio has `curate_content=true` and `write_board=true`; Roberto and Sarah have `curate_content=true` but `write_board=false`. Therefore the UI may allow access while the backend queue denies or errors.
+- **Impact:** Curators without broad board-write authority cannot reliably load `/admin/curatorship`, despite ADR-0087 making `curate_content` the canonical authority.
+- **Proposta:** Change reader RPC gates to `curate_content OR participate_in_governance_review OR manage_member` (or a narrower accepted contract), keeping write gates separate for mutations.
+- **Validation gate:** Roberto/Sarah persona smoke can load queue but cannot mutate outside allowed curation actions.
+- **Cross-ref:** GitHub #185; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-001; ADR-0087; issue #161.
+
+### 57. P0 — Canonical `submit_for_curation` does not notify the Comitê de Curadoria
+- **Tipo:** issue · **Severity:** CRITICAL for operational workflow · **Effort:** M
+- **Trigger:** ADR-0086 says tribe leaders should submit without naming curators. Live SQL/function audit shows `submit_for_curation(p_item_id)` only updates status and lifecycle events; notification trigger only notifies existing `board_item_assignments` rows.
+- **Production evidence (2026-05-19):** Live item `642fe90f` has 11 notifications, all tied to assignment/status triggers because curators were assigned. The three V4 curators each got digest/in-app notifications (`assignment_new`, `card_assigned`, `card_moved`), all `delivery_mode='digest_weekly'`, `email_sent_at=NULL`. If the canonical button is used without assignments, there may be zero curator recipients.
+- **Impact:** New submissions can silently enter `curation_pending` without curators receiving email or explicit committee broadcast, making SLA dependent on someone manually checking `/admin/curatorship`.
+- **Proposta:** Add idempotent committee broadcast when a card enters `curation_pending`, targeting active members with `can_by_member('curate_content')`; decide `transactional_immediate` vs digest explicitly.
+- **Validation gate:** Submitting via button creates notification rows for all active curators and expected delivery mode; no duplicate notifications on retry.
+- **Cross-ref:** GitHub #186; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-002; ADR-0086.
+
+### 58. P1 — `curation_reviewer` picker still filters by V3 `members.designations`
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** `MemberPickerMulti.tsx` filters `selectedRole === 'curation_reviewer'` with `m.designations?.includes('curator')`.
+- **Impact:** A new curator onboarded through V4 engagement permissions (`curate_content`) but without legacy designation will not appear as selectable reviewer in the card UI.
+- **Proposta:** Use V4 eligibility (`can_curate_content` payload, dedicated RPC, or semantic reviewer list) instead of raw designation filtering.
+- **Validation gate:** A member with `curate_content=true` and no `curator` designation appears in the picker; a non-curator does not.
+- **Cross-ref:** GitHub #187; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-003; ADR-0087.
+
+### 59. P1 — MCP curatorship surface is admin-only and lacks curation actions
+- **Tipo:** semantic-layer gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** MCP tool `get_curation_dashboard` is gated by `manage_member` and calls a reader RPC that currently requires `write_board`; MCP has no canonical tools for `submit_for_curation`, `submit_curation_review`, `complete_peer_review`, or `complete_leader_review`.
+- **Impact:** AI agents cannot assist curators with the real operational queue unless they have admin-style authority, and cannot perform or inspect the structured review flow through stable curation-native contracts.
+- **Proposta:** After SQL/RPC gates are corrected, add MCP tools for list queue, explain item state, submit review, return with feedback, and summarize SLA using a stable `curation_queue_state` envelope.
+- **Validation gate:** Curator persona can call MCP queue read; non-curator cannot; mutations use explicit V4 gates.
+- **Cross-ref:** GitHub #188, #162, #166; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-004.
+
+### 60. P2 — Card curation pipeline visual still uses aspirational states
+- **Tipo:** UX gap · **Severity:** MEDIUM · **Effort:** XS/S
+- **Trigger:** `CardDetail.tsx` renders visual pipeline states `ideation/research/drafting/author_review/peer_review/leader_review/curation/published`, while DB/type enum is `draft/peer_review/leader_review/curation_pending/published`.
+- **Impact:** Items in `curation_pending` may not mark the current visual stage correctly, confusing authors and leaders about where the card is in the process.
+- **Proposta:** Align visual states with DB or map `curation_pending -> curation` explicitly.
+- **Validation gate:** The live Débora-style item in `curation_pending` highlights the curadoria stage.
+- **Cross-ref:** GitHub #189; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-005; ADR-0086.
+
+### 61. P1 — Opportunity: canonical `curation_queue_state` semantic layer
+- **Tipo:** opportunity · **Severity:** HIGH · **Effort:** M
+- **Trigger:** p203 audit found curation state distributed across `board_items`, `curation_review_log`, `board_lifecycle_events`, `board_item_assignments`, `notifications`, `project_boards`, `engagements`, `engagement_kind_permissions`, MCP and the committee workspace.
+- **Impact:** `/admin/curatorship`, committee workspace, notifications, MCP and QA can disagree about queue state, notification coverage, required reviews and eligible actions.
+- **Proposta:** Create a view/RPC `curation_queue_state` with item, origin type, status, SLA, review counts, required review count, curators_notified, email_sent, next_action and caller-eligible actions.
+- **Validation gate:** `/admin/curatorship`, workspace queue and MCP read from the same envelope.
+- **Cross-ref:** GitHub #190, #166; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md`.
+
+### 62. P1 — Curadoria has parallel APIs/FSMs that can drift
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** p203 frontend/backend/MCP audit found active `CardDetail` path uses p197 RPCs, while `TribeKanbanIsland` and MCP `advance_card_curation` still point to legacy `advance_board_item_curation`.
+- **Impact:** Agents or future UI work can call outdated actions (`request_review`, `approve_peer`, `approve_leader`) or documented-but-invalid MCP actions, bypassing the structured ADR-0086 peer/leader review path.
+- **Proposta:** Deprecate legacy API/tool or rewrite them to delegate to `complete_peer_review`, `complete_leader_review`, `submit_for_curation`, and `submit_curation_review`.
+- **Validation gate:** No mounted UI or MCP tool advertises actions that do not exist in the target RPC; board curation tests exercise only the accepted path.
+- **Cross-ref:** GitHub #191; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-007/C-009.
+
+### 63. P1 — `curation_review_log` lacks duplicate-review guard
+- **Tipo:** data integrity gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Backend audit found consensus counts approvals in `curation_review_log`, but there is no documented UNIQUE guard for one review per curator per item/round.
+- **Impact:** A single curator could potentially submit repeated approvals and satisfy `reviewers_required`, weakening the two-reviewer governance model.
+- **Proposta:** Decide key (`board_item_id`, `curator_id`, `review_round`) and add DB constraint or RPC guard. Include backfill/dedup audit first.
+- **Validation gate:** Duplicate review attempt fails predictably; consensus count uses distinct curators.
+- **Cross-ref:** GitHub #192; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-010; ADR-0086.
+
+### 64. P2 — Curadoria vocabulary drift: `revision_requested` and `auto_publish_approved_article`
+- **Tipo:** drift/cleanup · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** `get_curation_dashboard()` filters `revision_requested`, which is not in the `board_items.curation_status` CHECK; ADR-0086 also notes `auto_publish_approved_article` expects `approved`, also absent from the CHECK.
+- **Impact:** Dead branches and phantom states confuse audits, agents and UI work. Devoluções currently become `curation_status='draft'` + `status='review'`.
+- **Proposta:** Remove phantom states or add explicit mapping in one semantic layer. Drop dead trigger if no longer part of the accepted FSM.
+- **Validation gate:** Static grep shows no unhandled phantom state in active reader/writer RPCs; live FSM states are exactly documented.
+- **Cross-ref:** GitHub #193; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-008/C-011; ADR-0086.
+
+### 65. P1 — Curadoria contract tests missing for accepted p197 flow
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Existing log item #32 covers `complete_peer_review`/`complete_leader_review`; p203 audit expands scope to include `submit_for_curation`, `submit_curation_review`, duplicate review prevention and curator notification side effects.
+- **Impact:** Critical governance flow can regress without breaking generic UI/build tests.
+- **Proposta:** Add DB-aware or static contract tests for authorization, state transitions, returned reset behavior, SLA creation, notification recipients, and consensus by distinct curators.
+- **Validation gate:** Tests fail if reader gates revert to `write_board`-only or if canonical submit does not notify committee.
+- **Cross-ref:** GitHub #194; existing P162 #32; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-006/C-010.
+
+### 66. P1 — Curadoria email policy lacks dedicated notification type
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Wave 2 audit found `_delivery_mode_for('assignment_new')`, `card_assigned`, `card_moved`, and hypothetical `curation_submitted` all route to `digest_weekly`; live item notifications had `email_sent_at=NULL`.
+- **Impact:** Comitê may not receive timely email for a 7-day SLA item. Current notification semantics piggyback on generic card assignment/move types, not curation intent.
+- **Proposta:** Create a dedicated type (`curation_item_submitted` or equivalent) and decide its delivery policy (`transactional_immediate` vs digest). If digest, add a dedicated curation section to the canonical weekly digest.
+- **Validation gate:** Submitting a card creates a notification with explicit curation type and expected email/digest behavior.
+- **Cross-ref:** GitHub #186; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-012.
+
+### 67. P1 — Cross-pipeline curation queue omits publication/governance review states
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** L
+- **Trigger:** Wave 2 audit found `publication_submissions` has 21 `under_review` + 8 `submitted`, `publication_ideas` has 1 `approved`, `governance_documents` has 6 `under_review`, and `change_requests` has 15 pending-ish rows, but `/admin/curatorship` only surfaces `board_items`.
+- **Impact:** Curators still need to inspect multiple surfaces; the "one place" workspace remains a pointer board, not a unified operational queue.
+- **Proposta:** Make `curation_queue_state` cross-pipeline with `origin_type`/`origin_id` for `board_item`, `publication_submission`, `publication_idea`, `governance_document`, `change_request`, `webinar_proposal`.
+- **Validation gate:** Committee workspace and `/admin/curatorship` show at least board items + publication submissions + governance docs with consistent next actions.
+- **Cross-ref:** GitHub #190; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-013; OPP-196.D.
+
+### 68. P2 — Weekly digest implementations diverge for curation follow-up
+- **Tipo:** drift/opportunity · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** Repo has rich DB-driven `get_weekly_member_digest()` and a separate `send-notification-digest` Edge Function that queries unread notifications and renders its own grouped HTML.
+- **Impact:** Adding curation to one path may not affect the other; digest behavior can drift or duplicate logic.
+- **Proposta:** Ratify the canonical digest path for members. Then add a curation-specific section in the chosen path and deprecate/mark the other path if legacy.
+- **Validation gate:** One documented digest path owns curation weekly summaries; cron/job references match the chosen path.
+- **Cross-ref:** GitHub #195; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-014; ADR-0022.
+
+### 69. P1 — Curadoria permissions/docs drift from V4 reality
+- **Tipo:** docs/governance drift · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** p203 Wave 2 found `PERMISSIONS_MATRIX.md` still dated 2026-03-15 and describing curadoria via observer/designation, while `SITE_MAP.md` lists `/admin/curatorship` as observer-only and still has stale platform counts (MCP 64, Edge Functions 21, pg_cron 4).
+- **Impact:** Docs imply curator access is `curator` designation/tier-based, while runtime should be V4 `curate_content` / `participate_in_governance_review`. This can lead future agents/humans to reintroduce wrong gates.
+- **Proposta:** Update permissions/site docs to distinguish nav discoverability from backend authority and pin current runtime counts or point to runtime sources.
+- **Validation gate:** Docs mention `curate_content`, do not claim `/admin/curatorship` is generic observer access, and no stale 64-tool MCP count remains in current docs.
+- **Cross-ref:** GitHub #196; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-015; ADR-0087.
+
+### 70. P1 — Curadoria tests crystallize legacy access contracts
+- **Tipo:** test gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** `tests/contracts/rpc-acl.test.mjs` expects curation RPCs to check `curator`/`designations` or admin role; `tests/contracts/rls-v4-phase4-1.test.mjs` still asserts `curation_review_log_write` uses `write_board`.
+- **Impact:** Tests can pass while the desired V4 curator contract is broken, or fail once #185 correctly moves queue readers toward `curate_content`.
+- **Proposta:** Fold into #194: update static tests to assert V4 `curate_content` / `participate_in_governance_review` according to accepted reader/writer contract, plus persona smoke for Roberto/Sarah.
+- **Validation gate:** Tests fail on `write_board`-only reader queue and on V3 `designations.includes('curator')` as sole eligibility source.
+- **Cross-ref:** GitHub #194; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-016.
+
+### 70.1 P1 — Curadoria modal hides submitted artifact links and source context
+- **Tipo:** bug / UX gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Fabricio reported the Débora/Agentes Autônomos item in `/admin/curatorship` does not show the article link or source folder/context needed for review. Live DB confirmed the item has `board_items.attachments` with a Google Doc link and `get_curation_dashboard()` includes `attachments`, but `ReviewRubricDialog` renders only title, tribe, SLA, assignee and description.
+- **Impact:** Curators cannot review the actual artifact without hunting in the tribe board/Drive. This breaks the "one place" curation promise and can recur for any item whose key context lives in `attachments`, `board_item_files`, checklist, Drive folder links or lifecycle history.
+- **Proposta:** Render submitted artifact links and context in the curation modal; extend future `curation_queue_state` to include `artifact_links`, `drive_links`, `checklist_summary`, source board/initiative/tribe and missing-context flags.
+- **Validation gate:** The live Débora card shows the Google Doc link in `/admin/curatorship`; an item without artifact link shows an explicit "no artifact link attached" warning.
+- **Cross-ref:** GitHub #201, #190, #188; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-012.
+
+### 71. OPP-181.A — sign_volunteer_agreement re-emits is_superadmin + hardcoded operational_role
+- **Tipo:** opportunity / ADR-0011 carry · **Severity:** MEDIUM · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #184 found that `sign_volunteer_agreement` notification fan-out uses `m.is_superadmin = true` and `m.operational_role = 'manager'` predicates plus an issuer-fallback `operational_role IN ('manager','tribe_leader')` block, all of which violate ADR-0011 (no hardcoded role lists; emergency-break `is_superadmin` outside its narrow scope). The body in this migration is byte-equivalent to the prior `20260513070000_adr0022_w1_producer_updates.sql` capture — pre-existing carry, NOT introduced by p203 #181 — but the DROP+CREATE in `20260724000000` re-emits and implicitly endorses the legacy pattern.
+- **Impact:** Future contributors editing the body inherit the antipattern. Notification fan-out can fail to reach intended audience if `operational_role` cache lags V4 reality.
+- **Proposta:** Replace `is_superadmin` and `operational_role = 'manager'` predicates with `can_by_member(m.id, 'manage_member')` subquery or a `WITH has_perm AS (SELECT m.id FROM members m JOIN can_by_member …) `CTE pattern. Same for issuer-resolution lookup at lines 249-256.
+- **Validation gate:** New static contract test verifies no `is_superadmin` / no bare `operational_role = 'manager'` in sign_volunteer_agreement body.
+- **Cross-ref:** PR #184 council close; ADR-0011; `20260513070000_adr0022_w1_producer_updates.sql`.
+
+### 72. WATCH-181.B — search_path asymmetry between counter_sign_certificate and sign_volunteer_agreement
+- **Tipo:** watch · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council platform-guardian audit of PR #184: `counter_sign_certificate` uses `SET search_path TO ''` (fully qualified, explicit `public.` prefix on every object); `sign_volunteer_agreement` uses `SET search_path TO 'public', 'pg_temp'` (unqualified references like `members`, `sha256`, `convert_to`). Both preserved from prior bodies; intentional difference. But a future contributor "harmonizing" them to `''` would silently break sign-side unqualified refs.
+- **Impact:** Latent risk if a mechanical refactor harmonizes search_path without rewriting unqualified object references.
+- **Proposta:** Add `COMMENT ON FUNCTION public.sign_volunteer_agreement(text, text, text)` explaining the intentional `public, pg_temp` search_path. Optionally a paragraph in ADR-0039 Amendment A documenting the asymmetry.
+- **Validation gate:** Visual review only; no automated gate proposed.
+- **Cross-ref:** PR #184 council close; ADR-0039 Amendment A.
+
+### 73. LOW-181.C — Server-side UA cap rationale lacks data assertion
+- **Tipo:** test gap · **Severity:** LOW · **Effort:** XS
+- **Trigger:** PR #184 added `p_signed_user_agent := left(p_signed_user_agent, 500)` to both certificate-evidence RPCs. Static contract test asserts the line is present, but no DB-aware test passes a 600+ char UA and verifies the stored `signed_user_agent` is exactly 500 chars.
+- **Impact:** Future regression where the cap is bypassed (e.g. via `coalesce` rewrite or accidental removal) would not fail any test.
+- **Proposta:** Either (a) add a DB-aware test that signs a term with `'A'.repeat(600)` UA and asserts `length(signed_user_agent) = 500`, OR (b) add `COMMENT ON COLUMN public.certificates.signed_user_agent` documenting the 500-char ceiling.
+- **Validation gate:** Either DB-aware regression test or column COMMENT present.
+- **Cross-ref:** PR #184 council close.
+
+### 74. LOW-181.D — Migration rollback comment references ephemeral PR URL
+- **Tipo:** doc drift · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Migration `20260724000000` rollback note says "Re-create prior bodies from migration history (pg_get_functiondef capture preserved at issue #181 PR description)" — the PR description on GitHub is mutable and the URL may rot.
+- **Impact:** If rollback is ever needed, the canonical prior body location is not durable.
+- **Proposta:** Replace with explicit migration filename: `-- prior bodies in 20260513070000_adr0022_w1_producer_updates.sql (sign_volunteer_agreement) and original counter_sign_certificate definition`.
+- **Validation gate:** Visual review.
+- **Cross-ref:** PR #184 council close.
+
+### 75. WATCH-203.C — MCP tool list_pending_agreement_engagements deferred
+- **Tipo:** watch / planned · **Severity:** MEDIUM · **Effort:** S (when triggered)
+- **Trigger:** PR #197 (#177) implemented `get_pending_agreement_engagements()` RPC but per P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC §5, MCP tool exposure was deferred until lifecycle RPCs (#179, #180, #181) stabilize. No issue auto-tracks the eventual tool add — purely doc-tracked today.
+- **Impact:** When #179/#180/#181 close, the lifecycle MCP wrappers (per #183) need to include `list_pending_agreement_engagements`. Without explicit tracking, this can fall through the cracks.
+- **Proposta:** When closing #183, audit pending lifecycle RPCs (including `get_pending_agreement_engagements`) and add MCP tool wrappers for each. Update MCP_TOOL_MATRIX from 293 → 294+.
+- **Validation gate:** MCP matrix audit shows `get_pending_agreement_engagements` exposed via `list_pending_agreement_engagements` tool.
+- **Cross-ref:** GitHub #183; PR #197 council close; `P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC` §5.
+
+### 76. LOW-203.D — Triple-scan of auth_engagements in get_pending_agreement_engagements
+- **Tipo:** opportunity / perf · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #197: `total` count, `by_kind_role` aggregation, and `pending` list each re-execute the same WHERE clause (status='active' + requires_agreement IS TRUE + agreement_certificate_id IS NULL) against `auth_engagements`. At 16 rows today this is irrelevant; as the queue grows (or as PMI cycles produce more engagements requiring agreements), three full scans add up.
+- **Impact:** Latent perf bloat.
+- **Proposta:** Refactor to a single `WITH pending_base AS (SELECT … FROM auth_engagements WHERE …)` CTE feeding all three output fields.
+- **Validation gate:** Function still returns the same shape (tested via contract test) but only one CTE scan.
+- **Cross-ref:** PR #197 council close.
+
+### 77. BUG-203.A — 8 pre-existing test fails in security-lgpd.test.mjs not introduced by p203
+- **Tipo:** test drift · **Severity:** MEDIUM · **Effort:** S/M
+- **Trigger:** `npm test` returns 1441 pass / 8 fail / 46 skip offline (deploy.md baseline was 1449/0/46). The 8 fails are in `tests/contracts/security-lgpd.test.mjs` covering `mark_member_present` (4 assertions) and `create_event` (4 assertions). Both code-reviewer + platform-guardian audits of PRs #184 and #197 confirmed: NOT introduced by p203 PRs. Likely sediment from p199-b/c Paulo Alves attendance fix that refactored `mark_member_present` body without updating the anti-assertion in the test.
+- **Impact:** CI is silently red on offline baseline. Future PRs may not notice their own regressions over this noise.
+- **Proposta:** Dedicated cleanup session: (a) confirm `mark_member_present` + `create_event` body changes are intentional, (b) update test assertions to match current canonical auth pattern, OR (c) revert body changes if they introduced a regression.
+- **Validation gate:** `npm test` returns 1449+ pass / 0 fail / 46 skip offline.
+- **Cross-ref:** PR #184, #197 council close; p199-b/c handoff (Paulo Alves attendance fix).
+
+### 78. OPP-204.A — Cloudflare traffic analytics tab for `nucleoia.vitormr.dev`
+- **Tipo:** opportunity / feature · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** PM noted Cloudflare Analytics is collected at the `vitormr.dev` zone level and should contain traffic for the Hub subdomain. The personal site project (`~/Documents/vitormr-site`) already has a reference admin metrics surface at `vitormr.dev/admin/metrics`.
+- **Impact:** `/admin/analytics` currently covers platform/product analytics but lacks web traffic visibility: requests/pageviews over time, top paths, referrers, countries/devices and period-over-period deltas for the public Hub. Without this, public interest in `nucleoia.vitormr.dev` is invisible to governance decisions.
+- **Proposta:** Add a Cloudflare traffic tab/section under `/admin/analytics` (not `/admin/adoption`). Filter Cloudflare data by `hostname = nucleoia.vitormr.dev`; show aggregate cards, overtime chart, period comparison, top paths/referrers/countries/devices/status codes. Keep data aggregate-only and cache server-side via RPC/Edge Function/table; never expose Cloudflare tokens in frontend.
+- **Non-goal:** Do not merge anonymous Cloudflare traffic with member identities in MVP. Keep `/admin/adoption` focused on authenticated product usage.
+- **Validation gate:** `/admin/analytics` shows traffic data filtered to the Hub hostname, with no zone-wide `vitormr.dev` mixing and no Cloudflare secret in client code.
+- **Cross-ref:** GitHub #200; reference project `~/Documents/vitormr-site` (`/admin/metrics`) for implementation pattern only.
+
+<!-- NOTE: items 79-81 reserved for issue-182 PR (WATCH-182.A / GAP-182.B / WATCH-182.C). This worktree was branched before that PR; renumber at merge time if it merges first. -->
+
+### 82. WATCH-205.A — workgroup_coordinator not in congress.allowed_engagement_kinds
+- **Tipo:** watch · **Severity:** LOW (advisory only) · **Effort:** XS-S
+- **Trigger:** Council platform-guardian audit of PR #169 (Vassouras initiative seed). João Coelho's engagement uses `kind='workgroup_coordinator'` on a `kind='congress'` initiative, but `engagement_kinds.metadata.allowed_engagement_kinds` for congress only lists `{volunteer,speaker,guest,observer}` (per migration `20260413600000` line 41-43). Since `allowed_engagement_kinds` is **advisory only** (no DB trigger enforces it on INSERT), the seed succeeded. But this creates conceptual drift between the schema definition and actual usage.
+- **Impact:** Future kind-aware UI/tooling reading `allowed_engagement_kinds` will not show workgroup_coordinator as a valid option, even though the live DB has one. View_pii scope resolution at congress initiative scope may behave inconsistently with what `engagement_kind_permissions` seed implies.
+- **Proposta:** Either (a) add `workgroup_coordinator` to congress's `allowed_engagement_kinds` via follow-up migration (preferred — aligns schema with usage; ADR-0009 "config not code"); OR (b) ADR addendum documenting that `congress` kind can host workgroup coordinator engagements with `metadata.initiative_subtype='external_event_collaboration'` as discriminator; OR (c) accept drift and rely on `committee_coordinator` permissions inheritance.
+- **Validation gate:** PR title includes `congress` AC update OR ADR addendum committed.
+- **Cross-ref:** PR #169 council close; migration `20260728000000`; engagement_kinds + permissions cross-table.
+
+### 83. LOW-205.B — metadata.angle dual semantic (engagement-level vs initiative array element)
+- **Tipo:** doc drift · **Severity:** LOW · **Effort:** XS
+- **Trigger:** Council code-reviewer audit of PR #169. `metadata.angle` is used as a JSONB key in TWO different shapes: (1) at engagement-level (`engagements.metadata.angle` on Vitor + Sarah's speaker engagements), and (2) inside `initiatives.metadata.confirmed_speakers[].angle` array elements. No schema constraint; dual use is semantic.
+- **Impact:** Future queries joining both paths need to UNION two different shapes. Subtle gotcha.
+- **Proposta:** Document the dual usage in ADR-0093 or a short addendum.
+- **Validation gate:** ADR amendment committed.
+- **Cross-ref:** PR #169 council close.
+
+### 84. LOW-205.C — initiative.metadata.open_questions duplicates board cards
+- **Tipo:** opportunity · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit. `initiatives.metadata.open_questions` is a JSONB string array (5 entries for Vassouras). 3 of 5 map directly to existing board cards. Completing a card does not auto-clear the question. Mirror of LATAM LIM precedent.
+- **Impact:** Stale `open_questions` after cards are resolved; admin UI showing question alongside the card it duplicates.
+- **Proposta:** Either (a) periodic admin UI clear; OR (b) board card UUIDs as references in `open_questions`; OR (c) drop `open_questions` and rely on board cards.
+- **Validation gate:** Pattern decision documented.
+- **Cross-ref:** PR #169 council close.
+
+### 85. LOW-205.D — Board card 4 sub-tasks belong in board_item_checklists
+- **Tipo:** modeling · **Severity:** LOW · **Effort:** S
+- **Trigger:** Council code-reviewer audit. Board card #169-104 ("Operação day-of") has 4 discrete sub-tasks (camisas + coffee-break + sorteio + bolsa-pós) in description free text. `board_item_checklists` table exists for this with assignment + completion semantics. Same applies to cards 1 + 3.
+- **Impact:** Student collaboration value (teaching scope) degrades when sub-tasks aren't trackable individually. Students can't claim "camisas" without claiming the whole operational card.
+- **Proposta:** Companion admin UI op or follow-up migration before T-5d (2026-05-28): create `board_item_checklists` rows for sub-tasks.
+- **Validation gate:** Sub-tasks split into checklist rows before student collaboration begins.
+- **Cross-ref:** PR #169 council close.
+
+### 86. WATCH-205.E — partner_entities.contact_email PII governance pattern
+- **Tipo:** watch / policy · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR #169. Initial seed had `contact_email='j_coelho@id.uff.br'` in a public-repo migration. Fixed inline by removing the column from the INSERT (nullified live row). Raises broader question: what's the policy for `partner_entities.contact_email` in future seeds?
+- **Impact:** Without governance, future PRs may seed partner contacts with real emails. LGPD-adjacent risk even for external/institutional contacts (individual still identifiable).
+- **Proposta:** Document policy: "partner_entities.contact_email MUST be NULL in seed migrations; admin UI is the only entry point post-merge." Add contract test or pre-commit grep to enforce.
+- **Validation gate:** Policy doc + pre-commit grep added.
+- **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
+
+### 92. BUG-207.A — /profile ReferenceError "t is not defined" (3rd recurrence of TS annotation × Vite minify trap)
+- **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** S (per-file fix) + M (broader audit + forward defense)
+- **Trigger:** PM reported live error on `/profile` (and presumably `/en/profile`, `/es/profile`) at p207 boot 2026-05-20. Live stack trace: `pt(profile.astro_astro_type_script_index_0_lang.v3Zqq7wC.js:116) → ReferenceError: t is not defined`. Inline comment in `src/pages/profile.astro:248-252` already documents 2 prior occurrences (p158 fix#8 `e098c398` + p184 inline strip of `lp` annotation). p184 patched only `lp`; ~22 other module-level TS-annotated consts/lets remain (OPROLE_LABELS/COLORS, DESIG_LABELS/COLORS, HISTORY_TYPE_LABELS, currentMember, attendanceHistory, ..., credlyNormalizeTimer).
+- **Impact:** `/profile` (member-facing critical page) renders partially or fails to render XP pillars, champion section, cycle history when minified bundle runs in prod. Invisible in dev (Vite minify off). 3rd recurrence indicates the class needs forward defense, not just point fixes.
+- **Proposta:** Issue #216 filed with full spec at `docs/project-governance/sessions/p207_issue_216_profile_ts_annotation_minify.md`. Fix scope: strip ~22 module-level annotations in `profile.astro` (lines 256-304) + EN/ES variants + inline comment update. Forward-defense Option B (audit script `scripts/audit-astro-script-annotations.mjs` + pre-commit hook) is RECOMMENDED but separable PR.
+- **Validation gate:** `npx astro build` PASS + manual browser smoke `/profile` (signed-in member) shows no console errors + XP pillars render.
+- **Cross-ref:** Issue #216; spec doc above; commit `e098c398`; profile.astro:248-252; `[[feedback-astro-define-vars-no-ts]]` p169 sediment (adjacent class).
+
+### 93. OPP-207.B — Forward defense audit script for module-level TS annotations in .astro <script>
+- **Tipo:** opportunity / forward defense · **Severity:** MED · **Effort:** S
+- **Trigger:** BUG-207.A (#92 above) — 3rd recurrence of the same class. Reactive hotfix-only cycle is inefficient; needs preventive surface.
+- **Impact:** Without forward defense, 4th recurrence will happen when next developer adds a module-level annotated const/let to any `<script>` block. Cost of recurrence is non-trivial: user-facing bug + Sentry alert + investigation + fix cycle. Preventive cost (audit script) is ~1-2h one-time.
+- **Proposta:** `scripts/audit-astro-script-annotations.mjs` runs project-wide grep for module-level annotated declarations in processed `<script>` blocks of `.astro` files; reports findings. Integrate into pre-commit hook + CI gate (warn, not block, initially). If still recurring after 1 quarter, promote to ESLint rule (Option A from spec).
+- **Validation gate:** Script exists + pre-commit invokes it + CI workflow runs it. Output reproducible.
+- **Cross-ref:** Issue #216 spec § "Forward defense"; spec recommends Option B over Options A (custom ESLint rule, M effort) and C (Vite plugin, L effort, invasive).
+
+### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (workerd DNS strict post p173 deps bump)
+- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** S (Opção A pin) / M (Opção B mock fetch) / XS (Opção C /etc/hosts hack)
+- **Trigger:** PM perguntou em p207 (2026-05-20) por que browser_guards falha consistentemente. Investigação revelou: 75+ runs consecutivos failing desde 2026-05-18 02:20 UTC (último verde `37e86d98`). Erro: `kj/async-io-unix.c++:1298: failed: DNS lookup failed.; params.host = mock.supabase.co`. Causa provável: bumps em p173 (2026-05-17) — astro 6.1.3→6.3.3 + @astrojs/cloudflare 13.1.7→13.5.1 + wrangler — versão nova do workerd ficou estrita sobre DNS failures durante boot (antes tolerava `mock.supabase.co` fake URL do env CI).
+- **Impact:** `validate` workflow falha em todos os PRs + main pushes → `quality_gate` SKIPPED em cascade. Merges (#199 e fila atual #184/#197/#198) precisam `--admin` bypass. Cada bypass consolida o pattern como aceitável → erosão de gates. browser_guards efetivamente disabled como signal — regressões UI/SSR-side passam silenciosamente.
+- **Proposta:** Issue #220 filed com 3 opções (A: downgrade wrangler/ajustar compatibility_date — Recommended; B: mockar fetch no test — fix de fundo; C: /etc/hosts hack — pragma). Recomendar A primeiro (reabre CI em <30min) + B no backlog.
+- **Validation gate:** `gh run list --workflow=ci.yml --branch <X> --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin.
+- **Cross-ref:** Issue #220; runs falhos como `26167448636`; commits gatilho `ce980c81` + `d96c0c7d` (p173); PR #199 merge (`c191254e`) primeiro a usar --admin por este motivo.
+
+### 95. WATCH-207.D — --admin bypass pattern erosão (PRs #199/#184/#197/#198 em sequência)
+- **Tipo:** watch / governance debt · **Severity:** MED · **Effort:** XS (após CI fix)
+- **Trigger:** BUG-207.C força `--admin` bypass em série. Sediment risk: PMs/agents futuros podem normalizar bypass mesmo após fix do CI infra.
+- **Impact:** Branch protection serves to prevent regressões; bypass repetido (mesmo com causa identificada) cria precedente de "ignore o checkmark se incomodar". Confusão de governance.
+- **Proposta:** Após Issue #220 resolved (browser_guards ✓ verde), auditar: (a) listar quantos PRs subiram via --admin no intervalo (esperado ≥4); (b) confirmar que cada --admin tem justificativa documentada em PR comment; (c) revogar --admin merge permission a partir de X data como sinal explícito de "voltamos ao normal".
+- **Validation gate:** PRs pós-fix passam CI sem --admin; --admin merges são raros e justificados.
+- **Cross-ref:** BUG-207.C #94 above; Issue #220; sediment desde PR #199 (c191254e p207).
 
