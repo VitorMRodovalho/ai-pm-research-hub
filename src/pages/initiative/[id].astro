@@ -633,7 +633,9 @@ const INIT_I18N = {
 
         const actionBtns = canManage ? `
           <button data-action="change-role" data-person-id="${eng.person_id}" data-current-role="${eng.role}" data-kind="${eng.kind}"
-            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar papel/nível">✏️</button>
+            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar Papel / Nível">✏️</button>
+          <button data-action="change-kind" data-person-id="${eng.person_id}" data-current-kind="${eng.kind}" data-current-role="${eng.role}" data-name="${escapeHtml(name)}"
+            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Mudar Função">🔄</button>
           <button data-action="remove-member" data-person-id="${eng.person_id}" data-name="${escapeHtml(name)}"
             class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border-0 cursor-pointer hover:bg-red-100 transition-all" title="Remover">✕</button>` : '';
 
@@ -1087,6 +1089,63 @@ const INIT_I18N = {
         });
         if (roleErr) { alert('Erro: ' + roleErr.message); return; }
         if (result?.error) { alert(result.error); return; }
+        await loadMembersTab();
+      }
+
+      if (action === 'change-kind') {
+        const btn = (target.closest('[data-person-id]') || target) as HTMLElement;
+        const personId = btn.dataset.personId;
+        const currentKind = btn.dataset.currentKind || '';
+        const memberName = btn.dataset.name || '';
+        if (!personId) return;
+
+        // STEP 1: Pick new FUNÇÃO from initiative's allowed kinds
+        const allowedKindsForChange: string[] = kindConfig?.allowed_engagement_kinds || [];
+        if (allowedKindsForChange.length < 2) {
+          alert('Esta iniciativa só permite uma função. Não há outras para mudar.');
+          return;
+        }
+        const kindOpts = allowedKindsForChange.map((k, i) => `${i + 1}. ${ENGAGEMENT_KIND_LABELS[k] || k}${k === currentKind ? ' (atual)' : ''}`).join('\n');
+        const kindChoice = prompt(`Mudar Função de ${memberName}\n(remove engajamento atual + recria com nova função)\n\nSelecione:\n${kindOpts}`);
+        const kindIdx = parseInt(kindChoice || '0', 10) - 1;
+        if (kindIdx < 0 || kindIdx >= allowedKindsForChange.length) return;
+        const newKind = allowedKindsForChange[kindIdx];
+        if (newKind === currentKind) { alert('Função inalterada.'); return; }
+
+        // STEP 2: Pick new PAPEL / NÍVEL (always 4 governance tiers)
+        const sugRole = defaultRoleForKind(newKind);
+        const sugIdx = GOVERNANCE_LEVELS.indexOf(sugRole);
+        const roleOpts = GOVERNANCE_LEVELS.map((r, i) => `${i + 1}. ${ROLE_LABELS[r]}${i === sugIdx ? ' (sugerido)' : ''}`).join('\n');
+        const roleChoice = prompt(`Papel / Nível na governança:\n${roleOpts}`);
+        const roleIdxChange = parseInt(roleChoice || String(sugIdx + 1), 10) - 1;
+        const newRoleChange = GOVERNANCE_LEVELS[roleIdxChange >= 0 && roleIdxChange < GOVERNANCE_LEVELS.length ? roleIdxChange : sugIdx];
+
+        // Confirm + execute remove + add
+        if (!confirm(`Confirma mudar ${memberName}:\n  Função: ${ENGAGEMENT_KIND_LABELS[currentKind] || currentKind} → ${ENGAGEMENT_KIND_LABELS[newKind] || newKind}\n  Papel:  ${ROLE_LABELS[newRoleChange]}`)) return;
+
+        // 1. Remove (revoke) old engagement
+        const { data: rmResult, error: rmErr } = await sb.rpc('manage_initiative_engagement', {
+          p_initiative_id: INITIATIVE_ID,
+          p_person_id: personId,
+          p_kind: '',
+          p_role: '',
+          p_action: 'remove',
+        });
+        if (rmErr) { alert('Erro ao remover engajamento atual: ' + rmErr.message); return; }
+        if (rmResult?.error) { alert('Erro ao remover: ' + rmResult.error); return; }
+
+        // 2. Add new engagement with new kind + role
+        const { data: addResult, error: addErr } = await sb.rpc('manage_initiative_engagement', {
+          p_initiative_id: INITIATIVE_ID,
+          p_person_id: personId,
+          p_kind: newKind,
+          p_role: newRoleChange,
+          p_action: 'add',
+        });
+        if (addErr) { alert('Engajamento removido mas erro ao recriar: ' + addErr.message + '\nReadicione manualmente.'); return; }
+        if (addResult?.error) { alert('Engajamento removido mas erro ao recriar: ' + addResult.error + '\nReadicione manualmente.'); return; }
+
+        alert(`${memberName} agora é ${ENGAGEMENT_KIND_LABELS[newKind] || newKind} · ${ROLE_LABELS[newRoleChange]}!`);
         await loadMembersTab();
       }
 
