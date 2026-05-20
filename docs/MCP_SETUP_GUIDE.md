@@ -84,6 +84,18 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 
 The live source of truth is the MCP `tools/list` response. The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 293 tools.
 
+For the **complete machine-generated contract matrix** (tool → domain → RPC dependencies → tables → canV4 gate → external fetches → service_role usage), see:
+
+- [`docs/reference/MCP_TOOL_MATRIX.md`](reference/MCP_TOOL_MATRIX.md) — human-readable markdown
+- [`docs/reference/mcp-tool-matrix.json`](reference/mcp-tool-matrix.json) — structured JSON (consumable by audit tooling)
+
+Re-generate with:
+
+```bash
+node scripts/audit-mcp-tool-matrix.mjs --runtime
+# Cross-checks index.ts static parser vs live tools/list; flags drift.
+```
+
 ### Read Tool Examples
 
 | Tool | Description |
