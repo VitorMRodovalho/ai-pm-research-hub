@@ -55,7 +55,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   async function counterSign(sb: any, certId: string, lang: Lang) {
     if (!confirm(t('admin.certificates.confirmCounterSign', lang))) return;
     try {
-      const { data, error } = await sb.rpc('counter_sign_certificate', { p_certificate_id: certId });
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 500) : null;
+      const { data, error } = await sb.rpc('counter_sign_certificate', { p_certificate_id: certId, p_signed_user_agent: ua });
       if (error) throw error;
       if (data?.error) { alert(data.error); return; }
       try { if ((window as any).posthog) (window as any).posthog.capture('certificate_issued', { cert_id: certId }); } catch {}
