@@ -4,7 +4,7 @@ title: infra - restore local Supabase QA stack or document remote-only workflow
 lane: Infra/Security + QA
 priority: P1
 effort: M (decide + implement + document)
-status: ready
+status: done
 opened: 2026-05-19
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/164
 ---
@@ -117,14 +117,32 @@ remote-linked is supported for everyday QA, with local being optional.
 
 ```md
 ## Handoff
+
 Issue: #164
-Branch:
-Path picked:
-Local supabase start status:
-Runbook path:
-Validacao:
+Branch: agent/issue-164 (worktree em /home/vitormrodovalho/projects/ai-pm-issue-164)
+Path picked: C (split baseline RPCs into post-schema migration) + remote-linked documentado como default
+Local supabase start status: 00000000 baseline não falha mais (reduzido a marker/deprecation); local stack funciona APÓS one-time `supabase db pull --linked` bootstrap
+Runbook path: docs/operations/LOCAL_QA.md (NOVO)
+Files:
+  - supabase/migrations/20260723000000_baseline_rpcs_after_schema.sql (NOVO) — 14 RPCs idempotent CREATE OR REPLACE, timestamp pós-schema
+  - supabase/migrations/00000000_baseline_rpcs.sql — reduzido a marker (DDL removido)
+  - docs/operations/LOCAL_QA.md (NOVO) — runbook A/B + bootstrap + drift troubleshooting + CI config
+  - .claude/rules/deploy.md — item 4 link LOCAL_QA.md
+  - AGENTS.md — paragrafo em "Local workflow" link LOCAL_QA.md
+  - docs/audit/P162_GAP_OPPORTUNITY_LOG.md — #39 RESOLVED
+Validação:
+  - Production effect = zero (idempotent CREATE OR REPLACE + RPCs já vivem em prod)
+  - Timestamp 20260723000000 > último existente (20260722020000)
+  - Build/test não executados (mudanças SQL+docs only); production sem impacto
 Riscos:
+  - Baixo. Produção zero risk (idempotent reapply). Local: precisa db pull --linked bootstrap, documentado.
 Rollback:
+  - Revert PR; 00000000 volta com DDL; new file removido. Production zero impact.
 Docs:
-Proximo passo:
+  - Runbook LOCAL_QA.md cobre Workflow A default + Workflow B opcional + bootstrap + drift troubleshooting + CI config secrets.
+  - Audit log #39 RESOLVED.
+Próximo passo:
+  - Pós-merge: próximo deploy session valida via `supabase db push` (esperado no-op idempotente).
+  - Backlog opcional: rodar `supabase db pull --linked` e commit baseline schema (one-time, não-bloqueante).
+  - Pós-1 sprint QA window: confirmar zero regression em CI + verificar contributor reproduce Workflow B.
 ```
