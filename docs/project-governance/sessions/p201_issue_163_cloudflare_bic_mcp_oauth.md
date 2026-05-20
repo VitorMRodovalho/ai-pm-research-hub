@@ -4,7 +4,7 @@ title: infra/security - Cloudflare BIC blocks MCP OAuth bootstrap
 lane: Infra/Security
 priority: P1
 effort: S (rule + verification)
-status: ready
+status: done
 opened: 2026-05-19
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/163
 ---
@@ -117,14 +117,36 @@ Cloudflare Security Events filtered by Ray ID + path.
 
 ```md
 ## Handoff
+
 Issue: #163
-Branch:
-Cloudflare rule ID:
+Branch: agent/issue-163 (worktree em /home/vitormrodovalho/projects/ai-pm-issue-163)
+Cloudflare rule:
+  - `mcp-oauth-skip-bic` (WAF Custom Rule) — Active. Match: `(http.host eq "nucleoia.vitormr.dev") and (starts_with /mcp or /.well-known/oauth- or /oauth/)`. Action: Skip → Browser Integrity Check + All Super Bot Fight Mode Rules.
 Rate limit configured:
+  - `mcp-rate-limit` (Rate Limiting Rule) — Active. Match: `(http.host eq "nucleoia.vitormr.dev") and starts_with(/mcp)`. Threshold: 50 req / 10s per IP. Action: Block. Duration: 10s. (Free plan limita Period a 10s; original spec 100/min adaptada mantendo ordem de magnitude ~300/min effective.)
 Security Events before/after:
+  - PRÉ-fix Ray IDs (Python-urllib/3.11 → 403): `9fe75d560886181e-RIC` (/.well-known/oauth-authorization-server), `9fe75d585a2f181e-RIC` (/oauth/authorize). Histórico em audit log #40 também lista 7 retests pré-fix com Rays adicionais.
+  - PÓS-fix Ray IDs (Python-urllib/3.11 → 200/302/401): `9fe793db1e9b151a-RIC`, `9fe793dbab751514-RIC`, `9fe793dc4c057bea-RIC`, `9fe793dcdc437bea-RIC`.
+  - Burst Ray IDs (429 rate limit hits): `9fe7a4903c0c151e-RIC`, `9fe7a490afc97bea-RIC`, `9fe7a4912df87bf3-RIC`.
 Smoke results:
+  - 4 paths × Python-urllib/3.11 UA: TODOS PASS (200 / 302 / 401 / 200 conforme expected). Pré-fix 2 paths retornavam 403; pós-fix 0 paths bloqueados.
+  - Burst 120 requests: 50 × 401 + 70 × 429 (match exato ao threshold 50/10s).
+  - Sanity Claude-User/1.0: continua HTTP/2 401 + WWW-Authenticate normal. Browser-like UAs preservados.
 Riscos:
+  - Free plan rate limit 10s window é mais agressivo que 1min original — sessões Claude.ai tool-heavy podem hit 429 em loops agênticos. Backlog: re-tunar para 100/1min se upgrade Pro plan.
+  - Skip rule cobre BIC + Bot Fight Mode + Super Bot Fight Mode. NÃO cobre WAF Managed Rules (preserva proteção contra exploits conhecidos) nem custom rules (defesa em profundidade).
 Rollback:
+  - Disable Rule 1 (`mcp-oauth-skip-bic`) → BIC volta a bloquear programáticos. 1-click no dashboard.
+  - Disable Rule 2 (`mcp-rate-limit`) → sem throttle de burst. 1-click no dashboard.
+  - Rate limit pode permanecer enabled se skip rule rolada — sem dependência.
 Docs:
-Proximo passo:
+  - `docs/infra/CLOUDFLARE_MCP_RULES.md` — spec completa com Rays pré/pós + burst evidence (NOVO arquivo)
+  - `docs/GOVERNANCE_CHANGELOG.md` — GC-146 atualizada Status: Aberto → Implementado com Rays evidence
+  - `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` — item #40 marcado RESOLVED com follow-up p202 + Rule 2 apply + burst smoke
+  - `docs/MCP_SETUP_GUIDE.md` — linha de Troubleshooting adicionada apontando para CLOUDFLARE_MCP_RULES.md
+Próximo passo:
+  - Pós-merge: monitorar Cloudflare Security Events últimas 24h pra confirmar 0 hits de `browser_signature_banned` em /mcp e /oauth (já são esperados 0 — Rule 1 skip elimina o block).
+  - Se algum cliente legítimo reportar 429 em uso normal Claude.ai tool-heavy: aumentar threshold (75 ou 100 req/10s).
+  - Pós-1 sprint QA window: PM avalia fechar issue + remover branch + remover worktree.
+  - Backlog WATCH: re-tunar rate limit para 100 req/1min se upgrade Pro plan acontecer (registrado em audit log #40 + CLOUDFLARE_MCP_RULES.md).
 ```
