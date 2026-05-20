@@ -756,3 +756,19 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Policy doc + pre-commit grep added.
 - **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
 
+### 92. BUG-207.A — /profile ReferenceError "t is not defined" (3rd recurrence of TS annotation × Vite minify trap)
+- **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** S (per-file fix) + M (broader audit + forward defense)
+- **Trigger:** PM reported live error on `/profile` (and presumably `/en/profile`, `/es/profile`) at p207 boot 2026-05-20. Live stack trace: `pt(profile.astro_astro_type_script_index_0_lang.v3Zqq7wC.js:116) → ReferenceError: t is not defined`. Inline comment in `src/pages/profile.astro:248-252` already documents 2 prior occurrences (p158 fix#8 `e098c398` + p184 inline strip of `lp` annotation). p184 patched only `lp`; ~22 other module-level TS-annotated consts/lets remain (OPROLE_LABELS/COLORS, DESIG_LABELS/COLORS, HISTORY_TYPE_LABELS, currentMember, attendanceHistory, ..., credlyNormalizeTimer).
+- **Impact:** `/profile` (member-facing critical page) renders partially or fails to render XP pillars, champion section, cycle history when minified bundle runs in prod. Invisible in dev (Vite minify off). 3rd recurrence indicates the class needs forward defense, not just point fixes.
+- **Proposta:** Issue #216 filed with full spec at `docs/project-governance/sessions/p207_issue_216_profile_ts_annotation_minify.md`. Fix scope: strip ~22 module-level annotations in `profile.astro` (lines 256-304) + EN/ES variants + inline comment update. Forward-defense Option B (audit script `scripts/audit-astro-script-annotations.mjs` + pre-commit hook) is RECOMMENDED but separable PR.
+- **Validation gate:** `npx astro build` PASS + manual browser smoke `/profile` (signed-in member) shows no console errors + XP pillars render.
+- **Cross-ref:** Issue #216; spec doc above; commit `e098c398`; profile.astro:248-252; `[[feedback-astro-define-vars-no-ts]]` p169 sediment (adjacent class).
+
+### 93. OPP-207.B — Forward defense audit script for module-level TS annotations in .astro <script>
+- **Tipo:** opportunity / forward defense · **Severity:** MED · **Effort:** S
+- **Trigger:** BUG-207.A (#92 above) — 3rd recurrence of the same class. Reactive hotfix-only cycle is inefficient; needs preventive surface.
+- **Impact:** Without forward defense, 4th recurrence will happen when next developer adds a module-level annotated const/let to any `<script>` block. Cost of recurrence is non-trivial: user-facing bug + Sentry alert + investigation + fix cycle. Preventive cost (audit script) is ~1-2h one-time.
+- **Proposta:** `scripts/audit-astro-script-annotations.mjs` runs project-wide grep for module-level annotated declarations in processed `<script>` blocks of `.astro` files; reports findings. Integrate into pre-commit hook + CI gate (warn, not block, initially). If still recurring after 1 quarter, promote to ESLint rule (Option A from spec).
+- **Validation gate:** Script exists + pre-commit invokes it + CI workflow runs it. Output reproducible.
+- **Cross-ref:** Issue #216 spec § "Forward defense"; spec recommends Option B over Options A (custom ESLint rule, M effort) and C (Vite plugin, L effort, invasive).
+
