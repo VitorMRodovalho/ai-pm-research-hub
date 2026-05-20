@@ -19,6 +19,8 @@ globs: wrangler.toml, astro.config.mjs
 
 3. No legacy URLs in code (`grep` for `platform.ai-pm-research-hub.workers.dev`)
 
+4. **Local QA workflow**: ver `docs/operations/LOCAL_QA.md` (adopted p202, issue #164 close). Default = remote-linked; local stack opcional após `supabase db pull --linked` bootstrap. Migration `20260723000000_baseline_rpcs_after_schema.sql` resolve o ordering bug que travava `supabase start`.
+
 ## Deploy Commands
 - **Worker:** `npx wrangler deploy`
 - **Edge Functions:** `supabase functions deploy <name> --no-verify-jwt`

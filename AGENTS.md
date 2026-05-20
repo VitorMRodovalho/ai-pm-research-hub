@@ -104,6 +104,8 @@ npm test
 npm run smoke:routes
 ```
 
+For DB/Edge Function local debugging and the broader local QA workflow (incl. remote-linked default + optional `supabase start` bootstrap), see `docs/operations/LOCAL_QA.md` (adopted p202, issue #164).
+
 Validate with `npm test` and `npm run build` before pushing. For production-impact changes, add or update an entry in `docs/RELEASE_LOG.md`.
 
 ## Sprint closure routine (5-phase)
