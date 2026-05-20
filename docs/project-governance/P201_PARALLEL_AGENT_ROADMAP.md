@@ -100,6 +100,13 @@ Próximo passo:
 
 ## 6. Backlog Priorizado para Execução Paralela
 
+### P0 — Volunteer Lifecycle Orchestration
+
+- Unificar aprovação de candidatos em uma RPC canônica usada por UI, bulk actions e MCP.
+- Garantir que aprovação gere `members`, `persons`, `engagements`, onboarding, notification e agreement queue.
+- Persistir prova de contra-assinatura (`counter_signature_hash`) e corrigir evidências do termo antes de claims formais de não-repúdio.
+- Criar matriz de transições lifecycle para termo, renovação, pending-authority e offboarding.
+
 ### P1 — Permission/Tiers/RLS
 
 - Resolver estado de autoridade pendente de Herlon (`study_group_owner/leader`).
@@ -162,6 +169,18 @@ Issues abertas:
 | #164 | `infra: restore local Supabase QA stack or document remote-only workflow` | Infra/QA |
 | #165 | `docs: complete governance and release backfill p40-p201` | Governance |
 | #166 | `architecture: semantic layer roadmap for facts dimensions snapshots` | Foundation/Governance |
+| #168 | `ops: triage WhatsApp action intake into governed backlog` | Governance/QA |
+| #169 | `event/initiative: João Coelho IA & Competências 02 Jun 2026` | Governance/Frontend/Foundation |
+| #170 | `mcp: investigate corrupted meeting notes inserted via Claude/MCP` | MCP/AI/Foundation |
+| #171 | `access: Ana Carla cannot read governance document` | Governance/Security |
+| #172 | `webinars/comms: repact webinar calendar and Sympla lead time` | Governance/Frontend |
+| #173 | `member lifecycle: Rogério Peixoto reintegration as observer in Tribe 07` | Foundation/Governance |
+| #177 | `governance: issue current volunteer agreements for special engagement kinds` | Foundation/Governance |
+| #179 | `selection: canonical approval orchestration for volunteer lifecycle` | Foundation/Frontend |
+| #180 | `authority: ensure approved volunteers enter authoritative V4 graph` | Foundation/Governance |
+| #181 | `certificates: persist counter-signature proof and agreement evidence` | Foundation/Security |
+| #182 | `lifecycle: map agreement notifications renewals and pending-authority campaigns` | Governance/Frontend |
+| #183 | `mcp: add canonical lifecycle tools after approval agreement contracts stabilize` | MCP/AI/Foundation |
 
 As issues devem usar os labels existentes:
 
