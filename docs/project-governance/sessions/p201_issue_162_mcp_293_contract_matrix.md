@@ -4,7 +4,7 @@ title: mcp - generate 293-tool contract matrix and refresh tool reference
 lane: MCP/AI
 priority: P1
 effort: L (parser + matrix + doc refresh)
-status: ready
+status: done
 opened: 2026-05-19
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/162
 ---
@@ -112,15 +112,40 @@ MCP callsite (failures stay HTTP-200 + inside the JSON payload).
 
 ```md
 ## Handoff
+
 Issue: #162
-Branch:
-Escopo:
-Matrix rows:
-Drift detected:
+Branch: agent/issue-162 (worktree em /home/vitormrodovalho/projects/ai-pm-issue-162)
+Escopo: gerador parser + matrix + runtime cross-check + docs refresh + audit log closure. Lane MCP/AI. Zero touch em tool semantics, RPC bodies, RLS, migrations.
+Matrix rows: 293 (runtime ≡ static ≡ /health all = 293)
+Drift detected: 0 (clean cross-check)
 Files added:
-Validacao:
+- scripts/audit-mcp-tool-matrix.mjs (NOVO) — generator + runtime cross-check + drift detection
+- docs/reference/MCP_TOOL_MATRIX.md (NOVO, auto-generated) — 293 rows + summary counts + direct-table hotspots ranking
+- docs/reference/mcp-tool-matrix.json (NOVO, auto-generated) — structured per-tool data (rpcs/tables/canV4/fetch/service_role/return_shape_hint)
+Files modified:
+- .claude/rules/mcp.md (§4 nova: Contract matrix drift pre-deploy check)
+- docs/MCP_SETUP_GUIDE.md (Representative Tools agora aponta para matrix + invocation note)
+- docs/audit/P162_GAP_OPPORTUNITY_LOG.md (#36 RESOLVED com matrix + #38 follow-up upstream-ready)
+- docs/project-governance/sessions/p201_issue_162_*.md + README.md (Handoff + status done)
+Validação:
+- `node scripts/audit-mcp-tool-matrix.mjs --runtime` exits 0; output `[runtime] clean (293 runtime ≡ 293 static)` + `[ok] wrote 293 rows`
+- Spot-check 3/3 tools (update_webinar_comms_assets, promote_to_leader_track, confirm_manual_version) — matrix row casa exatamente com handler real (canV4 actions, RPC names, table touches)
+- Cross-check counts vs brief audit baseline: 293 tools ✓, 83 canV4-gated ✓, 24 direct-table (brief said 25 — small diff devido dedup per chunk), 4 external fetch ✓, 4 service_role ✓
+- No touch em supabase/functions/nucleo-mcp/index.ts (tool semantics intactas)
+- No deploy needed (parser é local-only; matrix é docs-only)
 Riscos:
+- Baixo. Parser é purely-read; matrix é docs auto-generated; mcp.md guidance é additive (não muda existing checks). 
+- Heurística return_shape_hint pode dar truncated/noisy strings (acceptable — column é informational only)
+- Se index.ts mudar quote style (single quotes para sb.rpc/sb.from), regex precisa update — preventive: pre-deploy check pega via drift quando re-roda
 Rollback:
+- Pure docs + scripts addition; revert PR se matrix estiver wrong
+- Generator script é standalone — pode ser ignorado
 Docs:
-Proximo passo:
+- docs/reference/MCP_TOOL_MATRIX.md + .json gerados; rule mcp.md §4 documenta when to regenerate (pre-deploy + após migration que muda RPC signatures)
+- Audit log items #36 RESOLVED; #38 marcada upstream-ready para issue #166 (semantic layer roadmap)
+- Documentation pin 293 tools agora self-consistent: header CLAUDE.md / .claude/rules/mcp.md / README.md / MCP_SETUP_GUIDE.md / matrix / runtime — todos = 293
+Próximo passo:
+- Issue #166 (semantic layer) pode usar matrix.json como input para definir envelope contracts per-domain
+- Pós-1 sprint QA window: confirmar zero drift surge em sessions subsequentes (rodar matrix --runtime no fim de cada session que tocou MCP)
+- Backlog: adicionar matrix regeneration como step em CI (atualmente manual)
 ```
