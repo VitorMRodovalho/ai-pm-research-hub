@@ -780,13 +780,14 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** ADR doc + contract test extension shipped together.
 - **Cross-ref:** PR #215 council platform-guardian F4 + F5; p186 migration `20260694000000`; p206 migration `20260731000000`.
 
-### 90. WATCH-213.C — Static volunteer-authority-invariants test not wired to npm test
+### 90. WATCH-213.C — Static volunteer-authority-invariants test not wired to npm test — **RESOLVED p207 (2026-05-20)**
 - **Tipo:** test infrastructure · **Severity:** HIGH (blocks coverage delivery) · **Effort:** XS
 - **Trigger:** Council platform-guardian F6 on PR #215. The static contract test `tests/contracts/volunteer-authority-invariants.test.mjs` exists on `agent/issue-180` branch but is NOT added to `package.json` `test` + `test:contracts` scripts. When PR #199 merges, the file will land in repo but be silently excluded from CI test runs.
 - **Impact:** Until corrected, the 10 static contract tests for invariants R+S coverage will not execute in CI. PR #199's claimed coverage (per its description) will be falsely advertised.
 - **Proposta:** When PR #199 merges, immediately add the test file path to both `test` and `test:contracts` in package.json — either as a sub-commit of the merged work or as a separate follow-up commit. Verify via `npm test 2>&1 | grep -c volunteer-authority-invariants` returning ≥1.
 - **Validation gate:** `npm test` output includes `volunteer-authority-invariants.test.mjs` execution.
 - **Cross-ref:** PR #215 council platform-guardian F6; PR #199; `agent/issue-180` branch HEAD.
+- **Resolution (p207 2026-05-20):** PR #199 merged via `c191254e` (admin bypass — pre-existing browser_guards env CI failure on main HEAD too). Immediately followed by direct main commit `a1fc43ce fix(p207): wire volunteer-authority-invariants static test into npm scripts` adding the file to both `test` (between member-cycle-history-self-read and edge-functions group) and `test:contracts` (at end of contracts list). Local verification: `node --test tests/contracts/volunteer-authority-invariants.test.mjs` runs 10/10 pass cleanly offline (static, no DB env). Pattern matches PR #203 fa8b7a12 + 741511ce/0ca7910a post-merge direct fixes.
 
 ### 91. OPP-213.D — `test:contracts` script missing 4 pre-existing files
 - **Tipo:** test infrastructure / pre-existing · **Severity:** LOW · **Effort:** XS
