@@ -147,6 +147,7 @@ The live source of truth is the MCP `tools/list` response. The examples below co
 | Empty response | You may not have data in that category yet |
 | ChatGPT "Internal Server Error" | Known ChatGPT beta issue — try again later |
 | OAuth window doesn't open | Check browser popup blocker settings |
+| HTTP `403 Error 1010 browser_signature_banned` on `/mcp` or `/.well-known/oauth-*` | Cloudflare BIC block. See [`docs/infra/CLOUDFLARE_MCP_RULES.md`](infra/CLOUDFLARE_MCP_RULES.md) — WAF skip rule + rate limit applied for programmatic clients (Python-urllib, etc.). |
 
 ## Architecture
 

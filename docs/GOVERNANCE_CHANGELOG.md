@@ -1621,13 +1621,15 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 ---
 
 ### GC-146 — Bloqueio Cloudflare MCP/OAuth por Browser Integrity Check
-**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Aberto
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado (p202, 2026-05-19) — issue #163 close
 
-**Decisão:** Registrar que os endpoints MCP/OAuth (`/mcp`, `/.well-known/oauth-*`, `/oauth/*`) podem ser bloqueados por Cloudflare Browser Integrity Check antes de atingir o Worker. A mitigação recomendada é uma regra Cloudflare Skip/Allow escopada a esses paths e aos componentes corretos de Bot/BIC, mantendo OAuth/PKCE/JWT/RLS como controles reais de autorização.
+**Decisão:** Registrar que os endpoints MCP/OAuth (`/mcp`, `/.well-known/oauth-*`, `/oauth/*`) podem ser bloqueados por Cloudflare Browser Integrity Check antes de atingir o Worker. A mitigação implementada é uma regra Cloudflare WAF Skip escopada a esses paths + skip de BIC/Bot Fight/Managed Challenge, compensada por rate limit em `/mcp*`. OAuth/PKCE/JWT/RLS continuam sendo os controles reais de autorização.
 
-**Justificativa:** Requests com fingerprint Python/urllib receberam `403 Error 1010 browser_signature_banned`; requests browser-like/Claude-like chegaram ao Worker e retornaram respostas esperadas. Bloqueios 1010 não aparecem em Worker Observability nem `mcp_usage_log`.
+**Justificativa:** Requests com fingerprint Python/urllib receberam `403 Error 1010 browser_signature_banned` (re-confirmado em p202 com Ray `9fe75d560886181e-RIC` em `/.well-known/oauth-authorization-server` e Ray `9fe75d585a2f181e-RIC` em `/oauth/authorize`). Requests browser-like/Claude-like chegaram ao Worker e retornaram respostas esperadas. Bloqueios 1010 não aparecem em Worker Observability nem `mcp_usage_log`, então a única evidência observável é Cloudflare Security Events filtrado por Ray ID + path.
 
-**Impacto técnico:** Nenhum código de aplicação alterado. Ação pendente no Cloudflare Security Events/WAF. Ver `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #40.
+**Impacto técnico:** Nenhum código de aplicação alterado. Spec completa em `docs/infra/CLOUDFLARE_MCP_RULES.md` (WAF custom rule `mcp-oauth-skip-bic` + rate limit `mcp-rate-limit` 100 req/min per IP). Aplicação em produção feita via dashboard Cloudflare (zone `vitormr.dev` → Security → WAF) — sem Terraform mantido, então não há artefato no repo além da spec. Smoke pós-fix valida que Python-urllib retorna 200/401 (não 403) nos paths protegidos.
+
+**Resolução:** Ver `docs/infra/CLOUDFLARE_MCP_RULES.md` para spec + verification + rollback. Audit log em `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #40 marcado RESOLVED após smoke pós-aplicação.
 
 ---
 
