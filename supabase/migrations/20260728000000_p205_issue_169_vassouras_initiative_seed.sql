@@ -37,19 +37,25 @@
 --   title, engagement (person_id, kind, initiative_id), event (initiative_id,
 --   date)). Future updates land as separate migrations or admin UI ops.
 --
--- Rollback:
---   DELETE FROM events WHERE initiative_id = '<initiative_uuid>';
---   DELETE FROM engagements WHERE initiative_id = '<initiative_uuid>';
---   DELETE FROM initiatives WHERE id = '<initiative_uuid>';
---   DELETE FROM partner_entities WHERE id = '<partner_uuid>';
---   The initiative + partner UUIDs are stable (deterministic UUIDs below) so
---   rollback is reproducible. Idempotency guards make accidental re-apply safe.
+-- Rollback (order matters — clean board children first to avoid orphans):
+--   DELETE FROM board_items WHERE board_id = '6e9af7a8-1696-4169-a1a1-c0e160600004';
+--   DELETE FROM project_boards WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600004';
+--   DELETE FROM events WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600003';
+--   DELETE FROM engagements WHERE initiative_id = '6e9af7a8-1696-4169-a1a1-c0e160600002';
+--   DELETE FROM initiatives WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600002';
+--   DELETE FROM partner_entities WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600001';
+--   All stable UUIDs in the 6e9af7a8-1696-4169-a1a1-c0e16060000X pattern.
+--   Idempotency guards make accidental re-apply safe.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
 -- 1. partner_entity — Universidade de Vassouras (Polo Saquarema)
 -- ----------------------------------------------------------------------------
 
+-- contact_email intentionally omitted from public migration per LGPD posture
+-- (council fix p205). Admin fills via UI post-merge if needed.
+-- Names of external PMI-RJ chapter board officers also generalized to role
+-- descriptors per same review.
 INSERT INTO public.partner_entities (
   id,
   name,
@@ -57,7 +63,6 @@ INSERT INTO public.partner_entities (
   description,
   partnership_date,
   contact_name,
-  contact_email,
   status,
   chapter,
   organization_id,
@@ -70,11 +75,10 @@ SELECT
   'Polo regional da Universidade de Vassouras em Saquarema (RJ). Curso de Engenharia de Software. Parceria operacional para a mesa redonda "IA & Competências" em 2026-06-02 (online + presencial). Potencial para colaboração recorrente em ensino de gestão de projetos via plataforma Núcleo IA.',
   '2026-05-19'::date,
   'João Coelho Júnior',
-  'j_coelho@id.uff.br',
   'active',
   'PMI-RJ',
   '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid,
-  'Cross-chapter (PMI-CE liaison via João Coelho Júnior; PMI-RJ chapter board engaged via Dani Paoliello, Presidente PMI-RJ). MOU stage TBD.'
+  'Cross-chapter (PMI-CE liaison via João Coelho Júnior; PMI-RJ chapter board engaged via chapter Presidente). MOU stage TBD. Contact email omitted from public migration; admin fills via UI.'
 WHERE NOT EXISTS (
   SELECT 1 FROM public.partner_entities
   WHERE name = 'Universidade de Vassouras — Polo Saquarema'
@@ -208,6 +212,7 @@ SELECT
   now(),
   jsonb_build_object(
     'capacity', 'speaker',
+    'presenter_role', 'panelist',  -- satisfies engagements_speaker_role_check intent (council fix p205)
     'angle', 'GP + IA aplicada / gestão de projetos',
     'source', 'p205_issue_169_seed'
   )
@@ -238,6 +243,7 @@ SELECT
   now(),
   jsonb_build_object(
     'capacity', 'speaker',
+    'presenter_role', 'panelist',  -- satisfies engagements_speaker_role_check intent (council fix p205)
     'angle', 'System Engineering PhD; infraestrutura / data centers',
     'source', 'p205_issue_169_seed'
   )
@@ -361,7 +367,7 @@ INSERT INTO public.board_items (id, board_id, title, description, status, curati
 SELECT '6e9af7a8-1696-4169-a1a1-c0e160600105'::uuid,
   '6e9af7a8-1696-4169-a1a1-c0e160600004'::uuid,
   'Integração institucional + continuidade',
-  'PMI-RJ chapter board (Dani Paoliello, Tatiana) no loop para pitch institucional aos alunos. Documentação: criar pasta Drive da iniciativa, vincular via /admin/portfolio. Registrar URL do WhatsApp privado em initiative.metadata.whatsapp_url via UI admin (NÃO via PR público). Pós-evento: avaliar continuidade da parceria como initiative recorrente Universidade de Vassouras.',
+  'PMI-RJ chapter board no loop para pitch institucional aos alunos. Documentação: criar pasta Drive da iniciativa, vincular via /admin/portfolio. Registrar URL do WhatsApp privado em initiative.metadata.whatsapp_url via UI admin (NÃO via PR público). Pós-evento: avaliar continuidade da parceria como initiative recorrente Universidade de Vassouras.',
   'todo', 'draft',
   '880f736c-3e76-4df4-9375-33575c190305'::uuid,
   5, '2026-06-09'::date, '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid,
