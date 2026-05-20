@@ -1633,4 +1633,17 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 
 ---
 
+### GC-147 — Semantic Layer Roadmap adotado + 5 ADRs scaffolded (P1)
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p202 · **Status:** Implementado (issue #166 close)
+
+**Decisão:** Adotar `docs/architecture/SEMANTIC_LAYER_ROADMAP.md` como prioritisation canônica das mudanças semânticas pendentes na plataforma. Roadmap mapeia 3 dimensões (facts/dimensions/snapshots) + 7 drift risks ranqueados + P0/P1/P2 prioridades. 5 ADRs P1 scaffoladas em `Status: Proposed` para implementation em sessions dedicadas, cada uma com Context/Decision/Consequences/Acceptance test/Rollback estruturados.
+
+**Justificativa:** MCP audit p201 + matriz 293-tool em #162 expuseram 3 drift classes recorrentes: (1) 24 direct-table MCP tools com risco silent-failure em mutações de schema; (2) facts sem scoping columns (`gamification_points` sem `initiative_id` documentado em ADR-0085 §3); (3) V3→V4 authority carries em `document_*` RLS policies (audit item #29 + ADR-0087 §5). Sem prioritisation canônica, cada session ataca um drift isolado sem coordenação do todo — risco de retrabalho ou cobertura parcial.
+
+**Impacto técnico:** Zero schema/RPC changes nesta session — purely planning/governance. Novos arquivos: `docs/architecture/SEMANTIC_LAYER_ROADMAP.md`, ADR-0088 (gamification_points.initiative_id), ADR-0089 (champion_criteria_catalog), ADR-0090 (effective_cycle_bounds), ADR-0091 (tribe bridge remaining), ADR-0092 (document permissions V4 sweep). Atualizados: `docs/adr/README.md` index, `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` (#29/#34/#38 marked SCAFFOLDED ou RESOLVED). Cada ADR P1 requer ratification PM separada antes de migration land (Q1-Q4 open questions enumeradas no roadmap §6).
+
+**Resolução:** Roadmap status `Adopted`; ADRs P1 status `Proposed`. P2 (direct-table-MCP encapsulation + envelope contracts + per-domain smoke) carry para próximo roadmap pass quando P1 100% landed. Audit item #38 (semantic layer opportunity) RESOLVED como roadmap-format.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

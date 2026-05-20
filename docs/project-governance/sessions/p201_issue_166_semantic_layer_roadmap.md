@@ -4,7 +4,7 @@ title: architecture - semantic layer roadmap for facts dimensions snapshots
 lane: Foundation + Governance
 priority: P2
 effort: L (roadmap + ADRs)
-status: ready (depends on #162 matrix for downstream classification)
+status: done
 opened: 2026-05-19
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/166
 ---
@@ -118,14 +118,44 @@ sweep is incomplete (carry from ADR-0087 / GAP-200.A).
 
 ```md
 ## Handoff
+
 Issue: #166
-Branch:
-Roadmap status:
-ADRs scaffolded:
+Branch: agent/issue-166 (worktree em /home/vitormrodovalho/projects/ai-pm-issue-166)
+Roadmap status: Adopted (p202, 2026-05-19) — docs/architecture/SEMANTIC_LAYER_ROADMAP.md
+ADRs scaffolded: 5 (ADR-0088 a 0092) — todas Status: Proposed
 Files:
-Validacao:
+- docs/architecture/SEMANTIC_LAYER_ROADMAP.md (NOVO) — inventory + 7-rank drift risks + P0/P1/P2 + 4 PM open questions + matrix cross-ref
+- docs/adr/ADR-0088-gamification-points-initiative-scoping.md (NOVO) — closes ADR-0085 §3 carry + audit #34
+- docs/adr/ADR-0089-champion-criteria-catalog-semantics.md (NOVO) — formaliza catalog CRUD + audit + authority (ADR-0081 amendment thread)
+- docs/adr/ADR-0090-effective-cycle-bounds-helper.md (NOVO) — single canonical "active in cycle" via VIEW
+- docs/adr/ADR-0091-tribe-bridge-remaining.md (NOVO) — Option A/B/C decision matrix para ADR-0015 C2/C4 carry; recommends C
+- docs/adr/ADR-0092-document-permissions-v4-sweep.md (NOVO) — closes ADR-0087 §5 + audit item #29
+- docs/adr/README.md — index atualizado com 5 entradas
+- docs/audit/P162_GAP_OPPORTUNITY_LOG.md — items #29/#34 marked SCAFFOLDED com ADR refs; #38 RESOLVED como roadmap-format
+- docs/GOVERNANCE_CHANGELOG.md — GC-147 nova: roadmap adopted + 5 ADRs P1 scaffolded
+- docs/project-governance/sessions/p201_issue_166_*.md + README.md — Handoff + status done
+Validação:
+- Zero SQL/RPC/migration shipped nesta session (scope adherence — implementation triggers separate sessions per ADR)
+- Roadmap doc ratified pela PM via merge desta PR (status Adopted)
+- 5 ADR scaffolds com Status: Proposed + acceptance criteria + rollback structured per template ADR-0085
+- ADR README index atualizado com one-line summary cada
+- Audit log entries closed ou marked SCAFFOLDED conforme estado
+- Cross-references coerentes: roadmap §6 lista Q1-Q4, cada ADR aponta de volta para Q correspondente
 Riscos:
+- Baixo. Pure docs-only PR; revert sem impacto se PM rejeitar prioritisation.
+- Cada P1 ADR ainda requer PM ratification individual antes de implementation session (Q1-Q4 abertos)
+- Roadmap §3 drift ranking é judgment call — outros prioritisations possíveis sob diferentes value criteria
 Rollback:
+- Revert PR. Sem DDL/RPC/Worker/EF artifacts.
+- Cada arquivo é standalone, pode ser droppado individualmente.
 Docs:
-Proximo passo:
+- 5 ADR P1 prontos para session-by-session implementation
+- Roadmap doc Adopted é canonical para próximas sessions navegarem priority
+- GC-147 marca a decisão institucional
+- Audit log item #38 RESOLVED como opportunity → roadmap conversion
+Próximo passo:
+- PM revisa + ratifica 4 open questions (Q1 NULLable, Q2 catalog authority, Q3 tribe bridge A/B/C, Q4 doc V3 horizon)
+- Após ratification: cada ADR move Status Proposed → Accepted em sua própria implementation session (com migrations + tests + GC entries específicas)
+- P2 itens (envelope contracts + per-domain smoke + direct-table-MCP triage) ficam carry até P1 100% landed
+- Pós-1 sprint QA window: verificar zero regression em existing patterns (ADRs P1 são docs-only, baixo risco regressão)
 ```
