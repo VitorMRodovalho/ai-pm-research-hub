@@ -3,6 +3,8 @@
 **Data:** 2026-05-19  
 **Status:** Diagnóstico / decisão pendente  
 **Origem:** Investigação #160 Herlon authority state
+**Spec correlata:** `docs/project-governance/P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC.md`
+**SQL audit pack:** `docs/audit/P202_VOLUNTEER_LIFECYCLE_SQL_AUDIT.md`
 
 ---
 
@@ -39,6 +41,23 @@ Special kinds com backlog aproximado de engagements ativos sem certificado/termo
 - `study_group_owner / leader`
 
 `volunteer / researcher`, `volunteer / leader` e `volunteer / co_gp` já estavam cobertos pelo fluxo anterior.
+
+### Refinamento SQL — 2026-05-19
+
+Consulta read-only em produção refinou o backlog que realmente bloqueia autoridade por `auth_engagements.requires_agreement=true AND agreement_certificate_id IS NULL`:
+
+- total active requires agreement: 52
+- active requires agreement sem certificado: 16
+- pendências por kind/role:
+  - `ambassador / ambassador`: 6
+  - `ambassador / founder`: 6
+  - `study_group_owner / leader`: 1
+  - `study_group_participant / participant`: 1
+  - `volunteer / coordinator`: 1
+  - `volunteer / manager`: 1
+- cobertura de notificação detectável: 14/16 com notificação relacionada a termo/agreement/certificate; 2/16 sem notificação detectável.
+
+O backlog anterior por special kinds continua útil como hipótese de auditoria ampla, mas o recorte acima é o queue operacional mínimo para desbloquear autoridade V4 sem shortcut manual.
 
 ---
 
@@ -116,7 +135,7 @@ A expansão da emissão para special engagement kinds deve considerar os achados
 
 - `counter_signature_hash` precisa ser persistido no certificado, não apenas retornado pela RPC de contra-assinatura.
 - `signed_ip` e `signed_user_agent` existem no schema, mas devem ser populados por um caminho server-side seguro ou documentados como não utilizados.
-- `period_end` deve ser derivado do ciclo/engagement/template vigente, não hardcoded em uma data fixa.
+- `period_end` já é derivado pela função live a partir de VEP/ciclo/histórico; há 1 certificado histórico com `period_end='2026-06-30'` que deve ser auditado/backfilled se necessário.
 - `get_my_signatures()` deve expor um pacote coerente para consulta do membro e export LGPD Art. 18.
 
 Esses pontos não bloqueiam a emissão operacional do termo vigente para Herlon, mas são ship gates antes de qualquer claim formal de não-repúdio criptográfico completo.
