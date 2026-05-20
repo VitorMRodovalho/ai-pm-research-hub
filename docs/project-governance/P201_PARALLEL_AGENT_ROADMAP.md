@@ -1,7 +1,7 @@
 # p201 Parallel Agent Roadmap
 
 **Data:** 2026-05-19  
-**Status:** Proposto para execução multiagente  
+**Status:** Adopted (ratificado em 2026-05-19 — issue #159, p202)  
 **Fonte de contexto:** `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`, `docs/audit/P162_GAP_OPPORTUNITY_LOG.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`
 
 ---
@@ -36,6 +36,21 @@ O objetivo não é maximizar alterações simultâneas. O objetivo é maximizar 
 | Governance | ADR, release, audit, runbooks | `docs/`, `AGENTS.md`, `README*` | App behavior |
 | Infra/Security | Cloudflare, CI, Supabase local, WAF | `.github/`, `wrangler.toml`, Cloudflare/Supabase config docs | Product UI |
 | QA | smoke, tests, contracts, route inventory | `tests/`, `scripts/`, QA docs | Production DDL |
+
+### Mapeamento Lane → Labels GitHub (ratificado #159, p202)
+
+Cada lane usa um label primário existente. Não foram criados labels `lane:*` dedicados para evitar abstração nova sem necessidade comprovada.
+
+| Lane | Label primário | Labels secundários comuns |
+|---|---|---|
+| Foundation | `data-integrity` | `audit-trail`, `certificates` |
+| Frontend | `ux` | (none) |
+| MCP/AI | `mcp-server` | (none) |
+| Governance | `governance` | `documentation` |
+| Infra/Security | `infrastructure` | (none) |
+| QA | `audit` | (none) |
+
+**Promotion rule (PM #159, 2026-05-19):** se a ambiguidade do mapeamento atrapalhar triagem dentro de 1 sprint pós-adoption (ex.: confusão entre `data-integrity` puramente de DB e `data-integrity` como sinônimo de Foundation lane), promover para labels `lane:foundation`, `lane:frontend`, `lane:mcp-ai`, `lane:governance`, `lane:infra-security`, `lane:qa` dedicados e migrar as issues do programa p201 (#159-#166). Trigger: PM ou main loop observa friction em triage; decisão registrada em commit subsequente + atualização desta tabela.
 
 ---
 
