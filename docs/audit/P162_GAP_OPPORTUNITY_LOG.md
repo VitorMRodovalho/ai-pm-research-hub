@@ -641,6 +641,14 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Tests fail on `write_board`-only reader queue and on V3 `designations.includes('curator')` as sole eligibility source.
 - **Cross-ref:** GitHub #194; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-016.
 
+### 70.1 P1 — Curadoria modal hides submitted artifact links and source context
+- **Tipo:** bug / UX gap · **Severity:** HIGH · **Effort:** S/M
+- **Trigger:** Fabricio reported the Débora/Agentes Autônomos item in `/admin/curatorship` does not show the article link or source folder/context needed for review. Live DB confirmed the item has `board_items.attachments` with a Google Doc link and `get_curation_dashboard()` includes `attachments`, but `ReviewRubricDialog` renders only title, tribe, SLA, assignee and description.
+- **Impact:** Curators cannot review the actual artifact without hunting in the tribe board/Drive. This breaks the "one place" curation promise and can recur for any item whose key context lives in `attachments`, `board_item_files`, checklist, Drive folder links or lifecycle history.
+- **Proposta:** Render submitted artifact links and context in the curation modal; extend future `curation_queue_state` to include `artifact_links`, `drive_links`, `checklist_summary`, source board/initiative/tribe and missing-context flags.
+- **Validation gate:** The live Débora card shows the Google Doc link in `/admin/curatorship`; an item without artifact link shows an explicit "no artifact link attached" warning.
+- **Cross-ref:** GitHub #201, #190, #188; `docs/audit/P203_CURATION_JOURNEY_AUDIT.md` C-012.
+
 ### 71. OPP-181.A — sign_volunteer_agreement re-emits is_superadmin + hardcoded operational_role
 - **Tipo:** opportunity / ADR-0011 carry · **Severity:** MEDIUM · **Effort:** S
 - **Trigger:** Council code-reviewer audit of PR #184 found that `sign_volunteer_agreement` notification fan-out uses `m.is_superadmin = true` and `m.operational_role = 'manager'` predicates plus an issuer-fallback `operational_role IN ('manager','tribe_leader')` block, all of which violate ADR-0011 (no hardcoded role lists; emergency-break `is_superadmin` outside its narrow scope). The body in this migration is byte-equivalent to the prior `20260513070000_adr0022_w1_producer_updates.sql` capture — pre-existing carry, NOT introduced by p203 #181 — but the DROP+CREATE in `20260724000000` re-emits and implicitly endorses the legacy pattern.
@@ -696,4 +704,45 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Proposta:** Dedicated cleanup session: (a) confirm `mark_member_present` + `create_event` body changes are intentional, (b) update test assertions to match current canonical auth pattern, OR (c) revert body changes if they introduced a regression.
 - **Validation gate:** `npm test` returns 1449+ pass / 0 fail / 46 skip offline.
 - **Cross-ref:** PR #184, #197 council close; p199-b/c handoff (Paulo Alves attendance fix).
+
+### 78. OPP-204.A — Cloudflare traffic analytics tab for `nucleoia.vitormr.dev`
+- **Tipo:** opportunity / feature · **Severity:** MEDIUM · **Effort:** M
+- **Trigger:** PM noted Cloudflare Analytics is collected at the `vitormr.dev` zone level and should contain traffic for the Hub subdomain. The personal site project (`~/Documents/vitormr-site`) already has a reference admin metrics surface at `vitormr.dev/admin/metrics`.
+- **Impact:** `/admin/analytics` currently covers platform/product analytics but lacks web traffic visibility: requests/pageviews over time, top paths, referrers, countries/devices and period-over-period deltas for the public Hub. Without this, public interest in `nucleoia.vitormr.dev` is invisible to governance decisions.
+- **Proposta:** Add a Cloudflare traffic tab/section under `/admin/analytics` (not `/admin/adoption`). Filter Cloudflare data by `hostname = nucleoia.vitormr.dev`; show aggregate cards, overtime chart, period comparison, top paths/referrers/countries/devices/status codes. Keep data aggregate-only and cache server-side via RPC/Edge Function/table; never expose Cloudflare tokens in frontend.
+- **Non-goal:** Do not merge anonymous Cloudflare traffic with member identities in MVP. Keep `/admin/adoption` focused on authenticated product usage.
+- **Validation gate:** `/admin/analytics` shows traffic data filtered to the Hub hostname, with no zone-wide `vitormr.dev` mixing and no Cloudflare secret in client code.
+- **Cross-ref:** GitHub #200; reference project `~/Documents/vitormr-site` (`/admin/metrics`) for implementation pattern only.
+
+### 79. WATCH-182.A — Lifecycle matrix drift watch is manual-only
+- **Tipo:** watch · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR (issue #182) `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §11. Drift watch relies on a future author re-running 4 SQL queries "when the matrix changes". There is no CI gate, scheduled job, or process owner. In 6 months, none of the queries will auto-fail — the doc will go stale silently. This is exactly the gap the audit mechanism is meant to prevent.
+- **Impact:** Lifecycle matrix becomes stale relative to live notification/cron/template state. Future council audits referencing the matrix get false confidence.
+- **Proposta:** Either (a) add a contract test in `tests/contracts/lifecycle-notifications-matrix.test.mjs` that runs the 4 queries and asserts row counts match a checked-in fixture (must be ratcheted when fixture updates), OR (b) add a quarterly `platform-guardian` checklist item — guardian regenerates matrix queries at session boot when any work touches `notifications` / `engagements` / `certificates` / selection RPCs and flags drift, AND a quarterly fallback even when no relevant work happens.
+- **Mitigation in-doc:** §11 now explicitly states `platform-guardian` is owner and quarterly is the floor cadence; this WATCH tracks the mechanization.
+- **Validation gate:** Either CI test exists OR `platform-guardian` checklist in `.claude/agents/platform-guardian.md` adds matrix-drift step.
+- **Cross-ref:** PR (#182) council close; `docs/architecture/LIFECYCLE_NOTIFICATIONS_MATRIX.md` §11.
+
+### 80. GAP-182.B — Forward-defense grep for notification dedup guards is aspirational
+- **Tipo:** gap · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §6. The doc codifies a forward-defense convention: "any new notification creation point must include `NOT EXISTS` dedup guard." This is enforced today only by manual code review (sediment from #198 council fix HIGH on `approve_selection_application`). Doc now references a concrete grep pattern, but it is not wired into `npm test` or any CI step.
+- **Impact:** Future migration adds `INSERT INTO notifications` without the guard. Council manual review may miss it. Re-introduces the same idempotency bug class that #198 council fix had to retro-fix.
+- **Proposta:** Add a CI step (or `npm test` contract test) that runs:
+  ```bash
+  grep -rn 'INSERT INTO notifications' supabase/migrations/ | grep -v 'NOT EXISTS' | grep -v '^[^:]*:[^:]*:\s*--'
+  ```
+  Fails the suite if any non-comment line matches without `NOT EXISTS` somewhere in the same statement. Allowlist for true one-shot inserts (e.g. `delivery_mode='transactional_immediate'` system alerts) via a `-- ALLOW-NO-DEDUP: reason` inline comment.
+- **Validation gate:** CI fails on synthetic test migration that omits the guard; passes when guard or allowlist comment is present.
+- **Cross-ref:** PR (#182) council close; `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §6.
+
+### 81. WATCH-182.C — Verify Gap 1 implementation honors p_dry_run=true PREREQ
+- **Tipo:** watch · **Severity:** MED (becomes BLOCKER if violated) · **Effort:** XS (a contract test)
+- **Trigger:** `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §5 Gap 1 now codifies a hard PREREQ: the future `nudge_pending_agreements_daily` cron MUST ship with `p_dry_run` parameter defaulting to `true`. PM signs off before flipping to `false`. Without enforcement, an implementer may skip the param under deadline pressure → notification storm to ~16+60 candidates including #160 special-kinds engagements.
+- **Impact:** Notification storm to ~76 recipients on first non-dry-run cron tick if PM hasn't signed off on #160 retroactive scope.
+- **Proposta:** When Gap 1 implementation issue opens, add a contract test asserting:
+  - `pg_get_function_arguments('nudge_pending_agreements_daily')` contains `p_dry_run boolean DEFAULT true`
+  - cron.job entry for this function shows the call site explicitly passes the param (or relies on default)
+  - First migration ratifying `false` requires PM sign-off note in commit body
+- **Validation gate:** Contract test exists + first non-dry-run flip has explicit PM ratification.
+- **Cross-ref:** `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §5 Gap 1 PREREQ; GitHub #160 (special-kinds historical attestation decision).
 
