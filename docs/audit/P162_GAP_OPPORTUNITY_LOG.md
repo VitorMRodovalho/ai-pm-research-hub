@@ -714,3 +714,35 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** `/admin/analytics` shows traffic data filtered to the Hub hostname, with no zone-wide `vitormr.dev` mixing and no Cloudflare secret in client code.
 - **Cross-ref:** GitHub #200; reference project `~/Documents/vitormr-site` (`/admin/metrics`) for implementation pattern only.
 
+### 79. WATCH-182.A — Lifecycle matrix drift watch is manual-only
+- **Tipo:** watch · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of PR (issue #182) `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §11. Drift watch relies on a future author re-running 4 SQL queries "when the matrix changes". There is no CI gate, scheduled job, or process owner. In 6 months, none of the queries will auto-fail — the doc will go stale silently. This is exactly the gap the audit mechanism is meant to prevent.
+- **Impact:** Lifecycle matrix becomes stale relative to live notification/cron/template state. Future council audits referencing the matrix get false confidence.
+- **Proposta:** Either (a) add a contract test in `tests/contracts/lifecycle-notifications-matrix.test.mjs` that runs the 4 queries and asserts row counts match a checked-in fixture (must be ratcheted when fixture updates), OR (b) add a quarterly `platform-guardian` checklist item — guardian regenerates matrix queries at session boot when any work touches `notifications` / `engagements` / `certificates` / selection RPCs and flags drift, AND a quarterly fallback even when no relevant work happens.
+- **Mitigation in-doc:** §11 now explicitly states `platform-guardian` is owner and quarterly is the floor cadence; this WATCH tracks the mechanization.
+- **Validation gate:** Either CI test exists OR `platform-guardian` checklist in `.claude/agents/platform-guardian.md` adds matrix-drift step.
+- **Cross-ref:** PR (#182) council close; `docs/architecture/LIFECYCLE_NOTIFICATIONS_MATRIX.md` §11.
+
+### 80. GAP-182.B — Forward-defense grep for notification dedup guards is aspirational
+- **Tipo:** gap · **Severity:** MED · **Effort:** S
+- **Trigger:** Council code-reviewer audit of `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §6. The doc codifies a forward-defense convention: "any new notification creation point must include `NOT EXISTS` dedup guard." This is enforced today only by manual code review (sediment from #198 council fix HIGH on `approve_selection_application`). Doc now references a concrete grep pattern, but it is not wired into `npm test` or any CI step.
+- **Impact:** Future migration adds `INSERT INTO notifications` without the guard. Council manual review may miss it. Re-introduces the same idempotency bug class that #198 council fix had to retro-fix.
+- **Proposta:** Add a CI step (or `npm test` contract test) that runs:
+  ```bash
+  grep -rn 'INSERT INTO notifications' supabase/migrations/ | grep -v 'NOT EXISTS' | grep -v '^[^:]*:[^:]*:\s*--'
+  ```
+  Fails the suite if any non-comment line matches without `NOT EXISTS` somewhere in the same statement. Allowlist for true one-shot inserts (e.g. `delivery_mode='transactional_immediate'` system alerts) via a `-- ALLOW-NO-DEDUP: reason` inline comment.
+- **Validation gate:** CI fails on synthetic test migration that omits the guard; passes when guard or allowlist comment is present.
+- **Cross-ref:** PR (#182) council close; `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §6.
+
+### 81. WATCH-182.C — Verify Gap 1 implementation honors p_dry_run=true PREREQ
+- **Tipo:** watch · **Severity:** MED (becomes BLOCKER if violated) · **Effort:** XS (a contract test)
+- **Trigger:** `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §5 Gap 1 now codifies a hard PREREQ: the future `nudge_pending_agreements_daily` cron MUST ship with `p_dry_run` parameter defaulting to `true`. PM signs off before flipping to `false`. Without enforcement, an implementer may skip the param under deadline pressure → notification storm to ~16+60 candidates including #160 special-kinds engagements.
+- **Impact:** Notification storm to ~76 recipients on first non-dry-run cron tick if PM hasn't signed off on #160 retroactive scope.
+- **Proposta:** When Gap 1 implementation issue opens, add a contract test asserting:
+  - `pg_get_function_arguments('nudge_pending_agreements_daily')` contains `p_dry_run boolean DEFAULT true`
+  - cron.job entry for this function shows the call site explicitly passes the param (or relies on default)
+  - First migration ratifying `false` requires PM sign-off note in commit body
+- **Validation gate:** Contract test exists + first non-dry-run flip has explicit PM ratification.
+- **Cross-ref:** `LIFECYCLE_NOTIFICATIONS_MATRIX.md` §5 Gap 1 PREREQ; GitHub #160 (special-kinds historical attestation decision).
+
