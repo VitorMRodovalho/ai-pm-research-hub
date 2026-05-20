@@ -491,7 +491,49 @@ Próxima ação:
 
 ---
 
-## 7. Próximas Ações Recomendadas
+## 7. Wave 3 — QA/QC Operacional
+
+### 7.1 Route Smoke — Produção
+
+`curl -L` anônimo retornou `200` para:
+
+| Rota | HTTP |
+|---|---:|
+| `/admin/curatorship` | 200 |
+| `/initiative/6a93cc94-c4a0-4280-8ea7-452ec6ec48a5` | 200 |
+| `/publications` | 200 |
+| `/notifications` | 200 |
+
+Interpretação:
+
+- Não há falha de roteamento/SSR básica nas superfícies principais.
+- Esse smoke não valida acesso autenticado nem RPCs da ilha; os gaps de autorização permanecem em #185/#186.
+
+### 7.2 Logs Supabase — Últimas 24h
+
+Evidência:
+
+- API logs recentes mostram RPCs de board/card/notifications retornando `200`.
+- Edge Function `send-notification-email` executa com `200` em cron a cada 5 min.
+- `nucleo-mcp` aparece com `200/202` e um `406` isolado, sem correlação direta com curadoria.
+- Postgres logs mostram alguns `permission denied for function get_pending_ratifications` / `401` em API, fora do fluxo de curadoria.
+
+Interpretação:
+
+- Infra de email transacional está viva; o problema de curadoria é catálogo/tipo/destinatário, não outage da Edge Function.
+- Nenhum blocker novo de rota/log foi identificado para a auditoria p203.
+
+### 7.3 Supabase Advisors
+
+Rodado advisor de segurança como smoke geral. O output inclui achados existentes como `security_definer_view` e `rls_enabled_no_policy` em superfícies não relacionadas diretamente à curadoria. Como esta wave não alterou DDL/RLS, eles não foram abertos como novos blockers p203.
+
+Próxima ação se for aprofundar segurança:
+
+- Rodar uma auditoria dedicada de advisors/security drift e reconciliar com o baseline aceito do projeto.
+
+---
+
+## 8. Próximas Ações Recomendadas
 
 1. Corrigir gates das reader RPCs da fila (`get_curation_dashboard`, `list_curation_pending_board_items`) para `curate_content`.
 2. Criar notificação/broadcast transacional ou digest explícito para o Comitê quando item entra em `curation_pending`.
