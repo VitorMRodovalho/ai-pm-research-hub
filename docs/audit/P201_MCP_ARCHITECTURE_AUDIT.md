@@ -154,6 +154,12 @@ Confirmado:
 7. **Parallel agent governance:** padronizar worktrees, lanes, handoff e gates — GitHub #159.
 8. **Herlon authority state:** decidir acordo/certificado vs requirement vs UX pendente — GitHub #160.
 9. **Sensitive UI gates:** auditar `hasPermission(...)` e migrar superfícies sensíveis para `canFor(...)` — GitHub #161.
+10. **Agreement issuance for special kinds:** emitir termo vigente para special engagement kinds sem certificado e sem shortcut de autoridade — GitHub #177.
+11. **Approval orchestration:** `/admin/selection` aprova via `admin_update_application`, mas o caminho completo `finalize_decisions` está órfão no frontend — GitHub #179.
+12. **V4 provisioning pós-aprovação:** aprovação precisa garantir `members` + `persons` + `engagements` + termo/certificado sem depender de seed manual — GitHub #180.
+13. **Certificate non-repudiation:** `counter_signature_hash` é calculado na contra-assinatura mas não persistido no certificado — GitHub #181.
+14. **Lifecycle notifications:** special engagement kinds e estados pendentes não têm campanha/cron/onboarding consistente para termo, renovação e desbloqueio de autoridade — GitHub #182.
+15. **MCP lifecycle wrappers:** ferramentas MCP cobrem partes do ciclo, mas não expõem contratos canônicos para aprovação final, assinatura de termo e emissão/countersign de acordos — GitHub #183.
 
 ---
 
@@ -194,7 +200,74 @@ Consulta live em `members`, `engagements`, `can_by_member` e `get_caller_capabil
 
 ---
 
-## 6. Próximas Ondas
+## 6. Auditoria Lifecycle do Voluntário
+
+### 6.1 Diagnóstico Integrado
+
+O funil está maduro na entrada (`pmi-vep-sync`, `selection_applications`, portal por token, avaliações e entrevistas), mas a conversão de candidato aprovado em membro V4 autoritativo ainda está fragmentada.
+
+| Domínio | Achado | Risco | Próxima ação |
+|---|---|---|---|
+| Seleção | UI usa `admin_update_application`; `finalize_decisions` existe mas não é chamado pelo frontend | candidato aprovado pode não virar `member` completo quando ainda não existe em `members` | Unificar em RPC canônica de aprovação |
+| Identidade V4 | caminhos de aprovação não garantem `person_id` e `engagements` | `can()`/`can_by_member()` não concedem autoridade apesar do status operacional | Provisionar `persons` + `engagements.selection_application_id` no mesmo contrato |
+| Agreement | special kinds ficam com `requires_agreement=true` e `agreement_certificate_id=NULL` | líderes/colaboradores aparecem ativos, mas sem autoridade V4 | Implementar fila `pending_agreement_engagements` e emissão do termo vigente |
+| Certificados | contra-assinatura computa hash sem persistência em coluna | prova criptográfica da contra-assinatura fica fora do registro persistido | Persistir `counter_signature_hash` e reforçar audit log |
+| Crons/campanhas | notificações cobrem parte do funil, mas special kinds e renovações dependem de rotinas dispersas | onboarding e comunicação falham silenciosamente em reentrada ou engagement especial | Criar matriz cron/campaign por transição de lifecycle |
+| Admin surfaces | `/admin/selection`, `/admin/members`, `/admin/certificates` mostram partes do estado, mas não explicam pending-authority | GP vê `observer` ou acesso negado sem entender que falta termo/countersign | Expor estado "autoridade pendente de assinatura" |
+| MCP | MCP tem ferramentas sobre seleção, membros, initiatives e offboarding, mas faltam wrappers para contratos críticos | agentes podem operar em estados parciais, sem finalizar decisão ou termo | Adicionar tools canônicas após estabilizar RPCs |
+
+### 6.2 Contrato Canônico Proposto
+
+Criar uma orquestração única `approve_selection_application` ou equivalente, em vez de duplicar lógica entre `admin_update_application`, `finalize_decisions`, UI e MCP:
+
+1. Validar autoridade com `can_by_member()` e registrar audit log.
+2. Criar ou reativar `members` e garantir `persons`.
+3. Criar `engagements` com `selection_application_id`, `kind`, `role`, escopo e datas.
+4. Criar onboarding progress canônico.
+5. Emitir ou enfileirar termo vigente quando `requires_agreement=true`.
+6. Disparar notification/campaign apropriada.
+7. Expor estado de autoridade via `auth_engagements` sem shortcut manual em `is_authoritative`.
+
+### 6.3 Gates de Validação
+
+- Contract test: aprovar candidato novo gera `member`, `person`, `engagement`, onboarding e notification.
+- Contract test: `admin_update_application` e `finalize_decisions` têm paridade ou um deles é deprecado explicitamente.
+- Invariante: `selection_applications.status IN ('approved','converted')` não pode apontar para membro sem `person_id`, salvo exceção documentada.
+- Query operacional: active engagement com `requires_agreement=true` e `agreement_certificate_id IS NULL` aparece em fila admin.
+- MCP smoke: tool de aprovação e tool de termo retornam envelope estável e não deixam `mcp_usage_log.success=false`.
+
+### 6.4 Evidência SQL Produção — 2026-05-19
+
+Consulta read-only via Supabase MCP confirmou o tamanho real dos gaps:
+
+| Evidência | Resultado | Interpretação |
+|---|---:|---|
+| `selection_applications.status IN ('approved','converted')` | 38 | universo aprovado/convertido atual |
+| aprovados/convertidos sem `members` por email | 1 | confirma que o caminho de aprovação pode deixar candidato sem membro |
+| aprovados/convertidos com `member` mas sem `person_id` | 0 | V4 identity linkage está íntegro para os matches existentes |
+| active `auth_engagements.requires_agreement=true` | 52 | universo que depende de termo/certificado |
+| active requires agreement sem `agreement_certificate_id` | 16 | backlog real de authority pending |
+| pending agreement sem notificação detectável de termo/agreement | 2 | cobertura de comunicação existe, mas não é completa |
+| certificados totais | 42 | 41 `volunteer_agreement`, 1 `contribution` |
+| certificados com `counter_signed_at` | 33 | contra-assinatura operacional existe |
+| coluna `counter_signature_hash` | 0 | prova criptográfica da contra-assinatura não tem destino persistente |
+| `signed_ip` / `signed_user_agent` ausentes em certificados emitidos/assinados | 42 / 42 | schema prevê evidência, fluxo atual não popula |
+| `signature_hash` ausente em emitidos/assinados | 1 | residual a auditar/backfill |
+
+Distribuição de pending agreement por kind/role:
+
+- `ambassador/ambassador`: 6
+- `ambassador/founder`: 6
+- `study_group_owner/leader`: 1
+- `study_group_participant/participant`: 1
+- `volunteer/coordinator`: 1
+- `volunteer/manager`: 1
+
+Nota de correção: a função live `sign_volunteer_agreement()` deriva `period_end` de VEP/ciclo/histórico; não há hardcode simples para 30-Jun no corpo atual. A base possui 1 certificado histórico com `period_end='2026-06-30'`, então a ação correta é auditar/backfill de dados legados e manter teste de derivação.
+
+---
+
+## 7. Próximas Ondas
 
 ### Onda A — MCP Contract Inventory
 

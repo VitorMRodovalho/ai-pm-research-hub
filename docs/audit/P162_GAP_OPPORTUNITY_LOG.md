@@ -423,6 +423,9 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Impact:** Herlon is visibly a leader of a study group but receives no operational capabilities, and the single-value `operational_role` cache remains `observer`.
 - **Decision needed:** Either (a) issue/sign the required agreement/certificate for the study group owner engagement; (b) amend `engagement_kind_permissions` / agreement requirements for `study_group_owner`; or (c) treat this as intentional pending-authority state and add UX explaining "leadership pending agreement".
 - **Cross-ref:** Existing Item #4 Track E root and ADR-0080 pending cutover.
+- **Follow-up p202:** Investigation by Claude Code confirmed Herlon did **not** receive or sign a current volunteer agreement/certificate. The active term/template exists and 41 volunteers already signed it, while newer documents are under review. PM position: Herlon should sign the current term now; if/when the new term is approved, he signs an addendum or the new term as applicable.
+- **Expanded scope:** This is not just Herlon. The April admin_attestation batch covered only `engagement_kind='volunteer'`; special engagement kinds are orphaned from certificate issuance. Approximate active missing-cert backlog: `chapter_board/board_member` (9), `ambassador` (12), `workgroup_member/researcher` (6), `observer/observer` (5), `sponsor/sponsor` (5), `chapter_board/liaison` (4), `committee_*` (6), `study_group_owner/leader` (1 — Herlon), plus other cases. `volunteer/researcher`, `volunteer/leader`, `volunteer/co_gp` are covered.
+- **Decision status:** Deferred for PM/team review. Do not shortcut authority by toggling `is_authoritative`; fix issuance/onboarding flow first.
 - **Cross-ref:** Recent migration `20260722000000_p201_bug_201_a_cancelled_event_attendance_display.sql` touched `get_attendance_grid`; regression check should compare before/after payload shape and function signature.
 
 ### 45. MED-201.A — CuratorshipBoardIsland canFor() inconsistent with AdminNav under superadmin simulation — RESOLVED
@@ -446,4 +449,60 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Impact:** Low for this specific migration (live body is known and matches), but the pattern is fragile if reused.
 - **Proposta:** Prefer full `CREATE OR REPLACE FUNCTION` (the pattern used by `20260722010000`) for future similar fixes; or add a post-patch assertion that confirms the new body no longer contains the removed string.
 - **Cross-ref:** Migration `20260722020000` lines 45-53.
+
+### 48. P0 — Selection approval UI bypasses complete lifecycle orchestration
+- **Tipo:** issue/architecture · **Severity:** CRITICAL · **Effort:** L
+- **Trigger:** Lifecycle audit found `/admin/selection` approving via `admin_update_application`, while the richer `finalize_decisions` path is not referenced by the frontend.
+- **Impact:** Approval from the real admin UI can update application/member status without guaranteeing the complete side effects expected by the volunteer lifecycle: new `members`, canonical onboarding seed, V4 `persons`, `engagements`, notifications, agreement issuance and audit trace.
+- **Proposta:** Introduce a canonical approval RPC (`approve_selection_application` or equivalent) and move UI/MCP/bulk actions to it. Deprecate or wrap `admin_update_application` and `finalize_decisions` so there is one source of truth.
+- **Validation gate:** Contract test for "candidate approved from UI" must assert `selection_applications`, `members`, `persons`, `engagements`, onboarding and notification effects.
+- **Cross-ref:** GitHub #179; `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` section 6; `tests/contracts/selection-interview-decision.test.mjs`.
+
+### 49. P0 — Approved members can remain outside authoritative V4 graph
+- **Tipo:** gap · **Severity:** CRITICAL · **Effort:** M/L
+- **Trigger:** Lifecycle audit found approval paths that do not guarantee `members.person_id` and do not provision `engagements` linked to `selection_application_id`.
+- **Impact:** A member may look approved or active through legacy/cache fields while `can()` / `can_by_member()` returns no operational capability. Herlon is the visible instance of the broader pending-authority class, but this also affects future approvals and re-engagements.
+- **Proposta:** Add an invariant/backfill strategy for approved/converted applicants: ensure `person_id`, create scoped engagement from template, link `engagements.selection_application_id`, and surface explicit waivers where an engagement is intentionally non-authoritative.
+- **Validation gate:** Extend schema invariants or add DB-aware contract tests for approved applications without `person_id` / engagement.
+- **Cross-ref:** GitHub #180; ADR-0007, ADR-0011, p170 VEP engagement linkage, item #44.
+
+### 50. P0 — `counter_signature_hash` is computed but not persisted
+- **Tipo:** security/auditability issue · **Severity:** CRITICAL for formal non-repudiation · **Effort:** S/M
+- **Trigger:** Certificate governance audit found `counter_sign_certificate()` computes a counter-signature hash but returns it to the caller without writing it to the certificate row.
+- **Impact:** The platform records who countersigned and when, but the cryptographic proof of the counter-signature is not persisted. Operational audit remains usable; formal non-repudiation claims should remain conditional until fixed.
+- **Proposta:** Add/persist `counter_signature_hash` (or use existing column if present but unwritten), update `counter_sign_certificate()`, add audit log assertion and regression test.
+- **Validation gate:** Counter-sign a certificate in test and assert persisted hash, audit log row, notification, and unchanged member-facing certificate payload.
+- **Cross-ref:** GitHub #181; `docs/project-governance/P202_AGREEMENT_ISSUANCE_GAP.md`, certificates RPC cluster.
+
+### 51. P1 — Volunteer agreement evidence fields are incomplete
+- **Tipo:** compliance gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Certificate governance audit found `signed_ip` and `signed_user_agent` columns exist but are not populated by the Termo flow; `period_end` is hardcoded to 30-Jun, which breaks terms signed after July.
+- **Impact:** Evidence package for signature context is weaker than the schema suggests, and term validity periods can be wrong for later-cycle signatures or off-cycle engagements.
+- **Proposta:** Capture IP/user-agent through a safe server-side path, derive `period_end` from cycle/engagement/template rules, and update `get_my_signatures()` to expose a complete LGPD Art. 18-friendly view.
+- **Validation gate:** New signature test must assert IP/user-agent handling, period derivation and user export payload shape.
+- **Cross-ref:** GitHub #181; LGPD Art. 18 workflow, `sign_volunteer_agreement`, `get_my_signatures`.
+
+### 52. P1 — Lifecycle cron/campaign coverage is incomplete for special kinds and renewals
+- **Tipo:** gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Crons/campaigns audit mapped existing notification routines but found no consistent automation for special engagement agreement issuance, pending-authority reminders, renewal reminders and re-engagement communication.
+- **Impact:** Volunteers can be approved or assigned to leadership-like engagements without receiving the right agreement/onboarding communication. Failures appear as permission problems instead of lifecycle state problems.
+- **Proposta:** Build a lifecycle transition matrix (`selected`, `approved`, `agreement_pending`, `signed`, `countersigned`, `authoritative`, `renewal_due`, `offboarded`) mapped to cron/campaign/RPC owners.
+- **Validation gate:** For each transition, define owner table, idempotency key, notification template and observable audit log.
+- **Cross-ref:** GitHub #182; `/admin/campaigns`, Resend send pipeline, p202 agreement issuance.
+
+### 53. P1 — MCP lacks canonical lifecycle tools for approval and agreement workflows
+- **Tipo:** semantic-layer gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** MCP lifecycle audit found tools around members, selection, interviews, initiatives and offboarding, but no canonical wrappers for `finalize_decisions`, agreement signing/issuance/countersign, or the proposed approval orchestration.
+- **Impact:** AI agents can inspect lifecycle state and operate around it, but cannot safely complete the critical transition from candidate to authoritative volunteer without falling back to partial tools or manual admin actions.
+- **Proposta:** After the approval/agreement RPC contracts are stabilized, add MCP tools with explicit gates and stable envelopes: approve application, list pending agreement engagements, issue current agreement, countersign certificate, explain pending authority.
+- **Validation gate:** MCP contract matrix must include dependencies, gates, expected payload and smoke test for each lifecycle tool.
+- **Cross-ref:** GitHub #183, #162, #166; `supabase/functions/nucleo-mcp/index.ts`, `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`.
+
+### 54. P1 — Admin surfaces do not present pending-authority state coherently
+- **Tipo:** UX/governance gap · **Severity:** HIGH · **Effort:** M
+- **Trigger:** Admin surfaces audit found `/admin/selection`, `/admin/members`, `/admin/certificates` and related panels each show fragments of the lifecycle, but they do not explain "engagement active, authority blocked pending agreement/countersign" as a coherent state.
+- **Impact:** GP/admins may interpret Herlon-style cases as permission bugs or manually adjust roles, instead of completing the agreement flow that unlocks V4 authority.
+- **Proposta:** Add a shared pending-authority component or dashboard card sourced from `auth_engagements` / pending agreement query. Show next action, responsible role and link to certificate/term workflow.
+- **Validation gate:** Herlon-class fixture should show explicit pending agreement state in member detail/admin certificate surfaces, without granting capabilities before signature/countersign.
+- **Cross-ref:** Items #44, #177, #48-#53.
 
