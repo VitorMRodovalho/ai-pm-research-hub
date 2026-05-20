@@ -278,12 +278,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 
 **Runtime evidence collected:** Supabase Edge Function logs show recent `nucleo-mcp/mcp` calls returning HTTP `200/202`; live `tools/list` returns **293 tools**; `check_schema_invariants()` returns **16/16 invariants with 0 violations**; `mcp_usage_log` has **0 failures in the last 14 days**. Historical MCP failures confirm the expected post-migration drift class (`tribe_id`, `member_status_transitions`, `cpmai_sessions`) but no active recurrence.
 
-### 29. GAP — `document_*` RLS policies retêm V3 gates sem backlog formal
+### 29. GAP — `document_*` RLS policies retêm V3 gates sem backlog formal — SCAFFOLDED (ADR-0092, p202)
 - **Tipo:** gap · **Severity:** HIGH · **Effort:** M
 - **Trigger:** Migration `20260721000000_p201_gap_200_a_v4_curator_rls_swap.sql` explicitly preserves three `document_*` policies with `operational_role IN ('manager','deputy_manager','tribe_leader')` and `chapter_board` / `chapter_witness` designation checks, marked as out of scope for ADR-0087 and "tracked separately".
 - **Impact:** When chapter-board style authority is granted only through V4 engagements, these governance document policies can silently deny access.
 - **Proposta:** Create ADR-0088 or an equivalent backlog item for the final document-permissions V4 sweep; include smoke tests proving V4 chapter-board access before removing the carry gates.
 - **Cross-ref:** ADR-0011, ADR-0087, migration `20260721000000`.
+- **Follow-up p202 (issue #166):** ADR-0092 scaffolded (`docs/adr/ADR-0092-document-permissions-v4-sweep.md`) com 3 V3 policies identificadas + mapping V3→V4 actions + shadow window 48-72h + smoke 22 governance MCP tools. Implementation deferida para session dedicada após PM Q4 (deprecation horizon V3 policies).
 
 ### 30. GAP — Platform Guardian spec desatualizado: 15 invariantes / 83 ADRs / 289 tools — RESOLVED
 - **Tipo:** gap · **Severity:** MEDIUM · **Effort:** XS
@@ -310,12 +311,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Impact:** Curators still lack a unified queue across governance docs, manuals, webinars, and board items.
 - **Proposta:** Prioritize only after curator feedback confirms the workspace board is being used.
 
-### 34. GAP — `gamification_points` lacks `initiative_id` for strict semantic scoping
+### 34. GAP — `gamification_points` lacks `initiative_id` for strict semantic scoping — SCAFFOLDED (ADR-0088, p202)
 - **Tipo:** gap · **Severity:** MEDIUM · **Effort:** M
 - **Trigger:** ADR-0085 documents that XP metrics in `exec_cross_initiative_comparison` remain cohort-scoped because `gamification_points` has no `initiative_id`.
 - **Impact:** Initiative/tribe gamification can overstate or misattribute XP across initiatives.
 - **Proposta:** Add `initiative_id uuid` to `gamification_points` with backfill/trigger strategy from event or award context; create ADR if this becomes a semantic contract change.
 - **Cross-ref:** ADR-0085, GAP-194.B.
+- **Follow-up p202 (issue #166):** ADR-0088 scaffolded (`docs/adr/ADR-0088-gamification-points-initiative-scoping.md`) com schema change + backfill rules (4 sources) + trigger forward-strategy + RPC update plan + acceptance test. Implementation deferida para session dedicada após PM Q1 (NULLable forever vs eventual NOT NULL).
 
 ### 35. GAP — User-facing MCP docs drift from runtime tool inventory
 - **Tipo:** gap · **Severity:** MEDIUM · **Effort:** XS
@@ -347,6 +349,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Proposta:** Define domain-level semantic contracts for `member`, `initiative`, `board`, `selection`, `governance`, `curation`, and `gamification`; prefer stable RPC/view envelopes for AI-facing tools; add smoke tests that call a representative tool per domain and assert envelope shape plus no `mcp_usage_log.success=false`.
 - **Cross-ref:** ADR-0005, ADR-0007, ADR-0011, ADR-0012, ADR-0015, ADR-0085.
 - **Follow-up p202 (issue #162 partial input ready):** `docs/reference/MCP_TOOL_MATRIX.md` agora documenta direct-table-access hotspots (24 tools, com `members`/`board_items`/`project_boards`/`events` no topo) + 83 canV4-gated + 4 external fetch + 4 service_role. Esse mapa é upstream para o semantic layer roadmap (issue #166). Próximo passo (issue #166): definir envelope contracts per-domain + smoke tests por domínio.
+- **Follow-up p202 (issue #166 — roadmap ADOPTED):** `docs/architecture/SEMANTIC_LAYER_ROADMAP.md` adopted com inventory facts/dimensions/snapshots + 7-rank drift risk table + P0/P1/P2 prioritization. 5 P1 scaffolds em `docs/adr/`: ADR-0088 (gamification_points.initiative_id), ADR-0089 (champion_criteria_catalog), ADR-0090 (effective_cycle_bounds), ADR-0091 (tribe bridge remaining), ADR-0092 (document permissions V4 sweep). P2 (direct-table-MCP encapsulation + envelope contracts + per-domain smoke) carry para próximo roadmap pass quando P1 100% landed. Status: opportunity #38 RESOLVED como roadmap-format; implementation per-ADR triggers individual sessions.
 
 ### 39. ISSUE — Local Supabase stack cannot start from migrations
 - **Tipo:** issue · **Severity:** HIGH for local debug/QA · **Effort:** M
