@@ -229,6 +229,14 @@ BEGIN
     INTO v_default_days, v_requires_agreement
   FROM public.engagement_kinds ek WHERE ek.slug = v_engagement_kind;
 
+  -- Council fix: protect against historical-cycle backfill creating an engagement
+  -- with status='active' AND end_date < CURRENT_DATE (no current invariant catches
+  -- the active+past-end_date case; Q only catches expired+future). When the cycle
+  -- has already ended, fall back to the kind's default_duration_days from today.
+  IF v_cycle_end_date IS NOT NULL AND v_cycle_end_date < CURRENT_DATE THEN
+    v_cycle_end_date := NULL;
+  END IF;
+
   -- Idempotent: skip if active engagement for same person+kind already exists.
   -- Backfill selection_application_id when missing.
   SELECT id INTO v_existing_engagement_id
@@ -303,15 +311,25 @@ BEGIN
   PERFORM public.check_pre_onboarding_auto_steps(v_member_id);
 
   -- (h) Notification (7-arg variant: recipient/type/title/body/link/source_type/source_id).
-  PERFORM public.create_notification(
-    v_member_id,
-    'selection_approved',
-    'Parabéns! Você foi aprovado no Núcleo IA',
-    'Sua candidatura foi aprovada. Acesse a plataforma para iniciar o onboarding.',
-    '/onboarding',
-    'selection_application',
-    p_application_id
-  );
+  -- Council fix: guard against duplicate selection_approved notification on idempotent
+  -- re-invocation (canonical may be called twice for the same application, e.g., manual
+  -- re-approval or finalize_decisions batch including an already-approved row).
+  IF NOT EXISTS (
+    SELECT 1 FROM public.notifications
+    WHERE recipient_id = v_member_id
+      AND type = 'selection_approved'
+      AND source_id = p_application_id
+  ) THEN
+    PERFORM public.create_notification(
+      v_member_id,
+      'selection_approved',
+      'Parabéns! Você foi aprovado no Núcleo IA',
+      'Sua candidatura foi aprovada. Acesse a plataforma para iniciar o onboarding.',
+      '/onboarding',
+      'selection_application',
+      p_application_id
+    );
+  END IF;
 
   -- (i) Audit trail.
   INSERT INTO public.data_anomaly_log (anomaly_type, severity, description, context)
@@ -424,14 +442,16 @@ BEGIN
 
     v_canonical_result := public.approve_selection_application(p_application_id, p_data);
 
-    -- Surface canonical errors but preserve admin_update_application's return shape.
+    -- Council fix: when canonical fails, RAISE so the entire transaction rolls back
+    -- (the UPDATE selection_applications SET status='approved' above must NOT commit
+    -- without the V4 graph being populated, otherwise invariant R is violated). The
+    -- prior RETURN-with-error JSON pattern caused PostgREST to surface HTTP 200 +
+    -- {error:...} while leaving the UPDATE committed → status='approved' with no
+    -- member/person/engagement.
     IF (v_canonical_result->>'success') IS DISTINCT FROM 'true' THEN
-      RETURN json_build_object(
-        'error',         coalesce(v_canonical_result->>'error', 'Canonical approval failed'),
-        'old_status',    v_old_status,
-        'new_status',    v_new_status,
-        'canonical',     v_canonical_result
-      );
+      RAISE EXCEPTION 'Canonical approval failed: %', coalesce(v_canonical_result->>'error', 'unknown')
+        USING ERRCODE = 'P0001',
+              DETAIL = v_canonical_result::text;
     END IF;
 
     v_member_id      := (v_canonical_result->>'member_id')::uuid;
@@ -556,29 +576,39 @@ BEGIN
       CONTINUE;
     END IF;
 
-    -- Normal decision update.
-    UPDATE public.selection_applications SET
-      status     = v_status,
-      feedback   = coalesce(v_feedback, feedback),
-      updated_at = now()
-    WHERE id = v_app_id;
-
     IF v_status = 'approved' THEN
-      v_approved_count := v_approved_count + 1;
+      -- Council fix: wrap per-decision approve flow in BEGIN/EXCEPTION sub-block
+      -- so a canonical failure rolls back THIS decision (status UPDATE + partner
+      -- flag + canonical side-effects) WITHOUT aborting the rest of the batch.
+      -- The prior pattern UPDATE'd status BEFORE canonical and silently swallowed
+      -- canonical failures — that left the application in status='approved' with
+      -- no member/person/engagement (invariant R violation).
+      BEGIN
+        UPDATE public.selection_applications SET
+          status     = v_status,
+          feedback   = coalesce(v_feedback, feedback),
+          updated_at = now()
+        WHERE id = v_app_id;
 
-      -- Partner chapter flag (same pattern as admin_update_application).
-      IF NOT EXISTS (
-        SELECT 1 FROM public.selection_membership_snapshots
-        WHERE application_id = v_app_id AND is_partner_chapter = true
-      ) THEN
-        UPDATE public.selection_applications SET tags = array_append(tags, 'no_partner_chapter')
-        WHERE id = v_app_id AND NOT ('no_partner_chapter' = ANY(tags));
-      END IF;
+        -- Partner chapter flag (same pattern as admin_update_application).
+        IF NOT EXISTS (
+          SELECT 1 FROM public.selection_membership_snapshots
+          WHERE application_id = v_app_id AND is_partner_chapter = true
+        ) THEN
+          UPDATE public.selection_applications SET tags = array_append(tags, 'no_partner_chapter')
+          WHERE id = v_app_id AND NOT ('no_partner_chapter' = ANY(tags));
+        END IF;
 
-      -- Delegate to canonical.
-      v_canonical_result := public.approve_selection_application(v_app_id, '{}'::jsonb);
+        v_canonical_result := public.approve_selection_application(v_app_id, '{}'::jsonb);
 
-      IF (v_canonical_result->>'success') = 'true' THEN
+        IF (v_canonical_result->>'success') IS DISTINCT FROM 'true' THEN
+          RAISE EXCEPTION 'Canonical approval failed for application %: %',
+                          v_app_id,
+                          coalesce(v_canonical_result->>'error', 'unknown')
+            USING ERRCODE = 'P0001';
+        END IF;
+
+        v_approved_count := v_approved_count + 1;
         v_member_id         := (v_canonical_result->>'member_id')::uuid;
         v_promoted_this_app := coalesce((v_canonical_result->>'role_promoted')::boolean, false);
         v_target_role       := v_canonical_result->>'promoted_to';
@@ -588,12 +618,32 @@ BEGIN
         IF v_promoted_this_app THEN
           v_promoted_count := v_promoted_count + 1;
         END IF;
-      END IF;
+      EXCEPTION WHEN OTHERS THEN
+        -- Sub-tx rolled back automatically; status NOT committed. Surface the
+        -- failure via canonical_result so per-decision audit row records it,
+        -- and let the loop continue with the next decision (best-effort batch).
+        v_member_id        := NULL;
+        v_canonical_result := jsonb_build_object('success', false, 'error', SQLERRM);
+      END;
 
     ELSIF v_status = 'rejected' THEN
+      UPDATE public.selection_applications SET
+        status     = v_status,
+        feedback   = coalesce(v_feedback, feedback),
+        updated_at = now()
+      WHERE id = v_app_id;
       v_rejected_count := v_rejected_count + 1;
     ELSIF v_status = 'waitlist' THEN
+      UPDATE public.selection_applications SET
+        status     = v_status,
+        feedback   = coalesce(v_feedback, feedback),
+        updated_at = now()
+      WHERE id = v_app_id;
       v_waitlisted_count := v_waitlisted_count + 1;
+    ELSE
+      -- Unknown decision: still record audit row but do not change application
+      -- status to avoid silent corruption of the workflow state machine.
+      v_canonical_result := jsonb_build_object('success', false, 'error', 'unknown_decision', 'decision', v_status);
     END IF;
 
     -- Audit per-decision.
@@ -640,6 +690,13 @@ BEGIN
   );
 END;
 $function$;
+
+-- Council fix: explicit REVOKE/GRANT on wrappers (CREATE OR REPLACE inherits prior
+-- privileges silently, which the prior migrations relied on without documenting).
+REVOKE ALL ON FUNCTION public.admin_update_application(uuid, jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_update_application(uuid, jsonb) TO authenticated;
+REVOKE ALL ON FUNCTION public.finalize_decisions(uuid, jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.finalize_decisions(uuid, jsonb) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
 
