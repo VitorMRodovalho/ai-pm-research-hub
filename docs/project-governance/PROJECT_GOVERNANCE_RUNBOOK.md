@@ -20,6 +20,7 @@ Sim, continuamos a usar o **GitHub Project** para gestão de sprints e backlog.
 6. Para analytics partner-facing, usar o checklist em `docs/project-governance/ANALYTICS_V2_PARTNER_VALIDATION.md`.
 7. Itens em `In progress` devem ser **GitHub Issues** no repositório (não Drafts). Crie a issue se ainda não existir.
 8. Ao commitar, referencie o sprint/issue (ex.: `fix: S-HF5 data patch (#XX)`).
+9. Para trabalho **paralelo por múltiplos agentes/modelos** (Claude Code, Cursor, Codex, etc.), siga `docs/project-governance/P201_PARALLEL_AGENT_ROADMAP.md` (Adopted #159) — lanes, handoff obrigatório, gates por tipo de mudança. Use o template `.github/ISSUE_TEMPLATE/parallel_agent_task.yml` ao abrir issues desse programa.
 
 ---
 
