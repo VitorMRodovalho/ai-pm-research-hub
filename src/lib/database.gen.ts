@@ -13998,6 +13998,7 @@ export type Database = {
         Returns: Json
       }
       get_partner_pipeline: { Args: never; Returns: Json }
+      get_pending_agreement_engagements: { Args: never; Returns: Json }
       get_pending_countersign: { Args: never; Returns: Json }
       get_pending_ratifications: {
         Args: never
