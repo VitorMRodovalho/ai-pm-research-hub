@@ -517,9 +517,12 @@ async function run() {
     await analyticsPage.locator('#analytics-panel').waitFor({ state: 'visible' });
     assert.equal(await analyticsPage.locator('#analytics-denied').isVisible(), false);
     assert.equal(await analyticsPage.locator('#analytics-filter-cycle').isVisible(), true);
-    assert.equal(await analyticsPage.locator('#analytics-quality-banner').isVisible(), true);
     assert.equal(await analyticsPage.locator('#analytics-interpretation-card').isVisible(), true);
-    assert.match(await analyticsPage.locator('#kpi-cohort-members').textContent() || '', /10/);
+    // p211: exec_funnel_summary + exec_analytics_v2_quality dropped p59 (see
+    // analytics.astro:loadAnalyticsV2 comment). Removed assertions that depended
+    // on mock data from those RPCs — funnel/quality renders null in real prod.
+    // Coverage retained: filter shell, interpretation card, leadership matrix,
+    // copy button + Scope line all flow through exec_role_transitions (live).
     await analyticsPage.waitForFunction(
       () => (document.getElementById('analytics-transition-matrix')?.textContent || '').match(/researcher|tribe_leader/),
       { timeout: 10000 }
@@ -528,8 +531,6 @@ async function run() {
     await analyticsPage.locator('#analytics-copy-summary').click();
     const copiedSummary = await analyticsPage.evaluate(() => (window).__copiedSummary || '');
     assert.match(copiedSummary, /Scope:/);
-    assert.match(copiedSummary, /Funnel => total: 10/);
-    assert.match(copiedSummary, /Quality => issues: 0, warnings: 0/);
     await analyticsPage.close();
 
     await page.close();
