@@ -240,6 +240,15 @@ const PROFILE_I18N = {
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
+  // p207 (Issue #216, 2026-05-20): import t() runtime translator. The script body
+  // below calls t('profile.xp.howToEarn', lang) etc ~25 times at runtime (XP pillars
+  // + champions + journey labels). Frontmatter `import { t } from '../i18n/utils'`
+  // is SERVER-side only; this inline <script> runs in the browser and needs its
+  // own client-side import. Without this line, minified bundle has unresolved `t`
+  // calls → "ReferenceError: t is not defined". Note: this is a DIFFERENT class
+  // than p158/p184 (those were TDZ + TS-annotation issues on `lp`, see comments
+  // around `const lp` below).
+  import { t } from '../i18n/utils';
 
   const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
   // p158 hotfix#8 (Fixes AI-PM-RESEARCH-HUB-1P): module-level so myWeekHtml + renderProfile +
