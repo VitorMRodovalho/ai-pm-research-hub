@@ -59,7 +59,7 @@ Claude Code doesn't auto-initiate OAuth. Workaround:
 }
 ```
 
-Token expires in 1 hour. Refresh by repeating step 2-3.
+Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth connector flow when available; if using this manual workaround, refresh by repeating step 2-3.
 
 ### Cursor / VS Code
 
@@ -148,13 +148,13 @@ node scripts/audit-mcp-tool-matrix.mjs --runtime
 - **Row Level Security (RLS)** enforced on every query — you only see data your role permits
 - **No personal data exposed** — emails, phones are excluded from tool responses
 - **Write guards** — only tribe leaders, GP, and deputy can use write tools
-- **Tokens expire** in 1 hour — no persistent access
+- **Access tokens expire** in 1 hour; OAuth clients should use refresh tokens. Claude.ai refreshes through `/oauth/token`, and the `/mcp` proxy also attempts server-side refresh via KV for continuity.
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| "Unauthorized" | Token expired — log in again |
+| "Unauthorized" | Token expired or refresh failed — reconnect the OAuth connector. If this happens in under 24h, check refresh-token metadata/logs; it is not expected steady-state behavior. |
 | "Permission denied" | Your role doesn't have access to that tool |
 | Empty response | You may not have data in that category yet |
 | ChatGPT "Internal Server Error" | Known ChatGPT beta issue — try again later |

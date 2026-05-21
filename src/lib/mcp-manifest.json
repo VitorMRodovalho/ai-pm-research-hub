@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-05-08T19:10:24.359Z",
+  "generated_at": "2026-05-21T04:23:02.089Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 283,
+  "total": 293,
   "by_domain": {
     "personal": 20,
-    "tribe": 82,
+    "tribe": 87,
     "board": 64,
     "events": 15,
     "governance": 22,
     "comms": 12,
     "partners": 11,
-    "gamification": 8,
-    "selection": 23,
+    "gamification": 12,
+    "selection": 24,
     "knowledge": 11,
     "admin": 1,
     "health": 14
   },
   "by_permission": {
-    "read": 177,
+    "read": 187,
     "write": 97,
     "admin": 9
   },
@@ -185,6 +185,13 @@
       "is_sensitive": false
     },
     {
+      "name": "compute_pert_cutoff",
+      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists pert_target_score/pert_band_lower/upper/cohort_n on every application in the cycle. Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Use BEFORE committee final decision to refresh the cutoff band against the current pool of active members.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "deselect_tribe",
       "description": "Remove a seleção de tribe do caller. Wrap RPC existente.",
       "domain": "tribe",
@@ -311,6 +318,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_notifications_analytics",
+      "description": "Returns notifications send rates and breakdown for window (default 28d): overall counts, by_delivery_mode (transactional_immediate / digest_weekly / suppress) with send_rate + avg_send_latency_minutes, by_type (top 20) with per-type send_rate, daily timeseries (last 30d). Use to triage 'are notifications being sent?' or which types lag. NOTE: open/click/bounce data lives in campaign_recipients (use get_comms_metrics_by_channel for campaign-level rates). Authority: view_internal_analytics.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_operational_alerts",
       "description": "Returns operational alerts — inactivity, overdue cards, taxonomy drift. Admin/GP only.",
       "domain": "tribe",
@@ -320,6 +334,13 @@
     {
       "name": "get_person",
       "description": "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_pert_cutoff_summary",
+      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Use to assess whether candidates land within the calibration band of approved members. Admin/curator (manage_member).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -396,7 +417,14 @@
     },
     {
       "name": "get_tribes_comparison",
-      "description": "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.",
+      "description": "BREAKING SHAPE CHANGE post-p192: response is now a V4 envelope { initiatives: [...], kinds_present: [...], generated_at } — NOT a V3 row array. Returns cross-initiative comparison (research_tribes by default; supports all kinds via `kind` param): attendance rate, cards done/total, impact hours (strict-scoped to initiative events post-p194 GAP-192.C), events, last meeting, member count, members_inactive_30d (strict-scoped to initiative events post-p194 GAP-194.A), XP (cohort-scoped: total XP earned by initiative members across all chapter activities, see GAP-194.B). Pass kind = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' to filter, or kind = 'all' for cross-kind. Omit for research_tribe (preserves V3 behavior). Admin/GP only (manage_platform OR view_chapter_dashboards).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_vep_divergence_report",
+      "description": "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -418,6 +446,13 @@
     {
       "name": "list_ai_processing_log",
       "description": "ARM Onda 3 (ADR-0074): admin observability over ai_processing_log (LGPD Art. 37 audit). Filter by application_id, purpose (triage|briefing|qualitative|enrichment|other), status (running|completed|failed), limit 1-200. Returns rows with hashes truncated (12 chars). Auth: view_internal_analytics.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_ai_suggestions",
+      "description": "Returns AI-generated evaluation suggestions for an application (from selection_evaluation_ai_suggestions). Closes the producer→consumer loop: analyze_application generates, submit_evaluation accepts via ai_suggestion_id. Filter by evaluation_type ('objective'|'interview'|'leader_extra') and/or only_pending=true (excludes already-consumed or superseded). Each suggestion includes suggested_scores + suggested_criterion_notes + suggested_weighted_subtotal + suggested_overall_summary + model_provider/name + is_pending flag. Auth: committee membership of the cycle OR manage_member. Logs PII access.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -564,7 +599,7 @@
     },
     {
       "name": "bulk_mark_excused",
-      "description": "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Tribe leaders can mark own tribe. Admins can mark anyone.",
+      "description": "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Initiative leaders can mark members of shared initiatives. Org-scope admins (manage_event globally) can mark anyone.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -1264,7 +1299,7 @@
     },
     {
       "name": "meeting_close",
-      "description": "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. Returns drift_signal flag + counter set. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo'.",
+      "description": "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. p171 #9 (Track B): also accepts suggested_champion_ids[] — member UUIDs the closer suggests for Champion. UI /admin/gamification deep-link reads these for prefill/nudge. Returns drift_signal flag + counter set + suggestions_count. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo + sugiro Champion pra Y e Z'.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false
@@ -1620,8 +1655,29 @@
       "is_sensitive": false
     },
     {
+      "name": "award_champion",
+      "description": "Award a Champion to a member for standout contribution. Surfaces: 'general' (plenary meeting), 'tribe' (tribe meeting), 'deliverable' (artifact/deliverable completion). V4-gated by award_champion action (org-scope for general; initiative-scope for tribe/deliverable). Caps: 3/2/1 per-event, 3 per-grantor-per-event, soft-warn at 5+8+3 per-cycle. Auto-computes points via gamification_rules (base 30/20/40 + 5/criterion, capped 50/40/60). Recipient must be present at event (general/tribe) or be assigned_member/created_by (deliverable). criteria_met: 1-4 strings; justification: ≥50 chars.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_champions_ranking",
+      "description": "Ranking of Champion recipients within scope (global or initiative) for a cycle. Returns aggregated stats: total_points + counts by surface (general/tribe/deliverable). Respects LGPD opt-out (gamification_opt_out). Limit clamp [1,100]. Useful for /tribe/[id] leaderboard or /admin transparency UX.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_initiative_gamification",
       "description": "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_member_champions_history",
+      "description": "Chronological history of Champions received by a member. Self-view always allowed; cross-member view requires view_pii action OR target not opted-out. Returns history[] (per-Champion details with awarder name, criteria, justification, status) + totals (active_count, revoked_count, active_points, breakdown by surface). Audit-load-bearing.",
       "domain": "gamification",
       "permission": "read",
       "is_sensitive": false
@@ -1655,6 +1711,13 @@
       "is_sensitive": false
     },
     {
+      "name": "revoke_champion",
+      "description": "Revoke a Champion previously awarded. Soft-revokes row (status=revoked + audit fields) AND deletes corresponding gamification_points (no XP compounding from revoked Champions). Authority: original awarder within 7-day window, OR manage_platform anytime. Reason ≥10 chars required (audit). ADR p161 Q5.7.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "recalculate_cycle_rankings",
       "description": "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.",
       "domain": "gamification",
@@ -1678,6 +1741,13 @@
     {
       "name": "analyze_application",
       "description": "ARM-3 Onda 3 (ADR-0074): triggers AI triage scoring (Claude Sonnet 4.6 + cached rubric) for a selection_application. Updates ai_triage_score (0-10) + ai_triage_reasoning + ai_triage_confidence. NON-BINDING per LGPD Art. 20 §1 — decisão humana é autoritária. Requires consent_ai_analysis_at NOT NULL on the application. Admin only (manage_member). Logs to ai_processing_log.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "analyze_application_video",
+      "description": "p197d D1 (2026-05-19): triggers AI video analysis for an application. For each uploaded pmi_video_screening row, generates a suggestion in selection_evaluation_ai_suggestions (evaluation_type='video') via Whisper (transcription) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail → score per pillar). NON-BINDING per LGPD Art. 20 — humano evaluator decides via submit_evaluation(ai_suggestion_id=...). Skips pillars with pending suggestion unless force=true. Auth: committee membership of cycle OR manage_member (gated at JS via view_pii + at RPC via cycle-scoped committee check). Returns dispatch envelope {dispatched, application_id, pillar, force, dispatch_id}; analysis runs async — re-call list_ai_suggestions after ~30-60s to see results.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1733,7 +1803,7 @@
     },
     {
       "name": "get_evaluation_form",
-      "description": "Returns the evaluation form template for an application: cycle's criteria + your existing draft (if any). evaluation_type: 'objective' | 'interview' | 'leader_extra'. Use BEFORE submit_evaluation/submit_interview_scores to discover the rubric.",
+      "description": "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of approved active members from prior cycles), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1810,14 +1880,14 @@
     },
     {
       "name": "submit_evaluation",
-      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview with application_summary so you can verify context. With confirm=true: writes to selection_evaluations (irreversible after phase closes).",
+      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of approved active members from prior cycles) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
     },
     {
       "name": "submit_interview_scores",
-      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns preview. With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
+      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of approved active members) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false

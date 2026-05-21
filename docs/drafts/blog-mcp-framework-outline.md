@@ -2,7 +2,7 @@
 
 **Status:** ✅ **Shipped 2026-05-08 (p122e)** — PM autorizou publicar sem aguardar CR-050 ratificação.
 **Slug:** `mcp-server-launch` (mantido — preserva URLs/SEO/inbound do Trentim/social).
-**Numbers refreshed:** 283 ferramentas (177R + 97W + 9 admin), 12 domínios, 48 voluntários, 7 tribos, 15 capítulos PMI Brasil, 1.295h impacto, 246 reuniões. Manifest regenerado em sync.
+**Numbers refreshed:** 293 ferramentas (187R + 97W + 9 admin), 12 domínios, 48 voluntários, 7 tribos, 15 capítulos PMI Brasil, 1.295h impacto, 246 reuniões. Manifest regenerado em sync em 2026-05-21. Public blog ainda precisa ser republicado/atualizado no conteúdo DB se estiver servindo versão 283.
 **Smoke prod:** PT-BR / EN (`?lang=en-US`) / ES (`?lang=es-LATAM`) renderizando OK. EN/ES via `/en/blog/{slug}` e `/es/blog/{slug}` fazem meta-refresh ao mesmo endpoint com query param.
 
 **Audience:** Primary persona per product-leader council = **PMI Chapter Operator/President**. Secondary: PMs corporativos curiosos sobre AI-native ops.
@@ -31,7 +31,7 @@
 > "Gestores de projeto passam 30-40% do tempo localizando informação dispersa — ata no Drive, decisão no WhatsApp, KPI na planilha. O MCP do Núcleo conecta tudo em um único ponto via chat. A IA não substitui o gestor; amplifica o tempo dele para decisão, não para localização."
 
 **Componentes do framework (tabela ou lista visual):**
-- **Plataforma** (banco + RPCs) — Supabase Postgres com 236 ferramentas operacionais expostas
+- **Plataforma** (banco + RPCs) — Supabase Postgres com 293 ferramentas operacionais expostas
 - **MCP** (camada conectora) — 1 EF expõe tudo via OAuth 2.1 + permissões `can_by_member()`
 - **Drive** (documentos) — atas, arquivos, deliverables das tribos auto-discovered (ADR-0064/0065)
 - **Chat** (interface) — Claude.ai / Claude Code / Cursor / outros clientes MCP
@@ -43,17 +43,17 @@
 - Curador busca recursos da biblioteca por tópico
 - Tudo com auth + audit log + LGPD-compliant
 
-**Diferencial Núcleo:** processo seletivo assistido por IA (Gemini 2.5 + comissão híbrida), gamificação automática, governança documentada via 67+ ADRs públicos.
+**Diferencial Núcleo:** processo seletivo assistido por IA (Gemini 2.5 + comissão híbrida), gamificação automática, governança documentada via 90+ ADRs públicos.
 
 ### Seção 3 — Números ao vivo + link para o catálogo
 ~100 palavras.
 
 **Texto:**
-> "Hoje o servidor MCP do Núcleo expõe **236 ferramentas, 4 prompts e 3 recursos**, organizados em 12 domínios. Read tools (148): consulta de membros, eventos, KPIs, atas, biblioteca. Write tools (79): criar cards, registrar presença, atualizar boards, propor versões. Admin tools (9): operações de gestão por membros autorizados.
+> "Hoje o servidor MCP do Núcleo expõe **293 ferramentas, 4 prompts e 3 recursos**, organizados em 12 domínios. Read tools (187): consulta de membros, eventos, KPIs, atas, biblioteca. Write tools (97): criar cards, registrar presença, atualizar boards, propor versões. Admin tools (9): operações de gestão por membros autorizados.
 >
 > [**Ver catálogo completo →** /docs/mcp](/docs/mcp)"
 
-Não listar as 236 inline. O link para /docs/mcp resolve.
+Não listar as 293 inline. O link para /docs/mcp resolve.
 
 ### Seção 4 — Jornada de exemplo (case study mini)
 ~300 palavras. Story de 5 passos com 1 voluntário concreto (anonimizado ou com permissão).
@@ -98,7 +98,7 @@ Pesquisador (no Claude.ai chat):
 - 31 Edge Functions deployable
 
 **Núcleo-specific (não replicável só lendo README):**
-- 67+ ADRs documentando *por quê* de cada decisão (Domain Model V4, IP ratification, drift prevention)
+- 90+ ADRs documentando *por quê* de cada decisão (Domain Model V4, IP ratification, drift prevention)
 - 30 migrations consolidadas + RLS policies + LGPD compliance
 - Modelo de membro/engagement/initiative refinado em 7 fases de refactor
 - Volunteer flywheel + brand PMI
