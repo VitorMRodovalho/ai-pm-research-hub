@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_audit_log: {
@@ -9153,7 +9128,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id: string | null
-          verified_at: string | null
         }
         Insert: {
           added_at?: string
@@ -9163,7 +9137,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id?: string | null
-          verified_at?: string | null
         }
         Update: {
           added_at?: string
@@ -9173,7 +9146,6 @@ export type Database = {
           kind?: string
           member_id?: string
           organization_id?: string | null
-          verified_at?: string | null
         }
         Relationships: [
           {
@@ -9209,6 +9181,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_emails_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -19937,7 +19916,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id: string
-          verified_at: string
         }[]
       }
       member_resolve_email: { Args: { p_email: string }; Returns: string }
@@ -21145,9 +21123,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       re_engagement_state: [

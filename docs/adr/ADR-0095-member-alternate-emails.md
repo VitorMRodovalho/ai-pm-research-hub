@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Accepted (amended 2026-05-21 — see end) |
 | Date | 2026-05-21 |
 | Author | Antigravity (Assisted-By: Gemini) |
-| Migrations | [20260802000008_member_alternate_emails.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000008_member_alternate_emails.sql) |
+| Migrations | [20260802000008_member_alternate_emails.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000008_member_alternate_emails.sql), [20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql), [20260802000010_p213_205_invariant_synthetic_filter.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000010_p213_205_invariant_synthetic_filter.sql), [20260802000011_p214_205b_member_emails_organization_id_fk.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000011_p214_205b_member_emails_organization_id_fk.sql), [20260802000012_p215_205c_drop_member_emails_verified_at.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000012_p215_205c_drop_member_emails_verified_at.sql) |
 | Cross-ref | [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
-| Closes | Issue #205 |
+| Closes | Issue #205 (GAPs A/B closed p214; C closed p215) |
 
 ## Context
 
@@ -31,9 +31,9 @@ We create the table `public.member_emails` with the following attributes:
 - `email` (citext UNIQUE NOT NULL)
 - `is_primary` (boolean NOT NULL DEFAULT false)
 - `kind` (text NOT NULL CHECK (kind IN ('personal', 'institutional', 'chapter', 'other')))
-- `verified_at` (timestamptz)
+- ~~`verified_at` (timestamptz)~~ — **removed 2026-05-21 via Amendment / GAP-205.C, see end**
 - `added_at` (timestamptz NOT NULL DEFAULT now())
-- `organization_id` (uuid)
+- `organization_id` (uuid REFERENCES public.organizations(id) ON DELETE RESTRICT — FK added 2026-05-21 via GAP-205.B / migration 20260802000011)
 
 To guarantee that each member has exactly one primary email, we define a partial unique index:
 ```sql
@@ -78,3 +78,14 @@ We redefine `check_schema_invariants()` to include `T_member_has_exactly_one_pri
 - **Security Hardening**: Data is isolated at the tenant/organization boundary (`auth_org()`) and direct API manipulations are prevented via restrictive RLS and revoked grants.
 - **Invariants Enforcement**: Any drift or breach is immediately detected by the schema invariants test suite.
 - **Backward Compatibility**: Existing code writing to `public.members.email` continues to work seamlessly due to the trigger sync, automatically populating primary entries in `public.member_emails`.
+
+## Amendment 2026-05-21 (GAP-205.C / P162 #118)
+
+The `verified_at` column was dropped via migration `20260802000012_p215_205c_drop_member_emails_verified_at.sql`. Rationale:
+
+- **Dead schema**: at p214 close (2026-05-21) the column had zero write paths anywhere in migrations / RPCs / EFs / src / tests. All 73 backfilled rows had `verified_at IS NULL`.
+- **YAGNI**: no caller exists; future devs would wonder why the column exists. System policy "don't add features for hypothetical future requirements" applies.
+- **Reversibility**: re-adding is a trivial `ALTER TABLE ADD COLUMN verified_at timestamptz` + `DROP/CREATE member_list_emails` if and when a verification flow becomes a real product requirement. Migration 20260802000012 documents the rollback in its header.
+- **Pre-existing alternative**: Supabase Auth already verifies primary emails through its standard flow; an alternate-email verification flow would require custom token generation + email-send + verify RPC + UI, which does not exist yet. When that work is scoped, the column can be reintroduced alongside its consumers (not before).
+
+`member_list_emails` RPC return TABLE was simultaneously updated to remove the `verified_at` field. No other RPC, trigger, or invariant referenced the column, so the migration scope is narrow.
