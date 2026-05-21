@@ -1189,3 +1189,31 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **When to ship:** Backlog. Open issue + assign owner. Once executed, this entry becomes RESOLVED-160.B and Issue #160 fully closes.
 - **Cross-ref:** Issue #160 (parent, partially closed), Issue #182 (lifecycle mapping consumer), P162 #133 (DECISION-160), P162 #134 (RESOLVED-160.A), governance_documents.id `a78311fd-cf87-4bee-b0f1-e117a36095c5`.
 
+### 136. WATCH-217.A — `validate_privacy_policy_consistency()` flags ambassador as error post-RESOLVED-160.A (false positive)
+- **Tipo:** validation drift / docs · **Severity:** MED (alert visible) · **Effort:** S (1-2h: add `is_merit_only` boolean OR exemption list in RPC OR test assertion documenting expected false positive)
+- **Trigger:** PR #250 platform-guardian MED-1 + code-reviewer corroborating note. The RPC at `migration 20260418010000` lines 268-276 raises severity=`error` for any kind where `legal_basis='consent' AND NOT requires_agreement`, with message "Consent-based kind does not require agreement. LGPD Art. 8 requires explicit consent documentation." Post-RESOLVED-160.A, ambassador (legal_basis=consent, requires_agreement=false) trips this branch.
+- **Description:** The RPC was written under the assumption that any kind with `legal_basis='consent'` corresponds to LGPD Art. 7 I (data processing consent requiring written documentation per Art. 8). Ambassador uses "consent" in the colloquial sense — member accepts a merit recognition (no written instrument required). ADR-0008 line 25 is the canonical source: ambassador = "Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent". The RPC is currently dormant (not in MCP, not called from any page or test, only in `database.gen.ts` type gen), so no live breakage. Risk: a future session runs the RPC as a health check, sees the "error", and reverts the catalog fix to clear the alert.
+- **Mitigations applied this session:**
+  - Migration `20260803000001` header explicitly documents the false positive + warning to future maintainers.
+  - ADR-0006 §"Reconciliação de catálogo" 2026-05-21 documents the false positive + cross-refs this WATCH entry.
+- **Recommended long-term fix (choose one):**
+  - (A) Add `is_merit_only boolean` column to `engagement_kinds` + skip the consent check when true.
+  - (B) Add an explicit exemption list `kinds_consent_without_agreement = ARRAY['ambassador', ...]` inside the RPC.
+  - (C) Refactor the RPC to distinguish LGPD Art. 7 I consent from merit-recognition consent — possibly by reading `description` for "honorário/mérito" markers (brittle).
+- **When to ship:** Backlog. Mid-priority — no live breakage today, but addressing it removes a foot-gun that could undo a deliberate architectural decision.
+- **Cross-ref:** PR #250 platform-guardian MED-1, migration 20260418010000:268-276, ADR-0006 §"Reconciliação de catálogo" 2026-05-21, RESOLVED-160.A (#134).
+
+### 137. WATCH-217.B — `engagement-kinds-catalog-invariants.test.mjs` future-pattern coverage extension (resolved inline for ON CONFLICT + VALUES-tuple; MERGE pending)
+- **Tipo:** test robustness · **Severity:** LOW (resolved 2 of 3 cases inline) · **Effort:** XS (MERGE pattern when first MERGE migration ships)
+- **Trigger:** PR #250 platform-guardian LOW-1 (multi-row INSERT false positive) + code-reviewer LOW (ON CONFLICT DO UPDATE bypass; MERGE bypass).
+- **Description:** The original `insertReflipPattern` used `[\s\S]*?` lazy matching across an entire INSERT statement, which:
+  - **Multi-row false positive:** `INSERT INTO engagement_kinds VALUES ('ambassador', false), ('sponsor', true)` would match (ambassador followed by true somewhere downstream).
+  - **ON CONFLICT bypass:** `INSERT ... ON CONFLICT (slug) DO UPDATE SET requires_agreement=true` matches neither the UPDATE pattern (no WHERE) nor the original INSERT pattern.
+  - **MERGE bypass (theoretical):** Postgres 15+ MERGE statements not covered.
+- **Mitigations applied this session (PR #250 amendments commit):**
+  - Replaced `insertReflipPattern` with VALUES-tuple-scoped `/VALUES\s*\([^)]*'ambassador'[^)]*,\s*true[^)]*\)/i` (no multi-row false positive).
+  - Added `onConflictReflipPattern` for the upsert bypass case.
+  - Inline comment noting the MERGE gap + codebase status (zero MERGE usage today).
+- **Backlog item:** Add MERGE coverage when the first migration adopts MERGE patterns. Until then, accepted gap.
+- **Cross-ref:** PR #250 platform-guardian LOW-1, code-reviewer LOW (table row 2-3), tests/contracts/engagement-kinds-catalog-invariants.test.mjs line 105-117.
+
