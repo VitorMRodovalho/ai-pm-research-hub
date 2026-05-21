@@ -899,23 +899,18 @@ const ANALYTICS_I18N = {
     // p190 BUG-190.B: 5/6 analytics RPCs dropped p59 (migration
     // 20260426171855_drop_dead_analytics_chain_p59.sql — "dead chain" cleanup
     // missed safeRpc('NAME') wrapper in frontend audit). p190 hardcoded null
-    // here to avoid 404 + 5 toast errors per page load.
-    //
-    // p220 (issue #220 L2 fix): restored safeRpc(...) calls for `exec_funnel_summary`
-    // + `exec_analytics_v2_quality` (2 RPCs that browser-guards.test.mjs asserts
-    // via fakeSb mock at line 426/479). safeRpc was updated to silently return
-    // null on error (no user toast — preserves p190's no-noise intent). In real
-    // prod where these RPCs don't exist, calls 404 silently + render code handles
-    // null gracefully (`if (funnel) renderFunnelChart(...)` pattern). The other
-    // 3 dropped RPCs (impact, cert, roi) stay hardcoded null — test doesn't need
-    // them. Layout refresh tracked in OPP-190.I.
+    // here. p209/p220 L2 restored calls solely to satisfy browser-guards
+    // mock assertions — but real PostgREST 404'd them, dirtying DevTools.
+    // p211 reverts to hardcoded null and updates tests to match reality.
+    // Only exec_role_transitions is a live RPC in this chain.
+    // Restoration plan tracked in OPP-190.I (canonical analytics rebuild).
     const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
-      safeRpc('exec_funnel_summary'),
+      Promise.resolve(null),
       Promise.resolve(null),
       Promise.resolve(null),
       Promise.resolve(null),
       safeRpc('exec_role_transitions'),
-      safeRpc('exec_analytics_v2_quality'),
+      Promise.resolve(null),
     ]);
 
     // p190 BUG-190.B council follow-up: post-p59 only `leadership` is a live RPC.
