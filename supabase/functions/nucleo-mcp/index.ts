@@ -6678,6 +6678,89 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
     await logUsage(sb, member.id, "member_add_alternate_email", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL: member_remove_alternate_email (ADR-0095 GAP-205.D)
+  mcp.tool("member_remove_alternate_email", "ADR-0095 GAP-205.D: Remove an alternate email from a member. Rejects primary (use member_set_primary_email to promote a different alternate first). Returns true if removed, false if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address to remove")
+  }, async (params: { member_id: string; email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_remove_alternate_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_remove_alternate_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_remove_alternate_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_remove_alternate_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_remove_alternate_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_set_primary_email (ADR-0095 GAP-205.D)
+  mcp.tool("member_set_primary_email", "ADR-0095 GAP-205.D: Promote a registered alternate to primary via UPDATE members.email (fires sync trigger; preserves alt kind). Idempotent on already-primary. Raises if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The email address to set as primary (must already be registered as primary or alternate for this member)")
+  }, async (params: { member_id: string; email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_set_primary_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_set_primary_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_set_primary_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_set_primary_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_set_primary_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_update_alternate_email_kind (ADR-0095 GAP-205.D)
+  mcp.tool("member_update_alternate_email_kind", "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address whose kind to change"),
+    new_kind: z.enum(["personal", "institutional", "chapter", "other"]).describe("The new kind value")
+  }, async (params: { member_id: string; email: string; new_kind: "personal" | "institutional" | "chapter" | "other" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_update_alternate_email_kind", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_update_alternate_email_kind", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_update_alternate_email_kind", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+      p_new_kind: params.new_kind,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_update_alternate_email_kind", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_update_alternate_email_kind", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -6688,7 +6771,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.76.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.78.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6708,6 +6791,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.76.1", tools: 293, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.78.0", tools: 299, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
