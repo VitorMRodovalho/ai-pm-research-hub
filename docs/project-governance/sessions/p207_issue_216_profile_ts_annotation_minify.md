@@ -4,9 +4,23 @@ title: profile.astro — strip module-level TS annotations from inline <script> 
 lane: Frontend
 priority: P1
 effort: S (profile.astro fix) + M (broader audit + forward defense)
-status: spec ready — awaiting agent claim
+status: RESOLVED p207 — DIAGNOSIS REVISED, PR #223 (bb95bb03) merged. See PR description + Issue #216 comment 4504200204 for real cause. **TL;DR: this spec was wrong about TS annotations; real fix was 1-line `import { t } from '../i18n/utils'` in the <script> block.**
 opened: 2026-05-20
+closed: 2026-05-20 (same day, p207 session)
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/216
+pr: https://github.com/VitorMRodovalho/ai-pm-research-hub/pull/223
+---
+
+> **⚠️ DIAGNOSTIC REVISION NOTE (p207 close)**
+>
+> This spec hypothesized that the bug was the 3rd recurrence of TS-annotation × Vite-minify trap (p158/p184 class on `lp`). **Empirical disproof during execution**: stripping all 22 module-level annotations produced bundle byte-identical to broken prod (same hash `v3Zqq7wC.js` + md5 `418784e95fc0830e2c749c305a109485`). Esbuild strips TS annotations BEFORE Vite minification, so source-level annotations are no-op for output bundle.
+>
+> **Real root cause**: inline `<script>` calls `t('profile.xp.howToEarn', lang)` ~25× at runtime but never imports `t` (frontmatter imports server-side only; script runs in browser).
+>
+> **Real fix (PR #223)**: 1-line `import { t } from '../i18n/utils';` at top of `<script>` block. Bundle hash CHANGED `v3Zqq7wC` → `CGuhpcmD`.
+>
+> **The body of this spec below is HISTORICAL — kept for archaeological reference. The fix that shipped is 1-line, not 22-line. Future agents reading this for context: see PR #223 description + Issue #216 comment for the actual diagnosis path.**
+
 ---
 
 # p207 Session Brief — Profile /profile ReferenceError (TS annotation × Vite minify)
