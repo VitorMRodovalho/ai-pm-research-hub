@@ -98,3 +98,20 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 - [ ] Herlon tem 2 engagements distintos (ambassador + study_group_owner) — **PENDENTE** aguarda VEP formal
 - [ ] Export LGPD gera JSON por engagement com base legal — **POSTERGADO Fase 7**
 - [ ] MCP tools migram para `getPerson() + getActiveEngagements()` — **POSTERGADO Fase 7**
+
+## Reconciliação de catálogo
+
+### 2026-05-21 (p217, issue #160) — `engagement_kinds(ambassador).requires_agreement` corrigido de `true` para `false`
+
+O seed inicial de `engagement_kinds` (cutover V4, 2026-04-13) gravou a linha de `ambassador` com `requires_agreement=true`, contradizendo o modelo canônico descrito na linha 55 deste ADR (`kind=ambassador, status=active, legal_basis=consent, end_date=null, agreement=null` — mérito, sem termo). A própria coluna `description` da linha já alertava: "Reconhecimento honorário / mérito. Sem termo obrigatório."
+
+A drift foi descoberta durante investigação do issue #160 (Herlon authority state): 12 dos 16 engagements no backlog de "pending agreement" eram ambassadors que o design nunca exigiu termo. Ambassadors não possuem nenhuma linha em `engagement_kind_permissions` — o flag não concedia capacidades V4, apenas mantinha o cache de `auth_engagements.is_authoritative=false` indevidamente.
+
+**Fix:** Migration `20260803000001_p217_160_ambassador_catalog_fix.sql` aplicou `UPDATE engagement_kinds SET requires_agreement=false WHERE slug='ambassador'`. Efeitos:
+- 12 engagements ambassador (8 membros distintos) flip para `is_authoritative=true` via a branch `OR NOT COALESCE(ek.requires_agreement, false)` da view `auth_engagements`.
+- Zero side-effects de capacidade V4 (0 linhas em `engagement_kind_permissions` para esse kind).
+- Backlog real de termo cai de 16 → 4 (Herlon study_group_owner + Fernando study_group_participant + Vitor volunteer x2).
+
+**Forward-defense:** Teste `tests/contracts/engagement-kinds-catalog-invariants.test.mjs` impede que migrations futuras re-introduzam a drift.
+
+**Cross-ref:** Issue #160 (parcialmente fechado para os 8 ambassadors; 1 study_group_owner Herlon segue rastreado), P162 RESOLVED-160.A, decisão DECISION-160 path A' picada pelo PM em 2026-05-21.
