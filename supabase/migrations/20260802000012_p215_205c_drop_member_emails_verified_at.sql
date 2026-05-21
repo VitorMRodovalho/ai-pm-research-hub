@@ -23,7 +23,9 @@
 
 BEGIN;
 
--- 1. Drop existing RPC (return TABLE shape changes; CREATE OR REPLACE refuses)
+-- 1. Drop existing RPC. CREATE OR REPLACE FUNCTION cannot change the RETURNS
+--    TABLE column set on an existing function (errors with `cannot change
+--    return type of existing function`), so we explicitly DROP first per GC-097.
 DROP FUNCTION IF EXISTS public.member_list_emails(uuid);
 
 -- 2. Drop the dead-schema column
