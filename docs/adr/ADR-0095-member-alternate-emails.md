@@ -5,7 +5,7 @@
 | Status | Accepted (amended 2026-05-21 GAP-205.C + GAP-205.D — see end) |
 | Date | 2026-05-21 |
 | Author | Antigravity (Assisted-By: Gemini) |
-| Migrations | 20260802000008_member_alternate_emails.sql, 20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql, 20260802000010_p213_205_invariant_synthetic_filter.sql, 20260802000011_p214_205b_member_emails_organization_id_fk.sql, 20260802000012_p215_205c_drop_member_emails_verified_at.sql, 20260802000013_p216_205d_member_emails_write_surface.sql |
+| Migrations | 20260802000008_member_alternate_emails.sql, 20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql, 20260802000010_p213_205_invariant_synthetic_filter.sql, 20260802000011_p214_205b_member_emails_organization_id_fk.sql, 20260802000012_p215_205c_drop_member_emails_verified_at.sql, 20260802000013_p216_205d_member_emails_write_surface.sql, 20260802000014_p216_205d_council_amendments.sql |
 | Cross-ref | [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Closes | Issue #205 (GAPs A/B closed p214; C closed p215; D closed p216) |
 
@@ -126,3 +126,14 @@ NOTIFY pgrst, 'reload schema';
 ```
 
 MCP tool registrations and the version + tool-count labels in `nucleo-mcp/index.ts` are removed in the same PR.
+
+### Council Tier 1 amendments (migration 20260802000014)
+
+PR #244 Council Tier 1 review (platform-guardian GO-WITH-AMENDMENTS 1 MED 2 LOW + code-reviewer APPROVE-WITH-AMENDMENTS 1 HIGH 2 MED 2 LOW) produced one follow-up migration applied pre-merge:
+
+- **HIGH (code-reviewer, LGPD)**: `member_set_primary_email` error message replaced with the generic `'Email not found for this member; ensure it was previously added.'` — the original message echoed `p_member_id` and exposed the helper RPC name, both of which were enumeration vectors for callers with `manage_member`.
+- **MED #1 (code-reviewer, concurrency)**: `member_remove_alternate_email` SELECT clause now uses `... LIMIT 1 FOR UPDATE` to serialize against concurrent trigger UPDATEs from `member_set_primary_email`. Without the lock, a remove + concurrent promote could leave the member with zero primary rows.
+- **MED #2 (code-reviewer, multi-tenant)**: All three new RPCs now perform `SELECT organization_id FROM members WHERE id = p_member_id` as an org-boundary anchor at the top of the body (matching the existing `member_add_alternate_email` pattern from mig 20260802000008). This raises `Member not found` if the target member does not exist, and creates a single point where future cross-org scoping checks can be added when the policy tightens — SECDEF functions bypass RLS, so the org boundary is otherwise unenforced.
+- **LOW #1 (code-reviewer)**: `member_remove_alternate_email` primary-rejection error message replaced with `'Cannot remove primary email; promote a different alternate to primary first.'` (no internal RPC name).
+
+Signatures unchanged; CREATE OR REPLACE FUNCTION updates bodies in place. Existing GRANT EXECUTE and COMMENT ON statements remain in effect.

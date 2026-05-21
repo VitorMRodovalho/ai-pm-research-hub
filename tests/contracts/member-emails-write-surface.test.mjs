@@ -54,6 +54,7 @@ function loadMigrations() {
 
 const migrations = loadMigrations();
 const writeSurfaceMig = migrations.find(m => m.name.includes('p216_205d_member_emails_write_surface'));
+const councilAmendmentsMig = migrations.find(m => m.name.includes('p216_205d_council_amendments'));
 const mcpIndex = readFileSync(MCP_INDEX_PATH, 'utf8');
 
 const RPC_NAMES = [
@@ -219,4 +220,77 @@ test('GAP-205.D: /health endpoint reports tools = 299 (matches catalog post-GAP-
     `/health tools count must equal 299 (= 296 at p215 close + 3 new tools shipped in ` +
     `GAP-205.D). Source-of-truth is the runtime tools/list, but the /health label ` +
     `should track to avoid the WATCH-205.G drift class.`);
+});
+
+// ─── 12. Council Tier 1 amendments migration exists ───
+test('GAP-205.D: council amendments migration 20260802000014 exists', () => {
+  assert.ok(councilAmendmentsMig,
+    'Migration 20260802000014_p216_205d_council_amendments.sql must exist. ' +
+    'This migration ships HIGH (LGPD oracle) + MED (FOR UPDATE concurrency + org boundary) + LOW (internal name) fixes from PR #244 Council Tier 1 review.');
+  assert.match(councilAmendmentsMig.name, /20260802000014_p216_205d_council_amendments/,
+    'Council amendments migration filename must encode p216 session + 205d + council_amendments anchor for cross-ref.');
+});
+
+// ─── 13. HIGH (LGPD): member_set_primary_email uses generic "Email not found for this member" msg ───
+test('GAP-205.D council HIGH: set_primary error msg is generic (no member_id echo, no helper-RPC hint)', () => {
+  assert.ok(councilAmendmentsMig, 'precondition: amendments migration must exist');
+  const blockRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.member_set_primary_email\s*\(([\s\S]+?)\$\$;/i;
+  const m = councilAmendmentsMig.content.match(blockRe);
+  assert.ok(m, 'Could not locate member_set_primary_email body in amendments migration');
+  assert.match(m[0], /RAISE\s+EXCEPTION\s+'Email not found for this member;\s+ensure it was previously added\.'/i,
+    'member_set_primary_email must use the generic LGPD-safe message ' +
+    '"Email not found for this member; ensure it was previously added." — no %s ' +
+    'placeholders for member_id, no helper-RPC hint. Replaces the original p216 message ' +
+    'that exposed p_member_id (enumeration oracle for callers with manage_member).');
+  // Explicit negative checks: must NOT contain the leaky patterns from migration 13
+  assert.doesNotMatch(m[0], /Email % is not registered for member %/i,
+    'set_primary must not have the original "Email % is not registered for member %" format — it leaks member_id via %s.');
+  assert.doesNotMatch(m[0], /add it via member_add_alternate_email first/i,
+    'set_primary must not hint at the helper RPC name in the user-facing error.');
+});
+
+// ─── 14. MED #1 (concurrency): member_remove_alternate_email uses FOR UPDATE on the SELECT ───
+test('GAP-205.D council MED #1: remove uses SELECT ... FOR UPDATE to serialize against trigger UPDATEs', () => {
+  assert.ok(councilAmendmentsMig, 'precondition: amendments migration must exist');
+  const blockRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.member_remove_alternate_email\s*\(([\s\S]+?)\$\$;/i;
+  const m = councilAmendmentsMig.content.match(blockRe);
+  assert.ok(m, 'Could not locate member_remove_alternate_email body in amendments migration');
+  assert.match(m[0], /SELECT\s+id,\s+is_primary[\s\S]{0,200}FROM\s+public\.member_emails[\s\S]{0,200}LIMIT\s+1[\s\S]{0,40}FOR\s+UPDATE/i,
+    'member_remove_alternate_email must use SELECT ... LIMIT 1 FOR UPDATE on member_emails. ' +
+    'Without the row-level lock, a concurrent member_set_primary_email on another connection ' +
+    'can promote the row between our SELECT (is_primary=false) and our DELETE — leaving the ' +
+    'member with zero primary rows, violating T_member_has_exactly_one_primary_email.');
+});
+
+// ─── 15. MED #2 (org boundary): all 3 RPCs anchor on members.id existence check ───
+for (const rpc of RPC_NAMES) {
+  test(`GAP-205.D council MED #2: ${rpc} has org boundary anchor (SELECT organization_id FROM members + Member not found raise)`, () => {
+    assert.ok(councilAmendmentsMig, 'precondition: amendments migration must exist');
+    const blockRe = new RegExp(
+      `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${rpc}\\s*\\(([\\s\\S]+?)\\$\\$;`,
+      'i'
+    );
+    const m = councilAmendmentsMig.content.match(blockRe);
+    assert.ok(m, `Could not locate ${rpc} body in amendments migration`);
+    assert.match(m[0], /SELECT\s+organization_id\s+INTO\s+v_target_org_id\s+FROM\s+public\.members\s+WHERE\s+id\s*=\s*p_member_id/i,
+      `${rpc} must perform "SELECT organization_id INTO v_target_org_id FROM public.members WHERE id = p_member_id" as an org-boundary anchor. ` +
+      `SECDEF functions bypass RLS, so the member_emails_v4_org_scope RESTRICTIVE policy does not apply. ` +
+      `The anchor (a) raises Member not found if the target member does not exist (matches member_add_alternate_email pattern), ` +
+      `and (b) creates a single point for future cross-org scoping when policy tightens.`);
+    assert.match(m[0], /IF\s+NOT\s+FOUND\s+THEN[\s\S]{0,80}RAISE\s+EXCEPTION\s+'Member not found:/i,
+      `${rpc} must RAISE 'Member not found: %' (with p_member_id format arg in the developer-debugging context — ` +
+      `acceptable here because the member_id was already supplied by the caller, so this is not a privacy oracle).`);
+  });
+}
+
+// ─── 16. LOW #1 (LGPD-adjacent): remove primary error msg drops internal RPC name "member_set_primary_email" ───
+test('GAP-205.D council LOW #1: remove primary error msg uses neutral guidance (no internal RPC name)', () => {
+  assert.ok(councilAmendmentsMig, 'precondition: amendments migration must exist');
+  const blockRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.member_remove_alternate_email\s*\(([\s\S]+?)\$\$;/i;
+  const m = councilAmendmentsMig.content.match(blockRe);
+  assert.ok(m, 'Could not locate member_remove_alternate_email body in amendments migration');
+  assert.match(m[0], /RAISE\s+EXCEPTION\s+'Cannot remove primary email;\s+promote a different alternate to primary first\.'/i,
+    'remove primary error msg must be neutral: "Cannot remove primary email; promote a different alternate to primary first."');
+  assert.doesNotMatch(m[0], /promote another alternate via member_set_primary_email/i,
+    'remove primary error msg must not reference the internal RPC name member_set_primary_email.');
 });
