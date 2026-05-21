@@ -368,6 +368,13 @@ export interface ScriptIngestPayload {
   // p151 C: dry-run preview support (early exit with diff, no DML).
   // When true, /ingest returns IngestDryRunSummary instead of applying changes.
   dry_run?: boolean;
+  // #224 — Phase A extract script records its own ingest attempt (with no
+  // x-ingest-secret on the client side) and persists the result here. The
+  // worker passes this through to the response envelope as a non-blocking
+  // informational warning, so the admin UI can clarify that an "error" key
+  // present in the uploaded JSON is the Phase A export-side attempt, not
+  // this Apply call's status.
+  ingestResult?: { error?: string; [key: string]: any };
 }
 
 // p151 C: shape returned when /ingest is called with dry_run=true.
@@ -403,6 +410,13 @@ export interface IngestDryRunSummary {
   }>;
   will_skip: Array<{ ref: string; reason: string }>;
   errors: Array<{ scope: string; ref?: string; error: string }>;
+  // #224 — correlation id (cron_run_log.id) so the admin UI can deep-link
+  // to the row. Nullable when logRunStart fails (worker degrades gracefully).
+  run_id?: string | null;
+  // #224 — pass-through of body.ingestResult from the uploaded JSON (Phase A
+  // export-side ingest attempt result). Informational; never blocks the
+  // dry-run or apply. UI renders this as a yellow source-export warning.
+  ingest_result_warning?: { error?: string; [key: string]: any } | null;
 }
 
 export interface IngestSummary {
@@ -443,4 +457,14 @@ export interface IngestSummary {
   // Closes the misassignment pattern where late-imported apps landed in current
   // open cycle when they semantically belonged to a prior closed cycle.
   applications_cycle_redirected?: number;
+
+  // #224 — correlation id (cron_run_log.id) so the admin UI can deep-link
+  // to the row and surface a stable identifier when partial failures happen.
+  run_id?: string | null;
+  // #224 — pass-through of body.ingestResult from the uploaded JSON. The
+  // Phase A extract script attempts its own ingest (without x-ingest-secret)
+  // and records the result in this field; when present, the admin UI shows
+  // it as a yellow source-export warning to clarify that it is NOT the
+  // current Apply call's status.
+  ingest_result_warning?: { error?: string; [key: string]: any } | null;
 }

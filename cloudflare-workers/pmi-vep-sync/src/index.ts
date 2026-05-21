@@ -369,6 +369,12 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       } as any, dryDiff.errors);
     }
 
+    // #224 — surface correlation id + Phase A source-export warning so the
+    // admin UI can deep-link and disambiguate the uploaded ingestResult.error
+    // (Phase A) from this dry-run's status (Phase B).
+    dryDiff.run_id = runId;
+    dryDiff.ingest_result_warning = body.ingestResult ?? null;
+
     return jsonResponse(dryDiff, 200);
   }
 
@@ -598,6 +604,12 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       : 'success';
     await logRunComplete(db, runId, finalStatus, summary as any, summary.errors);
   }
+
+  // #224 — surface correlation id + Phase A source-export warning so the
+  // admin UI can deep-link to cron_run_log and disambiguate the uploaded
+  // ingestResult.error (Phase A export-side) from this Apply call's status.
+  summary.run_id = runId;
+  summary.ingest_result_warning = body.ingestResult ?? null;
 
   return jsonResponse(summary, 200);
 }
