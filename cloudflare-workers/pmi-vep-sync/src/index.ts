@@ -555,7 +555,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
               source_id: result.id,
               scopes: ['profile_completion', 'video_screening', 'consent_giving'],
               ttl_days: ttlDays,
-              issued_by_worker: WORKER_NAME + '-ingest'
+              issued_by_worker: WORKER_NAME + '-ingest',
+              // BUG-224.A (#237): worker has no JWT context; pass env.ORG_ID
+              // explicitly because onboarding_tokens.organization_id default
+              // auth_org() resolves to NULL under SERVICE_ROLE_KEY auth.
+              organization_id: env.ORG_ID
             });
 
             const welcomeResult = await dispatchWelcome(db, env, {
