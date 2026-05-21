@@ -772,13 +772,21 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Script exists + pre-commit invokes it + CI workflow runs it. Output reproducible.
 - **Cross-ref:** Issue #216 spec § "Forward defense"; spec recommends Option B over Options A (custom ESLint rule, M effort) and C (Vite plugin, L effort, invasive).
 
-### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (workerd DNS strict post p173 deps bump)
-- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** S (Opção A pin) / M (Opção B mock fetch) / XS (Opção C /etc/hosts hack)
-- **Trigger:** PM perguntou em p207 (2026-05-20) por que browser_guards falha consistentemente. Investigação revelou: 75+ runs consecutivos failing desde 2026-05-18 02:20 UTC (último verde `37e86d98`). Erro: `kj/async-io-unix.c++:1298: failed: DNS lookup failed.; params.host = mock.supabase.co`. Causa provável: bumps em p173 (2026-05-17) — astro 6.1.3→6.3.3 + @astrojs/cloudflare 13.1.7→13.5.1 + wrangler — versão nova do workerd ficou estrita sobre DNS failures durante boot (antes tolerava `mock.supabase.co` fake URL do env CI).
-- **Impact:** `validate` workflow falha em todos os PRs + main pushes → `quality_gate` SKIPPED em cascade. Merges (#199 e fila atual #184/#197/#198) precisam `--admin` bypass. Cada bypass consolida o pattern como aceitável → erosão de gates. browser_guards efetivamente disabled como signal — regressões UI/SSR-side passam silenciosamente.
-- **Proposta:** Issue #220 filed com 3 opções (A: downgrade wrangler/ajustar compatibility_date — Recommended; B: mockar fetch no test — fix de fundo; C: /etc/hosts hack — pragma). Recomendar A primeiro (reabre CI em <30min) + B no backlog.
-- **Validation gate:** `gh run list --workflow=ci.yml --branch <X> --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin.
-- **Cross-ref:** Issue #220; runs falhos como `26167448636`; commits gatilho `ce980c81` + `d96c0c7d` (p173); PR #199 merge (`c191254e`) primeiro a usar --admin por este motivo.
+### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (2-camadas: workerd DNS strict + test brittleness)
+- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** M-L (revised — era S, na verdade tem 2 camadas)
+- **Trigger:** PM perguntou em p207 (2026-05-20) por que browser_guards falha. **Investigação p207 (sessão de ~45min)** descartou 2 hipóteses iniciais + refinou diagnostic. Ver Issue #220 comment para detalhes completos. Resumo das camadas:
+  - **L1 (workerd DNS strict)**: `kj/async-io-unix.c++:1298: DNS lookup failed; params.host = mock.supabase.co`. Workerd novo (provavelmente atualizado por CI cache invalidation em 2026-05-18 02:43 — commit gatilho `7fa3ea1c` é **docs-only**, não código) aborta dev server fatalmente em DNS unresolvable. **Fix L1 confirmado funcional via smoke local**: trocar `PUBLIC_SUPABASE_URL=https://mock.supabase.co` por URL DNS-resolvable (`http://localhost:9999` ou `http://127.0.0.1:9999`). 1-line edit em ci.yml linha 89.
+  - **L2 (test brittleness)**: mesmo com L1 fix aplicado, test ainda falha com `false !== true` em `tests/browser-guards.test.mjs:66` (`assert.equal(await page.locator('#sel-panel').isVisible(), false)`). Test espera Supabase ter falha-mode específico (auth-fail clean → page mostra `#sel-denied` + esconde `#sel-panel`); com URL ECONNREFUSED, page entra em estado diferente. **L2 precisa de fix de fundo** — Phase 2.
+- **Impact:** Idem ao registro anterior — `validate` falha em todos os PRs + main pushes; --admin bypass obrigatório.
+- **Proposta revisada (Phase 1 + Phase 2)**:
+  - **Phase 1 (S, ~30 min)**: aplicar L1 fix em ci.yml — remove catastrophe + mensagem de falha clara (não-DNS) → debug de L2 fica viável.
+  - **Phase 2 (L, ~2-4h)**: L2 fix. 3 sub-options:
+    - (a) Mock Supabase HTTP responses via [msw](https://mswjs.io/) ou node http server seedado. Cleaner.
+    - (b) Real Supabase via `supabase start` local stack em CI antes do test. Maior delta de infra.
+    - (c) Refactor test pra não depender de Supabase auth-fail UI state.
+- **Validation gate Phase 1**: smoke local com URL fix mostra 0 DNS errors em astro log (✅ confirmado em p207).
+- **Validation gate Phase 2**: `gh run list --workflow=ci.yml --branch <X> --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin.
+- **Cross-ref:** Issue #220 + comment com investigação completa de p207; runs falhos `26167448636`; commit gatilho `7fa3ea1c` (docs-only — CI infra externo é o verdadeiro gatilho); PR #199 merge (`c191254e`) primeiro a usar --admin.
 
 ### 95. WATCH-207.D — --admin bypass pattern erosão (PRs #199/#184/#197/#198 em sequência)
 - **Tipo:** watch / governance debt · **Severity:** MED · **Effort:** XS (após CI fix)
