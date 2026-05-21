@@ -22,7 +22,7 @@ Status values:
 | #221 | active | Foundation / Integration / Governance | #212, #208, #207, AI/video features | Angeline/PM legal ops for later waves | Migration/EF gate, privacy/i18n/UI consent, notification/invariant evidence as scoped | Close only when remaining waves are complete or split into accepted child issues |
 | #218 | active | Foundation / Governance | AI/video features | duplicate decision with #221 | Wave 1 evidence exists; Waves 2-5 still pending | Decide parent vs superseded-by-#221 before closing |
 | #148 | active | Infra/Security / QA | all merge confidence | #220 | CI heartbeat green on `main` | Close only after CI Validate recovers on main |
-| #220 | active | Infra/Security / QA | #148 | none | `browser_guards` passes without `--admin` bypass | Close after CI PR passes and main heartbeat confirms |
+| #220 | active | Infra/Security / QA | #148 | none | Local test:browser:guards + build pass with resolvable mock Supabase URL; remote CI pending | Close after CI PR passes and main heartbeat confirms |
 
 ---
 
