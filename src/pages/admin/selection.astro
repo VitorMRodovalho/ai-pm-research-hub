@@ -213,6 +213,16 @@ const SEL_I18N = {
     off: t('comp.vepBadge.off', lang),
     offTooltip: t('comp.vepBadge.offTooltip', lang),
   },
+  // #224 — admin JSON import observability labels (consumed by
+  // renderJsonApplyResult + renderJsonDryRunPreview helpers).
+  importJson: {
+    partialTitle: t('admin.selection.importJsonResultPartialTitle', lang),
+    correlationCycle: t('admin.selection.importJsonCorrelationCycle', lang),
+    correlationRunId: t('admin.selection.importJsonCorrelationRunId', lang),
+    correlationApplied: t('admin.selection.importJsonCorrelationApplied', lang),
+    errorsHeader: t('admin.selection.importJsonErrorsHeader', lang),
+    ingestResultWarning: t('admin.selection.importJsonIngestResultWarning', lang),
+  },
 };
 ---
 
@@ -493,7 +503,8 @@ const SEL_I18N = {
             </details>
           </div>
 
-          <div id="json-apply-result" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-[12px]"></div>
+          <!-- #224 — Banner color set dynamically by renderJsonApplyResult based on errs > 0 (amber when partial, emerald when clean). -->
+          <div id="json-apply-result" class="hidden rounded-lg p-3 text-[12px]"></div>
         </div>
       </div>
 
@@ -4715,21 +4726,130 @@ const SEL_I18N = {
     const wccRows = (d.will_cross_cycle_refresh ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">♻️ <strong>${esc(r.applicant_name)}</strong> · status=${esc(r.existing_status)} (preservado) · cycle=${esc(r.existing_cycle_id?.slice(0,8))}… → partial refresh</div>`).join('');
     const wsRows = (d.will_skip ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">⏭ ${esc(r.ref)}: ${esc(r.reason)}</div>`).join('');
     detEl.innerHTML = `${wiRows}${wuRows}${wccRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
+    // #224 — surface uploaded-JSON Phase A warning + correlation footer in
+    // the dry-run preview too (uploaded ingestResult.error visible at preview
+    // time, not just after Apply).
+    const previewEl = document.getElementById('json-preview');
+    if (previewEl) {
+      previewEl.querySelectorAll('[data-issue-224]').forEach(n => n.remove());
+      const extra = document.createElement('div');
+      extra.setAttribute('data-issue-224', '1');
+      extra.innerHTML = renderIngestResultWarning(d.ingest_result_warning) + renderCorrelationFooter(d, new Date());
+      previewEl.appendChild(extra);
+    }
     document.getElementById('json-preview')?.classList.remove('hidden');
+  }
+
+  // #224 — group worker errors by scope so the admin can see the failure
+  // pattern at a glance (e.g. "3× token_or_welcome" vs "1× resume_sync_failed
+  // + 1× phase_b_canonical"). Falls back to ungrouped list when scope is
+  // missing. Returns HTML for an open <details> block.
+  function renderWorkerErrorsBlock(errors: any[]): string {
+    if (!Array.isArray(errors) || errors.length === 0) return '';
+    const byScope = new Map<string, any[]>();
+    for (const err of errors) {
+      const scope = (err && typeof err.scope === 'string' && err.scope) || 'unknown';
+      const bucket = byScope.get(scope) ?? [];
+      bucket.push(err);
+      byScope.set(scope, bucket);
+    }
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const header = i18n.errorsHeader ?? 'Erros do worker (por escopo)';
+    const scopeBlocks: string[] = [];
+    for (const [scope, items] of byScope.entries()) {
+      const rows = items.map((err: any) => {
+        const ref = err?.ref ? esc(String(err.ref)) : '—';
+        const msg = err?.error ? esc(String(err.error)) : esc(JSON.stringify(err));
+        return `<li class="py-1 border-b border-amber-200/40 last:border-0">
+          <code class="text-[10px] text-amber-900/70">${ref}</code>
+          <span class="ml-2">${msg}</span>
+        </li>`;
+      }).join('');
+      scopeBlocks.push(`
+        <div class="mt-2">
+          <div class="text-[11px] font-bold text-amber-900">
+            ${esc(scope)} <span class="font-normal text-amber-700">(${items.length})</span>
+          </div>
+          <ul class="mt-1 text-[11px] text-amber-900 list-none pl-0">${rows}</ul>
+        </div>
+      `);
+    }
+    return `
+      <details class="mt-3 border border-amber-300 bg-amber-50/60 rounded-lg p-3" open>
+        <summary class="text-[12px] font-bold text-amber-900 cursor-pointer">
+          ⚠️ ${esc(header)} — ${errors.length}
+        </summary>
+        ${scopeBlocks.join('')}
+      </details>
+    `;
+  }
+
+  // #224 — render the Phase A extract result attached to the uploaded JSON.
+  // The extract script tries its own ingest call from the browser (without
+  // x-ingest-secret) and persists the result in `ingestResult`. We surface
+  // it here as a yellow informational banner so the admin disambiguates a
+  // pre-existing source-side error from this Apply call's status.
+  function renderIngestResultWarning(payload: any): string {
+    if (!payload || typeof payload !== 'object') return '';
+    if (!payload.error && Object.keys(payload).length === 0) return '';
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const header = i18n.ingestResultWarning ?? 'Aviso do JSON enviado (resultado da Phase A extract)';
+    const body = esc(JSON.stringify(payload, null, 2));
+    return `
+      <div class="mt-3 border border-yellow-300 bg-yellow-50 rounded-lg p-3 text-[11px] text-yellow-900">
+        <div class="font-bold mb-1">ℹ️ ${esc(header)}</div>
+        <pre class="text-[10px] whitespace-pre-wrap break-all">${body}</pre>
+      </div>
+    `;
+  }
+
+  // #224 — correlation footer (cycle_code + run_id + apply timestamp) so the
+  // PM has a stable handle to find the cron_run_log row when partial errors
+  // surface. run_id is a UUID; the copy button copies it to the clipboard.
+  function renderCorrelationFooter(d: any, appliedAt: Date): string {
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const labelCycle = i18n.correlationCycle ?? 'Ciclo';
+    const labelRun = i18n.correlationRunId ?? 'Run id (cron_run_log)';
+    const labelApplied = i18n.correlationApplied ?? 'Aplicado em';
+    const cycleCode = d.cycle_code ? esc(String(d.cycle_code)) : '—';
+    const runId = d.run_id ? esc(String(d.run_id)) : '—';
+    const ts = appliedAt.toISOString();
+    const copyBtn = d.run_id
+      ? `<button type="button" class="ml-1 text-[10px] underline cursor-pointer" data-copy-run-id="${runId}" title="Copy run_id">📋</button>`
+      : '';
+    return `
+      <div class="mt-3 pt-2 border-t border-gray-200 text-[10px] text-[var(--text-muted)] grid grid-cols-3 gap-2">
+        <div><strong>${esc(labelCycle)}:</strong> ${cycleCode}</div>
+        <div><strong>${esc(labelRun)}:</strong> <code>${runId}</code>${copyBtn}</div>
+        <div><strong>${esc(labelApplied)}:</strong> ${esc(ts)}</div>
+      </div>
+    `;
   }
 
   function renderJsonApplyResult(d: any) {
     const el = document.getElementById('json-apply-result');
     if (!el) return;
     const errs = d.errors?.length ?? 0;
-    el.classList.remove('hidden');
+    const partial = errs > 0;
+    // #224 — switch container palette based on partial-vs-clean state.
+    el.classList.remove('hidden', 'bg-emerald-50', 'border', 'border-emerald-200', 'bg-amber-50', 'border-amber-200');
+    if (partial) {
+      el.classList.add('bg-amber-50', 'border', 'border-amber-200');
+    } else {
+      el.classList.add('bg-emerald-50', 'border', 'border-emerald-200');
+    }
     // p153 hotfix7: surface applications_cross_cycle_refreshed so the PM can see
     // the 65 prior-cycle rows that got partial-refreshed (resume_url SAS + profile
     // data) instead of silently disappearing from the new/updated/skipped totals.
     const crossCycle = d.applications_cross_cycle_refreshed ?? 0;
+    const i18nApply = (window as any).__SEL_I18N?.importJson ?? {};
+    const titleSuccess = '✓ Import concluído';
+    const titlePartial = '⚠️ ' + (i18nApply.partialTitle ?? 'Import concluído com erros parciais');
+    const titleClass = partial ? 'text-amber-900' : 'text-emerald-900';
+    const statsClass = partial ? 'text-amber-800' : 'text-emerald-800';
     el.innerHTML = `
-      <div class="font-bold text-emerald-900 mb-1">✓ Import concluído</div>
-      <div class="grid grid-cols-2 gap-2 text-[11px] text-emerald-800">
+      <div class="font-bold ${titleClass} mb-1">${partial ? titlePartial : titleSuccess}</div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] ${statsClass}">
         <div>processed: <strong>${d.applications_processed ?? 0}</strong></div>
         <div>new: <strong>${d.applications_new ?? 0}</strong></div>
         <div>updated (mesmo ciclo): <strong>${d.applications_updated ?? 0}</strong></div>
@@ -4743,8 +4863,24 @@ const SEL_I18N = {
         <div title="p195 — resumes que falharam download/upload (link Azure pode estar expirado entre Phase A export e este Apply). Re-importe o JSON com link fresco se ${(d.resumes_failed ?? 0) > 0 ? 'crítico' : 'persistir'}.">${(d.resumes_failed ?? 0) > 0 ? '⚠️' : '✓'} resumes falhos: <strong>${d.resumes_failed ?? 0}</strong></div>
         <div title="p195 BUG-195.B — apps cuja application_date caía em ciclo fechado diferente do open atual; Worker auto-redirecionou para o ciclo semanticamente correto.">🔀 cycle redirects: <strong>${d.applications_cycle_redirected ?? 0}</strong></div>
       </div>
-      ${errs > 0 ? `<div class="mt-2 text-[11px] text-amber-700"><strong>${errs} erro(s)</strong> — ver detalhes no cron_run_log do worker.</div>` : ''}
+      ${renderWorkerErrorsBlock(d.errors ?? [])}
+      ${renderIngestResultWarning(d.ingest_result_warning)}
+      ${renderCorrelationFooter(d, new Date())}
     `;
+    // Attach clipboard copy handler for run_id.
+    const copyBtn = el.querySelector('[data-copy-run-id]') as HTMLButtonElement | null;
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const v = copyBtn.getAttribute('data-copy-run-id');
+        if (!v) return;
+        try {
+          await navigator.clipboard.writeText(v);
+          toast('Run id copiado', 'success');
+        } catch {
+          toast('Falha ao copiar', 'error');
+        }
+      });
+    }
   }
 
   function handleCSVFile(file: File) {
