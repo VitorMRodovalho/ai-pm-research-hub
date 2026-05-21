@@ -166,4 +166,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "[bypass-audit] Week $WEEK — $TOTAL events ($STATUS)" \
             --body-file /tmp/issue-body.md \
+            --label "bypass-audit" \
             --label "$LABEL"
