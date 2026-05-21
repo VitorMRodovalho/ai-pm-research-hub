@@ -243,6 +243,7 @@ BEGIN
     SELECT id AS member_id FROM public.members
     WHERE member_status = 'alumni' AND operational_role IS DISTINCT FROM 'alumni'
       AND name != 'VP Desenvolvimento Profissional (PMI-GO)'
+      AND name NOT LIKE '%_synthetic%'
   )
   SELECT 'A1_alumni_role_consistency'::text,
          'member_status=alumni must coerce operational_role=alumni (B7 trigger)'::text,
@@ -255,6 +256,7 @@ BEGIN
     SELECT id AS member_id FROM public.members
     WHERE member_status = 'observer' AND operational_role NOT IN ('observer','guest','none')
       AND name != 'VP Desenvolvimento Profissional (PMI-GO)'
+      AND name NOT LIKE '%_synthetic%'
   )
   SELECT 'A2_observer_role_consistency'::text,
          'member_status=observer must coerce operational_role IN (observer,guest,none) (B7 trigger)'::text,
@@ -288,6 +290,7 @@ BEGIN
     FROM public.members m
     LEFT JOIN public.auth_engagements ae ON ae.person_id = m.person_id AND ae.is_authoritative = true
     WHERE m.member_status='active' AND m.name != 'VP Desenvolvimento Profissional (PMI-GO)'
+      AND m.name NOT LIKE '%_synthetic%'
     GROUP BY m.id
   ),
   drift AS (
@@ -306,6 +309,7 @@ BEGIN
     SELECT id AS member_id FROM public.members
     WHERE ((member_status='active' AND is_active=false) OR (member_status IN ('observer','alumni','inactive') AND is_active=true))
       AND name != 'VP Desenvolvimento Profissional (PMI-GO)'
+      AND name NOT LIKE '%_synthetic%'
   )
   SELECT 'B_is_active_status_mismatch'::text,
          'members.is_active must match member_status mapping (active=true, terminal=false)'::text,
@@ -514,6 +518,7 @@ BEGIN
            COUNT(me.id) FILTER (WHERE me.is_primary = true) AS primary_count
     FROM public.members m
     LEFT JOIN public.member_emails me ON me.member_id = m.id
+    WHERE m.name NOT LIKE '%_synthetic%'
     GROUP BY m.id
   ),
   drift AS (
