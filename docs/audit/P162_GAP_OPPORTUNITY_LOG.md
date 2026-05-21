@@ -1161,3 +1161,59 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Description:** No nested `$$` in this PR's migration files (all bodies use single `$$` quoting), so no current risk. But the pattern would silently degrade on future migrations that use alternative dollar-tag styles. Either (a) anchor the regex on `$$;\\s*(?:GRANT|COMMENT|DROP|NOTIFY|END\\s*$)` for stronger termination, or (b) use the shared parser at `tests/helpers/rpc-body-drift-parser.mjs:43` which is already pattern-agnostic for dollar-tags. Backlog: project-wide sweep across `tests/contracts/*.test.mjs` for body-extraction regexes.
 - **Cross-ref:** PR #244 code-reviewer LOW #2, tests/contracts/member-emails-write-surface.test.mjs body-extractor blocks, tests/helpers/rpc-body-drift-parser.mjs:43.
 
+### 133. DECISION-160 — Path A' picked: catalog reconciliation for ambassador + R3-C3 batch only for the real 4 (Issue #160, p217, 2026-05-21)
+- **Tipo:** decision log · **Severity:** N/A · **Effort:** XS (decision capture)
+- **Trigger:** PM ABCD pick at p217 boot: chose Path A' (Recommended) over original Path A after p217 discovery surfaced catalog drift on `ambassador.requires_agreement`. Path A' = two-step: (1) catalog fix for ambassador (this session, RESOLVED-160.A); (2) R3-C3 notification batch for the 4 actually-needing-termo engagements (deferred OPP-160.B).
+- **Description:** Original p202 PM guidance ("fix issuance/onboarding flow first; do not shortcut by flipping authority") framed the 16-engagement backlog as a termo-issuance gap. p217 investigation found 12 of those 16 were `ambassador` kind, which per ADR-0006 line 55 + the row's own `description` field ("Reconhecimento honorário / mérito. Sem termo obrigatório.") + `legal_basis=consent` was never supposed to require termo. The `requires_agreement=true` flag was a seed bug from V4 cutover (2026-04-13). Path A' fixes the catalog (zero V4 capability side-effects since `engagement_kind_permissions` has 0 rows for ambassador kind) and scopes the R3-C3 batch to the 4 engagements that genuinely need termo (Herlon SGO + Fernando SGP + Vitor volunteer x2 = 3 distinct members).
+- **Cross-ref:** Issue #160 (parent), Issue #182 (lifecycle mapping unblocked by this decision), ADR-0006 §"Reconciliação de catálogo" 2026-05-21, P162 #134 (RESOLVED-160.A — the catalog fix), P162 #135 (OPP-160.B — the deferred R3-C3 batch).
+
+### 134. RESOLVED-160.A — `engagement_kinds(ambassador).requires_agreement` corrigido true→false (Issue #160 path A' step 1, p217)
+- **Tipo:** catalog reconciliation / drift fix · **Severity:** MED (resolved) · **Effort:** XS (~1h migration + tests + governance, completed)
+- **Trigger:** P162 #133 DECISION-160. Surfaced organically during p217 investigation when verifying which engagements actually needed termo issuance.
+- **Description:** Migration `20260803000001_p217_160_ambassador_catalog_fix.sql` applies `UPDATE engagement_kinds SET requires_agreement=false WHERE slug='ambassador'` with idempotent guard + in-tx sanity DO block. Smoke pre-state: `requires_agreement=TRUE`, `legal_basis=consent`, `description="Reconhecimento honorário / mérito. Sem termo obrigatório."`, `agreement_template=NULL`, `engagement_kind_permissions WHERE kind='ambassador'` = 0 rows, 12 engagements pending. Post-state: `requires_agreement=FALSE` ✓, 0 ambassador pending ✓, 12 ambassador now `is_authoritative=true` ✓, total backlog 16→4 ✓, invariants 19/19=0 unchanged ✓. Zero V4 capability side-effects (engagement_kind_permissions for ambassador has 0 rows — no actions granted by this kind regardless of authoritative status). 8 members affected via flip: Andressa Martins (PMI-GO), Antonio Marcos Costa (PMI-GO), Fabricio Costa (PMI-GO), Herlon Alves de Sousa (PMI-CE), Ivan Lourenço (PMI-GO), Roberto Macêdo (PMI-CE), Sarah Faria Alcantara Macedo Rodovalho (PMI-GO), Vitor Maia Rodovalho (PMI-GO).
+- **Forward-defense:** `tests/contracts/engagement-kinds-catalog-invariants.test.mjs` (+9 assertions: 8 subtests on migration body presence/correctness + 1 invariant on no future re-flip). Test count 1587 → 1596 offline.
+- **Governance:** ADR-0006 amended with §"Reconciliação de catálogo" 2026-05-21 documenting the seed bug + fix + zero-capability-impact rationale.
+- **Issue #160 status:** partially closed — 8 ambassadors now authoritative (including Herlon's ambassador role); Herlon's `study_group_owner / leader` engagement remains pending termo (handed off to OPP-160.B).
+- **Cross-ref:** Issue #160, Issue #182 (lifecycle mapping unblocked), ADR-0006, migration 20260803000001, test file engagement-kinds-catalog-invariants.test.mjs, P162 #133 (parent decision), P162 #135 (sibling — remaining 4-person batch).
+
+### 135. OPP-160.B — R3-C3 Termo notification batch for the 4 remaining real-termo engagements (3 distinct members)
+- **Tipo:** notification batch / operational follow-up · **Severity:** MED · **Effort:** S (1-2h: 4 individual notifications + 4 self-signs + 4 GP countersigns)
+- **Trigger:** P162 #133 DECISION-160 path A' step 2 (deferred from p217 close to a dedicated session). Backlog after RESOLVED-160.A: 4 engagements / 3 distinct members.
+- **Description:** Pending real-termo engagements (per `get_pending_agreement_engagements()` post p217 catalog fix):
+  - Herlon Alves de Sousa (PMI-CE) — `study_group_owner / leader` for CPMAI (the original #160 case)
+  - Fernando Maquiaveli (PMI-DF) — `study_group_participant / participant`
+  - Vitor Maia Rodovalho (PMI-GO) — `volunteer / coordinator` + `volunteer / manager` (2 engagements)
+  - All 4 covered by R3-C3 template `a78311fd-cf87-4bee-b0f1-e117a36095c5` "Termo de Voluntariado — Template Ciclo 3" (status=active).
+- **Approach (recommended):** Given the small N, prefer individual notifications + existing `sign_volunteer_agreement(lang, ip, ua)` flow over building a full campaign_templates entry. Sequence per person: (1) direct notification (Slack/email) with deeplink to sign UI; (2) member self-signs; (3) GP countersigns via `counter_sign_certificate(cert_id, ip, ua)`; (4) verify `auth_engagements.is_authoritative=true` post-countersign. Vitor's 2 engagements use a single signed certificate (same person, same termo version).
+- **Why deferred from p217:** PM ABCD path A' was scoped explicitly as "catalog fix + R3-C3 batch only for the real 4". Catalog fix shipped this session as RESOLVED-160.A. The notification batch is operational (1:1 ping work, no code change) and benefits from a separate dedicated session with PM in the loop.
+- **When to ship:** Backlog. Open issue + assign owner. Once executed, this entry becomes RESOLVED-160.B and Issue #160 fully closes.
+- **Cross-ref:** Issue #160 (parent, partially closed), Issue #182 (lifecycle mapping consumer), P162 #133 (DECISION-160), P162 #134 (RESOLVED-160.A), governance_documents.id `a78311fd-cf87-4bee-b0f1-e117a36095c5`.
+
+### 136. WATCH-217.A — `validate_privacy_policy_consistency()` flags ambassador as error post-RESOLVED-160.A (false positive)
+- **Tipo:** validation drift / docs · **Severity:** MED (alert visible) · **Effort:** S (1-2h: add `is_merit_only` boolean OR exemption list in RPC OR test assertion documenting expected false positive)
+- **Trigger:** PR #250 platform-guardian MED-1 + code-reviewer corroborating note. The RPC at `migration 20260418010000` lines 268-276 raises severity=`error` for any kind where `legal_basis='consent' AND NOT requires_agreement`, with message "Consent-based kind does not require agreement. LGPD Art. 8 requires explicit consent documentation." Post-RESOLVED-160.A, ambassador (legal_basis=consent, requires_agreement=false) trips this branch.
+- **Description:** The RPC was written under the assumption that any kind with `legal_basis='consent'` corresponds to LGPD Art. 7 I (data processing consent requiring written documentation per Art. 8). Ambassador uses "consent" in the colloquial sense — member accepts a merit recognition (no written instrument required). ADR-0008 line 25 is the canonical source: ambassador = "Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent". The RPC is currently dormant (not in MCP, not called from any page or test, only in `database.gen.ts` type gen), so no live breakage. Risk: a future session runs the RPC as a health check, sees the "error", and reverts the catalog fix to clear the alert.
+- **Mitigations applied this session:**
+  - Migration `20260803000001` header explicitly documents the false positive + warning to future maintainers.
+  - ADR-0006 §"Reconciliação de catálogo" 2026-05-21 documents the false positive + cross-refs this WATCH entry.
+- **Recommended long-term fix (choose one):**
+  - (A) Add `is_merit_only boolean` column to `engagement_kinds` + skip the consent check when true.
+  - (B) Add an explicit exemption list `kinds_consent_without_agreement = ARRAY['ambassador', ...]` inside the RPC.
+  - (C) Refactor the RPC to distinguish LGPD Art. 7 I consent from merit-recognition consent — possibly by reading `description` for "honorário/mérito" markers (brittle).
+- **When to ship:** Backlog. Mid-priority — no live breakage today, but addressing it removes a foot-gun that could undo a deliberate architectural decision.
+- **Cross-ref:** PR #250 platform-guardian MED-1, migration 20260418010000:268-276, ADR-0006 §"Reconciliação de catálogo" 2026-05-21, RESOLVED-160.A (#134).
+
+### 137. WATCH-217.B — `engagement-kinds-catalog-invariants.test.mjs` future-pattern coverage extension (resolved inline for ON CONFLICT + VALUES-tuple; MERGE pending)
+- **Tipo:** test robustness · **Severity:** LOW (resolved 2 of 3 cases inline) · **Effort:** XS (MERGE pattern when first MERGE migration ships)
+- **Trigger:** PR #250 platform-guardian LOW-1 (multi-row INSERT false positive) + code-reviewer LOW (ON CONFLICT DO UPDATE bypass; MERGE bypass).
+- **Description:** The original `insertReflipPattern` used `[\s\S]*?` lazy matching across an entire INSERT statement, which:
+  - **Multi-row false positive:** `INSERT INTO engagement_kinds VALUES ('ambassador', false), ('sponsor', true)` would match (ambassador followed by true somewhere downstream).
+  - **ON CONFLICT bypass:** `INSERT ... ON CONFLICT (slug) DO UPDATE SET requires_agreement=true` matches neither the UPDATE pattern (no WHERE) nor the original INSERT pattern.
+  - **MERGE bypass (theoretical):** Postgres 15+ MERGE statements not covered.
+- **Mitigations applied this session (PR #250 amendments commit):**
+  - Replaced `insertReflipPattern` with VALUES-tuple-scoped `/VALUES\s*\([^)]*'ambassador'[^)]*,\s*true[^)]*\)/i` (no multi-row false positive).
+  - Added `onConflictReflipPattern` for the upsert bypass case.
+  - Inline comment noting the MERGE gap + codebase status (zero MERGE usage today).
+- **Backlog item:** Add MERGE coverage when the first migration adopts MERGE patterns. Until then, accepted gap.
+- **Cross-ref:** PR #250 platform-guardian LOW-1, code-reviewer LOW (table row 2-3), tests/contracts/engagement-kinds-catalog-invariants.test.mjs line 105-117.
+
