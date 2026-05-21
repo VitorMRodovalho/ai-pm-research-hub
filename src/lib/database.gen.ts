@@ -19943,6 +19943,10 @@ export type Database = {
           organization_id: string
         }[]
       }
+      member_remove_alternate_email: {
+        Args: { p_email: string; p_member_id: string }
+        Returns: boolean
+      }
       member_resolve_email: { Args: { p_email: string }; Returns: string }
       member_self_update: {
         Args: {
@@ -19953,6 +19957,14 @@ export type Database = {
           p_share_whatsapp?: boolean
         }
         Returns: Json
+      }
+      member_set_primary_email: {
+        Args: { p_email: string; p_member_id: string }
+        Returns: boolean
+      }
+      member_update_alternate_email_kind: {
+        Args: { p_email: string; p_member_id: string; p_new_kind: string }
+        Returns: boolean
       }
       mirror_sibling_interview: {
         Args: { p_application_id: string }
