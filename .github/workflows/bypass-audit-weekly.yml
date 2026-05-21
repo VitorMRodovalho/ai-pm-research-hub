@@ -163,6 +163,7 @@ jobs:
           EOF
 
           gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
             --title "[bypass-audit] Week $WEEK — $TOTAL events ($STATUS)" \
             --body-file /tmp/issue-body.md \
             --label "$LABEL"
