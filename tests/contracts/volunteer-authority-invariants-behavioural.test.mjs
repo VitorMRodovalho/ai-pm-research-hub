@@ -103,6 +103,30 @@ async function callBreachHelper(breach) {
   return await res.json();
 }
 
+async function cleanupSyntheticRows() {
+  // Explicit cleanup of synthetic test rows. Was relying on `Prefer: tx=rollback`
+  // but empirically that does NOT rollback SECDEF function INSERTs (sediment
+  // observed at p206/p207/p209 — see Issue #231). This cleanup is the
+  // canonical mechanism going forward.
+  // Pattern: `__test_invariant_<r|s>_<uuid>@invariant.test` (set by the helper).
+  await fetch(`${SUPABASE_URL}/rest/v1/selection_applications?email=like.*@invariant.test`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Prefer': 'return=minimal',
+    },
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/members?email=like.*@invariant.test`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Prefer': 'return=minimal',
+    },
+  });
+}
+
 function findInvariant(rows, name) {
   if (!Array.isArray(rows)) {
     throw new Error(`Expected array of invariant rows, got: ${JSON.stringify(rows)}`);
@@ -199,14 +223,16 @@ test(
       `so S CTE should produce 0 rows. Sample ids: ${JSON.stringify(s.sample_ids ?? [])}.`
     );
 
-    // Post-test verification: confirm tx=rollback dropped the synthetic row.
-    // (If this fails, we have a leak — the helper should have left zero trace.)
+    // Post-test verification: explicit cleanup (tx=rollback does NOT rollback
+    // SECDEF function INSERTs reliably — see Issue #231 sediment). Then assert
+    // count=0 to catch any leakage from non-test paths.
+    await cleanupSyntheticRows();
     const postRows = await callCheckInvariants();
     const postR = findInvariant(postRows, R_NAME);
     assert.equal(
       postR.violation_count, 0,
-      `LEAK DETECTED: post-test R violation_count=${postR.violation_count} (expected 0). ` +
-      `Prefer: tx=rollback failed to revert the synthetic application. Sample ids: ${JSON.stringify(postR.sample_ids ?? [])}.`
+      `Post-cleanup R violation_count=${postR.violation_count} (expected 0). ` +
+      `Cleanup may have failed OR there is real prod R violation. Sample ids: ${JSON.stringify(postR.sample_ids ?? [])}.`
     );
   }
 );
@@ -246,17 +272,18 @@ test(
       `so R CTE should produce 0 rows. Sample ids: ${JSON.stringify(r.sample_ids ?? [])}.`
     );
 
-    // Post-test verification: confirm tx=rollback dropped both synthetic rows.
+    // Post-test verification: explicit cleanup then assert 0 (Issue #231 sediment).
+    await cleanupSyntheticRows();
     const postRows = await callCheckInvariants();
     const postR = findInvariant(postRows, R_NAME);
     const postS = findInvariant(postRows, S_NAME);
     assert.equal(
       postR.violation_count, 0,
-      `LEAK DETECTED: post-test R violation_count=${postR.violation_count}. tx=rollback failed.`
+      `Post-cleanup R violation_count=${postR.violation_count} (expected 0).`
     );
     assert.equal(
       postS.violation_count, 0,
-      `LEAK DETECTED: post-test S violation_count=${postS.violation_count}. tx=rollback failed.`
+      `Post-cleanup S violation_count=${postS.violation_count} (expected 0).`
     );
   }
 );

@@ -17,11 +17,10 @@
 #
 # See docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md § Phase C charter.
 
-# === p209 close additions (2026-05-21) ===
-# Both have only formatting-level drift vs migration file capture 20260802000005.
-# Bodies are functionally identical to canonical (verified by re-apply via MCP).
-# Cleanup deferred — issue to ratchet down by re-capturing with byte-exact pg_get_functiondef output via script.
-_trg_pmi_video_screening_voice_consent_check@
-submit_evaluation@p_application_id uuid, p_evaluation_type text, p_scores jsonb, p_notes text, p_criterion_notes jsonb, p_ai_suggestion_id uuid
+# === p209 close note ===
+# Initial allowlist entries for _trg_pmi_video_screening_voice_consent_check + submit_evaluation
+# were REMOVED at p209 close after MCP apply_migration round-trip made live body
+# byte-equivalent to migration file 20260802000005. Phase C drift = 0 for both.
+# Baseline reverted to 0.
 
 
