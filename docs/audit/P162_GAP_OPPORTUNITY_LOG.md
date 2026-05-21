@@ -1176,9 +1176,9 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Issue #160 status:** partially closed — 8 ambassadors now authoritative (including Herlon's ambassador role); Herlon's `study_group_owner / leader` engagement remains pending termo (handed off to OPP-160.B).
 - **Cross-ref:** Issue #160, Issue #182 (lifecycle mapping unblocked), ADR-0006, migration 20260803000001, test file engagement-kinds-catalog-invariants.test.mjs, P162 #133 (parent decision), P162 #135 (sibling — remaining 4-person batch).
 
-### 135. OPP-160.B — R3-C3 Termo notification batch for the 4 remaining real-termo engagements (3 distinct members)
+### 135. OPP-160.B — R3-C3 Termo notification batch for the 4 remaining real-termo engagements (3 distinct members) [**DISPATCHED 2026-05-21 p217 — see #138**]
 - **Tipo:** notification batch / operational follow-up · **Severity:** MED · **Effort:** S (1-2h: 4 individual notifications + 4 self-signs + 4 GP countersigns)
-- **Trigger:** P162 #133 DECISION-160 path A' step 2 (deferred from p217 close to a dedicated session). Backlog after RESOLVED-160.A: 4 engagements / 3 distinct members.
+- **Trigger:** P162 #133 DECISION-160 path A' step 2 (originally deferred from p217 close to a dedicated session, but PM picked "OPP-160.B agora" mid-session — see #138 for dispatch record). Backlog after RESOLVED-160.A: 4 engagements / 3 distinct members.
 - **Description:** Pending real-termo engagements (per `get_pending_agreement_engagements()` post p217 catalog fix):
   - Herlon Alves de Sousa (PMI-CE) — `study_group_owner / leader` for CPMAI (the original #160 case)
   - Fernando Maquiaveli (PMI-DF) — `study_group_participant / participant`
@@ -1216,4 +1216,24 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   - Inline comment noting the MERGE gap + codebase status (zero MERGE usage today).
 - **Backlog item:** Add MERGE coverage when the first migration adopts MERGE patterns. Until then, accepted gap.
 - **Cross-ref:** PR #250 platform-guardian LOW-1, code-reviewer LOW (table row 2-3), tests/contracts/engagement-kinds-catalog-invariants.test.mjs line 105-117.
+
+### 138. DISPATCH-160.B — Notification batch sent for OPP-160.B (3 notifications, 3 members, transactional_immediate)
+- **Tipo:** notification dispatch / operational milestone · **Severity:** N/A (action record) · **Effort:** XS (~15min — completed)
+- **Trigger:** PM ABCD pick mid-p217 session "OPP-160.B agora — batch R3-C3 para os 4 (Recommended)" after PR #250 merge. Replaces the originally-deferred timing in #135.
+- **Description:** 3 rows inserted into `public.notifications` table 2026-05-21 23:43 UTC with type=`engagement_termo_due`, link=`/volunteer-agreement`, delivery_mode=`transactional_immediate`, actor_id=Vitor Maia Rodovalho (PM-initiated dispatch):
+  - **Herlon Alves de Sousa** (`c8e76355-...`) — notification id `8bc80cec-b808-4408-a60d-f51132ef7b65` — body references CPMAI study_group_owner role
+  - **Fernando Maquiaveli** (`c8b930c3-...`) — notification id `166280fa-a30a-43f9-a4cf-ccd885eb9873` — body references CPMAI study_group_participant role
+  - **Vitor Maia Rodovalho** (`880f736c-...`) — notification id `7da2bf52-e109-4fdc-bcd8-cb15c7e9aa4c` — body references both volunteer engagements (LATAM LIM 2026 + CPMAI) + notes single signature covers both
+- **Pre-dispatch idempotency:** confirmed 0 prior `engagement_termo_due` notifications in last 30 days for these 3 recipients (no duplicate spam).
+- **Body strategy:** per-member contextualized body (mentions specific initiative + role) rather than generic template — keeps message actionable for N=3 without building a full `campaign_templates` row (overkill per PM's path A' framing).
+- **Email delivery:** `transactional_immediate` mode triggers the platform's outbound email pipeline (Resend integration). `email_sent_at` will populate when the cron/EF processes the queue. Manual verification possible via `SELECT email_sent_at FROM notifications WHERE id IN (...)` in 5-10 minutes.
+- **Expected next flow (per ADR-0039 volunteer agreement countersign subsystem):**
+  1. Recipient clicks notification link → `/volunteer-agreement` UI
+  2. Recipient reviews termo + clicks "Sign" → triggers `sign_volunteer_agreement(language, ip, ua)` RPC
+  3. RPC creates a `certificates` row + sets `engagements.agreement_certificate_id`
+  4. GP (PM) sees pending countersign via `get_pending_countersign()` → calls `counter_sign_certificate(cert_id, ip, ua)`
+  5. `auth_engagements.is_authoritative` flips to `true` for that engagement
+  6. When all 4 engagements have signed+countersigned certs, OPP-160.B becomes RESOLVED-160.B and Issue #160 fully closes.
+- **Note on Vitor self-cert:** As member + PM (GP) of the platform, Vitor signs his own termo via member flow, then countersigns via GP flow. Whether the system permits self-countersign depends on ADR-0039 countersign chain rules — not investigated this session (PM territory, low-impact if requires another GP).
+- **Cross-ref:** Issue #160, OPP-160.B (#135 — original entry, marked DISPATCHED), DECISION-160 (#133), RESOLVED-160.A (#134), `public.notifications` rows 8bc80cec / 166280fa / 7da2bf52, governance_documents.id `a78311fd-cf87-4bee-b0f1-e117a36095c5` (R3-C3 template).
 
