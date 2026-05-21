@@ -21,6 +21,7 @@ export const GET: APIRoute = () => {
       registration_endpoint: `${BASE}/oauth/register`,
       response_types_supported: ["code"],
       grant_types_supported: ["authorization_code", "refresh_token"],
+      scopes_supported: ["mcp:tools", "offline_access"],
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["none"],
     }),
