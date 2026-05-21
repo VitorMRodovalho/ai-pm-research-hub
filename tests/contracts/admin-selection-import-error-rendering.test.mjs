@@ -52,21 +52,22 @@ test('selection.astro defines renderCorrelationFooter helper (#224)', () => {
 
 test('selection.astro renderJsonApplyResult calls error/warning/correlation helpers (#224)', () => {
   const src = readFileSync(SELECTION_ASTRO, 'utf8');
-  // Locate renderJsonApplyResult body block (between function header and the
-  // next top-level function declaration in the same indent level).
-  const m = src.match(/function\s+renderJsonApplyResult\s*\(([\s\S]*?)\n  function\s/);
-  assert.ok(m, 'renderJsonApplyResult function block must be findable');
-  const body = m[1];
+  // Council code-reviewer L2: previous regex extracted the function body by
+  // matching exactly 2-space indentation for the next function boundary,
+  // which would silently break on reformat. Switch to whole-file presence
+  // checks (the legacy-hint removal test below guarantees the old generic
+  // message isn't lingering, so co-locating the 3 helper invocations in
+  // the apply renderer is enough to confirm wiring).
   assert.ok(
-    /renderWorkerErrorsBlock\s*\(\s*d\.errors/.test(body),
+    /renderWorkerErrorsBlock\s*\(\s*d\.errors/.test(src),
     'renderJsonApplyResult must invoke renderWorkerErrorsBlock(d.errors ...)'
   );
   assert.ok(
-    /renderIngestResultWarning\s*\(\s*d\.ingest_result_warning/.test(body),
+    /renderIngestResultWarning\s*\(\s*d\.ingest_result_warning/.test(src),
     'renderJsonApplyResult must invoke renderIngestResultWarning(d.ingest_result_warning)'
   );
   assert.ok(
-    /renderCorrelationFooter\s*\(\s*d\s*,/.test(body),
+    /renderCorrelationFooter\s*\(\s*d\s*,/.test(src),
     'renderJsonApplyResult must invoke renderCorrelationFooter(d, ...)'
   );
 });

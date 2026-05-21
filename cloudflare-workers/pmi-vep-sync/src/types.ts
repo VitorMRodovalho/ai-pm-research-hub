@@ -375,7 +375,6 @@ export interface ScriptIngestPayload {
   // present in the uploaded JSON is the Phase A export-side attempt, not
   // this Apply call's status.
   ingestResult?: { error?: string; [key: string]: any };
-  phaseB?: any;
 }
 
 // p151 C: shape returned when /ingest is called with dry_run=true.

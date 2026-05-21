@@ -4728,7 +4728,9 @@ const SEL_I18N = {
     detEl.innerHTML = `${wiRows}${wuRows}${wccRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
     // #224 — surface uploaded-JSON Phase A warning + correlation footer in
     // the dry-run preview too (uploaded ingestResult.error visible at preview
-    // time, not just after Apply).
+    // time, not just after Apply). Council code-reviewer L1: wire the same
+    // clipboard handler used in the apply path so the copy button is live
+    // at preview stage too.
     const previewEl = document.getElementById('json-preview');
     if (previewEl) {
       previewEl.querySelectorAll('[data-issue-224]').forEach(n => n.remove());
@@ -4736,6 +4738,19 @@ const SEL_I18N = {
       extra.setAttribute('data-issue-224', '1');
       extra.innerHTML = renderIngestResultWarning(d.ingest_result_warning) + renderCorrelationFooter(d, new Date());
       previewEl.appendChild(extra);
+      const copyBtn = extra.querySelector('[data-copy-run-id]') as HTMLButtonElement | null;
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const v = copyBtn.getAttribute('data-copy-run-id');
+          if (!v) return;
+          try {
+            await navigator.clipboard.writeText(v);
+            toast('Run id copiado', 'success');
+          } catch {
+            toast('Falha ao copiar', 'error');
+          }
+        });
+      }
     }
     document.getElementById('json-preview')?.classList.remove('hidden');
   }
@@ -4789,16 +4804,24 @@ const SEL_I18N = {
   // x-ingest-secret) and persists the result in `ingestResult`. We surface
   // it here as a yellow informational banner so the admin disambiguates a
   // pre-existing source-side error from this Apply call's status.
+  //
+  // Council code-reviewer (PR #236, M1): narrow rendered shape to { error }
+  // only — the uploaded ingestResult may carry arbitrary nested fields that
+  // could include applicant PII. Admin-only page is access-gated, but the
+  // observability goal is satisfied by the single error string; keep the
+  // blast radius small.
   function renderIngestResultWarning(payload: any): string {
     if (!payload || typeof payload !== 'object') return '';
-    if (!payload.error && Object.keys(payload).length === 0) return '';
+    const errVal = (typeof payload.error === 'string' || typeof payload.error === 'number')
+      ? String(payload.error)
+      : null;
+    if (!errVal) return '';
     const i18n = (window as any).__SEL_I18N?.importJson ?? {};
     const header = i18n.ingestResultWarning ?? 'Aviso do JSON enviado (resultado da Phase A extract)';
-    const body = esc(JSON.stringify(payload, null, 2));
     return `
       <div class="mt-3 border border-yellow-300 bg-yellow-50 rounded-lg p-3 text-[11px] text-yellow-900">
         <div class="font-bold mb-1">ℹ️ ${esc(header)}</div>
-        <pre class="text-[10px] whitespace-pre-wrap break-all">${body}</pre>
+        <div class="text-[10px]"><code>error</code>: ${esc(errVal)}</div>
       </div>
     `;
   }
