@@ -14,15 +14,24 @@
 --   they ran once at original apply, and the migration is recorded in
 --   `supabase_migrations.schema_migrations`).
 --
--- All bodies below are byte-identical to the original baseline. Production
--- impact = zero on reapply (CREATE OR REPLACE is idempotent and the live
--- RPCs already match). Local stack impact = supabase start no longer fails
--- on the baseline ordering, provided the schema has been seeded first (see
--- `docs/operations/LOCAL_QA.md`).
+-- All bodies below WERE byte-identical to the original baseline at first
+-- introduction (p202, 2026-05-19). Production impact = zero on reapply
+-- (CREATE OR REPLACE is idempotent and the live RPCs already match). Local
+-- stack impact = supabase start no longer fails on the baseline ordering,
+-- provided the schema has been seeded first (see `docs/operations/LOCAL_QA.md`).
 --
 -- 00000000_baseline_rpcs.sql is retained as a marker file pointing to this
 -- one — modifying it (rather than deleting) preserves the migration history
 -- record without breaking idempotent reapply.
+--
+-- 2026-05-21 (issue #220 / BUG-203.A): functions 4 (create_event) and
+-- 8 (mark_member_present) were REMOVED from this baseline because their
+-- bare pre-W125 bodies (no auth gate) conflicted with the hardened bodies
+-- defined in earlier-timestamp migrations (W125 + p149 + p174 + p178).
+-- The static `security-lgpd` test takes the LAST CREATE OR REPLACE FUNCTION
+-- block per name as canonical, and lex order placed this file last → 8
+-- false-fail assertions on auth gates the live prod body has. See inline
+-- comments below at slots 4 and 8 for full rationale.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -112,30 +121,21 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------------
--- 4. create_event
+-- 4. create_event — REMOVED from baseline 2026-05-21 (issue #220 / BUG-203.A)
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.create_event(
-  p_type             text,
-  p_title            text,
-  p_date             date,
-  p_duration_minutes int      DEFAULT 90,
-  p_tribe_id         uuid     DEFAULT NULL,
-  p_audience_level   text     DEFAULT 'all'
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_id uuid;
-BEGIN
-  INSERT INTO public.events (type, title, date, duration_minutes, tribe_id, audience_level)
-  VALUES (p_type, p_title, p_date, p_duration_minutes, p_tribe_id, p_audience_level)
-  RETURNING id INTO v_id;
-
-  RETURN json_build_object('success', true, 'event_id', v_id);
-END;
-$$;
+-- Original baseline body had NO auth gate (bare SECURITY DEFINER INSERT).
+-- The hardened body lives in `20260319100029_w125_security_lgpd_hardening.sql`
+-- and was further refined in `20260524000000_p149_*` and the canonical
+-- `20260684000000_p178_phase_b_drift_capture_*` (14-param signature, full
+-- `auth.uid()` + `can_by_member` + `Unauthorized` gates). Keeping the bare
+-- body here caused `tests/contracts/security-lgpd.test.mjs` to take THIS
+-- block as canonical (lex order LAST), generating 4 false-fail assertions on
+-- auth checks that the live prod body actually has. Removal makes the test
+-- pick up the p178 hardened body instead. Production state unaffected — this
+-- migration is not in `supabase_migrations.schema_migrations` (local-stack
+-- ordering fix only; verified 2026-05-21 via MCP). Local `supabase start`
+-- still works because the W125 + p149 + p178 migrations CREATE OR REPLACE
+-- this function at earlier timestamps with the hardened body.
 
 -- ---------------------------------------------------------------------------
 -- 5. create_recurring_weekly_events
@@ -238,30 +238,16 @@ AS $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- 8. mark_member_present
+-- 8. mark_member_present — REMOVED 2026-05-21 (issue #220 / BUG-203.A)
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.mark_member_present(
-  p_event_id  uuid,
-  p_member_id uuid,
-  p_present   boolean
-)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  IF p_present THEN
-    INSERT INTO public.attendance (event_id, member_id)
-    VALUES (p_event_id, p_member_id)
-    ON CONFLICT (event_id, member_id) DO NOTHING;
-  ELSE
-    DELETE FROM public.attendance
-     WHERE event_id = p_event_id AND member_id = p_member_id;
-  END IF;
-
-  RETURN json_build_object('success', true);
-END;
-$$;
+-- Original baseline body had NO auth gate (bare INSERT/DELETE). The hardened
+-- body lives in `20260319100029_w125_security_lgpd_hardening.sql` (W125) and
+-- was refined in `20260514490000_item_10_*` and the canonical
+-- `20260679000000_p174_qb_drift_correction_*` (full `auth.uid()` + caller
+-- self-check `v_caller_id = p_member_id` + `can_by_member(_, 'manage_event')`
+-- + `RAISE EXCEPTION 'Not authenticated'` / `'Unauthorized: ...'`). Same lex-
+-- ordering conflict as create_event above caused 4 false-fail test assertions.
+-- See create_event note for full context.
 
 -- ---------------------------------------------------------------------------
 -- 9. deselect_tribe
