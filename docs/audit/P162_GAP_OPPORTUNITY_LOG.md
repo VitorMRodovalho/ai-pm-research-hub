@@ -756,21 +756,25 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Policy doc + pre-commit grep added.
 - **Cross-ref:** PR #169 council close; LGPD posture for external contacts.
 
-### 92. BUG-207.A — /profile ReferenceError "t is not defined" (3rd recurrence of TS annotation × Vite minify trap)
-- **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** S (per-file fix) + M (broader audit + forward defense)
-- **Trigger:** PM reported live error on `/profile` (and presumably `/en/profile`, `/es/profile`) at p207 boot 2026-05-20. Live stack trace: `pt(profile.astro_astro_type_script_index_0_lang.v3Zqq7wC.js:116) → ReferenceError: t is not defined`. Inline comment in `src/pages/profile.astro:248-252` already documents 2 prior occurrences (p158 fix#8 `e098c398` + p184 inline strip of `lp` annotation). p184 patched only `lp`; ~22 other module-level TS-annotated consts/lets remain (OPROLE_LABELS/COLORS, DESIG_LABELS/COLORS, HISTORY_TYPE_LABELS, currentMember, attendanceHistory, ..., credlyNormalizeTimer).
-- **Impact:** `/profile` (member-facing critical page) renders partially or fails to render XP pillars, champion section, cycle history when minified bundle runs in prod. Invisible in dev (Vite minify off). 3rd recurrence indicates the class needs forward defense, not just point fixes.
-- **Proposta:** Issue #216 filed with full spec at `docs/project-governance/sessions/p207_issue_216_profile_ts_annotation_minify.md`. Fix scope: strip ~22 module-level annotations in `profile.astro` (lines 256-304) + EN/ES variants + inline comment update. Forward-defense Option B (audit script `scripts/audit-astro-script-annotations.mjs` + pre-commit hook) is RECOMMENDED but separable PR.
-- **Validation gate:** `npx astro build` PASS + manual browser smoke `/profile` (signed-in member) shows no console errors + XP pillars render.
-- **Cross-ref:** Issue #216; spec doc above; commit `e098c398`; profile.astro:248-252; `[[feedback-astro-define-vars-no-ts]]` p169 sediment (adjacent class).
+### 92. BUG-207.A — /profile ReferenceError "t is not defined" — **RESOLVED p207 (PR #223 bb95bb03), DIAGNOSIS REVISED**
+- **Tipo:** bug · **Severity:** HIGH (user-facing critical, member profile page) · **Effort:** XS (1-line import — real fix; spec scoping was wrong)
+- **Trigger:** PM reported live error on `/profile` at p207 boot 2026-05-20.
+- **DIAGNOSIS REVISED during execution (p207 close)**: spec hypothesized TS annotation × Vite minify (3rd recurrence of p158/p184 lp class). **Empirically disproven**: stripped all 22 module-level annotations → bundle byte-identical to broken prod (same hash `v3Zqq7wC.js` + same md5). Conclusion: esbuild strips TS annotations BEFORE Vite minification in current Astro+Vite stack, so source-level annotations are no-op for output bundle.
+- **REAL ROOT CAUSE**: Inline `<script>` in `profile.astro:237+` calls `t('profile.xp.howToEarn', lang)` ~25× at runtime (XP pillars + champion + journey labels) but never imports `t`. Frontmatter imports server-side; client-side script needed own import. Without it, minified bundle has unresolved `t` references → `ReferenceError`.
+- **REAL FIX** (PR #223 `bb95bb03`): `import { t } from '../i18n/utils';` added at top of `<script>` block. 1 file changed, +9 lines (1 import + 8-line comment explaining the class). Bundle hash CHANGED `v3Zqq7wC` → `CGuhpcmD`, +40 bytes; bundle now has `import{t as x}from"./utils.CUL6moXM.js"`.
+- **Verification**: `astro build` PASS + `astro preview /profile` HTTP 200 + bundle byte-comparison proves real fix.
+- **Validation gate**: PM browser smoke `/profile` (signed-in member) — no `ReferenceError: t is not defined` in console, XP pillars + champion + journey labels render.
+- **Cross-ref:** Issue #216; PR #223 (`bb95bb03`); spec doc `docs/project-governance/sessions/p207_issue_216_profile_ts_annotation_minify.md` (now SUPERSEDED — filename misleading, real fix doc in PR description); `[[feedback-bundle-byte-identity-diagnostic]]` (NEW sediment to capture).
+- **Note on p158/p184 historicals**: those commits ALSO stripped TS annotations (on `lp`) — based on the bundle-byte test in p207, those edits were ALSO no-op. The fixes must have coincided with browser cache invalidation / CDN purge / unrelated changes that gave illusion of "TS annotation strip = fix". Real cause of those was likely also missing/broken bindings, just on different vars.
 
-### 93. OPP-207.B — Forward defense audit script for module-level TS annotations in .astro <script>
+### 93. OPP-207.B — Forward defense audit for inline-script runtime-bound identifiers without imports
 - **Tipo:** opportunity / forward defense · **Severity:** MED · **Effort:** S
-- **Trigger:** BUG-207.A (#92 above) — 3rd recurrence of the same class. Reactive hotfix-only cycle is inefficient; needs preventive surface.
-- **Impact:** Without forward defense, 4th recurrence will happen when next developer adds a module-level annotated const/let to any `<script>` block. Cost of recurrence is non-trivial: user-facing bug + Sentry alert + investigation + fix cycle. Preventive cost (audit script) is ~1-2h one-time.
-- **Proposta:** `scripts/audit-astro-script-annotations.mjs` runs project-wide grep for module-level annotated declarations in processed `<script>` blocks of `.astro` files; reports findings. Integrate into pre-commit hook + CI gate (warn, not block, initially). If still recurring after 1 quarter, promote to ESLint rule (Option A from spec).
-- **Validation gate:** Script exists + pre-commit invokes it + CI workflow runs it. Output reproducible.
-- **Cross-ref:** Issue #216 spec § "Forward defense"; spec recommends Option B over Options A (custom ESLint rule, M effort) and C (Vite plugin, L effort, invasive).
+- **Trigger:** BUG-207.A revealed a CLASS of bug: inline `<script>` blocks in `.astro` files use runtime identifiers (`t`, `lp`, etc.) that need to be imported separately from the frontmatter. Without explicit import in the script, minified bundle has unresolved references. **3rd recurrence of this class** (p158 `lp` TDZ + p184 `lp` re-issue + p207 `t`); needs preventive surface.
+- **REFRAMED (was: "audit module-level TS annotations")**: original framing scoped wrong class. After BUG-207.A diagnostic revision (TS annotations are no-op for output bundle), the real forward-defense need is auditing inline `<script>` blocks for **runtime-bound identifiers that are USED but not IMPORTED/DEFINED in script scope**.
+- **Impact:** 4th recurrence will happen when next developer adds another runtime call (e.g., `formatDate(...)`, `getRoleLabel(...)`) without importing in script scope. Each costs: prod ReferenceError + Sentry alert + investigation + diagnostic-error cycle (PM was bitten 3× already).
+- **Proposta:** `scripts/audit-astro-script-runtime-bindings.mjs` — for each `.astro` file with `<script>` (non-`is:inline`), parse the script body, extract all CallExpressions where callee is an Identifier, check if that identifier is imported/declared in script scope. Report orphan calls. Pre-commit hook + CI gate (warn first, block after 1 quarter).
+- **Validation gate:** Script catches `t()` call in `<script>` without `import { t }`. Output reproducible.
+- **Cross-ref:** Issue #216 + PR #223 (revised diagnostic); BUG-207.A note about p158/p184 historicals; `[[feedback-astro-define-vars-no-ts]]` p169 (adjacent class, NOT same).
 
 ### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (2-camadas: workerd DNS strict + test brittleness)
 - **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** M-L (revised — era S, na verdade tem 2 camadas)
