@@ -181,6 +181,18 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: 'missing_applications', message: 'body.applications array required' }, 400);
   }
 
+  // BUG-224.A (#237) council code-reviewer HIGH: surface ORG_ID misconfig at
+  // request time with a clear message rather than letting Postgres throw a
+  // 22P02 invalid_text_representation buried in the per-app error log. The
+  // var is declared as `string` in types.ts, but wrangler does not enforce
+  // [vars] presence at deploy time.
+  if (!env.ORG_ID) {
+    return jsonResponse({
+      error: 'server_misconfig',
+      message: 'env.ORG_ID is required — configure [vars] ORG_ID in wrangler.toml'
+    }, 500);
+  }
+
   const db = createDbClient(env);
 
   // Log this ingest run for observability (cron_run_log)
@@ -555,7 +567,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
               source_id: result.id,
               scopes: ['profile_completion', 'video_screening', 'consent_giving'],
               ttl_days: ttlDays,
-              issued_by_worker: WORKER_NAME + '-ingest'
+              issued_by_worker: WORKER_NAME + '-ingest',
+              // BUG-224.A (#237): worker has no JWT context; pass env.ORG_ID
+              // explicitly because onboarding_tokens.organization_id default
+              // auth_org() resolves to NULL under SERVICE_ROLE_KEY auth.
+              organization_id: env.ORG_ID
             });
 
             const welcomeResult = await dispatchWelcome(db, env, {

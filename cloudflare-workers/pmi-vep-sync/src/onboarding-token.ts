@@ -12,6 +12,15 @@ export interface IssueTokenOpts {
   ttl_days: number;
   issued_by_worker?: string;
   issued_by?: string;
+  // BUG-224.A (#237): onboarding_tokens.organization_id is NOT NULL DEFAULT
+  // auth_org(). The worker connects via SUPABASE_SERVICE_ROLE_KEY, which has
+  // no JWT / auth.uid() context, so auth_org() resolves to NULL and the
+  // default fails the NOT NULL constraint. Caller MUST pass env.ORG_ID
+  // explicitly. Discovered after PR #236 (#224 observability) made the
+  // hidden 23509 constraint_violation visible — 3 cycle4-2026 candidates
+  // (Emanuelle / Denis / Henrique) had missed welcome emails between
+  // 2026-05-19 → 2026-05-21 because issueOnboardingToken kept throwing.
+  organization_id: string;
 }
 
 export async function issueOnboardingToken(
@@ -30,7 +39,8 @@ export async function issueOnboardingToken(
       scopes: opts.scopes,
       expires_at: expiresAt,
       issued_by: opts.issued_by ?? null,
-      issued_by_worker: opts.issued_by_worker ?? null
+      issued_by_worker: opts.issued_by_worker ?? null,
+      organization_id: opts.organization_id
     });
 
   if (error) throw new Error(`issueOnboardingToken: ${error.message}`);
