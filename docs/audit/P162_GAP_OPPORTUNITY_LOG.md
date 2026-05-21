@@ -1027,3 +1027,54 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **When to ship:** At multi-tenant milestone (single-tenant safe today).
 - **Cross-ref:** P162 #111 (PR #238 fix); WATCH-237.A; `supabase/functions/sync-artia/index.ts:12`.
 
+### 115. RESOLVED-205.A — Alternate member emails subsystem + 3 RPCs + 3 MCP tools + invariant T (Issue #205, PR #240, p213)
+- **Tipo:** structural feature ship · **Severity:** N/A (resolved) · **Effort:** L (delivered)
+- **Trigger:** PM ask 2026-05-21 — modernize identity resolution to support members with multiple email addresses (personal/institutional/chapter/other) for DocuSign + Credly + chapter integrations.
+- **Description:** PR #240 merges agent/p212-close-log (af378809 + ec988042 + de109c7b). Net change:
+  - New table `public.member_emails` (citext UNIQUE, partial unique idx on `is_primary`, FK CASCADE to members)
+  - Trigger `sync_member_email_trigger_fn` keeps `members.email` ↔ `member_emails` primary in sync
+  - 3 SECDEF RPCs: `member_resolve_email` (auth-gated) / `member_list_emails` (self / manage_member / view_pii) / `member_add_alternate_email` (self / manage_member)
+  - 3 MCP tools: 293 → **296**
+  - Invariant T added to `check_schema_invariants()`: 18 → **19**, all violation_count=0 live; synthetic test members filtered from A1/A2/A3/B/T per defense-in-depth
+  - ADR-0095 ratified
+  - Council Tier 1 BLOCKERs + HIGHs all resolved via 3 migrations (008/009/010) + ec988042 test refactor + de109c7b HTTP 204 fix
+- **Live verified:** member_emails 73 rows, 1-to-1 primary backfill, MCP tools/list = 296, invariant T = 0 violations, trigger cross-member guard live, REVOKE SELECT FROM authenticated took effect.
+- **Cross-ref:** ADR-0095; PR #240; commits af378809 + ec988042 + de109c7b; migrations 20260802000008-10.
+
+### 116. GAP-205.A — RLS cross-tenant authenticated read test missing (member_emails)
+- **Tipo:** test coverage gap · **Severity:** MED · **Effort:** S (~30 min)
+- **Trigger:** code-reviewer HIGH-4 + platform-guardian LOW-2 in PR #240 council review.
+- **Description:** `tests/contracts/member_emails.test.mjs` Step 7 only tests no-Authorization-header rejection (trivial 401). The RESTRICTIVE policy `member_emails_v4_org_scope` (auth_org() isolation) is never exercised. Multi-tenant defense is the actual concern when 2nd tenant onboards.
+- **Fix:** add sub-test that creates a member in a different org or uses an anon-key+authenticated-JWT-for-different-org pair, calls direct GET on `/rest/v1/member_emails?member_id=eq.<id>` and asserts result is empty.
+- **When to ship:** At multi-tenant milestone OR sooner if PR #240 backlog burndown.
+- **Cross-ref:** ADR-0095 §3; `member_emails_v4_org_scope` policy in migration `20260802000008`.
+
+### 117. GAP-205.B — `member_emails.organization_id` has no FK to `organizations(id)`
+- **Tipo:** schema integrity gap · **Severity:** LOW · **Effort:** XS (~5 min ALTER TABLE)
+- **Trigger:** code-reviewer MED-1 + platform-guardian LOW-3 in PR #240 council review.
+- **Description:** Other multi-tenant tables use `organization_id uuid REFERENCES public.organizations(id)`. `member_emails.organization_id` is just `uuid` (nullable, no FK). Dangling org refs possible if a bad insert happens. Currently the only writer is the sync trigger which copies `members.organization_id` (FK-enforced), so risk is low — but explicit FK is defense in depth.
+- **Fix:** `ALTER TABLE public.member_emails ADD CONSTRAINT member_emails_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;` via new migration.
+- **When to ship:** Backlog (next session that touches member_emails).
+
+### 118. GAP-205.C — `member_emails.verified_at` column has no verification flow
+- **Tipo:** dead schema / future surface · **Severity:** LOW · **Effort:** S-M (workflow design)
+- **Trigger:** code-reviewer LOW in PR #240 council review.
+- **Description:** `verified_at timestamptz` column exists in `member_emails` per ADR-0095 §1 but no write path sets it. Currently the column is dead. Either:
+  - (a) Ship the verification flow: email confirmation token → RPC `member_verify_alternate_email` → sets `verified_at`
+  - (b) Drop the column before downstream assumptions accumulate
+- **When to ship:** At the moment the first integration needs verified-only emails (e.g., DocuSign signing).
+
+### 119. WATCH-205.D — `database.gen.ts` regen added `graphql_public` schema surface (PR #240)
+- **Tipo:** surface expansion / observability · **Severity:** LOW · **Effort:** XS (audit only)
+- **Trigger:** platform-guardian MED-2 + code-reviewer LOW-3 in PR #240 council review.
+- **Description:** PR #240's `database.gen.ts` regen included a new `graphql_public` schema block, which comes from Supabase's `pg_graphql` extension detection. Not a defect but a surface expansion — the type layer now exposes graphql_public types that weren't previously visible. Verify whether this causes unintended PostgREST/type-surface exposure downstream.
+- **Fix:** sanity-check that `pg_graphql` is intentionally enabled + no UI/RPC accidentally consumes graphql_public types.
+- **When to ship:** Backlog (passive audit, no urgency).
+
+### 120. WATCH-205.E — Concurrent agent workflow: 20260802000008 file modified post-apply created file/live drift (resolved by 20260802000010)
+- **Tipo:** workflow / sediment lesson · **Severity:** MED (pattern recurrence risk) · **Effort:** docs only
+- **Trigger:** mid-session discovery during PR #240 amendments — concurrent agent's `ec988042` modified `20260802000008` file body (added `_synthetic` filter to invariants) but did not apply the change to live DB.
+- **Description:** Modifying already-applied migration files is an anti-pattern — the schema_migrations.statements[V] is the at-apply snapshot (immutable), and any file edit after apply causes file/live drift that Phase C body-hash gate would flag. The correct pattern: NEW migration with `CREATE OR REPLACE FUNCTION` block for the function update. This session resolved the drift by adding `20260802000010` to apply the filter to live; the modified `20260802000008` file is now historical documentation of intent.
+- **Sediment lesson:** When a council finding requires changes to an already-applied function, ALWAYS author a new follow-up migration (next-greater timestamp); never edit the original file's body. Update CLAUDE.md or `.claude/rules/database.md` to document explicitly.
+- **Cross-ref:** P162 #115 (PR #240); commits ec988042 + de109c7b; migrations 20260802000008-10.
+
