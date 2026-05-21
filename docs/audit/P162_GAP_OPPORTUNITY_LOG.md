@@ -975,3 +975,55 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Stop-gap for 2026-W22 audit (Mon 2026-05-25):** PM cross-references session handoffs to identify real bypasses; applies criteria only to real subset; ignores v1 noise. Documented in #235 issue body.
 - **Cross-ref:** Issue #232 (closed); Issue #235 (v2 detection); commit `a443a77d` (Option C Híbrido governance origin); `.claude/rules/bypass-protocol.md` (criteria); `.github/workflows/bypass-audit-weekly.yml` (v1 script to refine); p209/p210 handoffs (16 real bypass catalog).
 
+### 110. RESOLVED-224.A — /admin/selection JSON import observability (Issue #224, PR #236, p212)
+- **Tipo:** observability / user-visible UX (admin) — generic "ver detalhes no cron_run_log do worker" hint replaced with structured inline errors · **Severity:** HIGH (real-world impact discovered) · **Effort:** M (~2.5h full scope C end-to-end)
+- **Trigger:** PM ask 2026-05-21 p212 (post-p211 close): focus on #224. Sample JSON `/home/vitormrodovalho/Downloads/A/pmi_volunteer_full_enriched_2026-05-21.json` already pre-loaded by Codex curation comment.
+- **What shipped:**
+  - **UI (selection.astro)**: 3 new render helpers — `renderWorkerErrorsBlock(errors)` groups worker errors by scope with ref + sanitized message; `renderIngestResultWarning(payload)` surfaces Phase A extract result as yellow info banner (narrowed to `{error}` only per code-reviewer M1); `renderCorrelationFooter(d, appliedAt)` shows cycle_code + run_id (clipboard-copyable) + ISO timestamp. `renderJsonApplyResult` palette switches amber-vs-emerald by `errs > 0`. Same treatment in dry-run preview path (warning + correlation; errors not populated in dry-run path). Clipboard handler wired in both paths.
+  - **Worker (pmi-vep-sync /ingest)**: `IngestSummary.run_id` + `IngestSummary.ingest_result_warning` + same on `IngestDryRunSummary`. Both stamped before return in apply + dry-run paths. `ScriptIngestPayload.ingestResult` declared so worker can pass through.
+  - **i18n**: 6 new keys (pt-BR + en-US + es-LATAM) — `importJsonResultPartialTitle`, `importJsonCorrelationCycle/RunId/Applied`, `importJsonErrorsHeader`, `importJsonIngestResultWarning`. SEL_I18N bundle exposes `importJson.*` subpath.
+  - **Contract test**: `tests/contracts/admin-selection-import-error-rendering.test.mjs` — 9 static assertions wired to npm test + npm run test:contracts.
+- **Pipeline discovery (separate issue):** Reproducer via `cron_run_log` snapshot exposed **BUG-224.A** — 3 cycle4-2026 candidates missed welcome emails between 2026-05-19 → 2026-05-21 because `issueOnboardingToken` was throwing constraint violation. The observability fix made this visible; BUG-224.A was filed as Issue #237 + fixed in PR #238 (entry #111) + manually backfilled in same session.
+- **Council Tier 1 (PR #236):** platform-guardian GO-WITH-AMENDMENTS (LOW deploy.md baseline bump + 4 pre-existing test:contracts gaps backlog) + code-reviewer GO-WITH-AMENDMENTS (M1 PII narrow on renderIngestResultWarning + M2 verified non-issue + L1 dry-run clipboard handler + L2 test regex robustness + L3 strip phaseB). All applied inline in amendment commit `405b3080` before merge.
+- **Validation:** npm test 1499/0/50 (+9 from p211 baseline 1490); npx astro build clean; new contract test 9/9 in isolation. Worker redeployed Version `cd7ea6d8`.
+- **Merge:** Squash `704fa2f0` 2026-05-21 08:01 UTC. No --admin bypass (CI green except pre-existing CodeQL fail).
+- **Cross-ref:** Issue #224 (closed); PR #236 (merged); Issue #237 (BUG-224.A filed + fixed); deploy worker Version cd7ea6d8; council code-reviewer M2 (esc on attr) verified non-issue with HTML5 entity-decoding spec; feedback memory candidates: not promoted yet (4 inline lessons in PR commit body).
+
+### 111. RESOLVED-237.A — BUG-224.A onboarding_tokens.organization_id pass-through fix (Issue #237, PR #238, p212)
+- **Tipo:** bug / hidden data loss (3 missed welcome emails) · **Severity:** HIGH (cycle4-2026 NEW applicants did not receive onboarding emails 2026-05-19 → 2026-05-21) · **Effort:** S (~1h fix + backfill)
+- **Trigger:** Discovered during #224 reproducer (P162 #110). Filed as #237 after-merge of #236, fixed + backfilled same session.
+- **Root cause:** `onboarding_tokens.organization_id` is `NOT NULL DEFAULT auth_org()`. The pmi-vep-sync worker connects via `SUPABASE_SERVICE_ROLE_KEY` which has no JWT / `auth.uid()` context — so `auth_org()` returns NULL and the constraint fires. `issueOnboardingToken()` in `cloudflare-workers/pmi-vep-sync/src/onboarding-token.ts` did NOT pass `organization_id` explicitly. Result: every NEW applicant in cycle4-2026 since worker deploy had failed token issuance → no welcome email. Hidden by generic UI hint (until #224 fixed observability).
+- **Fix:**
+  - **Worker (onboarding-token.ts)**: `IssueTokenOpts.organization_id` declared as REQUIRED `string` (no `?:`). Insert payload literal includes `organization_id: opts.organization_id`. Comment block documents the auth_org() ↔ JWT-context pattern.
+  - **Worker (index.ts /ingest)**: caller passes `organization_id: env.ORG_ID`. `env.ORG_ID` was already a bound env var (confirmed at deploy "env.ORG_ID (\"2b4f58ab-7c45-4170-8718-b77ee69ff906\")"), so no env config change needed.
+  - **Council code-reviewer HIGH amendment**: early guard `if (!env.ORG_ID) return server_misconfig 500` added in handleIngest. Wrangler doesn't enforce `[vars]` presence at deploy time; this surfaces misconfig at request time with clear actionable message instead of Postgres 22P02 buried in per-app error log.
+  - **Contract test**: `tests/contracts/onboarding-token-organization-id.test.mjs` — 4 static assertions (interface field required, insert payload key, /ingest caller passes env.ORG_ID, guard against missing env.ORG_ID).
+- **Manual backfill (same session):** Direct SQL via MCP `execute_sql` — DO block iterated 3 application_ids, generated tokens via `gen_random_bytes(32)` + base64url + `digest(... 'sha256')`, INSERTed onboarding_tokens with `organization_id` explicit, called `campaign_send_one_off(p_template_slug := 'pmi_welcome_with_token', ...)`. Result: 3 onboarding_tokens created + 3 campaign_sends `status='sent'` (Resend accepted delivery). Issued_by_worker stamped as 'pmi-vep-sync-backfill-bug224a' for traceability.
+- **Council Tier 1 (PR #238):** platform-guardian GO (no schema impact + class-of-bugs scan confirmed only this caller affected, all other `onboarding_tokens` inserts already pass org_id) + code-reviewer GO-WITH-AMENDMENTS (HIGH env.ORG_ID guard + LOW UUID-in-test-comment cleanup). All applied inline in amendment commit `8d5d9e95` before merge.
+- **Validation:** npm test 1503/0/50 (+4 from p212 #224 baseline 1499); npx astro build clean; new contract test 4/4 in isolation. Worker redeployed Version `26a850e4`.
+- **Merge:** Squash `f47a1428` 2026-05-21 08:19 UTC. No --admin bypass (CI green).
+- **Backfill verification:** 3 onboarding_tokens with organization_id correctly set + expires_at 2026-05-28 + scopes correct + issued_by_worker traceable. 3 campaign_sends status='sent'. 18/18 invariants = 0 violations post-backfill. 0 synth leaks.
+- **Cross-ref:** Issue #237 (closed); PR #238 (merged); Issue #224 + PR #236 (parent observability that surfaced this bug); deploy worker Version 26a850e4; council audit script `_audit_list_public_function_bodies` lookups for class-of-bugs scan; GAP-237.A LOW backlog (sync-artia hardcodes PMI_GO_ORG_ID — single-tenant safe today, sweep at multi-tenant milestone); WATCH-237.A LOW backlog (architecturally: derive `organization_id` from `selection_cycles.organization_id` instead of `env.ORG_ID` pass-through; multi-tenant cleaner future path).
+
+### 112. WATCH-224.A — observability invariant for welcome dispatch completeness (p212 backlog)
+- **Tipo:** test gap / WATCH · **Severity:** LOW · **Effort:** S (~1h DB-aware contract test)
+- **Trigger:** code-reviewer suggested during PR #236 review. Not addressed in #237 fix (scope discipline).
+- **Description:** DB-aware contract test that asserts `applications_new === welcome_dispatched + welcomes_skipped_non_submitted` after every successful /ingest apply. If violated → constraint or downstream failure exists (the exact class that hid BUG-224.A for 22+ days).
+- **Where to add:** `tests/contracts/worker-ingest-welcome-dispatch-completeness.test.mjs` (new), DB-aware path. Requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` env (skips silently without per WATCH-213.C).
+- **When to ship:** Next maintenance session; not blocking.
+- **Cross-ref:** P162 #110 (PR #236 observability); P162 #111 (PR #238 fix); council code-reviewer flag in PR #236 review.
+
+### 113. WATCH-237.A — multi-tenant ORG_ID derivation from selection_cycles (p212 backlog)
+- **Tipo:** architectural backlog · **Severity:** LOW · **Effort:** M (~2h refactor + test)
+- **Trigger:** code-reviewer flagged during PR #238 review. Not addressed in this session (single-tenant safe today).
+- **Description:** `env.ORG_ID` hardcoded pass-through is correct for single-tenant deployment. If multi-tenant: derive `organization_id` from `selection_cycles.organization_id` row (one DB round-trip per ingest run) — single source of truth, no env-binding drift risk.
+- **When to ship:** At multi-tenant milestone (not before — single-tenant means env.ORG_ID is correct by definition).
+- **Cross-ref:** P162 #111 (PR #238 fix); GAP-237.A (related: sync-artia hardcoded PMI_GO_ORG_ID); ADR-0007 (V4 authority — engagement-derived authority resolves org via canonical query path).
+
+### 114. GAP-237.A — sync-artia worker hardcodes PMI_GO_ORG_ID literal (p212 backlog)
+- **Tipo:** dev-time tech-debt / sweep-on-multi-tenant · **Severity:** LOW · **Effort:** XS (~15 min env var)
+- **Trigger:** platform-guardian flagged during PR #238 review. Not in this PR's scope.
+- **Description:** `supabase/functions/sync-artia/index.ts:12` hardcodes `PMI_GO_ORG_ID = '2b4f58ab-7c45-4170-8718-b77ee69ff906'` as string literal rather than reading from env. Carries inline comment documenting the JWT-context root cause, but does not abstract to env. Will need sweep if second tenant onboards.
+- **When to ship:** At multi-tenant milestone (single-tenant safe today).
+- **Cross-ref:** P162 #111 (PR #238 fix); WATCH-237.A; `supabase/functions/sync-artia/index.ts:12`.
+
