@@ -181,6 +181,18 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: 'missing_applications', message: 'body.applications array required' }, 400);
   }
 
+  // BUG-224.A (#237) council code-reviewer HIGH: surface ORG_ID misconfig at
+  // request time with a clear message rather than letting Postgres throw a
+  // 22P02 invalid_text_representation buried in the per-app error log. The
+  // var is declared as `string` in types.ts, but wrangler does not enforce
+  // [vars] presence at deploy time.
+  if (!env.ORG_ID) {
+    return jsonResponse({
+      error: 'server_misconfig',
+      message: 'env.ORG_ID is required — configure [vars] ORG_ID in wrangler.toml'
+    }, 500);
+  }
+
   const db = createDbClient(env);
 
   // Log this ingest run for observability (cron_run_log)

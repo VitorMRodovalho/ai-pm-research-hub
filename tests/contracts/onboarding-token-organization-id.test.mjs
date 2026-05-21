@@ -45,11 +45,24 @@ test('issueOnboardingToken insert payload includes organization_id (#237)', () =
 test('worker /ingest caller passes env.ORG_ID to issueOnboardingToken (#237)', () => {
   const src = readFileSync(WORKER_INDEX_FILE, 'utf8');
   // The single issueOnboardingToken call site in index.ts (line ~553) must
-  // include organization_id: env.ORG_ID. ORG_ID is already a bound env var
-  // (confirmed at deploy: "env.ORG_ID (\"2b4f58ab-7c45-4170-8718-b77ee69ff906\")").
+  // include organization_id: env.ORG_ID. The UUID itself lives only in
+  // wrangler.toml [vars] (not in source) to avoid drift if the org id ever
+  // rotates.
   const callPattern = /issueOnboardingToken\s*\(\s*db\s*,\s*\{[\s\S]*?organization_id\s*:\s*env\.ORG_ID[\s\S]*?\}\s*\)/;
   assert.ok(
     callPattern.test(src),
     'worker /ingest must pass organization_id: env.ORG_ID when calling issueOnboardingToken'
+  );
+});
+
+test('worker /ingest guards against missing env.ORG_ID before insert (#237)', () => {
+  const src = readFileSync(WORKER_INDEX_FILE, 'utf8');
+  // Council code-reviewer HIGH: surface ORG_ID misconfig at request time with
+  // a clear message rather than letting Postgres throw 22P02 buried in the
+  // per-app error log.
+  const guardPattern = /if\s*\(\s*!env\.ORG_ID\s*\)\s*\{[\s\S]*?server_misconfig/;
+  assert.ok(
+    guardPattern.test(src),
+    'worker /ingest must guard against missing env.ORG_ID and return server_misconfig 500'
   );
 });
