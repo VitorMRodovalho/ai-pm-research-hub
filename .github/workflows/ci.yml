@@ -43,15 +43,18 @@ jobs:
         run: npm test
         
       - name: Build Project
-        # Usamos chaves falsas (mock) apenas para o Astro conseguir compilar no GitHub
+        # Mock env vars satisfy Astro/Vite build-time replacement. URL precisa
+        # DNS-resolvable: workerd recente (runner image update ~2026-05-18)
+        # aborta com `kj/async-io-unix.c++:1298: DNS lookup failed` em hostname
+        # inexistente como `mock.supabase.co`. Issue #220 / BUG-207.C.
         env:
-          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run build
-        
+
       - name: Smoke Test Routes
         env:
-          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run smoke:routes
         timeout-minutes: 2
@@ -85,8 +88,9 @@ jobs:
         run: npx playwright install chromium
 
       - name: Run browser guards
+        # URL precisa DNS-resolvable (workerd-strict) — ver Build step acima.
         env:
-          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: ./scripts/run_browser_guards_with_retry.sh
 
@@ -95,7 +99,8 @@ jobs:
     timeout-minutes: 15
     env:
       PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
-      PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+      # URL precisa DNS-resolvable (workerd-strict) — ver browser_guards acima.
+      PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
       PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
     steps:
       - uses: actions/checkout@v6
