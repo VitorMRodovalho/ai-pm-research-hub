@@ -4,7 +4,7 @@
  * Verifies the cv extraction pipeline shipped p117 stays operational:
  *   1. RPC extract_cv_text_batch(int) exists with SECURITY DEFINER + service-role gate
  *   2. RPC get_extraction_health() exists and returns expected fields when authenticated
- *   3. Cron job extract-cv-text-15min is scheduled and active (*/15 * * * *)
+ *   3. Cron job extract-cv-text-15min is scheduled and active (every 15 minutes)
  *   4. ai_processing_log purpose CHECK constraint allows 'enrichment' (used by EF)
  *   5. selection_applications has cv_extracted_text column with text type
  *   6. Column comment documents 90/180d retention policy (LGPD Art. 16 II)
