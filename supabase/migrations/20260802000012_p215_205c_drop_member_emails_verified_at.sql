@@ -53,7 +53,6 @@ DECLARE
   v_is_service_role boolean := false;
   v_allowed boolean := false;
 BEGIN
-  -- Determine if service_role or postgres is running
   IF current_setting('role', true) IN ('service_role', 'postgres') OR current_user IN ('postgres', 'supabase_admin') THEN
     v_is_service_role := true;
   END IF;
@@ -64,7 +63,6 @@ BEGIN
       RAISE EXCEPTION 'Not authenticated';
     END IF;
 
-    -- Check if self or manage_member or view_pii permission
     IF v_caller.id = p_member_id OR public.can_by_member(v_caller.id, 'manage_member') OR public.can_by_member(v_caller.id, 'view_pii') THEN
       v_allowed := true;
     END IF;
