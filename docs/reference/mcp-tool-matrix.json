@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-21T21:26:17.801Z",
+  "generated_at": "2026-05-21T21:37:13.541Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 299,
   "runtime_status": "clean (299 runtime ≡ 299 static)",
