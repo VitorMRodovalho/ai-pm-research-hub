@@ -819,11 +819,13 @@ const SEL_I18N = {
 
   function showDenied() {
     document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-panel')?.classList.add('hidden');
     document.getElementById('sel-denied')?.classList.remove('hidden');
   }
 
   function showPanel() {
     document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-denied')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.remove('hidden');
   }
 
