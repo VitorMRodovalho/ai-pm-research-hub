@@ -144,12 +144,16 @@ test('GAP-205.A: SELECT revoked from authenticated on member_emails (20260802000
 
 // ─── 6. SECDEF RPC member_resolve_email must require authentication (no anon enumeration) ───
 test('GAP-205.A: member_resolve_email SECDEF requires authentication (auth.uid() IS NULL guard)', () => {
-  // Find the latest CREATE OR REPLACE FUNCTION member_resolve_email block
+  // Find the latest CREATE [OR REPLACE] FUNCTION member_resolve_email block.
+  // Pattern-agnostic regex accepts both `CREATE FUNCTION` (after explicit DROP,
+  // per GC-097 for signature changes) and `CREATE OR REPLACE FUNCTION`
+  // (in-place body updates). Mirrors the shared parser at
+  // tests/helpers/rpc-body-drift-parser.mjs:43. WATCH-215.A sediment.
   let latestBlock = null;
   for (let i = migrations.length - 1; i >= 0; i--) {
     const m = migrations[i];
     const match = m.content.match(
-      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?member_resolve_email\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
+      /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?member_resolve_email\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
     );
     if (match) {
       latestBlock = { migration: m.name, body: match[1] };
@@ -157,7 +161,7 @@ test('GAP-205.A: member_resolve_email SECDEF requires authentication (auth.uid()
     }
   }
   assert.ok(latestBlock,
-    'No CREATE OR REPLACE FUNCTION member_resolve_email found in migrations.');
+    'No CREATE [OR REPLACE] FUNCTION member_resolve_email found in migrations.');
 
   // The function must raise on unauthenticated callers (excluding service_role/postgres).
   // ADR-0095 §4 documents this as intentional: any authenticated user can resolve any email.
@@ -178,7 +182,7 @@ test('GAP-205.A: member_list_emails SECDEF gates on self / manage_member / view_
   for (let i = migrations.length - 1; i >= 0; i--) {
     const m = migrations[i];
     const match = m.content.match(
-      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?member_list_emails\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
+      /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?member_list_emails\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
     );
     if (match) {
       latestBlock = { migration: m.name, body: match[1] };
@@ -186,7 +190,7 @@ test('GAP-205.A: member_list_emails SECDEF gates on self / manage_member / view_
     }
   }
   assert.ok(latestBlock,
-    'No CREATE OR REPLACE FUNCTION member_list_emails found in migrations.');
+    'No CREATE [OR REPLACE] FUNCTION member_list_emails found in migrations.');
 
   // The function must check self / manage_member / view_pii via can_by_member()
   assert.match(latestBlock.body, /can_by_member\([^)]*,\s*'manage_member'\)/i,
@@ -211,7 +215,7 @@ test('GAP-205.A: member_add_alternate_email SECDEF gates on self / manage_member
   for (let i = migrations.length - 1; i >= 0; i--) {
     const m = migrations[i];
     const match = m.content.match(
-      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?member_add_alternate_email\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
+      /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?member_add_alternate_email\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
     );
     if (match) {
       latestBlock = { migration: m.name, body: match[1] };
@@ -219,7 +223,7 @@ test('GAP-205.A: member_add_alternate_email SECDEF gates on self / manage_member
     }
   }
   assert.ok(latestBlock,
-    'No CREATE OR REPLACE FUNCTION member_add_alternate_email found in migrations.');
+    'No CREATE [OR REPLACE] FUNCTION member_add_alternate_email found in migrations.');
 
   assert.match(latestBlock.body, /can_by_member\([^)]*,\s*'manage_member'\)/i,
     `member_add_alternate_email (in ${latestBlock.migration}) must call can_by_member(..., 'manage_member'). ` +
@@ -246,7 +250,7 @@ test('GAP-205.A: sync_member_email_trigger_fn raises on cross-member email colli
   for (let i = migrations.length - 1; i >= 0; i--) {
     const m = migrations[i];
     const match = m.content.match(
-      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?sync_member_email_trigger_fn\s*\(\s*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
+      /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?sync_member_email_trigger_fn\s*\(\s*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
     );
     if (match) {
       latestBlock = { migration: m.name, body: match[1] };
@@ -254,7 +258,7 @@ test('GAP-205.A: sync_member_email_trigger_fn raises on cross-member email colli
     }
   }
   assert.ok(latestBlock,
-    'No CREATE OR REPLACE FUNCTION sync_member_email_trigger_fn found in migrations.');
+    'No CREATE [OR REPLACE] FUNCTION sync_member_email_trigger_fn found in migrations.');
 
   // Cross-member guard (migration 20260802000009 council Tier 1 HIGH-1)
   assert.match(latestBlock.body, /cross-member\s+collision\s+guard/i,
@@ -313,4 +317,49 @@ test('GAP-205.B: member_emails.organization_id has FK to organizations(id) ON DE
   assert.match(m011.content, /dangling\s+org_id\s+refs/i,
     'Migration 20260802000011 must include a pre-flight check that asserts ' +
     'no dangling org refs exist before applying the FK constraint.');
+});
+
+// ─── 12. GAP-205.C: verified_at column dropped from member_emails ───
+test('GAP-205.C: migration 20260802000012 drops verified_at column from member_emails', () => {
+  const m012 = migrations.find(m =>
+    m.name === '20260802000012_p215_205c_drop_member_emails_verified_at.sql'
+  );
+  assert.ok(m012,
+    'Migration 20260802000012_p215_205c_drop_member_emails_verified_at.sql must exist');
+
+  assert.match(m012.content, /ALTER\s+TABLE\s+public\.member_emails\s+DROP\s+COLUMN\s+verified_at/i,
+    'Migration 20260802000012 must contain ALTER TABLE public.member_emails DROP COLUMN verified_at. ' +
+    'GAP-205.C closure: column was dead schema (0 writes, 0 of 73 rows non-NULL) at p214 close.');
+});
+
+// ─── 13. GAP-205.C: latest member_list_emails CREATE FUNCTION omits verified_at from RETURNS TABLE ───
+test('GAP-205.C: latest member_list_emails RETURNS TABLE does not include verified_at', () => {
+  // Find the LATEST CREATE [OR REPLACE] FUNCTION member_list_emails block in migration sort order.
+  // Same pattern-agnostic regex used in test #7. The latest definition must be
+  // free of verified_at — both as a return column AND in the SELECT projection.
+  let latestBlock = null;
+  for (let i = migrations.length - 1; i >= 0; i--) {
+    const m = migrations[i];
+    const match = m.content.match(
+      /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?member_list_emails\s*\([^)]*\)[\s\S]*?\$\$([\s\S]*?)\$\$/i
+    );
+    if (match) {
+      // Capture both the header (RETURNS TABLE block) and body for inspection.
+      const fullBlock = m.content.match(
+        /CREATE(?:\s+OR\s+REPLACE)?\s+FUNCTION\s+(?:public\.)?member_list_emails\s*\([^)]*\)[\s\S]*?\$\$[\s\S]*?\$\$/i
+      );
+      latestBlock = { migration: m.name, header: fullBlock[0], body: match[1] };
+      break;
+    }
+  }
+  assert.ok(latestBlock,
+    'No CREATE [OR REPLACE] FUNCTION member_list_emails found in migrations.');
+
+  // The latest definition must NOT mention verified_at anywhere in its header
+  // (RETURNS TABLE column list) or body (SELECT projection). Without this assertion,
+  // a future re-add of the column could silently restore the dead-schema pattern.
+  assert.doesNotMatch(latestBlock.header, /\bverified_at\b/i,
+    `member_list_emails (latest in ${latestBlock.migration}) must NOT reference verified_at ` +
+    `anywhere in the function header (RETURNS TABLE) or body (SELECT projection). ` +
+    `Column was dropped via GAP-205.C; re-adding requires explicit ADR amendment.`);
 });
