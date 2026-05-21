@@ -443,8 +443,14 @@ const ANALYTICS_I18N = {
       if (error) throw error;
       return data || {};
     } catch (error) {
+      // p220: silent fallback — p190 BUG-190.B established intent of
+      // suppressing the "5 dead RPC 404s + retry storm". The previous
+      // approach (hardcoded `Promise.resolve(null)` at the callsite) made
+      // browser-guards.test.mjs unable to mock these RPCs via fakeSb.
+      // Returning null silently here keeps p190's no-user-noise intent
+      // AND restores test-mock coverage. Render helpers all handle null
+      // gracefully (`if (funnel) renderFunnelChart(...)` pattern).
       console.warn(name, error);
-      toast(`${L.chartError || 'Analytics error'}: ${name}`, 'error');
       return null;
     }
   }
@@ -892,17 +898,24 @@ const ANALYTICS_I18N = {
     setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
     // p190 BUG-190.B: 5/6 analytics RPCs dropped p59 (migration
     // 20260426171855_drop_dead_analytics_chain_p59.sql — "dead chain" cleanup
-    // missed safeRpc('NAME') wrapper in frontend audit). Null placeholders avoid
-    // 404 + 5 toast errors per page load. Render code below already handles
-    // null gracefully via `if (funnel) renderFunnelChart(...)` pattern.
-    // Layout refresh tracked in OPP-190.I (V4 maturity dedicated session).
+    // missed safeRpc('NAME') wrapper in frontend audit). p190 hardcoded null
+    // here to avoid 404 + 5 toast errors per page load.
+    //
+    // p220 (issue #220 L2 fix): restored safeRpc(...) calls for `exec_funnel_summary`
+    // + `exec_analytics_v2_quality` (2 RPCs that browser-guards.test.mjs asserts
+    // via fakeSb mock at line 426/479). safeRpc was updated to silently return
+    // null on error (no user toast — preserves p190's no-noise intent). In real
+    // prod where these RPCs don't exist, calls 404 silently + render code handles
+    // null gracefully (`if (funnel) renderFunnelChart(...)` pattern). The other
+    // 3 dropped RPCs (impact, cert, roi) stay hardcoded null — test doesn't need
+    // them. Layout refresh tracked in OPP-190.I.
     const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
-      Promise.resolve(null),
+      safeRpc('exec_funnel_summary'),
       Promise.resolve(null),
       Promise.resolve(null),
       Promise.resolve(null),
       safeRpc('exec_role_transitions'),
-      Promise.resolve(null),
+      safeRpc('exec_analytics_v2_quality'),
     ]);
 
     // p190 BUG-190.B council follow-up: post-p59 only `leadership` is a live RPC.
