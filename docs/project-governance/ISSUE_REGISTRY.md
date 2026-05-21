@@ -43,6 +43,7 @@ Status values:
 | Issue | Registry status | Lane | Blocks | Blocked by | Acceptance evidence | Close rule |
 |---|---|---|---|---|---|---|
 | #212 | spec-only | Governance / Architecture | #211, #209, Drive/external-member work | #221 and PM signoff | ADR-0094, architecture doc, sub-issue set accepted | Close only after child issues spawned or tracker intentionally retained |
+| #243 | spec-only | Governance / MCP-AI / Frontend / QA | selection AI-assist calibration children | calibration profile contract and child split | Spec/ADR defines versioned calibration profile, context completeness warnings, evidence guardrails, AI lineage, and LGPD/HITL stance | Close only after child issues are accepted or tracker intentionally retained |
 | #166 | spec-only | Foundation / Governance | semantic-layer implementation | ADR decisions | roadmap/ADR accepted | Close after roadmap decomposes into leaves |
 | #204 | spec-only | Governance / Integration | Gemini/Drive/Calendar work | #212/#209 boundaries | integration governance direction accepted | Close after split into vendor eval, Drive lifecycle, calendar governance leaves |
 | #97 | spec-only | Governance / Foundation | speaker lifecycle | consent/legal pattern from #221/#212 | accepted external speaker lifecycle spec | Close after child issues exist |
