@@ -875,3 +875,16 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Fresh `supabase db reset` test in next deploy validates grants intact for captured functions.
 - **Cross-ref:** Code-reviewer PR #228 review (background agent at p209 close); WATCH-226.A is different (platform-guardian finding re drift capture deadline).
 
+### 104. RESOLVED-209.E — A1 cycle4-2026 leader_extra max:5→10 + RPC validation (PM ask 2026-05-21)
+- **Tipo:** bug / silent data corruption · **Severity:** HIGH (would have continued to corrupt cohort comparisons + accepted invalid scores silently) · **Effort:** S (~30 min discovery + apply)
+- **Trigger:** PM chat at p209 mid-session: "Henrique continua claramente acima do band superior (219 vs 170.96). Tres anomalias ainda em aberto. Anomalia 1 — schema leader_extra ainda em max: 5". Investigation revealed 3 distinct issues; A1 fixed in-session via 2 migrations.
+- **Root cause (A1)**: historical drift in `selection_cycles.leader_extra_criteria`. Original seed (cycle3, migration 20260319100024) had ALL criteria max:5. Migration 20260401090000_evaluation_rubrics_advisory_panel.sql bumped `objective_criteria` to max:10 with anchored guides for inter-rater reliability — but `leader_extra_criteria` was FORGOTTEN in that pass. ~7 weeks of drift (2026-04-01 → 2026-05-21). `submit_evaluation` RPC didn't validate score against schema max, so evaluators using max:10 scale (Fabricio: Francisleila scores 7-8) had submissions silently accepted with weighted_subtotal=162 (when ostensible "valid" max would be 110).
+- **Fix**:
+  - Migration 20260802000002 — UPDATE selection_cycles SET leader_extra_criteria with jsonb_set max:10 for active cycles (cycle3-2026-b2 + cycle4-2026). Idempotent. Applied via execute_sql (DML).
+  - Migration 20260802000003 — CREATE OR REPLACE submit_evaluation adding `v_max := COALESCE((v_criterion->>'max')::numeric, 10);` + `IF v_score < 0 OR v_score > v_max THEN RAISE EXCEPTION` inside scores loop. Applied via apply_migration MCP. Body re-verified live post-apply.
+- **Impact preserved**: Cycle4-2026 had 2 existing leader_extra evals. Vitor's William (scores 1-4) valid under both scales. Fabricio's Francisleila (scores 5-8) valid under max:10. Both preserved per PM Option A.
+- **A2 deferred**: PM Option A for cohort separation refactor (leader_extra mutates objective_score_avg) — filed as Issue #229. Scope ~3-5h (new columns + RPC branch + UI changes + backfill + tests).
+- **A3 NOT a bug**: Henrique cutoff null because zero evaluations submitted (application created 2026-05-21 03:07).
+- **Direct apply pattern**: per PM instruction "vc consegue fazer aplicacao por aqui que é muito mais controlada". Increments WATCH-209.C count by 2 (commit fd322767 + apply_migration call) — now 10 bypass events total in 4-day window. PM-authorized for isolated fixes; documented per WATCH-209.C distinction.
+- **Cross-ref:** Issue #229 (A2 cohort separation); migration 20260802000002 + 20260802000003; PM chat 2026-05-21 p209 mid-session; PR #228 (#226 work in same window).
+
