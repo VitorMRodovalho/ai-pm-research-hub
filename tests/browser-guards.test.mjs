@@ -541,6 +541,6 @@ async function run() {
 }
 
 run().catch((error) => {
-  console.error(error.message || error);
+  console.error(error?.stack || error?.message || error);
   process.exit(1);
 });
