@@ -68,6 +68,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - i18n: `.claude/rules/i18n.md`
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
+- **Bypass protocol (--admin / direct push)**: `.claude/rules/bypass-protocol.md` (post-p209 governance — Option C Híbrido + weekly cron audit at `.github/workflows/bypass-audit-weekly.yml`)
 - V4 refactor invariants (historical): `.claude/rules/refactor-in-progress.md`
 
 ## Council (multi-agent review structure)

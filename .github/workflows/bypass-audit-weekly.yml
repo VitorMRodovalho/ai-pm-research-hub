@@ -1,0 +1,168 @@
+name: Bypass Audit (weekly)
+
+# Tripwire automation per .claude/rules/bypass-protocol.md (Option C — Híbrido).
+# Lists --admin merges + direct pushes to main from last 7 days.
+# If >2: labels output issue with 'requires-review' for PM reflection.
+
+on:
+  schedule:
+    # Mondays 10:00 UTC (07:00 Brasília during BRT, 06:00 during BST)
+    - cron: '0 10 * * 1'
+  workflow_dispatch:  # allow manual trigger
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Compute week window
+        id: window
+        run: |
+          SINCE=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          UNTIL=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "since=$SINCE" >> $GITHUB_OUTPUT
+          echo "until=$UNTIL" >> $GITHUB_OUTPUT
+          echo "week_label=$(date -u +%Y-W%V)" >> $GITHUB_OUTPUT
+
+      - name: Audit --admin merges
+        id: admin_merges
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE: ${{ steps.window.outputs.since }}
+        run: |
+          # List PRs merged in last 7 days; for each, check if validate was success at merge SHA
+          # If NOT success → likely --admin bypass
+          ADMIN_PRS=""
+          ADMIN_COUNT=0
+
+          for PR in $(gh pr list --state merged --search "merged:>$SINCE" --base main --json number --jq '.[].number'); do
+            COMMIT=$(gh pr view $PR --json mergeCommit -q .mergeCommit.oid)
+            if [ -z "$COMMIT" ] || [ "$COMMIT" = "null" ]; then continue; fi
+
+            VALIDATE_STATUS=$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT/check-runs" --jq '[.check_runs[] | select(.name=="validate") | .conclusion] | first // "unknown"' 2>/dev/null || echo "unknown")
+
+            if [ "$VALIDATE_STATUS" != "success" ]; then
+              TITLE=$(gh pr view $PR --json title -q .title)
+              MERGED_AT=$(gh pr view $PR --json mergedAt -q .mergedAt)
+              ADMIN_PRS="$ADMIN_PRS- PR #$PR ($MERGED_AT) — validate=$VALIDATE_STATUS — $TITLE\n"
+              ADMIN_COUNT=$((ADMIN_COUNT + 1))
+            fi
+          done
+
+          echo "count=$ADMIN_COUNT" >> $GITHUB_OUTPUT
+          {
+            echo 'prs<<BYPASS_EOF'
+            echo -e "$ADMIN_PRS"
+            echo 'BYPASS_EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Audit direct pushes to main
+        id: direct_pushes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE: ${{ steps.window.outputs.since }}
+        run: |
+          # List commits on main from last 7 days that are NOT merge commits (direct push pattern)
+          # Heuristic: parent count == 1 (merges have 2 parents in --first-parent view)
+          DIRECT_LINES=""
+          DIRECT_COUNT=0
+
+          for SHA in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&since=$SINCE&per_page=100" --jq '.[] | select(.parents | length == 1) | .sha'); do
+            # Skip if this commit is on any PR (would be a squash merge commit)
+            PR_FOR_COMMIT=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at)] | length' 2>/dev/null || echo 0)
+            if [ "$PR_FOR_COMMIT" = "0" ]; then
+              MSG=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.message' | head -1)
+              AUTHOR=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.author.name')
+              DIRECT_LINES="$DIRECT_LINES- \`${SHA:0:8}\` ($AUTHOR) — $MSG\n"
+              DIRECT_COUNT=$((DIRECT_COUNT + 1))
+            fi
+          done
+
+          echo "count=$DIRECT_COUNT" >> $GITHUB_OUTPUT
+          {
+            echo 'commits<<BYPASS_EOF'
+            echo -e "$DIRECT_LINES"
+            echo 'BYPASS_EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Compose report + decide threshold
+        id: report
+        env:
+          ADMIN_COUNT: ${{ steps.admin_merges.outputs.count }}
+          DIRECT_COUNT: ${{ steps.direct_pushes.outputs.count }}
+          WEEK: ${{ steps.window.outputs.week_label }}
+        run: |
+          TOTAL=$((ADMIN_COUNT + DIRECT_COUNT))
+          THRESHOLD=2
+
+          if [ $TOTAL -gt $THRESHOLD ]; then
+            STATUS="⚠️ THRESHOLD EXCEEDED ($TOTAL > $THRESHOLD)"
+            LABEL="requires-review"
+            ACTION="Per .claude/rules/bypass-protocol.md: pause merges; review each event for legitimacy criteria; file remediation issue for root cause if pattern unjustified."
+          elif [ $TOTAL -gt 0 ]; then
+            STATUS="✓ within threshold ($TOTAL ≤ $THRESHOLD)"
+            LABEL="audit"
+            ACTION="No action required — events within accepted threshold. Verify each has documented justification in PR/commit."
+          else
+            STATUS="✓ zero bypass events (clean week)"
+            LABEL="audit"
+            ACTION="No bypass events this week. Continued discipline."
+          fi
+
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "label=$LABEL" >> $GITHUB_OUTPUT
+          {
+            echo 'action<<BYPASS_EOF'
+            echo -e "$ACTION"
+            echo 'BYPASS_EOF'
+          } >> $GITHUB_OUTPUT
+
+      - name: Open weekly audit issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEEK: ${{ steps.window.outputs.week_label }}
+          STATUS: ${{ steps.report.outputs.status }}
+          TOTAL: ${{ steps.report.outputs.total }}
+          LABEL: ${{ steps.report.outputs.label }}
+          ACTION: ${{ steps.report.outputs.action }}
+          ADMIN_COUNT: ${{ steps.admin_merges.outputs.count }}
+          ADMIN_PRS: ${{ steps.admin_merges.outputs.prs }}
+          DIRECT_COUNT: ${{ steps.direct_pushes.outputs.count }}
+          DIRECT_COMMITS: ${{ steps.direct_pushes.outputs.commits }}
+        run: |
+          cat <<EOF > /tmp/issue-body.md
+          ## Week $WEEK — Bypass Audit
+
+          **Status:** $STATUS
+          **Total events:** $TOTAL (threshold: 2)
+
+          ### --admin PR merges ($ADMIN_COUNT)
+
+          $ADMIN_PRS
+
+          ### Direct pushes to main ($DIRECT_COUNT)
+
+          $DIRECT_COMMITS
+
+          ### Action required
+
+          $ACTION
+
+          ### Reference
+
+          - Protocol: \`.claude/rules/bypass-protocol.md\`
+          - Cron: \`.github/workflows/bypass-audit-weekly.yml\`
+          - Origin: WATCH-207.D + WATCH-209.C (P162 log)
+          - Decision: p209 close — Option C Híbrido
+
+          🤖 Generated by bypass-audit-weekly workflow
+          EOF
+
+          gh issue create \
+            --title "[bypass-audit] Week $WEEK — $TOTAL events ($STATUS)" \
+            --body-file /tmp/issue-body.md \
+            --label "$LABEL"
