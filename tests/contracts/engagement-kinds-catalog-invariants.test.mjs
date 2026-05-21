@@ -103,11 +103,20 @@ test('engagement_kinds catalog invariant: no migration re-flips ambassador.requi
   // Any migration *after* the fix that sets ambassador.requires_agreement = true is a regression
   const subsequent = migrations.slice(fixIdx + 1);
   const reflipPattern = /UPDATE\s+public\.engagement_kinds[\s\S]*?SET[\s\S]*?requires_agreement\s*=\s*true[\s\S]*?WHERE\s+slug\s*=\s*'ambassador'/i;
-  // Also catch the INSERT/upsert variant
-  const insertReflipPattern = /INSERT\s+INTO\s+public\.engagement_kinds[\s\S]*?\(\s*['"]ambassador['"][\s\S]*?,\s*['"]?true['"]?[\s\S]*?\)/i;
+  // VALUES-tuple-scoped INSERT pattern — avoids the multi-row false-positive
+  // where ambassador=false but a sibling row has true (per code-reviewer LOW
+  // in PR #250 council review). Anchors to a single VALUES(...) tuple.
+  const insertReflipPattern = /VALUES\s*\([^)]*'ambassador'[^)]*,\s*true[^)]*\)/i;
+  // ON CONFLICT DO UPDATE upsert form (per code-reviewer LOW in PR #250 — also
+  // bypasses the UPDATE pattern since ON CONFLICT has no WHERE clause).
+  const onConflictReflipPattern = /ON\s+CONFLICT[\s\S]*?DO\s+UPDATE\s+SET[\s\S]*?requires_agreement\s*=\s*true/i;
+  // Note: MERGE statement (Postgres 15+) is not covered. Codebase has zero
+  // MERGE usage; revisit if a future migration adopts MERGE patterns.
 
   const offenders = subsequent.filter((m) =>
-    reflipPattern.test(m.body) || insertReflipPattern.test(m.body)
+    reflipPattern.test(m.body) ||
+    insertReflipPattern.test(m.body) ||
+    onConflictReflipPattern.test(m.body)
   );
 
   assert.equal(

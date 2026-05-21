@@ -11,12 +11,25 @@
 -- The catalog row for `ambassador` is internally contradictory:
 --   - description: "Reconhecimento honorário / mérito. Sem termo obrigatório."
 --   - legal_basis: consent
---   - requires_agreement: TRUE  ← contradicts description + legal_basis + ADR-0006
+--   - requires_agreement: TRUE  ← contradicts description + legal_basis + ADR-0006/0008
 --   - agreement_template: NULL  ← no template even defined
 -- ADR-0006 line 55 is canonical:
 --   `kind=ambassador, status=active, legal_basis=consent, end_date=null, agreement=null`
 --                                                                       ^^^^^^^^^^^^
--- The TRUE flag was a seed bug from V4 cutover catalog seed (2026-04-13).
+-- ADR-0008 §lifecycle table (line 25) is the operational source of truth:
+--   `ambassador (mérito, Herlon) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent`
+--                                                  ^^^^^^^^^^^
+--
+-- HISTORY (pre-existing migration acknowledgment)
+-- Migration 20260419010000 (lines 99-104) explicitly re-set requires_agreement=true
+-- for ambassador with the rationale "Formal external role: keep consent, require
+-- agreement". That reasoning conflated two distinct uses of "consent": (a) LGPD
+-- Art. 7 I consent as legal basis for data processing (which requires written
+-- documentation per Art. 8), vs (b) consent in the colloquial sense of accepting
+-- a merit recognition (no written instrument required). Per ADR-0008 line 25,
+-- ambassador uses (b) — "Nomeação → Sem termo". This migration overrides the
+-- 20260419010000 decision and aligns the catalog with the canonical ADR position.
+--
 -- Surfaced during p217 issue #160 investigation: 12 of 16 "pending agreement"
 -- engagements were ambassadors that the design never required termo for.
 --
@@ -52,7 +65,23 @@
 --   -- Note: no need to revoke any certificates (none were issued). No audit log
 --   -- needed since this is a catalog correction, not a member-state transition.
 --
--- ADR cross-ref: ADR-0006 line 55 (canonical), ADR-0008 line 19 (lifecycle table — ambassador not listed under termo flow)
+-- KNOWN FALSE-POSITIVE (post-fix)
+-- `public.validate_privacy_policy_consistency()` (migration 20260418010000,
+-- lines 268-276) flags any kind with `legal_basis='consent' AND NOT requires_agreement`
+-- as severity='error' with message "Consent-based kind does not require agreement.
+-- LGPD Art. 8 requires explicit consent documentation." Post-fix, ambassador will
+-- trip this branch. This is a FALSE POSITIVE — the validator's assumption that
+-- consent always means LGPD Art. 7 I + Art. 8 is overly strict for merit-recognition
+-- kinds where "consent" is the colloquial acceptance of a title. Currently dormant
+-- in production (RPC is not exposed via MCP and is not called from any page or
+-- test), so no live breakage. Documented to prevent a future session from "fixing"
+-- ambassador back to requires_agreement=true based on the validator alert.
+-- Follow-up: P162 WATCH-217.A (consider is_merit_only column or RPC exemption).
+--
+-- ADR cross-ref:
+--   - ADR-0006 line 55 (canonical engagement_kind row shape for ambassador)
+--   - ADR-0008 line 25 (lifecycle table — "Nomeação → Sem termo" for ambassador)
+--   - ADR-0006 §"Reconciliação de catálogo" 2026-05-21 (this fix in narrative form)
 -- Decision log: docs/audit/P162_GAP_OPPORTUNITY_LOG.md DECISION-160 + RESOLVED-160.A
 -- Forward-defense test: tests/contracts/engagement-kinds-catalog-invariants.test.mjs
 
