@@ -9153,7 +9153,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id: string | null
-          verified_at: string | null
         }
         Insert: {
           added_at?: string
@@ -9163,7 +9162,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id?: string | null
-          verified_at?: string | null
         }
         Update: {
           added_at?: string
@@ -9173,7 +9171,6 @@ export type Database = {
           kind?: string
           member_id?: string
           organization_id?: string | null
-          verified_at?: string | null
         }
         Relationships: [
           {
@@ -9209,6 +9206,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_emails_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -19937,7 +19941,6 @@ export type Database = {
           kind: string
           member_id: string
           organization_id: string
-          verified_at: string
         }[]
       }
       member_resolve_email: { Args: { p_email: string }; Returns: string }
