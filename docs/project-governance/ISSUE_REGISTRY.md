@@ -3,6 +3,8 @@
 **Last updated:** 2026-05-21  
 **Purpose:** dispatch board for parallel agents. This registry complements GitHub labels by adding execution status, lane, blockers, and close rules.
 
+**Operating protocol:** `docs/project-governance/ISSUE_REGISTRY_OPERATING_PROTOCOL.md`
+
 Status values:
 
 - `active` — work may proceed now.
