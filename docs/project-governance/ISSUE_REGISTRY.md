@@ -58,6 +58,7 @@ Status values:
 | #217 | ready-leaf | Frontend / Integration | #212 v1 | none | welcome email link smoke: `/initiative/` not `/iniciativas/` | Close after route/link smoke |
 | #205 | ready-leaf | Foundation | #210, #212 G1/G2 | none | migration + `resolve_member_by_email` RPC smoke | Close after contract tests and docs |
 | #224 | ready-leaf | Frontend / Integration / QA | VEP JSON import confidence | reproducible sample JSON from PM | `/admin/selection` JSON dry-run/apply shows actual worker errors inline, plus `cron_run_log` lookup path or run id | File issue, reproduce with failing JSON, then close after UI/error contract smoke |
+| #251 | ready-leaf | QA / Foundation | Cycle 4 selection trust | production read-only audit | Henrique visibility and William dual-track evaluation state explained with SQL evidence; remediation plan split if needed | Close after root cause is documented and data/code fix issue is created or applied with PM approval |
 | #211 | blocked | Frontend | #212 G3 | #212 PM signoff if broader scope applies | metadata UI smoke | Do not start until scope is confirmed standalone vs #212 child |
 | #194 | ready-leaf | QA | curatorship p197 confidence | p197 test fixtures | contract tests for review flow pass | Close after tests land |
 | #193 | ready-leaf | Foundation | curatorship status consistency | none | migration/audit confirms phantom states removed | Close after migration + rollback docs |
