@@ -336,21 +336,20 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes('id="analytics-filter-tribe"'), true);
   assert.equal(analytics.includes('id="analytics-filter-chapter"'), true);
   // p190 BUG-190.B: 5 of 6 analytics RPCs dropped p59 (migration
-  // 20260426171855_drop_dead_analytics_chain_p59.sql). Frontend used null
-  // placeholders for the dropped calls; only exec_role_transitions remained alive.
+  // 20260426171855_drop_dead_analytics_chain_p59.sql). Frontend uses null
+  // placeholders for the dropped calls; only exec_role_transitions remains alive.
   //
-  // p220 (issue #220 L2 fix): restored safeRpc('exec_funnel_summary') +
-  // safeRpc('exec_analytics_v2_quality') because browser-guards.test.mjs asserts
-  // their rendered output via fakeSb mock. safeRpc was updated to silently return
-  // null on error (preserves p190's no-noise intent — no toast). The other 3
-  // (impact, cert, roi) remain hardcoded null since they have no test coverage.
+  // p209/p220 transiently restored safeRpc('exec_funnel_summary') +
+  // safeRpc('exec_analytics_v2_quality') to satisfy browser-guards mocks, but
+  // those calls 404'd in real prod (mocks intercept only in test). p211 reverts:
+  // all 5 dropped names stay hardcoded null. Canonical rebuild tracked OPP-190.I.
   assert.equal(analytics.includes("safeRpc('exec_role_transitions')"), true);
   assert.equal(analytics.includes("BUG-190.B"), true);
-  assert.equal(analytics.includes("safeRpc('exec_funnel_summary')"), true);    // restored p220
+  assert.equal(analytics.includes("safeRpc('exec_funnel_summary')"), false);
   assert.equal(analytics.includes("safeRpc('exec_impact_hours_v2')"), false);
   assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), false);
   assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), false);
-  assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), true); // restored p220
+  assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), false);
   assert.equal(analytics.includes('id="analytics-quality-banner"'), true);
   assert.equal(analytics.includes('id="analytics-interpretation-card"'), true);
   assert.equal(analytics.includes('id="analytics-copy-summary"'), true);
