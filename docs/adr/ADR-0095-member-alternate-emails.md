@@ -2,12 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (amended 2026-05-21 — see end) |
+| Status | Accepted (amended 2026-05-21 GAP-205.C + GAP-205.D — see end) |
 | Date | 2026-05-21 |
 | Author | Antigravity (Assisted-By: Gemini) |
-| Migrations | [20260802000008_member_alternate_emails.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000008_member_alternate_emails.sql), [20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql), [20260802000010_p213_205_invariant_synthetic_filter.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000010_p213_205_invariant_synthetic_filter.sql), [20260802000011_p214_205b_member_emails_organization_id_fk.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000011_p214_205b_member_emails_organization_id_fk.sql), [20260802000012_p215_205c_drop_member_emails_verified_at.sql](file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/20260802000012_p215_205c_drop_member_emails_verified_at.sql) |
+| Migrations | 20260802000008_member_alternate_emails.sql, 20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql, 20260802000010_p213_205_invariant_synthetic_filter.sql, 20260802000011_p214_205b_member_emails_organization_id_fk.sql, 20260802000012_p215_205c_drop_member_emails_verified_at.sql, 20260802000013_p216_205d_member_emails_write_surface.sql |
 | Cross-ref | [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
-| Closes | Issue #205 (GAPs A/B closed p214; C closed p215) |
+| Closes | Issue #205 (GAPs A/B closed p214; C closed p215; D closed p216) |
 
 ## Context
 
@@ -63,10 +63,13 @@ Three Security Definer functions are defined to manage email queries and additio
 
 ### 5. MCP Tool Exposure
 
-The Deno edge function `nucleo-mcp` exposes these three RPCs as MCP tools for agentic workflows:
-- `member_resolve_email`
-- `member_list_emails`
-- `member_add_alternate_email`
+The Deno edge function `nucleo-mcp` exposes these RPCs as MCP tools for agentic workflows. The p213 batch shipped the first three (read + add); the p216 batch (GAP-205.D, see amendment) shipped the remaining write surface (remove + set_primary + update_kind), six total:
+- `member_resolve_email` (read; ADR-0095 §4 + p213)
+- `member_list_emails` (read; ADR-0095 §4 + p213)
+- `member_add_alternate_email` (write; ADR-0095 §4 + p213)
+- `member_remove_alternate_email` (write; Amendment GAP-205.D + p216)
+- `member_set_primary_email` (write; Amendment GAP-205.D + p216)
+- `member_update_alternate_email_kind` (write; Amendment GAP-205.D + p216)
 
 ### 6. Schema Invariant T
 
@@ -89,3 +92,37 @@ The `verified_at` column was dropped via migration `20260802000012_p215_205c_dro
 - **Pre-existing alternative**: Supabase Auth already verifies primary emails through its standard flow; an alternate-email verification flow would require custom token generation + email-send + verify RPC + UI, which does not exist yet. When that work is scoped, the column can be reintroduced alongside its consumers (not before).
 
 `member_list_emails` RPC return TABLE was simultaneously updated to remove the `verified_at` field. No other RPC, trigger, or invariant referenced the column, so the migration scope is narrow.
+
+## Amendment 2026-05-21 (GAP-205.D / P162 #126)
+
+The write surface of `member_emails` was completed by adding three new RPCs in migration `20260802000013_p216_205d_member_emails_write_surface.sql`:
+
+- `member_remove_alternate_email(p_member_id uuid, p_email text) → boolean` — deletes an alternate row; rejects if the email is the member's primary.
+- `member_set_primary_email(p_member_id uuid, p_email text) → boolean` — promotes a registered alternate to primary by routing the change through `UPDATE public.members SET email = ...`, which fires `sync_member_email_trigger_fn` (mig 20260802000009) to handle the demote+promote and preserve the alt kind on conflict. Idempotent on already-primary.
+- `member_update_alternate_email_kind(p_member_id uuid, p_email text, p_new_kind text) → boolean` — updates the kind on an alternate; rejects primary mutations.
+
+### Rationale
+
+- **Surfaced organically in p215 PM smoke**: PM added an alternate (`vitor@vitormr.dev`) with kind=`personal` while the original intent was `institutional`. There was no kind-correction path without direct SQL, contradicting the agentic-workflow goal stated in §5.
+- **Auth pattern reused unchanged**: the three new RPCs follow the existing `member_add_alternate_email` template — self OR `can_by_member('manage_member')`, SECURITY DEFINER, SET search_path, VOLATILE.
+- **Primary-mutation policy**: all three RPCs treat the primary email as a sync-trigger-driven invariant. `remove` and `update_kind` raise on primary; `set_primary` is the only canonical path to change which email is primary, and it routes through `UPDATE members.email` so that the existing cross-member theft guard (mig 20260802000009) remains the single enforcement point.
+- **Idempotency**: `set_primary` on already-primary returns true (no-op). `remove` / `update_kind` on a non-registered email return false (not raise) — the distinction is between invalid operations (raise) and absent state (return false).
+
+### MCP surface
+
+Three matching MCP tools were added to `supabase/functions/nucleo-mcp/index.ts`, bumping the catalog from 296 to 299 and the server version from 2.77.0 to 2.78.0.
+
+### Schema invariants
+
+Unchanged at 19. `T_member_has_exactly_one_primary_email` already enforces the partial-unique invariant, which the three RPCs cannot violate because (a) `remove` rejects primary, (b) `set_primary` routes via the existing trigger whose `INSERT ... ON CONFLICT DO UPDATE SET is_primary = true` is itself constrained by the partial unique index, (c) `update_kind` only touches the `kind` column.
+
+### Rollback
+
+```sql
+DROP FUNCTION IF EXISTS public.member_remove_alternate_email(uuid, text);
+DROP FUNCTION IF EXISTS public.member_set_primary_email(uuid, text);
+DROP FUNCTION IF EXISTS public.member_update_alternate_email_kind(uuid, text, text);
+NOTIFY pgrst, 'reload schema';
+```
+
+MCP tool registrations and the version + tool-count labels in `nucleo-mcp/index.ts` are removed in the same PR.
