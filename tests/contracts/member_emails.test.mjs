@@ -277,7 +277,7 @@ test('ADR-0095: member_emails live behaviour and invariant T', { skip: !canRun &
           }),
         }
       );
-      assert.ok([204, 240].includes(demoteRes.status), `Expected 204 or 240, got ${demoteRes.status}`);
+      assert.equal(demoteRes.status, 204, `Expected 204, got ${demoteRes.status}`);
 
       // 2. Query member_emails directly to verify that the test member has exactly 0 primary emails
       const queryEmailsRes = await fetch(
