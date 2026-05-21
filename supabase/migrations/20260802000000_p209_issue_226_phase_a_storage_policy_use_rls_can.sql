@@ -51,3 +51,15 @@ CREATE POLICY selection_resumes_read_view_pii ON storage.objects
 
 COMMENT ON POLICY selection_resumes_read_view_pii ON storage.objects IS
   'Read access to selection-resumes bucket gated by view_pii capability. Uses rls_can() wrapper (GRANT EXECUTE TO authenticated) instead of can() (service_role only). See p209/#226 Phase A.';
+
+-- Out-of-band Dashboard application (MCP service_role cannot ALTER storage.objects):
+-- since this file is applied via Supabase Dashboard SQL editor rather than
+-- `supabase db push`, the schema_migrations registry insert must happen in the
+-- same SQL block. Idempotent via ON CONFLICT for safety against double-paste.
+-- See code-reviewer PR #228 HIGH amendment (operational risk if PM forgets to
+-- paste the INSERT block separately).
+INSERT INTO supabase_migrations.schema_migrations (version, name)
+VALUES ('20260802000000', 'p209_issue_226_phase_a_storage_policy_use_rls_can')
+ON CONFLICT (version) DO NOTHING;
+
+NOTIFY pgrst, 'reload schema';

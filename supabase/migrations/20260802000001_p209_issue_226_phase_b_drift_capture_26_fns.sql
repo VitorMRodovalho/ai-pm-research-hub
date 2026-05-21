@@ -24,6 +24,24 @@
 --
 -- Rollback: not applicable — these are captures of the current live state.
 -- If a body is found to be wrong AFTER apply, fix forward via new migration.
+--
+-- GRANT EXECUTE clauses NOT included in this capture (per code-reviewer LOW finding,
+-- PR #228). The 26 functions inherit grants from their original CREATE FUNCTION
+-- migrations. For fresh-DB apply (e.g. `supabase db reset` replaying all migrations
+-- chronologically), grants from prior files remain in effect after CREATE OR REPLACE.
+-- This file does NOT redundantly re-grant. Same pattern as
+-- 20260723000000_baseline_rpcs_after_schema.sql and other Phase B captures.
+--
+-- Pre-existing patterns canonicalized in this capture WITHOUT inline cleanup (also
+-- per code-reviewer MED findings — modifying bodies inline would trigger re-drift):
+--   - sign_volunteer_agreement (line ~2779): notification recipient WHERE uses
+--     `m.operational_role = 'manager' OR m.is_superadmin = true` instead of
+--     can_by_member('manage_member') query. Pre-existing since p203 (PR #184).
+--     Cleanup tracked as OPP-226.B in docs/audit/P162_GAP_OPPORTUNITY_LOG.md.
+--   - update_board_item (line ~2831): v_is_gp hybrid retains is_superadmin +
+--     hardcoded `operational_role IN ('manager', 'deputy_manager')` alongside
+--     `can_by_member('manage_platform')`. p180 ADR-0011 hybrid intentionally
+--     preserved for cache-drift defense-in-depth. No cleanup needed.
 
 -- ============================================================
 -- _compute_pert_cutoff_core(p_cycle_id uuid, p_role text, p_filter_active_only boolean, p_score_column text, p_actor_id uuid)
