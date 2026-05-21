@@ -6603,6 +6603,81 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
     await logUsage(sb, member.id, "list_ai_processing_log", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL: member_resolve_email
+  mcp.tool("member_resolve_email", "ADR-0095: Resolve a member ID by their email (primary or alternate). Auth: authenticated.", {
+    email: z.string().describe("The email address to resolve")
+  }, async (params: { email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_resolve_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    const { data, error } = await sb.rpc("member_resolve_email", {
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_resolve_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_resolve_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_list_emails
+  mcp.tool("member_list_emails", "ADR-0095: List all emails (primary and alternate) associated with a member. Auth: self, manage_member, or view_pii.", {
+    member_id: z.string().describe("The member UUID")
+  }, async (params: { member_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_list_emails", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_list_emails", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_list_emails", {
+      p_member_id: params.member_id,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_list_emails", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_list_emails", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_add_alternate_email
+  mcp.tool("member_add_alternate_email", "ADR-0095: Add an alternate email address to a member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address to add"),
+    kind: z.enum(["personal", "institutional", "chapter", "other"]).describe("The kind of alternate email")
+  }, async (params: { member_id: string; email: string; kind: "personal" | "institutional" | "chapter" | "other" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_add_alternate_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_add_alternate_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_add_alternate_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+      p_kind: params.kind,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_add_alternate_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_add_alternate_email", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport

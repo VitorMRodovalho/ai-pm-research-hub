@@ -199,34 +199,37 @@ test(
     // The R CTE should flag this row as a violation. tx=rollback at
     // request end drops the synthetic row before this test's transaction
     // commits — zero leakage into prod data.
-    const breachRows = await callBreachHelper('R');
-    const r = findInvariant(breachRows, R_NAME);
-    const s = findInvariant(breachRows, S_NAME);
+    try {
+      const breachRows = await callBreachHelper('R');
+      const r = findInvariant(breachRows, R_NAME);
+      const s = findInvariant(breachRows, S_NAME);
 
-    // Behavioural assertion: R should now flag at least the synthetic row.
-    assert.ok(
-      r.violation_count >= 1,
-      `R failed to detect synthetic breach — violation_count=${r.violation_count} (expected >= 1). ` +
-      `CTE may have drifted from the documented semantics (Issue #180). ` +
-      `Helper seeded an approved application with unique email matching no member.`
-    );
-    assert.ok(
-      Array.isArray(r.sample_ids) && r.sample_ids.length >= 1,
-      `R reported count=${r.violation_count} but sample_ids is empty: ${JSON.stringify(r.sample_ids)}`
-    );
+      // Behavioural assertion: R should now flag at least the synthetic row.
+      assert.ok(
+        r.violation_count >= 1,
+        `R failed to detect synthetic breach — violation_count=${r.violation_count} (expected >= 1). ` +
+        `CTE may have drifted from the documented semantics (Issue #180). ` +
+        `Helper seeded an approved application with unique email matching no member.`
+      );
+      assert.ok(
+        Array.isArray(r.sample_ids) && r.sample_ids.length >= 1,
+        `R reported count=${r.violation_count} but sample_ids is empty: ${JSON.stringify(r.sample_ids)}`
+      );
 
-    // S should NOT detect anything from the R breach (the synthetic app has
-    // no matching member, so the S join produces no rows).
-    assert.equal(
-      s.violation_count, 0,
-      `S incorrectly counts ${s.violation_count} for R-only breach — the synthetic app has no matching member ` +
-      `so S CTE should produce 0 rows. Sample ids: ${JSON.stringify(s.sample_ids ?? [])}.`
-    );
+      // S should NOT detect anything from the R breach (the synthetic app has
+      // no matching member, so the S join produces no rows).
+      assert.equal(
+        s.violation_count, 0,
+        `S incorrectly counts ${s.violation_count} for R-only breach — the synthetic app has no matching member ` +
+        `so S CTE should produce 0 rows. Sample ids: ${JSON.stringify(s.sample_ids ?? [])}.`
+      );
+    } finally {
+      // Post-test verification: explicit cleanup (tx=rollback does NOT rollback
+      // SECDEF function INSERTs reliably — see Issue #231 sediment). Then assert
+      // count=0 to catch any leakage from non-test paths.
+      await cleanupSyntheticRows();
+    }
 
-    // Post-test verification: explicit cleanup (tx=rollback does NOT rollback
-    // SECDEF function INSERTs reliably — see Issue #231 sediment). Then assert
-    // count=0 to catch any leakage from non-test paths.
-    await cleanupSyntheticRows();
     const postRows = await callCheckInvariants();
     const postR = findInvariant(postRows, R_NAME);
     assert.equal(
@@ -249,31 +252,34 @@ test(
     // Helper inserts a synthetic approved application AND a member with
     // matching email + person_id=NULL. The S CTE should flag the member.
     // R should NOT flag because the member exists (the join finds it).
-    const breachRows = await callBreachHelper('S');
-    const r = findInvariant(breachRows, R_NAME);
-    const s = findInvariant(breachRows, S_NAME);
+    try {
+      const breachRows = await callBreachHelper('S');
+      const r = findInvariant(breachRows, R_NAME);
+      const s = findInvariant(breachRows, S_NAME);
 
-    assert.ok(
-      s.violation_count >= 1,
-      `S failed to detect synthetic breach — violation_count=${s.violation_count} (expected >= 1). ` +
-      `CTE may have drifted from the documented semantics (Issue #180). ` +
-      `Helper seeded an approved application + matching member with person_id=NULL.`
-    );
-    assert.ok(
-      Array.isArray(s.sample_ids) && s.sample_ids.length >= 1,
-      `S reported count=${s.violation_count} but sample_ids is empty: ${JSON.stringify(s.sample_ids)}`
-    );
+      assert.ok(
+        s.violation_count >= 1,
+        `S failed to detect synthetic breach — violation_count=${s.violation_count} (expected >= 1). ` +
+        `CTE may have drifted from the documented semantics (Issue #180). ` +
+        `Helper seeded an approved application + matching member with person_id=NULL.`
+      );
+      assert.ok(
+        Array.isArray(s.sample_ids) && s.sample_ids.length >= 1,
+        `S reported count=${s.violation_count} but sample_ids is empty: ${JSON.stringify(s.sample_ids)}`
+      );
 
-    // R should NOT flag for an S-only breach — the synthetic member matches
-    // the synthetic app's email, so R's NOT EXISTS check finds the member.
-    assert.equal(
-      r.violation_count, 0,
-      `R incorrectly counts ${r.violation_count} for S-only breach — the synthetic member exists with matching email ` +
-      `so R CTE should produce 0 rows. Sample ids: ${JSON.stringify(r.sample_ids ?? [])}.`
-    );
+      // R should NOT flag for an S-only breach — the synthetic member matches
+      // the synthetic app's email, so R's NOT EXISTS check finds the member.
+      assert.equal(
+        r.violation_count, 0,
+        `R incorrectly counts ${r.violation_count} for S-only breach — the synthetic member exists with matching email ` +
+        `so R CTE should produce 0 rows. Sample ids: ${JSON.stringify(r.sample_ids ?? [])}.`
+      );
+    } finally {
+      // Post-test verification: explicit cleanup then assert 0 (Issue #231 sediment).
+      await cleanupSyntheticRows();
+    }
 
-    // Post-test verification: explicit cleanup then assert 0 (Issue #231 sediment).
-    await cleanupSyntheticRows();
     const postRows = await callCheckInvariants();
     const postR = findInvariant(postRows, R_NAME);
     const postS = findInvariant(postRows, S_NAME);
