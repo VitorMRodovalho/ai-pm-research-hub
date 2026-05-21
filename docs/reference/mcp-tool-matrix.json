@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-20T02:01:04.153Z",
+  "generated_at": "2026-05-21T21:37:13.541Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 293,
-  "runtime_status": "clean (293 runtime ≡ 293 static)",
+  "total": 299,
+  "runtime_status": "clean (299 runtime ≡ 299 static)",
   "by_domain": {
     "personal": 20,
     "events": 15,
     "gamification": 12,
     "board": 64,
-    "tribe": 87,
+    "tribe": 93,
     "comms": 12,
     "knowledge": 11,
     "partners": 11,
@@ -4029,6 +4029,84 @@
       "domain": "tribe",
       "rpcs": [
         "list_ai_processing_log"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_resolve_email",
+      "description": "ADR-0095: Resolve a member ID by their email (primary or alternate). Auth: authenticated.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_resolve_email"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_list_emails",
+      "description": "ADR-0095: List all emails (primary and alternate) associated with a member. Auth: self, manage_member, or view_pii.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_list_emails"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_add_alternate_email",
+      "description": "ADR-0095: Add an alternate email address to a member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_add_alternate_email"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_remove_alternate_email",
+      "description": "ADR-0095 GAP-205.D: Remove an alternate email from a member. Rejects primary (use member_set_primary_email to promote a different alternate first). Returns true if removed, false if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_remove_alternate_email"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_set_primary_email",
+      "description": "ADR-0095 GAP-205.D: Promote a registered alternate to primary via UPDATE members.email (fires sync trigger; preserves alt kind). Idempotent on already-primary. Raises if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_set_primary_email"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "member_update_alternate_email_kind",
+      "description": "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "rpcs": [
+        "member_update_alternate_email_kind"
       ],
       "tables": [],
       "canV4_actions": [],
