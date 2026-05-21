@@ -1078,3 +1078,51 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Sediment lesson:** When a council finding requires changes to an already-applied function, ALWAYS author a new follow-up migration (next-greater timestamp); never edit the original file's body. Update CLAUDE.md or `.claude/rules/database.md` to document explicitly.
 - **Cross-ref:** P162 #115 (PR #240); commits ec988042 + de109c7b; migrations 20260802000008-10.
 
+### 121. RESOLVED-205.C — Drop dead-schema `member_emails.verified_at` column (Issue #205 GAP-205.C, PR #242, p215)
+- **Tipo:** YAGNI cleanup / dead schema · **Severity:** LOW · **Effort:** XS (completed)
+- **Trigger:** P162 #118 GAP-205.C deferred at p214 close — PM ABCD pick "Drop column (Recommended)" at p215 boot.
+- **Description:** `member_emails.verified_at timestamptz` had 0 write paths anywhere in migrations/RPCs/EFs/src/tests; 0 of 73 rows non-NULL; 0 readers apart from `member_list_emails` return TABLE projection. Migration `20260802000012_p215_205c_drop_member_emails_verified_at.sql` performed `DROP FUNCTION member_list_emails(uuid)` + `ALTER TABLE member_emails DROP COLUMN verified_at` + rebuilt `member_list_emails` without verified_at in return TABLE (SECDEF body byte-identical otherwise). 2 forward-defense contract tests added (`member-emails-rls-multi-tenant.test.mjs` #12 + #13) asserting column absence in canonical migration + RPC return TABLE. ADR-0095 amended with "Amendment 2026-05-21 (GAP-205.C)" section documenting rationale + reversibility. `database.gen.ts` regenerated via canonical `npm run db:types`.
+- **Smoke:** PM verified via MCP host (resolve + list + add all green, smoke row `7e96d90a-8b26-4ddd-9875-2aa44bb0cbbb` `vitor@vitormr.dev` kind=personal kept as legitimate alternate).
+- **Cross-ref:** Issue #205, PR #242 squash `4be3ad83`, ADR-0095, migration 20260802000012, P162 #118.
+
+### 122. WATCH-215.A — Static-analysis test convention: accept both `CREATE FUNCTION` (post-DROP per GC-097) and `CREATE OR REPLACE FUNCTION`
+- **Tipo:** test convention / sediment · **Severity:** LOW · **Effort:** S (1-2h sweep)
+- **Trigger:** platform-guardian PR #242 BLOCKER B-1 — `member-emails-rls-multi-tenant.test.mjs` regex required `CREATE OR REPLACE FUNCTION` but migration 20260802000012 correctly used `CREATE FUNCTION` after explicit DROP (per GC-097 when changing return type). Test silently latched onto stale 20260802000008 body; assertions coincidentally passed because auth-gate logic is unchanged.
+- **Description:** Other contract tests that perform static migration analysis may still use the strict `CREATE OR REPLACE FUNCTION` regex. The shared parser at `tests/helpers/rpc-body-drift-parser.mjs:43` is already pattern-agnostic (accepts both forms). Test files should follow the same convention to avoid false-pass on DROP+CREATE migrations.
+- **Resolution this session:** all 4 regex blocks in `member-emails-rls-multi-tenant.test.mjs` updated to `CREATE(?:\\s+OR\\s+REPLACE)?\\s+FUNCTION` + inline comment with rationale + sediment ref. Project-wide sweep pending.
+- **Cross-ref:** PR #242 amendment commit `89aed393`; tests/helpers/rpc-body-drift-parser.mjs:43; GC-097.
+
+### 123. WATCH-215.B — `apply_migration` MCP body MUST be byte-identical to canonical migration file (including inline comments)
+- **Tipo:** workflow sediment / CI gate · **Severity:** MED (Phase C drift gate fires on next CI) · **Effort:** S (no code change; pattern reinforcement)
+- **Trigger:** mid-PR #242 — CI run 26245524978 failed Phase C body-hash drift: `[2x] member_list_emails(p_member_id uuid) live_len=941 mig_len=1056 latest=20260802000012`. Gap of 115 chars = 2 inline comments (`-- Determine if service_role...` + `-- Check if self...`) that I had in the migration file but omitted from the `apply_migration` MCP call body.
+- **Description:** When invoking `mcp__supabase__apply_migration`, the `query` parameter MUST be byte-identical to the canonical migration file (including all inline comments inside SECDEF function bodies, since `pg_get_functiondef` preserves them in `prosrc`). Omitting comments creates file/live drift that Phase C body-hash gate detects on next CI run. This is the third recurrence of an apply_migration-related sediment (after WATCH-205.E and Q-C). Either: paste-the-file-verbatim convention OR pre-deploy script that diffs file hash vs MCP call hash.
+- **Resolution this session:** removed the 2 inline comments from migration file (file = feature branch, not merged yet, so editing is OK per WATCH-205.E pre-merge clause). Live body now byte-matches file body (md5 `7147ef6a96eb1cc38c9058f6e1963c4d`, len=941). Commit `d631abb0`.
+- **Cross-ref:** WATCH-205.E, Q-C (apply_migration MCP doesn't auto-register schema_migrations), CI run 26245524978, commit d631abb0.
+
+### 124. WATCH-205.F — `database.gen.ts` regen source parity: MCP `generate_typescript_types` omits `graphql_public` schema block
+- **Tipo:** tool divergence / observability · **Severity:** LOW · **Effort:** M (investigation + potential CI addition)
+- **Trigger:** code-reviewer PR #242 MED finding — initial regen via `mcp__supabase__generate_typescript_types` dropped the `graphql_public` schema block that canonical `npm run db:types` (`supabase gen types typescript --linked`) includes. File was 21159 lines vs 21187 with CLI; `graphql_public` block (lines 15 + 21151) absent.
+- **Description:** Two regen tools produce different outputs. Currently no consumer depends on `graphql_public` types (grep returns 0 hits), so impact is null. But future drift undetected. Consider: (a) CI parity check comparing MCP regen output vs CLI; (b) ADR/deploy.md note declaring CLI canonical; (c) project script to enforce.
+- **Resolution this session:** regenerated via canonical `npm run db:types` for PR #242. PR description + amendment commit `89aed393` document the choice.
+- **Cross-ref:** PR #242 amendment, package.json:31 (db:types script), WATCH-205.D (related graphql_public discovery).
+
+### 125. WATCH-205.G — ADR `Migrations` field uses absolute `file:///` paths that break GitHub rendering
+- **Tipo:** docs convention · **Severity:** LOW · **Effort:** S (sed sweep across ADRs with absolute paths)
+- **Trigger:** code-reviewer PR #242 LOW finding — ADR-0095 Migrations field at line 8 uses `file:///home/vitormrodovalho/projects/ai-pm-research-hub/supabase/migrations/...` absolute paths. PR #242 extended the list to 5 entries, perpetuating the pattern. Renders as broken links on GitHub and any non-local viewer.
+- **Description:** Project-wide sweep needed to replace with relative paths (`../../supabase/migrations/...`) or bare filenames. ADR-0095 is the immediate offender; other ADRs may have similar pattern.
+- **Cross-ref:** ADR-0095 line 8, PR #242 amendment context.
+
+### 126. GAP-205.D — MCP write surface incomplete: no `member_remove_alternate_email` / `member_set_primary_email` / `member_update_alternate_email` RPCs
+- **Tipo:** missing CRUD surface · **Severity:** MED · **Effort:** M (1 migration + 3 MCP tools + tests, ~2-3h)
+- **Trigger:** mid-session smoke discovery — PM ran `member_add_alternate_email` via MCP host with kind=personal (intent was institutional). No update RPC exists to correct kind without direct SQL bypass. Same gap for removal + primary promotion.
+- **Description:** ADR-0095 §5 shipped 3 tools (resolve / list / add). Mutation paths missing for: (a) removing an alternate email, (b) promoting an alternate to primary (with cascade trigger to demote current primary + sync members.email), (c) correcting kind on an existing alternate. Direct SQL is the only current path, which is LGPD-sensitive (admin bypass of RLS not auditable via MCP usage log). Pairs with ADR-0095 §5 surface gap.
+- **When to ship:** Backlog. Recommended next time a user-correction case surfaces (e.g., institutional kind correction, mistyped alternate to remove). Mid-priority — not blocking #205 closure but quality-of-life gap.
+- **Cross-ref:** ADR-0095 §5, PR #242 smoke session, Issue #205.
+
+### 127. OPP-215.A — Forward-defense test pattern (column absence via static migration analysis) as project convention
+- **Tipo:** test pattern / convention · **Severity:** LOW · **Effort:** S (documentation only — convention establishment)
+- **Trigger:** PR #242 amendment commit `89aed393` added 2 forward-defense assertions (#12 + #13 in `member-emails-rls-multi-tenant.test.mjs`) confirming `verified_at` is absent from all migration files touching member_emails + from the RPC return TABLE.
+- **Description:** Pattern is novel in the test suite — asserts a column does NOT exist in canonical migration text. Lightweight regression guard against accidental re-add of YAGNI-removed columns. No DB access required (pure static analysis). Propose as project convention for future column removals — every DROP COLUMN migration ships with paired "absence assertion" test.
+- **When to ship:** Backlog. Doc-only; codify in `.claude/rules/database.md` or new ADR amendment if next column drop occurs.
+- **Cross-ref:** PR #242 commit 89aed393, tests/contracts/member-emails-rls-multi-tenant.test.mjs assertions #12-#13, ADR-0012.
+
