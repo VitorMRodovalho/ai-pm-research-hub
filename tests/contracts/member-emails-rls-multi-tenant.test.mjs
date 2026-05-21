@@ -289,3 +289,28 @@ test('GAP-205.A: canonical migrations exist (20260802000008 + 20260802000009)', 
   assert.ok(m009,
     'Migration 20260802000009_p213_205_email_theft_guard_and_revoke_authenticated_select.sql must exist');
 });
+
+// ─── 11. GAP-205.B: FK constraint member_emails.organization_id → organizations(id) ON DELETE RESTRICT ───
+test('GAP-205.B: member_emails.organization_id has FK to organizations(id) ON DELETE RESTRICT', () => {
+  // The FK constraint must be added by migration 20260802000011 (council Tier 1
+  // LOW / platform-guardian LOW-3 finding — schema integrity gap)
+  const fkRe = /ALTER\s+TABLE\s+(?:ONLY\s+)?public\.member_emails\s+ADD\s+CONSTRAINT\s+member_emails_organization_id_fkey\s+FOREIGN\s+KEY\s*\(\s*organization_id\s*\)\s+REFERENCES\s+(?:public\.)?organizations\s*\(\s*id\s*\)\s+ON\s+DELETE\s+RESTRICT/i;
+  assert.match(allSQL, fkRe,
+    'ALTER TABLE public.member_emails ADD CONSTRAINT member_emails_organization_id_fkey ' +
+    'FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE RESTRICT ' +
+    'must exist in migrations (added by 20260802000011). ' +
+    'Canonical pattern across multi-tenant tables (members/tribes/engagements all use RESTRICT). ' +
+    'Without this FK, dangling org refs could silently accumulate.');
+
+  // Verify the canonical migration exists
+  const m011 = migrations.find(m =>
+    m.name === '20260802000011_p214_205b_member_emails_organization_id_fk.sql'
+  );
+  assert.ok(m011,
+    'Migration 20260802000011_p214_205b_member_emails_organization_id_fk.sql must exist');
+
+  // Verify the safety pre-flight (no dangling refs) is part of the migration
+  assert.match(m011.content, /dangling\s+org_id\s+refs/i,
+    'Migration 20260802000011 must include a pre-flight check that asserts ' +
+    'no dangling org refs exist before applying the FK constraint.');
+});
