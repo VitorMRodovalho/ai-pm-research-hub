@@ -697,13 +697,13 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Function still returns the same shape (tested via contract test) but only one CTE scan.
 - **Cross-ref:** PR #197 council close.
 
-### 77. BUG-203.A — 8 pre-existing test fails in security-lgpd.test.mjs not introduced by p203
-- **Tipo:** test drift · **Severity:** MEDIUM · **Effort:** S/M
+### 77. BUG-203.A — 8 pre-existing test fails in security-lgpd.test.mjs — **RESOLVED p220 (PR #225)**
+- **Tipo:** test drift · **Severity:** MEDIUM · **Effort:** S (turned out)
 - **Trigger:** `npm test` returns 1441 pass / 8 fail / 46 skip offline (deploy.md baseline was 1449/0/46). The 8 fails are in `tests/contracts/security-lgpd.test.mjs` covering `mark_member_present` (4 assertions) and `create_event` (4 assertions). Both code-reviewer + platform-guardian audits of PRs #184 and #197 confirmed: NOT introduced by p203 PRs. Likely sediment from p199-b/c Paulo Alves attendance fix that refactored `mark_member_present` body without updating the anti-assertion in the test.
-- **Impact:** CI is silently red on offline baseline. Future PRs may not notice their own regressions over this noise.
-- **Proposta:** Dedicated cleanup session: (a) confirm `mark_member_present` + `create_event` body changes are intentional, (b) update test assertions to match current canonical auth pattern, OR (c) revert body changes if they introduced a regression.
-- **Validation gate:** `npm test` returns 1449+ pass / 0 fail / 46 skip offline.
-- **Cross-ref:** PR #184, #197 council close; p199-b/c handoff (Paulo Alves attendance fix).
+- **DIAGNOSIS REVISED p220 (2026-05-21)**: actual root cause was `supabase/migrations/20260723000000_baseline_rpcs_after_schema.sql` (added at p202 issue #164 for local supabase start ordering fix). This file contains the ORIGINAL pre-W125 bodies of `create_event` + `mark_member_present` (bare INSERT/UPDATE with NO auth gate). Since 20260723 sorts LAST in lex order, the test's `findFunctionBody()` extracted THIS body as canonical, missing the auth gates that the live hardened body (`20260319100029_w125_*` + `20260679000000_p174_*` + `20260684000000_p178_*`) actually has. Production state was never affected — 20260723 is local-stack-only and was NOT in `supabase_migrations.schema_migrations` (verified via MCP). Sediment trace was misleading: the assertion drift was not from p199-b/c Paulo Alves fix, but from p202's baseline file ordering.
+- **Fix:** Removed `create_event` + `mark_member_present` blocks from 20260723000000 (kept the other 12 baseline functions). Test now finds 20260684 (p178) + 20260679 (p174) hardened bodies as canonical → all 8 assertions pass. Local stack `supabase start` still works because W125 + p149 + p174 + p178 migrations CREATE OR REPLACE these functions at earlier timestamps with hardened bodies.
+- **Validation gate:** `npm test` returns 1487+ pass / 0 fail / 46 skip offline ✓ (Local validation 2026-05-21).
+- **Cross-ref:** PR #184, #197 council close (where it was first flagged); p199-b/c handoff; PR #225 (issue #220 combo); migration 20260723000000 inline comment at slot 4 + 8.
 
 ### 78. OPP-204.A — Cloudflare traffic analytics tab for `nucleoia.vitormr.dev`
 - **Tipo:** opportunity / feature · **Severity:** MEDIUM · **Effort:** M
@@ -776,21 +776,18 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Validation gate:** Script catches `t()` call in `<script>` without `import { t }`. Output reproducible.
 - **Cross-ref:** Issue #216 + PR #223 (revised diagnostic); BUG-207.A note about p158/p184 historicals; `[[feedback-astro-define-vars-no-ts]]` p169 (adjacent class, NOT same).
 
-### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 (2-camadas: workerd DNS strict + test brittleness)
-- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** M-L (revised — era S, na verdade tem 2 camadas)
+### 94. BUG-207.C — browser_guards CI broken 75+ runs since 2026-05-18 — **RESOLVED p220 (PR #225)**
+- **Tipo:** bug · **Severity:** HIGH (CI gate effectively disabled; obriga --admin bypass para todos os merges) · **Effort:** M (~3h combined Phase 1 + Phase 2)
 - **Trigger:** PM perguntou em p207 (2026-05-20) por que browser_guards falha. **Investigação p207 (sessão de ~45min)** descartou 2 hipóteses iniciais + refinou diagnostic. Ver Issue #220 comment para detalhes completos. Resumo das camadas:
-  - **L1 (workerd DNS strict)**: `kj/async-io-unix.c++:1298: DNS lookup failed; params.host = mock.supabase.co`. Workerd novo (provavelmente atualizado por CI cache invalidation em 2026-05-18 02:43 — commit gatilho `7fa3ea1c` é **docs-only**, não código) aborta dev server fatalmente em DNS unresolvable. **Fix L1 confirmado funcional via smoke local**: trocar `PUBLIC_SUPABASE_URL=https://mock.supabase.co` por URL DNS-resolvable (`http://localhost:9999` ou `http://127.0.0.1:9999`). 1-line edit em ci.yml linha 89.
-  - **L2 (test brittleness)**: mesmo com L1 fix aplicado, test ainda falha com `false !== true` em `tests/browser-guards.test.mjs:66` (`assert.equal(await page.locator('#sel-panel').isVisible(), false)`). Test espera Supabase ter falha-mode específico (auth-fail clean → page mostra `#sel-denied` + esconde `#sel-panel`); com URL ECONNREFUSED, page entra em estado diferente. **L2 precisa de fix de fundo** — Phase 2.
-- **Impact:** Idem ao registro anterior — `validate` falha em todos os PRs + main pushes; --admin bypass obrigatório.
-- **Proposta revisada (Phase 1 + Phase 2)**:
-  - **Phase 1 (S, ~30 min)**: aplicar L1 fix em ci.yml — remove catastrophe + mensagem de falha clara (não-DNS) → debug de L2 fica viável.
-  - **Phase 2 (L, ~2-4h)**: L2 fix. 3 sub-options:
-    - (a) Mock Supabase HTTP responses via [msw](https://mswjs.io/) ou node http server seedado. Cleaner.
-    - (b) Real Supabase via `supabase start` local stack em CI antes do test. Maior delta de infra.
-    - (c) Refactor test pra não depender de Supabase auth-fail UI state.
-- **Validation gate Phase 1**: smoke local com URL fix mostra 0 DNS errors em astro log (✅ confirmado em p207).
-- **Validation gate Phase 2**: `gh run list --workflow=ci.yml --branch <X> --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin.
-- **Cross-ref:** Issue #220 + comment com investigação completa de p207; runs falhos `26167448636`; commit gatilho `7fa3ea1c` (docs-only — CI infra externo é o verdadeiro gatilho); PR #199 merge (`c191254e`) primeiro a usar --admin.
+  - **L1 (workerd DNS strict)**: `kj/async-io-unix.c++:1298: DNS lookup failed; params.host = mock.supabase.co`. Workerd novo (CI runner image cache invalidation em 2026-05-18 — commit gatilho `7fa3ea1c` é **docs-only**, não código) aborta dev server fatalmente em DNS unresolvable.
+  - **L2 (test brittleness)**: mesmo com L1 fix aplicado, test failed at line 520 (`#analytics-quality-banner` visible). **p207 finding "line 66" was wrong** — error message lacked stack trace, attribution was misleading. Real cause: p190 BUG-190.B (commit `46aefd15`, 2026-05-18 same day) replaced 5 of 6 analytics RPCs with `Promise.resolve(null)` to suppress 404 noise. `browser-guards.test.mjs`'s fakeSb mocks for `exec_funnel_summary` + `exec_analytics_v2_quality` became dead code → quality/funnel rendered null → banner hidden → assertions fail. The L1 workerd crash MASKED this for 3 days.
+- **Impact:** `validate` + `browser_guards` falham em todos os PRs + main pushes → `quality_gate` SKIPPED em cascade. Merges (#199 + #184/#197/#198/#223) precisam `--admin` bypass. Cada bypass consolida o pattern como aceitável → erosão de gates (WATCH-207.D).
+- **Fix p220 (2026-05-21)**:
+  - **Phase 1 (L1)**: 4 occurrences of `https://mock.supabase.co` → `http://127.0.0.1:9999` in `.github/workflows/ci.yml` (Build + Smoke routes em validate; browser_guards env; visual_dark_mode env). Workerd survives DNS lookup on localhost. ECONNREFUSED is OK — fetch errors are recoverable, DNS errors are fatal in new workerd.
+  - **Phase 2 (L2)**: restored `safeRpc('exec_funnel_summary')` + `safeRpc('exec_analytics_v2_quality')` in `analytics.astro` `loadAnalyticsV2()`; silenced `safeRpc` toast (replaced `toast(...)` with comment + `console.warn` only). Preserves p190's no-user-noise intent (no toast) while restoring browser-guards test coverage via fakeSb mocks. Anti-assertions at `tests/ui-stabilization.test.mjs:343,347` updated to assert `true` for these 2 RPCs. Other 3 (impact, cert, roi) stay hardcoded null (no test asserts their UI).
+  - **Side fix (BUG-220.A discovered)**: 4 obsolete tests in `tests/contracts/selection-interview-decision.test.mjs:199-241` RELOCATED — comments cross-ref to `canonical-approval-orchestration.test.mjs` which already covers what `finalize_decisions` USED TO do before p204 (PR #198) introduced canonical orchestration. 4 pre-existing fails were silent because workerd L1 overshadowed in CI logs.
+- **Validation gate**: `gh run list --workflow=ci.yml --branch agent/issue-220 --limit 3` mostra browser_guards=SUCCESS + PR mergeable sem --admin. Local: `npm test` 1487/0/46 + `astro build` complete + browser-guards.test.mjs "passed" with localhost:9999 env.
+- **Cross-ref:** Issue #220 + p207 forensics comment; runs falhos como `26167448636`; commits gatilho `7fa3ea1c` (docs-only — CI infra externo é o verdadeiro gatilho); PR #199 merge (`c191254e`) primeiro a usar --admin; PR #225 (this fix); WATCH-207.D (--admin erosion now auditable).
 
 ### 95. WATCH-207.D — --admin bypass pattern erosão (PRs #199/#184/#197/#198 em sequência)
 - **Tipo:** watch / governance debt · **Severity:** MED · **Effort:** XS (após CI fix)
