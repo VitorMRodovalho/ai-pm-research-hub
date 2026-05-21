@@ -4,7 +4,7 @@
 **Scope:** open GitHub issues, resolved-but-open QA windows, early code hotspot scan  
 **Repo:** `VitorMRodovalho/ai-pm-research-hub`  
 **Mode:** curatorship and stabilization. No app behavior changed.
-**GitHub comments posted:** #159, #216, #224, #212, #148, #218, #221.
+**GitHub comments posted:** #159, #216, #224, #212, #148, #218, #221, #220.
 
 ---
 
