@@ -50,7 +50,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (!sb) { container.innerHTML = `<p class="text-center text-[var(--text-muted)] text-sm">${t('certificates.empty', lang)}</p>`; return; }
 
     try {
-      const { data, error } = await sb.rpc('get_my_certificates');
+      const { data, error } = await sb.rpc('get_my_certificates', { p_include_volunteer_agreements: true });
       if (error) throw error;
       if (!data?.length) {
         container.innerHTML = `<div class="text-center py-12">
