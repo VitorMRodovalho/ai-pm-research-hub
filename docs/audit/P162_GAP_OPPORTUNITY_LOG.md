@@ -1359,4 +1359,61 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Lesson:** Always include git divergence check in boot verify-on-boot. If divergence found, ABCD-pick the reconcile path early (don't accumulate further drift on top). PR posture is the project default (Option C Híbrido — `.claude/rules/bypass-protocol.md`).
 - **Cross-ref:** PR #261 (this session's reconcile), p214 sediment `WATCH-205.E` (concurrent agent workflow), p217 PR #252 (absorbed `9c3624b4`), `.claude/rules/bypass-protocol.md`.
 
+---
+
+## p219 close additions (2026-05-22) — entries #150-#157
+
+### 150. RESOLVED-218.A — Auto-link new volunteer engagements to existing ciclo cert
+- **Tipo:** wiring fix / data integrity · **Severity:** MEDIUM (inflated backlog noise; not LGPD-blocking) · **Effort:** S-M (~1h) · **Status:** RESOLVED (PR #265, mig 20260803000003)
+- **Trigger:** p219 boot smoke — UI showed Vitor "✅ Já assinou Termo de Voluntariado para este ciclo" but admin backlog still listed 3 pending engagements. Investigation found `sign_volunteer_agreement()` (mig 20260415020000) links cert ← active volunteer engagements **at signing time only**. New volunteer engagements created AFTER signing remain orphan (cert=NULL).
+- **Scope:** (a) Backfill 2 orphan Vitor engagements (`4711994b` LATAM LIM coordinator + `fe0d18df` CPMAI manager → cert `a375b716`); (b) BEFORE INSERT trigger `_trg_auto_link_volunteer_engagement_to_cycle_cert` forward-fix. (c) PM-chosen scope guard kind='volunteer' ONLY; SGO/SGP gap (requires_agreement=true but no signing flow) deferred.
+- **Cross-ref:** PR #265, mig 20260803000003, tests/contracts/auto-link-volunteer-engagement-to-cycle-cert.test.mjs (8 forward-defense static assertions).
+
+### 151. RESOLVED-257.B — Normalize 46 legacy `contract_volunteer` rows + 2 producer RPCs
+- **Tipo:** schema cleanup / canonical alignment · **Severity:** MEDIUM (perpetuates asymmetry on every new engagement) · **Effort:** M (~45min) · **Status:** RESOLVED (PR #266, mig 20260803000004)
+- **Trigger:** Follow-up to WATCH-257.A (#145 Option α additive constraint). Investigation found NOT just 46 rows but ALSO 2 producer RPCs (`approve_selection_application` + `seed_member_engagement_by_role`) emitting legacy literal on every new engagement creation.
+- **Scope:** PM-picked Path B — normalize 46 rows → `'contract'` (LGPD-canonical) AND CREATE OR REPLACE both producer RPCs to emit `'contract'`. Constraint stays additive (Path C DROP value deferred for safety). 46 audit_log entries with traceability.
+- **Cross-ref:** PR #266, mig 20260803000004, tests/contracts/normalize-legacy-contract-volunteer.test.mjs (7 forward-defense + 1 negative regression assertion in canonical-approval-orchestration), CI iteration caught body-hash drift (see SEDIMENT-219.A).
+
+### 152. WATCH-258.A — Server-side PDF backfill (DEFERRED to dedicated session via #267)
+- **Tipo:** UX / LGPD enhancement / auditor-readiness · **Severity:** LOW · **Effort:** L (~2-4h dedicated)
+- **Trigger:** p218 carry. p219 investigation surfaced @react-pdf/renderer@4.5.1 already installed (client-side only, no server-side precedent), no `certificates` storage bucket yet, 42 certs (41 volunteer_agreement + 1 contribution) need pdf_url backfill.
+- **Status:** FILED GH #267 with architecture options A (Local Node script ~1.5h backfill-only), B (Astro endpoint server-side ~2.5h backfill+forward), C (full integration ~3.5-4h B + RLS + verify-route binding + ADR). Recommendation: Option B.
+- **Cross-ref:** GH #267, supersedes #146 (WATCH-258.A initial entry).
+
+### 153. SEDIMENT-219.A — Body-hash drift gate trips when migration file has inline comments inside FUNCTION body that are stripped from apply_migration MCP call
+- **Tipo:** workflow sediment · **Severity:** LOW (CI catches) · **Effort:** N/A (recurring pattern)
+- **Trigger:** PR #266 first push hit body-hash drift on both `approve_selection_application` + `seed_member_engagement_by_role`. Migration FILE had inline comments (`-- p172 #5 fix...`, `-- Council fix...`) inside the function body that were missing from my apply_migration MCP call body. Live body (stripped) ≠ migration file body (with comments) → drift gate flags divergence.
+- **Lesson:** When using MCP `apply_migration` with large function bodies, either (a) send EXACT file content via apply_migration (incl. all inline comments), or (b) strip inline-body comments from migration file BEFORE commit. Pattern: MCP tool's `query` param is the source-of-truth for live; migration file is the source-of-truth for drift check; they must match.
+- **Cross-ref:** PR #266 fix commit `60262338` (drift-align fix), tests/contracts/rpc-migration-coverage.test.mjs (Phase C body-hash drift gate).
+
+### 154. RESOLVED-229-PHASE1 — leader_extra cohort separation (DB + RPC + backfill)
+- **Tipo:** structural refactor / data model · **Severity:** MEDIUM (UI cohort display blocked by shared columns) · **Effort:** M (~2h Phase 1) · **Status:** RESOLVED Phase 1 (PR #268, mig 20260803000005); Phase 2 deferred
+- **Trigger:** Issue #229 filed p209 close. Body claimed `submit_evaluation` MUTATES `objective_score_avg` (BUG description), but git log shows commit `fe80842c` (p209) ALREADY shipped A2 minimal isolation. Phase 1 = COMPLETING the schema + RPC plumbing that A2 only partially staged.
+- **Scope shipped:** 6 dedicated cohort columns (`leader_extra_pert_target/band_lower/band_upper/calc_at/cohort_n/cutoff_method`) + `_compute_pert_cutoff_core` accepts `'leader_extra_pert_score'` and routes to dedicated cols + `recompute_all_active_pert_cutoffs` cron extends to both dimensions + backfill 15 NULL apps (all met ≥2 submitted evals threshold).
+- **Phase 2 deferred (#155 below):** Frontend /admin/selection 2-cutoff display + analytics RPCs + MCP tool updates + pre-fe80842c inflated obj_score_avg cleanup.
+- **Cross-ref:** PR #268, mig 20260803000005, GH #229, tests/contracts/leader-extra-cohort-separation.test.mjs (9 forward-defense static).
+
+### 155. #229 Phase 2 — Frontend + MCP + analytics + obj_score_avg cleanup (DEFERRED)
+- **Tipo:** UX + plumbing follow-up · **Severity:** LOW-MEDIUM (Phase 1 provides data; UI surfaces it next) · **Effort:** L (2-3h dedicated)
+- **Scope deferred:** (a) `/admin/selection` UI shows 2 distinct PERT cutoff bands per application (objective + leader_extra); (b) analytics RPCs (`exec_funnel_summary`, `exec_analytics_v2_quality`) updated to surface leader_extra dimension; (c) MCP tools (`get_selection_dashboard`, `get_selection_rankings`, `get_application_score_breakdown`) expose leader_extra separately; (d) Pre-fe80842c inflated `objective_score_avg` cleanup (some apps have obj_avg matching leader_extra PERT despite 0 objective evals — clearly mutated; high blast radius, needs PM-reviewed migration).
+- **Cross-ref:** Phase 1 #154 (PR #268), supersedes A2 of original #229.
+
+### 156. BUG-219.A — External reviewer workflow incomplete; Angelina blocked from /admin/governance/documents/[chainId] despite p195 carve-out
+- **Tipo:** BUG / structural incompleteness · **Severity:** HIGH (Angelina legal review = institutional blocker for signature circulation) · **Effort:** L (2-3h) · **Status:** FILED GH #270, WORKAROUND in place (Word copies via gmail), PHASE 1+2+3 fix deferred
+- **Discovery (p219 close):** PM reported Angelina (`angeline.jur@gmail.com`) got "negativa de acesso" on links `nucleoia.vitormr.dev/admin/governance/documents/[chainId]` sent via gmail 2026-05-13 for review of 6 governance docs (Política de Governança de PI cfb15185 + 5 others). PM workaround: sent Word copies via gmail attachment — Angelina unblocked from READING but COMMENT-via-platform workflow remains broken.
+- **Root cause — 3 layers:**
+  1. **Operational gap:** Migration `20260710000000_p195_can_carve_out_governance_review.sql` header explicitly NAMES "advogada Angelina, external_reviewer" and shipped V4 plumbing (engagement_kind `external_reviewer` slug, `engagement_kind_permissions` row kind=external_reviewer/role=reviewer/action=participate_in_governance_review/scope=organization, can() carve-out bypassing is_authoritative for this action). BUT no per-person onboarding ever executed — Angelina has no persons / engagements / auth account.
+  2. **RPC code gap:** Even if Angelina were onboarded, `get_chain_for_pdf` (and likely siblings — needs audit) gates strictly on `can_by_member('manage_member')`. The p195 carve-out granted `participate_in_governance_review` — NOT `manage_member`. Consumer RPCs were never updated to respect the new capability. Migration intent docs ≠ implementation completeness.
+  3. **UX/URL:** `/admin/governance/documents/[chainId]` URL path-name suggests admin-only. No external-reviewer-friendly alt route; full admin sidebar + breadcrumbs render even in review-only mode.
+- **Phase 1+2+3 fix (L 2-3h):** (1) ~30min onboard Angelina (persons + engagement kind=external_reviewer/reviewer + auth invitation email); (2) ~1h audit ALL governance review RPCs for hardcoded `manage_member`; update READ + COMMENT RPCs to accept either `manage_member` OR `participate_in_governance_review`; keep strict for SIGN/LOCK/PUBLISH; (3) ~1h UX comment-only mode in ReviewChainIsland + optional `/governance/documents/[chainId]` external-friendly route.
+- **Cross-ref:** GH #270, mig `20260710000000_p195_can_carve_out_governance_review.sql` (the carve-out), mig `20260519000644_p195_initiative_leaders_governance_review_seed.sql` (companion seed), ADR-0007, ADR-0016.
+
+### 157. SEDIMENT-219.B — Check the ACTUAL URL/link before hypothesizing access-denied root cause
+- **Tipo:** workflow sediment · **Severity:** LOW (caught via PM correction) · **Effort:** N/A (recurring lesson)
+- **Trigger:** PM reported "Angelina não conseguiu acessar os links". Claude's first-pass diagnosis assumed Drive sharing config issue and recommended doc-track partner_entity. PM corrected with actual gmail body showing `/admin/governance/documents/[chainId]` platform admin URLs. Real bug (BUG-219.A) was platform-side workflow incompleteness — wasted ~5min on wrong hypothesis.
+- **Lesson:** When PM reports "X cannot access Y", FIRST ask to see the EXACT link/URL/email PM sent BEFORE hypothesizing root cause. Don't assume Drive vs platform from problem description alone.
+- **Cross-ref:** Initial Drive-sharing investigation thread + PM correction in p219 close session; BUG-219.A #156 above (the actual finding).
+
+
 
