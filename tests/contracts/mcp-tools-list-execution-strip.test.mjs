@@ -1,6 +1,6 @@
 /**
  * Forward-defense: MCP /mcp worker proxy strips non-spec `execution.taskSupport`
- * field from tools/list responses for spec-strict clients (Perplexity).
+ * and inputSchema `$schema` fields from tools/list responses for spec-strict clients (Perplexity).
  *
  * Origin: p220 session (2026-05-22) — after fixing the OAuth allowlist
  * (Perplexity subdomain coverage via host endsWith), the connector
@@ -13,8 +13,8 @@
  * drop the entire tools array on unknown top-level fields.
  *
  * Fix: post-process tools/list responses in the Worker proxy at src/pages/mcp.ts.
- * The SDK serializes the field with a constant value, so a literal regex is
- * safe and avoids JSON parse cost on the hot path.
+ * The SDK serializes `execution` with a constant value, and Zod emits a constant
+ * draft-07 `$schema` URI; literal regexes avoid JSON parse cost on the hot path.
  *
  * Cross-ref:
  *   - src/pages/mcp.ts (the proxy with the strip)
@@ -24,10 +24,11 @@
  * Static-only bundle: source-code checks (no SSE parser to run).
  *   1. Detection of tools/list method via regex on request body
  *   2. Strip applied universally (not gated on client User-Agent — defensive)
- *   3. Two regex variants cover leading-comma + trailing-comma positions
- *   4. content-length header deleted so client receives correct length
- *   5. Strip happens BEFORE the SSE streaming branch (so SSE tools/list also cleaned)
- *   6. kvLog instrumented to record rawLen/cleanedLen/stripped delta
+ *   3. Two regex variants cover leading-comma + trailing-comma positions for execution
+ *   4. `$schema` is also stripped from inputSchema payloads for Perplexity compatibility
+ *   5. content-length header deleted so client receives correct length
+ *   6. Strip happens BEFORE the SSE streaming branch (so SSE tools/list also cleaned)
+ *   7. kvLog instrumented to record rawLen/cleanedLen/stripped delta
  */
 
 import test from 'node:test';
@@ -50,6 +51,14 @@ test('mcp proxy: strips execution field with leading-comma variant', () => {
 test('mcp proxy: strips execution field with trailing-comma variant', () => {
   assert.match(SRC, /\.replace\(\s*\/"execution"\\s\*:\\s\*\\\{\\s\*"taskSupport"\\s\*:\\s\*"forbidden"\\s\*\\\}\\s\*,\?\/g/,
     'Must also strip "execution:{taskSupport:forbidden}" with optional trailing comma (field appears at start of object)');
+});
+
+test('mcp proxy: strips inputSchema $schema with both comma-position variants', () => {
+  const schemaStripCount = (SRC.match(/json-schema\\.org\\\/draft-07\\\/schema#/g) || []).length;
+  assert.ok(schemaStripCount >= 2,
+    'Must strip draft-07 $schema in both leading-comma and trailing-comma positions');
+  assert.ok(SRC.includes('"\\$schema"'),
+    'Strip regex must target the literal $schema key');
 });
 
 test('mcp proxy: deletes content-length header after strip (length mismatch prevention)', () => {

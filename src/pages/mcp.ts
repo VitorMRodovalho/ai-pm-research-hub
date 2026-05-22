@@ -152,13 +152,20 @@ export const ALL: APIRoute = async ({ request }) => {
   }
 
   // p220: detect tools/list so we can post-process the response to strip
-  // the non-MCP-spec `execution.taskSupport` field added by @modelcontextprotocol/sdk@1.29.0.
+  // fields known to break stricter MCP clients.
+  //
+  // 1) `execution.taskSupport` is a non-MCP-spec field added by
+  // @modelcontextprotocol/sdk@1.29.0.
+  // 2) `$schema` inside each inputSchema is valid JSON Schema, but Perplexity's
+  // connector still rejects the 299-tool catalog after the execution strip.
+  // Keep the public tools/list payload conservative: type/properties/required
+  // are enough for clients to render and call tools.
   // Stricter MCP clients (Perplexity) silently drop the entire tools array when
   // unknown top-level fields appear on each tool — symptom: "No tools to display"
   // despite tools/list returning 200 with all 299 tools. The field is Anthropic-
   // internal (Claude Managed Agents task scheduling hint) and not part of the
   // public MCP spec (https://spec.modelcontextprotocol.io). Strip universally so
-  // every client sees a spec-compliant payload.
+  // every client sees a spec-compliant, minimal payload.
   const isToolsList = typeof reqBody === 'string' && /"method"\s*:\s*"tools\/list"/.test(reqBody);
 
   try {
@@ -183,12 +190,14 @@ export const ALL: APIRoute = async ({ request }) => {
     // because the field's JSON serialization is constant).
     if (isToolsList) {
       const rawBody = await res.text();
-      // Match optional leading/trailing comma + the constant execution object.
-      // The SDK always emits this field with the exact taskSupport:"forbidden"
-      // value, so a literal regex is safe (no parser cost).
+      // Match optional leading/trailing comma + constant fields emitted by the
+      // SDK/Zod serializer. Literal regexes avoid parsing a large SSE payload on
+      // the hot path.
       const cleanedBody = rawBody
         .replace(/,\s*"execution"\s*:\s*\{\s*"taskSupport"\s*:\s*"forbidden"\s*\}/g, '')
-        .replace(/"execution"\s*:\s*\{\s*"taskSupport"\s*:\s*"forbidden"\s*\}\s*,?/g, '');
+        .replace(/"execution"\s*:\s*\{\s*"taskSupport"\s*:\s*"forbidden"\s*\}\s*,?/g, '')
+        .replace(/,\s*"\$schema"\s*:\s*"http:\/\/json-schema\.org\/draft-07\/schema#"/g, '')
+        .replace(/"\$schema"\s*:\s*"http:\/\/json-schema\.org\/draft-07\/schema#"\s*,?/g, '');
       const respHeadersOut = new Headers(respHeaders);
       respHeadersOut.delete('content-length'); // length changed after strip
       await kvLog("mcp-upstream-tools-list", {
