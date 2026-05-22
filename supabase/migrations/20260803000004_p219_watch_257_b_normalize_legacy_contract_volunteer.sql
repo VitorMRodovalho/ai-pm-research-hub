@@ -205,8 +205,6 @@ BEGIN
     INTO v_default_days, v_requires_agreement
   FROM public.engagement_kinds ek WHERE ek.slug = v_engagement_kind;
 
-  -- Council fix: protect against historical-cycle backfill creating an engagement
-  -- with status='active' AND end_date < CURRENT_DATE.
   IF v_cycle_end_date IS NOT NULL AND v_cycle_end_date < CURRENT_DATE THEN
     v_cycle_end_date := NULL;
   END IF;
@@ -279,7 +277,6 @@ BEGIN
 
   PERFORM public.check_pre_onboarding_auto_steps(v_member_id);
 
-  -- Council fix: dedup guard for selection_approved notification on idempotent re-call.
   IF NOT EXISTS (
     SELECT 1 FROM public.notifications
     WHERE recipient_id = v_member_id
@@ -439,7 +436,6 @@ BEGIN
       CONTINUE;
     END IF;
 
-    -- p172 #5 fix: granted_by FK → persons(id), not members(id)
     INSERT INTO public.engagements (
       person_id, organization_id, initiative_id, kind, role, status,
       start_date, legal_basis, granted_by, metadata
