@@ -1,0 +1,19 @@
+---
+/**
+ * /governance/documents/[chainId]/export-docx — external reviewer DOCX export.
+ * Mirrors /admin/governance/documents/[chainId]/export-docx but uses BaseLayout.
+ *
+ * p220 BUG-219.A Phase 3 (2026-05-22). Issue #270.
+ */
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import ChainDocxExportIsland from '../../../../components/governance/ChainDocxExportIsland';
+import { t, getLangFromURL, type Lang } from '../../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { chainId } = Astro.params;
+---
+<BaseLayout title={t('admin.governance.exportDocx.title', lang)} lang={lang}>
+  <div class="max-w-[900px] mx-auto px-4 py-6">
+    <ChainDocxExportIsland client:only="react" chainId={chainId || ''} />
+  </div>
+</BaseLayout>
