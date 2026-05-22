@@ -3,35 +3,43 @@
  *
  * DCR (/oauth/register) is stateless and returns a fixed client_id,
  * so we cannot validate redirect_uri per-client. Instead, we enforce
- * a static allowlist of MCP host prefixes and custom URI schemes.
+ * a static allowlist of trusted root hosts and custom URI schemes.
  *
  * Why this matters:
  *   Without validation, an attacker could initiate an OAuth flow with
  *   redirect_uri=https://attacker.example/cb, capture the auth code,
  *   and exchange it for a valid Supabase JWT (account takeover).
  *
+ * Matching strategy (p220 — host suffix model):
+ *   - HTTPS redirects: parse URL, accept if host === root OR host endsWith
+ *     '.' + root for any root in TRUSTED_ROOT_HOSTS. Subdomain coverage is
+ *     intentional: MCP providers commonly route callbacks via product-
+ *     specific subdomains (api.perplexity.ai, comet.perplexity.ai,
+ *     app.claude.ai, etc.) and the previous prefix-string approach
+ *     silently blocked them — Perplexity rotated to api.perplexity.ai
+ *     and the allowlist still listed only perplexity.ai + www.perplexity.ai,
+ *     so connector tools/list went silent for the user.
+ *   - Custom schemes (cursor://, vscode://): accept if scheme starts URI.
+ *   - Localhost: accept any http://localhost:PORT or http://127.0.0.1:PORT
+ *     for local dev.
+ *   - All other inputs REJECTED.
+ *
  * Maintenance:
- *   - Add new hosts here only after confirming they are legitimate
- *     MCP clients (not arbitrary third parties).
- *   - HTTPS entries match URL prefixes (scheme + host + trailing slash).
- *   - Custom schemes match the scheme itself (e.g., "cursor:").
- *   - localhost is allowed over http for local development only.
+ *   - Add new root hosts only after confirming they are legitimate MCP
+ *     providers (Anthropic-published or vendor-published MCP support).
+ *   - Subdomain trust is implicit: trusting `perplexity.ai` trusts
+ *     `*.perplexity.ai`. This relies on the provider's DNS hygiene —
+ *     subdomain takeover at a major MCP vendor would be a wider incident.
  */
 
-const HTTPS_PREFIXES: readonly string[] = [
-  'https://claude.ai/',
-  'https://app.claude.ai/',
-  'https://chatgpt.com/',
-  'https://www.chatgpt.com/',
-  'https://openai.com/',
-  'https://platform.openai.com/',
-  'https://perplexity.ai/',
-  'https://www.perplexity.ai/',
-  'https://cursor.com/',
-  'https://www.cursor.com/',
-  'https://manus.im/',
-  'https://www.manus.im/',
-  'https://nucleoia.vitormr.dev/',
+const TRUSTED_ROOT_HOSTS: readonly string[] = [
+  'claude.ai',
+  'chatgpt.com',
+  'openai.com',
+  'perplexity.ai',
+  'cursor.com',
+  'manus.im',
+  'vitormr.dev',
 ];
 
 const CUSTOM_SCHEMES: readonly string[] = [
@@ -41,10 +49,18 @@ const CUSTOM_SCHEMES: readonly string[] = [
   'code-oss://',
 ];
 
-const LOCALHOST_PREFIXES: readonly string[] = [
-  'http://localhost:',
-  'http://127.0.0.1:',
+const LOCALHOST_HOSTS: readonly string[] = [
+  'localhost',
+  '127.0.0.1',
 ];
+
+function matchesTrustedRoot(host: string): boolean {
+  const lower = host.toLowerCase();
+  for (const root of TRUSTED_ROOT_HOSTS) {
+    if (lower === root || lower.endsWith('.' + root)) return true;
+  }
+  return false;
+}
 
 export function isAllowedRedirectUri(uri: string | undefined | null): boolean {
   if (!uri || typeof uri !== 'string') return false;
@@ -53,13 +69,18 @@ export function isAllowedRedirectUri(uri: string | undefined | null): boolean {
     if (uri.startsWith(scheme)) return true;
   }
 
-  for (const prefix of HTTPS_PREFIXES) {
-    if (uri.startsWith(prefix)) return true;
+  let parsed: URL;
+  try {
+    parsed = new URL(uri);
+  } catch {
+    return false;
   }
 
-  for (const prefix of LOCALHOST_PREFIXES) {
-    if (uri.startsWith(prefix)) return true;
+  if (parsed.protocol === 'http:' && LOCALHOST_HOSTS.includes(parsed.hostname)) {
+    return true;
   }
 
-  return false;
+  if (parsed.protocol !== 'https:') return false;
+
+  return matchesTrustedRoot(parsed.hostname);
 }
