@@ -1251,3 +1251,40 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **PM smoke required post-merge:** Hard refresh `/certificates` after Cloudflare cache invalidation (typically <60s post-deploy) and confirm the R3-2026 termo card now appears with "counter-signed" badge.
 - **Cross-ref:** src/pages/certificates.astro:53, src/pages/volunteer-agreement.astro:212 (the working reference), get_my_certificates RPC (admin context preserves include=false default), DISPATCH-160.B (#138 — the trigger that surfaced the journey).
 
+### 140. RESOLVED-217.C — Herlon CPMAI study_group_owner withdrawal (partial engagement offboarding per ADR-0006/0007)
+- **Tipo:** member lifecycle / partial offboarding · **Severity:** N/A (operational action) · **Effort:** XS (~15min DB ops + governance — completed)
+- **Trigger:** PM communication 2026-05-21 — Herlon Alves de Sousa (`c8e76355-...`) informed he must decline continuing as GP of CPMAI Ciclo 3 (`study_group_owner / leader` engagement) due to personal reasons. Withdrawal was announced before he had signed the OPP-160.B dispatched termo (notification `8bc80cec-...`).
+- **Pattern:** Partial engagement offboarding per ADR-0006/0007 — end ONLY the study_group_owner engagement; ambassador + observer engagements preserved (Herlon stays in the platform as member with merit recognition + passive observer roles intact). The `offboard_member(p_member_id, ...)` RPC was rejected as too coarse — it would also kill ambassador (PM confirmed "sim ele fazendo offboarding vai matar o ambassador, esta certo").
+- **Execution (4 ops via execute_sql, atomic BEGIN/COMMIT):**
+  1. `UPDATE engagements SET status='offboarded', end_date=current_date WHERE id='cdcd9693-bbf4-4dad-90fa-4037972567d3'` — old (active, end 2027-06-30) → new (offboarded, end 2026-05-22)
+  2. `UPDATE notifications SET is_read=true, read_at=now() WHERE id='8bc80cec-...'` — dismisses moot termo notification
+  3. `UPDATE selection_applications SET conversion_reason='Withdrawn 2026-05-21 ... personal reasons. Selection approval preserved...' WHERE id='d1d72a91-e67e-4272-a278-609079085faf'` — status='approved' preserved (selection process completed correctly); conversion to active engagement did not complete
+  4. `INSERT admin_audit_log (action='engagement_offboarded', target_type='engagement', target_id='cdcd9693-...', changes={old:active,new:offboarded}, metadata={person, initiative, reason, session, cascade_actions[]})` — full audit trail
+- **Post-state verified:**
+  - ambassador/ambassador engagement: status=active, is_authoritative=true ✓ (PR #250 catalog fix preserved)
+  - observer/observer engagement: status=active ✓
+  - study_group_owner/leader engagement: status=offboarded, end_date=2026-05-22 ✓
+  - notification 8bc80cec: is_read=true, read_at populated ✓
+  - selection_application d1d72a91: conversion_reason populated, updated_at refreshed ✓
+  - admin_audit_log: entry with target_id=cdcd9693 + action=engagement_offboarded ✓
+- **OPP-160.B impact:** the remaining 4-engagement backlog drops to 3 (Fernando SGP + Vitor 2 volunteer). Herlon's notification dismissed; no termo sign expected from him.
+- **TAP CPMAI (governance_document d7447a94) chain:** unaffected by withdrawal — Herlon's submitter_acceptance gate already completed 2026-05-13 (his earlier GP-elect work preserved in audit trail); chain still awaits Ivan president_go.
+- **Follow-up issue filed:** GH issue #257 — CPMAI Ciclo 3 replacement GP needed (PM decides A: Vitor temp / B: promote from cohort / C: external selection / D: pause).
+- **Cross-ref:** GH #257 (CPMAI GP replacement), engagement_id `cdcd9693-bbf4-4dad-90fa-4037972567d3`, OPP-160.B (#135 — backlog scope reduced), DISPATCH-160.B (#138 — notification was dispatched but dismissed before sign), ADR-0006 (person-engagement identity model), ADR-0007 (authority-as-engagement-grant), ADR-0008 §lifecycle table line 18 (`study_group_owner` lifecycle: ... → Offboard → Anonymize 5a).
+
+### 141. BUG-217.B — Termo PDF download missing: 41/41 volunteer_agreement certs have `pdf_url=NULL` + verify page has no render-from-snapshot path
+- **Tipo:** UX / LGPD soft gap · **Severity:** MED · **Effort:** L-XL (storage bucket + PDF library + signing flow + UI render + cron backfill of 41 certs)
+- **Trigger:** PM smoke of PR #253 (RESOLVED-217.A) — after `/certificates` page started showing his R3-2026 termo correctly, PM clicked "Verificar" CTA → `/verify/{code}` page shows cert metadata (type, member name, dates, counter-signer, verification code) but provides NO way to view or download the actual signed document.
+- **DB evidence:** 41 of 41 `volunteer_agreement` certs have `pdf_url IS NULL`; 1 of 1 `contribution` cert also `pdf_url IS NULL`. All have `content_snapshot IS NOT NULL` (data preserved in DB). Source `src/pages/verify/[code].astro` grep for `pdf_url|content_snapshot|download|baixar|PDF` returns 0 hits.
+- **Root cause (two-layer gap):**
+  1. PDF generation never wired — `sign_volunteer_agreement` → `counter_sign_certificate` flow creates cert + populates `content_snapshot` but never generates a PDF file. The `pdf_url` field exists in schema but no upstream code writes to it.
+  2. Verify page has no fallback — reads cert metadata but doesn't render `content_snapshot` client-side when `pdf_url` is NULL.
+- **Impact:** Members cannot download a copy of the legal Termo de Voluntariado they signed (LGPD Art. 18 soft gap — data exists, export path broken). External legal/audit requests can't be served via platform — admins must manually re-render from content_snapshot.
+- **Proposed fix options (next session — needs proper scoping):**
+  - (A) Lazy PDF generation on first verify-page visit — EF or RPC: content_snapshot + metadata → PDF → storage bucket → backfill pdf_url
+  - (B) Client-side render from content_snapshot — verify page parses + renders inline + browser print-to-PDF
+  - (C) Hybrid — (B) now for quick win, (A) later for canonical signed artifact
+- **GH issue filed:** #258 — full reproduction + proposed fixes + LGPD context
+- **Forward-defense (when fix lands):** contract test asserting `/verify/[code].astro` either renders content_snapshot OR provides pdf_url download — never both empty.
+- **Cross-ref:** GH #258, src/pages/verify/[code].astro, certificates.{pdf_url, content_snapshot}, ADR-0039 (countersign subsystem — never defined PDF artifact step), p156 memory `feedback_altchunk_docx_export_unviable.md` (prior DOCX attempts), RESOLVED-217.A (#139 — the fix that surfaced this downstream gap).
+
