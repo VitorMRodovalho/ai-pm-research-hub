@@ -4737,6 +4737,8 @@ const enUS: Record<string, string> = {
   'certificates.empty': 'No certificates found.',
   'certificates.signTerm': 'Sign Volunteer Agreement',
   'certificates.verify': 'Verify',
+  'certificates.download': '📥 Download PDF',
+  'certificates.downloadError': 'Could not open the PDF. Check that pop-ups are allowed.',
   'certificates.status.issued': 'Issued',
   'certificates.status.counterSigned': 'Counter-signed',
   'certificates.status.pending': 'Pending counter-signature',
