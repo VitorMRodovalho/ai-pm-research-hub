@@ -25,6 +25,7 @@ Status values:
 | #218 | active | Foundation / Governance | AI/video features | duplicate decision with #221 | Wave 1 evidence exists; Waves 2-5 still pending | Decide parent vs superseded-by-#221 before closing |
 | #148 | active | Infra/Security / QA | all merge confidence | #220 | CI heartbeat green on `main` | Close only after CI Validate recovers on main |
 | #220 | active | Infra/Security / QA | #148 | none | Local test:browser:guards + build pass with resolvable mock Supabase URL; remote CI pending | Close after CI PR passes and main heartbeat confirms |
+| #260 | active | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | production read-only audit + PM delivery policy decisions | Source-audited root cause, selection notification policy, safe replay plan, catalog/helper parity, cutoff/interview-overdue split | Close only after affected candidate rows are replayed/manual-closed and routing tests prevent recurrence |
 
 ---
 
