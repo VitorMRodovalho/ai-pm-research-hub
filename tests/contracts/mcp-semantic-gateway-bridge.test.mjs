@@ -68,15 +68,22 @@ test('ef declares buildSemanticError helper for structured error envelopes', () 
 function semanticBlock() {
   const start = EF.indexOf('function registerSemanticTools');
   assert.notEqual(start, -1, 'registerSemanticTools function not found');
-  // Find the next `function ` declaration OR `// MCP endpoint` boundary to bound the block.
+  // Find the next `function ` declaration OR `// MCP endpoint` boundary OR
+  // /mcp route OR /semantic route boundary to bound the block.
   const boundaryCandidates = [
     EF.indexOf('\nfunction ', start + 1),
     EF.indexOf('// MCP endpoint', start + 1),
     EF.indexOf('app.all("/mcp"', start + 1),
+    EF.indexOf('app.all("/semantic"', start + 1),
   ].filter((i) => i > 0);
   const end = Math.min(...boundaryCandidates);
   assert.ok(end > start, 'could not locate semantic-block end boundary');
-  return EF.slice(start, end);
+  const block = EF.slice(start, end);
+  // Council MED defensive — boundary detection truncation guard. registerSemanticTools
+  // body is ~280 lines (~12000 chars). If boundary detection accidentally truncates,
+  // tests would silently pass on an incomplete view of the function. Anchor a minimum.
+  assert.ok(block.length > 8000, `semantic block suspiciously short (${block.length} chars) — boundary detection may have truncated`);
+  return block;
 }
 
 test('semantic block registers exactly 3 mcp.tool() calls', () => {
@@ -268,5 +275,24 @@ test('semantic tools do not include raw email/phone/address selection from membe
   const cols = m[1];
   for (const piiCol of ['email', 'phone', 'address']) {
     assert.doesNotMatch(cols, new RegExp(`\\b${piiCol}\\b`), `get_my_context must NOT select members.${piiCol} (LGPD wave-1)`);
+  }
+});
+
+// ─── 11. Council HIGH-1 forward-defense — notifications schema correctness ────
+
+test('get_my_context notifications.select uses real columns (no `payload`)', () => {
+  const block = semanticBlock();
+  // The notifications.select(...) inside get_my_context (the withNotifs branch) must
+  // use columns that exist on the table: id/recipient_id/type/title/body/link/created_at/
+  // is_read/read_at/actor_id/email_sent_at/delivery_mode/digest_*. The first attempted
+  // shape "id, type, payload, created_at" referenced a non-existent `payload` column,
+  // surfaced by Council Tier 1 HIGH-1 (platform-guardian + code-reviewer) and verified
+  // via information_schema.columns live query.
+  const m = block.match(/sb\.from\(\s*"notifications"\s*\)\s*\.select\(\s*"([^"]+)"\s*\)\s*\.eq\(\s*"recipient_id"/);
+  assert.ok(m, 'expected withNotifs branch notifications.select(...) call');
+  const cols = m[1];
+  assert.doesNotMatch(cols, /\bpayload\b/, 'notifications has no `payload` column — use title/body/link');
+  for (const expectedCol of ['title', 'body', 'link']) {
+    assert.match(cols, new RegExp(`\\b${expectedCol}\\b`), `notifications.select must include ${expectedCol} (live notif content)`);
   }
 });

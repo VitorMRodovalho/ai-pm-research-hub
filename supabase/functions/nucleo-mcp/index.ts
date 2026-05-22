@@ -9,7 +9,9 @@
 //   with graceful per-source degradation (warnings array surfaces partial failures without breaking
 //   the compound response). Stable envelope: {ok, data, summary, warnings, next_actions, audit}.
 //   Public discovery contract designed against most restrictive store-readiness criteria of OpenAI/
-//   Anthropic/Perplexity/xAI/Manus per SPEC-280.A. /mcp/full and /semantic semver are independent.
+//   Anthropic/Perplexity/xAI/Manus per SPEC-280.A. /mcp (nucleo-ia-hub) and /semantic (nucleo-ia-semantic)
+//   semver evolve independently. /mcp/full is a future migration target (NOT shipped yet); current
+//   bridge state keeps /mcp as full catalog (no rename).
 // v2.78.0 (p216 GAP-205.D close — write surface completion via migration 20260802000013 + 3 new RPCs)
 // v2.76.1 (p199-a council fix bundle): analyze_application_video gains JS-layer canV4('view_pii')
 //   guard (defense-in-depth, was relying solely on RPC SQL gate — convention match with sibling
@@ -6818,15 +6820,17 @@ function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClien
       const today = new Date().toISOString().split("T")[0];
       const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
 
+      // Council HIGH-1 fix: notifications.payload does not exist — use title/body/link instead.
+      // Council MED-1 fix: drop unused credly_url from members.select (not surfaced in profile).
       const calls = await Promise.allSettled([
-        sb.from("members").select("name, operational_role, designations, tribe_id, chapter, current_cycle_active, cpmai_certified, credly_url").eq("id", member.id).single(),
+        sb.from("members").select("name, operational_role, designations, tribe_id, chapter, current_cycle_active, cpmai_certified").eq("id", member.id).single(),
         sb.rpc("get_current_cycle"),
         sb.rpc("get_my_gamification_stats"),
         sb.rpc("get_member_cycle_xp", { p_member_id: member.id }),
         sb.from("events").select("id, title, date, type").gte("date", today).lte("date", nextWeek).order("date").limit(3),
         sb.from("certificates").select("id, type, issued_at, pdf_url").eq("member_id", member.id).order("issued_at", { ascending: false }).limit(5),
         withNotifs
-          ? sb.from("notifications").select("id, type, payload, created_at").eq("recipient_id", member.id).is("read_at", null).order("created_at", { ascending: false }).limit(5)
+          ? sb.from("notifications").select("id, type, title, body, link, created_at").eq("recipient_id", member.id).is("read_at", null).order("created_at", { ascending: false }).limit(5)
           : Promise.resolve({ data: [], error: null } as any),
         sb.from("notifications").select("id", { count: "exact", head: true }).eq("recipient_id", member.id).is("read_at", null),
       ]);
