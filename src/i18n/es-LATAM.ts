@@ -4738,6 +4738,8 @@ const esLATAM: Record<string, string> = {
   'certificates.empty': 'No se encontraron certificados.',
   'certificates.signTerm': 'Firmar Acuerdo de Voluntariado',
   'certificates.verify': 'Verificar',
+  'certificates.download': '📥 Descargar PDF',
+  'certificates.downloadError': 'No se pudo abrir el PDF. Verifique que las ventanas emergentes estén permitidas.',
   'certificates.status.issued': 'Emitido',
   'certificates.status.counterSigned': 'Contra-firmado',
   'certificates.status.pending': 'Pendiente contra-firma',
