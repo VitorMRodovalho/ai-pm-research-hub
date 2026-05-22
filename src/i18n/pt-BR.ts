@@ -4743,6 +4743,8 @@ const ptBR: Record<string, string> = {
   'certificates.empty': 'Nenhum certificado encontrado.',
   'certificates.signTerm': 'Assinar Termo de Voluntariado',
   'certificates.verify': 'Verificar',
+  'certificates.download': '📥 Baixar PDF',
+  'certificates.downloadError': 'Não foi possível abrir o PDF. Verifique se o pop-up está liberado.',
   'certificates.status.issued': 'Emitido',
   'certificates.status.counterSigned': 'Contra-assinado',
   'certificates.status.pending': 'Pendente contra-assinatura',
