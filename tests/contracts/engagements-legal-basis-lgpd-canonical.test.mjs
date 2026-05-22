@@ -22,16 +22,20 @@
  *   - LGPD Art. 7 V (contract as legal basis)
  *   - P162 WATCH-257.A
  *
- * Two-test bundle:
- *   1. Static — migration file contains both literals (always runs)
- *   2. Behavioural — live constraint accepts both + catalog values are all accepted
- *      (DB-aware, skips without env)
+ * Static-only bundle:
+ *   1. Migration file contains both literals
+ *   2. Filename canonical per migration glob
+ *
+ * Behavioural verification lives inside the migration itself (in-tx DO block
+ * that fails loud if the new constraint doesn't list both literals — caught
+ * at apply time, not at runtime). Adding a CI-level behavioural DB check
+ * would require a generic exec_sql RPC which is not exposed by design.
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve } from 'node:path';
 
 const ROOT = process.cwd();
 const MIGRATION_FILE = resolve(
@@ -70,20 +74,3 @@ test('p218 WATCH-257.A migration is registered in supabase migrations baseline (
     'Migration filename must follow `<timestamp>_<descriptive_name>.sql` per CLAUDE.md GC-097');
 });
 
-test('engagements.legal_basis constraint accepts catalog values (live constraint includes contract)', { skip: !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY }, async () => {
-  const { createClient } = await import('@supabase/supabase-js');
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-
-  // Read the live constraint definition
-  const { data: constraintRows, error: cErr } = await sb.rpc('exec_sql_admin', {
-    p_sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'engagements_legal_basis_check'`
-  }).catch(() => ({ data: null, error: null }));
-
-  // Fallback if exec_sql_admin doesn't exist: just inspect via direct query through PostgREST
-  // (most projects don't expose a generic exec_sql; skip behavioural check gracefully)
-  if (!constraintRows || cErr) return;
-
-  const def = String(constraintRows?.[0]?.def || '');
-  assert.match(def, /'contract'/, 'live engagements_legal_basis_check must accept `contract`');
-  assert.match(def, /'contract_volunteer'/, 'live engagements_legal_basis_check must accept `contract_volunteer` (legacy preservation)');
-});
