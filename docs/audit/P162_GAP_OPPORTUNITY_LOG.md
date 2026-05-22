@@ -1237,3 +1237,17 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Note on Vitor self-cert:** As member + PM (GP) of the platform, Vitor signs his own termo via member flow, then countersigns via GP flow. Whether the system permits self-countersign depends on ADR-0039 countersign chain rules — not investigated this session (PM territory, low-impact if requires another GP).
 - **Cross-ref:** Issue #160, OPP-160.B (#135 — original entry, marked DISPATCHED), DECISION-160 (#133), RESOLVED-160.A (#134), `public.notifications` rows 8bc80cec / 166280fa / 7da2bf52, governance_documents.id `a78311fd-cf87-4bee-b0f1-e117a36095c5` (R3-C3 template).
 
+### 139. RESOLVED-217.A — `/certificates` page filtered out volunteer_agreement certs, returning empty for members with only TCV
+- **Tipo:** UI bug / user-visible regression · **Severity:** HIGH (broken journey) · **Effort:** XS (~20min — completed)
+- **Trigger:** PM clicked OPP-160.B dispatched notification email 2026-05-21 — landed on `/volunteer-agreement` which correctly detected his existing R3-2026 cert (`a375b716-...`, issued 2026-04-08, counter_signed 2026-02-18) and showed "you already signed" + CTA to `/certificates`. Clicked CTA → `/certificates` page returned empty with message "you have no certs, sign your termo" — the very thing he was just told he already signed. Cross-check: `/admin/governance/documents` showed his signed cert + TAP CPMAI chain (where his submitter_acceptance gate was already done 2026-05-13). Conclusion: journey broken at `/certificates`.
+- **Root cause:** `src/pages/certificates.astro:53` called `sb.rpc('get_my_certificates')` without arguments. The RPC signature is `get_my_certificates(p_include_volunteer_agreements boolean DEFAULT false)` — the FALSE default filters out `type='volunteer_agreement'` certs (an admin-context default for separating TCV from achievement certs). PM's only cert was `type='volunteer_agreement'` → filtered out → page empty.
+- **Asymmetry that hid the bug:** `src/pages/volunteer-agreement.astro:212` correctly passes `p_include_volunteer_agreements: true` for its "already signed" detection. The two pages used the same RPC with different defaults; only the member-facing list page had the wrong default.
+- **Fix:** `src/pages/certificates.astro:53` now passes `{ p_include_volunteer_agreements: true }` explicitly. Member-facing page should NEVER hide certs the member owns.
+- **Forward-defense:** `tests/contracts/certificates-page-include-volunteer-agreements.test.mjs` (+2 assertions):
+  - Positive: regex must match `sb.rpc('get_my_certificates', { ... p_include_volunteer_agreements: true ... })` in the page body
+  - Negative: regex must NOT match the naked `sb.rpc('get_my_certificates')` call form
+  - Negative: regex must NOT match `p_include_volunteer_agreements: false` (catches anyone re-introducing the bug deliberately)
+- **Test baseline:** 1596 → 1598 offline (1618 → 1620 with-DB) via the 2 new assertions. deploy.md baseline pin updated.
+- **PM smoke required post-merge:** Hard refresh `/certificates` after Cloudflare cache invalidation (typically <60s post-deploy) and confirm the R3-2026 termo card now appears with "counter-signed" badge.
+- **Cross-ref:** src/pages/certificates.astro:53, src/pages/volunteer-agreement.astro:212 (the working reference), get_my_certificates RPC (admin context preserves include=false default), DISPATCH-160.B (#138 — the trigger that surfaced the journey).
+
