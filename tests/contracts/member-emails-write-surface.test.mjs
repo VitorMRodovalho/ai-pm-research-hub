@@ -211,13 +211,20 @@ test('GAP-205.D: McpServer version is bumped past p215 (>= 2.78.0)', () => {
 });
 
 // ─── 11. /health endpoint tool count matches catalog claim (299) ───
-test('GAP-205.D: /health endpoint reports tools = 299 (matches catalog post-GAP-205.D)', () => {
-  const healthRe = /app\.get\s*\(\s*"\/health"[\s\S]{0,300}tools:\s*(\d+)/;
-  const m = mcpIndex.match(healthRe);
-  assert.ok(m, 'Could not find /health endpoint with tools: <count> in nucleo-mcp/index.ts');
+// p222 #280 update: /health was restructured to report BOTH /mcp and /semantic surfaces,
+// so the regex now targets the surfaces."/mcp".tools field specifically (was: greedy first
+// `tools: N` after /health which picked up /semantic.tools=3 after the restructure).
+test('GAP-205.D: /health endpoint reports /mcp tools = 299 (matches catalog post-GAP-205.D)', () => {
+  const healthBlockRe = /app\.get\s*\(\s*"\/health"[\s\S]{0,800}?\}\)\s*\)\s*;/;
+  const block = mcpIndex.match(healthBlockRe);
+  assert.ok(block, 'Could not find /health endpoint block in nucleo-mcp/index.ts');
+  // Match the /mcp surface's tools count specifically. Resilient to additional sibling surfaces.
+  const mcpToolsRe = /"\/mcp"\s*:\s*\{[^}]*?tools:\s*(\d+)/;
+  const m = block[0].match(mcpToolsRe);
+  assert.ok(m, 'Could not find "/mcp" surface tools count in /health endpoint');
   const count = Number(m[1]);
   assert.equal(count, 299,
-    `/health tools count must equal 299 (= 296 at p215 close + 3 new tools shipped in ` +
+    `/health /mcp surface tools count must equal 299 (= 296 at p215 close + 3 new tools shipped in ` +
     `GAP-205.D). Source-of-truth is the runtime tools/list, but the /health label ` +
     `should track to avoid the WATCH-205.G drift class.`);
 });
