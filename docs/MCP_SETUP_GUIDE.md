@@ -2,28 +2,35 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 293 tools that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes two surfaces: `/mcp` (299 implementation tools for verified clients) and `/mcp/semantic` (a smaller, bridge-first semantic gateway for strict MCP clients). Both surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
-## Universal URL
+## Endpoints
 
-All clients use the same URL:
+| Endpoint | Tools | Purpose | Recommended clients |
+|----------|-------|---------|---------------------|
+| `https://nucleoia.vitormr.dev/mcp` | 299 | Full internal capability registry. Stable for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
+| `https://nucleoia.vitormr.dev/mcp/semantic` | 3 (wave-1) | **Bridge-first semantic gateway (p222 #280 alpha).** Compact, review-ready public contract over the internal registry. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
 
-```
-https://nucleoia.vitormr.dev/mcp
-```
+Both endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients should still default to `/mcp`.
 
-Authentication: OAuth 2.1 — you'll be redirected to log in with the same account you use on the platform (Google, LinkedIn, or Microsoft).
+Wave-1 semantic tools (read-only):
+- `get_my_context` — compact self-scope context (profile, current cycle, gamification, upcoming events, certificates).
+- `search_nucleo_knowledge` — bounded multi-source search across hub resources + wiki + knowledge_assets.
+- `get_board_or_initiative_context` — initiative/board/tribe one-shot summary.
 
 ## Compatibility
 
-| Client | Status | Notes |
-|--------|--------|-------|
-| Claude.ai | ✅ Verified (293 tools) | Web and desktop app. Streamable HTTP SSE. |
-| Claude Code | ✅ Verified | Terminal — see token workaround below |
-| ChatGPT | ✅ Verified (beta) | Settings → Apps → Connectors → Advanced → New App |
-| Perplexity | ✅ Verified | MCP connector in settings. |
-| Cursor / VS Code | ✅ Verified | Settings → MCP → Add. OAuth flow. |
-| Manus AI | ✅ Verified | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
+| Client | Status | Recommended endpoint | Notes |
+|--------|--------|----------------------|-------|
+| Claude.ai | ✅ Verified | `/mcp` (full 299) | Web and desktop. Streamable HTTP SSE. |
+| Claude Code | ✅ Verified | `/mcp` (full 299) | Terminal — see token workaround below. |
+| ChatGPT | ✅ Verified (beta) | `/mcp` (full 299) | Settings → Apps → Connectors → Advanced → New App. Apps SDK submission should target `/mcp/semantic`. |
+| Perplexity | ⚠️ Use `/mcp/semantic` | **`/mcp/semantic`** | Transport: **Streamable HTTP** (not SSE). Auth: OAuth 2.0. Perplexity rejected the 299-tool full catalog (see GH #277 / #280). |
+| Cursor / VS Code | ✅ Verified | `/mcp` (full 299) | Settings → MCP → Add. OAuth flow. |
+| Manus AI | ✅ Verified | `/mcp` (full 299) | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
+| xAI / Grok | 🟡 Custom MCP | `/mcp/semantic` | BYO remote MCP via API; catalog submission not yet documented publicly. |
+| OpenAI Apps SDK review | 🟡 For submission | `/mcp/semantic` | Apps SDK review expects bounded tools + review-account; use semantic surface. |
+| Anthropic Connectors Directory review | 🟡 For submission | `/mcp/semantic` | Directory pre-submission checklist favors short bounded tool catalogs. |
 
 ## Setup by Client
 

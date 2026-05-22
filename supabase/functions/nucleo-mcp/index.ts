@@ -1,5 +1,18 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.76.1 — 293 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.79.0 — /mcp 299 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// v2.79.0 (p222 #280 alpha — Semantic MCP Gateway bridge): +1 endpoint `app.all("/semantic")`
+//   exposes 3 read-only semantic tools (get_my_context + search_nucleo_knowledge +
+//   get_board_or_initiative_context) via a separate McpServer instance ("nucleo-ia-semantic" v0.1.0).
+//   /mcp surface unchanged (299 tools, regression-safe). Implementation per SPEC-280.B Option A
+//   (register in this monolithic file alongside registerTools/registerKnowledge; future PR can
+//   extract to its own module). Each semantic tool wraps multiple underlying RPCs via Promise.allSettled
+//   with graceful per-source degradation (warnings array surfaces partial failures without breaking
+//   the compound response). Stable envelope: {ok, data, summary, warnings, next_actions, audit}.
+//   Public discovery contract designed against most restrictive store-readiness criteria of OpenAI/
+//   Anthropic/Perplexity/xAI/Manus per SPEC-280.A. /mcp (nucleo-ia-hub) and /semantic (nucleo-ia-semantic)
+//   semver evolve independently. /mcp/full is a future migration target (NOT shipped yet); current
+//   bridge state keeps /mcp as full catalog (no rename).
+// v2.78.0 (p216 GAP-205.D close — write surface completion via migration 20260802000013 + 3 new RPCs)
 // v2.76.1 (p199-a council fix bundle): analyze_application_video gains JS-layer canV4('view_pii')
 //   guard (defense-in-depth, was relying solely on RPC SQL gate — convention match with sibling
 //   analyze_application + generate_interview_briefing). Docstring clarified: returns dispatch
@@ -6763,6 +6776,385 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
   });
 }
 
+// ─── SEMANTIC GATEWAY (p222 #280 alpha) ──────────────────────────────────────
+// Public semantic contract over the internal 299-tool capability registry. Bridge-first:
+// /mcp keeps full catalog (regression-safe); /semantic exposes a compact, store-readiness-
+// designed surface for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors
+// Directory). See docs/specs/SPEC_280A_CONNECTOR_STORE_READINESS.md +
+// docs/specs/SPEC_280B_SEMANTIC_MCP_GATEWAY_IMPLEMENTATION.md.
+//
+// First-wave tools (3, all read-only):
+//   • get_my_context — compact self-scope operating context (profile + cycle + XP + events + certs)
+//   • search_nucleo_knowledge — bounded multi-source search (hub + wiki + knowledge_assets)
+//   • get_board_or_initiative_context — initiative/board/tribe one-shot summary
+//
+// Stable envelope per tool: {ok, data, summary, warnings, next_actions, audit}.
+// Errors return same envelope shape with ok=false + structured error block (NOT raw "Error: ...").
+function buildSemanticError(args: { tool: string; semantic_domain: string; code: string; message: string; action?: string }) {
+  return {
+    ok: false,
+    error: { code: args.code, message: args.message, action: args.action },
+    audit: { tool: args.tool, semantic_domain: args.semantic_domain, generated_at: new Date().toISOString() },
+  };
+}
+
+function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+
+  // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
+  mcp.tool(
+    "get_my_context",
+    "Returns a compact personal operating context for the authenticated user (profile, current cycle, gamification streak + cycle points, next-7-day events, recent certificates, and unread notification count). Self-scope only. Read-only. LGPD-clean — omits raw PII (email/phone/address) by default. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+    {
+      detail_level: z.enum(["summary", "standard"]).optional().describe("'summary' = profile + cycle + unread count. 'standard' = adds gamification + ranking + 3 upcoming events + 5 recent certs. Default: 'standard'."),
+      include_notifications: z.boolean().optional().describe("Include up to 5 unread notifications (LGPD: kept off by default to minimize PII surface). Default: false."),
+    },
+    async (params: { detail_level?: "summary" | "standard"; include_notifications?: boolean }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "get_my_context", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "get_my_context", semantic_domain: "personal", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      const detail = params.detail_level ?? "standard";
+      const withNotifs = params.include_notifications === true;
+      const today = new Date().toISOString().split("T")[0];
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
+      // Council HIGH-1 fix: notifications.payload does not exist — use title/body/link instead.
+      // Council MED-1 fix: drop unused credly_url from members.select (not surfaced in profile).
+      const calls = await Promise.allSettled([
+        sb.from("members").select("name, operational_role, designations, tribe_id, chapter, current_cycle_active, cpmai_certified").eq("id", member.id).single(),
+        sb.rpc("get_current_cycle"),
+        sb.rpc("get_my_gamification_stats"),
+        sb.rpc("get_member_cycle_xp", { p_member_id: member.id }),
+        sb.from("events").select("id, title, date, type").gte("date", today).lte("date", nextWeek).order("date").limit(3),
+        sb.from("certificates").select("id, type, issued_at, pdf_url").eq("member_id", member.id).order("issued_at", { ascending: false }).limit(5),
+        withNotifs
+          ? sb.from("notifications").select("id, type, title, body, link, created_at").eq("recipient_id", member.id).is("read_at", null).order("created_at", { ascending: false }).limit(5)
+          : Promise.resolve({ data: [], error: null } as any),
+        sb.from("notifications").select("id", { count: "exact", head: true }).eq("recipient_id", member.id).is("read_at", null),
+      ]);
+
+      const warnings: string[] = [];
+      const labels = ["profile", "cycle", "gamification", "ranking", "events", "certificates", "notifications_list", "notifications_count"];
+      const get = <T>(idx: number): T | null => {
+        const r = calls[idx];
+        if (r.status === "rejected") { warnings.push(`${labels[idx]}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+        const v = r.value as any;
+        if (v?.error) { warnings.push(`${labels[idx]}: ${v.error.message}`); return null; }
+        return v?.data ?? null;
+      };
+
+      const profile = get<any>(0);
+      const cycle = get<any>(1);
+      const gamification = get<any>(2);
+      const ranking = get<any>(3);
+      const events = (get<any[]>(4) ?? []).slice(0, 3);
+      const certs = (get<any[]>(5) ?? []).slice(0, 5);
+      const notifs = withNotifs ? (get<any[]>(6) ?? []).slice(0, 5) : [];
+      const notifCountResult = calls[7];
+      const notifCount = notifCountResult.status === "fulfilled" ? ((notifCountResult.value as any).count ?? 0) : 0;
+
+      const data: any = {
+        profile: profile ? {
+          name: profile.name,
+          operational_role: profile.operational_role,
+          designations: profile.designations ?? [],
+          tribe_id: profile.tribe_id,
+          chapter: profile.chapter,
+          current_cycle_active: profile.current_cycle_active,
+          cpmai_certified: profile.cpmai_certified,
+        } : null,
+        cycle: cycle ? {
+          code: cycle.cycle_code ?? cycle.code ?? null,
+          label: cycle.cycle_label ?? cycle.label ?? null,
+          start_date: cycle.cycle_start ?? cycle.start_date ?? null,
+          end_date: cycle.cycle_end ?? cycle.end_date ?? null,
+        } : null,
+        notifications_unread_count: notifCount,
+      };
+
+      if (detail === "standard") {
+        data.gamification = gamification;
+        data.ranking = ranking;
+        data.upcoming_events = events;
+        data.recent_certificates = certs;
+      }
+      if (withNotifs) data.notifications = notifs;
+
+      const cycleCode = (cycle?.cycle_code ?? cycle?.code) ?? null;
+      const streak = gamification?.current_streak_count ?? null;
+      const summaryParts = [
+        profile ? `${profile.name}${profile.operational_role ? ` (${profile.operational_role})` : ""}` : "Perfil indisponível",
+        cycleCode ? `ciclo ${cycleCode}` : null,
+        streak !== null ? `streak ${streak} ciclo(s)` : null,
+        events.length > 0 ? `${events.length} evento(s) próx. 7d` : null,
+        notifCount > 0 ? `${notifCount} notificação(ões) não lida(s)` : null,
+      ].filter(Boolean);
+      const summary = summaryParts.join(" · ") + ".";
+
+      await logUsage(sb, member.id, "get_my_context", true, undefined, start);
+      return ok({
+        ok: true,
+        data,
+        summary,
+        warnings,
+        next_actions: [
+          "search_nucleo_knowledge: search hub/wiki/knowledge_assets",
+          "get_board_or_initiative_context: explore your tribe or any initiative",
+        ],
+        audit: {
+          tool: "get_my_context",
+          semantic_domain: "personal",
+          pii_level: "self",
+          permission: "authenticated",
+          source_tools: ["members(self)", "get_current_cycle", "get_my_gamification_stats", "get_member_cycle_xp", "events", "certificates(self)", "notifications(self)"],
+          generated_at: new Date().toISOString(),
+          detail_level: detail,
+          include_notifications: withNotifs,
+        },
+      });
+    },
+  );
+
+  // ── SEMANTIC TOOL 2/3: search_nucleo_knowledge ─────────────────────────────
+  mcp.tool(
+    "search_nucleo_knowledge",
+    "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+    {
+      query: z.string().min(2).max(200).describe("Search query, Portuguese or English. 2-200 chars."),
+      sources: z.array(z.enum(["hub", "wiki", "knowledge_assets"])).optional().describe("Which sources to search. Default: all 3."),
+      limit_per_source: z.number().int().min(1).max(10).optional().describe("Max results per source. Default: 5; max: 10."),
+    },
+    async (params: { query: string; sources?: ("hub" | "wiki" | "knowledge_assets")[]; limit_per_source?: number }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "search_nucleo_knowledge", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      const query = (params.query ?? "").trim();
+      if (query.length < 2) {
+        await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Empty query", start);
+        return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "invalid_input", message: "query must be at least 2 characters.", action: "Provide a more specific search term." }));
+      }
+      const sources = (params.sources && params.sources.length > 0) ? params.sources : ["hub", "wiki", "knowledge_assets"] as const;
+      const limit = Math.min(Math.max(params.limit_per_source ?? 5, 1), 10);
+
+      const tasks: Promise<{ source: string; data: any[]; error: string | null }>[] = [];
+      if (sources.includes("hub")) {
+        tasks.push(
+          sb.rpc("search_hub_resources", { p_query: query, p_asset_type: null, p_limit: limit })
+            .then(({ data, error }: any) => ({ source: "hub", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+      if (sources.includes("wiki")) {
+        tasks.push(
+          sb.rpc("search_wiki_pages", { p_query: query, p_limit: limit, p_domain: null, p_tag: null })
+            .then(({ data, error }: any) => ({ source: "wiki", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+      if (sources.includes("knowledge_assets")) {
+        tasks.push(
+          sb.rpc("knowledge_search_text", { p_query: query, p_source: null, p_match_count: limit })
+            .then(({ data, error }: any) => ({ source: "knowledge_assets", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+
+      const settled = await Promise.allSettled(tasks);
+      const results: Record<string, any[]> = {};
+      const warnings: string[] = [];
+      let totalCount = 0;
+      for (const r of settled) {
+        if (r.status === "rejected") { warnings.push(`source rejected: ${(r.reason as any)?.message ?? "unknown"}`); continue; }
+        const { source, data, error } = r.value;
+        if (error) { warnings.push(`${source}: ${error}`); continue; }
+        results[source] = data;
+        totalCount += data.length;
+      }
+
+      const breakdown = Object.entries(results).map(([k, v]) => `${k} (${v.length})`).join(", ");
+      const summary = totalCount === 0
+        ? `Sem resultados para "${query}".`
+        : `${totalCount} resultado(s) para "${query}": ${breakdown}.`;
+
+      await logUsage(sb, member.id, "search_nucleo_knowledge", true, undefined, start);
+      return ok({
+        ok: true,
+        data: { query, total_count: totalCount, results },
+        summary,
+        warnings,
+        next_actions: totalCount === 0
+          ? ["Try broader or differently-phrased terms (PT or EN)"]
+          : ["get_wiki_page: read a wiki page by full path", "get_board_or_initiative_context: explore an initiative"],
+        audit: {
+          tool: "search_nucleo_knowledge",
+          semantic_domain: "knowledge",
+          pii_level: "none",
+          permission: "authenticated",
+          source_tools: [
+            sources.includes("hub") ? "search_hub_resources" : null,
+            sources.includes("wiki") ? "search_wiki_pages" : null,
+            sources.includes("knowledge_assets") ? "knowledge_search_text" : null,
+          ].filter(Boolean),
+          generated_at: new Date().toISOString(),
+          sources_requested: sources,
+          limit_per_source: limit,
+        },
+      });
+    },
+  );
+
+  // ── SEMANTIC TOOL 3/3: get_board_or_initiative_context ─────────────────────
+  mcp.tool(
+    "get_board_or_initiative_context",
+    "Summarize an initiative/tribe/board in one call: initiative metadata, primary board (sample of 5 recent cards + status breakdown), next 3 upcoming events, last 2 meeting notes (300-char preview), and active engagement count. Pass exactly one of initiative_id (UUID) or tribe_id (1-8). Stable envelope. Read-only.",
+    {
+      initiative_id: z.string().optional().describe("Initiative UUID. Pass exactly one of initiative_id or tribe_id."),
+      tribe_id: z.number().int().min(1).max(8).optional().describe("Legacy tribe ID 1-8. Pass exactly one of initiative_id or tribe_id."),
+      detail_level: z.enum(["summary", "standard"]).optional().describe("'summary' = title+kind only. 'standard' = adds cards/events/notes/count. Default: 'standard'."),
+    },
+    async (params: { initiative_id?: string; tribe_id?: number; detail_level?: "summary" | "standard" }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "get_board_or_initiative_context", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      // Validate input — exactly one of initiative_id or tribe_id required (XOR)
+      const hasInit = !!params.initiative_id;
+      const hasTribe = params.tribe_id !== undefined && params.tribe_id !== null;
+      if (hasInit === hasTribe) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Must pass exactly one of initiative_id or tribe_id", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "invalid_input", message: "Pass exactly one of initiative_id (UUID) or tribe_id (1-8).", action: "If you have a UUID, pass initiative_id; otherwise pass tribe_id for legacy tribes 1-8." }));
+      }
+
+      let initiativeId: string | null = params.initiative_id ?? null;
+      if (!initiativeId && hasTribe) {
+        initiativeId = await resolveInitiativeId(sb, params.tribe_id!);
+        if (!initiativeId) {
+          await logUsage(sb, member.id, "get_board_or_initiative_context", false, `tribe ${params.tribe_id} not found`, start);
+          return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "not_found", message: `Initiative not found for tribe_id=${params.tribe_id}.`, action: "Use list_initiatives or get_portfolio_overview to find available initiatives." }));
+        }
+      }
+      if (!initiativeId || !isUUID(initiativeId)) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Invalid initiative_id", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "invalid_input", message: "initiative_id must be a UUID." }));
+      }
+
+      const detail = params.detail_level ?? "standard";
+      const today = new Date().toISOString().split("T")[0];
+
+      const [initRes, boardRes] = await Promise.all([
+        sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initiativeId).maybeSingle(),
+        sb.from("project_boards").select("id, title").eq("initiative_id", initiativeId).limit(1).maybeSingle(),
+      ]);
+
+      if (initRes.error) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, initRes.error.message, start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "internal_error", message: initRes.error.message }));
+      }
+      if (!initRes.data) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Initiative not found or no access", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "not_found", message: `Initiative ${initiativeId} not found or you lack access.`, action: "Confirm the UUID, or use list_initiatives to discover initiatives you can view." }));
+      }
+
+      const initiative = initRes.data;
+      const board = boardRes.data ?? null;
+
+      if (detail === "summary") {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", true, undefined, start);
+        return ok({
+          ok: true,
+          data: {
+            initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
+            board: board ? { id: board.id, title: board.title } : null,
+          },
+          summary: `Iniciativa "${initiative.title}" (${initiative.kind})${board ? `, board "${board.title}"` : " (sem board)"}.`,
+          warnings: [],
+          next_actions: [
+            "detail_level='standard' for cards/events/notes/count",
+            "list_board_cards: full card list with filters",
+            "list_initiative_events: full event history",
+          ],
+          audit: {
+            tool: "get_board_or_initiative_context",
+            semantic_domain: "operations",
+            pii_level: "low",
+            permission: "authenticated",
+            source_tools: ["initiatives", "project_boards"],
+            generated_at: new Date().toISOString(),
+            detail_level: detail,
+            initiative_id: initiativeId,
+            tribe_id: params.tribe_id ?? null,
+          },
+        });
+      }
+
+      // Standard detail: fetch cards + events + notes + engagement count in parallel
+      const [cardsRes, eventsRes, notesRes, engRes] = await Promise.all([
+        board?.id
+          ? sb.from("board_items").select("id, title, status, due_date, position").eq("board_id", board.id).neq("status", "archived").order("position").limit(5)
+          : Promise.resolve({ data: [], error: null } as any),
+        sb.from("events").select("id, title, date, type").eq("initiative_id", initiativeId).gte("date", today).order("date").limit(3),
+        sb.from("events").select("id, title, date, minutes_text").eq("initiative_id", initiativeId).not("minutes_text", "is", null).order("date", { ascending: false }).limit(2),
+        sb.from("engagements").select("id", { count: "exact", head: true }).eq("initiative_id", initiativeId).is("end_date", null).is("revoked_at", null),
+      ]);
+
+      const warnings: string[] = [];
+      if (cardsRes.error) warnings.push(`cards: ${cardsRes.error.message}`);
+      if (eventsRes.error) warnings.push(`events: ${eventsRes.error.message}`);
+      if (notesRes.error) warnings.push(`notes: ${notesRes.error.message}`);
+      if (engRes.error) warnings.push(`engagement_count: ${engRes.error.message}`);
+
+      const cards = (cardsRes.data ?? []).slice(0, 5);
+      const events = (eventsRes.data ?? []).slice(0, 3);
+      const notes = (notesRes.data ?? []).slice(0, 2);
+      const memberCount = (engRes as any).count ?? null;
+
+      const statusCounts: Record<string, number> = {};
+      for (const c of cards) statusCounts[c.status] = (statusCounts[c.status] ?? 0) + 1;
+
+      await logUsage(sb, member.id, "get_board_or_initiative_context", true, undefined, start);
+      return ok({
+        ok: true,
+        data: {
+          initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
+          board: board ? { id: board.id, title: board.title, sample_card_count: cards.length, sample_status_breakdown: statusCounts } : null,
+          recent_cards: cards,
+          upcoming_events: events,
+          recent_meeting_notes: notes.map((n: any) => ({ event_id: n.id, title: n.title, date: n.date, preview: typeof n.minutes_text === "string" ? n.minutes_text.substring(0, 300) : null })),
+          member_count: memberCount,
+        },
+        summary: [
+          `Iniciativa "${initiative.title}" (${initiative.kind})`,
+          board ? `board "${board.title}" — ${cards.length} card(s) mostrados` : "sem board",
+          events.length > 0 ? `${events.length} evento(s) próximos` : "sem eventos próximos",
+          notes.length > 0 ? `${notes.length} ata(s) recentes` : "sem atas recentes",
+          memberCount !== null ? `${memberCount} engagement(s) ativo(s)` : null,
+        ].filter(Boolean).join(" · ") + ".",
+        warnings,
+        next_actions: [
+          "list_board_cards: full card list with filters",
+          "list_initiative_events: full event history",
+          "list_initiative_engagements: members + roles + audit detail",
+        ],
+        audit: {
+          tool: "get_board_or_initiative_context",
+          semantic_domain: "operations",
+          pii_level: "low",
+          permission: "authenticated",
+          source_tools: ["initiatives", "project_boards", "board_items", "events(upcoming)", "events(meeting_notes)", "engagements(count)"],
+          generated_at: new Date().toISOString(),
+          detail_level: detail,
+          initiative_id: initiativeId,
+          tribe_id: params.tribe_id ?? null,
+        },
+      });
+    },
+  );
+}
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
 // SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
@@ -6790,7 +7182,44 @@ app.all("/mcp", async (c) => {
   }
 });
 
-// Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.78.0", tools: 299, transport: "native-streamable-http", sdk: "1.29.0" }));
+// p222 #280 alpha — Semantic MCP Gateway bridge endpoint
+// Same transport + protocol as /mcp; difference is the McpServer is constructed with ONLY the
+// 3 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
+// for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors Directory).
+app.all("/semantic", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    const sb = createAuthenticatedClient(token);
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.1.0" });
+    registerSemanticTools(mcp, sb);
+
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless mode — no session persistence
+    });
+
+    await mcp.connect(transport);
+    const response = await transport.handleRequest(c.req.raw);
+    transport.onclose = () => mcp.close();
+
+    return response;
+  } catch (e: any) {
+    console.error("[MCP-Semantic] Handler error:", e.message, e.stack?.substring(0, 300));
+    return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
+  }
+});
+
+// Health check (p222 #280 alpha — reports both surfaces)
+app.get("/health", (c) => c.json({
+  status: "ok",
+  ef_version: "2.79.0",
+  surfaces: {
+    "/mcp": { server: "nucleo-ia-hub", version: "2.78.0", tools: 299 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
+  },
+  transport: "native-streamable-http",
+  sdk: "1.29.0",
+}));
 
 Deno.serve(app.fetch);

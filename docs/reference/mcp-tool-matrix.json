@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-05-22T18:36:47.756Z",
+  "generated_at": "2026-05-22T23:04:14.440Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 299,
-  "runtime_status": "clean (299 runtime ≡ 299 static)",
+  "total": 302,
+  "runtime_status": "drift: 3 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context], 0 runtime-only []",
   "by_domain": {
-    "personal": 20,
+    "personal": 21,
     "events": 15,
     "gamification": 12,
-    "board": 64,
+    "board": 65,
     "tribe": 93,
     "comms": 12,
-    "knowledge": 11,
+    "knowledge": 12,
     "partners": 11,
     "selection": 24,
     "health": 14,
@@ -4113,6 +4113,61 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "data"
+    },
+    {
+      "name": "get_my_context",
+      "description": "Returns a compact personal operating context for the authenticated user (profile, current cycle, gamification streak + cycle points, next-7-day events, recent certificates, and unread notification count). Self-scope only. Read-only. LGPD-clean — omits raw PII (email/phone/address) by default. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "domain": "personal",
+      "rpcs": [
+        "get_current_cycle",
+        "get_member_cycle_xp",
+        "get_my_gamification_stats"
+      ],
+      "tables": [
+        "certificates",
+        "events",
+        "members",
+        "notifications"
+      ],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent",
+      "drift": "static-only"
+    },
+    {
+      "name": "search_nucleo_knowledge",
+      "description": "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+      "domain": "knowledge",
+      "rpcs": [
+        "knowledge_search_text",
+        "search_hub_resources",
+        "search_wiki_pages"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: ",
+      "drift": "static-only"
+    },
+    {
+      "name": "get_board_or_initiative_context",
+      "description": "Summarize an initiative/tribe/board in one call: initiative metadata, primary board (sample of 5 recent cards + status breakdown), next 3 upcoming events, last 2 meeting notes (300-char preview), and active engagement count. Pass exactly one of initiative_id (UUID) or tribe_id (1-8). Stable envelope. Read-only.",
+      "domain": "board",
+      "rpcs": [],
+      "tables": [
+        "board_items",
+        "engagements",
+        "events",
+        "initiatives",
+        "project_boards"
+      ],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
+      "drift": "static-only"
     }
   ]
 }
