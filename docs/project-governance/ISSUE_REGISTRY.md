@@ -25,6 +25,7 @@ Status values:
 | #218 | active | Foundation / Governance | AI/video features | duplicate decision with #221 | Wave 1 evidence exists; Waves 2-5 still pending | Decide parent vs superseded-by-#221 before closing |
 | #148 | active | Infra/Security / QA | all merge confidence | #220 | CI heartbeat green on `main` | Close only after CI Validate recovers on main |
 | #220 | active | Infra/Security / QA | #148 | none | Local test:browser:guards + build pass with resolvable mock Supabase URL; remote CI pending | Close after CI PR passes and main heartbeat confirms |
+| #260 | active | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | production read-only audit + PM delivery policy decisions | Source-audited root cause, selection notification policy, safe replay plan, catalog/helper parity, cutoff/interview-overdue split | Close only after affected candidate rows are replayed/manual-closed and routing tests prevent recurrence |
 
 ---
 
@@ -43,6 +44,7 @@ Status values:
 | Issue | Registry status | Lane | Blocks | Blocked by | Acceptance evidence | Close rule |
 |---|---|---|---|---|---|---|
 | #212 | spec-only | Governance / Architecture | #211, #209, Drive/external-member work | #221 and PM signoff | ADR-0094, architecture doc, sub-issue set accepted | Close only after child issues spawned or tracker intentionally retained |
+| #254 | spec-only | QA / Foundation / Integration / Frontend / MCP-AI / Governance | Cycle 4 video screening trust, AI-assisted video review workflow | production read-only audit, #221/#218 consent stance | Drive folder files reconciled to `pmi_video_screenings`, AI processing/suggestion state, and human validation path; child issues split by lane | Close only after audit evidence and child implementation issues are accepted or tracker intentionally retained |
 | #243 | spec-only | Governance / MCP-AI / Frontend / QA | selection AI-assist calibration children | calibration profile contract and child split | Spec/ADR defines versioned calibration profile, context completeness warnings, evidence guardrails, AI lineage, and LGPD/HITL stance | Close only after child issues are accepted or tracker intentionally retained |
 | #166 | spec-only | Foundation / Governance | semantic-layer implementation | ADR decisions | roadmap/ADR accepted | Close after roadmap decomposes into leaves |
 | #204 | spec-only | Governance / Integration | Gemini/Drive/Calendar work | #212/#209 boundaries | integration governance direction accepted | Close after split into vendor eval, Drive lifecycle, calendar governance leaves |
@@ -74,7 +76,7 @@ Status values:
 | Volunteer lifecycle | #177, #179, #180, #181, #182, #183, #205, #213 | Foundation sequence | Start after #221 containment; #179 is the canonical contract gate |
 | MCP/AI | #162, #163, #170, #183, #188, #206-#208 | High-risk | Pause new tools until #162 contract matrix and #221 consent gates are stable |
 | Attendance/calendar | #104, #107, #116, #156, #157, #172, #210 | Stabilization wave | Treat as one semantic cohort/cadence program |
-| Drive/identity/collaboration | #110, #204, #205, #209, #211, #212 | Architecture first | Drive permission lifecycle must follow engagement source-of-truth decision |
+| Drive/identity/collaboration | #110, #204, #205, #209, #211, #212, #254 | Architecture first | Drive permission lifecycle must follow engagement source-of-truth decision; video file reconciliation must start with read-only evidence |
 
 ---
 
