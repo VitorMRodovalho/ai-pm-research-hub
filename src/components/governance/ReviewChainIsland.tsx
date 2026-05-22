@@ -151,9 +151,14 @@ function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[]
 }
 
 
-export default function ReviewChainIsland({ chainId }: { chainId: string }) {
+export default function ReviewChainIsland({ chainId, externalReviewMode = false }: { chainId: string; externalReviewMode?: boolean }) {
   const [member, setMember] = useState<any>(null);
   const [detail, setDetail] = useState<WorkflowDetail | null>(null);
+  // p220 BUG-219.A Phase 3: external reviewers (e.g., advogada Angelina,
+  // engagement kind=external_reviewer) hold the p195 participate_in_governance_review
+  // carve-out but no manage_member / curator / submitter rights. They need to read
+  // + comment without seeing sign buttons or admin chrome.
+  const [canReviewGovernance, setCanReviewGovernance] = useState<boolean>(false);
   // p130: gates the current user already signed in this chain — used to render a
   // "Você já assinou: [gates]" callout so the chain detail page never feels empty
   // for someone who already signed but has no further action on this chain.
@@ -214,6 +219,16 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
     }
     if (!m) { setError('Faça login para acessar este link. Se você tem múltiplos emails (ex: pessoal + institucional), tente o que está cadastrado como principal no seu perfil — o sistema auto-reconhece emails secundários no próximo login.'); setLoading(false); return; }
     setMember(m);
+
+    // p220 BUG-219.A Phase 3: probe the p195 participate_in_governance_review
+    // carve-out. External reviewers (kind=external_reviewer) and chapter board
+    // liaisons get TRUE here without holding manage_member; the UI uses this
+    // to unlock comment-only mode (and the migration 20260804000000 broadens
+    // the read RPC gates symmetrically). Non-fatal if the probe fails.
+    try {
+      const capRes = await sb.rpc('can_by_member', { p_member_id: m.id, p_action: 'participate_in_governance_review' });
+      if (!capRes.error) setCanReviewGovernance(capRes.data === true);
+    } catch { /* non-fatal — defaults to false */ }
 
     const dRes = await sb.rpc('get_chain_workflow_detail', { p_chain_id: chainId });
     if (dRes.error || dRes.data?.error) { setError(dRes.error?.message || dRes.data?.error || 'Erro'); setLoading(false); return; }
@@ -357,13 +372,34 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const designations: string[] = member.designations || [];
   const isCurator = designations.includes('curator');
   const isAdmin = ['manager','deputy_manager'].includes(member.operational_role) || member.is_superadmin;
-  const canComment = isCurator || isSubmitter || isAdmin;
+  // p220 BUG-219.A: external reviewers / chapter board liaisons can comment via p195 carve-out.
+  // isCommentOnlyMode = has carve-out but NONE of the strict capabilities — used to switch
+  // the chrome to read+comment-only (no sign buttons, no recirculate, no admin shortcuts).
+  const isCommentOnlyMode = canReviewGovernance && !isCurator && !isSubmitter && !isAdmin;
+  const canComment = isCurator || isSubmitter || isAdmin || canReviewGovernance;
 
   const eligibleGates = activeEligibleGates(detail, member.id);
   const statusMeta = STATUS_LABELS[detail.chain_status] || { label: detail.chain_status, cls: 'bg-gray-100' };
 
   return (
     <div className="space-y-4">
+      {(isCommentOnlyMode || externalReviewMode) && (
+        <div className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className="text-base leading-5">📋</span>
+            <div>
+              <p className="font-semibold">Modo de revisão externa</p>
+              <p className="text-blue-800 mt-0.5">
+                Você está acessando esta cadeia como revisor externo (participate_in_governance_review).
+                Pode <strong>ler o documento</strong> e <strong>adicionar comentários por cláusula</strong>.
+                Funções de assinatura, lacre e re-circulação ficam restritas aos gestores da iniciativa.
+                {' '}Para questões fora deste documento, entre em contato com{' '}
+                <strong>{detail.submitter?.name || 'o gestor da iniciativa'}</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
@@ -377,22 +413,24 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* p220 BUG-219.A Phase 3: external reviewers stay on /governance/* routes (no admin chrome).
+                Admins keep the /admin/* routes (existing flow). Same RPC backs both paths post-Phase 2 carve-out. */}
             <a
-              href={`/admin/governance/documents/${detail.chain_id}/export-pdf`}
+              href={`${externalReviewMode ? '/governance' : '/admin/governance'}/documents/${detail.chain_id}/export-pdf`}
               className="rounded-lg bg-white text-[var(--text-secondary)] text-[11px] font-semibold px-2.5 py-1 border border-[var(--border-default)] hover:bg-[var(--surface-hover)]"
               title="Gerar PDF oficial da cadeia com evidências"
             >
               ⬇ PDF oficial
             </a>
             <a
-              href={`/admin/governance/documents/${detail.chain_id}/export-docx`}
+              href={`${externalReviewMode ? '/governance' : '/admin/governance'}/documents/${detail.chain_id}/export-docx`}
               className="rounded-lg bg-white text-[var(--text-secondary)] text-[11px] font-semibold px-2.5 py-1 border border-[var(--border-default)] hover:bg-[var(--surface-hover)]"
               title="Gerar DOCX (Word) do conteúdo para envio offline a curadores externos"
             >
               ⬇ DOCX (Word)
             </a>
             <a
-              href={`/admin/governance/documents/${detail.chain_id}/audit-report`}
+              href={`${externalReviewMode ? '/governance' : '/admin/governance'}/documents/${detail.chain_id}/audit-report`}
               className="rounded-lg bg-white text-amber-800 text-[11px] font-semibold px-2.5 py-1 border border-amber-300 hover:bg-amber-50"
               title="Relatório de auditoria para Conselho Fiscal (evidence trail completo)"
             >
