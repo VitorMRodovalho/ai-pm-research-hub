@@ -92,12 +92,17 @@ test('approve_selection_application upserts persons with consent_status=pending 
 });
 
 // ─── 6. Engagement insert with V4 schema ───
-test('approve_selection_application creates engagement with selection_application_id + contract_volunteer legal basis', () => {
+// p219 WATCH-257.B: legal_basis literal harmonized from `contract_volunteer` (legacy from
+// 20260413320000) to LGPD-canonical `contract` (Art. 7 V). Constraint stays additive
+// (PR #263) but the producer RPC now emits canonical value. See migration 20260803000004.
+test('approve_selection_application creates engagement with selection_application_id + contract (LGPD-canonical) legal basis', () => {
   const body = findFunctionBody('approve_selection_application');
   assert.ok(/INSERT INTO public\.engagements[\s\S]+?selection_application_id/.test(body),
     'must INSERT engagement with selection_application_id');
-  assert.ok(/'contract_volunteer'/.test(body),
-    'must use contract_volunteer legal_basis (matches engagements_legal_basis_check)');
+  assert.ok(/v_legal_basis\s+text\s*:=\s*'contract'\s*;/.test(body),
+    'must use contract (LGPD-canonical Art. 7 V) as legal_basis default — NOT legacy contract_volunteer (p219 WATCH-257.B)');
+  assert.ok(!/v_legal_basis\s+text\s*:=\s*'contract_volunteer'/.test(body),
+    'must NOT regress to legacy contract_volunteer literal (constraint accepts both but canonical producer outputs `contract`)');
   assert.ok(/kind = v_engagement_kind/.test(body) || /kind\s*=\s*'volunteer'/.test(body) || /v_engagement_kind\s+text\s+:=\s+'volunteer'/.test(body),
     'must use kind=volunteer for selection-derived engagements');
 });
