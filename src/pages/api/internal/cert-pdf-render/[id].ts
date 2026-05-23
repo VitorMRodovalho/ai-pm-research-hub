@@ -137,8 +137,11 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
 
   // 2. Service-role Supabase client (bypass RLS for cert + members read + storage upload)
-  const supabaseUrl = (cfEnv as any)?.SUPABASE_URL as string | undefined;
-  const serviceRoleKey = (cfEnv as any)?.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
+  // Pattern matches src/pages/api/calendar-webhook.ts + src/pages/api/admin/import-pmi-vep-json.ts:
+  // SUPABASE_URL falls back to import.meta.env.PUBLIC_SUPABASE_URL (build-time from .env);
+  // SUPABASE_SERVICE_ROLE_KEY is runtime only (wrangler secret).
+  const supabaseUrl = (cfEnv as any)?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = (cfEnv as any)?.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
     return new Response(
       JSON.stringify({ error: 'server_misconfig', detail: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set' }),
