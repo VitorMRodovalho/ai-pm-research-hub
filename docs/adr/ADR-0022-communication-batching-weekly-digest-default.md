@@ -349,13 +349,13 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 
 ### Implementation phasing — 7 W2 Leaves
 
-- **Leaf 1 (this Amendment, 2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension.
-- **Leaf 2:** `selection_interview_overdue` new type + daily cron + idempotent INSERT.
-- **Leaf 3:** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`.
-- **Leaf 4:** `selection_cutoff_approved` new type + trigger when `(objective_done >= 2 AND pert_score >= cutoff)` + Resend template.
-- **Leaf 5:** selective replay/manual-close of 17 historical rows (idempotent UPDATE).
-- **Leaf 6:** operational suppress_all bypass classifier + EF integration.
-- **Leaf 7:** 24h health signal — `selection_emails_pending_24h` MCP tool + admin widget.
+- **Leaf 1 (2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension. Migration `20260805000008`.
+- **Leaf 2 (2026-05-23):** `selection_interview_overdue` new type + daily `_selection_interview_overdue_cron()` at 14:00 UTC + one notification per (interview, interviewer) pair with 7-day idempotency window. Migration `20260805000009`.
+- **Leaf 3 (2026-05-23):** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`. Removes hard `PEER_PRECONDITION` raise; adds `p_force_no_ai_context boolean DEFAULT false` parameter (admin override). Notification body + admin_audit_log + return jsonb all carry `no_ai_context` + `no_ai_reason ∈ {no_consent, analysis_pending, admin_override, NULL}`. Authority gate unchanged. Migration `20260805000010`.
+- **Leaf 4 (2026-05-23):** `selection_cutoff_approved` new type + foundation. Helper case `transactional_immediate`; idempotency column `selection_applications.cutoff_approved_email_sent_at`; multi-lang campaign template `selection_cutoff_approved` (PT-BR/EN/ES); manual dispatch RPC `notify_selection_cutoff_approved(p_application_id)` with committee-lead-or-manage_member authority, idempotent single-fire, audit log. Cycle's `interview_booking_url` is CTA. **Auto-trigger deferred to PM follow-up** — admin invokes RPC manually until cron lands (decision needed on threshold formula + transition vs cron). Migration `20260805000011`.
+- **Leaf 5 (2026-05-23):** one-shot RPC `_replay_selection_notifications_p228(p_dry_run)` with dry-run default. Identifies 17 historical mis-routed rows (window 2026-05-01..2026-05-20), applies per-type selective criteria per PM D-sel-2, returns eligible_replay + manual_close breakdown. p_dry_run=false UPDATEs eligible rows + writes admin_audit_log. Live dry-run smoke: 2 eligible (selection_approved recent+active) + 15 manual_close. Migration `20260805000012`.
+- **Leaf 6 (2026-05-23):** operational suppress_all bypass for the 4 candidate-facing operational types (selection_termo_due, selection_approved, selection_interview_scheduled, selection_cutoff_approved). SQL helper `_is_operational_candidate_facing(p_type text)` is source-of-truth; EF `send-notification-email` matches the Set byte-for-byte in lock-step. PM D-sel-4 explicit: workflow-critical operational > opt-out preference (candidate-facing only — evaluator/admin-facing types still respect suppress_all). Migration `20260805000013`.
+- **Leaf 7 (2026-05-23):** 24h dispatcher silence health signal `get_selection_emails_pending_24h(p_alert_threshold integer DEFAULT 10)`. STABLE SECDEF RPC returns jsonb {total_pending, by_type, oldest_pending_at, oldest_age_minutes, alert_threshold, alert_triggered}. Counts selection_* + delivery_mode=transactional_immediate + email_sent_at NULL + created_at > NOW()-24h. Healthy state ~0 (cron picks up within 5min). Authority: manage_member/manage_platform admin path; service_role for cron auto-monitoring. MCP tool registration deferred to p229 fast-follow. Migration `20260805000014`.
 
 ### Cross-refs
 
