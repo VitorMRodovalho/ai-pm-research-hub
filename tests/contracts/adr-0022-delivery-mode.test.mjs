@@ -572,3 +572,69 @@ test('ADR-0022 Amendment D Leaf 4: p228 Leaf 4 migration file exists', () => {
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 4 migration must NOTIFY pgrst to reload schema.');
 });
+
+// ─── Amendment D / p228 #260 W2 Leaf 5 contracts ───
+// Selective replay RPC for the 17 historical mis-routed selection notifications.
+// Forward-defense locks the dry-run-default, authority gate, per-type criteria,
+// and the audit log integration.
+
+test('ADR-0022 Amendment D Leaf 5: _replay_selection_notifications_p228 RPC declared with dry-run default', () => {
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match, '_replay_selection_notifications_p228 must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    '_replay_selection_notifications_p228 must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'RPC must RETURN jsonb (analysis envelope).');
+  // Safety-first: p_dry_run defaults to true so accidental invocation = no writes
+  assert.ok(/p_dry_run\s+boolean\s+DEFAULT\s+true/i.test(wrapper),
+    'Leaf 5: p_dry_run parameter must DEFAULT to true (safety-first; no accidental double-send).');
+
+  // Window scope — 17 historical rows are bounded by created_at 2026-05-01 .. 2026-05-20
+  assert.ok(/v_window_start[\s\S]{0,100}'2026-05-01'/i.test(body),
+    'Window start must be 2026-05-01 (audit doc cutover).');
+  assert.ok(/v_window_end[\s\S]{0,100}'2026-05-20'/i.test(body),
+    'Window end must be 2026-05-20 (audit doc cutover).');
+
+  // Email-sent guard — defense-in-depth against double-send
+  assert.ok(/email_sent_at\s+IS\s+NULL/i.test(body),
+    'RPC must guard on email_sent_at IS NULL for idempotency.');
+
+  // Per-type selective criteria per PM D-sel-2
+  for (const reason of ['pending_term_action_exists', 'recent_and_active_member', 'interview_still_upcoming']) {
+    assert.ok(body.includes(`'${reason}'`),
+      `Leaf 5: selective criteria reason '${reason}' must appear in body for PM D-sel-2 auditability.`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 5: replay RPC grants restrict to authenticated + service_role', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._replay_selection_notifications_p228\(boolean\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Leaf 5 RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._replay_selection_notifications_p228\(boolean\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Leaf 5 RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 5: replay RPC writes admin_audit_log on actual UPDATE path', () => {
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match);
+  const body = match[2];
+
+  // Audit log entry on actual UPDATE
+  assert.ok(/admin_audit_log[\s\S]{0,800}'selection\.notifications_replay_p228'/i.test(body),
+    'Replay RPC must write admin_audit_log entry with action selection.notifications_replay_p228 when UPDATE applied.');
+  // UPDATE is gated on NOT p_dry_run
+  assert.ok(/IF\s+NOT\s+p_dry_run[\s\S]{0,200}UPDATE\s+public\.notifications/i.test(body),
+    'UPDATE must be gated on IF NOT p_dry_run (default true → no writes).');
+});
+
+test('ADR-0022 Amendment D Leaf 5: p228 Leaf 5 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafFive = files.find(f => f.includes('p228_260_w2_leaf5_selective_replay_mis_routed'));
+  assert.ok(leafFive,
+    'Migration 20260805000012_p228_260_w2_leaf5_selective_replay_mis_routed.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafFive), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 5 migration must NOTIFY pgrst to reload schema.');
+});
