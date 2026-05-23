@@ -215,6 +215,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   rosterLoading: t('attendance.roster.loading', lang),
   rosterNoParticipants: t('attendance.roster.noParticipants', lang),
   rosterCount: t('attendance.roster.count', lang),
+  rosterCancelled: t('attendance.roster.cancelled', lang),
   rosterVisible: t('attendance.modal.visible', lang),
   rankingNoData: t('attendance.ranking.noData', lang),
   rankingNoDataHint: t('attendance.ranking.noDataHint', lang),
@@ -320,6 +321,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     rosterLoading: 'Carregando...',
     rosterNoParticipants: 'Nenhum participante encontrado.',
     rosterCount: '✅ {present}/{total} presentes',
+    rosterCancelled: '🚫 Reunião cancelada — sem registro de presença',
     rosterVisible: 'visíveis',
     rankingNoData: 'Sem dados de ranking ainda',
     rankingNoDataHint: 'Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.',
@@ -1990,16 +1992,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const searchInput = document.getElementById('roster-search') as HTMLInputElement;
     if (searchInput) searchInput.value = '';
     openModal('modal-roster');
-    // Show bulk buttons for leaders+
     const bulkAllBtn = document.getElementById('roster-bulk-all');
     const bulkConfirmBtn = document.getElementById('roster-bulk-confirm');
-    if (CAN_MANAGE) {
-      bulkAllBtn?.classList.remove('hidden');
-      bulkConfirmBtn?.classList.remove('hidden');
-    } else {
-      bulkAllBtn?.classList.add('hidden');
-      bulkConfirmBtn?.classList.add('hidden');
-    }
     const rosterBody = document.getElementById('roster-body');
     if (rosterBody) rosterBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
     let data: any;
@@ -2019,16 +2013,28 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       tbody.innerHTML = `<tr><td colspan="3" class="text-center text-[var(--text-secondary)] py-5">${I18N.rosterNoParticipants}</td></tr>`;
       return;
     }
-    // Sort: present first, then alphabetically
+    // p201 BUG-201.A: short-circuit display when event is cancelled — no
+    // attendance state to render (rows deleted by p199-c trigger), so showing
+    // each member as ❌ is misleading. Roster RPC returns event_cancelled
+    // per row (consistent across all rows for the same event).
+    const isCancelledEvent = data.some((m: any) => m.event_cancelled === true);
+    if (CAN_MANAGE && !isCancelledEvent) {
+      bulkAllBtn?.classList.remove('hidden');
+      bulkConfirmBtn?.classList.remove('hidden');
+    } else {
+      bulkAllBtn?.classList.add('hidden');
+      bulkConfirmBtn?.classList.add('hidden');
+    }
     const sorted = [...data].sort((a: any, b: any) => {
       if (a.present !== b.present) return a.present ? -1 : 1;
       return (a.name || '').localeCompare(b.name || '');
     });
     const presentCount = sorted.filter((m: any) => m.present).length;
-    // Update counter
     const countEl = document.getElementById('roster-count');
     if (countEl) {
-      const text = I18N.rosterCount.replace('{present}', String(presentCount)).replace('{total}', String(sorted.length));
+      const text = isCancelledEvent
+        ? I18N.rosterCancelled
+        : I18N.rosterCount.replace('{present}', String(presentCount)).replace('{total}', String(sorted.length));
       countEl.textContent = text;
       countEl.dataset.full = text;
     }
@@ -2037,19 +2043,21 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         <td class="px-3 py-2.5 border-b border-[var(--border-subtle)]">
           <div class="flex items-center gap-2">
             <img class="w-7 h-7 rounded-full object-cover bg-[var(--surface-section-cool)] flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
-            <span class="${m.present ? 'font-semibold' : ''}">${m.name}</span>
+            <span class="${!isCancelledEvent && m.present ? 'font-semibold' : ''}${isCancelledEvent ? ' opacity-60' : ''}">${m.name}</span>
           </div>
         </td>
-        <td class="px-3 py-2.5 border-b border-[var(--border-subtle)]">${roleBadges(rolesFromMember(m))}</td>
+        <td class="px-3 py-2.5 border-b border-[var(--border-subtle)]${isCancelledEvent ? ' opacity-60' : ''}">${roleBadges(rolesFromMember(m))}</td>
         <td class="px-3 py-2.5 border-b border-[var(--border-subtle)] text-center">
-          ${CAN_MANAGE
-            ? `<button type="button" class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
-                 data-action="toggle-presence" data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
-            : `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto ${m.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.present ? '✅' : '❌'}</div>`
+          ${isCancelledEvent
+            ? `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto bg-[var(--surface-section-cool)] text-[var(--text-muted)]" title="${escapeAttr(I18N.rosterCancelled)}">🚫</div>`
+            : (CAN_MANAGE
+              ? `<button type="button" class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
+                   data-action="toggle-presence" data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
+              : `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto ${m.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.present ? '✅' : '❌'}</div>`
+            )
           }
         </td>
       </tr>`).join('');
-    // Load showcases after roster renders
     await loadShowcases(eventId);
   }
 

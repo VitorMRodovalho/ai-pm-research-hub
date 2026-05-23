@@ -1439,6 +1439,7 @@ const ptBR: Record<string, string> = {
   'attendance.roster.loading': 'Carregando...',
   'attendance.roster.noParticipants': 'Nenhum participante encontrado.',
   'attendance.roster.count': '✅ {present}/{total} presentes',
+  'attendance.roster.cancelled': '🚫 Reunião cancelada — sem registro de presença',
   'attendance.ranking.noData': 'Sem dados de ranking ainda',
   'attendance.ranking.noDataHint': 'Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.',
 
