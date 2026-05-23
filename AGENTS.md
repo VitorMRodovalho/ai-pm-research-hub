@@ -171,3 +171,48 @@ Para trabalho paralelo de múltiplos agentes/modelos (Claude Code, Cursor, Codex
 5. **Deploy** — commit + push + tag + verificar produção.
 
 Detalhes em `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`.
+
+## Context & continuity (harness engineering)
+
+This project adopts Anthropic's harness engineering framework — see [Building Effective Agents](https://www.anthropic.com/research/building-effective-agents), [Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents), [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents). The audit in CR-052 found 5 of 7 principles already covered by the existing rules in this file; the two sections below close the remaining gaps (context engineering and mid-wave handoff).
+
+### Context strategy (principle 2: context is finite)
+
+The repo surfaces 64 MCP tools (51R + 13W) plus dense governance docs. Loading everything upfront burns 30–50k tokens of schema before useful work begins. Agents MUST follow this strategy:
+
+1. **MCP tools — route, don't preload.** Classify intent first ("board?", "governance?", "selection?", "gamification?"), then load only the relevant subset. Generic ops (search, profile) stay available; domain ops load on-demand.
+2. **Docs JIT, not upfront.** `GOVERNANCE_CHANGELOG.md`, `MIGRATION.md`, `RELEASE_LOG.md`, and ADRs in `docs/project-governance/` load **only when referenced** by the current task. The quick-reference table at the top of this file is the index.
+3. **Schema by symbol, not by file.** Don't load `src/lib/database.gen.ts` wholesale — `grep` for the specific table/RPC, read the local region. Same for `src/lib/navigation.config.ts` and `src/components/admin/constants.ts`.
+4. **Catalogs via RPC, not `SELECT *`.** Members, cycles, tribes, board cards — always via existing RPCs (`get_*`, `list_*`, `search_*`). Never `.from('table').select('*')` patterns that pull dataset-sized payloads into context.
+5. **Sub-agent isolation when the lane is clear.** If the task is wholly within one lane (Foundation / Frontend / Integration / Governance / DevOps), invoke the lane-specific sub-agent with its scoped context. The orchestrator does not need to load everything just to delegate.
+
+### Mid-wave handoff (principle 5: plan for context reset)
+
+The 5-phase sprint closure (Execute → Audit → Fix → Docs → Deploy) covers **end of sprint**. It does NOT cover **end of session within a wave in flight**. When work straddles sessions, agents MUST produce a handoff artifact so the next session opens cold and picks up cleanly.
+
+**When to write a handoff:**
+- Session ending without completing the current feature/wave.
+- More than ~1h of identifiable residual work.
+- Any blocker that requires human decision before the next session resumes.
+
+**Where it lives:**
+- Default: `docs/handoff/HANDOFF-YYYY-MM-DD-session-end.md` (same pattern Panorama uses in `docs/audits/HANDOFF-*`).
+- Alternative: draft PR description, extended with the same fields, when work is committable-as-draft.
+
+**Minimum content:**
+1. **State**: feature/wave, current phase of the 5-phase closure, last commit SHA on the working branch.
+2. **Decisions made this session**: bullet list, with link to any ADR opened or amended.
+3. **Blockers**: human decisions pending, external waits (Cloudflare deploys, Supabase migrations), or known broken state.
+4. **Next concrete step**: one sentence describing exactly what the next session opens with.
+5. **Related**: links to relevant ADRs, issues, RELEASE_LOG entries, GOVERNANCE_CHANGELOG entries.
+
+**Opening sequence for the next session:**
+1. Read the latest `docs/handoff/HANDOFF-*.md`.
+2. Verify state (run smoke tests if the handoff says environment may be dirty).
+3. Address blockers first if any; otherwise pick up the next concrete step.
+4. Append a marker to the handoff confirming pickup (or open a new handoff if you'll close the wave this session).
+
+**Anti-patterns explicitly forbidden:**
+- Declaring "complete" without a handoff when work is incomplete — leads to next session re-doing or contradicting decisions.
+- Editing/deleting handoffs from previous sessions to "tidy up". Archive to `docs/handoff/archive/` instead.
+- Skipping the handoff because "the next session will figure it out" — this section exists to prevent that failure mode.
