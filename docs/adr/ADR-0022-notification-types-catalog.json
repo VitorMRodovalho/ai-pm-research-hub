@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ADR-0022-notification-types-catalog",
-  "title": "ADR-0022 Notification Types Catalog (W1)",
+  "title": "ADR-0022 Notification Types Catalog (W1.4)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.3",
-  "updated_at": "2026-04-27",
+  "version": "W1.4",
+  "updated_at": "2026-05-23",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into weekly digest sent Saturday 12:00 UTC via send-weekly-member-digest EF. Default for most types.",
@@ -125,6 +125,30 @@
     "governance_manual_proposed": {
       "delivery_mode": "transactional_immediate",
       "rationale": "ADR-0044 2-of-N approval — 2nd manage_platform signoff required within 24h to publish a new manual version. Used both for proposal-fanout (asks for 2nd signoff) and final-publish-fanout (informs chapter board + sponsors). Time-critical (24h window)."
+    },
+    "selection_termo_due": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "p159 (2026-05-14): post-VEP-Active candidate email carrying volunteer term link + next steps + Lorena (signatory). Helper updated p159; catalog backfilled p228 W2 Leaf 1 per PM Policy Matrix (#260, 2026-05-23). Candidate-facing operational; bypasses notify_delivery_mode_pref=suppress_all per W2 Leaf 6."
+    },
+    "selection_approved": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "p228 W2 Leaf 1 (2026-05-23) PM Policy Matrix: approval is a milestone event; bundling in weekly digest erodes candidate experience. Was previously falling through ELSE → digest_weekly. Candidate-facing operational; bypasses suppress_all per W2 Leaf 6."
+    },
+    "selection_interview_scheduled": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "p228 W2 Leaf 1 (2026-05-23) PM Policy Matrix: interview details (calendar link, date/time) must reach candidate before the interview. Was previously falling through ELSE → digest_weekly. Candidate-facing operational; bypasses suppress_all per W2 Leaf 6."
+    },
+    "peer_review_requested": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "p228 W2 Leaf 1 (2026-05-23) PM Policy Matrix: evaluator needs prompt action to keep cycle moving. Already hardcoded at INSERT in dispatch_peer_review_invitations; catalog + helper now parity-locked. Admin/evaluator-facing — NOT a candidate-facing operational type."
+    },
+    "selection_evaluation_complete": {
+      "delivery_mode": "suppress",
+      "rationale": "p228 W2 Leaf 1 (2026-05-23) PM Policy Matrix: admin/internal signal surfaced via dashboard (selection_health, evaluator ranking). In-app only; no email."
+    },
+    "selection_interview_noshow": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "p228 W2 Leaf 1 (2026-05-23) PM Policy Matrix: admin recap, not time-critical. Made explicit in helper for catalog parity and forward-drift detection."
     }
   },
   "implementation": {
@@ -140,6 +164,7 @@
   },
   "next_waves": {
     "W2": "Implement get_weekly_member_digest() RPC + Saturday digest content. Add settings UI for 4-mode opt-out.",
-    "W3": "Leader digest, smart-skip empty digest, broadcast rate-limit (1/week)."
+    "W3": "Leader digest, smart-skip empty digest, broadcast rate-limit (1/week).",
+    "selection_workstream_2": "p228 W2 Leaves 1-7: Leaf 1 (this catalog amendment + helper parity). Leaf 2 — selection_interview_overdue type + cron. Leaf 3 — soft AI gate + no_ai_context. Leaf 4 — selection_cutoff_approved type + trigger + template. Leaf 5 — selective replay of 17 historical mis-routed rows. Leaf 6 — operational suppress_all bypass for candidate-facing selection_* types. Leaf 7 — 24h health signal."
   }
 }
