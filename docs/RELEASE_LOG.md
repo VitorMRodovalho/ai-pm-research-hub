@@ -1,5 +1,18 @@
 # Release Log
 
+## 2026-05-23 — main hotfix: volunteer compliance SSR guard
+
+### Scope
+Corrige falha SSR em `/admin` durante `smoke:routes`: `VolunteerComplianceWidget` calculava o prefixo de idioma antes de inicializar `lang`, causando `ReferenceError: Cannot access lang before initialization`.
+
+### Delivered
+- `src/components/admin/VolunteerComplianceWidget.tsx` inicializa `lang` antes de calcular `lp`, preservando os prefixos `/en` e `/es`.
+
+### Validation
+- `npm run smoke:routes`
+- `PUBLIC_SUPABASE_URL=https://mock.supabase.co PUBLIC_SUPABASE_ANON_KEY=mock-key-for-build npm run build`
+- `npm test` — 1722 tests, 1674 pass, 48 skipped, 0 fail.
+
 ## 2026-05-19 — p201 hotfix: Attendance grid + curatorship access
 
 ### Scope
