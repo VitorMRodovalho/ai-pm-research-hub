@@ -1890,3 +1890,28 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   - MCP tool registration for `get_selection_emails_pending_24h` (admin observability via Claude.ai / Perplexity connectors).
   - #260 moves to `qa-window` per ISSUE_REGISTRY update. Close after PM replay execution + production smoke 7d.
 - **Cross-ref:** PR #305 (Leaf 1, `25c4a472`) · PR #307 (Leaves 2-7, `2c6aa83f`) · PR #306 CLOSED (Leaf 2 standalone, superseded by bundled PR #307) · `docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md` (parent audit) · #260 (parent) · #292 (sprint umbrella) · ADR-0022 Amendment D (catalog W1.3 → W1.6) · migrations `20260805000008..14`.
+
+### 194. RESOLVED-LEAF5-HOTFIX — _replay_selection_notifications_p228 hotfix (3 dormant pre-execution bugs)
+
+- **When:** 2026-05-23 p228 post-close (PR #309 merged), PM-caught
+- **What:** Selective replay RPC shipped in PR #307 had 3 dormant bugs in the `IF NOT p_dry_run AND v_eligible_count > 0` branch. All masked by dry_run-only smoke. PM caught (1) before merge of close PR; (2) and (3) surfaced during live smoke of p_dry_run=false. Single hotfix migration `20260805000015` fixes all 3.
+- **Where:** PR #313 squash-merged `8dd9ae5d`. Updated test baselines on PR #309 via deploy.md amendment.
+- **The 3 bugs:**
+  1. **RETURNING 1 INTO v_updated_count** raises SQLSTATE 21000 ("query returned more than one row") on multi-row UPDATE. Live state has v_eligible_count=2 → would have errored. Fix: drop RETURNING clause; existing `GET DIAGNOSTICS ROW_COUNT` gives correct count.
+  2. **v_caller record unassigned** when auth.uid() IS NULL (service_role bypass). Downstream COALESCE(v_caller.id, ...) raises SQLSTATE 55000 "record is not assigned yet". Fix: replace with scalar `v_caller_id uuid := NULL;` populated only inside the IF auth.uid() IS NOT NULL branch.
+  3. **admin_audit_log_actor_id_fkey violation** via zero-uuid sentinel '00000000-...' in COALESCE fallback (not a real members row → FK 23503). Fix: gate INSERT on `IF v_caller_id IS NOT NULL THEN`; service_role / cron tracks via postgres logs + cron_run_log.
+- **Live smoke (both modes, post-fix):**
+  - p_dry_run=true: {success: true, eligible_replay_count: 2, manual_close_count: 15, updated_count: 0}
+  - p_dry_run=false: {success: true, eligible_replay_count: 2, manual_close_count: 15, **updated_count: 2**}
+- **Row verification:** notifications `1470e6ce-...` + `6338a42d-...` flipped to delivery_mode='transactional_immediate' + digest_delivered_at=NULL. send-notification-email cron (every 5min) will dispatch real Resend emails to the 2 selection_approved candidates.
+- **Contract test (3 forward-defense assertions):**
+  - `_replay_selection_notifications_p228` body has no `RETURNING ... INTO`
+  - v_caller declared as scalar uuid (not unassigned record)
+  - admin_audit_log INSERT gated on v_caller_id IS NOT NULL
+- **Tests:** 1784/1726/0/48 → 1793/1745/0/48 offline. Phase C drift gate PASS. Invariants 19/19=0.
+- **Sediment learnings (3 NEW):**
+  - **SEDIMENT-228.D**: when a code path is only exercised under a non-default parameter (here `p_dry_run=false`), the test plan MUST include both paths in live smoke before merge. dry_run-only smoke masked 3 production bugs in the same RPC.
+  - **SEDIMENT-228.E**: PostgreSQL `record` declarations are unassigned until the first SELECT/INSERT ... INTO populates them. Accessing `.field` on an unassigned record raises 55000. Prefer scalar variables for caller_id patterns where the assignment branch may be skipped (service_role context, etc).
+  - **SEDIMENT-228.F**: `admin_audit_log.actor_id` is NOT NULL FK to `members(id)`; no system-member sentinel exists for service_role/cron context. Gate the INSERT on a real actor (v_caller_id IS NOT NULL) or skip it. service_role tracks via postgres logs + cron_run_log.
+- **Workflow side-effect:** Hotfix branch rebase onto post-#313 main triggered force-push permission block in harness. Resolved via `git merge origin/main` into the close-docs branch (option 2 per PM ABCD authorization) — creates a merge commit but avoids force-push.
+- **Cross-ref:** PR #313 (`8dd9ae5d`) · PR #309 close-docs (`5375a927`) · PM dispatch comment ("Do not merge #309 as final close yet... First ship a small Foundation hotfix...") · Migration `20260805000015` · 17 historical mis-routed rows: 2 replayed live, 15 documented as manual_close · #260 (parent) · #292 (sprint umbrella).
