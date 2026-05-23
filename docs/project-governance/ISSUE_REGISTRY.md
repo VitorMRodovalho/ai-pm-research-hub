@@ -1,6 +1,6 @@
 # Issue Registry
 
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-23 (post-p228 #260 W2 implementation complete)
 **Purpose:** dispatch board for parallel agents. This registry complements GitHub labels by adding execution status, lane, blockers, and close rules.
 
 **Operating protocol:** `docs/project-governance/ISSUE_REGISTRY_OPERATING_PROTOCOL.md`
@@ -25,7 +25,7 @@ Status values:
 | #218 | active | Foundation / Governance | AI/video features | duplicate decision with #221 | Wave 1 evidence exists; Waves 2-5 still pending | Decide parent vs superseded-by-#221 before closing |
 | #148 | active | Infra/Security / QA | all merge confidence | #220 | CI heartbeat green on `main` | Close only after CI Validate recovers on main |
 | #220 | active | Infra/Security / QA | #148 | none | Local test:browser:guards + build pass with resolvable mock Supabase URL; remote CI pending | Close after CI PR passes and main heartbeat confirms |
-| #260 | active | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | child implementation leaves from p227 W2 audit | PM approved Policy Matrix, selective replay, soft AI gate/no_ai_context, operational suppress_all bypass, and automatic idempotent dispatch + manual override + 24h health signal | Close only after affected candidate rows are replayed/manual-closed and routing tests prevent recurrence |
+| #260 | qa-window | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | PM call of `_replay_selection_notifications_p228(false)` to execute 2 eligible_replay rows; auto-trigger design for selection_cutoff_approved | All 7 W2 leaves shipped p228 (PRs #305 + #307). Live smoke PASS. 17 historical rows analyzed via dry-run RPC: 2 eligible_replay + 15 manual_close. Catalog parity locked. Phase C drift gate enforced. Health signal HEALTHY (alert_triggered=false). | Close after PM executes the 2-row replay AND production smoke confirms no recurrence over 7 days |
 | #230 | active | Foundation / Governance / QA | volunteer lifecycle reliability after selection approval | PM decision: auto-generate agreement vs manual queue | Herlon-like backlog count, agreement generation/nudge path, idempotent stale alert design | Close after affected backlog is generated/queued/manual-closed and future approved candidates have observable agreement path |
 
 ---
@@ -82,7 +82,7 @@ Status values:
 
 | Cluster | Issues | Registry stance | Dispatch rule |
 |---|---|---|---|
-| Selection reliability Cycle 4 | #292, #251, #298(closed), #260, #116, #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit and #298 fix are complete; #260 W2 audit is complete; next p228 action is PM decision pack for #260 child leaves, then #116 smoke, #179/#230 lifecycle, and #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
+| Selection reliability Cycle 4 | #292, #251, #298(closed), #260(qa-window), #116, #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit + #298 fix + #260 W2 audit + #260 W2 ALL 7 LEAVES SHIPPED (p228 PRs #305 + #307) — moves to qa-window pending PM replay execution + production smoke. Next p229: #116 smoke, #179/#230 lifecycle, #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
 | Curatorship p197 | #185-#196, #188, #190, #201 | Needs parent status board | Allow max 2 ready leaves concurrently; serialize DB changes |
 | Volunteer lifecycle | #177, #179, #180, #181, #182, #183, #205, #213 | Foundation sequence | Start after #221 containment; #179 is the canonical contract gate |
 | MCP/AI | #162, #163, #170, #183, #188, #206-#208 | High-risk | Pause new tools until #162 contract matrix and #221 consent gates are stable |
@@ -99,7 +99,7 @@ Status values:
 4. Foundation migrations serialize unless explicitly proven independent.
 5. MCP/AI work must name data touched, consent basis, RPC/tool contract, and smoke evidence.
 6. Any branch touching multiple lanes needs a documented exception or a split.
-7. During the Selection reliability sprint, #251 read-only evidence and #298 implementation are complete; #260 Workstream 2 audit is complete and PM decisions are approved. Next p228 step is #260 implementation leaves in audit order: catalog/helper parity → interview_overdue → soft AI gate/no_ai_context → selection_cutoff_approved → selective replay/manual-close → operational suppress_all bypass → 24h health signal, then #116 smoke/leaf → #179/#230 lifecycle → #229 Phase 2. Carry p226 open decisions for cycle4 committee seed and 19 screening apps status advance. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
+7. During the Selection reliability sprint, **#260 Workstream 2 ALL 7 leaves are SHIPPED end-to-end (p228)**: PR #305 (Leaf 1 catalog/helper parity) + PR #307 (Leaves 2 interview_overdue cron + 3 soft AI gate + 4 selection_cutoff_approved foundation + 5 selective replay RPC + 6 operational suppress_all bypass + 7 24h health signal). #260 moves to `qa-window` pending PM call of replay RPC with `p_dry_run=false` to execute 2 eligible rows + production smoke confirmation. **Next p229 dispatch order**: #116 smoke/leaf → #179/#230 lifecycle → #229 Phase 2. p229 fast-follow carries: PM decision on auto-trigger for selection_cutoff_approved (cron schedule + threshold evaluation) + MCP tool registration for `get_selection_emails_pending_24h`. p226 carries: cycle4 committee seed (no longer urgent post-Leaf 3 soft gate) + 19 cycle4 screening apps status advance. #298 CLOSED. #251 close-candidate awaiting PM retest. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
 
 ---
 
