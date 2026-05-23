@@ -1,0 +1,35 @@
+# Migration local-file orphan baseline — p224 (2026-05-22)
+#
+# Versions present as local .sql files BUT no corresponding row in
+# supabase_migrations.schema_migrations.
+#
+# Discovery: WATCH-AUDIT-HIGH-17 (P162 log #185). 15 entries at p224 baseline.
+#
+# 3 clusters identified in p224:
+#  - p64 incident-revert + Pacote M (Apr 26-27, 3 files)
+#  - p125-E1/E2/p126-E3 selection PMI 3D series (May 18, 11 files)
+#  - TAP CPMAI R00 seed content (Jun 18, 1 file)
+#
+# Risk: functional = NONE today (DDL applied via path that bypassed
+# schema_migrations insert; live infra works). Surfaces only on
+# `supabase db reset` — files would re-apply against canonical baseline
+# and could conflict.
+#
+# Ratchet DOWN: register version via `supabase migration repair --status
+# applied <version>` + bump baseline.
+# Ratchet UP: prohibited (file should never exist without registration).
+20260426234500
+20260427000000
+20260427000100
+20260518000000
+20260518010000
+20260518020000
+20260518030000
+20260518040000
+20260518050000
+20260518060000
+20260518070000
+20260518080000
+20260518090000
+20260518100000
+20260618000001
