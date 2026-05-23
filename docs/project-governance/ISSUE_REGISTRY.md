@@ -1,6 +1,6 @@
 # Issue Registry
 
-**Last updated:** 2026-05-23 (post-p228 #260 W2 implementation complete)
+**Last updated:** 2026-05-23 (p229 — #116 calendar booking smoke PASS + closed)
 **Purpose:** dispatch board for parallel agents. This registry complements GitHub labels by adding execution status, lane, blockers, and close rules.
 
 **Operating protocol:** `docs/project-governance/ISSUE_REGISTRY_OPERATING_PROTOCOL.md`
@@ -71,7 +71,6 @@ Status values:
 | Issue | Registry status | Lane | Blocks | Blocked by | Acceptance evidence | Close rule |
 |---|---|---|---|---|---|---|
 | #251 | close-candidate | QA / Foundation | none | PM browser retest / devtools evidence if still reported | p226 audit did not reproduce Henrique invisibility or William 1/2 state; #298 spawned for real pending-list bug | Close after PM retest confirms current state or split a narrow UI/cache issue |
-| #116 | close-candidate | QA / Integration | selection interview booking trust | real booking smoke | Calendar event creates/updates `selection_interviews` with `calendar_event_id`; exact failing boundary if not | Close after first controlled/live booking smoke passes, otherwise split a single Integration leaf |
 | #217 | close-candidate | Foundation / QA | none | final curator/PM close comment | Migration `20260802000007` + contract test show `/initiative/` and not `/iniciativas/` | Close after posting evidence summary to issue |
 | #227 | close-candidate | Foundation / QA | none | PM browser smoke for CV button | Storage policy uses `rls_can('view_pii')`; forward-defense test exists | Close after `/admin/selection` CV signed URL smoke confirms no 400 |
 
@@ -82,7 +81,7 @@ Status values:
 
 | Cluster | Issues | Registry stance | Dispatch rule |
 |---|---|---|---|
-| Selection reliability Cycle 4 | #292, #251, #298(closed), #260(qa-window), #116, #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit + #298 fix + #260 W2 audit + #260 W2 ALL 7 LEAVES SHIPPED (p228 PRs #305 + #307) — moves to qa-window pending PM replay execution + production smoke. Next p229: #116 smoke, #179/#230 lifecycle, #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
+| Selection reliability Cycle 4 | #292, #251, #298(closed), #260(qa-window), #116(closed), #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit + #298 fix + #260 W2 audit + #260 W2 ALL 7 LEAVES SHIPPED (p228 PRs #305 + #307) — moves to qa-window pending PM replay execution + production smoke. #116 calendar webhook smoke PASS + closed p229 (22 real bookings, 92% cycle4 sync rate, idempotency + reschedule-clearance live). Next p229: #179/#230 lifecycle, #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
 | Curatorship p197 | #185-#196, #188, #190, #201 | Needs parent status board | Allow max 2 ready leaves concurrently; serialize DB changes |
 | Volunteer lifecycle | #177, #179, #180, #181, #182, #183, #205, #213 | Foundation sequence | Start after #221 containment; #179 is the canonical contract gate |
 | MCP/AI | #162, #163, #170, #183, #188, #206-#208 | High-risk | Pause new tools until #162 contract matrix and #221 consent gates are stable |
@@ -99,7 +98,7 @@ Status values:
 4. Foundation migrations serialize unless explicitly proven independent.
 5. MCP/AI work must name data touched, consent basis, RPC/tool contract, and smoke evidence.
 6. Any branch touching multiple lanes needs a documented exception or a split.
-7. During the Selection reliability sprint, **#260 Workstream 2 ALL 7 leaves are SHIPPED end-to-end (p228)**: PR #305 (Leaf 1 catalog/helper parity) + PR #307 (Leaves 2 interview_overdue cron + 3 soft AI gate + 4 selection_cutoff_approved foundation + 5 selective replay RPC + 6 operational suppress_all bypass + 7 24h health signal) + PR #313 Leaf 5 hotfix + PR #316 P162 hotfix addendum. Replay executed live (`updated_count=2`; 15 manual_close), so #260 remains `qa-window` for 7d production smoke only. **Next p229 dispatch order**: #116 smoke/leaf → #179/#230 lifecycle → #229 Phase 2. p229 fast-follow carries: auto-trigger design for selection_cutoff_approved (cron schedule + threshold evaluation) + MCP tool registration for `get_selection_emails_pending_24h`. p226 carries: cycle4 committee seed (no longer urgent post-Leaf 3 soft gate) + 19 cycle4 screening apps status advance. #298 CLOSED. #251 close-candidate awaiting PM retest. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
+7. During the Selection reliability sprint, **#260 Workstream 2 ALL 7 leaves are SHIPPED end-to-end (p228)**: PR #305 (Leaf 1 catalog/helper parity) + PR #307 (Leaves 2 interview_overdue cron + 3 soft AI gate + 4 selection_cutoff_approved foundation + 5 selective replay RPC + 6 operational suppress_all bypass + 7 24h health signal) + PR #313 Leaf 5 hotfix + PR #316 P162 hotfix addendum. Replay executed live (`updated_count=2`; 15 manual_close), so #260 remains `qa-window` for 7d production smoke only. **p229 #116 closed**: live smoke PASS — 22 webhook-synced rows since p95 (2026-05-06), 92% cycle4 sync rate, idempotency + B3 reschedule-clearance both live, most-recent fire 2 days pre-close. P162 #195 carries WATCH-116.A (webhook service_role bypasses `schedule_interview` gate by design; `gate_attempts` audit visibility weaker than RPC path — non-blocking, documented). **Next p229 dispatch order**: #179/#230 lifecycle → #229 Phase 2. p229 fast-follow carries: auto-trigger design for selection_cutoff_approved (cron schedule + threshold evaluation) + MCP tool registration for `get_selection_emails_pending_24h` + WATCH-116.A audit-visibility evaluation (if PM wants symmetric webhook logging). p226 carries: cycle4 committee seed (no longer urgent post-Leaf 3 soft gate) + 19 cycle4 screening apps status advance. #298 + #116 CLOSED. #251 close-candidate awaiting PM retest. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
 
 ---
 

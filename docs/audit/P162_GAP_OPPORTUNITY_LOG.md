@@ -1915,3 +1915,28 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   - **SEDIMENT-228.F**: `admin_audit_log.actor_id` is NOT NULL FK to `members(id)`; no system-member sentinel exists for service_role/cron context. Gate the INSERT on a real actor (v_caller_id IS NOT NULL) or skip it. service_role tracks via postgres logs + cron_run_log.
 - **Workflow side-effect:** Hotfix branch rebase onto post-#313 main triggered force-push permission block in harness. Resolved via `git merge origin/main` into the close-docs branch (option 2 per PM ABCD authorization) — creates a merge commit but avoids force-push.
 - **Cross-ref:** PR #313 (`8dd9ae5d`) · PR #309 close-docs (`5375a927`) · PM dispatch comment ("Do not merge #309 as final close yet... First ship a small Foundation hotfix...") · Migration `20260805000015` · 17 historical mis-routed rows: 2 replayed live, 15 documented as manual_close · #260 (parent) · #292 (sprint umbrella).
+
+### 195. RESOLVED-116 + WATCH-116.A — Calendar webhook smoke PASS (close) + service_role gate-bypass audit visibility carry
+
+- **When:** 2026-05-23 p229 boot, PM dispatched per ISSUE_REGISTRY locked order (#116 → #179/#230 → #229 Phase 2).
+- **What — RESOLVED-116:** Live read-only smoke of `selection_interviews` post-p95 webhook online (2026-05-06 → 2026-05-23, 17 days elapsed). All 7 acceptance checks from registry close rule PASS:
+  - Webhook online (HTTP 401 on bad secret, was 503 pre-p95)
+  - 22 webhook-synced rows in 13 days
+  - Most recent webhook fire 2 days ago (Emanuelle Stellet Lourenço, `bfdi1ffs7rvklsdu4bmg`, 2026-05-21 13:16:47Z)
+  - cycle4-2026 sync rate 22/24 = 92%
+  - 0 duplicate `calendar_event_id` rows (idempotency)
+  - B3 reschedule-clearance live (2 rows in `status='rescheduled'` with `interview_reschedule_reason=null` + `interview_reschedule_requested_at=null`)
+  - App-status transition correct (active pipeline → `interview_scheduled`)
+- **Where:** GH issue #116 closed with evidence comment ([comment-4526194154](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/116#issuecomment-4526194154)). Path A per PM ABCD (Recommended); no controlled smoke needed since 22 real bookings already validate end-to-end.
+- **Outliers documented:** 2 cycle4 rows without `calendar_event_id` are intentional non-webhook entries (William Junio 5th row = curator manual reconciliation; Matheus Teixeira 2026-05-06 22:46 = pre-stabilization or manual RPC during secret-setup window). Cycle3-2026 closed cycle has 34 pre-webhook rows as expected.
+- **What — WATCH-116.A:** Non-blocking design note. Webhook uses service_role `INSERT INTO selection_interviews` directly, bypassing the `schedule_interview` 3-layer gate (P0001/P0002/P0003). Rationale documented in `src/pages/api/calendar-webhook.ts` lines 28-31: trusted Calendar sync AFTER comissão `mark_interview_status('pending')` already gated server-side. Side effect: `gate_attempts` audit table only logs admin-UI manual RPC path — 3 entries total since p95 vs 22 webhook-driven rows with no `gate_attempts` entry.
+- **Defensibility:** shared secret (`CALENDAR_WEBHOOK_SECRET`) + token-gated booking page (`/interview-booking/[token].astro`, p87 Sprint A.2). Both are pre-requisites; without either, webhook can't reach DB.
+- **Visibility weakness:** if webhook secret leaks AND attacker knows a candidate email, they can schedule an interview without triggering the gate or leaving a `gate_attempts` row. Mitigations: secret rotation cadence (none documented) + Calendar API access control (Apps Script trusted-context).
+- **Carry options if PM wants stronger audit later:**
+  1. Insert a `gate_attempts` row from webhook with `bypass_requested=true, bypass_granted=true, gate_failed_code='WEBHOOK_SERVICE_ROLE'` for symmetric audit trail (no functional change, just visibility)
+  2. Add an explicit `selection_interviews.created_via` column (`webhook|manual_rpc|curator_insert`) for forensic separation
+  3. Both above + admin dashboard surfacing webhook vs manual ratio per cycle
+- **Tests:** no test delta this session (read-only audit + close). Forward-defense test for webhook would require live CALENDAR_WEBHOOK_SECRET + real Calendar mock; deferred unless PM requests.
+- **Sediment learnings (1 NEW):**
+  - **SEDIMENT-229.A**: when an integration endpoint uses service_role to bypass a normal RPC gate (legitimate trust-boundary design), the parallel audit table (`gate_attempts` in this case) becomes asymmetric — only one path is logged. Document the asymmetry where it lives (here: webhook code lines 28-31 already comments the rationale; this entry adds the audit-visibility consequence) so future audits don't misread "0 gate_attempts" as "0 traffic."
+- **Cross-ref:** GH issue #116 (closed) · `src/pages/api/calendar-webhook.ts` · `src/pages/interview-booking/[token].astro` · `docs/specs/p87-calendar-webhook-apps-script.md` · `gate_attempts` table · `schedule_interview` RPC · #292 (selection reliability sprint umbrella).
