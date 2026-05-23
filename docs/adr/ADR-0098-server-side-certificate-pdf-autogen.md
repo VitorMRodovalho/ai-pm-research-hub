@@ -1,6 +1,6 @@
 # ADR-0098 — Server-side certificate PDF auto-generation via DB trigger + CF Browser Rendering
 
-**Status:** Accepted (2026-05-23 p225 #281 close)
+**Status:** Accepted (2026-05-23 p225 #281 close); Amended same-day for vault refactor (migration 20260805000006) — see "Amendment 2026-05-23" below.
 **Supersedes:** none
 **Amends:** none (extends p221 #267 alpha — backfill scope completion)
 **Related:** [[ADR-0006]] (V4 person + engagement model), p221 PR #282 (backfill alpha — bucket + script), [[ADR-0095]] (member alternate emails — PII surface reference)
@@ -54,7 +54,9 @@ Cert issuance UX (sign termo, bulk issue, offboarding) não pode esperar 2-5s do
 
 ### Por que shared secret (não JWT/HMAC)
 
-Caminho interno DB-trigger → Worker endpoint, mesma org, sem expectativa de rotation crítica. Shared secret via `app.cert_pdf_internal_secret` GUC (DB) + `CERT_PDF_INTERNAL_SECRET` wrangler secret (Worker). Rotation requer 2-step (Worker secret → DB GUC) mas é raro. JWT/HMAC adicionaria complexidade `pgcrypto.digest()` em plpgsql sem benefício prático em threat model atual.
+Caminho interno DB-trigger → Worker endpoint, mesma org, sem expectativa de rotation crítica. Shared secret armazenado em **Supabase Vault** (`vault.decrypted_secrets` name=`cert_pdf_internal_secret`) no lado DB + `CERT_PDF_INTERNAL_SECRET` wrangler secret (Worker). Rotation requer 2-step (Worker secret → vault row UPDATE) mas é raro. JWT/HMAC adicionaria complexidade `pgcrypto.digest()` em plpgsql sem benefício prático em threat model atual.
+
+> **Historical note**: original migration 20260805000005 attempted to use `app.cert_pdf_internal_secret` GUC via `ALTER DATABASE postgres SET`. Supabase managed PG returned `ERROR: 42501: permission denied to set parameter "app.cert_pdf_internal_secret"` — the `app.*` namespace requires allowlist enrollment. Migration 20260805000006 refactored the trigger fn body to read from `vault.decrypted_secrets` instead. See SEDIMENT-225.B below.
 
 ### Storage path convention
 
@@ -105,9 +107,41 @@ Path β wins on time + zero rendering drift. CF cost negligible (~$5/M req; nucl
 - **HMAC instead of shared secret**: if cert issuance volume scales 100x or threat model changes (e.g. multi-tenant external client touching this path), revisit.
 - **/admin/certificates bulk-regen UI**: backfill script (`scripts/backfill-cert-pdfs.ts`) still works; future enhancement could expose a "regenerate PDF" admin action wired to the same endpoint via service-role.
 
+## Amendment 2026-05-23 (vault refactor + SEDIMENTs surfaced during ship)
+
+Three sediments surfaced during the same-day ship:
+
+- **SEDIMENT-225.A** (already merged in 20260805000005 commit body): Postgres strips inline `--` comments from `prosrc` when storing function source. The body-drift parser (`tests/helpers/rpc-body-drift-parser.mjs`) parses the raw migration file body verbatim, so any `--` inside the function body causes md5(prosrc) ≠ md5(file body) drift on first Phase C check. Fix = move design notes outside the `AS $$ ... $$` block.
+
+- **SEDIMENT-225.B**: Supabase managed PG blocks `ALTER DATABASE postgres SET app.*` for non-allowlisted params. The original GUC-based approach in 20260805000005 was deployment-blocked. Path forward = `supabase_vault` extension (v0.3.1, installed by default). Migration 20260805000006 refactored the trigger fn body to read via `SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cert_pdf_internal_secret'` (search_path includes `vault`).
+
+- **SEDIMENT-225.C**: Body-drift parser regex `/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+.../i` matches `CREATE OR REPLACE FUNCTION` literal **inside SQL comments**. The rollback example in the migration header initially included a `CREATE OR REPLACE FUNCTION` template inside a comment, causing the parser to emit two blocks for the same function (a 5-byte stub from the comment + the real 1097-byte body), which broke Phase C "latest capture" logic. Fix = rephrase rollback examples to avoid the exact `CREATE ... FUNCTION` token sequence inside comments.
+
+### Updated deploy ops (post-vault refactor)
+
+1. `npx wrangler deploy` (one-time, already done in initial deploy)
+2. `openssl rand -base64 32` (capture output)
+3. `npx wrangler secret put CERT_PDF_INTERNAL_SECRET` (paste output from step 2)
+4. **Vault** (Studio SQL editor — was `ALTER DATABASE SET` before refactor):
+   ```sql
+   SELECT vault.create_secret(
+     '<same value from step 2>',
+     'cert_pdf_internal_secret',
+     'p225 #281 ADR-0098: shared secret for AFTER INSERT trigger → /api/internal/cert-pdf-render'
+   );
+   ```
+5. Smoke: INSERT test cert via `execute_sql` → verify pdf_url populated within 5s
+
+### Rotation (future, post-vault refactor)
+
+1. Worker side: `npx wrangler secret put CERT_PDF_INTERNAL_SECRET` (new value)
+2. DB side (Studio SQL): `UPDATE vault.secrets SET secret = vault.encrypt('<new value>', key_id) WHERE name = 'cert_pdf_internal_secret';`
+   (or `DELETE` + `vault.create_secret` in same transaction for atomicity)
+
 ## Cross-ref
 
 - Migration: `supabase/migrations/20260805000005_p225_281_certificate_pdf_autogen_trigger.sql`
+- Migration (vault refactor): `supabase/migrations/20260805000006_p225_281_certificate_pdf_autogen_use_vault.sql`
 - Endpoint: `src/pages/api/internal/cert-pdf-render/[id].ts`
 - Browser binding: `wrangler.toml` `[browser] binding = "BROWSER"`
 - CSRF allowlist: `src/middleware.ts` `CSRF_BYPASS_PREFIXES` includes `/api/internal/`
