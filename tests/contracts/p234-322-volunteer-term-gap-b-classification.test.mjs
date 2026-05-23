@@ -53,6 +53,10 @@ const MIGRATION_FILE = resolve(
   ROOT,
   'supabase/migrations/20260805000019_p234_322_volunteer_term_gap_b_classification_and_guards.sql'
 );
+const CLOSE_REVIEW_FILE = resolve(
+  ROOT,
+  'supabase/migrations/20260805000020_p234_322_close_review_get_my_onboarding_guard.sql'
+);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -233,6 +237,62 @@ test('p234 #322: migration reloads PostgREST schema cache', () => {
   const body = readFileSync(MIGRATION_FILE, 'utf8');
   assert.match(body, /NOTIFY pgrst,\s*'reload schema'/i,
     'Migration must NOTIFY pgrst reload schema (CLAUDE.md GC-097)');
+});
+
+// ===================================================================
+// CLOSE-REVIEW PATCH (20260805000020) — get_my_onboarding auto-seed guard
+// PM curator review of PR #327 (2026-05-23) caught that get_my_onboarding()
+// universally auto-seeds onboarding_steps catalog on first call, which
+// reintroduced Gap B for any future member whose first hit lands here.
+// This sibling migration mirrors the approve_selection_application guard.
+// ===================================================================
+
+test('p234 #322 close-review: migration 20260805000020 present at canonical path', () => {
+  const dir = resolve(ROOT, 'supabase/migrations');
+  const files = readdirSync(dir).filter(f => f.startsWith('20260805000020_'));
+  assert.equal(files.length, 1,
+    'Exactly one migration file must exist for version 20260805000020 (p234 #322 close-review patch)');
+  assert.match(files[0], /^20260805000020_p234_322_close_review_get_my_onboarding_guard\.sql$/,
+    'Migration filename must follow `<timestamp>_<descriptive_name>.sql` per CLAUDE.md GC-097');
+});
+
+test('p234 #322 close-review: get_my_onboarding declares v_has_req_agreement_engagement and computes via EXISTS', () => {
+  const body = readFileSync(CLOSE_REVIEW_FILE, 'utf8');
+  assert.match(body, /CREATE OR REPLACE FUNCTION public\.get_my_onboarding\(\)/i,
+    'Close-review migration must CREATE OR REPLACE get_my_onboarding()');
+  // Variable declaration
+  assert.match(body, /v_has_req_agreement_engagement boolean/i,
+    'get_my_onboarding must declare v_has_req_agreement_engagement boolean');
+  // EXISTS query reads engagements + engagement_kinds + status=active + requires_agreement=true
+  assert.match(body, /SELECT EXISTS \(\s*SELECT 1 FROM public\.engagements e\s*JOIN public\.members m ON m\.id\s*=\s*v_member_id\s*JOIN public\.engagement_kinds ek ON ek\.slug\s*=\s*e\.kind\s*WHERE e\.person_id\s*=\s*m\.person_id\s*AND e\.status\s*=\s*'active'\s*AND ek\.requires_agreement\s*=\s*true\s*\)\s*INTO v_has_req_agreement_engagement/i,
+    'EXISTS query must join engagements + members + engagement_kinds and filter status=active + requires_agreement=true');
+});
+
+test('p234 #322 close-review: get_my_onboarding auto-seed INSERT skips volunteer_term when v_has_req_agreement_engagement is false', () => {
+  const body = readFileSync(CLOSE_REVIEW_FILE, 'utf8');
+  // The auto-seed INSERT must include the guard alongside the NOT EXISTS dedup
+  assert.match(body, /INSERT INTO onboarding_progress \(member_id, step_key, status\)\s*SELECT v_member_id, s\.id, 'pending'\s*FROM onboarding_steps s\s*WHERE NOT EXISTS \(SELECT 1 FROM onboarding_progress op WHERE op\.member_id\s*=\s*v_member_id AND op\.step_key\s*=\s*s\.id\)\s*AND NOT \(s\.id\s*=\s*'volunteer_term'\s*AND NOT v_has_req_agreement_engagement\)/i,
+    'Auto-seed INSERT must include `AND NOT (s.id = \'volunteer_term\' AND NOT v_has_req_agreement_engagement)` — mirrors approve_selection_application forward guard');
+});
+
+test('p234 #322 close-review: get_my_onboarding preserves skipped≡completed harmonization + SECDEF + pinned search_path', () => {
+  const body = readFileSync(CLOSE_REVIEW_FILE, 'utf8');
+  // Preservation: skipped≡completed harmonization from 20260805000019 must remain
+  assert.match(body, /'completed_steps',\s*\(SELECT count\(\*\) FROM onboarding_progress WHERE member_id\s*=\s*v_member_id\s*AND status IN \('completed',\s*'skipped'\)/i,
+    'completed_steps must continue to treat status IN (\'completed\', \'skipped\') as terminal');
+  assert.match(body, /'all_complete',\s*\(NOT EXISTS \([\s\S]{0,500}WHERE s\.is_required\s*AND op\.status NOT IN \('completed',\s*'skipped'\)/i,
+    'all_complete must continue to treat status NOT IN (\'completed\', \'skipped\') as terminal-blocking');
+  // SECDEF + search_path preserved
+  assert.match(body, /SECURITY DEFINER/i,
+    'get_my_onboarding must remain SECURITY DEFINER');
+  assert.match(body, /SET search_path TO 'public', 'pg_temp'/i,
+    'get_my_onboarding must remain pinned to public + pg_temp');
+  // Per-step rendering verbatim
+  assert.match(body, /COALESCE\(op\.status,\s*'pending'\) AS status/i,
+    'Per-step status rendering preserved verbatim — UI may render skipped distinctly');
+  // NOTIFY pgrst
+  assert.match(body, /NOTIFY pgrst,\s*'reload schema'/i,
+    'Close-review migration must NOTIFY pgrst reload schema');
 });
 
 // ===================================================================
