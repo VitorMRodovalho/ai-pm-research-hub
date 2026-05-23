@@ -349,9 +349,9 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 
 ### Implementation phasing — 7 W2 Leaves
 
-- **Leaf 1 (this Amendment, 2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension.
-- **Leaf 2:** `selection_interview_overdue` new type + daily cron + idempotent INSERT.
-- **Leaf 3:** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`.
+- **Leaf 1 (2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension. Migration `20260805000008`.
+- **Leaf 2 (2026-05-23):** `selection_interview_overdue` new type + daily `_selection_interview_overdue_cron()` at 14:00 UTC + one notification per (interview, interviewer) pair with 7-day idempotency window. Migration `20260805000009`.
+- **Leaf 3 (2026-05-23):** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`. Removes hard `PEER_PRECONDITION` raise; adds `p_force_no_ai_context boolean DEFAULT false` parameter (admin override). Notification body + admin_audit_log + return jsonb all carry `no_ai_context` + `no_ai_reason ∈ {no_consent, analysis_pending, admin_override, NULL}`. Authority gate unchanged. Migration `20260805000010`.
 - **Leaf 4:** `selection_cutoff_approved` new type + trigger when `(objective_done >= 2 AND pert_score >= cutoff)` + Resend template.
 - **Leaf 5:** selective replay/manual-close of 17 historical rows (idempotent UPDATE).
 - **Leaf 6:** operational suppress_all bypass classifier + EF integration.

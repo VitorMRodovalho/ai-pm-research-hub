@@ -303,3 +303,107 @@ test('ADR-0022 Amendment D: p228 migration file exists and registers helper upda
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 1 migration must NOTIFY pgrst to reload schema.');
 });
+
+// ─── Amendment D / p228 #260 W2 Leaf 3 contracts ───
+// Soft AI gate: dispatch_peer_review_invitations no longer hard-blocks when AI
+// context is absent. Forward-defense locks the parameter count, body branches,
+// and admin_audit_log capture of no_ai_context + no_ai_reason.
+
+test('ADR-0022 Amendment D Leaf 3: dispatch_peer_review_invitations gains p_force_no_ai_context parameter', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match, 'dispatch_peer_review_invitations must be declared.');
+  const wrapper = match[0];
+
+  // Three params: p_application_id uuid, p_max_peers integer DEFAULT 2,
+  // p_force_no_ai_context boolean DEFAULT false
+  assert.ok(/p_force_no_ai_context\s+boolean\s+DEFAULT\s+false/i.test(wrapper),
+    'Leaf 3: dispatch_peer_review_invitations must declare p_force_no_ai_context boolean DEFAULT false parameter.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: hard PEER_PRECONDITION raise is removed', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // Forward-defense: latest body MUST NOT raise PEER_PRECONDITION (the audit doc
+  // identified this as the cycle 4 hard-block source). Implicit no-AI now flows
+  // through to v_no_ai_context flag.
+  assert.ok(!/RAISE\s+EXCEPTION\s+'PEER_PRECONDITION/i.test(body),
+    'Leaf 3: PEER_PRECONDITION hard raise must be removed (soft gate). Re-introducing it regresses cycle 4 fix.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: no_ai_context branching with 4 reason states', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // The four sources of no_ai_context flag, in priority order:
+  //   admin_override → explicit force
+  //   no_consent     → consent_ai_analysis_at IS NULL
+  //   analysis_pending → ai_analysis IS NULL
+  //   (else)         → v_no_ai_context := false (AI context available)
+  for (const reason of ['admin_override', 'no_consent', 'analysis_pending']) {
+    assert.ok(body.includes(`'${reason}'`),
+      `Leaf 3: no_ai_reason value '${reason}' must be present in dispatch body.`);
+  }
+  assert.ok(/v_no_ai_context\s*:=\s*true/i.test(body),
+    'Leaf 3: dispatch body must assign v_no_ai_context := true in at least one branch.');
+  assert.ok(/v_no_ai_context\s*:=\s*false/i.test(body),
+    'Leaf 3: dispatch body must have a v_no_ai_context := false branch for AI-present path.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: no_ai_context flows into audit log + return jsonb', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // admin_audit_log changes JSON must capture no_ai_context + no_ai_reason
+  assert.ok(/'no_ai_context'\s*,\s*v_no_ai_context/i.test(body),
+    "Leaf 3: admin_audit_log changes JSON must include 'no_ai_context' field.");
+  assert.ok(/'no_ai_reason'\s*,\s*v_no_ai_reason/i.test(body),
+    "Leaf 3: admin_audit_log changes JSON must include 'no_ai_reason' field.");
+
+  // Return jsonb must surface the flags for callers
+  const lastReturn = body.split('RETURN ').pop();
+  assert.ok(/'no_ai_context'\s*,\s*v_no_ai_context/i.test(lastReturn),
+    "Leaf 3: terminal RETURN jsonb must include 'no_ai_context' for caller visibility.");
+});
+
+test('ADR-0022 Amendment D Leaf 3: peer_review_requested INSERT uses helper for delivery_mode', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // Pre-leaf-3, delivery_mode was hardcoded 'transactional_immediate' at INSERT.
+  // Leaf 3 routes through _delivery_mode_for so the policy matrix stays the single
+  // source of truth (Leaf 1 added 'peer_review_requested' to helper).
+  assert.ok(/_delivery_mode_for\(\s*'peer_review_requested'\s*\)/i.test(body),
+    'Leaf 3: peer_review_requested INSERT must derive delivery_mode via _delivery_mode_for helper (not hardcoded).');
+});
+
+test('ADR-0022 Amendment D Leaf 3: p228 Leaf 3 migration uses DROP + CREATE pattern + restores GRANTs', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafThree = files.find(f => f.includes('p228_260_w2_leaf3_soft_ai_gate_no_ai_context'));
+  assert.ok(leafThree,
+    'Migration 20260805000010_p228_260_w2_leaf3_soft_ai_gate_no_ai_context.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafThree), 'utf8');
+
+  // GC-097 §4: parameter count changes require DROP first (to avoid PostgreSQL
+  // creating a parallel overload). CREATE OR REPLACE for the brand-new signature
+  // is equivalent to CREATE since no function with that signature exists post-DROP,
+  // AND keeps the function discoverable by the test's findLatestFunctionMatch helper.
+  assert.ok(/DROP\s+FUNCTION\s+IF\s+EXISTS\s+public\.dispatch_peer_review_invitations\s*\(\s*uuid\s*,\s*integer\s*\)/i.test(body),
+    'Leaf 3 migration must DROP IF EXISTS the prior dispatch_peer_review_invitations(uuid, integer) signature.');
+  assert.ok(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.dispatch_peer_review_invitations\s*\([^)]*p_force_no_ai_context/i.test(body),
+    'Leaf 3 migration must CREATE (or CREATE OR REPLACE) FUNCTION with the new 3-param signature including p_force_no_ai_context.');
+
+  // GRANTs restored to authenticated + service_role; explicitly REVOKE anon
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.dispatch_peer_review_invitations\([^)]*boolean[^)]*\)\s+TO\s+authenticated\s*,\s*service_role/i.test(body),
+    'Leaf 3 migration must GRANT EXECUTE TO authenticated, service_role on new signature.');
+  assert.ok(/REVOKE\s+ALL[\s\S]{0,300}dispatch_peer_review_invitations[\s\S]{0,200}FROM[\s\S]{0,200}anon/i.test(body),
+    'Leaf 3 migration must REVOKE anon from new signature.');
+
+  // NOTIFY pgrst to publish new signature
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 3 migration must NOTIFY pgrst to reload schema.');
+});
