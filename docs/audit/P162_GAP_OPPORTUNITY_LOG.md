@@ -1606,3 +1606,60 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Counter:** the close docs section for p222 will pin the CORRECTED baseline (1706 total / 1664 pass / 42 skip) AND document the historical correction. Future sessions: copy the entire `ℹ tests N` line from npm test output verbatim, don't summarize. Or better — script the ratchet via `scripts/update-test-baseline.sh` that grep/sed-ups deploy.md from npm test output (WATCH-186.C automation).
 - **Cross-ref:** PR #285 (does NOT update deploy.md baseline — that lands in close docs), deploy.md `## Pre-Deploy Checklist` section #2, WATCH-186.C original filing.
 
+### 181. RESOLVED-AUDIT-MED-10 — ADR-0096 `impact_hours_total` accepted advisor risk (PR #287)
+- **Tipo:** documentation / audit-trail close · **Severity:** MED (advisor ERROR untracked) · **Effort:** XS (~30min ADR + 12-line COMMENT migration) · **Status:** RESOLVED via PR #287 squash `6e02f58b`
+- **Trigger:** p223 boot audit `/audit` MED #10 finding: `public.impact_hours_total` was the only SECDEF view advisor ERROR without an ADR (sibling `public_members` was covered by ADR-0024). Audit recommendation: file accepted-risk ADR mirroring ADR-0024 pattern OR REVOKE anon.
+- **Fix:** Created ADR-0096 documenting accepted risk + trade-off matrix (α invoker-flip / β SECDEF RPC / γ slim view N/A / δ document risk — chose δ). Migration `20260805000002` updates `COMMENT ON VIEW` to preserve p170 BUG-HOI canonical formula rationale AND add ADR-0096 cross-reference. Zero behavior change: view definition, ACLs (anon already REVOKE'd via `20260426155255`), and 5 callsites (`attendance.astro` + 4 RPCs) untouched.
+- **Rationale for δ over α/β:** (1) Content is platform-aggregate scalars — no PII per row, threat surface materially smaller than `public_members` (22 personal columns). (2) `anon` already REVOKE'd (live verified); surface is authenticated-only consuming RPCs. (3) Migration `20260508030000_security_sweep_wave1_flip_invoker_6_views.sql` already documents the intentional skip in code comment ("anon kept (UI anon-pre-auth)") — ADR formalizes what code already practiced. (4) Refactor β (DROP view + SECDEF RPC) is ~3-4h with 5 callsite cascading retest; cost/benefit favors δ.
+- **Expected advisor behavior:** `security_definer_view` ERROR count STAYS at 2 (advisor is structural, doesn't read COMMENTs). Both findings now have ADR coverage for audit trail. Path β remains documented in ADR-0096 §"Follow-up planejado" for future invocation.
+- **Cross-ref:** PR #287, ADR-0096, ADR-0024 (sibling pattern), migrations `20260805000002` (this) + `20260508030000` (prior implicit decision) + `20260674400000` (canonical formula source) + `20260426155255` (anon REVOKE).
+
+### 182. RESOLVED-AUDIT-LOW-18 — ADR-0095 backfilled to README index + ADR-0094 reserved-numbering note (PR #287)
+- **Tipo:** documentation drift close · **Severity:** LOW (audit-trail gap) · **Effort:** XS (3 lines in README) · **Status:** RESOLVED via PR #287
+- **Trigger:** p223 boot audit `/audit` LOW #18: `docs/adr/ADR-0095-member-alternate-emails.md` existed as file (p213 ship) but no entry in `docs/adr/README.md` index. Audit script `scripts/audit_adr_index.sh` had not flagged this because it only checks "referenced ADRs have files" not "all files are referenced" (asymmetric check).
+- **Fix:** Added 3 lines to `docs/adr/README.md`:
+  - ADR-0094 reserved-numbering note (mirrors ADR-0082 pattern — confirms 0093→0095 jump is intentional, no references in docs/src/supabase or git history).
+  - ADR-0095 entry (member alternate emails p213-p216 — 4-PR sequence with Council Tier 1 GO+AMENDMENTS).
+  - ADR-0096 entry (this session — paired with #181 above).
+- **Post-fix state:** 94 ADR files + 95 README entries; the +1 delta is ADR-0082 (intentional reserved numbering, audit p165 confirmed). `bash scripts/audit_adr_index.sh` PASS.
+- **Audit script gap surfaced:** the bidirectional asymmetry is itself a documentation invariant gap — a file without a README entry should also be flagged. Backlog candidate: extend the audit script to also walk `docs/adr/ADR-*.md` and assert each one appears in the README (modulo intentional reservations). Not filed as its own entry because the fix is single-line awk on the existing script.
+- **Cross-ref:** PR #287, ADR-0095 (member alternate emails p213), ADR-0082 (intentional reservation precedent), `scripts/audit_adr_index.sh`.
+
+### 183. RESOLVED-279 — PR #279 closed as superseded by `/semantic` architecture
+- **Tipo:** PR triage decision · **Severity:** N/A (housekeeping) · **Effort:** XS (close + comment) · **Status:** CLOSED (PR #279 closed; not merged)
+- **Trigger:** p223 audit triage of open PRs surfaced #279 (`fix: strip schema from MCP tools/list for Perplexity` — opened 2026-05-22T20:03 same day as #285 semantic alpha). PR #279 was attempt at H1 hypothesis of #277 (Perplexity rejects `$schema` in inputSchema). Issue #280 acceptance criteria explicitly contemplated this close: *"PR #279 is either closed as unnecessary or folded only if the audit proves `$schema` is the blocker."*
+- **Decision rationale (4 factors):**
+  1. **Architectural supersession:** PR #285 (semantic gateway alpha) ships the narrow 3-tool `/mcp/semantic` surface that IS the canonical answer to #280's "capability profiles instead of one universal 299-tool catalog" requirement. Stripping `$schema` from the 299-catalog is a band-aid on the architecture #280 wants to replace.
+  2. **CI validate failing:** branch was behind main (opened pre-#285 merge); test count drift 1701/1695/1/5 vs p222 baseline 1706/1664/0/42 needed rebase. Not worth maintaining a rebase if path is to close.
+  3. **H1 not proven:** no Perplexity-side capture exists yet — the schema-strip is preemptive speculation per #277 H1 hypothesis list, not a confirmed bug fix.
+  4. **`/semantic` ALSO emits `$schema`:** live smoke confirmed `/mcp/semantic` tools/list responses carry `"$schema":"http://json-schema.org/draft-07/schema#"` in each inputSchema — same trigger as `/mcp`. PM's next Perplexity retest against `/mcp/semantic` is the cheapest H1 disambiguation.
+- **Reopen criteria documented in close comment:** reopen if PM's retest of Perplexity against `/mcp/semantic` (per updated #277) shows /semantic ALSO shows "No tools to display" AND a captured Perplexity payload specifically points at `$schema` as parse failure root cause.
+- **Cross-ref:** PR #279 (closed) close comment, #277 (parent bug), #280 (semantic spec), PR #285 (alpha merged).
+
+### 184. UPDATED-277 — Perplexity bug retest path documented (Case A close / Case B narrows to H4/H5/H6/H0)
+- **Tipo:** PM async followup ask · **Severity:** N/A (workflow) · **Effort:** XS (PM ~2min retest) · **Status:** OPEN — PM action pending
+- **Trigger:** p223 audit triage of #277 found semantic gateway alpha live + healthy but PM had not yet retested Perplexity against the new endpoint. Comment posted to #277 with smoke-confirmed evidence + structured retest path.
+- **Smoke confirmation:** `/mcp/semantic` initialize → HTTP 200, serverInfo `{name:"nucleo-ia-semantic", version:"0.1.0"}`. tools/list → 3 tools (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`).
+- **Retest config asked of PM:** Perplexity new connector with Server URL `https://nucleoia.vitormr.dev/mcp/semantic` + Auth OAuth 2.0 + Transport **Streamable HTTP** (NOT SSE — per Perplexity docs, transport mismatch is a known issue class = H0).
+- **Decision matrix posted:**
+  - **Case A** (semantic shows 3 tools in Perplexity) → close #277 as resolved by alpha. Semantic surface IS the Perplexity-fit answer. Wave-2+ grows curated catalog per #280.
+  - **Case B** (semantic ALSO "No tools to display") → H1 ($schema), H2 (catalog size), H7 (anti-spam) all DISPROVEN (3 tools << any reasonable limit). Remaining live hypotheses: H4 malformed-tool (JSON-Schema-validate each of 3 in <5min), H5 protocol-version mismatch (capture initialize request via mitmproxy/devtools), H6 missing outputSchema/annotations (SDK 1.29.0 doesn't emit), H0 transport mismatch (confirm Streamable HTTP).
+- **Workaround:** Claude.ai connector continues to work fine; no urgency.
+- **Cross-ref:** Issue #277 comment post-p223-audit, PR #279 (closed), PR #285 (semantic alpha).
+
+### 185. WATCH-AUDIT-HIGH-17 — Migration file/row drift: 669-row gap (1112 .sql files vs 1781 tracked rows)
+- **Tipo:** historical drift surveillance · **Severity:** HIGH-drift / LOW-functional · **Effort:** M (30min discovery + decision; up to 2-3h if remediation needed) · **Status:** OPEN — deferred discovery
+- **Trigger:** p223 boot audit `/audit` finding #17. Migration tracking comparison: `ls supabase/migrations/*.sql | wc -l` = 1112 files vs `SELECT count(*) FROM supabase_migrations.schema_migrations` = 1781 rows. Delta = -669 (DB has 669 versions with no corresponding local file). Bucketing by date: 318 in Q1 2026 + 1435 in Q2 + 27 in Q3+ + 1 baseline.
+- **Probable root cause:** historical V4 refactor sediment from pre-GC-097 era (pre-2026-04-13). Many migrations were applied via `apply_migration` MCP (or directly via Studio SQL editor) without the manual sync step that writes a local file + runs `supabase migration repair --status applied`. The GC-097 rule was instituted later; the discipline has been kept since (recent versions `20260805000000`/`001`/`002` all have files).
+- **Functional risk assessment:** none today — contract tests `rpc-migration-coverage.test.mjs` pass (live function bodies all match SOME CREATE FUNCTION block in migrations). The risk surfaces only on `supabase db reset` from local files: 669 versions would be missing on reset.
+- **Recommended discovery (next session):** sample 20 of the missing versions via `SELECT version FROM supabase_migrations.schema_migrations WHERE version NOT IN (SELECT 'TIMESTAMP_LIST_FROM_LS')` — classify each as (a) DDL needing capture vs (b) DML/backfill needing none vs (c) duplicate of an existing file with a different version stamp. Then decide between: amnesty migration (bulk-register a "drift baseline marker"), snapshot squash (collapse history at a recent good state), or per-version recovery.
+- **Why not fixed in p223:** scope of audit was triage, not remediation. Wanted PM sign-off on remediation approach before committing time. Audit recommendation: investigate before any baseline rebuild.
+- **Cross-ref:** p223 audit report finding #17, `.claude/rules/database.md` GC-097 rule (post-this gap was instituted), p86 sediment in `feedback_pg_get_functiondef_idempotent_capture.md` (related apply_migration file-write gap).
+
+### 186. WATCH-AUDIT-LOW-LINT — Tailwind v4 CSS `Delim('/')` build warning on `text-[var(--text-primary/secondary/muted)]`
+- **Tipo:** build hygiene warn · **Severity:** LOW (non-blocking; build exit 0) · **Effort:** XS (refactor 1 CSS class to 3 separate vars) · **Status:** OPEN — deferred
+- **Trigger:** p223 boot audit `/audit` finding within infra check #2 (`npx astro build`). Build completes successfully (server built in 25.45s, exit 0) but emits one Tailwind v4 lint warning: `Unexpected token Delim('/')` on the class `text-[var(--text-primary/secondary/muted)]`. The arbitrary-value bracket syntax can't parse the `/` separator inside `var()` — it interprets `/` as the CSS alpha-channel separator.
+- **Fix:** refactor whatever component uses `text-[var(--text-primary/secondary/muted)]` to use 3 separate utility classes or 3 separate `var()` references (e.g., conditionally pick the right var via prop/state instead of trying to express the trio in one bracket-expression).
+- **Why deferred:** non-blocking (build passes), not user-visible (the CSS still resolves at runtime to one of the vars), trivial scope (find the source component + split the class). Backlog candidate for any session that touches the affected component organically.
+- **Cross-ref:** p223 audit report finding #2, build warn line `Unexpected token Delim('/')`.
+
