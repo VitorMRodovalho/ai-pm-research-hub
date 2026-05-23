@@ -249,6 +249,11 @@ const SELECTION_POLICY_MATRIX = {
   selection_evaluation_complete: 'suppress',
   // Admin-facing recap (digest_weekly explicit for parity + forward-drift detection)
   selection_interview_noshow: 'digest_weekly',
+  // Admin-facing reminder for stale interviews (W2 Leaf 2 — emitted by cron)
+  selection_interview_overdue: 'digest_weekly',
+  // Candidate-facing invite to book interview after objective phase clears
+  // (W2 Leaf 4 — dispatched via notify_selection_cutoff_approved RPC)
+  selection_cutoff_approved: 'transactional_immediate',
 };
 
 test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with expected modes', () => {
@@ -263,11 +268,14 @@ test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with ex
   }
 });
 
-test('ADR-0022 Amendment D: catalog metadata bumped to W1.4 with updated_at 2026-05-23', () => {
-  assert.equal(catalog.version, 'W1.4',
-    'Catalog version must be bumped to W1.4 to reflect Amendment D shipping.');
+test('ADR-0022 Amendment D: catalog metadata bumped per latest selection workstream ship', () => {
+  // W1.4 shipped Leaf 1; W1.5 ships Leaf 2 (selection_interview_overdue). Each
+  // selection workstream leaf bumps the catalog minor version so reviewers can
+  // spot the latest active milestone in the catalog file alone.
+  assert.ok(['W1.4', 'W1.5', 'W1.6', 'W1.7', 'W1.8', 'W1.9', 'W1.10'].includes(catalog.version),
+    `Catalog version must be ≥ W1.4 (Amendment D shipping). Got "${catalog.version}".`);
   assert.equal(catalog.updated_at, '2026-05-23',
-    'Catalog updated_at must be 2026-05-23 (p228 #260 W2 Leaf 1 ship date).');
+    'Catalog updated_at must be 2026-05-23 (p228 selection workstream ship date).');
 });
 
 test('ADR-0022 Amendment D: _delivery_mode_for helper explicit-case parity with selection policy', () => {
@@ -302,4 +310,449 @@ test('ADR-0022 Amendment D: p228 migration file exists and registers helper upda
     'Leaf 1 migration must redefine _delivery_mode_for.');
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 1 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 2 contracts ───
+// selection_interview_overdue: new admin-facing type + daily cron with 7d
+// idempotency window. Forward-defense locks the cron RPC signature, the pg_cron
+// schedule, and the scope guards (24h grace + status filter).
+
+test('ADR-0022 Amendment D Leaf 2: _selection_interview_overdue_cron RPC declared with idempotency guard', () => {
+  const match = findLatestFunctionMatch('_selection_interview_overdue_cron');
+  assert.ok(match, '_selection_interview_overdue_cron must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    '_selection_interview_overdue_cron must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    '_selection_interview_overdue_cron must RETURN jsonb (count + run_at envelope).');
+
+  // 24h grace window — prevents alerting interviews running late same-day
+  assert.ok(/scheduled_at\s*<\s*now\(\)\s*-\s*interval\s+'24\s*hours'/i.test(body),
+    'Cron must enforce 24-hour grace window.');
+
+  // Status scope guard — only scheduled/rescheduled trigger alerts
+  assert.ok(/status\s+IN\s*\(\s*'scheduled'\s*,\s*'rescheduled'\s*\)/i.test(body),
+    'Cron scope must include status IN (scheduled, rescheduled).');
+
+  // Conducted_at NULL guard — completed interviews never alert
+  assert.ok(/conducted_at\s+IS\s+NULL/i.test(body),
+    'Cron must require conducted_at IS NULL.');
+
+  // 7-day idempotency window — one notif per (interview, recipient) per week
+  assert.ok(/NOT\s+EXISTS[\s\S]{0,800}selection_interview_overdue[\s\S]{0,600}now\(\)\s*-\s*interval\s+'7\s*days'/i.test(body),
+    'Cron must implement 7-day NOT EXISTS idempotency window.');
+
+  // INSERT routes via helper (no hardcoded delivery_mode)
+  assert.ok(/_delivery_mode_for\(\s*'selection_interview_overdue'\s*\)/i.test(body),
+    'Cron INSERT must derive delivery_mode via _delivery_mode_for helper.');
+
+  // Source attribution for traceability + dedupe
+  assert.ok(/source_type[\s\S]{0,200}'selection_interview'/i.test(body),
+    "Cron must set source_type='selection_interview' for traceability.");
+});
+
+test('ADR-0022 Amendment D Leaf 2: pg_cron schedule selection-interview-overdue-daily declared', () => {
+  assert.ok(/cron\.schedule\(\s*'selection-interview-overdue-daily'\s*,\s*'0\s+14\s+\*\s+\*\s+\*'/i.test(allSQL),
+    'pg_cron schedule selection-interview-overdue-daily must run at 14:00 UTC daily.');
+  // Cron body must call the RPC
+  assert.ok(/cron\.schedule\([\s\S]{0,200}'selection-interview-overdue-daily'[\s\S]{0,400}public\._selection_interview_overdue_cron/i.test(allSQL),
+    'pg_cron schedule must invoke public._selection_interview_overdue_cron().');
+});
+
+test('ADR-0022 Amendment D Leaf 2: cron RPC grants restrict to service_role only', () => {
+  // Service-role-only execution prevents authenticated users from triggering admin spam
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._selection_interview_overdue_cron[\s\S]{0,200}FROM\s+public[\s\S]{0,200}anon[\s\S]{0,200}authenticated/i.test(allSQL),
+    'Cron RPC must REVOKE ALL FROM public, anon, authenticated.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._selection_interview_overdue_cron[\s\S]{0,200}TO\s+service_role/i.test(allSQL),
+    'Cron RPC must GRANT EXECUTE TO service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 2: p228 Leaf 2 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafTwo = files.find(f => f.includes('p228_260_w2_leaf2_selection_interview_overdue_cron'));
+  assert.ok(leafTwo,
+    'Migration 20260805000009_p228_260_w2_leaf2_selection_interview_overdue_cron.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafTwo), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 2 migration must NOTIFY pgrst to reload schema.');
+  // Idempotent cron re-registration — unschedule prior if exists
+  assert.ok(/IF\s+EXISTS[\s\S]{0,200}'selection-interview-overdue-daily'[\s\S]{0,200}cron\.unschedule/i.test(body),
+    'Leaf 2 migration must idempotently unschedule prior version before re-creating cron.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 3 contracts ───
+// Soft AI gate: dispatch_peer_review_invitations no longer hard-blocks when AI
+// context is absent. Forward-defense locks the parameter count, body branches,
+// and admin_audit_log capture of no_ai_context + no_ai_reason.
+
+test('ADR-0022 Amendment D Leaf 3: dispatch_peer_review_invitations gains p_force_no_ai_context parameter', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match, 'dispatch_peer_review_invitations must be declared.');
+  const wrapper = match[0];
+
+  // Three params: p_application_id uuid, p_max_peers integer DEFAULT 2,
+  // p_force_no_ai_context boolean DEFAULT false
+  assert.ok(/p_force_no_ai_context\s+boolean\s+DEFAULT\s+false/i.test(wrapper),
+    'Leaf 3: dispatch_peer_review_invitations must declare p_force_no_ai_context boolean DEFAULT false parameter.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: hard PEER_PRECONDITION raise is removed', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // Forward-defense: latest body MUST NOT raise PEER_PRECONDITION (the audit doc
+  // identified this as the cycle 4 hard-block source). Implicit no-AI now flows
+  // through to v_no_ai_context flag.
+  assert.ok(!/RAISE\s+EXCEPTION\s+'PEER_PRECONDITION/i.test(body),
+    'Leaf 3: PEER_PRECONDITION hard raise must be removed (soft gate). Re-introducing it regresses cycle 4 fix.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: no_ai_context branching with 4 reason states', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // The four sources of no_ai_context flag, in priority order:
+  //   admin_override → explicit force
+  //   no_consent     → consent_ai_analysis_at IS NULL
+  //   analysis_pending → ai_analysis IS NULL
+  //   (else)         → v_no_ai_context := false (AI context available)
+  for (const reason of ['admin_override', 'no_consent', 'analysis_pending']) {
+    assert.ok(body.includes(`'${reason}'`),
+      `Leaf 3: no_ai_reason value '${reason}' must be present in dispatch body.`);
+  }
+  assert.ok(/v_no_ai_context\s*:=\s*true/i.test(body),
+    'Leaf 3: dispatch body must assign v_no_ai_context := true in at least one branch.');
+  assert.ok(/v_no_ai_context\s*:=\s*false/i.test(body),
+    'Leaf 3: dispatch body must have a v_no_ai_context := false branch for AI-present path.');
+});
+
+test('ADR-0022 Amendment D Leaf 3: no_ai_context flows into audit log + return jsonb', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // admin_audit_log changes JSON must capture no_ai_context + no_ai_reason
+  assert.ok(/'no_ai_context'\s*,\s*v_no_ai_context/i.test(body),
+    "Leaf 3: admin_audit_log changes JSON must include 'no_ai_context' field.");
+  assert.ok(/'no_ai_reason'\s*,\s*v_no_ai_reason/i.test(body),
+    "Leaf 3: admin_audit_log changes JSON must include 'no_ai_reason' field.");
+
+  // Return jsonb must surface the flags for callers
+  const lastReturn = body.split('RETURN ').pop();
+  assert.ok(/'no_ai_context'\s*,\s*v_no_ai_context/i.test(lastReturn),
+    "Leaf 3: terminal RETURN jsonb must include 'no_ai_context' for caller visibility.");
+});
+
+test('ADR-0022 Amendment D Leaf 3: peer_review_requested INSERT uses helper for delivery_mode', () => {
+  const match = findLatestFunctionMatch('dispatch_peer_review_invitations');
+  assert.ok(match);
+  const body = match[2];
+
+  // Pre-leaf-3, delivery_mode was hardcoded 'transactional_immediate' at INSERT.
+  // Leaf 3 routes through _delivery_mode_for so the policy matrix stays the single
+  // source of truth (Leaf 1 added 'peer_review_requested' to helper).
+  assert.ok(/_delivery_mode_for\(\s*'peer_review_requested'\s*\)/i.test(body),
+    'Leaf 3: peer_review_requested INSERT must derive delivery_mode via _delivery_mode_for helper (not hardcoded).');
+});
+
+test('ADR-0022 Amendment D Leaf 3: p228 Leaf 3 migration uses DROP + CREATE pattern + restores GRANTs', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafThree = files.find(f => f.includes('p228_260_w2_leaf3_soft_ai_gate_no_ai_context'));
+  assert.ok(leafThree,
+    'Migration 20260805000010_p228_260_w2_leaf3_soft_ai_gate_no_ai_context.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafThree), 'utf8');
+
+  // GC-097 §4: parameter count changes require DROP first (to avoid PostgreSQL
+  // creating a parallel overload). CREATE OR REPLACE for the brand-new signature
+  // is equivalent to CREATE since no function with that signature exists post-DROP,
+  // AND keeps the function discoverable by the test's findLatestFunctionMatch helper.
+  assert.ok(/DROP\s+FUNCTION\s+IF\s+EXISTS\s+public\.dispatch_peer_review_invitations\s*\(\s*uuid\s*,\s*integer\s*\)/i.test(body),
+    'Leaf 3 migration must DROP IF EXISTS the prior dispatch_peer_review_invitations(uuid, integer) signature.');
+  assert.ok(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.dispatch_peer_review_invitations\s*\([^)]*p_force_no_ai_context/i.test(body),
+    'Leaf 3 migration must CREATE (or CREATE OR REPLACE) FUNCTION with the new 3-param signature including p_force_no_ai_context.');
+
+  // GRANTs restored to authenticated + service_role; explicitly REVOKE anon
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.dispatch_peer_review_invitations\([^)]*boolean[^)]*\)\s+TO\s+authenticated\s*,\s*service_role/i.test(body),
+    'Leaf 3 migration must GRANT EXECUTE TO authenticated, service_role on new signature.');
+  assert.ok(/REVOKE\s+ALL[\s\S]{0,300}dispatch_peer_review_invitations[\s\S]{0,200}FROM[\s\S]{0,200}anon/i.test(body),
+    'Leaf 3 migration must REVOKE anon from new signature.');
+
+  // NOTIFY pgrst to publish new signature
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 3 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 4 contracts ───
+// selection_cutoff_approved: new candidate-facing type + manual dispatch RPC + multi-lang
+// campaign template. Forward-defense locks the idempotency column, authority gate,
+// and the email goes via campaign_send_one_off (NOT notifications table, since
+// candidate is not a member yet).
+
+test('ADR-0022 Amendment D Leaf 4: selection_applications.cutoff_approved_email_sent_at column declared', () => {
+  assert.ok(
+    /ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+cutoff_approved_email_sent_at\s+timestamptz/i.test(allSQL),
+    'Leaf 4 migration must declare ADD COLUMN cutoff_approved_email_sent_at timestamptz for single-fire idempotency.'
+  );
+});
+
+test('ADR-0022 Amendment D Leaf 4: notify_selection_cutoff_approved RPC declared with authority + idempotency', () => {
+  const match = findLatestFunctionMatch('notify_selection_cutoff_approved');
+  assert.ok(match, 'notify_selection_cutoff_approved must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    'notify_selection_cutoff_approved must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'notify_selection_cutoff_approved must RETURN jsonb (envelope with success + idempotency state).');
+
+  // Authority gate — same pattern as dispatch_peer_review_invitations
+  assert.ok(/selection_committee[\s\S]{0,400}role\s*=\s*'lead'/i.test(body),
+    'Authority gate must check selection_committee.role = lead.');
+  assert.ok(/can_by_member\(\s*v_caller\.id\s*,\s*'manage_member'/i.test(body),
+    "Authority gate must fall back to can_by_member('manage_member').");
+
+  // Single-fire idempotency on cutoff_approved_email_sent_at
+  assert.ok(/cutoff_approved_email_sent_at\s+IS\s+NOT\s+NULL/i.test(body),
+    'Idempotency guard must check cutoff_approved_email_sent_at IS NOT NULL.');
+
+  // Dispatches via campaign_send_one_off (NOT notifications table — candidate not member)
+  assert.ok(/campaign_send_one_off[\s\S]{0,400}'selection_cutoff_approved'/i.test(body),
+    'Email must dispatch via campaign_send_one_off with template_slug selection_cutoff_approved.');
+
+  // Marks idempotency post-send
+  assert.ok(/UPDATE\s+public\.selection_applications[\s\S]{0,300}cutoff_approved_email_sent_at\s*=\s*now\(\)/i.test(body),
+    'After dispatch, RPC must UPDATE selection_applications SET cutoff_approved_email_sent_at = now().');
+
+  // Audit log
+  assert.ok(/admin_audit_log[\s\S]{0,1000}'selection\.cutoff_approved_email_dispatched'/i.test(body),
+    'RPC must write admin_audit_log entry with action selection.cutoff_approved_email_dispatched.');
+
+  // Booking URL precondition
+  assert.ok(/CUTOFF_NO_BOOKING_URL/i.test(body),
+    'RPC must raise CUTOFF_NO_BOOKING_URL when cycle has no interview_booking_url.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: notify_selection_cutoff_approved grants restrict anon', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.notify_selection_cutoff_approved\(uuid\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.notify_selection_cutoff_approved\(uuid\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: selection_cutoff_approved campaign template declared with multi-lang body', () => {
+  // INSERT on campaign_templates with the canonical slug + ON CONFLICT upsert pattern
+  assert.ok(/INSERT\s+INTO\s+public\.campaign_templates[\s\S]{0,500}'selection_cutoff_approved'/i.test(allSQL),
+    'Leaf 4 migration must INSERT campaign_templates row for slug selection_cutoff_approved.');
+  // Multi-language body required (PT/EN/ES) — matching interview_reminder_1h pattern
+  for (const lang of ['pt', 'en', 'es']) {
+    assert.ok(
+      new RegExp(`'${lang}'\\s*,\\s*'[^']{0,5000}interview_booking_url`, 'i').test(allSQL),
+      `Template body must include ${lang} variant referencing interview_booking_url variable.`
+    );
+  }
+  // Variables declaration must list first_name + interview_booking_url
+  assert.ok(/'first_name'[\s\S]{0,200}'interview_booking_url'/i.test(allSQL),
+    'Template variables must declare first_name + interview_booking_url as required.');
+  // Upsert idempotency
+  assert.ok(/ON\s+CONFLICT\s*\(\s*slug\s*\)\s+DO\s+UPDATE/i.test(allSQL),
+    'Template INSERT must use ON CONFLICT (slug) DO UPDATE for idempotent reruns.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: p228 Leaf 4 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafFour = files.find(f => f.includes('p228_260_w2_leaf4_selection_cutoff_approved'));
+  assert.ok(leafFour,
+    'Migration 20260805000011_p228_260_w2_leaf4_selection_cutoff_approved.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafFour), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 4 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 5 contracts ───
+// Selective replay RPC for the 17 historical mis-routed selection notifications.
+// Forward-defense locks the dry-run-default, authority gate, per-type criteria,
+// and the audit log integration.
+
+test('ADR-0022 Amendment D Leaf 5: _replay_selection_notifications_p228 RPC declared with dry-run default', () => {
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match, '_replay_selection_notifications_p228 must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    '_replay_selection_notifications_p228 must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'RPC must RETURN jsonb (analysis envelope).');
+  // Safety-first: p_dry_run defaults to true so accidental invocation = no writes
+  assert.ok(/p_dry_run\s+boolean\s+DEFAULT\s+true/i.test(wrapper),
+    'Leaf 5: p_dry_run parameter must DEFAULT to true (safety-first; no accidental double-send).');
+
+  // Window scope — 17 historical rows are bounded by created_at 2026-05-01 .. 2026-05-20
+  assert.ok(/v_window_start[\s\S]{0,100}'2026-05-01'/i.test(body),
+    'Window start must be 2026-05-01 (audit doc cutover).');
+  assert.ok(/v_window_end[\s\S]{0,100}'2026-05-20'/i.test(body),
+    'Window end must be 2026-05-20 (audit doc cutover).');
+
+  // Email-sent guard — defense-in-depth against double-send
+  assert.ok(/email_sent_at\s+IS\s+NULL/i.test(body),
+    'RPC must guard on email_sent_at IS NULL for idempotency.');
+
+  // Per-type selective criteria per PM D-sel-2
+  for (const reason of ['pending_term_action_exists', 'recent_and_active_member', 'interview_still_upcoming']) {
+    assert.ok(body.includes(`'${reason}'`),
+      `Leaf 5: selective criteria reason '${reason}' must appear in body for PM D-sel-2 auditability.`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 5: replay RPC grants restrict to authenticated + service_role', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._replay_selection_notifications_p228\(boolean\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Leaf 5 RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._replay_selection_notifications_p228\(boolean\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Leaf 5 RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 5: replay RPC writes admin_audit_log on actual UPDATE path', () => {
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match);
+  const body = match[2];
+
+  // Audit log entry on actual UPDATE
+  assert.ok(/admin_audit_log[\s\S]{0,800}'selection\.notifications_replay_p228'/i.test(body),
+    'Replay RPC must write admin_audit_log entry with action selection.notifications_replay_p228 when UPDATE applied.');
+  // UPDATE is gated on NOT p_dry_run
+  assert.ok(/IF\s+NOT\s+p_dry_run[\s\S]{0,200}UPDATE\s+public\.notifications/i.test(body),
+    'UPDATE must be gated on IF NOT p_dry_run (default true → no writes).');
+});
+
+test('ADR-0022 Amendment D Leaf 5: p228 Leaf 5 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafFive = files.find(f => f.includes('p228_260_w2_leaf5_selective_replay_mis_routed'));
+  assert.ok(leafFive,
+    'Migration 20260805000012_p228_260_w2_leaf5_selective_replay_mis_routed.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafFive), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 5 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 6 contracts ───
+// Operational suppress_all bypass: SQL helper + EF parity in lock-step.
+
+const LEAF6_OPERATIONAL_CANDIDATE_FACING = [
+  'selection_termo_due',
+  'selection_approved',
+  'selection_interview_scheduled',
+  'selection_cutoff_approved',
+];
+
+test('ADR-0022 Amendment D Leaf 6: _is_operational_candidate_facing SQL helper declared', () => {
+  const match = findLatestFunctionMatch('_is_operational_candidate_facing');
+  assert.ok(match, '_is_operational_candidate_facing must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/RETURNS\s+boolean/i.test(wrapper),
+    'Helper must RETURN boolean.');
+  assert.ok(/IMMUTABLE\s+PARALLEL\s+SAFE/i.test(wrapper),
+    'Helper must be IMMUTABLE PARALLEL SAFE (pure classifier).');
+
+  // All 4 PM-approved candidate-facing operational types listed
+  for (const type of LEAF6_OPERATIONAL_CANDIDATE_FACING) {
+    assert.ok(body.includes(`'${type}'`),
+      `Helper body must include '${type}' (PM D-sel-4 bypass scope).`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 6: EF send-notification-email matches SQL helper Set byte-for-byte', () => {
+  // Lock-step parity check: the TypeScript Set in EF code must list exactly the
+  // same 4 types as the SQL helper. Drift on either side breaks PM D-sel-4.
+  const efPath = resolve(ROOT, 'supabase/functions/send-notification-email/index.ts');
+  const efSource = readFileSync(efPath, 'utf8');
+
+  assert.ok(/OPERATIONAL_CANDIDATE_FACING\s*=\s*new\s+Set\(/i.test(efSource),
+    'EF must declare const OPERATIONAL_CANDIDATE_FACING = new Set([...]).');
+
+  for (const type of LEAF6_OPERATIONAL_CANDIDATE_FACING) {
+    assert.ok(efSource.includes(`'${type}'`),
+      `EF OPERATIONAL_CANDIDATE_FACING Set must include '${type}' (parity with SQL helper).`);
+  }
+
+  // The bypass guard must include this Set in its conditional
+  assert.ok(/OPERATIONAL_CANDIDATE_FACING\.has\(notif\.type\)/i.test(efSource),
+    'EF must check OPERATIONAL_CANDIDATE_FACING.has(notif.type) before applying suppress_all skip.');
+  assert.ok(/suppress_all['"]?\s*&&\s*!isOperationalCandidateFacing/i.test(efSource),
+    'EF suppress_all skip must require !isOperationalCandidateFacing (only suppress if NOT candidate-facing operational).');
+});
+
+test('ADR-0022 Amendment D Leaf 6: helper grants restrict to authenticated + service_role', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._is_operational_candidate_facing\(text\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Leaf 6 helper must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._is_operational_candidate_facing\(text\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Leaf 6 helper must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 6: p228 Leaf 6 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafSix = files.find(f => f.includes('p228_260_w2_leaf6_operational_suppress_all_bypass'));
+  assert.ok(leafSix,
+    'Migration 20260805000013_p228_260_w2_leaf6_operational_suppress_all_bypass.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafSix), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 6 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 7 contracts ───
+// 24h dispatcher silence health signal — selection_emails_pending_24h.
+
+test('ADR-0022 Amendment D Leaf 7: get_selection_emails_pending_24h RPC declared with envelope shape', () => {
+  const match = findLatestFunctionMatch('get_selection_emails_pending_24h');
+  assert.ok(match, 'get_selection_emails_pending_24h must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    'Health RPC must be SECURITY DEFINER (read-only but gates auth).');
+  assert.ok(/STABLE/i.test(wrapper),
+    'Health RPC must be marked STABLE (deterministic for given snapshot).');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'Health RPC must RETURN jsonb (envelope shape).');
+  assert.ok(/p_alert_threshold\s+integer\s+DEFAULT\s+10/i.test(wrapper),
+    'Health RPC must declare p_alert_threshold integer DEFAULT 10 parameter.');
+
+  // Scope guard — selection_* type LIKE pattern + transactional_immediate + 24h age
+  assert.ok(/type\s+LIKE\s+'selection_%'/i.test(body),
+    'Health RPC must scope to type LIKE selection_%.');
+  assert.ok(/delivery_mode\s*=\s*'transactional_immediate'/i.test(body),
+    'Health RPC must scope to delivery_mode = transactional_immediate.');
+  assert.ok(/email_sent_at\s+IS\s+NULL/i.test(body),
+    'Health RPC must require email_sent_at IS NULL (pending state).');
+  assert.ok(/created_at\s*<\s*now\(\)\s*-\s*interval\s+'24\s*hours'/i.test(body),
+    'Health RPC must enforce 24h age window.');
+
+  // Envelope keys
+  for (const key of ['total_pending', 'by_type', 'oldest_pending_at', 'oldest_age_minutes', 'alert_threshold', 'alert_triggered']) {
+    assert.ok(body.includes(`'${key}'`),
+      `Health RPC envelope must include '${key}' field.`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 7: health RPC grants restrict anon', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.get_selection_emails_pending_24h\(integer\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Health RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.get_selection_emails_pending_24h\(integer\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Health RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 7: p228 Leaf 7 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafSeven = files.find(f => f.includes('p228_260_w2_leaf7_selection_emails_pending_24h_health'));
+  assert.ok(leafSeven,
+    'Migration 20260805000014_p228_260_w2_leaf7_selection_emails_pending_24h_health.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafSeven), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 7 migration must NOTIFY pgrst to reload schema.');
 });
