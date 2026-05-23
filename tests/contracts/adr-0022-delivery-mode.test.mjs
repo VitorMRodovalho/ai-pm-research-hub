@@ -230,3 +230,76 @@ test('ADR-0022 W3: set_my_muted_notification_types + get_my_notification_metrics
   assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_my_notification_metrics/i.test(allSQL),
     'get_my_notification_metrics RPC must be declared.');
 });
+
+// ─── Amendment D / p228 #260 W2 Leaf 1 contracts (2026-05-23) ───
+//
+// PM Policy Matrix ratified for selection funnel notification types. Forward-defense:
+// each selection_* type below MUST be in the catalog with the expected delivery_mode
+// AND must appear as an explicit case in the latest _delivery_mode_for helper body.
+// Detecting drift on any one of these is a Stop-The-Line signal.
+
+const SELECTION_POLICY_MATRIX = {
+  // Candidate-facing operational (transactional_immediate) — bypass suppress_all per W2 Leaf 6
+  selection_termo_due: 'transactional_immediate',
+  selection_approved: 'transactional_immediate',
+  selection_interview_scheduled: 'transactional_immediate',
+  // Evaluator-facing operational (transactional_immediate)
+  peer_review_requested: 'transactional_immediate',
+  // Admin-facing dashboard-only (suppress)
+  selection_evaluation_complete: 'suppress',
+  // Admin-facing recap (digest_weekly explicit for parity + forward-drift detection)
+  selection_interview_noshow: 'digest_weekly',
+};
+
+test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with expected modes', () => {
+  for (const [type, expectedMode] of Object.entries(SELECTION_POLICY_MATRIX)) {
+    const entry = catalog.types[type];
+    assert.ok(entry,
+      `Catalog must include "${type}" (W2 Leaf 1 PM Policy Matrix, 2026-05-23).`);
+    assert.equal(entry.delivery_mode, expectedMode,
+      `Catalog drift on "${type}": expected delivery_mode "${expectedMode}", got "${entry.delivery_mode}".`);
+    assert.ok(typeof entry.rationale === 'string' && entry.rationale.includes('p228'),
+      `Catalog entry "${type}" must cite p228 W2 Leaf 1 in rationale (audit trail).`);
+  }
+});
+
+test('ADR-0022 Amendment D: catalog metadata bumped to W1.4 with updated_at 2026-05-23', () => {
+  assert.equal(catalog.version, 'W1.4',
+    'Catalog version must be bumped to W1.4 to reflect Amendment D shipping.');
+  assert.equal(catalog.updated_at, '2026-05-23',
+    'Catalog updated_at must be 2026-05-23 (p228 #260 W2 Leaf 1 ship date).');
+});
+
+test('ADR-0022 Amendment D: _delivery_mode_for helper explicit-case parity with selection policy', () => {
+  // Every type in SELECTION_POLICY_MATRIX must appear as an explicit WHEN clause in
+  // the latest helper body, regardless of whether the mode equals the ELSE default.
+  // This locks the policy matrix into the SQL — future drift requires an explicit migration.
+  const match = findLatestFunctionMatch('_delivery_mode_for');
+  assert.ok(match, '_delivery_mode_for body not located.');
+  const body = match[2];
+
+  for (const [type, expectedMode] of Object.entries(SELECTION_POLICY_MATRIX)) {
+    const literalQuoted = `'${type}'`;
+    assert.ok(body.includes(literalQuoted),
+      `Helper drift: "${type}" must have an explicit WHEN clause in latest _delivery_mode_for (W2 Leaf 1 policy).`);
+    // Match the WHEN ... THEN pair for this type (allow whitespace).
+    const whenPattern = new RegExp(
+      `WHEN\\s+'${type}'\\s+THEN\\s+'${expectedMode}'`,
+      'i'
+    );
+    assert.ok(whenPattern.test(body),
+      `Helper drift: "${type}" must map to "${expectedMode}" (W2 Leaf 1 PM Policy Matrix).`);
+  }
+});
+
+test('ADR-0022 Amendment D: p228 migration file exists and registers helper update', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafOne = files.find(f => f.includes('p228_260_w2_leaf1_selection_notification_catalog_helper_parity'));
+  assert.ok(leafOne,
+    'Migration 20260805000008_p228_260_w2_leaf1_selection_notification_catalog_helper_parity.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafOne), 'utf8');
+  assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\._delivery_mode_for/i.test(body),
+    'Leaf 1 migration must redefine _delivery_mode_for.');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 1 migration must NOTIFY pgrst to reload schema.');
+});
