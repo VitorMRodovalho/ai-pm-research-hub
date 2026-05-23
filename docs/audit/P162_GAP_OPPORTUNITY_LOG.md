@@ -1767,3 +1767,91 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   - **SEDIMENT-226.C**: Service-role calls to admin RPCs that gate on `auth.uid()` will get `Unauthorized` returns. To simulate PM context for read-only testing, use `SET LOCAL request.jwt.claims = json_build_object('sub', '<auth_id>')::text` then call the RPC — works for SECURITY DEFINER functions that key off `auth.uid()`.
   - **SEDIMENT-226.D**: First push to a new agent branch may NOT trigger all CI workflows even when no path filter is configured. Cloudflare Pages registers reliably but GH Actions (CI Validate, analyze, invariants) may not queue. Workaround = push empty commit (`git commit --allow-empty`) to force re-evaluation of `pull_request` triggers. Caught in p226 with PR #297.
 - **Cross-ref:** PR #297 (audit doc) · Issue #298 (spawned remediation) · #251 (commented + registry recommendation) · #292 (sprint umbrella) · #260 (W2 bundle target for code bug #2) · #229 (Phase 2 bundle target for status drift) · `get_my_pending_evaluations()` body · `get_selection_dashboard(text)` body · `dispatch_peer_review_invitations(uuid,int)` body · `src/pages/admin/selection.astro` lines 1230-1290 (filter logic) + lines 4283-4340 (cycle picker init) · branch `agent/selection-cycle4-trust-audit` (sha f3830d86).
+
+### 191. RESOLVED-298 — `get_my_pending_evaluations()` cycle non-determinism + gate scope (Option A+)
+- **Tipo:** code bug fix · **Severity:** HIGH · **Effort:** XS (~1h impl + smoke + ship) · **Status:** RESOLVED via PR #302 (squash-merged `5d649ac2` 2026-05-23 15:31:04 UTC); #298 auto-closed
+- **Trigger:** p226 audit Code Bug A (P162 #190) spawned #298 as Foundation XS ready-leaf. PM ABCD this session picked Option A+ (`ORDER BY created_at DESC` + cycle-scoped gate `sc.cycle_id = v_cycle.id`) over Option A minimal or Option B with p_cycle_id param.
+- **Two latent bugs both fixed:**
+  1. **Picker non-determinism**: `SELECT * INTO v_cycle FROM selection_cycles WHERE phase='evaluating' LIMIT 1` had no ORDER BY. Planner could return either of the 2 currently-evaluating cycles (cycle3-2026-b2 + cycle4-2026).
+  2. **Gate misalignment**: legacy gate `JOIN selection_cycles c ON c.id = sc.cycle_id WHERE c.phase='evaluating'` allowed caller on ANY evaluating committee to pass, but the picker could then select a DIFFERENT cycle where caller is not on committee → latent privilege misalignment.
+- **Fix shipped (migration `20260805000007`):**
+  ```sql
+  -- Pick newest evaluating cycle deterministically
+  SELECT * INTO v_cycle FROM selection_cycles
+  WHERE phase = 'evaluating' ORDER BY created_at DESC LIMIT 1;
+  -- Empty-cycle short-circuit returns consistent empty payload (no info leak)
+  IF v_cycle.id IS NULL THEN RETURN ...; END IF;
+  -- Gate scoped to picked cycle (caller must be on THIS cycle committee or admin)
+  IF NOT EXISTS (
+    SELECT 1 FROM selection_committee sc
+    WHERE sc.member_id = v_caller_member_id AND sc.cycle_id = v_cycle.id
+  ) AND NOT can_by_member(v_caller_member_id, 'manage_member') THEN
+    RAISE EXCEPTION 'Unauthorized: caller is not on this cycle committee';
+  END IF;
+  ```
+- **Live smoke verified (2026-05-23 pre-merge):**
+  - **Vitor (manage_member admin)** via `SET LOCAL request.jwt.claims`: cycle_code='cycle4-2026', pending_count=1 (Maria Araújo), total=38 ✓
+  - **Roberto Macêdo (cycle3-2026-b2 observer only, NO manage_member)**: ERROR 42501 Unauthorized: caller is not on this cycle committee ✓ (line 32 of new RAISE)
+- **Contract test `get-my-pending-evaluations-cycle-deterministic.test.mjs` +8 assertions (offline pass):**
+  1. migration file exists
+  2. picker uses `ORDER BY created_at DESC`
+  3. gate is cycle-scoped (`sc.cycle_id = v_cycle.id`)
+  4. legacy permissive JOIN gate is gone
+  5. `Unauthorized: caller is not on this cycle committee` message present
+  6. `can_by_member(... 'manage_member')` admin bypass retained
+  7. empty-cycle short-circuit precedes gate (no info leak; ordering enforced)
+  8. `NOTIFY pgrst, 'reload schema'` issued in migration
+- **Test baseline:** **1751/1703/0/48 → 1759/1711/0/48** offline (+8 static pass); with-DB CI evidence post-merge `1787/1782/0/5` (delta beyond +8 confirms with-DB pin was undercounted in p225 — see SEDIMENT-227.B below).
+- **SEDIMENT-227.A — MCP `apply_migration` shadow row cleanup workflow** (reinforces SEDIMENT-224.A §1):
+  - Confirmed live: `apply_migration` MCP creates a row in `supabase_migrations.schema_migrations` with **version = NOW()** (in this session: `20260523150530`) and **name = full string passed as `name` param** (including the timestamp prefix `20260805000007_p227_...`).
+  - When `supabase migration repair --status applied 20260805000007` then runs, it creates ANOTHER row at version `20260805000007` with name derived from the file.
+  - End state: 2 rows for the same migration intent. The shadow row is detected by ADR-0097 ratchet (`tests/contracts/rpc-migration-coverage.test.mjs` Phase D "no NEW missing-file drift") as version with no `.sql` file.
+  - **Mandatory clean-up step after every apply_migration + repair:** `DELETE FROM supabase_migrations.schema_migrations WHERE version = '<NOW()-format-shadow>'`. Find shadow via `SELECT version, name FROM ... WHERE name LIKE '20260805%' OR version LIKE '202605%'` — the canonical version has just the timestamp digits as version and just the descriptive part as name; the shadow has NOW() as version and the FULL `<ts>_<name>` as name.
+  - **Symptom if forgotten:** CI validate fails with "NEW missing-file drift detected — version(s) appear in supabase_migrations.schema_migrations but no corresponding .sql exists". Easily diagnosed but blocks merge.
+  - Caught this session (PR #302 first CI run): shadow `20260523150530` from `apply_migration` for the #298 fix; cleaned via execute_sql DELETE; empty commit `cb63fe5d` re-triggered CI which passed all 10 checks.
+  - **Backlog (low priority):** wrap apply_migration calls in a helper that auto-cleans the shadow row, OR update `.claude/rules/database.md` GC-097 protocol to add the DELETE step as mandatory. Defer to ADR-0097 follow-up since this is now codified as session sediment.
+- **SEDIMENT-227.B — with-DB CI baseline drift discovery**: PR #302 first CI run (with-DB env) showed **1787 total tests** vs deploy.md p225 prediction of "~1773". After +8 from this session, expected was 1781 not 1787. The +6 unexplained delta suggests p225 with-DB baseline was undercounted (or earlier sessions added DB-gated tests without bumping with-DB pin). Recommended: at next session that touches deploy.md, set with-DB pin to **1787/1782/0/5** (empirical, last CI run). Filed as backlog (not blocking).
+- **Cross-ref:** PR #302 (sha `5d649ac2`) · migration `20260805000007` · `tests/contracts/get-my-pending-evaluations-cycle-deterministic.test.mjs` · #298 (auto-closed) · p226 audit doc `docs/audit/CYCLE4_TRUST_AUDIT_P226.md` Code Bug A · ADR-0097 (shadow row pattern from SEDIMENT-224.A confirmed in field) · `.claude/rules/database.md` GC-097 protocol (candidate amendment).
+
+### 192. AUDITED-260-W2 — Selection notifications Workstream 2 read-only audit (5 findings + 7 child leaves + 5 PM decisions)
+- **Tipo:** read-only audit deliverable · **Severity:** mix (3 HIGH + 2 MED) · **Effort:** M (~2h SQL evidence + classify + draft + PR) · **Status:** AUDIT SHIPPED; PM decisions block all 7 child leaves
+- **Trigger:** PM ABCD Q2 picked "#298 close + #260 W2 audit" (Recommended). After #298 close (PR #302 merge), branched `agent/p227-issue-260-w2-selection-notifications-audit` from main for read-only audit. Sprint plan Handoff B at `docs/project-governance/SELECTION_RELIABILITY_PRIORITIZATION_PLAN.md` explicitly defined scope.
+- **Deliverables:**
+  - `docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md` (242 lines)
+  - PR #303 (open, awaiting CI + PM review)
+  - #260 issue comment 4525812302 (PM-facing summary + PR link)
+- **5 findings + classification:**
+  1. **HIGH — Catalog/helper drift**: ADR-0022 catalog (W1.3, 2026-04-27) has **zero** selection_* entries. `_delivery_mode_for` helper only covers `selection_termo_due` (post-p159 hot-path). All other selection_* types fall to ELSE → digest_weekly. 17 candidate-facing rows mis-routed in 90d window (13 termo_due pre-p159 race + 2 approved + 2 interview_scheduled).
+  2. **HIGH — peer_review_requested dispatch trigger gap**: cycle4-2026 has 24/38 apps with consent + AI analysis (eligible) but only 6 have notification → **18 apps eligible-never-dispatched**. `dispatch_peer_review_invitations` is RPC-triggered manually by committee lead; no cron auto-dispatch.
+  3. **HIGH — AI precondition gate impact**: 14/38 cycle4 apps hard-blocked by `consent_ai_analysis_at IS NULL OR ai_analysis IS NULL`. PM decision needed: hard gate / soft gate / admin override / hybrid.
+  4. **MED — Stale interview visibility gap**: 11 `selection_interviews` rows with `scheduled_at < NOW() AND conducted_at IS NULL` (all 1-30d old). No notification type exists; no cron tracks them.
+  5. **MED — `selection_cutoff_approved` type does not exist**: 0 notifications + 0 RPC references + 5 generic cutoff RPCs are PERT compute. Proposed by #260 as "2 obj evals + PERT ≥ cutoff → invite interview booking" trigger.
+- **Policy Matrix proposal (8 types, PM decision):**
+  - **Candidate-facing transactional**: selection_termo_due (already p159) + selection_approved (currently digest, recommend transactional) + selection_interview_scheduled (currently digest, recommend transactional) + selection_cutoff_approved (new, recommend transactional)
+  - **Admin-facing transactional**: peer_review_requested (already hardcoded at INSERT)
+  - **Admin-facing digest or suppress**: selection_interview_overdue (new) + selection_evaluation_complete + selection_interview_noshow
+- **7 proposed child ready-leaf issues:**
+  1. (Foundation S) ADR-0022 catalog backfill + helper sync + contract test
+  2. (Foundation + QA S) Resend-safe replay of 17 mis-routed rows (idempotent UPDATE)
+  3. (Foundation M) selection_cutoff_approved new type + trigger + template
+  4. (Foundation + Governance M) dispatch_peer_review_invitations AI gate policy
+  5. (Foundation S) selection_interview_overdue type + daily cron
+  6. (Governance S) suppress_all bypass for candidate-facing operational emails
+  7. (QA XS) selection_emails_pending_24h health signal
+  - **Recommended dispatch order**: #1 → #5 → #4 → #3 → #2 → #6 + #7
+- **5 PM decisions blocking implementation:**
+  1. Policy Matrix adoption (or alternative per-row)
+  2. Replay vs no-replay for 17 mis-routed rows + double-send tolerance
+  3. AI precondition gate policy (options a/b/c/d in audit doc)
+  4. Member preference override for candidate-facing operational emails (suppress_all bypass)
+  5. Manual vs cron dispatch trigger for dispatch_peer_review_invitations
+- **PM gates observed:**
+  - ✅ No production writes (all queries `SELECT`-only via `mcp__supabase__execute_sql`)
+  - ✅ Read-only audit pattern per Handoff B
+  - ✅ Aceitação evidence delivered: classified findings + policy matrix + child split + PM decisions enumerated
+  - ✅ PII discipline: only 1 candidate name (Maria Araújo, from #298 smoke output mentioned in #260 comment context) — counts elsewhere
+- **Sediment learnings (carry forward):**
+  - **SEDIMENT-227.C** — ADR-0022 `_delivery_mode_for` ELSE-default trap: any new notification type added via INSERT without explicit helper case silently routes to `digest_weekly`. Catalog parity contract test only covers types listed in the catalog → routing decisions for missing types go undetected forever. Fix as Child Leaf #1 above: backfill catalog → contract test → drift caught at PR time.
+  - **SEDIMENT-227.D** — `process_vep_acceptance_transition` uses `create_notification` helper-path → routes via `_delivery_mode_for`. The 13 termo_due rows from 2026-05-14 were inserted in the pre-p159-application race window (helper still returning digest_weekly during that window). Not a code bug — just historical backlog. Detected because all 13 are same-day + helper now returns transactional for that type post-p159.
+  - **SEDIMENT-227.E** — peer_review_requested `delivery_mode='transactional_immediate'` is **hardcoded at INSERT** in `dispatch_peer_review_invitations` body (not via helper). This works correctly but bypasses helper drift detection. ADR-0022 catalog parity contract test does not catch this case. Recommendation in Child Leaf #1: standardize all INSERT callsites to use the helper, OR add catalog assertion that hardcoded values match catalog mode.
+- **Cross-ref:** PR #303 · `docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md` · #260 (parent + comment 4525812302) · #292 (sprint umbrella) · #298 (orthogonal close PR #302) · #251 (close-candidate) · ADR-0022 W1.3 (needs W1.4 amendment) · ADR-0097 (no relation, just session co-occurrence) · `_delivery_mode_for` body · `dispatch_peer_review_invitations` body · p159 migration `20260632000000` · branch `agent/p227-issue-260-w2-selection-notifications-audit` (sha `a8c86e69`).
