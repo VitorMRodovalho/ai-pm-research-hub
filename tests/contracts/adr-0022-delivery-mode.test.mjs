@@ -639,6 +639,81 @@ test('ADR-0022 Amendment D Leaf 5: p228 Leaf 5 migration file exists', () => {
     'Leaf 5 migration must NOTIFY pgrst to reload schema.');
 });
 
+// ─── Amendment D / p228 Leaf 5 hotfix contracts ───
+// PM-caught regression guard: `RETURNING ... INTO <scalar>` in plpgsql expects
+// EXACTLY ONE row and raises "query returned more than one row" (SQLSTATE
+// 21000) when an UPDATE touches 2+ rows. Initial Leaf 5 body shipped with
+// `UPDATE ... RETURNING 1 INTO v_updated_count` which would have errored on
+// real execution given live state had v_eligible_count=2. Replaced with plain
+// UPDATE + pre-existing GET DIAGNOSTICS ROW_COUNT. This contract test prevents
+// the broken pattern from coming back.
+
+test('ADR-0022 Amendment D Leaf 5 hotfix: _replay_selection_notifications_p228 body has no RETURNING ... INTO', () => {
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match, '_replay_selection_notifications_p228 must be declared.');
+  const body = match[2];
+
+  // Regression guard: the broken pattern is `RETURNING <something> INTO
+  // <scalar>`. `GET DIAGNOSTICS ... = ROW_COUNT` is the correct multi-row
+  // count primitive.
+  assert.ok(!/RETURNING[\s\S]{0,200}INTO\b/i.test(body),
+    'Leaf 5 hotfix: body must NOT contain `RETURNING ... INTO` — multi-row UPDATE raises "query returned more than one row". Use GET DIAGNOSTICS ROW_COUNT instead.');
+
+  // Sanity: the correct pattern is in place
+  assert.ok(/GET\s+DIAGNOSTICS\s+v_updated_count\s*=\s*ROW_COUNT/i.test(body),
+    'Leaf 5 hotfix: body must use GET DIAGNOSTICS v_updated_count = ROW_COUNT (correct multi-row count primitive).');
+});
+
+test('ADR-0022 Amendment D Leaf 5 hotfix: v_caller declared as scalar uuid (not unassigned record)', () => {
+  // Second bug fixed in same hotfix: `v_caller record;` was declared but never
+  // assigned when service_role calls the RPC (auth.uid() IS NULL → IF block
+  // skipped). The downstream COALESCE(v_caller.id, ...) raised "record is not
+  // assigned yet" (SQLSTATE 55000). Fix: replace with `v_caller_id uuid := NULL;`
+  // scalar so the COALESCE works on the unassigned-cron path.
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match);
+  const body = match[2];
+
+  assert.ok(!/v_caller\s+record\s*;/i.test(body),
+    'Leaf 5 hotfix: must NOT declare v_caller as `record` (unassigned-record-access trap on service_role path). Use scalar uuid instead.');
+  assert.ok(/v_caller_id\s+uuid\s*:=\s*NULL/i.test(body),
+    'Leaf 5 hotfix: must declare `v_caller_id uuid := NULL;` for safe COALESCE on the service_role unassigned path.');
+  assert.ok(!/v_caller\.id/i.test(body),
+    'Leaf 5 hotfix: must not reference v_caller.id (record syntax). Use v_caller_id scalar.');
+});
+
+test('ADR-0022 Amendment D Leaf 5 hotfix: admin_audit_log INSERT gated on v_caller_id IS NOT NULL', () => {
+  // Third bug fixed in same hotfix: admin_audit_log.actor_id has a NOT NULL FK
+  // to members(id). Earlier code used COALESCE(v_caller_id, '00000000-...zero
+  // uuid...') as sentinel for service_role bypass, but the zero-uuid is not a
+  // real member → FK violation 23503 on actual UPDATE execution. Fix: gate
+  // INSERT on `IF v_caller_id IS NOT NULL THEN`; service_role / cron tracks
+  // elsewhere (postgres logs, cron_run_log).
+  const match = findLatestFunctionMatch('_replay_selection_notifications_p228');
+  assert.ok(match);
+  const body = match[2];
+
+  // Zero-uuid sentinel pattern must be gone
+  assert.ok(!/COALESCE\(\s*v_caller_id\s*,\s*'00000000-0000-0000-0000-000000000000'/i.test(body),
+    'Leaf 5 hotfix: must NOT use zero-uuid sentinel via COALESCE(v_caller_id, ...) — violates admin_audit_log_actor_id_fkey. Gate INSERT on v_caller_id IS NOT NULL instead.');
+
+  // The conditional gate must precede the INSERT
+  assert.ok(/IF\s+v_caller_id\s+IS\s+NOT\s+NULL\s+THEN[\s\S]{0,800}INSERT\s+INTO\s+public\.admin_audit_log/i.test(body),
+    'Leaf 5 hotfix: admin_audit_log INSERT must be gated on `IF v_caller_id IS NOT NULL THEN` to skip on service_role / cron context.');
+});
+
+test('ADR-0022 Amendment D Leaf 5 hotfix: hotfix migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const hotfix = files.find(f => f.includes('p228_leaf5_hotfix_returning_into_to_get_diagnostics'));
+  assert.ok(hotfix,
+    'Migration 20260805000015_p228_leaf5_hotfix_returning_into_to_get_diagnostics.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, hotfix), 'utf8');
+  assert.ok(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\._replay_selection_notifications_p228/i.test(body),
+    'Hotfix migration must redefine _replay_selection_notifications_p228.');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Hotfix migration must NOTIFY pgrst.');
+});
+
 // ─── Amendment D / p228 #260 W2 Leaf 6 contracts ───
 // Operational suppress_all bypass: SQL helper + EF parity in lock-step.
 
