@@ -18,9 +18,9 @@ function useLang(p?: string): string {
 }
 
 export default function VolunteerComplianceWidget({ lang: propLang }: Props) {
+  const lang = useLang(propLang);
   // p123 i18n nav: prefix preserves /en /es when navigating between sections
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
-  const lang = useLang(propLang);
   const t = L[lang] || L['pt-BR'];
   const [data, setData] = useState<any>(null);
   const [authorized, setAuthorized] = useState(false);
