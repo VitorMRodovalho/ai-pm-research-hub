@@ -3,12 +3,12 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.79.0 — /mcp full catalog + /semantic bridge)
+# MCP Server Rules (nucleo-mcp v2.79.1 — /mcp full catalog + /semantic bridge)
 
 ## Current State
 
 Two surfaces shipped post-p222 #280 alpha (Semantic MCP Gateway bridge):
-- `/mcp` (server: nucleo-ia-hub v2.78.0) — **299 tools + 4 prompts + 3 resources**, full internal capability registry. Unchanged.
+- `/mcp` (server: nucleo-ia-hub v2.78.1) — **299 tools + 4 prompts + 3 resources**, full internal capability registry. p232 #229 Phase 2 patch (descriptions only, no new tools): `get_pert_cutoff_summary` + `compute_pert_cutoff` `score_column` z.enum extends to include `leader_extra_pert_score`; `get_application_score_breakdown` description mentions dual cutoff bands. All RPC body changes via migration `20260805000017_p232_229_phase2_leader_extra_visibility_read_surfaces.sql` (3 RPCs extended: get_pert_cutoff_summary dual-track CHECK + math; get_application_score_breakdown adds `leader_extra_cutoff` block + `leader_extra_score_position`; get_selection_dashboard.cycle adds sibling `leader_extra_cutoff` block). 1-arg overload of `get_pert_cutoff_summary` dropped to prevent PostgREST dispatch to OLD body (sediment-232.A — CREATE OR REPLACE preserves the other overload by signature). EF v2.79.1 deployed live verified at /health + tools/list 299 + lookup of `leader_extra_pert_score` in enum.
 - `/semantic` (server: nucleo-ia-semantic v0.1.0) — **3 tools** (wave-1), bridge-first public semantic gateway. Compact, store-readiness-designed. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Wave-1: `get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`. Underlying capability: composes existing RPCs via Promise.allSettled with graceful per-source degradation (warnings array).
 
 Worker proxy paths (`nucleoia.vitormr.dev`): `/mcp` → EF `/nucleo-mcp/mcp`; `/mcp/semantic` → EF `/nucleo-mcp/semantic`. Both shave the SDK 1.29.0 `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See `docs/MCP_SETUP_GUIDE.md` for client routing.

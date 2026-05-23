@@ -44,8 +44,11 @@ const EF = readFileSync(EF_PATH, 'utf8');
 
 // ─── 1. Header changelog ──────────────────────────────────────────────────────
 
-test('ef header declares v2.79.0 (semantic gateway bridge)', () => {
-  assert.match(EF, /MCP server v2\.79\.0/, 'expected v2.79.0 marker in header');
+test('ef header declares v2.79.x (semantic gateway bridge era)', () => {
+  // p232: loosened to v2.79.\d+ so additive patches (description bumps, no-new-tools)
+  // don't break this assertion. The contract is "semantic gateway bridge shipped in 2.79.x";
+  // a major/minor bump (3.x.x or 2.80.x) would intentionally break this.
+  assert.match(EF, /MCP server v2\.79\.\d+/, 'expected v2.79.x marker in header (bridge era)');
   assert.match(EF, /p222 #280 alpha/i, 'expected p222 #280 alpha provenance');
   assert.match(EF, /Semantic MCP Gateway bridge/i, 'expected semantic gateway naming in header');
 });
