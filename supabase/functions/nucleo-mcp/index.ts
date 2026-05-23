@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.79.0 — /mcp 299 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.79.1 — /mcp 299 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// v2.79.1 (p232 #229 Phase 2 leader_extra cohort visibility): get_pert_cutoff_summary +
+//   compute_pert_cutoff tools extend score_column z.enum to include 'leader_extra_pert_score'
+//   + descriptions clarify dual-dim model (objective + leader_extra). No new tools (count
+//   unchanged 299/3). RPC bodies extended via migration 20260805000017 to dual-track read/write.
+//   get_application_score_breakdown JSONB now carries 'leader_extra_cutoff' block + top-level
+//   'leader_extra_pert_score'; get_selection_dashboard.cycle carries sibling 'leader_extra_cutoff'.
 // v2.79.0 (p222 #280 alpha — Semantic MCP Gateway bridge): +1 endpoint `app.all("/semantic")`
 //   exposes 3 read-only semantic tools (get_my_context + search_nucleo_knowledge +
 //   get_board_or_initiative_context) via a separate McpServer instance ("nucleo-ia-semantic" v0.1.0).
@@ -2442,7 +2448,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 67: get_application_score_breakdown — Detailed breakdown of a single application (admin)
-  mcp.tool("get_application_score_breakdown", "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.", {
+  mcp.tool("get_application_score_breakdown", "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Two cutoff bands surface separately: 'pert_cutoff' (objective; reads pert_target_score/band_*) and 'leader_extra_cutoff' (leader_extra dimension; reads leader_extra_pert_target/band_* with leader_extra_score_position ∈ below/within/above). Top-level 'leader_extra_pert_score' also exposed. p232 #229 Phase 2 closed the dual-dimension visibility loop. Admin/GP/curator only.", {
     application_id: z.string().describe("Selection application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -2948,11 +2954,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: get_pert_cutoff_summary — read PERT cutoff state for a cycle (p197b)
-  mcp.tool("get_pert_cutoff_summary", "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Use to assess whether candidates land within the calibration band of approved members. Admin/curator (manage_member).", {
+  // TOOL: get_pert_cutoff_summary — read PERT cutoff state for a cycle (p197b + p232 #229 Phase 2 dual-dim)
+  mcp.tool("get_pert_cutoff_summary", "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the calibration band of approved members per dimension. Admin/curator (manage_member).", {
     cycle_id: z.string().describe("Cycle UUID (from get_selection_cycles output)"),
-    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Which score column to summarize. Default: objective_score_avg")
-  }, async (params: { cycle_id: string; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    score_column: z.enum(["objective_score_avg","final_score","research_score","leader_extra_pert_score"]).optional().describe("Which score column to summarize. Default: objective_score_avg. Use 'leader_extra_pert_score' to read the leader_extra dimension separately (p232 #229 Phase 2).")
+  }, async (params: { cycle_id: string; score_column?: "objective_score_avg"|"final_score"|"research_score"|"leader_extra_pert_score" }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_pert_cutoff_summary", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2964,13 +2970,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: compute_pert_cutoff — admin trigger to recompute PERT cutoff for a cycle (p197b)
-  mcp.tool("compute_pert_cutoff", "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists pert_target_score/pert_band_lower/upper/cohort_n on every application in the cycle. Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Use BEFORE committee final decision to refresh the cutoff band against the current pool of active members.", {
+  // TOOL: compute_pert_cutoff — admin trigger to recompute PERT cutoff for a cycle (p197b + p232 #229 Phase 2 dual-dim)
+  mcp.tool("compute_pert_cutoff", "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Note: the weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).", {
     cycle_id: z.string().describe("Cycle UUID"),
     role: z.enum(["researcher","leader"]).optional().describe("Track being cut. Default: researcher"),
     filter_active_only: z.boolean().optional().describe("Only count active engagements in cohort. Default: true"),
-    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Cohort score column. Default: objective_score_avg")
-  }, async (params: { cycle_id: string; role?: "researcher"|"leader"; filter_active_only?: boolean; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    score_column: z.enum(["objective_score_avg","final_score","research_score","leader_extra_pert_score"]).optional().describe("Cohort score column. Default: objective_score_avg. Use 'leader_extra_pert_score' to recompute the leader_extra dimension cutoff (p232 #229 Phase 2).")
+  }, async (params: { cycle_id: string; role?: "researcher"|"leader"; filter_active_only?: boolean; score_column?: "objective_score_avg"|"final_score"|"research_score"|"leader_extra_pert_score" }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "compute_pert_cutoff", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -7163,7 +7169,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.78.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.78.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -7213,9 +7219,9 @@ app.all("/semantic", async (c) => {
 // Health check (p222 #280 alpha — reports both surfaces)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.79.0",
+  ef_version: "2.79.1",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.78.0", tools: 299 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.78.1", tools: 299 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",

@@ -5025,6 +5025,10 @@ const enUS: Record<string, string> = {
   'admin.selection.pertCutoffLabel': 'Cutoff',
   'admin.selection.pertCutoffTooltip': 'Cutoff = PERT (Min+4×Avg+Max)/8 of approved active members in prior cycles. ±10% band is the cross-evaluator calibration range. Rows with final_score below the band are red; within = yellow; above = green.',
   'admin.selection.pertCutoffEmpty': 'Cutoff not computed (cohort < 10)',
+  // p232 #229 Phase 2 — leader_extra cohort separated from objective
+  'admin.selection.leaderExtraCutoffLabel': 'Leader Cutoff',
+  'admin.selection.leaderExtraCutoffTooltip': 'Leader pillar cutoff (leader_extra) = PERT of leader scores of approved active members in prior cycles. Tracked separately from the objective cutoff since p209 (refactor #229) to avoid distorting cross-dimension cohort comparisons.',
+  'admin.selection.leaderExtraCutoffEmpty': 'Leader cutoff not computed (cohort < 10 or no evaluations)',
   'admin.selection.startScreening': 'Start Screening',
   'admin.selection.slugRequired': 'Slug required',
   'admin.selection.postSaved': 'Post saved',

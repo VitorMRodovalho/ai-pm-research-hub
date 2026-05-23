@@ -33,6 +33,9 @@ const SEL_I18N = {
   pertCutoffLabel: t('admin.selection.pertCutoffLabel', lang),
   pertCutoffTooltip: t('admin.selection.pertCutoffTooltip', lang),
   pertCutoffEmpty: t('admin.selection.pertCutoffEmpty', lang),
+  leaderExtraCutoffLabel: t('admin.selection.leaderExtraCutoffLabel', lang),
+  leaderExtraCutoffTooltip: t('admin.selection.leaderExtraCutoffTooltip', lang),
+  leaderExtraCutoffEmpty: t('admin.selection.leaderExtraCutoffEmpty', lang),
   consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
   consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
   consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
@@ -269,6 +272,8 @@ const SEL_I18N = {
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
           <!-- p197b: PERT cutoff chip (cohort of approved active members in prior cycles) -->
           <div id="pert-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold cursor-help" title=""></div>
+          <!-- p232 #229 Phase 2: sibling chip for leader_extra dimension cutoff (separate cohort from objective) -->
+          <div id="leader-extra-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold cursor-help" title=""></div>
         </div>
         <!-- p152 W4 OPP-152.6: alert when most rows have rank null (closed cycle reopened com legacy) -->
         <div id="rank-empty-alert" class="hidden mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
@@ -586,6 +591,9 @@ const SEL_I18N = {
     pertCutoffLabel: 'Corte',
     pertCutoffTooltip: 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores.',
     pertCutoffEmpty: 'Corte não calculado (cohort < 10)',
+    leaderExtraCutoffLabel: 'Corte Líder',
+    leaderExtraCutoffTooltip: 'Corte da pilastra Líder (leader_extra) calibrado separadamente do objetivo desde p209 (#229).',
+    leaderExtraCutoffEmpty: 'Corte Líder não calculado (cohort < 10 ou sem avaliações)',
     consentPendingBadge: 'sem consent IA',
     consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
     consentRevokedBadge: 'consent revogado',
@@ -1174,6 +1182,29 @@ const SEL_I18N = {
             cutoffEl.textContent = T.pertCutoffEmpty;
             cutoffEl.title = T.pertCutoffTooltip;
             cutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 font-semibold cursor-help';
+          }
+        }
+        // p232 #229 Phase 2: populate leader_extra cutoff chip (separate cohort from objective)
+        const leCutoffEl = document.getElementById('leader-extra-cutoff-chip');
+        if (leCutoffEl) {
+          const lec = (cycle as any).leader_extra_cutoff || {};
+          if (lec.target_score != null && lec.band_lower != null && lec.band_upper != null) {
+            const target = Number(lec.target_score).toFixed(1);
+            const lower = Number(lec.band_lower).toFixed(1);
+            const upper = Number(lec.band_upper).toFixed(1);
+            leCutoffEl.textContent = `${T.leaderExtraCutoffLabel}: ${target} (${lower}–${upper}, n=${lec.cohort_n}, ${lec.method})`;
+            leCutoffEl.title = T.leaderExtraCutoffTooltip;
+            leCutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold cursor-help';
+          } else {
+            // Only show "empty" state if cycle has any leader_extra activity (apps with score),
+            // otherwise hide the chip entirely to avoid noise on cycles without leader_extra evals.
+            if (lec.apps_with_score && lec.apps_with_score > 0) {
+              leCutoffEl.textContent = T.leaderExtraCutoffEmpty;
+              leCutoffEl.title = T.leaderExtraCutoffTooltip;
+              leCutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 font-semibold cursor-help';
+            } else {
+              leCutoffEl.className = 'hidden';
+            }
           }
         }
       }

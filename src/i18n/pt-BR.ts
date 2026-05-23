@@ -5031,6 +5031,10 @@ const ptBR: Record<string, string> = {
   'admin.selection.pertCutoffLabel': 'Corte',
   'admin.selection.pertCutoffTooltip': 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores. Rows com final_score abaixo da banda ficam vermelhas; dentro = amarelo; acima = verde.',
   'admin.selection.pertCutoffEmpty': 'Corte não calculado (cohort < 10)',
+  // p232 #229 Phase 2 — leader_extra cohort separated from objective
+  'admin.selection.leaderExtraCutoffLabel': 'Corte Líder',
+  'admin.selection.leaderExtraCutoffTooltip': 'Corte da pilastra Líder (leader_extra) = PERT da pontuação Líder dos aprovados ativos em ciclos anteriores. Tracked separadamente do corte objetivo desde p209 (refactor #229) para não distorcer comparação cohort entre dimensões.',
+  'admin.selection.leaderExtraCutoffEmpty': 'Corte Líder não calculado (cohort < 10 ou sem avaliações)',
   'admin.selection.startScreening': 'Iniciar Triagem',
   'admin.selection.slugRequired': 'Slug obrigatório',
   'admin.selection.postSaved': 'Post salvo',
