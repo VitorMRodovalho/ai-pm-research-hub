@@ -67,20 +67,39 @@ function normalizeBlock(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Strip document scaffold + global styles before diffing.
+// TAP HTML stored as full document (<!DOCTYPE><html><head><style>...</style></head><body>).
+// Diff view uses dangerouslySetInnerHTML (no iframe isolation), so any embedded <style>
+// would leak globally — e.g. TAP CSS `body{max-width:920px;margin:0 auto}` shrinks the
+// host page. The /document/[id] viewer + ReviewChainIsland.IsolatedHtmlFrame use sandbox
+// iframes which isolate styles; the inline diff cannot, so we strip scaffolding here.
+function stripDocumentScaffold(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<!doctype\s+html[^>]*>/gi, '')
+    .replace(/<\/?html[^>]*>/gi, '')
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+    .replace(/<\/?body[^>]*>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<link[^>]*>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+}
+
 // Split HTML into "rough blocks" — match on top-level closing tags
 function splitBlocks(html: string): string[] {
   if (!html) return [];
+  const cleaned = stripDocumentScaffold(html);
   // Split on closing tags of block elements; keep closer attached
   const re = /(<\/(?:p|h[1-6]|ul|ol|li|blockquote|pre|hr|table)>)/gi;
   const parts: string[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
   // eslint-disable-next-line no-cond-assign
-  while ((m = re.exec(html)) !== null) {
-    parts.push(html.slice(last, m.index + m[0].length));
+  while ((m = re.exec(cleaned)) !== null) {
+    parts.push(cleaned.slice(last, m.index + m[0].length));
     last = m.index + m[0].length;
   }
-  if (last < html.length) parts.push(html.slice(last));
+  if (last < cleaned.length) parts.push(cleaned.slice(last));
   return parts.map(p => p.trim()).filter(Boolean);
 }
 
