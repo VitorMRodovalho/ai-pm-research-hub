@@ -249,6 +249,8 @@ const SELECTION_POLICY_MATRIX = {
   selection_evaluation_complete: 'suppress',
   // Admin-facing recap (digest_weekly explicit for parity + forward-drift detection)
   selection_interview_noshow: 'digest_weekly',
+  // Admin-facing reminder for stale interviews (W2 Leaf 2 — emitted by cron)
+  selection_interview_overdue: 'digest_weekly',
 };
 
 test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with expected modes', () => {
@@ -263,11 +265,14 @@ test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with ex
   }
 });
 
-test('ADR-0022 Amendment D: catalog metadata bumped to W1.4 with updated_at 2026-05-23', () => {
-  assert.equal(catalog.version, 'W1.4',
-    'Catalog version must be bumped to W1.4 to reflect Amendment D shipping.');
+test('ADR-0022 Amendment D: catalog metadata bumped per latest selection workstream ship', () => {
+  // W1.4 shipped Leaf 1; W1.5 ships Leaf 2 (selection_interview_overdue). Each
+  // selection workstream leaf bumps the catalog minor version so reviewers can
+  // spot the latest active milestone in the catalog file alone.
+  assert.ok(['W1.4', 'W1.5', 'W1.6', 'W1.7', 'W1.8', 'W1.9', 'W1.10'].includes(catalog.version),
+    `Catalog version must be ≥ W1.4 (Amendment D shipping). Got "${catalog.version}".`);
   assert.equal(catalog.updated_at, '2026-05-23',
-    'Catalog updated_at must be 2026-05-23 (p228 #260 W2 Leaf 1 ship date).');
+    'Catalog updated_at must be 2026-05-23 (p228 selection workstream ship date).');
 });
 
 test('ADR-0022 Amendment D: _delivery_mode_for helper explicit-case parity with selection policy', () => {
@@ -302,6 +307,76 @@ test('ADR-0022 Amendment D: p228 migration file exists and registers helper upda
     'Leaf 1 migration must redefine _delivery_mode_for.');
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 1 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 2 contracts ───
+// selection_interview_overdue: new admin-facing type + daily cron with 7d
+// idempotency window. Forward-defense locks the cron RPC signature, the pg_cron
+// schedule, and the scope guards (24h grace + status filter).
+
+test('ADR-0022 Amendment D Leaf 2: _selection_interview_overdue_cron RPC declared with idempotency guard', () => {
+  const match = findLatestFunctionMatch('_selection_interview_overdue_cron');
+  assert.ok(match, '_selection_interview_overdue_cron must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    '_selection_interview_overdue_cron must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    '_selection_interview_overdue_cron must RETURN jsonb (count + run_at envelope).');
+
+  // 24h grace window — prevents alerting interviews running late same-day
+  assert.ok(/scheduled_at\s*<\s*now\(\)\s*-\s*interval\s+'24\s*hours'/i.test(body),
+    'Cron must enforce 24-hour grace window.');
+
+  // Status scope guard — only scheduled/rescheduled trigger alerts
+  assert.ok(/status\s+IN\s*\(\s*'scheduled'\s*,\s*'rescheduled'\s*\)/i.test(body),
+    'Cron scope must include status IN (scheduled, rescheduled).');
+
+  // Conducted_at NULL guard — completed interviews never alert
+  assert.ok(/conducted_at\s+IS\s+NULL/i.test(body),
+    'Cron must require conducted_at IS NULL.');
+
+  // 7-day idempotency window — one notif per (interview, recipient) per week
+  assert.ok(/NOT\s+EXISTS[\s\S]{0,800}selection_interview_overdue[\s\S]{0,600}now\(\)\s*-\s*interval\s+'7\s*days'/i.test(body),
+    'Cron must implement 7-day NOT EXISTS idempotency window.');
+
+  // INSERT routes via helper (no hardcoded delivery_mode)
+  assert.ok(/_delivery_mode_for\(\s*'selection_interview_overdue'\s*\)/i.test(body),
+    'Cron INSERT must derive delivery_mode via _delivery_mode_for helper.');
+
+  // Source attribution for traceability + dedupe
+  assert.ok(/source_type[\s\S]{0,200}'selection_interview'/i.test(body),
+    "Cron must set source_type='selection_interview' for traceability.");
+});
+
+test('ADR-0022 Amendment D Leaf 2: pg_cron schedule selection-interview-overdue-daily declared', () => {
+  assert.ok(/cron\.schedule\(\s*'selection-interview-overdue-daily'\s*,\s*'0\s+14\s+\*\s+\*\s+\*'/i.test(allSQL),
+    'pg_cron schedule selection-interview-overdue-daily must run at 14:00 UTC daily.');
+  // Cron body must call the RPC
+  assert.ok(/cron\.schedule\([\s\S]{0,200}'selection-interview-overdue-daily'[\s\S]{0,400}public\._selection_interview_overdue_cron/i.test(allSQL),
+    'pg_cron schedule must invoke public._selection_interview_overdue_cron().');
+});
+
+test('ADR-0022 Amendment D Leaf 2: cron RPC grants restrict to service_role only', () => {
+  // Service-role-only execution prevents authenticated users from triggering admin spam
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._selection_interview_overdue_cron[\s\S]{0,200}FROM\s+public[\s\S]{0,200}anon[\s\S]{0,200}authenticated/i.test(allSQL),
+    'Cron RPC must REVOKE ALL FROM public, anon, authenticated.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._selection_interview_overdue_cron[\s\S]{0,200}TO\s+service_role/i.test(allSQL),
+    'Cron RPC must GRANT EXECUTE TO service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 2: p228 Leaf 2 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafTwo = files.find(f => f.includes('p228_260_w2_leaf2_selection_interview_overdue_cron'));
+  assert.ok(leafTwo,
+    'Migration 20260805000009_p228_260_w2_leaf2_selection_interview_overdue_cron.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafTwo), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 2 migration must NOTIFY pgrst to reload schema.');
+  // Idempotent cron re-registration — unschedule prior if exists
+  assert.ok(/IF\s+EXISTS[\s\S]{0,200}'selection-interview-overdue-daily'[\s\S]{0,200}cron\.unschedule/i.test(body),
+    'Leaf 2 migration must idempotently unschedule prior version before re-creating cron.');
 });
 
 // ─── Amendment D / p228 #260 W2 Leaf 3 contracts ───
