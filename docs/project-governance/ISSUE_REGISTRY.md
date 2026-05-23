@@ -25,7 +25,7 @@ Status values:
 | #218 | active | Foundation / Governance | AI/video features | duplicate decision with #221 | Wave 1 evidence exists; Waves 2-5 still pending | Decide parent vs superseded-by-#221 before closing |
 | #148 | active | Infra/Security / QA | all merge confidence | #220 | CI heartbeat green on `main` | Close only after CI Validate recovers on main |
 | #220 | active | Infra/Security / QA | #148 | none | Local test:browser:guards + build pass with resolvable mock Supabase URL; remote CI pending | Close after CI PR passes and main heartbeat confirms |
-| #260 | active | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | production read-only audit + PM delivery policy decisions | Source-audited root cause, selection notification policy, safe replay plan, catalog/helper parity, cutoff/interview-overdue split | Close only after affected candidate rows are replayed/manual-closed and routing tests prevent recurrence |
+| #260 | active | Foundation / Integration / QA / Governance | selection funnel communications, Resend quota safety | 5 PM delivery-policy decisions from p227 W2 audit | W2 read-only audit shipped; Policy Matrix, replay stance, AI gate policy, suppress_all behavior, and manual-vs-cron dispatch trigger decided; child leaves split | Close only after affected candidate rows are replayed/manual-closed and routing tests prevent recurrence |
 | #230 | active | Foundation / Governance / QA | volunteer lifecycle reliability after selection approval | PM decision: auto-generate agreement vs manual queue | Herlon-like backlog count, agreement generation/nudge path, idempotent stale alert design | Close after affected backlog is generated/queued/manual-closed and future approved candidates have observable agreement path |
 
 ---
@@ -60,7 +60,6 @@ Status values:
 
 | Issue | Registry status | Lane | Blocks | Blocked by | Acceptance evidence | Close rule |
 |---|---|---|---|---|---|---|
-| #298 | ready-leaf | Foundation | evaluator pending list / Cycle 4 selection trust | PM decision: newest-cycle only vs explicit/fallback cycle behavior | Migration makes `get_my_pending_evaluations()` deterministic + contract test + live smoke | Close after RPC returns intended cycle deterministically and Phase C/body drift gates pass |
 | #211 | blocked | Frontend | #212 G3 | #212 PM signoff if broader scope applies | metadata UI smoke | Do not start until scope is confirmed standalone vs #212 child |
 | #194 | ready-leaf | QA | curatorship p197 confidence | p197 test fixtures | contract tests for review flow pass | Close after tests land |
 | #193 | ready-leaf | Foundation | curatorship status consistency | none | migration/audit confirms phantom states removed | Close after migration + rollback docs |
@@ -83,7 +82,7 @@ Status values:
 
 | Cluster | Issues | Registry stance | Dispatch rule |
 |---|---|---|---|
-| Selection reliability Cycle 4 | #292, #251, #298, #260, #116, #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit is complete; next dispatch #298 + #260 Workstream 2, then booking smoke, lifecycle, and PERT Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
+| Selection reliability Cycle 4 | #292, #251, #298(closed), #260, #116, #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit and #298 fix are complete; #260 W2 audit is complete; next p228 action is PM decision pack for #260 child leaves, then #116 smoke, #179/#230 lifecycle, and #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
 | Curatorship p197 | #185-#196, #188, #190, #201 | Needs parent status board | Allow max 2 ready leaves concurrently; serialize DB changes |
 | Volunteer lifecycle | #177, #179, #180, #181, #182, #183, #205, #213 | Foundation sequence | Start after #221 containment; #179 is the canonical contract gate |
 | MCP/AI | #162, #163, #170, #183, #188, #206-#208 | High-risk | Pause new tools until #162 contract matrix and #221 consent gates are stable |
@@ -100,7 +99,7 @@ Status values:
 4. Foundation migrations serialize unless explicitly proven independent.
 5. MCP/AI work must name data touched, consent basis, RPC/tool contract, and smoke evidence.
 6. Any branch touching multiple lanes needs a documented exception or a split.
-7. During the Selection reliability sprint, #251 read-only evidence is complete. Next dispatch is #298 (deterministic pending-evaluations RPC) plus #260 Workstream 2 (peer-review dispatch gap), then #116 smoke/leaf → #179/#230 lifecycle → #229 Phase 2. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
+7. During the Selection reliability sprint, #251 read-only evidence and #298 implementation are complete; #260 Workstream 2 read-only audit is complete. Next p228 step is PM decision pack for #260 W2 child leaves (Policy Matrix, replay, AI gate, suppress_all, manual-vs-cron dispatch), then implementation leaves in the audit order → #116 smoke/leaf → #179/#230 lifecycle → #229 Phase 2. Carry p226 open decisions for cycle4 committee seed and 19 screening apps status advance. Do not dispatch #243/#254 implementation until #221/#218 consent blockers are resolved or explicitly decomposed; keep #300 deferred unless PM explicitly escalates a narrow active-data-corruption child.
 
 ---
 
