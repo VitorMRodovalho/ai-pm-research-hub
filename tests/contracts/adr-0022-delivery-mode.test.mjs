@@ -704,3 +704,55 @@ test('ADR-0022 Amendment D Leaf 6: p228 Leaf 6 migration file exists', () => {
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 6 migration must NOTIFY pgrst to reload schema.');
 });
+
+// ─── Amendment D / p228 #260 W2 Leaf 7 contracts ───
+// 24h dispatcher silence health signal — selection_emails_pending_24h.
+
+test('ADR-0022 Amendment D Leaf 7: get_selection_emails_pending_24h RPC declared with envelope shape', () => {
+  const match = findLatestFunctionMatch('get_selection_emails_pending_24h');
+  assert.ok(match, 'get_selection_emails_pending_24h must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    'Health RPC must be SECURITY DEFINER (read-only but gates auth).');
+  assert.ok(/STABLE/i.test(wrapper),
+    'Health RPC must be marked STABLE (deterministic for given snapshot).');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'Health RPC must RETURN jsonb (envelope shape).');
+  assert.ok(/p_alert_threshold\s+integer\s+DEFAULT\s+10/i.test(wrapper),
+    'Health RPC must declare p_alert_threshold integer DEFAULT 10 parameter.');
+
+  // Scope guard — selection_* type LIKE pattern + transactional_immediate + 24h age
+  assert.ok(/type\s+LIKE\s+'selection_%'/i.test(body),
+    'Health RPC must scope to type LIKE selection_%.');
+  assert.ok(/delivery_mode\s*=\s*'transactional_immediate'/i.test(body),
+    'Health RPC must scope to delivery_mode = transactional_immediate.');
+  assert.ok(/email_sent_at\s+IS\s+NULL/i.test(body),
+    'Health RPC must require email_sent_at IS NULL (pending state).');
+  assert.ok(/created_at\s*<\s*now\(\)\s*-\s*interval\s+'24\s*hours'/i.test(body),
+    'Health RPC must enforce 24h age window.');
+
+  // Envelope keys
+  for (const key of ['total_pending', 'by_type', 'oldest_pending_at', 'oldest_age_minutes', 'alert_threshold', 'alert_triggered']) {
+    assert.ok(body.includes(`'${key}'`),
+      `Health RPC envelope must include '${key}' field.`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 7: health RPC grants restrict anon', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.get_selection_emails_pending_24h\(integer\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Health RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.get_selection_emails_pending_24h\(integer\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Health RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 7: p228 Leaf 7 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafSeven = files.find(f => f.includes('p228_260_w2_leaf7_selection_emails_pending_24h_health'));
+  assert.ok(leafSeven,
+    'Migration 20260805000014_p228_260_w2_leaf7_selection_emails_pending_24h_health.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafSeven), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 7 migration must NOTIFY pgrst to reload schema.');
+});
