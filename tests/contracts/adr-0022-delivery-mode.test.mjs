@@ -638,3 +638,69 @@ test('ADR-0022 Amendment D Leaf 5: p228 Leaf 5 migration file exists', () => {
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 5 migration must NOTIFY pgrst to reload schema.');
 });
+
+// ─── Amendment D / p228 #260 W2 Leaf 6 contracts ───
+// Operational suppress_all bypass: SQL helper + EF parity in lock-step.
+
+const LEAF6_OPERATIONAL_CANDIDATE_FACING = [
+  'selection_termo_due',
+  'selection_approved',
+  'selection_interview_scheduled',
+  'selection_cutoff_approved',
+];
+
+test('ADR-0022 Amendment D Leaf 6: _is_operational_candidate_facing SQL helper declared', () => {
+  const match = findLatestFunctionMatch('_is_operational_candidate_facing');
+  assert.ok(match, '_is_operational_candidate_facing must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/RETURNS\s+boolean/i.test(wrapper),
+    'Helper must RETURN boolean.');
+  assert.ok(/IMMUTABLE\s+PARALLEL\s+SAFE/i.test(wrapper),
+    'Helper must be IMMUTABLE PARALLEL SAFE (pure classifier).');
+
+  // All 4 PM-approved candidate-facing operational types listed
+  for (const type of LEAF6_OPERATIONAL_CANDIDATE_FACING) {
+    assert.ok(body.includes(`'${type}'`),
+      `Helper body must include '${type}' (PM D-sel-4 bypass scope).`);
+  }
+});
+
+test('ADR-0022 Amendment D Leaf 6: EF send-notification-email matches SQL helper Set byte-for-byte', () => {
+  // Lock-step parity check: the TypeScript Set in EF code must list exactly the
+  // same 4 types as the SQL helper. Drift on either side breaks PM D-sel-4.
+  const efPath = resolve(ROOT, 'supabase/functions/send-notification-email/index.ts');
+  const efSource = readFileSync(efPath, 'utf8');
+
+  assert.ok(/OPERATIONAL_CANDIDATE_FACING\s*=\s*new\s+Set\(/i.test(efSource),
+    'EF must declare const OPERATIONAL_CANDIDATE_FACING = new Set([...]).');
+
+  for (const type of LEAF6_OPERATIONAL_CANDIDATE_FACING) {
+    assert.ok(efSource.includes(`'${type}'`),
+      `EF OPERATIONAL_CANDIDATE_FACING Set must include '${type}' (parity with SQL helper).`);
+  }
+
+  // The bypass guard must include this Set in its conditional
+  assert.ok(/OPERATIONAL_CANDIDATE_FACING\.has\(notif\.type\)/i.test(efSource),
+    'EF must check OPERATIONAL_CANDIDATE_FACING.has(notif.type) before applying suppress_all skip.');
+  assert.ok(/suppress_all['"]?\s*&&\s*!isOperationalCandidateFacing/i.test(efSource),
+    'EF suppress_all skip must require !isOperationalCandidateFacing (only suppress if NOT candidate-facing operational).');
+});
+
+test('ADR-0022 Amendment D Leaf 6: helper grants restrict to authenticated + service_role', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\._is_operational_candidate_facing\(text\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'Leaf 6 helper must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._is_operational_candidate_facing\(text\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'Leaf 6 helper must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 6: p228 Leaf 6 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafSix = files.find(f => f.includes('p228_260_w2_leaf6_operational_suppress_all_bypass'));
+  assert.ok(leafSix,
+    'Migration 20260805000013_p228_260_w2_leaf6_operational_suppress_all_bypass.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafSix), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 6 migration must NOTIFY pgrst to reload schema.');
+});
