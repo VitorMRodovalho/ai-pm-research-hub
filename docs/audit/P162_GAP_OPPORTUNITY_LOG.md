@@ -2107,3 +2107,66 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   - **SEDIMENT-234.A (REAPPLIED)**: Still open — close-review patch is a per-RPC inline fix. The general schema-level solution (column on onboarding_steps catalog) remains backlog. #322 close still picks the minimal blast radius option.
 - **PR comment trail:** PM blocked PR #327 with comment-4526757434; agent replied with audit + fix plan in comment-4526761568; close-review commit pushed to same branch.
 - **Cross-ref:** GH #322 (Gap B closed via PR #327; 2 migrations) · `tests/contracts/p234-322-volunteer-term-gap-b-classification.test.mjs` extended +4 · migrations `20260805000019` + `20260805000020` · 6-path audit completed inline · #321 (sibling Gap A closed p233) · #323 (Gap C, only remaining #230 child).
+
+### 201. RESOLVED-323 — Gap C of #230 reframe: study_group_* engagement_kinds catalog config decision (p235)
+
+- **When:** 2026-05-23 p235 dispatch (post-#322 close)
+- **What:** GH #323 closed via migration `20260805000021_p235_323_study_group_catalog_config_decision.sql` shipped in PR #328 (squash `841da143`, merged 2026-05-23T23:46:10Z). Resolves the `engagement_kinds` catalog inconsistency surfaced by the p230 audit: 2 catalog rows (`study_group_owner` + `study_group_participant`) declared `requires_agreement=true` with `agreement_template=NULL`, meaning the p203 `pending_agreement_engagements` queue would route them to `'decide_template_for_kind_then_issue'` indefinitely.
+- **PM directives 2026-05-23 (two Recommended ABCD picks):**
+  - Q1 — `study_group_owner`: KEEP `requires_agreement=true`, assign placeholder `agreement_template='study_group_owner_agreement_v1'`. Preserves ADR-0006 line 56 (Herlon canonical V4 example) + ADR-0008 lifecycle ("VEP fast-track → Termo → 9m → 5yr retention"); mirrors ADR-0078 D5 external_reviewer slug placeholder precedent. Template body deferred to follow-up legal-counsel issue.
+  - Q2 — `study_group_participant`: FLIP `requires_agreement=false`. Course enrollee model; ADR-0008 "termo de uso" read as platform-wide TOS (consent), not per-engagement. `legal_basis` stays `contract` (curso execution — Lei 9.608 framing). Participant must not enter `pending_agreement` queue.
+- **Live evidence (pre-apply, 2026-05-23 23:35 UTC):**
+  - 2 catalog rows violating the invariant: `study_group_owner` + `study_group_participant`
+  - 2 pending_agreement queue rows — BOTH for Fernando Maquiaveli (member_id `c8b930c3-62ec-4d38-881e-307cd57a44f7`) on initiative "Grupo de Estudos CPMAI™" (the ONLY active `study_group`). One row per kind, both `role='leader'`. Redundant double-engagement flagged as separate data-quality carry (NOT a #323 blocker per PM directive).
+  - `engagement_kind_permissions` for `(study_group_participant, role=leader)`: EMPTY. The only permission seeded for this kind is `(role=participant, write_board, scope=initiative)` — applies prospectively to future enrollees as PM intended.
+  - `engagement_kinds.agreement_template` is a forward-declared TEXT slug with NO consumer code: `sign_volunteer_agreement` and `external_reviewer` mint paths are hardcoded; nothing auto-reads the slug. Placeholder = catalog/intent marker, not active mint trigger.
+- **What shipped (single migration, idempotent UPDATEs + audit + sanity DO):**
+  - UPDATE 1: `study_group_owner SET agreement_template='study_group_owner_agreement_v1' WHERE slug='study_group_owner' AND agreement_template IS NULL` (idempotent)
+  - UPDATE 2: `study_group_participant SET requires_agreement=false WHERE slug='study_group_participant' AND requires_agreement=true` (idempotent)
+  - Audit log INSERT: 2 rows with action `engagement_kind.catalog_config_decision` (matches admin_audit_log CHECK regex) + target_type `'engagement_kinds'` (canonical, count=7 historical) + per-row metadata (kind/change/rationale/pm_decision_session/migration)
+  - Sanity DO block: RAISES EXCEPTION if `requires_agreement=true AND agreement_template IS NULL AND slug NOT IN ('volunteer')` returns any rows. Hard-fails at write time.
+  - NOTIFY pgrst: defensive schema cache reload
+- **Contract tests +12 (`tests/contracts/p235-323-study-group-catalog-config-decision.test.mjs`):** 11 static migration body assertions + 1 DB-gated. Test file registered in BOTH `npm test` AND `npm run test:contracts` arrays (SEDIMENT-232.C / 233.B / 234.B convention upheld).
+  - Static (9): file present + header cross-refs (#323/ADR-0006/ADR-0008/ADR-0078/ROLLBACK/Herlon directive) + owner UPDATE idempotency guard + participant UPDATE idempotency guard + audit canonical action + sanity DO RAISE + sanity allowlist (`'volunteer'`) + NOTIFY pgrst + BEGIN/COMMIT wrapper
+  - Forward-defense (2): no future migration re-flips `study_group_owner.agreement_template` back to NULL (UPDATE pattern); no future migration re-flips `study_group_participant.requires_agreement` back to TRUE (UPDATE + VALUES-tuple + ON CONFLICT patterns per PR #250 LOW review)
+  - DB-gated (1): live catalog has 0 rows where `requires_agreement=true AND agreement_template IS NULL AND slug NOT IN ('volunteer')`
+- **Test baseline:** offline 1844/1789/0/55 → **1856/1800/0/56** (+12: +11 pass + +1 skip). With-DB CI expected ~1846 pass.
+- **Live smoke (2026-05-23 23:35 UTC, post-apply):**
+  - ✅ Catalog: `study_group_owner.agreement_template='study_group_owner_agreement_v1'`; `study_group_participant.requires_agreement=false`
+  - ✅ Goal metric: 0 catalog offenders (sanity DO didn't fail)
+  - ✅ Audit log: 2 rows with correct action + per-kind change tags
+  - ✅ Fernando's 2 engagements:
+    - `study_group_owner` (role=leader): `requires_agreement=true`, `is_authoritative=false` (still pending cert)
+    - `study_group_participant` (role=leader): `requires_agreement=false`, `is_authoritative=true` — **zero new capabilities** (role=leader doesn't match the (participant, role=participant, write_board) seed; participant seed applies prospectively only)
+  - ✅ `check_schema_invariants()` returns 19/19 = 0 violations
+- **Out of scope (per issue #323 body + PM directive):**
+  - Template body for `study_group_owner_agreement_v1` → follow-up legal-counsel issue (not filed yet; PM can file when bandwidth opens)
+  - Fernando's redundant owner+participant double-engagement on same initiative → separate data-quality carry, NOT #323 (PM acknowledged)
+  - Re-evaluation of `legal_basis` for `study_group_participant` → PM directive: keep `contract` (curso execution); revisit if a different LGPD framing emerges
+- **Sediment learnings (1 NEW + 1 REAPPLIED):**
+  - **SEDIMENT-235.A (NEW — registry text + GH auto-close keyword regex)**: The phrase `close #<N>` in any merged commit/PR description (including registry edits bundled with the implementation PR) triggers GitHub's auto-close keyword regex (`(close|closes|closed|fix|...)\s+#\d+`). My ISSUE_REGISTRY.md edit had "All 3 children shipped — close #230 in handoff PR with evidence summary" inside a Stop-The-Line row's Close rule column, which auto-closed #230 the moment PR #328 squash-merged at 23:46:10Z (same timestamp as #323). Outcome was what PM authorized ("close #230 after #323 ships"), but the evidence summary that should have accompanied the close was deferred to a retroactive comment (`4526837462`). **Operational rule going forward**: when authoring close-rule narrative in ISSUE_REGISTRY.md or PR descriptions, use neutral phrasing like "to be closed in <PR>" or "close-trigger satisfied" — avoid literal `close #<N>` unless you intend immediate auto-close. If the close must accompany the same PR, post the evidence summary comment BEFORE the merge so it lands before the close timestamp.
+  - **SEDIMENT-232.B (REAPPLIED, in-place UPDATE preferred)**: `apply_migration` MCP created a shadow row at NOW() (`20260523233550`). Used in-place `UPDATE supabase_migrations.schema_migrations SET version='20260805000021' WHERE version='20260523233550' AND name='p235_323_study_group_catalog_config_decision'` to cleanly re-version. Pattern matches p234 SEDIMENT-232.B refinement (filter by version prefix + name fragment to avoid collisions).
+- **PRs:** PR #328 (squash `841da143`, merged 23:46:10Z). No bypass; CI 10/10 GREEN (quality_gate + Cloudflare Pages + analyze 1m53s + browser_guards 1m51s + check-advisors 9s + check-invariants 23s + issue_reference_gate 7s + validate 2m20s + visual_dark_mode 57s; CodeQL skipping informational).
+- **Cross-ref:** GH #323 (closed) · GH #230 (umbrella also auto-closed via same merge; evidence comment 4526837462) · migration `20260805000021_p235_323_study_group_catalog_config_decision.sql` · `tests/contracts/p235-323-study-group-catalog-config-decision.test.mjs` (12 new) · ADR-0006 line 56 (Herlon canonical) · ADR-0008 (per-kind lifecycle) · ADR-0078 D5 (external_reviewer placeholder precedent) · sibling closes #321 p233 / #322 p234 · `engagement_kinds` catalog (requires_agreement + agreement_template columns) · `public.auth_engagements` view (derives is_authoritative).
+
+### 202. RESOLVED-230-UMBRELLA — Herlon vol_term workflow umbrella fully closed (p235)
+
+- **When:** 2026-05-23 23:46:11Z, auto-closed via PR #328 merge (same timestamp as #323 close)
+- **What:** GH #230 closed as fully shipped umbrella. Original "Herlon volunteer term workflow gap" premise was refuted at p230 (see #197 REFRAMED-230); reframed into 3 ready-leaf children all now closed:
+  - #321 (Gap A, closed p233 via PR #326, migration `20260805000018`): AFTER INSERT trigger on `certificates` + 30-row phantom backfill
+  - #322 (Gap B, closed p234 via PR #327, migrations `20260805000019` + `20260805000020` close-review): 8-row classification-leftover backfill + forward guards across 3 RPCs + UX harmonization + auto-seed guard mirror
+  - #323 (Gap C, closed p235 via PR #328, migration `20260805000021`): catalog config decision per kind (placeholder slug for owner + flip for participant)
+- **Final live state (2026-05-23 23:46Z, post-PR-#328):**
+  - `check_schema_invariants()`: 19/19 violation_count=0 ✅
+  - Catalog goal metric (#323 AC): 0 offenders ✅
+  - Cohort A (phantom vol_term rows where cert exists): 0 (was 30 pre-#321) ✅
+  - Cohort B (active members with pending vol_term AND no active requires_agreement engagement): 0 (was 4 pre-#322) ✅
+  - Pending agreement queue: only Fernando's `study_group_owner` row remains, flagged `decide_template_for_kind_then_issue` awaiting follow-up legal-counsel template body
+  - Herlon: never in any pending queue (his engagements are ambassador + observer, neither requires_agreement; PM directive "do NOT mint Herlon term" honored across p230 → p235)
+- **Auto-close mechanic:** my ISSUE_REGISTRY.md edit in PR #328 had close-rule narrative literally containing "close #230" which matched GitHub's auto-close keyword regex → both #323 and #230 closed at the same merge timestamp. Outcome matches PM directive ("close #230 after #323 ships") but the evidence summary was posted retroactively as comment 4526837462. See SEDIMENT-235.A for the operational rule update.
+- **Carries opening from #230 close (not blocking):**
+  1. Follow-up legal-counsel issue for `study_group_owner_agreement_v1` template body (slug now placeholder; mint workflow still TBD pending legal review — mirrors ADR-0078 D5 external_reviewer state)
+  2. Fernando double-engagement data-quality (owner + participant on same CPMAI™, both role=leader; participant row likely vestigial; file as standalone if you want it tracked)
+  3. Optional generalization (open backlog from SEDIMENT-234.A): extend `onboarding_steps` catalog with `requires_kind_agreement boolean` column so the Path A seed loop consults it instead of per-RPC inline guards. Only worth doing if another step surfaces a similar mis-seed pattern or `engagement_kind` becomes dynamic per `role_applied`/cycle config.
+- **PRs:** PR #328 (closes both #323 and #230). No bypass.
+- **Cross-ref:** GH #230 (closed) · GH #197 REFRAMED-230 (the p230 audit that reframed this umbrella) · GH #199/#200/#200a/#201 (the 3 child close entries) · #318/#320 (A3 invariant fix that resolved the Herlon-specific cache sediment behind the original premise) · #292 (Selection reliability Cycle 4 sprint umbrella).
