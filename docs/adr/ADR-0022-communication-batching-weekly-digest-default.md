@@ -350,7 +350,7 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 ### Implementation phasing — 7 W2 Leaves
 
 - **Leaf 1 (this Amendment, 2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension.
-- **Leaf 2:** `selection_interview_overdue` new type + daily cron + idempotent INSERT.
+- **Leaf 2 (2026-05-23):** `selection_interview_overdue` new type + daily `_selection_interview_overdue_cron()` at 14:00 UTC + one notification per (interview, interviewer) pair with 7-day idempotency window. Migration `20260805000009_p228_260_w2_leaf2_selection_interview_overdue_cron.sql`.
 - **Leaf 3:** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`.
 - **Leaf 4:** `selection_cutoff_approved` new type + trigger when `(objective_done >= 2 AND pert_score >= cutoff)` + Resend template.
 - **Leaf 5:** selective replay/manual-close of 17 historical rows (idempotent UPDATE).
