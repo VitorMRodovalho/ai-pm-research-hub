@@ -316,3 +316,51 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - p173 commit `7956e84` — initiative-aware extension (#21 fully resolved)
 - `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #21 ✅ RESOLVED p173
 - `memory/feedback_create_or_replace_full_body_fetch.md` — sediment de p172 #21 (CREATE OR REPLACE full body fetch antes de modificar)
+
+---
+
+## Amendment D — Selection Funnel Notification Policy Matrix (p228 #260 W2 Leaf 1, 2026-05-23)
+
+**Status:** Accepted (PM ratified 2026-05-23, #260 comment 4525886931)
+**Driver:** p227 W2 audit (`docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md`) surfaced 17 candidate-facing selection_* notifications mis-routed via digest path over the 90d window, plus ADR-0022 catalog had ZERO selection_* entries (helper only had `selection_termo_due` from p159). Other selection_* types fell through ELSE → digest_weekly silently.
+
+### Policy Matrix — 8 selection funnel types
+
+| type | delivery_mode | candidate-facing? | rationale |
+|---|---|---|---|
+| `selection_termo_due` | `transactional_immediate` | Yes | Post-VEP-Active term + Lorena signature; cannot wait for weekly digest (p159, kept). |
+| `selection_approved` | `transactional_immediate` | Yes | Approval is a milestone event; bundling erodes candidate experience. |
+| `selection_interview_scheduled` | `transactional_immediate` | Yes | Calendar link + date/time must reach candidate before interview. |
+| `peer_review_requested` | `transactional_immediate` | No (evaluator) | Evaluator needs prompt action to keep cycle moving; was already hardcoded at INSERT site `dispatch_peer_review_invitations`, now catalog+helper parity-locked. |
+| `selection_evaluation_complete` | `suppress` | No (admin) | Internal signal; surfaced in dashboards. No email. |
+| `selection_interview_noshow` | `digest_weekly` (explicit) | No (admin) | Admin recap, not time-critical. Made explicit for catalog parity + forward-drift detection. |
+| `selection_interview_overdue` (new — W2 Leaf 2) | `digest_weekly` | No (admin) | Admin reminder; daily cron scans `selection_interviews WHERE scheduled_at < NOW() AND conducted_at IS NULL`, idempotent (1 notif per interview per week). |
+| `selection_cutoff_approved` (new — W2 Leaf 4) | `transactional_immediate` | Yes | Candidate invitation to book interview after "2 objective evaluations + PERT ≥ cutoff". Time-critical. |
+
+### PM ratified decisions (D-sel-1 to D-sel-5)
+
+| ID | Decision | Justification |
+|---|---|---|
+| D-sel-1 | Adopt Policy Matrix as proposed (no per-type override) | Audit doc table aligns with candidate UX rationale + admin operational rhythm. |
+| D-sel-2 | **Selective** replay of the 17 historical mis-routed rows, not blind: replay `selection_approved` + `selection_interview_scheduled` when still relevant; replay `selection_termo_due` only when candidate still has a real pending term/onboarding action; otherwise manual-close/document. | Avoid useless double-send for candidates who already saw the digest summary. Resend quota (100/day) trivially covers but signal-to-noise matters more. |
+| D-sel-3 | **Soft** AI gate with `no_ai_context` path for `dispatch_peer_review_invitations`: if consent + analysis exist, peer review includes AI context; if absent, peer review may proceed without AI context. Do not simulate AI without consent. Admin override allowed only if audited. | Hard gate (status quo) blocked 14/38 cycle 4 apps; soft gate unblocks while preserving Art. 11 LGPD consent posture. |
+| D-sel-4 | `notify_delivery_mode_pref = suppress_all` is bypassed by **candidate-facing operational selection_*** emails only (termo_due, approved, interview_scheduled, cutoff_approved). Marketing/digest/internal noncritical messages still respect suppress_all. | Candidate is in active workflow; opt-out for promotional vs operational must be split. Legal/UX rationale: workflow-critical operational > opt-out preference. |
+| D-sel-5 | Peer-review dispatcher = **automatic + idempotent** (cron-driven) with manual override path retained + 24h health signal (`selection_emails_pending_24h`). | 18/38 cycle 4 apps were eligible-never-dispatched (manual trigger gap); cron closes that gap, health signal surfaces dispatcher silence. |
+
+### Implementation phasing — 7 W2 Leaves
+
+- **Leaf 1 (this Amendment, 2026-05-23):** catalog backfill + helper parity for 6 existing selection_* types + contract test extension.
+- **Leaf 2:** `selection_interview_overdue` new type + daily cron + idempotent INSERT.
+- **Leaf 3:** soft AI gate (`no_ai_context` path) in `dispatch_peer_review_invitations`.
+- **Leaf 4:** `selection_cutoff_approved` new type + trigger when `(objective_done >= 2 AND pert_score >= cutoff)` + Resend template.
+- **Leaf 5:** selective replay/manual-close of 17 historical rows (idempotent UPDATE).
+- **Leaf 6:** operational suppress_all bypass classifier + EF integration.
+- **Leaf 7:** 24h health signal — `selection_emails_pending_24h` MCP tool + admin widget.
+
+### Cross-refs
+
+- p159 commit `a3a91a9d` — `selection_termo_due → transactional_immediate` (single-type predecessor)
+- p228 #260 comment 4525886931 — PM Policy Matrix ratification
+- p227 audit doc `docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md` — 90d evidence pack
+- #292 sprint umbrella — Selection Reliability Cycle 4 sprint
+- Migration `20260805000008_p228_260_w2_leaf1_selection_notification_catalog_helper_parity.sql` — Leaf 1 shipping migration
