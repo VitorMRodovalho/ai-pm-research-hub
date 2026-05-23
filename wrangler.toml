@@ -6,6 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+# p225 #281 — Cloudflare Browser Rendering binding for forward auto-gen of
+# certificate PDFs via /api/internal/cert-pdf-render/[id]. Requires Workers Paid plan.
+# See ADR-0098, src/pages/api/internal/cert-pdf-render/[id].ts, migration 20260805000005.
+[browser]
+binding = "BROWSER"
+
 [assets]
 directory = "./dist/client/"
 
