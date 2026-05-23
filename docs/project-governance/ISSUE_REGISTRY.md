@@ -82,7 +82,7 @@ Status values:
 
 | Cluster | Issues | Registry stance | Dispatch rule |
 |---|---|---|---|
-| Selection reliability Cycle 4 | #292, #251, #298(closed), #260(qa-window), #116(closed), #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit + #298 fix + #260 W2 audit + #260 W2 ALL 7 LEAVES SHIPPED (p228 PRs #305 + #307) — moves to qa-window pending PM replay execution + production smoke. #116 calendar webhook smoke PASS + closed p229 (22 real bookings, 92% cycle4 sync rate, idempotency + reschedule-clearance live). Next p229: #179/#230 lifecycle, #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
+| Selection reliability Cycle 4 | #292, #251, #298(closed), #260(qa-window), #116(closed), #179, #230, #229, #243, #254 | P0 sequencing program | #251 audit + #298 fix + #260 W2 audit + #260 W2 ALL 7 LEAVES SHIPPED (p228 PRs #305 + #307 + #313 + #316) — #260 is qa-window for 7d production smoke only; replay already executed. #116 calendar webhook smoke PASS + closed p229 (22 real bookings, 92% cycle4 sync rate, idempotency + reschedule-clearance live). Next p230: #318 A3 stop-the-line triage before #179/#230 lifecycle and #229 Phase 2; keep #243/#254 spec/read-only behind #221/#218 |
 | Curatorship p197 | #185-#196, #188, #190, #201 | Needs parent status board | Allow max 2 ready leaves concurrently; serialize DB changes |
 | Volunteer lifecycle | #177, #179, #180, #181, #182, #183, #205, #213 | Foundation sequence | Start after #221 containment; #179 is the canonical contract gate |
 | MCP/AI | #162, #163, #170, #183, #188, #206-#208 | High-risk | Pause new tools until #162 contract matrix and #221 consent gates are stable |
