@@ -1,0 +1,74 @@
+# schema_migrations empty-statements baseline — p224 (2026-05-22)
+#
+# Versions in supabase_migrations.schema_migrations where the `statements`
+# column is NULL or empty array `'{}'`. Body not captured at registration time.
+#
+# Discovery: WATCH-AUDIT-HIGH-17 (P162 log #185). 41 entries at p224 baseline.
+#
+# Sub-categories (current live state):
+#  - 39 with statements IS NULL (true NULL — never had body recorded)
+#  - 2 with statements = '{}' (empty array — `supabase migration repair` set
+#    body to empty array instead of populating from local file content; see
+#    SEDIMENT note below). Affected: 20260721000000 + 20260722000000
+#    (p201_gap_200_a_v4_curator_rls_swap + p201_bug_201_a_cancelled_event...).
+#
+# Cross-cut with missing-file baseline:
+#  - 12 ALSO missing local file (truly lost — body only in pg_proc):
+#     20260501020001..5 (ip2b_v22_seed_*) + 20260504010001..7 (ip3e_gate_matrix_v2)
+#  - 29 with local file (body absent is cosmetic; safe to re-run migration
+#    repair to attempt backfill from file)
+#
+# Risk: 12 truly-lost reconstructible only from pg_proc introspection
+# (already live in DB; not blocking any feature). Others: zero risk.
+#
+# SEDIMENT discovered in p224: `supabase migration repair --status applied <v>`
+# can produce `statements='{}'` (empty array) instead of either populating
+# from local file OR leaving NULL. Three-valued SQL logic: an `IS NOT NULL
+# AND len>0` predicate returns NULL (not FALSE) for empty arrays, which is
+# why the audit helper RPC `_audit_list_schema_migrations()` returns
+# `has_body=NULL` for these 2 rows. Test layer (JS) treats truthy/null
+# correctly via `!has_body` filter; baseline reflects direct-query truth.
+#
+# Ratchet DOWN: re-run migration with body capture OR mark as 'no body needed'.
+# Ratchet UP: prohibited (apply_migration MCP should always capture body).
+20260428050000
+20260428090000
+20260428100000
+20260428110000
+20260430020000
+20260430030000
+20260430040000
+20260501010000
+20260501020001
+20260501020002
+20260501020003
+20260501020004
+20260501020005
+20260501040000
+20260504010000
+20260504010001
+20260504010002
+20260504010003
+20260504010004
+20260504010005
+20260504010006
+20260504010007
+20260504020000
+20260504030000
+20260504040000
+20260504050000
+20260504060000
+20260504070000
+20260504080000
+20260504080001
+20260504090000
+20260504100000
+20260721000000
+20260722000000
+20260802000000
+20260802000001
+20260802000002
+20260802000003
+20260802000004
+20260802000005
+20260802000006
