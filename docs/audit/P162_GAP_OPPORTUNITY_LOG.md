@@ -1663,3 +1663,25 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Why deferred:** non-blocking (build passes), not user-visible (the CSS still resolves at runtime to one of the vars), trivial scope (find the source component + split the class). Backlog candidate for any session that touches the affected component organically.
 - **Cross-ref:** p223 audit report finding #2, build warn line `Unexpected token Delim('/')`.
 
+
+### 187. RESOLVED-WATCH-185 — Migration history drift amnesty + ratchet (ADR-0097 / WATCH-AUDIT-HIGH-17 close)
+- **Tipo:** historical drift remediation · **Severity:** HIGH-drift / LOW-functional · **Effort:** M (~2-3h discovery + implementation) · **Status:** RESOLVED via path δ (Hybrid amnesty + ratchet) — ADR-0097
+- **Trigger:** WATCH-185 carry from p223 audit (P162 log #185). Discovery work in p224 refined the 669-row drift to exact set difference: 694 missing files (tracked − local) + 15 orphan local (local − tracked) + 41 empty-statements rows in `supabase_migrations.schema_migrations`.
+- **Sample analysis (n=20 of 694 missing):** 70% DDL recoverable (CREATE FUNCTION / ALTER / triggers / COMMENT) + 20% DML backfill (UPDATE/INSERT data) + 5% EMPTY (truly lost, body only in pg_proc) + 5% hotfix/reapply (redundant). 12 of 41 empty ALSO missing file — worst case `ip2b_v22_seed_*` + `ip3e_gate_matrix_v2` series only inferrable via pg_proc/pg_policies introspection.
+- **15 orphan-local clusters identified:**
+  - p64 incident-revert + Pacote M (Apr 26-27, 3 files)
+  - p125-E1/E2/p126-E3 selection PMI 3D series (May 18, 11 files — sprint inteiro)
+  - TAP CPMAI R00 seed content (Jun 18, 1 file, 60KB)
+- **Path δ implementation (~1h):**
+  1. 3 baseline files at `docs/audit/MIGRATION_{FILE_DRIFT,ORPHAN_LOCAL,EMPTY_STATEMENTS}_BASELINE_P224.txt` (694+15+41=750 versions documented)
+  2. Helper RPC `_audit_list_schema_migrations()` via 2 migrations: `20260805000003` (initial TABLE return) + `20260805000004` (jsonb_agg rewrite — bypasses PostgREST 1000-row pagination, see sediment §4 below)
+  3. 9 new ratchet tests in `tests/contracts/rpc-migration-coverage.test.mjs`: 3 SIZE (offline, pass) + 3 NEW-drift (DB-gated) + 3 STALE (DB-gated), all 9 PASS live verified
+  4. ADR-0097 with full 4-path trade-off matrix (α amnesty / β snapshot / γ per-version / δ hybrid) + 4 sediment learnings
+- **4 sediment learnings discovered during implementation:**
+  - §1 `apply_migration` MCP uses NOW() as version, ignores version-prefix in passed `name` → creates shadow rows requiring `supabase migration repair --status applied <canonical>` + DELETE of shadow
+  - §2 `supabase migration repair` may produce `statements='{}'` empty array (not NULL) → three-valued SQL trap on `IS NOT NULL AND len>0` returns NULL not FALSE
+  - §3 Cascade backfill via migration repair is volatile (count 41→39 transient observed); use direct query as truth, not RPC result
+  - §4 **PostgREST silently caps TABLE-returning RPCs at 1000 rows** — `?limit=10000`, `Range: 0-9999`, `Prefer: count=exact` ALL ignored. Fix: `RETURNS jsonb` + `jsonb_agg(...)`. New invariant: NUNCA use TABLE return em RPC quando volume pode exceder 1000.
+- **Funcional risk assessment:** ZERO today (live DB has all DDL applied; 1742/1785 rows with body; features functional; contract tests pass). Risk surfaces only on `supabase db reset` from local files (not used in prod; LOCAL_QA via `db pull --linked`).
+- **Test baseline impact:** 1713/1671/0/42 → **1722/1674/0/48** (+9 tests, +3 pass offline + 6 skip DB-gated).
+- **Cross-ref:** ADR-0097, P162 log #185 (WATCH-AUDIT-HIGH-17 origin), migrations 20260805000003 + 20260805000004, 3 baseline files, `.claude/rules/database.md` GC-097 protocol (preventive), Q-C drift class (related), sediment-learnings now also documented in ADR-0097 §"Sediment learnings (p224)".
