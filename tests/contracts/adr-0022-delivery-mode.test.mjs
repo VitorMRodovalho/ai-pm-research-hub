@@ -251,6 +251,9 @@ const SELECTION_POLICY_MATRIX = {
   selection_interview_noshow: 'digest_weekly',
   // Admin-facing reminder for stale interviews (W2 Leaf 2 — emitted by cron)
   selection_interview_overdue: 'digest_weekly',
+  // Candidate-facing invite to book interview after objective phase clears
+  // (W2 Leaf 4 — dispatched via notify_selection_cutoff_approved RPC)
+  selection_cutoff_approved: 'transactional_immediate',
 };
 
 test('ADR-0022 Amendment D: selection_* policy matrix present in catalog with expected modes', () => {
@@ -481,4 +484,91 @@ test('ADR-0022 Amendment D Leaf 3: p228 Leaf 3 migration uses DROP + CREATE patt
   // NOTIFY pgrst to publish new signature
   assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
     'Leaf 3 migration must NOTIFY pgrst to reload schema.');
+});
+
+// ─── Amendment D / p228 #260 W2 Leaf 4 contracts ───
+// selection_cutoff_approved: new candidate-facing type + manual dispatch RPC + multi-lang
+// campaign template. Forward-defense locks the idempotency column, authority gate,
+// and the email goes via campaign_send_one_off (NOT notifications table, since
+// candidate is not a member yet).
+
+test('ADR-0022 Amendment D Leaf 4: selection_applications.cutoff_approved_email_sent_at column declared', () => {
+  assert.ok(
+    /ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+cutoff_approved_email_sent_at\s+timestamptz/i.test(allSQL),
+    'Leaf 4 migration must declare ADD COLUMN cutoff_approved_email_sent_at timestamptz for single-fire idempotency.'
+  );
+});
+
+test('ADR-0022 Amendment D Leaf 4: notify_selection_cutoff_approved RPC declared with authority + idempotency', () => {
+  const match = findLatestFunctionMatch('notify_selection_cutoff_approved');
+  assert.ok(match, 'notify_selection_cutoff_approved must be declared in some migration.');
+  const wrapper = match[0];
+  const body = match[2];
+
+  assert.ok(/SECURITY\s+DEFINER/i.test(wrapper),
+    'notify_selection_cutoff_approved must be SECURITY DEFINER.');
+  assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
+    'notify_selection_cutoff_approved must RETURN jsonb (envelope with success + idempotency state).');
+
+  // Authority gate — same pattern as dispatch_peer_review_invitations
+  assert.ok(/selection_committee[\s\S]{0,400}role\s*=\s*'lead'/i.test(body),
+    'Authority gate must check selection_committee.role = lead.');
+  assert.ok(/can_by_member\(\s*v_caller\.id\s*,\s*'manage_member'/i.test(body),
+    "Authority gate must fall back to can_by_member('manage_member').");
+
+  // Single-fire idempotency on cutoff_approved_email_sent_at
+  assert.ok(/cutoff_approved_email_sent_at\s+IS\s+NOT\s+NULL/i.test(body),
+    'Idempotency guard must check cutoff_approved_email_sent_at IS NOT NULL.');
+
+  // Dispatches via campaign_send_one_off (NOT notifications table — candidate not member)
+  assert.ok(/campaign_send_one_off[\s\S]{0,400}'selection_cutoff_approved'/i.test(body),
+    'Email must dispatch via campaign_send_one_off with template_slug selection_cutoff_approved.');
+
+  // Marks idempotency post-send
+  assert.ok(/UPDATE\s+public\.selection_applications[\s\S]{0,300}cutoff_approved_email_sent_at\s*=\s*now\(\)/i.test(body),
+    'After dispatch, RPC must UPDATE selection_applications SET cutoff_approved_email_sent_at = now().');
+
+  // Audit log
+  assert.ok(/admin_audit_log[\s\S]{0,1000}'selection\.cutoff_approved_email_dispatched'/i.test(body),
+    'RPC must write admin_audit_log entry with action selection.cutoff_approved_email_dispatched.');
+
+  // Booking URL precondition
+  assert.ok(/CUTOFF_NO_BOOKING_URL/i.test(body),
+    'RPC must raise CUTOFF_NO_BOOKING_URL when cycle has no interview_booking_url.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: notify_selection_cutoff_approved grants restrict anon', () => {
+  assert.ok(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.notify_selection_cutoff_approved\(uuid\)\s+FROM\s+PUBLIC\s*,\s*anon/i.test(allSQL),
+    'RPC must REVOKE ALL FROM PUBLIC, anon.');
+  assert.ok(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.notify_selection_cutoff_approved\(uuid\)\s+TO\s+authenticated\s*,\s*service_role/i.test(allSQL),
+    'RPC must GRANT EXECUTE TO authenticated, service_role.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: selection_cutoff_approved campaign template declared with multi-lang body', () => {
+  // INSERT on campaign_templates with the canonical slug + ON CONFLICT upsert pattern
+  assert.ok(/INSERT\s+INTO\s+public\.campaign_templates[\s\S]{0,500}'selection_cutoff_approved'/i.test(allSQL),
+    'Leaf 4 migration must INSERT campaign_templates row for slug selection_cutoff_approved.');
+  // Multi-language body required (PT/EN/ES) — matching interview_reminder_1h pattern
+  for (const lang of ['pt', 'en', 'es']) {
+    assert.ok(
+      new RegExp(`'${lang}'\\s*,\\s*'[^']{0,5000}interview_booking_url`, 'i').test(allSQL),
+      `Template body must include ${lang} variant referencing interview_booking_url variable.`
+    );
+  }
+  // Variables declaration must list first_name + interview_booking_url
+  assert.ok(/'first_name'[\s\S]{0,200}'interview_booking_url'/i.test(allSQL),
+    'Template variables must declare first_name + interview_booking_url as required.');
+  // Upsert idempotency
+  assert.ok(/ON\s+CONFLICT\s*\(\s*slug\s*\)\s+DO\s+UPDATE/i.test(allSQL),
+    'Template INSERT must use ON CONFLICT (slug) DO UPDATE for idempotent reruns.');
+});
+
+test('ADR-0022 Amendment D Leaf 4: p228 Leaf 4 migration file exists', () => {
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const leafFour = files.find(f => f.includes('p228_260_w2_leaf4_selection_cutoff_approved'));
+  assert.ok(leafFour,
+    'Migration 20260805000011_p228_260_w2_leaf4_selection_cutoff_approved.sql must exist.');
+  const body = readFileSync(join(MIGRATIONS_DIR, leafFour), 'utf8');
+  assert.ok(/NOTIFY\s+pgrst\s*,\s*'reload schema'/i.test(body),
+    'Leaf 4 migration must NOTIFY pgrst to reload schema.');
 });

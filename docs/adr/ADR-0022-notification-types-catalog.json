@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ADR-0022-notification-types-catalog",
-  "title": "ADR-0022 Notification Types Catalog (W1.5)",
+  "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.5",
+  "version": "W1.6",
   "updated_at": "2026-05-23",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
@@ -153,6 +153,10 @@
     "selection_interview_overdue": {
       "delivery_mode": "digest_weekly",
       "rationale": "p228 W2 Leaf 2 (2026-05-23) — admin alert for stale `selection_interviews` (scheduled_at past, conducted_at NULL, status IN scheduled/rescheduled). Emitted by `_selection_interview_overdue_cron()` daily at 14:00 UTC. One notification per (interview, interviewer) pair with 7-day idempotency window. Bundled in Saturday digest; no email spam."
+    },
+    "selection_cutoff_approved": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "p228 W2 Leaf 4 (2026-05-23) — candidate-facing invitation to book an interview after the objective evaluation phase clears (2+ objective evals + research_score >= cycle cutoff). Dispatched via manual RPC `notify_selection_cutoff_approved(p_application_id)` until PM follow-up adds the auto-trigger. Email goes via `campaign_send_one_off` directly to candidate (not yet a member); catalog entry tracks the type for future helper coverage when candidates become members at approval. Candidate-facing operational; bypasses notify_delivery_mode_pref=suppress_all per W2 Leaf 6."
     }
   },
   "implementation": {
