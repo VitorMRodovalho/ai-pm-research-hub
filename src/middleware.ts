@@ -11,8 +11,9 @@ const LEGACY_HOSTS = [
   "mcp.vitormr.dev",
 ];
 
-// Paths that accept cross-origin POST (MCP clients, OAuth flow)
-const CSRF_BYPASS_PREFIXES = ["/oauth/", "/mcp", "/.well-known/"];
+// Paths that accept cross-origin POST (MCP clients, OAuth flow, internal-only callbacks)
+// /api/internal/ — invoked by DB trigger pg_net (cert PDF auto-gen, p225 #281)
+const CSRF_BYPASS_PREFIXES = ["/oauth/", "/mcp", "/.well-known/", "/api/internal/"];
 
 // Redirect legacy domains to canonical (301 permanent)
 const redirectMiddleware = defineMiddleware((context, next) => {
