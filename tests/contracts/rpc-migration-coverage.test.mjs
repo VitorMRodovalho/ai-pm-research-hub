@@ -79,7 +79,9 @@ const MIGRATION_FILE_DRIFT_BASELINE_PATH = resolve(
 // p224 baseline: 694 versions tracked in supabase_migrations.schema_migrations
 // without a corresponding local .sql file. Origin: pre-GC-097 era
 // apply_migration without manual file sync.
-const MIGRATION_FILE_DRIFT_BASELINE_SIZE = 694;
+// p233 (this session): -1 (20260523010325 shadow row from prior p229/p230 era
+// session cleaned via SEDIMENT-232.B cleanup workflow during #321 close).
+const MIGRATION_FILE_DRIFT_BASELINE_SIZE = 693;
 
 const MIGRATION_ORPHAN_LOCAL_BASELINE_PATH = resolve(
   ROOT,
