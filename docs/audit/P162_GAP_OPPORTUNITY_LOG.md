@@ -1656,12 +1656,21 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Why not fixed in p223:** scope of audit was triage, not remediation. Wanted PM sign-off on remediation approach before committing time. Audit recommendation: investigate before any baseline rebuild.
 - **Cross-ref:** p223 audit report finding #17, `.claude/rules/database.md` GC-097 rule (post-this gap was instituted), p86 sediment in `feedback_pg_get_functiondef_idempotent_capture.md` (related apply_migration file-write gap).
 
-### 186. WATCH-AUDIT-LOW-LINT — Tailwind v4 CSS `Delim('/')` build warning on `text-[var(--text-primary/secondary/muted)]`
-- **Tipo:** build hygiene warn · **Severity:** LOW (non-blocking; build exit 0) · **Effort:** XS (refactor 1 CSS class to 3 separate vars) · **Status:** OPEN — deferred
-- **Trigger:** p223 boot audit `/audit` finding within infra check #2 (`npx astro build`). Build completes successfully (server built in 25.45s, exit 0) but emits one Tailwind v4 lint warning: `Unexpected token Delim('/')` on the class `text-[var(--text-primary/secondary/muted)]`. The arbitrary-value bracket syntax can't parse the `/` separator inside `var()` — it interprets `/` as the CSS alpha-channel separator.
-- **Fix:** refactor whatever component uses `text-[var(--text-primary/secondary/muted)]` to use 3 separate utility classes or 3 separate `var()` references (e.g., conditionally pick the right var via prop/state instead of trying to express the trio in one bracket-expression).
-- **Why deferred:** non-blocking (build passes), not user-visible (the CSS still resolves at runtime to one of the vars), trivial scope (find the source component + split the class). Backlog candidate for any session that touches the affected component organically.
-- **Cross-ref:** p223 audit report finding #2, build warn line `Unexpected token Delim('/')`.
+### 186. WATCH-AUDIT-LOW-LINT — Tailwind v4 CSS `Delim('/')` build warning (UPDATED p225: reclassified as TAILWIND_V4_UPSTREAM phantom warn)
+- **Tipo:** build hygiene warn · **Severity:** LOW (non-blocking; build exit 0) · **Effort:** XS originally; now **upstream-blocked** · **Status:** OPEN — reclassified as TAILWIND_V4_UPSTREAM after 30min p225 investigation
+- **Trigger (original p223):** `npx astro build` emits one Tailwind v4 lint warning during Lightning CSS optimization: `Unexpected token Delim('/')` on the class `text-[var(--text-primary/secondary/muted)]`.
+- **p225 investigation findings (30min, after PM picked WATCH-186 over close-session option):**
+  - **Class does NOT exist in source code.** Grep'd `src/**/*.{tsx,ts,astro,jsx,js,mjs,css}` for `primary/secondary/muted`, `--text-primary/`, `--text-primary)/`, `text-primary/secondary`, and broader patterns. Zero matches outside of `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` (which mentions the warn itself, not the class usage).
+  - **Class does NOT appear in final CSS output** (`dist/client/_astro/BaseLayout.CRZoe56R.css` etc.). The only `--text-primary` references in dist CSS are `text-[var(--text-primary)]` (correct) and `text-[var(--text-primary,#fff)]` (fallback syntax with comma — valid).
+  - **Class does NOT appear in node_modules CSS** nor in Vite cache (`node_modules/.vite/*.css`).
+  - The warn surfaces ONLY during Lightning CSS optimization pass; the offending class is **transiently generated** by Tailwind v4 (likely from a fuzzy-match or arbitrary-value heuristic) and **discarded by Lightning CSS** before output is written.
+  - Tailwind v4.3.0 + @tailwindcss/vite ^4.3.0. The `/` inside `var()` is being interpreted as CSS Color Module Level 4 alpha-channel separator by Lightning CSS, which is correct CSS behavior — the bug is that Tailwind v4 generated this class at all (no upstream source for it).
+- **Why no longer XS-fixable:**  Cannot fix at source level (no source). Cannot fix at config level (no class to remove or rename). Only paths forward:
+  1. Report upstream to Tailwind v4 / Lightning CSS as a false-positive class generator + console-warn pair.
+  2. Suppress the specific warn via Vite/Astro config (e.g., `build.cssMinify: false` or custom Lightning CSS warning filter) — but suppression hides legitimate warns, not recommended.
+  3. Wait for Tailwind v4 / Lightning CSS upstream fix.
+- **New defer reasoning:** non-blocking + non-output-affecting + truly external. The warn IS a phantom — does not affect any rendered CSS, does not affect runtime behavior, only adds noise to build log. Acceptable to leave until upstream fixes it OR upgrade path happens organically.
+- **Cross-ref:** p223 audit report finding #2; p225 investigation 2026-05-23.
 
 
 ### 187. RESOLVED-WATCH-185 — Migration history drift amnesty + ratchet (ADR-0097 / WATCH-AUDIT-HIGH-17 close)
@@ -1694,3 +1703,33 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Production routing implication:** Perplexity MCP users connect to `/mcp/semantic` (3 tools, will grow via #280 wave-2+); Claude.ai (and any client with no cap) continue connecting to `/mcp` (299 tools). Both surfaces remain healthy and served from the same EF v2.79.0 — the bridge architecture is the canonical answer per #280 acceptance criteria.
 - **Soft WATCH (not filed as issue):** if/when #280 wave-2+ adds capability profiles (`core` / `selection` / `governance` / `knowledge` / `profile` / `admin` / `full`), monitor whether any profile crosses Perplexity's cap. The `full` profile is most at risk since it bundles all wave-1+wave-2 tools. Mitigation if hit: split into smaller named profiles (no architectural change needed, just config in `registerSemanticTools`).
 - **Cross-ref:** P162 #184 (retest matrix documented at p223 audit) · P162 #174 (RESOLVED-280-ALPHA `/semantic` ship) · PR #285 (semantic alpha) · PR #275 (OAuth allowlist refactor, p220) · PR #276 (execution strip, p220) · PR #279 (closed-as-superseded `$schema` strip, p223) · #280 (semantic capability profiles wave-2+ tracking).
+
+### 189. RESOLVED-281 — Server-side cert PDF forward auto-gen via DB trigger + CF Browser Rendering + supabase_vault (live verified end-to-end)
+- **Tipo:** forward feature gap close · **Severity:** MED (LGPD Art. 16 retention + Art. 18 access) · **Effort:** L (~5h total: spec + 3 PRs + deploy ops + smoke + investigation) · **Status:** RESOLVED — pipeline live + smoke verified 2026-05-23 05:22:32 UTC
+- **Trigger:** Carry from p221 PR #282 (#267 alpha backfill of 42 existing certs left forward gap). #281 selected via PM ABCD as next p225 carry after #277 close.
+- **Pipeline shipped (ADR-0098, 3 PRs):**
+  1. **PR #293** — Migration `20260805000005` + Astro endpoint `/api/internal/cert-pdf-render/[id]` + wrangler.toml `[browser]` binding + middleware CSRF bypass + ADR-0098 + 22 contract assertions. Path β chosen from 4-path trade-off (β CF Browser Rendering, recommended for zero visual drift vs backfill alpha).
+  2. **PR #294 (same-day refactor)** — SEDIMENT-225.B: Supabase managed PG blocks `ALTER DATABASE SET app.*` for non-allowlisted GUCs. Refactored trigger fn to read shared secret from `vault.decrypted_secrets` (supabase_vault v0.3.1 installed by default). Migration `20260805000006` + ADR-0098 Amendment + 7 contract assertions.
+  3. **PR #295 (same-day hotfix)** — Endpoint env fallback: `cfEnv.SUPABASE_URL` was never set as wrangler binding (it's build-time `PUBLIC_SUPABASE_URL` via `import.meta.env`). Mirrored dual-source pattern from `calendar-webhook.ts`. Smoke test surfaced this via pg_net response capture (HTTP 500 + exact error message).
+- **3 sediments discovered + documented (ADR-0098 Amendment + this entry):**
+  - **SEDIMENT-225.A**: Postgres strips inline `--` comments from `prosrc` when storing function source → Phase C body-hash drift gate flags any function with inline `--` in body. Fix = move comments outside `AS $$ ... $$` block. Caught by CI on first PR #293 push.
+  - **SEDIMENT-225.B**: Supabase managed PG restricts `ALTER DATABASE SET app.*` to allowlisted params. Custom GUC `app.cert_pdf_internal_secret` was blocked → error 42501. Workaround = `supabase_vault` (already installed). Caught at deploy ops by PM running ALTER DATABASE.
+  - **SEDIMENT-225.C**: Body-drift parser (`tests/helpers/rpc-body-drift-parser.mjs`) regex `/\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+.../i` matches `CREATE OR REPLACE FUNCTION` literal **inside SQL comments**. Initial migration `20260805000006` had a rollback example inside a comment that caused the parser to emit 2 blocks for the same function (one 5-byte stub from the comment + the real 1097-byte body). Fix = avoid the exact `CREATE ... FUNCTION` token sequence inside rollback comment examples.
+- **Live smoke verification (2026-05-23 05:22:32 UTC):**
+  - INSERT test cert (vc=TEST-P225-281-002, type=contribution, member_id=Vitor) at 05:22:32.614
+  - pg_net response captured at 05:22:32.622: HTTP 200, body `{"ok":true, "cert_id":"ebbbc25c-...", "verification_code":"TEST-P225-281-002", "pdf_url":"880f736c-3e76-4df4-9375-33575c190305/TEST-P225-281-002.pdf", "bytes":44423, "race_winner":true}`
+  - storage.objects row created at 05:22:41 (size=44423 bytes, mimetype=application/pdf, cacheControl=max-age=31536000, httpStatusCode=200)
+  - certificates.pdf_url populated to the storage path (race_winner=true confirms UPDATE went through cleanly)
+  - End-to-end latency ~9s (INSERT → storage written, includes pg_net dequeue + endpoint dispatch + CF Browser Rendering render + storage upload + UPDATE)
+  - Cleanup: cert row + storage.objects row both deleted via REST API
+- **Operator setup completed by PM:**
+  - `npx wrangler deploy` (Cloudflare Pages auto-deployed on PR merge)
+  - `openssl rand -base64 32 | npx wrangler secret put CERT_PDF_INTERNAL_SECRET` (32-byte secret, base64 = 44 chars)
+  - Studio SQL: `SELECT vault.create_secret('<same_value>', 'cert_pdf_internal_secret', 'p225 #281 ADR-0098: shared secret for AFTER INSERT trigger → /api/internal/cert-pdf-render');`
+  - Verify: `SELECT name, length(decrypted_secret) FROM vault.decrypted_secrets WHERE name = 'cert_pdf_internal_secret';` → secret_len=44 ✓
+- **Member SELECT path (PM decision: Option A LGPD-conservative):** `/verify/{code}` STAYS metadata-only; `/certificates` continues using browser-print pipeline (PR #262, p218) — already satisfies LGPD Art. 18. **Future work** (deferred to follow-up): new RPC `get_my_certificate_pdf_path(p_cert_id)` + new Astro endpoint `/api/cert-pdf-url/[id]` returning signed URL TTL 5min via service-role. Estimated S (~1h). Acceptable defer because browser-print already provides access.
+- **Test baseline impact:** 1722/1674/0/48 → **1751/1703/0/48** offline (+29 assertions: 22 from PR #293 + 7 from PR #294 vault path).
+- **Carries continued:**
+  - `/certificates` signed URL wiring (Phase 4 deferred from #281 spec) — soft WATCH inline in ADR-0098
+  - #280 wave-2+ semantic capability profiles — strategic carry from p222
+- **Cross-ref:** ADR-0098 (Accepted + Amendment 2026-05-23) · migrations `20260805000005` + `20260805000006` · endpoint `src/pages/api/internal/cert-pdf-render/[id].ts` · `wrangler.toml` `[browser]` binding · `src/middleware.ts` `/api/internal/` CSRF bypass · contract test `tests/contracts/certificate-pdf-autogen-trigger.test.mjs` · `scripts/backfill-cert-pdfs.ts` (p221 alpha reference) · `src/lib/certificates/pdf.ts` (canonical template, reused) · PRs #293/#294/#295 · #281 (closed) · #267 (closed p221) · #258 (closed p218) · LGPD Art. 16 + Art. 18.
