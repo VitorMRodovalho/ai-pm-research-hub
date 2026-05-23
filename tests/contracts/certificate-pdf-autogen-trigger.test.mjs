@@ -19,6 +19,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { test, describe } from 'node:test';
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000005_p225_281_certificate_pdf_autogen_trigger.sql';
+const VAULT_REFACTOR_PATH = 'supabase/migrations/20260805000006_p225_281_certificate_pdf_autogen_use_vault.sql';
 const ENDPOINT_PATH = 'src/pages/api/internal/cert-pdf-render/[id].ts';
 const WRANGLER_PATH = 'wrangler.toml';
 const MIDDLEWARE_PATH = 'src/middleware.ts';
@@ -202,5 +203,52 @@ describe('p225 #281 — certificate PDF autogen trigger pipeline', () => {
     // The @page CSS pattern must match scripts/backfill-cert-pdfs.ts buildBackfillDocument()
     assert.match(ts, /@page\{size:A4 portrait;margin:15mm 12mm 18mm 12mm\}/, 'must match @page A4 margins from backfill');
     assert.match(ts, /font-family:Georgia,serif/, 'must use same font family as backfill');
+  });
+
+  // Vault refactor (20260805000006) — SEDIMENT-225.B: Supabase managed PG blocks
+  // ALTER DATABASE SET app.* for non-allowlisted params, forcing migration to
+  // supabase_vault for the shared secret instead of GUC.
+
+  test('vault refactor migration 20260805000006 exists', () => {
+    assert.ok(existsSync(VAULT_REFACTOR_PATH), `vault refactor missing: ${VAULT_REFACTOR_PATH}`);
+  });
+
+  test('vault refactor reads secret from vault.decrypted_secrets', () => {
+    const sql = readFileSync(VAULT_REFACTOR_PATH, 'utf8');
+    assert.match(
+      sql,
+      /SELECT decrypted_secret INTO v_secret\s+FROM vault\.decrypted_secrets\s+WHERE name = 'cert_pdf_internal_secret'/,
+      'vault refactor must read shared secret from vault.decrypted_secrets by name',
+    );
+    assert.match(sql, /SET search_path = public, extensions, vault/, 'vault refactor must include vault in search_path for SECDEF safety');
+  });
+
+  test('vault refactor preserves trigger fn signature (CREATE OR REPLACE keeps trigger binding)', () => {
+    const sql = readFileSync(VAULT_REFACTOR_PATH, 'utf8');
+    assert.match(sql, /CREATE OR REPLACE FUNCTION public\._trg_certificate_pdf_autogen\(\)\s+RETURNS TRIGGER/s, 'must keep same fn signature so existing trigger stays bound');
+  });
+
+  test('vault refactor preserves best-effort exception semantics', () => {
+    const sql = readFileSync(VAULT_REFACTOR_PATH, 'utf8');
+    assert.match(sql, /EXCEPTION\s+WHEN OTHERS THEN/, 'must keep WHEN OTHERS handler');
+    assert.match(sql, /RAISE WARNING.*continuing.*best-effort/, 'must still log WARNING (not fail insert)');
+  });
+
+  test('vault refactor sanity DO verifies fn body references vault.decrypted_secrets', () => {
+    const sql = readFileSync(VAULT_REFACTOR_PATH, 'utf8');
+    assert.match(sql, /v_body_uses_vault/, 'sanity DO must check vault reference in prosrc after CREATE OR REPLACE');
+    assert.match(sql, /RAISE EXCEPTION 'p225 #281 vault refactor/, 'sanity must RAISE EXCEPTION to block migration apply if vault refactor did not stick');
+  });
+
+  test('vault refactor documents SEDIMENT-225.B (managed PG GUC restriction)', () => {
+    const sql = readFileSync(VAULT_REFACTOR_PATH, 'utf8');
+    assert.match(sql, /SEDIMENT-225\.B/, 'must reference the sediment learning by ID for P162 backlog cross-ref');
+    assert.match(sql, /permission denied to set parameter/, 'must document the exact error message from ALTER DATABASE SET app.* failure');
+  });
+
+  test('ADR-0098 references vault path (post-amendment) + SEDIMENT-225.B', () => {
+    const adr = readFileSync(ADR_PATH, 'utf8');
+    assert.match(adr, /vault\.decrypted_secrets|vault\.create_secret|supabase_vault/, 'ADR must document vault approach (post-amendment)');
+    assert.match(adr, /SEDIMENT-225\.B|managed PG.*GUC|ALTER DATABASE.*app\./, 'ADR must capture the managed-PG GUC sediment that motivated the refactor');
   });
 });
