@@ -70,6 +70,40 @@ const TABLE_ORPHAN_ALLOWLIST_PATH = resolve(
 // sessions. See `docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md` p174 section.
 const TABLE_ORPHAN_ALLOWLIST_BASELINE_SIZE = 35;
 
+// ADR-0097 / WATCH-185 — schema_migrations drift baselines (p224).
+// Three orthogonal drift classes with separate allowlists + ratchets.
+const MIGRATION_FILE_DRIFT_BASELINE_PATH = resolve(
+  ROOT,
+  'docs/audit/MIGRATION_FILE_DRIFT_BASELINE_P224.txt'
+);
+// p224 baseline: 694 versions tracked in supabase_migrations.schema_migrations
+// without a corresponding local .sql file. Origin: pre-GC-097 era
+// apply_migration without manual file sync.
+const MIGRATION_FILE_DRIFT_BASELINE_SIZE = 694;
+
+const MIGRATION_ORPHAN_LOCAL_BASELINE_PATH = resolve(
+  ROOT,
+  'docs/audit/MIGRATION_ORPHAN_LOCAL_BASELINE_P224.txt'
+);
+// p224 baseline: 15 local .sql files without corresponding row in
+// supabase_migrations.schema_migrations. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI R00 seed (1).
+const MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE = 15;
+
+const MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH = resolve(
+  ROOT,
+  'docs/audit/MIGRATION_EMPTY_STATEMENTS_BASELINE_P224.txt'
+);
+// p224 baseline: 41 rows in schema_migrations where statements is NULL OR
+// empty array '{}'. Two sub-categories:
+//   - 39 with statements IS NULL (true NULL — never recorded)
+//   - 2 with statements = '{}' (empty array — `supabase migration repair`
+//     set body to empty array instead of populating from local file; bug
+//     pattern documented in ADR-0097 sediment section). Affected:
+//     20260721000000 + 20260722000000.
+// Cross-cut with missing-file baseline: 12 ALSO missing local file
+// (truly lost — body only in pg_proc); 29 with local file (cosmetic).
+const MIGRATION_EMPTY_STATEMENTS_BASELINE_SIZE = 41;
+
 function loadAllMigrationsConcat() {
   const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort();
   return files.map(f => readFileSync(join(MIGRATIONS_DIR, f), 'utf8')).join('\n');
@@ -163,6 +197,29 @@ async function callBodiesAuditRpc() {
   return res.json();
 }
 
+async function callSchemaMigrationsAuditRpc() {
+  // schema_migrations has ~1784 rows (p224 baseline). PostgREST default
+  // limit is 1000, so we must explicitly request more. Using `Range`
+  // header with `Range-Unit: items` to fetch all rows (canonical
+  // PostgREST pattern for unbounded RPC result sets).
+  const url = `${SUPABASE_URL}/rest/v1/rpc/_audit_list_schema_migrations`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Range-Unit': 'items',
+      Range: '0-9999',
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok && res.status !== 206) {
+    throw new Error(`schema_migrations audit RPC failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
 function loadBodyDriftAllowlist() {
   const raw = readFileSync(BODY_DRIFT_ALLOWLIST_PATH, 'utf8');
   return new Set(
@@ -191,6 +248,50 @@ function loadTableOrphanAllowlist() {
       .map(s => s.trim())
       .filter(s => s.length > 0 && !s.startsWith('#'))
   );
+}
+
+function loadMigrationFileDriftBaseline() {
+  const raw = readFileSync(MIGRATION_FILE_DRIFT_BASELINE_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
+}
+
+function loadMigrationOrphanLocalBaseline() {
+  const raw = readFileSync(MIGRATION_ORPHAN_LOCAL_BASELINE_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
+}
+
+function loadMigrationEmptyStatementsBaseline() {
+  const raw = readFileSync(MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
+}
+
+function extractLocalMigrationVersions() {
+  // Extract unique version prefix from supabase/migrations/*.sql filenames.
+  // Filename format: <version>_<name>.sql or <version>.sql (rare).
+  // Returns Set of version strings (deduped).
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const out = new Set();
+  for (const f of files) {
+    const base = f.replace(/\.sql$/, '');
+    const version = base.split('_')[0];
+    out.add(version);
+  }
+  return out;
 }
 
 function buildCreateTableMatcher(name) {
@@ -611,5 +712,244 @@ test('Phase C: body-drift allowlist size matches p175 baseline', () => {
       `Ratcheting UP requires capturing the body via apply_migration first; ` +
       `if intentionally accepting new drift, document the rationale in the ` +
       `allowlist file AND bump the constant.`
+  );
+});
+
+// ============================================================================
+// ADR-0097 / WATCH-185 — schema_migrations drift baselines (p224)
+//
+// Closes the gap between supabase_migrations.schema_migrations (tracked rows)
+// and supabase/migrations/*.sql (local files). Three orthogonal drift classes:
+//
+//   1. MISSING FILE: tracked − local. 694 entries at p224 baseline.
+//      Pre-GC-097 era: apply_migration applied DDL to DB without manual
+//      file sync. Body still in statements column (1742/1783 rows).
+//
+//   2. ORPHAN LOCAL: local − tracked. 15 entries at p224 baseline.
+//      Files exist on disk but never registered via `migration repair --status
+//      applied`. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI (1).
+//
+//   3. EMPTY STATEMENTS: tracked rows with NULL/empty statements. 39 entries
+//      at p224 baseline. Two sub-categories: 12 ALSO missing local file
+//      (truly lost — body only in pg_proc), 27 with local file (cosmetic).
+//
+// Discovery: P162 log #185 WATCH-AUDIT-HIGH-17. Decision: ADR-0097 (Path δ
+// Hybrid amnesty + ratchet). Helper RPC: `_audit_list_schema_migrations()`
+// (migration 20260805000003).
+//
+// Three failure paths per drift class (mirror Q-C / Pacote M / Phase C):
+//   - NEW: live drift entry not in baseline allowlist → fail (drift grew)
+//   - STALE: baseline entry not in current live state → fail (ratchet DOWN)
+//   - SIZE: allowlist file size != BASELINE_SIZE constant → fail (force bump)
+// ============================================================================
+
+test(
+  'ADR-0097: no NEW missing-file drift vs p224 baseline (tracked − local)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const localVersions = extractLocalMigrationVersions();
+    const baseline = loadMigrationFileDriftBaseline();
+
+    const trackedVersions = new Set(rows.map(r => r.version));
+    const currentMissing = [...trackedVersions].filter(v => !localVersions.has(v));
+    const newMissing = currentMissing.filter(v => !baseline.has(v));
+
+    if (newMissing.length > 0) {
+      assert.fail(
+        `NEW missing-file drift detected — version(s) appear in ` +
+          `supabase_migrations.schema_migrations but no corresponding .sql ` +
+          `exists in supabase/migrations/. Pre-GC-097 era apply_migration ` +
+          `pattern (DDL applied via MCP without manual file sync) was the ` +
+          `historical cause; GC-097 protocol now requires writing the local ` +
+          `file + running 'supabase migration repair --status applied <ts>' ` +
+          `after every apply_migration call.\n\n` +
+          `To fix: either (a) write the missing .sql file with the DDL body ` +
+          `(query the live row's statements via SELECT * FROM ` +
+          `supabase_migrations.schema_migrations WHERE version='<v>'), or ` +
+          `(b) extend ${MIGRATION_FILE_DRIFT_BASELINE_PATH} with PM ack + ` +
+          `bump MIGRATION_FILE_DRIFT_BASELINE_SIZE in this file (rare — ` +
+          `recovery is the preferred path).\n\n` +
+          `New missing-file drift:\n  ${newMissing.sort().join('\n  ')}`
+      );
+    }
+  }
+);
+
+test(
+  'ADR-0097: missing-file baseline stays in sync (no resolved entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const localVersions = extractLocalMigrationVersions();
+    const baseline = loadMigrationFileDriftBaseline();
+
+    const trackedVersions = new Set(rows.map(r => r.version));
+    const currentMissing = new Set(
+      [...trackedVersions].filter(v => !localVersions.has(v))
+    );
+
+    const stale = [...baseline].filter(v => !currentMissing.has(v));
+
+    if (stale.length > 0) {
+      assert.fail(
+        `Missing-file baseline contains entries that are no longer missing ` +
+          `(either local .sql was added OR row was deleted from ` +
+          `supabase_migrations.schema_migrations). Remove from ` +
+          `${MIGRATION_FILE_DRIFT_BASELINE_PATH} (drift cleanup ratcheting ` +
+          `down) and decrement MIGRATION_FILE_DRIFT_BASELINE_SIZE in this ` +
+          `file by ${stale.length}:\n\n  ` +
+          stale.sort().join('\n  ')
+      );
+    }
+  }
+);
+
+test('ADR-0097: missing-file baseline size matches p224 constant', () => {
+  const baseline = loadMigrationFileDriftBaseline();
+  assert.equal(
+    baseline.size,
+    MIGRATION_FILE_DRIFT_BASELINE_SIZE,
+    `Missing-file baseline size drifted from ${MIGRATION_FILE_DRIFT_BASELINE_SIZE} ` +
+      `to ${baseline.size}. Ratcheting DOWN (drift recovery): decrement ` +
+      `the constant in this file to match the new baseline count. ` +
+      `Ratcheting UP requires PM ack + ADR-0097 amendment + documented ` +
+      `rationale in the baseline file header.`
+  );
+});
+
+test(
+  'ADR-0097: no NEW orphan-local drift vs p224 baseline (local − tracked)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const localVersions = extractLocalMigrationVersions();
+    const baseline = loadMigrationOrphanLocalBaseline();
+
+    const trackedVersions = new Set(rows.map(r => r.version));
+    const currentOrphans = [...localVersions].filter(v => !trackedVersions.has(v));
+    const newOrphans = currentOrphans.filter(v => !baseline.has(v));
+
+    if (newOrphans.length > 0) {
+      assert.fail(
+        `NEW orphan-local drift detected — version(s) appear as .sql files ` +
+          `in supabase/migrations/ but no corresponding row in ` +
+          `supabase_migrations.schema_migrations. Indicates a file was added ` +
+          `without running 'supabase migration repair --status applied <ts>' ` +
+          `(GC-097 manual sync step).\n\n` +
+          `To fix: run \`supabase migration repair --status applied <version>\` ` +
+          `for each new orphan to register it. Files should NEVER exist ` +
+          `without registration.\n\n` +
+          `New orphan-local drift:\n  ${newOrphans.sort().join('\n  ')}`
+      );
+    }
+  }
+);
+
+test(
+  'ADR-0097: orphan-local baseline stays in sync (no resolved entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const localVersions = extractLocalMigrationVersions();
+    const baseline = loadMigrationOrphanLocalBaseline();
+
+    const trackedVersions = new Set(rows.map(r => r.version));
+    const currentOrphans = new Set(
+      [...localVersions].filter(v => !trackedVersions.has(v))
+    );
+
+    const stale = [...baseline].filter(v => !currentOrphans.has(v));
+
+    if (stale.length > 0) {
+      assert.fail(
+        `Orphan-local baseline contains entries that are no longer orphan ` +
+          `(either row was registered via migration repair OR file was ` +
+          `deleted). Remove from ${MIGRATION_ORPHAN_LOCAL_BASELINE_PATH} and ` +
+          `decrement MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE in this file by ` +
+          `${stale.length}:\n\n  ` +
+          stale.sort().join('\n  ')
+      );
+    }
+  }
+);
+
+test('ADR-0097: orphan-local baseline size matches p224 constant', () => {
+  const baseline = loadMigrationOrphanLocalBaseline();
+  assert.equal(
+    baseline.size,
+    MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE,
+    `Orphan-local baseline size drifted from ${MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE} ` +
+      `to ${baseline.size}. Ratcheting DOWN (orphan registered via migration ` +
+      `repair): decrement the constant in this file. Ratcheting UP prohibited ` +
+      `(files should never exist without registration — GC-097 violation).`
+  );
+});
+
+test(
+  'ADR-0097: no NEW empty-statements drift vs p224 baseline',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const baseline = loadMigrationEmptyStatementsBaseline();
+
+    const currentEmpty = rows.filter(r => !r.has_body).map(r => r.version);
+    const newEmpty = currentEmpty.filter(v => !baseline.has(v));
+
+    if (newEmpty.length > 0) {
+      assert.fail(
+        `NEW empty-statements drift detected — row(s) in ` +
+          `supabase_migrations.schema_migrations have NULL or empty ` +
+          `statements column. The apply_migration MCP should always capture ` +
+          `the body. Empty statements indicate either (a) row inserted via ` +
+          `'supabase migration repair --status applied' without statements ` +
+          `column being set, or (b) dashboard SQL editor DDL without ` +
+          `migration discipline.\n\n` +
+          `To fix: re-run 'supabase migration repair --status applied <v>' ` +
+          `for each new empty row IF the corresponding local file exists ` +
+          `(CLI backfills body from file). If no local file, the DDL is ` +
+          `only recoverable from pg_proc/pg_policies introspection.\n\n` +
+          `New empty-statements drift:\n  ${newEmpty.sort().join('\n  ')}`
+      );
+    }
+  }
+);
+
+test(
+  'ADR-0097: empty-statements baseline stays in sync (no resolved entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callSchemaMigrationsAuditRpc();
+    const baseline = loadMigrationEmptyStatementsBaseline();
+
+    const currentEmpty = new Set(
+      rows.filter(r => !r.has_body).map(r => r.version)
+    );
+
+    const stale = [...baseline].filter(v => !currentEmpty.has(v));
+
+    if (stale.length > 0) {
+      assert.fail(
+        `Empty-statements baseline contains entries that no longer have empty ` +
+          `statements (body was backfilled — typically by 'supabase migration ` +
+          `repair --status applied' cascading to other versions with local ` +
+          `files present). Remove from ${MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH} ` +
+          `and decrement MIGRATION_EMPTY_STATEMENTS_BASELINE_SIZE in this ` +
+          `file by ${stale.length}:\n\n  ` +
+          stale.sort().join('\n  ')
+      );
+    }
+  }
+);
+
+test('ADR-0097: empty-statements baseline size matches p224 constant', () => {
+  const baseline = loadMigrationEmptyStatementsBaseline();
+  assert.equal(
+    baseline.size,
+    MIGRATION_EMPTY_STATEMENTS_BASELINE_SIZE,
+    `Empty-statements baseline size drifted from ${MIGRATION_EMPTY_STATEMENTS_BASELINE_SIZE} ` +
+      `to ${baseline.size}. Ratcheting DOWN (body backfilled): decrement ` +
+      `the constant. Ratcheting UP prohibited (apply_migration MCP should ` +
+      `always capture body — investigate cause before accepting).`
   );
 });
