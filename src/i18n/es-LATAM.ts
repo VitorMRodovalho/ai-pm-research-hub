@@ -5350,6 +5350,14 @@ const esLATAM: Record<string, string> = {
   'admin.memberEdit.toast.reactivated': 'Miembro reactivado 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Motivo para desactivar a {name} (opcional):',
 
+  // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
+  'admin.member.bookingUrl.label': 'URL de agenda de entrevista',
+  'admin.member.bookingUrl.placeholder': 'https://calendar.app.google/...',
+  'admin.member.bookingUrl.help': 'Se usa en la pista investigador(a) para entrevistas individuales. La pista líder usa el enlace a nivel de ciclo.',
+  'admin.member.bookingUrl.invalid': 'La URL debe empezar con http:// o https://',
+  'admin.member.bookingUrl.empty': '(no definida)',
+  'admin.member.bookingUrl.savedToast': 'URL de agenda guardada ✅',
+
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Comparativa cross-iniciativa del ciclo actual (tribus de investigación, grupos de trabajo, comités, grupos de estudio, congresos). Use el filtro para elegir el tipo. Solo GP/DM.',
   'admin.tribes.denied': 'Acceso restringido a GP/DM',
