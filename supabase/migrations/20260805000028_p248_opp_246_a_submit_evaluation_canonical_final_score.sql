@@ -182,11 +182,6 @@ BEGIN
       UPDATE public.selection_applications SET status = v_new_status, updated_at = now()
       WHERE id = p_application_id AND status IN ('submitted', 'screening', 'objective_eval');
     ELSIF p_evaluation_type = 'interview' THEN
-      -- p248 OPP-246.A: final_score derivation moved to canonical compute_application_scores
-      -- (CR-047 weighted formula). Trigger trg_recompute_application_scores on the
-      -- selection_evaluations INSERT above already invokes it; the inline naive-sum UPDATE
-      -- (final_score = obj + interview + leader_extra) was overriding that canonical write.
-      -- Defense-in-depth: explicit PERFORM after our status='final_eval' UPDATE.
       UPDATE public.selection_applications
         SET interview_score = v_pert_score,
             status = 'final_eval',
@@ -194,8 +189,6 @@ BEGIN
       WHERE id = p_application_id;
       PERFORM public.compute_application_scores(p_application_id);
     ELSIF p_evaluation_type = 'leader_extra' THEN
-      -- p248 OPP-246.A: final_score derivation moved to canonical compute_application_scores
-      -- (see interview branch comment above for full context).
       UPDATE public.selection_applications
         SET leader_extra_pert_score = v_pert_score,
             updated_at = now()
