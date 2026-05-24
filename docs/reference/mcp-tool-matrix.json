@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-05-22T23:04:14.440Z",
+  "generated_at": "2026-05-24T03:44:43.599Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 302,
+  "total": 304,
   "runtime_status": "drift: 3 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context], 0 runtime-only []",
   "by_domain": {
     "personal": 21,
@@ -13,7 +13,7 @@
     "knowledge": 12,
     "partners": 11,
     "selection": 24,
-    "health": 14,
+    "health": 16,
     "governance": 22,
     "admin": 1
   },
@@ -1336,7 +1336,7 @@
     },
     {
       "name": "get_application_score_breakdown",
-      "description": "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.",
+      "description": "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Two cutoff bands surface separately: 'pert_cutoff' (objective; reads pert_target_score/band_*) and 'leader_extra_cutoff' (leader_extra dimension; reads leader_extra_pert_target/band_* with leader_extra_score_position ∈ below/within/above). Top-level 'leader_extra_pert_score' also exposed. p232 #229 Phase 2 closed the dual-dimension visibility loop. Admin/GP/curator only.",
       "domain": "selection",
       "rpcs": [
         "get_application_score_breakdown"
@@ -1735,7 +1735,7 @@
     },
     {
       "name": "get_pert_cutoff_summary",
-      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Use to assess whether candidates land within the calibration band of approved members. Admin/curator (manage_member).",
+      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the calibration band of approved members per dimension. Admin/curator (manage_member).",
       "domain": "tribe",
       "rpcs": [
         "get_pert_cutoff_summary"
@@ -1748,7 +1748,7 @@
     },
     {
       "name": "compute_pert_cutoff",
-      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists pert_target_score/pert_band_lower/upper/cohort_n on every application in the cycle. Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Use BEFORE committee final decision to refresh the cutoff band against the current pool of active members.",
+      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Note: the weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
       "domain": "tribe",
       "rpcs": [
         "compute_pert_cutoff"
@@ -2672,6 +2672,36 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "data"
+    },
+    {
+      "name": "lgpd_record_retroactive_notification",
+      "description": "Records a retroactive Art. 18 §IV notification dispatch in pii_access_log (context='lgpd_art_18_retroactive_notification'). Use AFTER PM dispatches the notification email via official channel to anchor the audit chain. PM-only (manage_member). The RPC does NOT send the email — it logs the dispatch event. p_dispatched_at lets PM backdate to the actual send timestamp; defaults to now() if omitted. Returns pii_access_log_id of the created row + target_member_id resolved from applicant email. Pairs with notification template at docs/audit/lgpd-art11-remediation/ (interim_v1 PM-approved; angeline_v1 pending sibling #334).",
+      "domain": "health",
+      "rpcs": [
+        "lgpd_record_retroactive_notification"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "lgpd_execute_retroactive_deletion",
+      "description": "Atomically clears pmi_video_screenings.transcription for a specific video row and writes a pii_access_log row (context='lgpd_art_18_deletion_executed') with full deletion_artifacts jsonb evidence. PM-only (manage_member). Use IF the candidate requests Art. 18 §IV deletion within the response window. Validates video_id belongs to application_id + rejects idempotent no-op (already-NULL transcription) to keep audit clean. Drive file removal is a SEPARATE operator step — pass p_drive_deletion_ref (trash confirmation URL or Workspace audit ref) once you've deleted the Drive asset, so the chain stays complete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
+      "domain": "health",
+      "rpcs": [
+        "lgpd_execute_retroactive_deletion"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "{ action: \"lgpd_execute_retroactive_deletion\", preview: true, target: vs ? { id: vs.id, ap"
     },
     {
       "name": "list_initiative_engagements",
