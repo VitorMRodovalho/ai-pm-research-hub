@@ -36,6 +36,12 @@ const SEL_I18N = {
   leaderExtraCutoffLabel: t('admin.selection.leaderExtraCutoffLabel', lang),
   leaderExtraCutoffTooltip: t('admin.selection.leaderExtraCutoffTooltip', lang),
   leaderExtraCutoffEmpty: t('admin.selection.leaderExtraCutoffEmpty', lang),
+  // p245 #229a — per-candidate PERT classification badges
+  pertBandAbove: t('admin.selection.pertBandAbove', lang),
+  pertBandWithin: t('admin.selection.pertBandWithin', lang),
+  pertBandBelow: t('admin.selection.pertBandBelow', lang),
+  pertBandTooltipFull: t('admin.selection.pertBandTooltipFull', lang),
+  leaderExtraDisabledChip: t('admin.selection.leaderExtraDisabledChip', lang),
   consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
   consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
   consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
@@ -594,6 +600,12 @@ const SEL_I18N = {
     leaderExtraCutoffLabel: 'Corte Líder',
     leaderExtraCutoffTooltip: 'Corte da pilastra Líder (leader_extra) calibrado separadamente do objetivo desde p209 (#229).',
     leaderExtraCutoffEmpty: 'Corte Líder não calculado (cohort < 10 ou sem avaliações)',
+    // p245 #229a fallbacks
+    pertBandAbove: 'Acima',
+    pertBandWithin: 'Na banda',
+    pertBandBelow: 'Abaixo',
+    pertBandTooltipFull: 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
+    leaderExtraDisabledChip: 'Régua líder: n={n}<10',
     consentPendingBadge: 'sem consent IA',
     consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
     consentRevokedBadge: 'consent revogado',
@@ -745,6 +757,70 @@ const SEL_I18N = {
     if (s < lower) return 'bg-red-50 text-red-700';
     if (s > upper) return 'bg-emerald-50 text-emerald-700';
     return 'bg-amber-50 text-amber-700';
+  }
+  // p245 #229a: per-candidate PERT classification helpers. Surface the band position
+  // explicitly (not just by color), with delta vs target + enriched tooltip including
+  // cohort_n + method. Leader_extra dimension renders separately with its own cutoff
+  // (or disabled reason when method=disabled, e.g. cohort_n<10 historical threshold).
+  function bandClassify(score: any, cutoff: any): { color: string; label: 'above'|'within'|'below'|'none'; delta: number | null } {
+    if (score == null || !cutoff || cutoff.band_lower == null || cutoff.band_upper == null) {
+      return { color: '', label: 'none', delta: null };
+    }
+    const s = Number(score);
+    if (!Number.isFinite(s)) return { color: '', label: 'none', delta: null };
+    const lower = Number(cutoff.band_lower);
+    const upper = Number(cutoff.band_upper);
+    const target = cutoff.target_score != null ? Number(cutoff.target_score) : null;
+    const delta = target != null ? s - target : null;
+    if (s < lower) return { color: 'bg-red-50 text-red-700', label: 'below', delta };
+    if (s > upper) return { color: 'bg-emerald-50 text-emerald-700', label: 'above', delta };
+    return { color: 'bg-amber-50 text-amber-700', label: 'within', delta };
+  }
+  function formatDelta(d: number | null): string {
+    if (d == null || !Number.isFinite(d)) return '';
+    const sign = d >= 0 ? '+' : '';
+    return `${sign}${d.toFixed(1)}`;
+  }
+  function pertBandChip(score: any, cutoff: any): string {
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') return '';
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}">${esc(labelText)}${esc(deltaText)}</div>`;
+  }
+  function pertFullTooltip(score: any, cutoff: any): string {
+    if (score == null || !cutoff || cutoff.target_score == null) return '';
+    const tpl: string = T.pertBandTooltipFull || 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}';
+    return tpl
+      .replace('{score}', Number(score).toFixed(1))
+      .replace('{lower}', cutoff.band_lower != null ? Number(cutoff.band_lower).toFixed(1) : '—')
+      .replace('{upper}', cutoff.band_upper != null ? Number(cutoff.band_upper).toFixed(1) : '—')
+      .replace('{target}', Number(cutoff.target_score).toFixed(1))
+      .replace('{n}', String(cutoff.cohort_n ?? '?'))
+      .replace('{method}', String(cutoff.method ?? '?'));
+  }
+  function leaderExtraChip(score: any, cutoff: any): string {
+    // PM rule (#229a): never compare leader against the objective rule. Leader_extra
+    // has its own cohort + cutoff (p219 Phase 1 + p232 #229 Phase 2). When the cycle
+    // has insufficient leader-track approved history (cohort_n<10), method=disabled
+    // and we surface the reason instead of a band classification.
+    const cohortN = cutoff && cutoff.cohort_n != null ? Number(cutoff.cohort_n) : null;
+    const method = cutoff?.method;
+    if (method === 'disabled') {
+      const tpl: string = T.leaderExtraDisabledChip || 'Régua líder: n={n}<10';
+      const text = tpl.replace('{n}', String(cohortN ?? '?'));
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600" title="${esc(T.leaderExtraCutoffTooltip || '')}">${esc(text)}</div>`;
+    }
+    if (score == null) return '';
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') {
+      // Score present but cutoff missing — show the score in a neutral chip so PM
+      // still sees the dimension value without implying it passed/failed a rule.
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600">LE ${esc(Number(score).toFixed(1))}</div>`;
+    }
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">LE ${esc(Number(score).toFixed(1))} · ${esc(labelText)}${esc(deltaText)}</div>`;
   }
   // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
   // o que ainda falta avaliar e o que já foi decidido.
@@ -1528,8 +1604,14 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.research_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${researchScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? `font-bold ${bandColorClass(r.leader_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.leader_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${leaderScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.research_score, currentCycle?.pert_cutoff))}">
+          <div class="${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${researchScore}</div>
+          ${pertBandChip(r.research_score, currentCycle?.pert_cutoff)}
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
+          ${leaderExtraChip(r.leader_extra_pert_score, (currentCycle as any)?.leader_extra_cutoff)}
+        </td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>

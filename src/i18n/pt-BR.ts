@@ -5036,6 +5036,12 @@ const ptBR: Record<string, string> = {
   'admin.selection.leaderExtraCutoffLabel': 'Corte Líder',
   'admin.selection.leaderExtraCutoffTooltip': 'Corte da pilastra Líder (leader_extra) = PERT da pontuação Líder dos aprovados ativos em ciclos anteriores. Tracked separadamente do corte objetivo desde p209 (refactor #229) para não distorcer comparação cohort entre dimensões.',
   'admin.selection.leaderExtraCutoffEmpty': 'Corte Líder não calculado (cohort < 10 ou sem avaliações)',
+  // p245 #229a — per-candidate PERT classification badges
+  'admin.selection.pertBandAbove': 'Acima',
+  'admin.selection.pertBandWithin': 'Na banda',
+  'admin.selection.pertBandBelow': 'Abaixo',
+  'admin.selection.pertBandTooltipFull': 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
+  'admin.selection.leaderExtraDisabledChip': 'Régua líder: n={n}<10',
   'admin.selection.startScreening': 'Iniciar Triagem',
   'admin.selection.slugRequired': 'Slug obrigatório',
   'admin.selection.postSaved': 'Post salvo',
