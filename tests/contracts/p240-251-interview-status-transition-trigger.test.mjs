@@ -183,24 +183,31 @@ function makeClient() {
   });
 }
 
-test('p240 #251 (live): migration 20260805000025 is registered (proxy for trigger deploy)',
+test('p240 #251 (live): backfill audit rows present (proxy for trigger + backfill deploy)',
   { skip: !dbGated && skipMsg },
   async () => {
     const sb = makeClient();
-    // Proxy: a registered migration row implies the trigger was created (the
-    // trigger DDL lives inside this exact migration file). Direct pg_trigger
-    // inspection from the JS client would require a custom helper RPC, which
-    // adds REST surface for a one-off check — not worth the cost. Post-deploy
-    // MCP smoke (logged in handoff_p240) already verified trigger presence.
-    const { data: mig, error: mErr } = await sb
-      .schema('supabase_migrations')
-      .from('schema_migrations')
-      .select('version')
-      .eq('version', '20260805000025');
-    assert.ok(!mErr, `schema_migrations probe failed: ${mErr?.message}`);
-    assert.ok(mig && mig.length === 1,
-      'Migration 20260805000025 must be registered in supabase_migrations.schema_migrations ' +
-      '(if absent, trigger cannot have been deployed — re-run supabase migration repair)');
+    // Proxy: the migration ships trigger + backfill atomically. If the backfill
+    // wrote audit rows with action='p240_251_backfill_interview_status', the
+    // migration was applied AND the trigger was created (same migration body).
+    // admin_audit_log is exposed via PostgREST (unlike supabase_migrations).
+    // Post-deploy MCP smoke (logged in handoff_p240) verified 14 rows live;
+    // we assert >= 1 here to remain robust under future re-applies / pruning.
+    const { data, error } = await sb
+      .from('admin_audit_log')
+      .select('id, metadata')
+      .eq('action', 'p240_251_backfill_interview_status')
+      .limit(20);
+    assert.ok(!error, `admin_audit_log probe failed: ${error?.message}`);
+    assert.ok(data && data.length >= 1,
+      'At least one admin_audit_log row with action=p240_251_backfill_interview_status must exist ' +
+      '(if absent, the migration was never applied or the backfill block never ran — re-run apply_migration). ' +
+      'Post-deploy smoke verified 14 rows (10 cycle4 + 4 cycle3-b2).');
+    // All audit rows should carry the migration tag for forensic traceability.
+    const rowsWithTag = (data || []).filter(r => r.metadata?.migration === '20260805000025');
+    assert.ok(rowsWithTag.length === data.length,
+      `All p240_251_backfill_interview_status audit rows must tag metadata.migration='20260805000025'; ` +
+      `got ${rowsWithTag.length}/${data.length} tagged.`);
   }
 );
 
