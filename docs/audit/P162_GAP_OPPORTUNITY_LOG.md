@@ -2209,3 +2209,41 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **Test baseline:** No code/DDL changes in this PR — pure registry + P162 docs + GH issue side effects. Test baseline unchanged at offline **1856/1800/0/56** (post-p235 baseline).
 - **PRs:** p236 close PR (this PR — registry + P162 update + close docs). Standard CI gate path expected (validate + check-invariants + others). No bypass.
 - **Cross-ref:** GH #221 (closed p236, was Tier 3 council 5/5 verdict + 3-migration + 5-audit-doc framework) · GH #218 (closed p236, was original emergency-block + 5-wave umbrella + Codex curator deliberation 2026-05-21) · GH #331 (C1 ready-leaf) · GH #332 (C2 ready-leaf with C4 interim bridge) · GH #333 (C3 blocked on PM sequencing) · GH #334 (C4 blocked on Angeline async) · GH #335 (C5 spec-only blocked on C1/C2/C3) · `docs/council/2026-05-20-p207-tier3-strategic-review-212.md` (Tier 3 council origin) · migrations `20260731000000_issue_218_whisper_art11_emergency_block.sql` + `20260801000000_p207_issue_221_whisper_art11_drop_trigger.sql` + `20260801000001_p207_issue_221_capture_voice_biometric_consent_columns.sql` + `20260801000002_p207_issue_221_helper_gate_voice_biometric_consent.sql` (Wave 1 engineering moat already live) · `selection_applications.consent_voice_biometric_at + consent_voice_biometric_revoked_at + consent_voice_biometric_evidence` columns · `trg_pmi_video_screening_voice_consent` trigger · `analyze_application_video_async` helper · ADR-0067 (AI-augmented selection Art. 20 safeguards) · ADR-0074 (PMI candidate AI dual-model) · ADR-0079 (subjective scoring via video transcription) · #243 + #254 (unblocked from "consent blockers" gate by this decomposition; PM dispatched as next p236 sequence after #221/#218 disposition completes).
+
+### 204. RESOLVED-p237-ORPHAN-BRANCHES — Two stale agent branches dispositioned via ADR-0097 amnesty + deleted
+
+- **When:** 2026-05-23 p237 boot-to-close (single PR governance; PM-dispatched "resolve orphan migration situation before new implementation" per p236 entry #203 line 2205 out-of-scope #2)
+- **What:** Two stale agent branches (`agent/issue-218-whisper-art11` head `58a9051b` + `agent/issue-221` head `a48ebc90`) deleted from local + remote after explicit ADR-0097 amnesty/equivalence documentation. No DDL. No code. No live DB writes. Pure governance close.
+- **PM directive 2026-05-23 (single Recommended ABCD pick):**
+  - Q1 — Orphan path: **Option A — Amnesty doc + delete (Recommended)**. ADR-0097 path δ default policy. The canonical row `20260520231254:issue_218_whisper_art11_emergency_block` is already in `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` (line 1 of 694 amnesty entries). Cherry-pick (Path B) would add 1 file + 1 row without reducing operational risk. Hybrid (Path C) was scoped to also clean 4 historical apply_migration shadow rows but PM correctly opted for narrower scope this session.
+- **Boot audit findings (live-verified):**
+  - `agent/issue-221` head `a48ebc90` adds 3 migration files all **byte-identical** to `main`:
+    - `20260801000000_p207_issue_221_whisper_art11_drop_trigger.sql`
+    - `20260801000001_p207_issue_221_capture_voice_biometric_consent_columns.sql`
+    - `20260801000002_p207_issue_221_helper_gate_voice_biometric_consent.sql`
+    - Branch is purely stale. Zero orphan content.
+  - `agent/issue-218-whisper-art11` head `58a9051b` adds 1 file `20260731000000_issue_218_whisper_art11_emergency_block.sql` (4442 bytes). This filename does NOT exist in `main` (main's `20260731000000_p206_gap_204_b_invariant_breach_helper.sql` is a separate concern — GAP-204.B test-only helper, whose own canonical row is `20260520200049`).
+  - Live `supabase_migrations.schema_migrations` has 2 rows for `issue_218_whisper_art11_emergency_block`:
+    - `20260520231254` has_body=true (canonical p206 row via `migration repair --status applied`)
+    - `20260731000000` has_body=true (apply_migration NOW() shadow at p207 time)
+  - Operational evidence: `trg_pmi_video_screening_voice_consent` trigger + `_trg_pmi_video_screening_voice_consent_check` function + `consent_voice_biometric_at` + `consent_voice_biometric_revoked_at` columns all present on `public.selection_applications` + `public.pmi_video_screenings`.
+  - `20260520231254` IS in `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` line 1 → amnesty already in place.
+- **What shipped (this PR — no DDL/code):**
+  - `docs/audit/2026-05-23_p237_orphan_branches_equivalence.md` — equivalence audit (this disposition's anchor doc)
+  - `docs/project-governance/ISSUE_REGISTRY.md` — header bumped to p237 with orphan-branch deletion narrative
+  - This P162 entry #204 added
+  - After PR merge: `git branch -D agent/issue-218-whisper-art11 agent/issue-221` + `git push origin --delete agent/issue-218-whisper-art11 agent/issue-221`
+- **Side-finding (NOT remediated this PR per Path A scope discipline):**
+  - 4 historical apply_migration MCP shadow rows in `schema_migrations` discovered during audit: `20260521015219` + `20260521015244` + `20260521015320` shadowing the issue-221 trio + `20260731000000` duplicating the issue-218 canonical row. All from p206/p207. SEDIMENT-227.A / SEDIMENT-232.B class artifacts. Operationally inert (canonical rows present; baselines count canonical, not shadow). PM may pick up Path C narrow follow-up if a clean ratchet down is desired.
+  - Minor inaccuracy in P162 entry #203 line 2211 cross-ref string: lists `20260731000000_issue_218_whisper_art11_emergency_block.sql` among migrations live in main. That filename does not exist in `main`; canonical row is `20260520231254` and main has a different file (`p206_gap_204_b_invariant_breach_helper.sql`) at the colliding timestamp. Flagged here, not retroactively edited (scope discipline).
+- **Out of scope (deferred carries):**
+  1. Cleanup of the 4 shadow rows in `supabase_migrations.schema_migrations` (Path C narrow follow-up; PM call)
+  2. EF `analyze-application-video/index.ts` line 263 JS-layer consent gate (still p236 carry — defense-in-depth WATCH)
+  3. Stale-branch retention policy: PM may want a `.claude/rules/branch-hygiene.md` documenting "delete `agent/issue-*` heads within 1 session of the matching issue closing OR after explicit amnesty audit"
+  4. **Other local `agent/*` branches NOT audited in p237** — `git branch -a` lists at least: `agent/issue-212-research`, `agent/issue-213`, `agent/issue-216`, `agent/issue-220`, `agent/issue-224`, `agent/issue-226`, `agent/issue-237`. These were NOT inventoried against `origin`/`main` this session. **PM directive p237: do NOT bulk-delete.** Future cleanup must inventory each branch individually — diff vs `main`, diff vs canonical `schema_migrations` rows, confirm any orphan files have live equivalence (per ADR-0097 pattern documented here) — before deletion. Recommend a dedicated future session with branch-by-branch ABCD if PM wants this swept.
+- **Sediment learnings (0 NEW):**
+  - All sediment in this session was carry from p206/p207 (SEDIMENT-227.A / SEDIMENT-232.B revisited). No new artifact introduced.
+- **Test baseline:** No code/DDL changes — pure docs PR. Test baseline unchanged at offline **1856/1800/0/56** (post-p236).
+- **PRs:** p237 close PR (this PR — `governance/p237-orphan-branch-amnesty` → main). Standard CI gate path expected. No bypass.
+- **Verify-on-next-boot:** `git ls-remote origin | grep 'agent/issue-2'` empty + `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` line count unchanged at 694 + `schema_migrations` row count unchanged + invariants 19/19=0 + npm test 1856/1800/0/56 unchanged.
+- **Cross-ref:** ADR-0097 §Decisão path δ · `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` line 1 (`20260520231254`) · P162 #203 line 2205 (out-of-scope #2 carry origin) · `docs/audit/2026-05-23_p237_orphan_branches_equivalence.md` (this disposition anchor) · branch heads `58a9051b` + `a48ebc90` (deleted post-merge) · canonical rows `20260520231254:issue_218_whisper_art11_emergency_block` + `20260801000000:p207_issue_221_whisper_art11_drop_trigger` + `20260801000001:p207_issue_221_capture_voice_biometric_consent_columns` + `20260801000002:p207_issue_221_helper_gate_voice_biometric_consent` · SEDIMENT-227.A / SEDIMENT-232.B (apply_migration shadow row class).
