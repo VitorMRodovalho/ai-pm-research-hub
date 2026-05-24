@@ -2247,3 +2247,52 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **PRs:** p237 close PR (this PR — `governance/p237-orphan-branch-amnesty` → main). Standard CI gate path expected. No bypass.
 - **Verify-on-next-boot:** `git ls-remote origin | grep 'agent/issue-2'` empty + `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` line count unchanged at 694 + `schema_migrations` row count unchanged + invariants 19/19=0 + npm test 1856/1800/0/56 unchanged.
 - **Cross-ref:** ADR-0097 §Decisão path δ · `MIGRATION_FILE_DRIFT_BASELINE_P224.txt` line 1 (`20260520231254`) · P162 #203 line 2205 (out-of-scope #2 carry origin) · `docs/audit/2026-05-23_p237_orphan_branches_equivalence.md` (this disposition anchor) · branch heads `58a9051b` + `a48ebc90` (deleted post-merge) · canonical rows `20260520231254:issue_218_whisper_art11_emergency_block` + `20260801000000:p207_issue_221_whisper_art11_drop_trigger` + `20260801000001:p207_issue_221_capture_voice_biometric_consent_columns` + `20260801000002:p207_issue_221_helper_gate_voice_biometric_consent` · SEDIMENT-227.A / SEDIMENT-232.B (apply_migration shadow row class).
+
+---
+
+### 205. RESOLVED-#331 — Wave 2 voice biometric destacado consent UI capture + RPC dispatch + i18n disclosure (p238)
+
+- **When:** 2026-05-23 p238 (single PR; dispatched as #1 next-up after p237 close per PM-stated order).
+- **What:** Closes #331 (W2 of #221/#218 Whisper Art. 11 decomposition). DB moat shipped p207 (`trg_pmi_video_screening_voice_consent` blocks transcription when `consent_voice_biometric_at IS NULL`) but no UX path existed to populate the column — 0/107 applications had consent. This PR unblocks Wave 2 with forward UI + RPC capability + i18n.
+- **Migration `20260805000022_p238_331_voice_biometric_consent_rpcs.sql` (live applied + canonical registered)**:
+  - DROP+CREATE `give_consent_via_token(text, text, jsonb)` — accepts `p_consent_type='voice_biometric'` plus a REQUIRED `p_evidence` jsonb (version + lang + label_text_hash). The hash is the SHA-256 of the displayed destacado label text — provable later that the candidate saw the exact Art. 11 §I copy. For `ai_analysis` the evidence param is ignored (preserves existing schema).
+  - DROP+CREATE `revoke_consent_via_token(text, text)` — accepts voice_biometric and clears the revoked_at sibling column.
+  - CREATE OR REPLACE `consume_onboarding_token(text)` — payload.application gains `has_voice_biometric_consent` + `has_voice_biometric_revoked` so the React island can render the destacado section state and gate the video upload UI without an extra RPC roundtrip.
+  - Idempotency: `COALESCE` preserves first `consent_at` + evidence on regrant; `COALESCE` preserves earliest `revoked_at` on revoke.
+  - Sanity DO block asserts: voice_biometric dispatch in both RPCs + label_text_hash guard + has_voice_biometric_* in consume payload + single-overload defense (SEDIMENT-232.A).
+- **Frontend `src/components/pmi-onboarding/PMIOnboardingPortal.tsx`**:
+  - `VOICE_CONSENT_VERSION = 'v1'` constant pinning the destacado label text version.
+  - `sha256Hex(text)` helper using `crypto.subtle.digest('SHA-256', ...)`.
+  - `handleVoiceConsentToggle(grant)` handler dispatching `give_consent_via_token` (with evidence) or `revoke_consent_via_token` with `p_consent_type: 'voice_biometric'`.
+  - `ConsumePayload.application` interface gains `has_voice_biometric_consent?: boolean` + `has_voice_biometric_revoked?: boolean`.
+  - `hasVoiceConsent` derived const: `Boolean(app.has_voice_biometric_consent && !app.has_voice_biometric_revoked)`.
+  - Amber-styled destacado section (`data-testid="voice-biometric-consent-section"`) placed BETWEEN the AI analysis consent (white) and the profile section — visually distinct per LGPD Art. 8 destaque rule for sensitive data.
+  - Video upload pillar list now gated on `{!isInterviewMode && hasVoiceConsent && (...)}`; new gated message `data-testid="video-upload-gated-by-voice-consent"` shows under `{!isInterviewMode && !hasVoiceConsent && (...)}` directing user to the live interview alternative. The "request interview" CTA + interview-mode panel remain unchanged so the candidate's application proceeds either way.
+- **i18n (3 langs)**: 8 new keys per lang (24 total):
+  - `privacy.s4.openaiWhisper` — OpenAI Whisper subprocessor declaration with consent_voice_biometric_at + Art. 11 §I citation
+  - `pmi.onboarding.voiceConsentTitle` — destacado section heading
+  - `pmi.onboarding.voiceConsentBody` — destacado label text (HASHED for evidence)
+  - `pmi.onboarding.voiceConsentGranted` / `voiceConsentNotGranted` — chip labels
+  - `pmi.onboarding.grantVoiceConsent` / `revokeVoiceConsent` — button labels
+  - `pmi.onboarding.videoGatedByVoiceConsent` — gated-state message
+- **`src/pages/privacy.astro`**: adds `<li>{t('privacy.s4.openaiWhisper', lang)}</li>` to the S4 subprocessor list (after googleAi, before noCommercial).
+- **Contract test `tests/contracts/consent-voice-biometric-ui.test.mjs` (23 assertions)**:
+  - 17 static: file existence + DROP+CREATE pattern + 3-arg signature + voice_biometric dispatch + label_text_hash guard + idempotency COALESCE + payload extension + sanity DO + dual-overload defense + NOTIFY pgrst + header cross-refs + i18n keys present in 3 langs + voiceConsentBody cites Art. 11 + Art. 18 + sha256Hex/handleVoiceConsentToggle/testids in component + ConsumePayload interface fields + privacy.astro lists key.
+  - 3 forward-defense ratchets: no future migration re-adds 2-arg give_consent_via_token without dropping the 3-arg; no future migration removes voice_biometric dispatch; no future migration removes has_voice_biometric_consent payload key.
+  - 3 DB-gated: misuse call dispatch reach + revoke voice_biometric dispatch reach + consume body audit helper (skipped offline; non-fatal warn if helper missing).
+- **Test baseline:** offline **1856/1800/0/56 → 1879/1820/0/59** (+20 pass + 3 skip; matches expected delta).
+- **Live smoke 3/3 PASS:**
+  1. `give_consent_via_token('bad-token-...', 'voice_biometric', evidence_jsonb)` → "Invalid token or missing consent_giving scope" (proves 3-arg dispatch reaches the token check; new shape accepted).
+  2. `revoke_consent_via_token('bad-token-...', 'voice_biometric')` → same error path (proves voice_biometric dispatch).
+  3. `pg_proc` signature query: `give_consent_via_token(p_token text, p_consent_type text DEFAULT 'ai_analysis'::text, p_evidence jsonb DEFAULT NULL::jsonb)` confirmed single overload.
+- **Invariants:** 19/19 = 0 violations throughout (no schema changes; only function bodies).
+- **SEDIMENT-232.B reapplied:** apply_migration MCP created shadow row `20260524021619:p238_331_voice_biometric_consent_rpcs` at NOW(). Cleaned via DELETE WHERE version='20260524021619' + INSERT canonical `20260805000022`. Same recipe as p232 / p225; documented here for the next session.
+- **Out of scope (carries forward):**
+  - **#332 next dispatch** (W3 retroactive notification + Art. 18 §IV deletion offer for 1 affected candidate — Eduardo Luz background pillar pre-block).
+  - p236 EF `analyze-application-video/index.ts` line 263 JS-layer consent gate (defense-in-depth WATCH; the live SQL trigger is authoritative, JS gate is belt-and-suspenders).
+  - `consent_voice_biometric_evidence` is text (json-stringified). If a future enhancement requires structured query over evidence (e.g., "all consents granted under v1 label in pt-BR"), consider migrating to jsonb column. Current usage is store-and-prove only, so text is fine.
+  - Goal metric trajectory: 0/107 → grows by 1 per candidate explicit grant. This PR enables the path; population happens organically as candidates use `/pmi-onboarding/[token]`.
+- **Sediment learnings (0 NEW):** SEDIMENT-232.B revisited (apply_migration shadow row). No new artifact introduced.
+- **PR:** governance/p238-331-voice-biometric-consent-ui → main (standard CI gate, expected 0 bypass).
+- **Verify-on-next-boot:** `pg_proc.give_consent_via_token` has 3 args (text, text, jsonb) + only 1 overload · `revoke_consent_via_token` has 2 args + only 1 overload · live `consume_onboarding_token` body contains `has_voice_biometric_consent` + `has_voice_biometric_revoked` · invariants 19/19=0 · npm test 1879/1820/0/59 offline · migration `20260805000022` registered (canonical) + no shadow rows at `20260524*` · `tests/contracts/consent-voice-biometric-ui.test.mjs` present in `package.json` `test` + `test:contracts` scripts · `src/components/pmi-onboarding/PMIOnboardingPortal.tsx` has `data-testid="voice-biometric-consent-section"` + `data-testid="video-upload-gated-by-voice-consent"` · `privacy.s4.openaiWhisper` in pt-BR.ts/en-US.ts/es-LATAM.ts · `src/pages/privacy.astro` lists openaiWhisper.
+- **Cross-ref:** GH #331 (closed this PR) · GH #221 + #218 (parent umbrella, decomposed p236; P162 #203 line 2174) · GH #332/#333/#334/#335 (sibling W3-W5 leaves; next #332) · `supabase/migrations/20260805000022_p238_331_voice_biometric_consent_rpcs.sql` · `supabase/migrations/20260801000000-002_p207_issue_221_*.sql` (Wave 1 moat) · canonical `20260520231254:issue_218_whisper_art11_emergency_block` (the live trigger this UI now feeds) · LGPD Art. 8 (destaque rule) · Art. 11 §I (sensitive data consent) · Art. 18 §IV (deletion right; Wave 3 #332) · ADR-0006/0007 (V4 model + can() authority — RPC SECURITY DEFINER body remains in token-auth pattern, not switching to canV4 since the token IS the auth artifact) · ADR-0078 D5 (placeholder-slug evidence pattern reused in spirit: VOICE_CONSENT_VERSION='v1' pins label text version).

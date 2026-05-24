@@ -42,6 +42,8 @@ interface ConsumePayload {
     cycle_id: string;
     has_consent: boolean;
     has_revoked: boolean;
+    has_voice_biometric_consent?: boolean;
+    has_voice_biometric_revoked?: boolean;
     status: string;
   };
   cycle: {
@@ -81,11 +83,24 @@ const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> =
 
 const BOOKING_URL = 'https://calendar.app.google/gh9WjefjcmisVLoh7';
 
+// Issue #331: voice biometric destacado consent (LGPD Art. 11 §I).
+// Version pins the destacado label text; bump if you ever edit voiceConsentBody.
+const VOICE_CONSENT_VERSION = 'v1';
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export default function PMIOnboardingPortal({
   token, initialPayload, i18n, lang, supabaseUrl, supabaseAnonKey
 }: Props) {
   const [payload, setPayload] = useState<ConsumePayload | null>(initialPayload);
   const [busyConsent, setBusyConsent] = useState(false);
+  const [busyVoiceConsent, setBusyVoiceConsent] = useState(false);
   const [busyStep, setBusyStep] = useState<string | null>(null);
   const [busyVideo, setBusyVideo] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<Record<string, { progress: number; status: 'uploading' | 'finalizing' | 'error'; error?: string }>>({});
@@ -134,6 +149,7 @@ export default function PMIOnboardingPortal({
   const { application: app, cycle, onboarding_progress: progress, token_metadata } = payload;
   const videoScreenings = payload.video_screenings ?? [];
   const isInterviewMode = videoScreenings.length >= 5 && videoScreenings.every(v => v.status === 'opted_out');
+  const hasVoiceConsent = Boolean(app.has_voice_biometric_consent && !app.has_voice_biometric_revoked);
   const videosUploadedCount = videoScreenings.filter(v => ['uploaded','transcribing','transcribed'].includes(v.status)).length;
 
   const expiresAtDate = new Date(token_metadata.expires_at);
@@ -207,6 +223,54 @@ export default function PMIOnboardingPortal({
       setErrorMsg(e?.message ?? String(e));
     } finally {
       setBusyConsent(false);
+    }
+  };
+
+  const handleVoiceConsentToggle = async (grant: boolean) => {
+    setBusyVoiceConsent(true);
+    setErrorMsg(null);
+    try {
+      if (grant) {
+        const labelText = T('pmi.onboarding.voiceConsentBody');
+        const labelHash = await sha256Hex(labelText);
+        const evidence = {
+          version: VOICE_CONSENT_VERSION,
+          lang,
+          label_text_hash: labelHash,
+        };
+        const { error } = await sb.rpc('give_consent_via_token', {
+          p_token: token,
+          p_consent_type: 'voice_biometric',
+          p_evidence: evidence,
+        });
+        if (error) throw new Error(error.message);
+        setPayload({
+          ...payload,
+          application: {
+            ...app,
+            has_voice_biometric_consent: true,
+            has_voice_biometric_revoked: false,
+          },
+        });
+      } else {
+        const { error } = await sb.rpc('revoke_consent_via_token', {
+          p_token: token,
+          p_consent_type: 'voice_biometric',
+        });
+        if (error) throw new Error(error.message);
+        setPayload({
+          ...payload,
+          application: {
+            ...app,
+            has_voice_biometric_consent: false,
+            has_voice_biometric_revoked: true,
+          },
+        });
+      }
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? String(e));
+    } finally {
+      setBusyVoiceConsent(false);
     }
   };
 
@@ -531,6 +595,49 @@ export default function PMIOnboardingPortal({
         </div>
       </section>
 
+      {/* Issue #331 — destacado consent for voice biometric data (LGPD Art. 11 §I).
+          Visually distinct (amber) from the AI analysis consent above per Art. 8 destaque rule. */}
+      <section
+        data-testid="voice-biometric-consent-section"
+        className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6 shadow-sm"
+      >
+        <h2 className="text-lg font-bold text-amber-900 mb-2">
+          {T('pmi.onboarding.voiceConsentTitle')}
+        </h2>
+        <p className="text-sm text-amber-900 leading-relaxed mb-4 whitespace-pre-line">
+          {T('pmi.onboarding.voiceConsentBody')}
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          {hasVoiceConsent ? (
+            <>
+              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                ✓ {T('pmi.onboarding.voiceConsentGranted')}
+              </span>
+              <button
+                disabled={busyVoiceConsent}
+                onClick={() => handleVoiceConsentToggle(false)}
+                className="text-sm text-gray-700 underline hover:text-red-700 disabled:opacity-50"
+              >
+                {T('pmi.onboarding.revokeVoiceConsent')}
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="bg-white border border-amber-300 text-amber-900 px-3 py-1 rounded-full text-sm">
+                {T('pmi.onboarding.voiceConsentNotGranted')}
+              </span>
+              <button
+                disabled={busyVoiceConsent}
+                onClick={() => handleVoiceConsentToggle(true)}
+                className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white px-4 py-2 rounded-lg font-semibold text-sm"
+              >
+                {busyVoiceConsent ? '...' : T('pmi.onboarding.grantVoiceConsent')}
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+
       {/* p86 Wave 5b-2: AI-augmented self-improvement cards (Card B + Card A) */}
       {enrichmentStatus?.has_analysis && (
         <>
@@ -784,7 +891,17 @@ export default function PMIOnboardingPortal({
           </div>
         )}
 
-        {!isInterviewMode && (<>
+        {!isInterviewMode && !hasVoiceConsent && (
+          <div
+            data-testid="video-upload-gated-by-voice-consent"
+            className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-sm text-amber-900 mb-4"
+            role="status"
+          >
+            {T('pmi.onboarding.videoGatedByVoiceConsent')}
+          </div>
+        )}
+
+        {!isInterviewMode && hasVoiceConsent && (<>
         <ul className="space-y-3">
           {PILLARS.map(p => {
             const existing = videoScreenings.find(v => v.pillar === p.key);

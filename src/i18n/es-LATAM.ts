@@ -3404,6 +3404,7 @@ const esLATAM: Record<string, string> = {
   'privacy.s4.resend': 'Resend (procesador): envío de emails transaccionales y campañas, rastreo de entrega/apertura/clics',
   'privacy.s4.credly': 'Credly/Pearson VUE (fuente): verificación de badges y certificaciones PMI via API pública',
   'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocesador): análisis automatizado de aplicaciones de voluntariado — solo tras consentimiento expreso (consent_ai_analysis_at). Ninguna decisión se toma exclusivamente por la IA — el comité humano evalúa y decide. Conformidad LGPD Art. 7,V + 9,I (divulgación a terceros) + Art. 20 (revisión humana de decisiones automatizadas).',
+  'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocesador, EE.UU.): transcripción automatizada de videos de respuestas de candidatos en el screening selectivo — solo tras consentimiento destacado para tratamiento de dato personal sensible biométrico de voz (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audios y transcripciones alimentan sugerencias iniciales revisadas por evaluadores humanos. Revocación inmediata vía portal del candidato; ventana de eliminación de 30 días para transcripciones y archivos de audio (LGPD Art. 18, §IV).',
   'privacy.s4.noCommercial': 'No compartimos datos personales con terceros para fines comerciales',
 
   // S5 — Transferencia internacional
@@ -5755,6 +5756,13 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.revokeConsent': 'Revocar consentimiento',
   'pmi.onboarding.consentNotGranted': 'Consentimiento no otorgado',
   'pmi.onboarding.grantConsent': 'Otorgar consentimiento',
+  'pmi.onboarding.voiceConsentTitle': '🎙️ Consentimiento destacado para dato biométrico de voz (LGPD Art. 11, §1, I)',
+  'pmi.onboarding.voiceConsentBody': 'Para grabar videos de respuestas como parte del screening selectivo, se requiere su consentimiento destacado y específico para el tratamiento de dato personal sensible biométrico de voz, exigido por el Art. 11, §1, inciso I de la LGPD. Las grabaciones se almacenarán en carpeta privada del Google Drive de la organización, transcritas por OpenAI Whisper (subprocesador, EE.UU.) para fundamentar la evaluación por evaluadores humanos. Puede revocar en cualquier momento: las nuevas transcripciones se bloquean inmediatamente, y eliminaremos transcripciones y archivos de audio relacionados en hasta 30 días tras la revocación (LGPD Art. 18, §IV). Este consentimiento es totalmente separado del consentimiento de análisis por IA arriba. Si prefiere no consentir, su candidatura sigue válida por la vía alternativa de entrevista 1:1 en vivo vía Google Meet.',
+  'pmi.onboarding.voiceConsentGranted': 'Consentimiento de voz otorgado',
+  'pmi.onboarding.voiceConsentNotGranted': 'Consentimiento de voz no otorgado',
+  'pmi.onboarding.grantVoiceConsent': 'Otorgar consentimiento destacado',
+  'pmi.onboarding.revokeVoiceConsent': 'Revocar consentimiento de voz',
+  'pmi.onboarding.videoGatedByVoiceConsent': '🔒 La subida de video está deshabilitada hasta que otorgue el consentimiento destacado de voz arriba. Si prefiere no consentir, elija la vía alternativa de entrevista 1:1 en vivo abajo — su candidatura continúa normalmente.',
   'pmi.onboarding.progressTitle': 'Etapas del proceso',
   'pmi.onboarding.completedOn': 'Completada en',
   'pmi.onboarding.markDone': 'Marcar como concluida',
