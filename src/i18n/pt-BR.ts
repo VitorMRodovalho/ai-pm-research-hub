@@ -5042,6 +5042,13 @@ const ptBR: Record<string, string> = {
   'admin.selection.pertBandBelow': 'Abaixo',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
   'admin.selection.leaderExtraDisabledChip': 'Régua líder: n={n}<10',
+  // p247 #229b Frontend — per-candidate final-score régua + interview score visibility
+  'admin.selection.colInterviewScore': 'Nota Entrevista',
+  'admin.selection.colInterviewScoreHint': 'Nota consolidada da entrevista (interview_score). Apresentada inline sem régua — PERT Objetiva é o gate de entrada da entrevista; PERT Final é a comparação pós-entrevista.',
+  'admin.selection.colFinal': 'Final',
+  'admin.selection.colFinalHint': 'Score Final do candidato + chip de régua por trilha (researcher/leader), calculado pelo cohort PERT da própria trilha (p246 #229b Foundation).',
+  'admin.selection.finalScoreCutoffTooltip': 'Régua final (PERT) calculada por trilha desde p246 (refactor #229b). Researcher pool e leader pool têm distribuições diferentes; não misturamos. Quando cohort_n<10, a régua fica indisponível para aquela trilha.',
+  'admin.selection.finalScoreDisabledChip': 'Régua final: n={n}<10',
   'admin.selection.startScreening': 'Iniciar Triagem',
   'admin.selection.slugRequired': 'Slug obrigatório',
   'admin.selection.postSaved': 'Post salvo',

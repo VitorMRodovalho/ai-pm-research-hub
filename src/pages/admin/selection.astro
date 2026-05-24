@@ -42,6 +42,9 @@ const SEL_I18N = {
   pertBandBelow: t('admin.selection.pertBandBelow', lang),
   pertBandTooltipFull: t('admin.selection.pertBandTooltipFull', lang),
   leaderExtraDisabledChip: t('admin.selection.leaderExtraDisabledChip', lang),
+  // p247 #229b Frontend — per-candidate final-score cutoff
+  finalScoreCutoffTooltip: t('admin.selection.finalScoreCutoffTooltip', lang),
+  finalScoreDisabledChip: t('admin.selection.finalScoreDisabledChip', lang),
   consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
   consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
   consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
@@ -345,6 +348,8 @@ const SEL_I18N = {
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">{t('admin.selection.colResearch', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
@@ -606,6 +611,9 @@ const SEL_I18N = {
     pertBandBelow: 'Abaixo',
     pertBandTooltipFull: 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
     leaderExtraDisabledChip: 'Régua líder: n={n}<10',
+    // p247 #229b Frontend fallbacks
+    finalScoreCutoffTooltip: 'Régua final (PERT) calculada por trilha desde p246 (refactor #229b). Researcher pool e leader pool têm distribuições diferentes; não misturamos. Quando cohort_n<10, a régua fica indisponível para aquela trilha.',
+    finalScoreDisabledChip: 'Régua final: n={n}<10',
     consentPendingBadge: 'sem consent IA',
     consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
     consentRevokedBadge: 'consent revogado',
@@ -821,6 +829,36 @@ const SEL_I18N = {
     const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
     const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
     return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">LE ${esc(Number(score).toFixed(1))} · ${esc(labelText)}${esc(deltaText)}</div>`;
+  }
+  // p247 #229b Frontend: per-candidate final-score chip using track-resolved per-app cutoff.
+  // Backend (p246) populates r.final_score_pert_* via _compute_pert_cutoff_core scoped by
+  // AND role_applied = p_role, so the chip needs no manual track switching — researcher app
+  // gets researcher cutoff, leader gets leader cutoff. When cohort_n<10, method='disabled'
+  // surfaces the reason rather than a band classification (mirrors leaderExtraChip's
+  // disabled branch). PM rules (#229b dispatch): no régua para entrevista; PERT Objetiva
+  // (Pesquisa) é gate pré-entrevista; PERT Final é comparação pós-entrevista.
+  function finalScoreChip(row: any): string {
+    const score = row?.final_score;
+    const method = row?.final_score_pert_cutoff_method;
+    const cohortN = row?.final_score_pert_cohort_n != null ? Number(row.final_score_pert_cohort_n) : null;
+    if (method === 'disabled') {
+      const tpl: string = T.finalScoreDisabledChip || 'Régua final: n={n}<10';
+      const text = tpl.replace('{n}', String(cohortN ?? '?'));
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600" title="${esc(T.finalScoreCutoffTooltip || '')}">${esc(text)}</div>`;
+    }
+    if (score == null) return '';
+    const cutoff = {
+      target_score: row?.final_score_pert_target,
+      band_lower: row?.final_score_pert_band_lower,
+      band_upper: row?.final_score_pert_band_upper,
+      cohort_n: cohortN,
+      method,
+    };
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') return '';
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">${esc(labelText)}${esc(deltaText)}</div>`;
   }
   // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
   // o que ainda falta avaliar e o que já foi decidido.
@@ -1318,7 +1356,7 @@ const SEL_I18N = {
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="15" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -1506,7 +1544,7 @@ const SEL_I18N = {
       }
     }
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="15" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -1611,6 +1649,13 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 text-[12px] font-mono">
           <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
           ${leaderExtraChip(r.leader_extra_pert_score, (currentCycle as any)?.leader_extra_cutoff)}
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.interview_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.interview_score != null ? Number(r.interview_score).toFixed(1) : '—'}</div>
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.final_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.final_score != null ? Number(r.final_score).toFixed(1) : '—'}</div>
+          ${finalScoreChip(r)}
         </td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
