@@ -5036,6 +5036,13 @@ const enUS: Record<string, string> = {
   'admin.selection.pertBandBelow': 'Below',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Band {lower}–{upper} (target {target}) · cohort n={n} · method {method}',
   'admin.selection.leaderExtraDisabledChip': 'Leader rule: n={n}<10',
+  // p247 #229b Frontend — per-candidate final-score cutoff + interview score visibility
+  'admin.selection.colInterviewScore': 'Interview Score',
+  'admin.selection.colInterviewScoreHint': 'Consolidated interview score (interview_score). Rendered inline without a cutoff chip — PERT Objective is the interview entry gate; PERT Final is the post-interview comparison.',
+  'admin.selection.colFinal': 'Final',
+  'admin.selection.colFinalHint': 'Candidate Final Score + per-track cutoff chip (researcher/leader), computed from the track-scoped PERT cohort (p246 #229b Foundation).',
+  'admin.selection.finalScoreCutoffTooltip': 'Final cutoff (PERT) computed per track since p246 (refactor #229b). Researcher pool and leader pool have different distributions; we do not mix them. When cohort_n<10, the cutoff is disabled for that track.',
+  'admin.selection.finalScoreDisabledChip': 'Final cutoff: n={n}<10',
   'admin.selection.startScreening': 'Start Screening',
   'admin.selection.slugRequired': 'Slug required',
   'admin.selection.postSaved': 'Post saved',
