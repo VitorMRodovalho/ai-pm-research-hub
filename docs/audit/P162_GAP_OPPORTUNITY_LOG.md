@@ -2616,3 +2616,58 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **PR**: `agent/p244-watch-240-b-cycle3-b2-late-eval-audit` → main (docs-only, standard CI gate path, 0 bypass).
 - **Verify-on-next-boot**: HEAD includes p244 PR · `docs/audit/CYCLE3_B2_LATE_EVAL_P244_WATCH_240_B.md` present · `memory/handoff_p244_post_p243_close.md` + `feedback_sediment_244_a_handoff_propagation_drift.md` present in auto-memory dir · `memory/MEMORY.md` index has new entries for both · `docs/project-governance/ISSUE_REGISTRY.md` header updated · cycle3-b2 apps remain 2 both `approved` · `cutoff_approved_email_sent_at IS NULL` for both (expected — no dispatch) · `admin_audit_log` `p240_251_backfill_interview_status` GROUP BY cycle_code = `cycle4-2026: 14` (0 cycle3-b2) · npm test 1953/1887/0/66 offline (unchanged — no new tests) · invariants 19/19=0.
 - **Cross-ref**: P162 #208 (origin — RESOLVED-#251 p240 close, line 2466 + 2495 + 2576 carry text) · P162 #209 (sibling — RESOLVED-WATCH-240.A p241) · P162 #210 (sibling — RESOLVED-WATCH-240.C p242) · audit doc `docs/audit/CYCLE3_B2_LATE_EVAL_P244_WATCH_240_B.md` · audit chain anchors: `application.status_manual_advance` audit rows (p129-s1 administrative onboarding) + `p219_229_phase1_leader_extra_pert_score_backfill` (Herlon's leader_extra PERT column backfill) · MEMORY.md SEDIMENT-244.A.
+
+---
+
+### 212. RESOLVED-#229a-READ-SURFACE — Per-candidate PERT classification on /admin/selection (p245)
+
+- **Date**: 2026-05-24 (p245)
+- **Status**: RESOLVED — per-candidate PERT classification + leader_extra dimension visibility shipped end-to-end. PM-dispatched as internal #229a tag (read-surface follow-on to the p232 #229 Phase 2 RPC/data work; not a GH issue).
+- **Origin**: PM dispatch — *"Mostrar em /admin/selection, por candidato, a classificação PERT contra a régua do ciclo: score, target, banda, delta e status abaixo/dentro/acima. Mostrar também o estado de leader_extra com motivo quando a régua estiver desabilitada por cohort_n < 10."* Baseline state pre-p245: cycle-level chip shipped p197b (objective) + p232 #229 Phase 2 (leader_extra sibling chip + 3 RPCs extended for dual-dim cohort visibility); the 2 score TDs on per-app rows used `bandColorClass(score, currentCycle?.pert_cutoff)` for BOTH research_score AND leader_score — violating the PM rule *"Não comparar líder contra a régua objetiva."*
+- **Step 1 audit findings (read-only, 2026-05-24 ≈18:00 UTC)**:
+  1. `get_selection_dashboard('cycle4-2026')` payload returns `{cycle, stats, applications[]}`; `cycle.pert_cutoff` has `{method, calc_at, cohort_n, apps_total, band_lower, band_upper, target_score, apps_with_pert}`; `cycle.leader_extra_cutoff` mirrors shape + adds `apps_with_score` (currently `{method:disabled, cohort_n:6, apps_with_pert:0, apps_with_score:3, band/target:null}` for cycle4-2026 — disabled because historical leader-track approved cohort_n=6<10 threshold per p219 Phase 1 design).
+  2. All 38 cycle4 apps have full objective PERT (target/band_lower/band_upper/calc_at/cohort_n/method=dynamic populated per p242 manual recompute). 0 apps have leader_extra_pert_target (expected — cycle cutoff disabled). 3 apps have leader_extra_pert_score populated (leader-track candidates with submitted leader_extra evals).
+  3. Per-app payload has `research_score`, `leader_score`, `leader_extra_pert_score`, `final_score`, `objective_score`, `rank_*`, `role_applied` + identity/contact fields.
+  4. Old bandColorClass coloring of leader_score against pert_cutoff was a regression seed (would have surfaced as "leader candidate is below the researcher cutoff" coloring — apples to oranges).
+- **Fix shipped (frontend-only, no DB / no RPC changes)**:
+  - `src/pages/admin/selection.astro` — 4 new helpers + 2 TD refactors:
+    - `bandClassify(score, cutoff) → {color, label:'above'|'within'|'below'|'none', delta}` (structured return; replaces internal logic of `bandColorClass` while keeping `bandColorClass` as back-compat alias).
+    - `formatDelta(d) → string` with sign prefix (`+8.6` / `-7.1` / `''` for null).
+    - `pertBandChip(score, cutoff) → HTML` returns small inline chip with band-position label + delta or empty string.
+    - `pertFullTooltip(score, cutoff) → string` enriches tooltip with `Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}` (6 placeholders).
+    - `leaderExtraChip(score, cutoff) → HTML` — disabled branch (method=disabled) returns gray chip with `Régua líder: n={n}<10` neutral text; otherwise classifies LE score against LE cutoff with `LE {score} · {label} {delta}` chip.
+  - 2 TDs at the per-app render block now:
+    - **research_score TD**: keeps band color on score number + appends `pertBandChip(r.research_score, currentCycle?.pert_cutoff)` below score + enriched tooltip via `pertFullTooltip`.
+    - **leader_score TD**: **strips `bandColorClass(r.leader_score, currentCycle?.pert_cutoff)` (PM rule)** — score now neutral font-bold + appends `leaderExtraChip(r.leader_extra_pert_score, leader_extra_cutoff)` below.
+  - 5 new i18n keys in pt-BR.ts + en-US.ts + es-LATAM.ts (15 total): `pertBandAbove`, `pertBandWithin`, `pertBandBelow`, `pertBandTooltipFull`, `leaderExtraDisabledChip`.
+  - Frontmatter T object wires all 5 + script-side fallback for SSR-degraded render.
+- **Tests**:
+  - New contract test `tests/contracts/per-candidate-pert-classification.test.mjs` — 30 static assertions covering: 4 helper signatures + return shapes + delta logic + tooltip placeholders + disabled-branch behavior + LE prefix marker + 2 TD wiring assertions + 2 forward-defense regressions (no `bandColorClass(r.leader_score, currentCycle?.pert_cutoff)` AND no `bandClassify(r.leader_score, currentCycle?.pert_cutoff)`) + cycle chip presence baseline (p197b + p232 #229 Phase 2 baselines retained) + i18n parity across 3 dicts (5 keys × 3 langs = 15 keys) + placeholder presence in all 3 langs + T object surface + fallback T object.
+  - `package.json` `npm test` + `test:contracts` whitelist updated per SEDIMENT-186.C.
+  - Test baseline **1953/1887/0/66 → 1983/1917/0/66 offline** (+30 tests / +30 pass / 0 skip).
+- **Live smoke**:
+  - `node --test tests/contracts/per-candidate-pert-classification.test.mjs` → 30/30 PASS isolated.
+  - `npx astro build` → 0 errors, complete in 18s.
+  - `npm test` → 1983/1917/0/66 (matches expected +30).
+  - `check_schema_invariants()` → 19/19=0 (no schema changes, sanity).
+- **What was NOT touched (per scope)**:
+  - No migrations, no RPC changes (data already populated p242 recompute).
+  - No new columns in `/admin/selection` table (chose inline chip approach per minimum-diff principle; PM said "coluna ou badge" — inline badge less disruptive).
+  - No browser-driven UI test (static contract test asserts code-level structure; visual rendering not exercised). PM may want a follow-up Playwright/browser test if visual regression matters.
+- **Sediment learnings (0 NEW this session)**:
+  - SEDIMENT-242.A respected — probed `get_selection_dashboard` payload via SEDIMENT-226.C JWT-claim pattern (service-role gate fires; `DO $$ … RAISE NOTICE … $$` doesn't return rows but CTE-based probe pattern works for inspecting jsonb).
+  - SEDIMENT-244.A respected — confirmed live PERT completeness for 38 cycle4 apps BEFORE writing helpers around the data shape (no propagation of stale "the apps don't have PERT yet" assumption).
+  - SEDIMENT-186.C respected — new test file added to BOTH `"test"` and `"test:contracts"` whitelists before npm test (baseline jumped 1953→1983 on first run, not stale 1953 due to whitelist omission).
+  - SEDIMENT-235.A respected — no GH auto-close keyword on any open issue; #229a is internal P162 tag.
+- **Carries forward (unchanged from p244 + 1 new)**:
+  1. **WATCH-240.C cron observability** (p243 carry): cron jobid 47 first fire Mon 2026-05-25 13:00 UTC armed via `trig_01GCFWXgzN1dWndKXRv34eVC`.
+  2. **OPP-245.A NEW** (deferred): browser-driven test for /admin/selection page rendering would catch visual regressions (currently static contract test only). Defer unless PM signals UI churn risk. Could pair with #348 Step 2 backlog (per-evaluator booking_url UI work).
+  3. **#348 roadmap Steps 2-4** (unchanged): per-evaluator/committee booking_url schema.
+  4. **#333 W4 invariant U** (unchanged): blocked on PM sequencing call.
+  5. **#334 W5 Angeline legal-ops** (unchanged): external 3-5 business days.
+  6. **#335 ADR-0094** (unchanged): blocked on C1/C2/C3.
+  7. **OPP-244.A** (unchanged from p244, deferred): ADR for "administrative onboarding cycle" pattern.
+  8. **All p239b LGPD carries unchanged**.
+- **PR**: `agent/p245-229a-per-candidate-pert-classification` → main (frontend + i18n + test, standard CI gate path, 0 bypass).
+- **Verify-on-next-boot**: HEAD includes p245 PR · `src/pages/admin/selection.astro` has `bandClassify` + `pertBandChip` + `pertFullTooltip` + `leaderExtraChip` helpers · 5 new i18n keys in pt-BR/en-US/es-LATAM with placeholder parity · `tests/contracts/per-candidate-pert-classification.test.mjs` present · package.json whitelist has test in BOTH `"test"` + `"test:contracts"` · npm test 1983/1917/0/66 offline · invariants 19/19=0 · ISSUE_REGISTRY header mentions p245 · P162 entry #212 RESOLVED-#229a-READ-SURFACE anchors disposition.
+- **Cross-ref**: PM dispatch text in conversation 2026-05-24 · p232 #229 Phase 2 RPC work (RESOLVED in P162 close ~p232 entry; `get_selection_dashboard.cycle.leader_extra_cutoff` block) · p219 Phase 1 (leader_extra cohort separation — established the disabled-state policy via cohort_n<10 threshold) · p197b cycle-level PERT chip (still present, baseline test guard added) · `bandColorClass` legacy helper (retained as back-compat alias) · `get_selection_dashboard.applications[].leader_extra_pert_score` field exposed via p232 read-surface extension.
