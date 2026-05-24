@@ -235,12 +235,13 @@ test('p241 WATCH-240.A (live): live function body md5 matches migration file (Ph
       `Live function body md5 mismatch — Phase C body-hash drift. ` +
       `Live=${fn.body_md5} Expected=${expectedMd5} (from migration file). ` +
       `If apply_migration ran a different SQL string than the local file, re-apply with the ` +
-      `verbatim file content (SEDIMENT-238.B class regression).`);
-    // prosrc_len is a secondary check; md5 already detects content drift, but length is
-    // useful for grep-style debugging if md5 fails.
-    assert.strictEqual(fn.prosrc_len, expectedLen,
-      `Live function prosrc length ${fn.prosrc_len} differs from migration ${expectedLen} ` +
-      `(secondary check; md5 mismatch above is the load-bearing assertion).`);
+      `verbatim file content (SEDIMENT-238.B class regression). ` +
+      `Live prosrc raw length (informational only): ${fn.prosrc_len}; ` +
+      `migration normalized body length: ${expectedLen}.`);
+    // Note: helper RPC returns prosrc_len = LENGTH(prosrc) (raw, pre-normalization),
+    // which is not directly comparable to our normalized expectedLen. md5 above is the
+    // canonical drift check; raw length is surfaced in the failure message above for
+    // debugging only.
   }
 );
 
