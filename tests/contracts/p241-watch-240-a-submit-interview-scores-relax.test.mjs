@@ -43,6 +43,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const ROOT = process.cwd();
@@ -197,35 +198,49 @@ function makeClient() {
   });
 }
 
-test('p241 WATCH-240.A (live): live function body hoist position precedes all-submitted check',
+// Compute the expected body md5 from the migration file at test load time.
+// Mirrors the SQL-side normalization used by `_audit_list_public_function_bodies()`:
+//   md5(regexp_replace(prosrc, '\s+', ' ', 'g'))
+// The function body is everything between `AS $function$` and `$function$;`.
+function expectedBodyMd5FromMigrationFile() {
+  const sql = readFileSync(MIGRATION_FILE, 'utf8');
+  const match = sql.match(/AS\s+\$function\$([\s\S]+?)\$function\$/);
+  if (!match) {
+    throw new Error('Migration file does not contain a `AS $function$ … $function$` block — cannot derive expected md5');
+  }
+  const normalized = match[1].replace(/\s+/g, ' ');
+  return { md5: createHash('md5').update(normalized).digest('hex'), len: normalized.length };
+}
+
+test('p241 WATCH-240.A (live): live function body md5 matches migration file (Phase C drift parity)',
   { skip: !dbGated && skipMsg },
   async () => {
     const sb = makeClient();
-    // Probe live prosrc via admin_audit_log proxy: cannot reach pg_proc through PostgREST
-    // public schema, but we DO have an RPC for this — _audit_list_public_function_bodies()
-    // exists from p175 Phase C work. If unavailable, fall back to the safer proxy via
-    // a marker row in admin_audit_log (the migration registered itself in schema_migrations
-    // which we can't probe via PostgREST either; admin_audit_log is the only exposed proxy
-    // and the p241 migration writes no audit rows, so we instead use the p240 audit rows
-    // as the "this app-cluster is alive" proxy + assert the function body via the helper
-    // RPC if available).
+    // Helper RPC `_audit_list_public_function_bodies()` from p175 Phase C work.
+    // Returns columns: proname, identity_args, body_md5, prosrc_len, is_secdef.
+    // (No raw body — md5 only; size/privacy discipline.)
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) {
-      // Helper RPC may not be exposed in this environment — degrade to a structural check
-      // via the migration file (offline assertion already covers this). Skip the live
-      // body probe rather than failing the test for a tooling gap.
+      // Helper RPC may not be exposed in this environment — static body-shape check
+      // already covers design intent. Skip rather than fail for tooling gap.
       return;
     }
-    const fn = (data || []).find(r => r.name === 'submit_interview_scores');
-    assert.ok(fn, 'submit_interview_scores must be present in pg_proc');
-    const hoistIdx = fn.body.indexOf('IF v_interview.conducted_at IS NULL THEN');
-    const allCheckIdx = fn.body.indexOf('v_all_interviewers_submitted := NOT EXISTS');
-    assert.ok(hoistIdx > 0,
-      'Live body must contain the hoisted conducted_at IS NULL block (apply_migration may have failed silently)');
-    assert.ok(allCheckIdx > 0,
-      'Live body must contain v_all_interviewers_submitted assignment (regression check)');
-    assert.ok(hoistIdx < allCheckIdx,
-      `Live body hoist must precede all-submitted check; got hoist=${hoistIdx} all=${allCheckIdx}`);
+    const fn = (data || []).find(r => r.proname === 'submit_interview_scores');
+    assert.ok(fn,
+      'submit_interview_scores must appear in _audit_list_public_function_bodies() output — ' +
+      'if missing, the migration was never applied OR the helper RPC was changed to filter ' +
+      'this function out (re-check helper definition).');
+    const { md5: expectedMd5, len: expectedLen } = expectedBodyMd5FromMigrationFile();
+    assert.strictEqual(fn.body_md5, expectedMd5,
+      `Live function body md5 mismatch — Phase C body-hash drift. ` +
+      `Live=${fn.body_md5} Expected=${expectedMd5} (from migration file). ` +
+      `If apply_migration ran a different SQL string than the local file, re-apply with the ` +
+      `verbatim file content (SEDIMENT-238.B class regression).`);
+    // prosrc_len is a secondary check; md5 already detects content drift, but length is
+    // useful for grep-style debugging if md5 fails.
+    assert.strictEqual(fn.prosrc_len, expectedLen,
+      `Live function prosrc length ${fn.prosrc_len} differs from migration ${expectedLen} ` +
+      `(secondary check; md5 mismatch above is the load-bearing assertion).`);
   }
 );
 
@@ -233,16 +248,17 @@ test('p241 WATCH-240.A (live): submit_interview_scores has exactly 1 overload (5
   { skip: !dbGated && skipMsg },
   async () => {
     const sb = makeClient();
-    // Proxy: post-deploy admin_audit_log carries p240 rows that prove the cluster is reachable.
-    // We can't query pg_proc directly via PostgREST. Use the helper RPC if exposed; otherwise
-    // skip — the static signature assertion already covers the design intent.
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) {
-      return; // helper unavailable — static check suffices
+      return; // helper unavailable — static signature check suffices
     }
-    const matches = (data || []).filter(r => r.name === 'submit_interview_scores');
+    const matches = (data || []).filter(r => r.proname === 'submit_interview_scores');
     assert.strictEqual(matches.length, 1,
       `Expected exactly 1 overload of submit_interview_scores; got ${matches.length}. ` +
       `Multiple overloads would create PostgREST dispatch ambiguity and break MCP tool calls.`);
+    // identity_args confirms the canonical 5-arg shape (uuid, jsonb, text, text, jsonb).
+    assert.strictEqual(matches[0].identity_args,
+      'p_interview_id uuid, p_scores jsonb, p_theme text, p_notes text, p_criterion_notes jsonb',
+      `submit_interview_scores signature drifted from canonical 5-arg shape; got identity_args=${matches[0].identity_args}`);
   }
 );
