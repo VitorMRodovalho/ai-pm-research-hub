@@ -446,30 +446,20 @@ test('p238 #331: no future migration removes has_voice_biometric_consent from co
 // ===================================================================
 
 test(
-  'p238 #331: live give_consent_via_token signature is (text, text, jsonb)',
+  'p238 #331: live give_consent_via_token accepts 3-arg shape (text, text, jsonb)',
   { skip: !dbGated ? skipMsg : false },
   async () => {
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data, error } = await sb.rpc('_audit_list_public_function_bodies').catch(() => ({ data: null, error: null }));
-    // Fall back to a direct system query (the helper may not exist on every env).
-    const { data: sigRows, error: sigErr } = await sb
-      .from('pg_proc')
-      .select('*')
-      .limit(0);
-    // We can't query pg_proc directly from PostgREST RLS — use the canonical
-    // probe instead: a misuse call must return the expected message.
+    // Canonical probe: a misuse call with the 3-arg shape must reach the body
+    // (returning the token-lookup error). If the RPC were still 2-arg, PostgREST
+    // would 404 on the unknown p_evidence parameter.
     const { error: misuseError } = await sb.rpc('give_consent_via_token', {
       p_token: 'definitely-not-a-token-' + Date.now(),
       p_consent_type: 'voice_biometric',
       p_evidence: null,
     });
-    // We expect EITHER the token-lookup failure ("Invalid token...") OR the
-    // evidence-guard failure ("voice_biometric consent requires p_evidence...").
-    // The token check fires first in the live body, but the API still accepts
-    // the 3-arg shape if the RPC was redeployed correctly. The hard signal is
-    // that the call did not 404 (which is what a 2-arg-only fn would do).
     assert.ok(misuseError, 'misuse must return an error (not data)');
     const msg = misuseError.message || '';
     assert.ok(
@@ -500,32 +490,27 @@ test(
 );
 
 test(
-  'p238 #331: live consume_onboarding_token body advertises voice payload',
+  'p238 #331: live consume_onboarding_token exists and dispatches (smoke via invalid-token misuse)',
   { skip: !dbGated ? skipMsg : false },
   async () => {
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    // Use the existing audit helper if present.
-    const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
-    if (error) {
-      // Helper not present — non-fatal; this is a defensive DB probe.
-      console.warn(`[p238 #331] _audit_list_public_function_bodies unavailable: ${error.message}`);
-      return;
-    }
-    const rows = Array.isArray(data) ? data : [];
-    const consume = rows.find(
-      (r) => r.name === 'consume_onboarding_token' || r.proname === 'consume_onboarding_token'
-    );
-    assert.ok(consume, 'consume_onboarding_token must appear in audit helper output');
-    const body = consume.body || consume.prosrc || '';
+    // The audit helper `_audit_list_public_function_bodies()` returns only
+    // md5(prosrc) hashes (proname, identity_args, body_md5, prosrc_len,
+    // is_secdef), not the raw body — so we can't string-search 'has_voice_biometric_consent'
+    // in it. The static migration body assertion + the sanity DO block at apply
+    // time both already prove the new payload keys are present in the source.
+    // This DB-gated test is a misuse-dispatch smoke: prove the function still
+    // exists + returns the expected token-lookup error.
+    const { error: misuseError } = await sb.rpc('consume_onboarding_token', {
+      p_token: 'definitely-not-a-token-' + Date.now(),
+    });
+    assert.ok(misuseError, 'misuse must return an error (not data)');
+    const msg = misuseError.message || '';
     assert.ok(
-      body.includes('has_voice_biometric_consent'),
-      'live consume_onboarding_token body must include has_voice_biometric_consent'
-    );
-    assert.ok(
-      body.includes('has_voice_biometric_revoked'),
-      'live consume_onboarding_token body must include has_voice_biometric_revoked'
+      /Invalid or expired token/i.test(msg),
+      `live consume_onboarding_token must dispatch and fail on invalid token; got: ${msg}`
     );
   }
 );
