@@ -2240,6 +2240,7 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
   1. Cleanup of the 4 shadow rows in `supabase_migrations.schema_migrations` (Path C narrow follow-up; PM call)
   2. EF `analyze-application-video/index.ts` line 263 JS-layer consent gate (still p236 carry — defense-in-depth WATCH)
   3. Stale-branch retention policy: PM may want a `.claude/rules/branch-hygiene.md` documenting "delete `agent/issue-*` heads within 1 session of the matching issue closing OR after explicit amnesty audit"
+  4. **Other local `agent/*` branches NOT audited in p237** — `git branch -a` lists at least: `agent/issue-212-research`, `agent/issue-213`, `agent/issue-216`, `agent/issue-220`, `agent/issue-224`, `agent/issue-226`, `agent/issue-237`. These were NOT inventoried against `origin`/`main` this session. **PM directive p237: do NOT bulk-delete.** Future cleanup must inventory each branch individually — diff vs `main`, diff vs canonical `schema_migrations` rows, confirm any orphan files have live equivalence (per ADR-0097 pattern documented here) — before deletion. Recommend a dedicated future session with branch-by-branch ABCD if PM wants this swept.
 - **Sediment learnings (0 NEW):**
   - All sediment in this session was carry from p206/p207 (SEDIMENT-227.A / SEDIMENT-232.B revisited). No new artifact introduced.
 - **Test baseline:** No code/DDL changes — pure docs PR. Test baseline unchanged at offline **1856/1800/0/56** (post-p236).
