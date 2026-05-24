@@ -52,37 +52,56 @@ The 11 above-target apps (PM's "11 apps cycle4") break down as 1 + 3 + 1 + 1 + 5
 
 | Applicant | obj_avg | Band Position | Suggested Next Action |
 |---|---|---|---|
-| Henrique Diniz S. Silva | 227.00 | above_target | committee approves → `objective_done` (top performer) |
-| João Coelho Júnior | 171.00 | above_target | committee approves → `objective_done` |
-| Francisleila Melo Santos | 164.00 | above_target | committee approves → `objective_done` |
-| Cristiano de Oliveira Santos Filho | 163.00 | above_target | committee approves → `objective_done` |
-| Edinan Soares | 157.50 | above_target | committee approves → `objective_done` |
+| Henrique Diniz S. Silva | 227.00 | above_target | committee dispatches cutoff email (top performer) |
+| João Coelho Júnior | 171.00 | above_target | committee dispatches cutoff email |
+| Francisleila Melo Santos | 164.00 | above_target | committee dispatches cutoff email |
+| Cristiano de Oliveira Santos Filho | 163.00 | above_target | committee dispatches cutoff email |
+| Edinan Soares | 157.50 | above_target | committee dispatches cutoff email |
 | Hector Rigon | 140.50 | in_band_below_target | **committee judgment call** — within ±10% band but below 155.42 target |
-| Alexandre Fortes | 119.50 | below_band | committee approves → `objective_cutoff` (below band lower) |
-| Carla Rosa | 117.50 | below_band | committee approves → `objective_cutoff` (below band lower) |
+| Alexandre Fortes | 119.50 | below_band | committee marks `objective_cutoff` (below band lower) |
+| Carla Rosa | 117.50 | below_band | committee marks `objective_cutoff` (below band lower) |
 
-Suggested `finalize_decisions(cycle4, …)` JSON skeleton for PM (PM amends per committee discussion):
+### Canonical cutoff-advance workflow (audit-confirmed RPC contracts)
 
-```json
-{
-  "approve": [
-    "bcc54dfc-ac79-4a26-a05f-eeb571d48fd9", // Henrique
-    "cef2b25e-4bc0-4e0e-a642-a3f3fec68549", // João
-    "72ea1a45-8dc8-4b0b-b4cb-f1427968ff22", // Francisleila
-    "f82f5ec7-1a76-4960-8c0d-5a94b502ffc3", // Cristiano
-    "77fdb870-5398-4c52-abda-b292b594b558"  // Edinan
-  ],
-  "in_band_review": [
-    "c78b885b-95e6-4cb8-91e6-a026423b6c78"  // Hector — committee judgment
-  ],
-  "below_cutoff": [
-    "c5b8be87-17f2-4cc4-a104-3838d9cbc435", // Alexandre
-    "afb35307-6693-4fd4-82d0-7d5a49c3572e"  // Carla
-  ]
-}
+**Important correction**: `finalize_decisions(p_cycle_id, p_decisions)` is for **FINAL committee decisions** (`approved` / `rejected` / `waitlisted` / `converted`) AFTER interviews — not for the screening→cutoff-advance step. Body parser expects:
+
+```jsonb
+[{ "application_id": "<uuid>", "decision": "approved|rejected|waitlisted|converted",
+   "feedback": "<text>", "convert_to": "<role_text|null>" }, ...]
 ```
 
-Exact `finalize_decisions` signature: `finalize_decisions(p_cycle_id uuid, p_decisions jsonb)` — PM should consult the RPC body or invoke from an authenticated MCP-Claude session to construct the canonical `p_decisions` shape per its parser. The above is per-app classification; the RPC may expect a different keying.
+For the **cutoff-advance step** (the actual gap this audit surfaced), the canonical path per `notify_selection_cutoff_approved(app_id)` (migration `20260805000011_p228_260_w2_leaf4_selection_cutoff_approved.sql`) is **per-app**:
+
+- **Gate**: committee `role='lead'` OR `can_by_member('manage_member')` — Vitor (platform admin) satisfies the latter.
+- **Preconditions checked**: `cycle.interview_booking_url IS NOT NULL` (raises `CUTOFF_NO_BOOKING_URL` errcode `P0020` if missing); `application.email IS NOT NULL`; idempotency via `cutoff_approved_email_sent_at IS NULL`.
+- **Effect**: dispatches `selection_cutoff_approved` email template (with `interview_booking_url` CTA + `first_name`) via `campaign_send_one_off` → Resend; UPDATEs `cutoff_approved_email_sent_at = now()`; logs audit row `'selection.cutoff_approved_email_dispatched'`.
+- **Does NOT** advance `selection_applications.status`. Status advance happens **naturally** when the candidate books via the calendar URL → webhook (#116) fires → `schedule_interview` writes `selection_interviews` row → p240 trigger advances app `screening → interview_scheduled`.
+
+**Suggested PM committee actions** (5 above-target cycle4 screening apps):
+
+```sql
+-- Run as Vitor (platform admin) from authenticated MCP-Claude session:
+SELECT public.notify_selection_cutoff_approved('bcc54dfc-ac79-4a26-a05f-eeb571d48fd9'::uuid); -- Henrique
+SELECT public.notify_selection_cutoff_approved('cef2b25e-4bc0-4e0e-a642-a3f3fec68549'::uuid); -- João
+SELECT public.notify_selection_cutoff_approved('72ea1a45-8dc8-4b0b-b4cb-f1427968ff22'::uuid); -- Francisleila
+SELECT public.notify_selection_cutoff_approved('f82f5ec7-1a76-4960-8c0d-5a94b502ffc3'::uuid); -- Cristiano
+SELECT public.notify_selection_cutoff_approved('77fdb870-5398-4c52-abda-b292b594b558'::uuid); -- Edinan
+```
+
+Each call is **idempotent** (no-op if `cutoff_approved_email_sent_at` already set) and returns `{ success: true, email_sent: true|false, recipient_email_redacted: "ab***xy.z" }`. The `cutoff_approved_email_sent_at` column flips post-dispatch and the candidate receives the booking email.
+
+For the **2 below-band apps** (Alexandre 119.50, Carla 117.50), no canonical `screening → objective_cutoff` RPC exists in the current codebase (`status='objective_done'` is referenced only as a variable name `v_objective_done int` inside `notify_selection_cutoff_approved`, never written as a status enum value). PM has 2 options:
+
+1. **Leave them in `screening` until committee runs `finalize_decisions`** with `decision='rejected'` after the broader cohort review.
+2. **Manual UPDATE** via authenticated PM session: `UPDATE selection_applications SET status='objective_cutoff' WHERE id IN (…) AND status='screening'` (write `admin_audit_log` row for traceability).
+
+For the **1 in-band borderline app** (Hector 140.50), committee judges in next meeting.
+
+**Pre-dispatch check**: confirm `cycle4-2026.interview_booking_url` is set, otherwise `notify_selection_cutoff_approved` will raise `CUTOFF_NO_BOOKING_URL P0020`:
+
+```sql
+SELECT cycle_code, interview_booking_url FROM public.selection_cycles WHERE cycle_code='cycle4-2026';
+```
 
 ## Cron Posture — `recompute-pert-cutoffs-weekly`
 
