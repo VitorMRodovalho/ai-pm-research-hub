@@ -66,6 +66,12 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // (futuro: backfill via VEP sync workflow). Não derivável de outras colunas — é um
   // ponteiro explícito, não um cache. Backfill p170 linkou 53/129 via email+cycle match.
   ['engagements.selection_application_id', 'Explicit upstream FK to selection_applications (p170 VEP source-of-truth linkage); explicit pointer, no derivation source'],
+  // Personal booking/calendar pool URL per evaluator (SPEC #348 / #354 Foundation, p250).
+  // Set by member via /admin/members/[id] form (Child #3 / #356); validation is app-level
+  // (^https?:// regex). Not derivable — points to external calendar provider chosen by
+  // the evaluator. Consumed by Child #2 / #355 RPC body for researcher-track LRD routing
+  // in notify_selection_cutoff_approved.
+  ['members.interview_booking_url', 'Personal evaluator calendar/booking pool URL (SPEC #348); user-set via admin form, no derivation source'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.
