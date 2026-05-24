@@ -34,6 +34,7 @@ interface MemberDetail {
     is_active: boolean; tribe_id: number | null; tribe_name: string | null;
     chapter: string; auth_id: string | null; credly_username: string | null;
     last_seen_at: string | null; total_sessions: number; credly_badges: any[];
+    interview_booking_url: string | null;
   };
   cycles: Array<{ cycle: string; tribe_id: number | null; tribe_name: string | null; operational_role: string; designations: string[]; status: string }>;
   gamification: { total_xp: number; rank: number; categories: Array<{ category: string; xp: number; description: string }> } | null;
@@ -77,6 +78,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   const [editChapter, setEditChapter] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
+  const [editBookingUrl, setEditBookingUrl] = useState('');
   const [chapters, setChapters] = useState<Chapter[]>([]);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
@@ -108,6 +110,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     setEditChapter(m.chapter || 'PMI-GO');
     setEditActive(m.is_active);
     setEditSuperadmin(m.is_superadmin);
+    setEditBookingUrl(m.interview_booking_url || '');
     setEditing(true);
   };
 
@@ -130,6 +133,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     if (editChapter !== m.chapter) changes.chapter = editChapter;
     if (editActive !== m.is_active) changes.is_active = editActive;
     if (editSuperadmin !== m.is_superadmin) changes.is_superadmin = editSuperadmin;
+    if (editBookingUrl !== (m.interview_booking_url || '')) changes.interview_booking_url = editBookingUrl;
 
     const { error } = await sb.rpc('admin_update_member_audited', {
       p_member_id: memberId,
@@ -296,6 +300,26 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
                 <span className="text-sm text-[var(--text-secondary)]">SA</span>
               </label>
             </div>
+          </div>
+
+          {/* Interview Booking URL (SPEC #348 Child #3 — populates members.interview_booking_url) */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="interview_booking_url" className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              {t('admin.member.bookingUrl.label', 'URL de agendamento de entrevista')}
+            </label>
+            <input
+              id="interview_booking_url"
+              type="url"
+              pattern="^https?://.*"
+              value={editBookingUrl}
+              onChange={e => setEditBookingUrl(e.target.value)}
+              placeholder={t('admin.member.bookingUrl.placeholder', 'https://calendar.app.google/...')}
+              title={t('admin.member.bookingUrl.invalid', 'A URL precisa começar com http:// ou https://')}
+              className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"
+            />
+            <span className="text-[.7rem] text-[var(--text-muted)]">
+              {t('admin.member.bookingUrl.help', 'Usada para entrevistas da trilha pesquisador(a); a trilha líder usa o link do ciclo.')}
+            </span>
           </div>
 
           {/* Actions */}
