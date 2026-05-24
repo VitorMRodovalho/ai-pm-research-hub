@@ -249,8 +249,12 @@ export default function ReviewChainIsland({ chainId, externalReviewMode = false 
       }
     } catch { /* non-fatal */ }
 
-    const vRes = await sb.from('document_versions').select('content_html').eq('id', dRes.data.version_id).single();
-    setContentHtml(vRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>');
+    // p255 HF2: read content_html from get_chain_workflow_detail RPC payload.
+    // Previously did a direct SELECT on document_versions which 406'd under
+    // RLS for external reviewers / pending signers (Fernando bug). The RPC
+    // already carries the auth context for chain access — content_html
+    // joins to the same SECDEF query, no separate fetch needed.
+    setContentHtml(dRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>');
 
     // Load previous locked version (if any) for diff viewer (IP-3d)
     const pRes = await sb.rpc('get_previous_locked_version', { p_version_id: dRes.data.version_id });
