@@ -44,11 +44,14 @@ const EF = readFileSync(EF_PATH, 'utf8');
 
 // ─── 1. Header changelog ──────────────────────────────────────────────────────
 
-test('ef header declares v2.79.x (semantic gateway bridge era)', () => {
+test('ef header declares v2.79.x or v2.80.x (semantic gateway bridge era + p239b LGPD operator surface)', () => {
   // p232: loosened to v2.79.\d+ so additive patches (description bumps, no-new-tools)
-  // don't break this assertion. The contract is "semantic gateway bridge shipped in 2.79.x";
-  // a major/minor bump (3.x.x or 2.80.x) would intentionally break this.
-  assert.match(EF, /MCP server v2\.79\.\d+/, 'expected v2.79.x marker in header (bridge era)');
+  //   don't break this assertion. The contract is "semantic gateway bridge shipped in 2.79.x".
+  // p239b: extended to also accept v2.80.x — bridge gateway itself unchanged (still alpha,
+  //   nucleo-ia-semantic@0.1.0), but ef_version + nucleo-ia-hub bumped to ship +2 LGPD
+  //   retroactive operator tools (issue #332 close). Next minor bump (2.81.x) should
+  //   intentionally break this — that's the forward-defense signal.
+  assert.match(EF, /MCP server v2\.(79|80)\.\d+/, 'expected v2.79.x or v2.80.x marker in header');
   assert.match(EF, /p222 #280 alpha/i, 'expected p222 #280 alpha provenance');
   assert.match(EF, /Semantic MCP Gateway bridge/i, 'expected semantic gateway naming in header');
 });
@@ -188,7 +191,8 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   assert.match(m[0], /"nucleo-ia-hub"/, '/health should report /mcp server name');
   assert.match(m[0], /"nucleo-ia-semantic"/, '/health should report /semantic server name');
   assert.match(m[0], /tools:\s*3/, '/health should report 3 tools on /semantic');
-  assert.match(m[0], /tools:\s*299/, '/health should still report 299 tools on /mcp');
+  // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close).
+  assert.match(m[0], /tools:\s*301/, '/health should report 301 tools on /mcp (was 299 pre-p239b)');
 });
 
 // ─── 7. /mcp regression-safety guarantee ──────────────────────────────────────
