@@ -54,8 +54,8 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
       assert.match(MIGRATION_SQL, /-- CROSS-REF:/);
     });
 
-    it('header marks scope as boards-only (HF2 governance viewer NOT included)', () => {
-      assert.match(MIGRATION_SQL, /does NOT touch governance document viewer/i);
+    it('header documents HF1 scope (boards write/move RPCs)', () => {
+      assert.match(MIGRATION_SQL, /\bboard write RPCs\b/i);
     });
   });
 

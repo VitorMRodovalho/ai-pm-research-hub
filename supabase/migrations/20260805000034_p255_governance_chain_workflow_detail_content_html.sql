@@ -12,38 +12,40 @@
 -- WHY: Bug — Fernando Maquiaveli opening /governance/documents/<chainId>
 --   (or external-reviewer path) sees "conteúdo indisponível" while export PDF
 --   works. Console shows HTTP 406 on direct PostgREST SELECT to
---   document_versions.content_html. Cause:
---     - ReviewChainIsland.tsx fetches chain detail via this RPC (OK), then
---       does a SEPARATE client-side SELECT on document_versions to fetch
---       content_html. RLS on document_versions denies the read for users
---       outside the document author / signer / SA roles (Fernando is an
---       external reviewer / pending signer, not author).
---     - Export PDF path uses a server-side route with elevated context, so
---       it works.
+--   document_versions.content_html. Cause: ReviewChainIsland.tsx fetches
+--   chain detail via this RPC (OK) then does a SEPARATE client-side SELECT
+--   on document_versions to fetch content_html — RLS denies the read for
+--   users outside the document author / signer / SA roles. Export PDF path
+--   uses a server-side route with elevated context, so it works.
 --   PM-mandated fix path:
 --     - Do NOT add allow-scripts to the viewer iframe (XSS risk).
---     - Do NOT broaden document_versions RLS generically (too coarse —
---       eligible reviewers vs document authors vs SA all need separate
---       policies; out of hotfix scope).
---     - Extend the existing SECDEF RPC that already returns chain detail.
---       The auth model "anyone who can call this RPC for this chain_id can
---       also see the version content" is consistent with the established
---       pattern (get_previous_locked_version and get_next_draft_version
---       both already return content_html via SECDEF SECURITY DEFINER).
+--     - Do NOT broaden document_versions RLS generically (too coarse).
+--     - Extend the existing SECDEF RPC. The auth model "anyone who can call
+--       this RPC for this chain_id can also see the version content" is
+--       consistent with the established pattern (get_previous_locked_version
+--       and get_next_draft_version both already return content_html via
+--       SECDEF).
 --
 -- SPEC DRIFT RESOLVED: none — bugfix.
 --
 -- ROLLBACK: re-apply the prior body from
 --   supabase/migrations/20260684000000_p178_phase_b_drift_capture_1_touch_a_g_69fns.sql
---   Safe (same signature, additive field — drops content_html from the
---   payload; UI would fall back to "(conteúdo indisponível)" placeholder).
+--   Safe (same signature, additive field; payload omits content_html so UI
+--   falls back to "(conteúdo indisponível)" placeholder).
 --
 -- INVARIANTS: 19/19=0 unchanged. No tables / FKs / RLS / triggers touched.
 --   ACL preserved (CREATE OR REPLACE keeps EXECUTE grants intact).
 --
--- CROSS-REF: HF2 of the p254 hotfix pair.
---   HF1 (PR #362): boards initiative-leader gate (CPMAI/Fernando edit cards)
---   HF2 (this):    governance viewer content_html (CPMAI/Fernando read TAP)
+-- SEDIMENT-246.B FOOTNOTE: body below matches live byte-for-byte
+--   (post-apply_migration). Original draft had inline -- comments inside
+--   the function body documenting "Submitter info" + "Per-gate aggregate"
+--   sub-sections; apply_migration MCP silently strips inline -- inside
+--   AS $$ ... $$. Replaced with live capture to keep Phase C body-drift
+--   gate green. WHY documentation lives in this header instead.
+--
+-- CROSS-REF: HF2 of the p254 hotfix pair (same bundle PR).
+--   HF1 (p254): boards initiative-leader gate (CPMAI/Fernando edit cards)
+--   HF2 (this):  governance viewer content_html (CPMAI/Fernando read TAP)
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.get_chain_workflow_detail(p_chain_id uuid)
@@ -70,12 +72,10 @@ BEGIN
     RETURN jsonb_build_object('error','chain_not_found');
   END IF;
 
-  -- Submitter info
   SELECT jsonb_build_object('id', m.id, 'name', m.name, 'chapter', m.chapter, 'role', m.operational_role)
   INTO v_submitter
   FROM public.members m WHERE m.id = v_chain.opened_by;
 
-  -- Per-gate aggregate: signed_count + signers + eligible_pending + days_stale
   SELECT jsonb_agg(
     jsonb_build_object(
       'kind', g->>'kind',

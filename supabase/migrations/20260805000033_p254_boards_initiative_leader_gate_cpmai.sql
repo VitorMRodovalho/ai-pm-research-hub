@@ -6,33 +6,29 @@
 --   of THAT initiative can edit and move cards on THAT initiative's board(s).
 --
 --   1. CREATE OR REPLACE public.update_board_item(uuid, jsonb) — same sig.
---      - Declares v_is_initiative_leader boolean.
---      - Computes it from EXISTS on public.engagements (status=active,
---        initiative_id = board.initiative_id, role IN ('leader','coordinator',
---        'manager','co_gp')) keyed on caller's person_id (V4 ladder).
---      - Threads v_is_initiative_leader through the outer "Insufficient
---        permissions" gate AND the per-field gates (baseline_date,
---        forecast_date, assignee_id, is_portfolio_item) so initiative
---        leaders can adjust the same fields a tribe_leader can.
---      - All other gates (V4 can_by_member('write_board'), v_is_gp,
---        v_is_card_owner, v_is_board_admin, v_is_board_editor,
---        v_is_comms_for_domain, v_is_leader legacy-tribe-match,
---        publications_submissions domain carve-out) PRESERVED verbatim.
+--      Declares v_is_initiative_leader boolean. Computes it from EXISTS on
+--      public.engagements (status=active, initiative_id = board.initiative_id,
+--      role IN ('leader','coordinator','manager','co_gp')) keyed on caller's
+--      person_id (V4 ladder). Threads v_is_initiative_leader through the
+--      outer "Insufficient permissions" gate AND the per-field gates
+--      (baseline_date, forecast_date, assignee_id, is_portfolio_item) so
+--      initiative leaders can adjust the same fields a tribe_leader can.
+--      All other gates (V4 can_by_member('write_board'), v_is_gp,
+--      v_is_card_owner, v_is_board_admin, v_is_board_editor,
+--      v_is_comms_for_domain, v_is_leader legacy-tribe-match,
+--      publications_submissions domain carve-out) PRESERVED verbatim.
 --
 --   2. CREATE OR REPLACE public.move_board_item(uuid, text, integer, text)
---      — same sig.
---      - Declares v_is_initiative_leader (same predicate).
---      - Adds it to BOTH "mark as done" and "Unauthorized requires
---        write_board" gates so a leader can move + close cards on their
---        initiative's board.
---      - All other gates (v_is_gp, v_is_leader legacy, v_is_card_owner,
---        v_is_comms_for_domain, can_by_member('write_board')) PRESERVED.
+--      — same sig. Declares v_is_initiative_leader (same predicate). Adds
+--      it to BOTH "mark as done" and "Unauthorized requires write_board"
+--      gates so a leader can move + close cards on their initiative's
+--      board. All other gates PRESERVED.
 --
--- WHY: Bug surfaced via CPMAI study group — Fernando Maquiaveli has
---   active engagements as study_group_owner (role='leader') on the parent
---   CPMAI study group AND workgroup_coordinator (role='coordinator') on
---   the Capilarização CPMAI child workgroup, but cannot edit/move cards
---   on either board because:
+-- WHY: Bug surfaced via CPMAI study group — Fernando Maquiaveli has active
+--   engagements as study_group_owner (role='leader') on the parent CPMAI
+--   study group AND workgroup_coordinator (role='coordinator') on the
+--   Capilarização CPMAI child workgroup, but cannot edit/move cards on
+--   either board because:
 --     - v_is_leader uses operational_role='tribe_leader' + members.tribe_id
 --       = initiative.legacy_tribe_id. Study groups / workgroups have NULL
 --       legacy_tribe_id so the predicate never fires for non-research-tribe
@@ -42,15 +38,13 @@
 --     - No board_members row added manually for Fernando (data-fix path
 --       PM ruled out as paliativo).
 --   PM rule: the structural fix is "initiative leader by engagement,
---   regardless of initiative kind". This migration adds exactly that
---   predicate — narrow, engagement-derived, no RLS broadening, no new
---   capability in the V4 catalog (defense vs privilege escalation).
+--   regardless of initiative kind". Narrow predicate based on the V4
+--   engagements graph.
 --
--- ROLES INCLUDED ('leader','coordinator','manager','co_gp')
+-- ROLES INCLUDED ('leader','coordinator','manager','co_gp'):
 --   - 'leader'      — research-tribe + study-group owner + volunteer leader
---                     (the canonical "I run this initiative" role)
 --   - 'coordinator' — workgroup_coordinator (Fernando's child engagement)
---   - 'manager'     — initiative manager role (distinct from operational_role)
+--   - 'manager'     — initiative manager role
 --   - 'co_gp'       — co-GP of initiative
 --
 -- ROLES EXCLUDED (drift watch — these must NOT inherit edit rights):
@@ -59,26 +53,32 @@
 --     'lead_presenter'
 --   → Common participants keep read-only / card-owner rights only.
 --
--- SPEC DRIFT RESOLVED: none — this is a forward-looking hotfix.
+-- SPEC DRIFT RESOLVED: none — forward-looking hotfix.
 --
--- ROLLBACK: re-apply the prior CREATE OR REPLACE bodies from
+-- ROLLBACK: re-apply the prior bodies from
 --   supabase/migrations/20260802000001_p209_issue_226_phase_b_drift_capture_26_fns.sql
 --   Safe (same signatures, additive predicate).
 --
 -- INVARIANTS: 19/19=0 unchanged. No tables / FKs / RLS / triggers touched.
 --   ACL preserved (CREATE OR REPLACE keeps EXECUTE grants intact).
 --
+-- SEDIMENT-246.B FOOTNOTE: bodies below match live byte-for-byte
+--   (post-apply_migration). Original draft had inline -- comments
+--   documenting the predicate intent; apply_migration MCP silently
+--   strips inline -- inside AS $$ ... $$. Replaced with live capture
+--   to keep Phase C body-drift gate green. WHY documentation lives in
+--   this header instead.
+--
 -- CROSS-REF:
---   This PR scope: BOARDS — does NOT touch governance document viewer
---   (separate HF2 for /governance/documents/[chainId] content_html 406).
+--   This PR scope: BOARDS — paired with HF2 in same bundle PR.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.update_board_item(p_item_id uuid, p_fields jsonb)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public', 'pg_temp'
-AS $$
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
 DECLARE
   v_board_id uuid;
   v_old record;
@@ -106,11 +106,6 @@ BEGIN
   SELECT legacy_tribe_id INTO v_board_legacy_tribe_id
   FROM public.initiatives WHERE id = v_board.initiative_id;
 
-  -- p180 ADR-0011 V4: hybrid v_is_gp authority. V3 surface preserved
-  -- (is_superadmin + operational_role + co_gp designation). V4 path added
-  -- via can_by_member('manage_platform') — catalog covers volunteer × {co_gp,
-  -- deputy_manager, manager} = same surface today. Defense-in-depth for cache
-  -- drift / future seed expansion.
   v_is_gp := coalesce(v_caller.is_superadmin, false)
     OR v_caller.operational_role IN ('manager', 'deputy_manager')
     OR coalesce('co_gp' = ANY(v_caller.designations), false)
@@ -132,7 +127,6 @@ BEGIN
     AND bm.board_role IN ('admin', 'editor')
   );
 
-  -- New: comms team in communication domain (Item 02 + Item 03 fix)
   v_is_comms_for_domain := coalesce(v_board.domain_key, '') = 'communication' AND (
     v_caller.operational_role = 'communicator'
     OR coalesce('comms_team' = ANY(v_caller.designations), false)
@@ -140,11 +134,6 @@ BEGIN
     OR coalesce('comms_member' = ANY(v_caller.designations), false)
   );
 
-  -- p254 hotfix: initiative leader by engagement (CPMAI/Fernando bug).
-  -- Fires only when (a) the board is bound to a non-NULL initiative AND
-  -- (b) the caller has a V4 person_id AND (c) an active engagement on the
-  -- SAME initiative_id with a leader-class role. Drift watch in p254
-  -- contract test pins the literal role whitelist.
   v_is_initiative_leader := v_board.initiative_id IS NOT NULL
     AND v_caller.person_id IS NOT NULL
     AND EXISTS (
@@ -155,7 +144,6 @@ BEGIN
         AND e.role IN ('leader', 'coordinator', 'manager', 'co_gp')
     );
 
-  -- p200 ADR-0087: curator V3 designation → V4 can_by_member('curate_content')
   IF NOT public.can_by_member(v_caller.id, 'write_board')
      AND NOT v_is_board_admin AND NOT v_is_card_owner AND NOT v_is_board_editor
      AND NOT v_is_comms_for_domain
@@ -283,15 +271,15 @@ BEGIN
       CASE WHEN (p_fields->>'is_portfolio_item')::boolean THEN 'Marcado como entregável' ELSE 'Removido de entregáveis' END, v_caller.id);
   END IF;
 END;
-$$;
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.move_board_item(p_item_id uuid, p_new_status text, p_new_position integer DEFAULT 0, p_reason text DEFAULT NULL::text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
 DECLARE
   v_old_status text;
   v_board_id uuid;
@@ -326,7 +314,6 @@ BEGIN
     OR coalesce('comms_member' = ANY(v_actor.designations), false)
   );
 
-  -- p254 hotfix: initiative leader by engagement (parity with update_board_item).
   v_is_initiative_leader := v_board.initiative_id IS NOT NULL
     AND v_actor.person_id IS NOT NULL
     AND EXISTS (
@@ -337,8 +324,6 @@ BEGIN
         AND e.role IN ('leader', 'coordinator', 'manager', 'co_gp')
     );
 
-  -- Item 05 fix (Decision #5 B): card owner can mark as done.
-  -- Audit trail in board_lifecycle_events; GP/Leader can reabrir if discordam.
   IF p_new_status = 'done' AND NOT v_is_gp AND NOT v_is_leader AND NOT v_is_card_owner AND NOT v_is_comms_for_domain AND NOT v_is_initiative_leader THEN
     RAISE EXCEPTION 'Only Leader, GP, card owner, or comms team (in communication board) can mark as completed';
   END IF;
@@ -365,6 +350,6 @@ BEGIN
     FROM board_item_assignments bia WHERE bia.item_id = p_item_id AND bia.member_id != v_actor.id;
   END IF;
 END;
-$$;
+$function$;
 
 NOTIFY pgrst, 'reload schema';
