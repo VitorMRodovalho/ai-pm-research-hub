@@ -1,5 +1,15 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.79.1 — /mcp 299 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 301 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
+//   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
+//   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
+//   path cannot satisfy). lgpd_record_retroactive_notification: anchors the notification dispatch
+//   in pii_access_log (context='lgpd_art_18_retroactive_notification'); audit-row only, no confirm.
+//   lgpd_execute_retroactive_deletion: atomic clear of pmi_video_screenings.transcription + audit
+//   row with deletion_artifacts jsonb; ADR-0018 W1 confirm gate (preview default). Both with JS
+//   layer canV4('manage_member') defense-in-depth (convention match analyze_application_video).
+//   Tool count 299 → 301. /semantic unchanged at 3. Closes #332 W3 — operator path unblocked
+//   without bypassing audit trail (per p239 PM technical explanation re: auth.uid() requirement).
 // v2.79.1 (p232 #229 Phase 2 leader_extra cohort visibility): get_pert_cutoff_summary +
 //   compute_pert_cutoff tools extend score_column z.enum to include 'leader_extra_pert_score'
 //   + descriptions clarify dual-dim model (objective + leader_extra). No new tools (count
@@ -4449,6 +4459,102 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: lgpd_record_retroactive_notification (p239b #332 W3 — anchors retroactive Art. 18 §IV dispatch in pii_access_log)
+  // RPC body already gates on can_by_member('manage_member'); JS layer adds defense-in-depth canV4 check
+  // (convention match with analyze_application_video p199-a). Audit-row insert only — no confirm gate (ADR-0018 scope is destructive mutations).
+  mcp.tool("lgpd_record_retroactive_notification", "Records a retroactive Art. 18 §IV notification dispatch in pii_access_log (context='lgpd_art_18_retroactive_notification'). Use AFTER PM dispatches the notification email via official channel to anchor the audit chain. PM-only (manage_member). The RPC does NOT send the email — it logs the dispatch event. p_dispatched_at lets PM backdate to the actual send timestamp; defaults to now() if omitted. Returns pii_access_log_id of the created row + target_member_id resolved from applicant email. Pairs with notification template at docs/audit/lgpd-art11-remediation/ (interim_v1 PM-approved; angeline_v1 pending sibling #334).", {
+    p_application_id: z.string().describe("UUID of selection_applications row for the affected candidate"),
+    p_template_version: z.string().describe("Template version label (e.g. 'interim_v1', 'angeline_v1'). Required, non-empty."),
+    p_lang: z.string().describe("Language tag of the dispatched message (e.g. 'pt-BR', 'en-US'). Required, non-empty."),
+    p_notification_method: z.enum(["email","whatsapp","in_person","other"]).optional().describe("Channel of dispatch. Default: 'email'."),
+    p_dispatched_at: z.string().optional().describe("ISO timestamp of the actual send (e.g. '2026-05-24T15:30:00-03:00'). Optional — defaults to now() if omitted. Pass the real send moment to keep the audit timestamp accurate.")
+  }, async (params: { p_application_id: string; p_template_version: string; p_lang: string; p_notification_method?: string; p_dispatched_at?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "lgpd_record_retroactive_notification", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.p_application_id)) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, "Invalid p_application_id", start); return err("p_application_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, "Unauthorized", start); return err("Unauthorized: requires manage_member capability."); }
+    const { data, error } = await sb.rpc("lgpd_record_retroactive_notification", {
+      p_application_id: params.p_application_id,
+      p_template_version: params.p_template_version,
+      p_lang: params.p_lang,
+      p_notification_method: params.p_notification_method || 'email',
+      p_dispatched_at: params.p_dispatched_at || null
+    });
+    if (error) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "lgpd_record_retroactive_notification", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: lgpd_execute_retroactive_deletion (p239b #332 W3 — atomic deletion of transcription + audit row, ADR-0018 W1 destructive)
+  // RPC body gates on can_by_member('manage_member') + validates video belongs to application + rejects idempotent no-op.
+  // JS layer adds canV4 defense-in-depth + ADR-0018 confirm gate (preview default; confirm=true required to execute).
+  mcp.tool("lgpd_execute_retroactive_deletion", "Atomically clears pmi_video_screenings.transcription for a specific video row and writes a pii_access_log row (context='lgpd_art_18_deletion_executed') with full deletion_artifacts jsonb evidence. PM-only (manage_member). Use IF the candidate requests Art. 18 §IV deletion within the response window. Validates video_id belongs to application_id + rejects idempotent no-op (already-NULL transcription) to keep audit clean. Drive file removal is a SEPARATE operator step — pass p_drive_deletion_ref (trash confirmation URL or Workspace audit ref) once you've deleted the Drive asset, so the chain stays complete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
+    p_application_id: z.string().describe("UUID of selection_applications row for the affected candidate"),
+    p_video_id: z.string().describe("UUID of pmi_video_screenings row whose transcription must be cleared"),
+    p_deletion_reason: z.string().describe("Required free-text reason (>= 8 chars). E.g. 'Eduardo Luz requested Art. 18 §IV deletion via email 2026-05-30'. Persisted to pii_access_log.reason + deletion_artifacts.deletion_reason."),
+    p_drive_deletion_ref: z.string().optional().describe("Optional Drive deletion reference (trash URL, Workspace audit message-id, or operator note). Captured in deletion_artifacts but NOT used to call the Drive API — operator deletes the Drive asset manually first."),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload showing target row + transcription length + cross-app validation (ADR-0018 W1 cross-MCP injection mitigation).")
+  }, async (params: { p_application_id: string; p_video_id: string; p_deletion_reason: string; p_drive_deletion_ref?: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "lgpd_execute_retroactive_deletion", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.p_application_id)) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Invalid p_application_id", start); return err("p_application_id must be a UUID"); }
+    if (!isUUID(params.p_video_id)) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Invalid p_video_id", start); return err("p_video_id must be a UUID"); }
+    if (!params.p_deletion_reason || params.p_deletion_reason.trim().length < 8) {
+      await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "p_deletion_reason too short", start);
+      return err("p_deletion_reason must be a non-trivial string (>= 8 chars)");
+    }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Unauthorized", start); return err("Unauthorized: requires manage_member capability."); }
+    if (params.confirm !== true) {
+      const { data: vs, error: ve } = await sb
+        .from("pmi_video_screenings")
+        .select("id, application_id, pillar, question_index, drive_file_id, drive_file_name, transcription")
+        .eq("id", params.p_video_id)
+        .maybeSingle();
+      if (ve) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, ve.message, start, "preview"); return err(ve.message); }
+      await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", true, undefined, start, "preview");
+      return ok({
+        action: "lgpd_execute_retroactive_deletion",
+        preview: true,
+        target: vs ? {
+          id: vs.id,
+          application_id: vs.application_id,
+          pillar: vs.pillar,
+          question_index: vs.question_index,
+          drive_file_id: vs.drive_file_id,
+          drive_file_name: vs.drive_file_name,
+        } : { id: params.p_video_id, note: "video row not found or inaccessible" },
+        impact: {
+          will_clear_transcription: !!vs?.transcription,
+          old_transcription_len: vs?.transcription ? vs.transcription.length : 0,
+        },
+        cross_app_check: {
+          provided_application_id: params.p_application_id,
+          row_application_id: vs?.application_id || null,
+          matches: vs ? vs.application_id === params.p_application_id : null,
+        },
+        proposed_change: {
+          deletion_reason: params.p_deletion_reason,
+          drive_deletion_ref: params.p_drive_deletion_ref || null,
+        },
+        warning: "Destructive action — will clear pmi_video_screenings.transcription IRREVERSIBLY and write a permanent pii_access_log row with deletion_artifacts evidence. Pass confirm=true in a follow-up call to execute.",
+        next_call: { p_application_id: params.p_application_id, p_video_id: params.p_video_id, p_deletion_reason: params.p_deletion_reason, p_drive_deletion_ref: params.p_drive_deletion_ref || null, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("lgpd_execute_retroactive_deletion", {
+      p_application_id: params.p_application_id,
+      p_video_id: params.p_video_id,
+      p_deletion_reason: params.p_deletion_reason,
+      p_drive_deletion_ref: params.p_drive_deletion_ref || null
+    });
+    if (error) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: list_initiative_engagements — owner/admin-detail listing (ADR-0061 W5)
   mcp.tool("list_initiative_engagements", "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.", {
     initiative_id: z.string().describe("Initiative UUID"),
@@ -7169,7 +7275,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.78.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.79.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -7219,9 +7325,9 @@ app.all("/semantic", async (c) => {
 // Health check (p222 #280 alpha — reports both surfaces)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.79.1",
+  ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.78.1", tools: 299 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 301 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",

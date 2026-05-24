@@ -2339,3 +2339,74 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **PR:** governance/p238b-332-lgpd-art18-retroactive-deletion-log → main (standard CI gate expected, 0 bypass).
 - **Verify-on-next-boot**: `pii_access_log` has `deletion_artifacts jsonb` column · `pg_proc.lgpd_record_retroactive_notification` has 5 args + only 1 overload · `pg_proc.lgpd_execute_retroactive_deletion` has 4 args + only 1 overload · both gate on can_by_member('manage_member') in body · invariants 19/19=0 · npm test 1899/1837/0/62 offline · migration `20260805000023` registered (canonical) with statements populated · no shadow rows at `20260524*` · `tests/contracts/lgpd-art-18-retroactive-deletion.test.mjs` present in `package.json` `test` + `test:contracts` scripts · `docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md` present · `pii_access_log` row count grew by 0 from this PR (notification anchor row written by PM later, not by this PR).
 - **Cross-ref:** GH #332 (this leaf, OPEN with status `ready-to-dispatch`) · GH #331 (sibling shipped p238) · GH #221 + #218 (parent umbrella, decomposed p236; P162 #203 line 2174; P162 #205 #331 close line ~2253+) · GH #333 (sibling — depends on Eduardo's deletion completing for the affected row to allow invariant U to land green; if Eduardo opts for retention, #333 needs the 1-row allowlist branch instead) · GH #334 (sibling — Angeline produces legal-grade template that supersedes interim_v1) · `supabase/migrations/20260805000023_p238_332_lgpd_art18_retroactive_deletion_log.sql` · `docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md` · `pmi_video_screenings.id=6afb7e26-b806-4028-a8d5-0a22d1a0584b` (the affected row) · `selection_applications.id=e780d8a9-55e0-4a6c-9370-4acc24a9619d` (Eduardo Luz) · LGPD Art. 11 §I (sensitive data) · Art. 18 §IV (deletion right) · Art. 9 (informed processing) · Art. 48 §1 (ANPD pre-disclosure — coordinated under sibling #334) · ADR-0007 (V4 authority via can_by_member, used as gate here).
+
+---
+
+### 207. RESOLVED-#332-OPERATOR — Wave 3 LGPD retroactive operator surface shipped on /mcp (p239b)
+
+- **When:** 2026-05-24 p239b (single PR, follow-up to p238b #332 W3 infrastructure ship).
+- **Why this PR was needed:** p238b shipped both RPCs (`lgpd_record_retroactive_notification` + `lgpd_execute_retroactive_deletion`) gated on `can_by_member('manage_member')` which reads `auth.uid()` to resolve the caller's member_id. PM tried to invoke directly from Supabase SQL Editor (service-role context) — got `Unauthorized: no member record for caller` because service-role has no member row binding. PM explicitly stated: "Caminho correto: executar a RPC a partir de uma sessão autenticada de PM/admin com manage_member, ou criar um wrapper/operator path específico aprovado para esse registro. Não recomendo bypassar com service role sem ajustar a trilha de auditoria, porque o accessor_id ficaria sem o ator humano real." PM chose Option (b) — wrapper/operator path — over Option (a) (PM runs from authenticated browser DevTools). Rationale: PM's primary operator interface is MCP-Claude, durable for future LGPD remediations, follows the platform's 299-tool pattern.
+- **What:** +2 tools on /mcp surface wrapping the existing SECDEF RPCs. Both use the standard `mcp.tool(name, description, zodSchema, handler)` pattern with `getMember(sb)` + `canV4(sb, member.id, 'manage_member')` defense-in-depth before dispatching to `sb.rpc(...)`. nucleo-mcp EF routes the PM's JWT to Supabase, so `auth.uid()` resolves correctly inside the RPC body. Tool count 299 → 301; nucleo-ia-hub 2.78.1 → 2.79.0; ef_version 2.79.1 → 2.80.0.
+- **Tool 1: `lgpd_record_retroactive_notification`** (audit-row only, no confirm gate):
+  - Zod schema: `p_application_id` (uuid) + `p_template_version` (string, e.g. 'interim_v1') + `p_lang` (string, e.g. 'pt-BR') + `p_notification_method` (z.enum email|whatsapp|in_person|other, optional, default 'email') + `p_dispatched_at` (ISO string, optional — defaults to now() if omitted).
+  - Gate ladder: `getMember` (else "Not authenticated") → UUID validate → `canV4('manage_member')` (else "Unauthorized: requires manage_member capability") → `sb.rpc('lgpd_record_retroactive_notification', ...)`.
+  - No ADR-0018 confirm: writes a single audit row, not destructive. Adding confirm would conflict with ADR-0018 W1 scope clarity.
+- **Tool 2: `lgpd_execute_retroactive_deletion`** (destructive, ADR-0018 W1 confirm gate):
+  - Zod schema: `p_application_id` (uuid) + `p_video_id` (uuid) + `p_deletion_reason` (string, >=8 chars; JS layer guard mirrors RPC's `length >= 8` sanity) + `p_drive_deletion_ref` (string, optional) + `confirm` (boolean, optional).
+  - Gate ladder: `getMember` → UUID validates × 2 → reason length JS guard → `canV4('manage_member')` → if `confirm !== true`: preview branch fetches the target `pmi_video_screenings` row (id, application_id, pillar, question_index, drive_file_id, drive_file_name, transcription), returns envelope with `preview: true` + `impact: { will_clear_transcription, old_transcription_len }` + `cross_app_check: { provided_application_id, row_application_id, matches }` + `proposed_change` + `warning` ("Destructive action — will clear pmi_video_screenings.transcription IRREVERSIBLY...") + `next_call` hint with `confirm: true`. Logs `result_kind="preview"` to mcp_usage_log. If `confirm === true`: dispatches to RPC.
+  - Defense-in-depth: even if RPC dispatch failed JS gate (e.g., service-role hypothetical bypass), the RPC's own SECDEF gate still rejects.
+- **Pre-deploy checks passed** (per `.claude/rules/mcp.md`):
+  - Duplicate tool names: empty (no collision)
+  - Zod 3-style single-arg z.record: empty
+  - Top-level z.uuid/email/url/etc: empty
+  - Tool count: 304 total (301 /mcp + 3 /semantic)
+- **EF deploy:** `supabase functions deploy nucleo-mcp --no-verify-jwt` succeeded (bundle 2.833MB).
+- **Live smoke 3/3 PASS:**
+  1. `GET /functions/v1/nucleo-mcp/health` → `{"ef_version":"2.80.0","surfaces":{"/mcp":{"server":"nucleo-ia-hub","version":"2.79.0","tools":301},"/semantic":{"server":"nucleo-ia-semantic","version":"0.1.0","tools":3}}}`
+  2. `initialize` JSON-RPC → HTTP 200 + serverInfo `{name:"nucleo-ia-hub", version:"2.79.0"}`
+  3. `tools/list` → 301 tool names; grep for `lgpd_record_retroactive_notification` + `lgpd_execute_retroactive_deletion` confirms both present.
+  4. `tool/call` with bogus JWT → "Error: Not authenticated" (gate fires before reaching the RPC).
+- **Matrix audit regen:** `node scripts/audit-mcp-tool-matrix.mjs --runtime` → `[parser] 304 tools extracted` + `[runtime] drift: 3 static-only [...semantic tools...]` (expected post-bridge — see #280 follow-up backlog). Updated `docs/reference/MCP_TOOL_MATRIX.md` H1 to "MCP 304-Tool Contract Matrix" + JSON `total: 304`.
+- **Contract test `tests/contracts/mcp-lgpd-retroactive-operator-tools.test.mjs` (17 assertions, static-only — no DB, no live HTTP)**:
+  - 2 tool-registration existence checks
+  - 2 canV4 gate assertions (both tools must call `canV4(sb, member.id, 'manage_member')`)
+  - 2 Zod schema completeness (5 params each, correct shapes + enums)
+  - 1 ADR-0018 confirm gate behavior (deletion tool: branches on `confirm !== true` → preview with `preview:true` + `will_clear_transcription` + `cross_app_check` + `next_call` hint; logs `result_kind="preview"`)
+  - 1 forward-defense: notification tool MUST NOT have `confirm:` schema field (keeps ADR-0018 scope clean)
+  - 1 JS-layer reason length guard for deletion (`>= 8 chars`)
+  - 1 UUID validation via `isUUID()` for both tools
+  - 3 version bump consistency: nucleo-ia-hub 2.79.0 + ef_version 2.80.0 + /mcp surface tools 301
+  - 1 header changelog mentions v2.80.0 + p239b #332 LGPD
+  - 2 matrix coverage (json lists both tools; MD H1 "304-Tool")
+  - 1 forward-defense: both tool names must remain present
+- **Ratchet updates (2 existing tests)**:
+  - `tests/contracts/mcp-semantic-gateway-bridge.test.mjs`: bridge era marker `v2.79.\d+` → `v2.(79|80)\.\d+` (next minor bump 2.81.x should intentionally break this); `/health tools: 299` → `tools: 301`.
+  - `tests/contracts/member-emails-write-surface.test.mjs`: `/health /mcp tools count 299` → `301` ratchet with provenance comment (history: 296 p215 → 299 GAP-205.D → 301 p239b).
+- **Package.json:** added `tests/contracts/mcp-lgpd-retroactive-operator-tools.test.mjs` to both `test` and `test:contracts` script lists.
+- **Test baseline:** offline **1899/1837/0/62 → 1916/1854/0/62** (+17 / +17 pass / 0 skip — all my new assertions are static-only).
+- **Invariants:** 19/19 = 0 throughout (no DDL touched; only EF code + test files + matrix regen + docs).
+- **NO bypass needed:** standard CI gate path expected. 0 admin-merge.
+- **Operator runbook (PM-facing)** for actually closing #332:
+  1. PM dispatches the email to Eduardo Luz via `nucleoia@pmigo.org.br` using the interim_v1 template from `docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md`. Save the Gmail "sent" confirmation outside the platform for the private chain (Gmail Sent folder + optional PDF screenshot).
+  2. From an authenticated MCP-Claude session, invoke the notification tool:
+     ```
+     lgpd_record_retroactive_notification(
+       p_application_id: "e780d8a9-55e0-4a6c-9370-4acc24a9619d",
+       p_template_version: "interim_v1",
+       p_lang: "pt-BR",
+       p_notification_method: "email",
+       p_dispatched_at: "<ISO timestamp of the actual send>"
+     )
+     ```
+     Capture the returned `pii_access_log_id` (uuid).
+  3. Ratchet #332 to `(closed)` in a follow-up brief commit (registry row + this P162 entry's `Goal metric` annotation referencing the `pii_access_log_id`).
+  4. If Eduardo replies requesting deletion (sentinel "SOLICITO EXCLUSÃO LGPD ART 18" or equivalent): PM removes Drive file `14bA9rCezVD0Usko-S28ZtJnXd63MwsO6` as Workspace admin (captures Trash URL or audit message-id), then invokes the deletion tool in preview mode first (omit `confirm`, inspect the preview envelope for `cross_app_check.matches: true`), then re-invokes with `confirm: true` + `p_drive_deletion_ref: "<trash URL or audit ref>"`. Replies to Eduardo confirming deletion with the `pii_access_log_id` from the deletion call. Sibling C3 (#333 invariant U) ratchets cleanly post-deletion.
+  5. If Eduardo does not respond within 30 days: PM may optionally log a tacit-close follow-up via `lgpd_record_retroactive_notification(..., p_template_version: "interim_v1.tacit_close")`. Right to deletion remains exercisable at any future moment.
+- **Out of scope (carries forward)**:
+  1. Drive API integration for automated file deletion — 1 row is manual-grade. If PMI scales to N retroactive deletions, follow-up issue can wire a pmi-video-init-upload-like EF for Drive admin auth + automated removal.
+  2. Surface-aware matrix audit (#280 follow-up backlog) — currently both /mcp + /semantic are counted as one flat list (304 total), and the audit script flags the 3 semantic tools as "static-only" which is expected, not drift.
+  3. Future enhancement: if structured queries over `deletion_artifacts` become needed (e.g., "all deletions for cycle X in pt-BR"), the jsonb column supports GIN indexing; current usage is store-and-prove only.
+- **Sediment learnings (0 NEW this session)**: SEDIMENT-235.A respected — PR description and commit message MUST NOT contain `close[sd]?|fix(?:es|ed)?|resolve[sd]?` followed by `#332` because the issue stays OPEN (only PM operator action closes it). Used "operator path unblocks #332" / "advances #332 substatus" / "ratchet #332 to (closed)" style throughout.
+- **PR:** `governance/p239b-332-mcp-operator-surface` → main (standard CI gate expected, 0 bypass).
+- **Verify-on-next-boot:** `/health` reports `ef_version: 2.80.0` + /mcp `{server: "nucleo-ia-hub", version: "2.79.0", tools: 301}` · `tools/list` returns 301 names including both new tool names · `lgpd_record_retroactive_notification` tool block in `supabase/functions/nucleo-mcp/index.ts` lines ~4454-4480 with 5 Zod params + canV4('manage_member') + sb.rpc dispatch · `lgpd_execute_retroactive_deletion` tool block lines ~4482-4548 with 5 Zod params (including `confirm`) + JS reason guard + canV4 + preview branch + execute branch · `tests/contracts/mcp-lgpd-retroactive-operator-tools.test.mjs` present + 17/17 PASS · `mcp-semantic-gateway-bridge.test.mjs` ratchet allows v2.79|80.x + tools 301 · `member-emails-write-surface.test.mjs` ratchet at 301 · npm test 1916/1854/0/62 offline · invariants 19/19=0 · `.claude/rules/mcp.md` header v2.80.0 + 301 tools · `docs/reference/MCP_TOOL_MATRIX.md` H1 "304-Tool" + JSON `total: 304` · ISSUE_REGISTRY.md #332 row Evidence column mentions "p239b operator path unblocked" + status still `ready-to-dispatch`.
+- **Cross-ref:** GH #332 (this leaf, still OPEN with status `ready-to-dispatch` — operator path unblocked, PM operator action remaining) · P162 #206 RESOLVED-#332-INFRA (p238b infrastructure) · `supabase/functions/nucleo-mcp/index.ts` v2.80.0 banner + 2 new tools after `get_lgpd_cron_health` · `tests/contracts/mcp-lgpd-retroactive-operator-tools.test.mjs` · `docs/reference/MCP_TOOL_MATRIX.md` regen · ADR-0018 W1 (destructive write confirm gate) · ADR-0007 (canV4 as MCP layer V4 authority) · SEDIMENT-235.A (PR narrative regex avoidance for stay-open issues).
