@@ -3404,6 +3404,7 @@ const enUS: Record<string, string> = {
   'privacy.s4.resend': 'Resend (processor): transactional and campaign email delivery, delivery/open/click tracking',
   'privacy.s4.credly': 'Credly/Pearson VUE (source): PMI badge and certification verification via public API',
   'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocessor): automated analysis of volunteer applications — only after explicit consent (consent_ai_analysis_at). No decision is made exclusively by the AI — the human committee evaluates and decides. LGPD Art. 7,V + 9,I (third-party disclosure) + Art. 20 (human review of automated decisions) compliance.',
+  'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocessor, USA): automated transcription of candidate video responses during selection screening — only after highlighted consent for processing sensitive personal biometric voice data (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audio and transcriptions feed initial suggestions reviewed by human evaluators. Immediate revocation via candidate portal; 30-day deletion window for transcriptions and audio files (LGPD Art. 18, §IV).',
   'privacy.s4.noCommercial': 'We do not share personal data with third parties for commercial purposes',
 
   // S5 — International transfer
@@ -5755,6 +5756,13 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.revokeConsent': 'Revoke consent',
   'pmi.onboarding.consentNotGranted': 'Consent not granted',
   'pmi.onboarding.grantConsent': 'Grant consent',
+  'pmi.onboarding.voiceConsentTitle': '🎙️ Highlighted consent for voice biometric data (LGPD Art. 11, §1, I)',
+  'pmi.onboarding.voiceConsentBody': 'To record video responses as part of the selection screening, your highlighted and specific consent is required for the processing of sensitive personal biometric voice data, as required by Art. 11, §1, item I of the LGPD. Recordings will be stored in a private folder on the organization\'s Google Drive, transcribed by OpenAI Whisper (subprocessor, USA) to support evaluation by human evaluators. You can revoke at any time: new transcriptions are blocked immediately, and we will delete related transcriptions and audio files within 30 days after revocation (LGPD Art. 18, §IV). This consent is fully separate from the AI analysis consent above. If you prefer not to consent, your application remains valid through the alternative live 1:1 interview path via Google Meet.',
+  'pmi.onboarding.voiceConsentGranted': 'Voice consent granted',
+  'pmi.onboarding.voiceConsentNotGranted': 'Voice consent not granted',
+  'pmi.onboarding.grantVoiceConsent': 'Grant highlighted consent',
+  'pmi.onboarding.revokeVoiceConsent': 'Revoke voice consent',
+  'pmi.onboarding.videoGatedByVoiceConsent': '🔒 Video upload is disabled until you grant the highlighted voice consent above. If you prefer not to consent, choose the alternative live 1:1 interview path below — your application proceeds normally.',
   'pmi.onboarding.progressTitle': 'Process steps',
   'pmi.onboarding.completedOn': 'Completed on',
   'pmi.onboarding.markDone': 'Mark as done',
