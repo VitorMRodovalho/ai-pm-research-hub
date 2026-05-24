@@ -171,7 +171,7 @@ ELSE IF sa.role_applied = 'researcher':
                 FROM selection_committee sc
                 JOIN members m ON m.id = sc.member_id
                 WHERE sc.cycle_id = cycle.id
-                  AND sc.role = 'researcher'
+                  AND sc.role IN ('evaluator', 'lead')  -- p251 #355 PM Option A
                   AND sc.can_interview = true
                   AND COALESCE(sc.interview_booking_url, m.interview_booking_url) IS NOT NULL
 
@@ -265,9 +265,11 @@ Decision: New column `members.interview_booking_url text` (nullable, no DB CHECK
 
 **Rejected alternatives:** `members.calendar_booking_url` (breaks grep symmetry); DB CHECK constraint (traps future deep-link providers); junction table `member_booking_pools` (overkill — Vitor + Fabricio have 1 pool each today).
 
-### Q3 — Cycle 4 reseed approach → **Seed committee Vitor+Fabricio researcher, URLs NULL** ✓
+### Q3 — Cycle 4 reseed approach → **Seed committee Vitor+Fabricio evaluator, URLs NULL** ✓
 
-Decision: SPEC #348 Child #4 = one-shot DML migration seeding `selection_committee` rows for Vitor + Fabricio (`role='researcher'`, `can_interview=true`); does NOT populate `members.interview_booking_url`. Routing falls back to `cycle.interview_booking_url` until PM populates personal URLs. Zero immediate behavior change. Keeps SPEC #348 schema-pure + 1 leaf of DML.
+Decision: SPEC #348 Child #4 = one-shot DML migration seeding `selection_committee` rows for Vitor + Fabricio (`role='evaluator'`, `can_interview=true`); does NOT populate `members.interview_booking_url`. Routing falls back to `cycle.interview_booking_url` until PM populates personal URLs. Zero immediate behavior change. Keeps SPEC #348 schema-pure + 1 leaf of DML.
+
+**p251 #355 correction (PM Option A 2026-05-24):** Q3 originally said `role='researcher'`, but `selection_committee.role` is the committee POSITION (`evaluator`/`lead`/`observer`), not the candidate track — the literal `'researcher'` would violate the existing CHECK constraint. PM ratified the live-schema interpretation: filter is `role IN ('evaluator','lead')` and Child #4 seeds with `role='evaluator'`. The `role_applied` column on `selection_applications` carries the track (`researcher`/`leader`), distinct from committee position. SPEC §5.1 query amended in same commit as the Child #2 migration.
 
 **Rejected alternatives:** Defer committee seed to a separate p226 child (creates orphan leaf); Seed with real URLs (blocked on PM-provided URLs — only Núcleo group link is known today).
 
