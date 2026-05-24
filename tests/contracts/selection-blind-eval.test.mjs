@@ -203,11 +203,17 @@ test('submit_evaluation auto-advances objective_eval to interview_pending or obj
     'submit_evaluation must advance to objective_cutoff on fail');
 });
 
-test('submit_evaluation updates final_score for interview type', () => {
+test('submit_evaluation delegates final_score derivation to canonical compute_application_scores (p248 OPP-246.A)', () => {
+  // p248: removed inline `final_score = obj + interview + leader_extra` naïve-sum UPDATE
+  // (was overriding the trigger-driven canonical compute_application_scores call).
+  // Interview + leader_extra branches now PERFORM the canonical RPC explicitly.
+  // The trigger trg_recompute_application_scores on selection_evaluations also calls it.
+  // See docs/audit/OPP_246_A_FRANCISLEILA_FINAL_SCORE_DRIFT.md.
   const body = findFunctionBody('submit_evaluation');
-  assert.ok(/final_score\s*=.*objective_score_avg.*interview/i.test(body)
-    || /final_score\s*=.*\+\s*v_pert_score/i.test(body),
-    'submit_evaluation must compute final_score from objective + interview');
+  assert.ok(
+    /PERFORM\s+public\.compute_application_scores\(p_application_id\)/i.test(body),
+    'submit_evaluation must delegate final_score derivation to canonical compute_application_scores via PERFORM (interview + leader_extra branches)'
+  );
 });
 
 // ─── Schema contract ───
