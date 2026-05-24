@@ -159,9 +159,6 @@ describe('p246 #229b Foundation — final-score PERT régua by track', () => {
   if (sb) {
     describe('DB-gated assertions (with SUPABASE_SERVICE_ROLE_KEY)', () => {
       it('6 new columns exist on selection_applications', async () => {
-        const { data, error } = await sb.rpc('execute_sql', {}).select().catch(() => ({ data: null, error: 'no execute_sql rpc' }));
-        // Fall back: read via information_schema through a small RPC or direct query.
-        // Since we cannot run arbitrary SQL from supabase-js, probe a sample row.
         const probe = await sb
           .from('selection_applications')
           .select('id, final_score_pert_target, final_score_pert_band_lower, final_score_pert_band_upper, final_score_pert_cutoff_method, final_score_pert_cohort_n, final_score_pert_calc_at')
@@ -169,41 +166,43 @@ describe('p246 #229b Foundation — final-score PERT régua by track', () => {
         if (probe.error) {
           assert.fail(`expected to select new columns; got error: ${probe.error.message}`);
         }
-        assert.ok(probe.data, 'should return at least 0 rows without column error');
+        assert.ok(probe.data !== null, 'should return data array (possibly empty) without column error');
       });
 
       it('cycle4 researcher-track apps have final_score_pert_target populated (after recompute)', async () => {
+        // Scope to cycle4 via inner-join on selection_cycles to avoid hitting historical
+        // cycles where recompute never ran (those would have NULL régua).
         const { data, error } = await sb
           .from('selection_applications')
-          .select('final_score_pert_target, final_score_pert_cohort_n, final_score_pert_cutoff_method, role_applied')
+          .select('final_score_pert_target, final_score_pert_cohort_n, final_score_pert_cutoff_method, role_applied, selection_cycles!inner(cycle_code)')
           .eq('role_applied', 'researcher')
+          .eq('selection_cycles.cycle_code', 'cycle4-2026')
           .not('final_score', 'is', null)
           .limit(5);
         if (error) {
           assert.fail(`probe error: ${error.message}`);
         }
-        assert.ok(data && data.length > 0, 'expect at least 1 researcher with final_score populated');
-        // Post-recompute, dynamic method should yield non-null targets for researcher track (cycle4 has n>=10)
+        assert.ok(data && data.length > 0, 'expect at least 1 cycle4 researcher with final_score populated');
         const hasDynamic = data.some(r => r.final_score_pert_cutoff_method === 'dynamic');
-        assert.ok(hasDynamic, 'expect at least one researcher with dynamic final_score régua post-recompute');
+        assert.ok(hasDynamic, 'expect at least one cycle4 researcher with dynamic final_score régua post-recompute');
       });
 
       it('cycle4 leader-track apps have method=disabled (cohort_n<10 historical leaders)', async () => {
         const { data, error } = await sb
           .from('selection_applications')
-          .select('final_score_pert_cutoff_method, final_score_pert_cohort_n, role_applied')
+          .select('final_score_pert_cutoff_method, final_score_pert_cohort_n, role_applied, selection_cycles!inner(cycle_code)')
           .eq('role_applied', 'leader')
+          .eq('selection_cycles.cycle_code', 'cycle4-2026')
           .not('final_score', 'is', null)
           .limit(5);
         if (error) {
           assert.fail(`probe error: ${error.message}`);
         }
-        // If any leader-track apps exist with final_score, their method should be 'disabled' until 10+ historical leader approvals exist.
         if (data && data.length > 0) {
           const allDisabled = data.every(r => r.final_score_pert_cutoff_method === 'disabled');
           assert.ok(
             allDisabled,
-            'leader-track final régua should be disabled (cohort_n<10 expected for current state)'
+            `cycle4 leader-track final régua should be disabled (cohort_n<10); got: ${JSON.stringify(data.map(r => r.final_score_pert_cutoff_method))}`
           );
         }
       });

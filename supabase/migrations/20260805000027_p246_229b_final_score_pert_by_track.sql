@@ -134,8 +134,6 @@ BEGIN
     v_target := (2 * v_cohort.s_min + 4 * v_cohort.s_avg + 2 * v_cohort.s_max) / 8;
     v_method := 'dynamic';
   ELSE
-    -- p246 #229b: fallback lookup, scoped per-column AND track-aware for final_score
-    -- (final_score is per-track; mixing researcher/leader scales would be misleading).
     IF v_is_final_score THEN
       SELECT MAX(final_score_pert_target)
       INTO v_fallback_target
@@ -162,8 +160,6 @@ BEGIN
     v_band_upper := v_target * 1.10;
   END IF;
 
-  -- p246 #229b: per-column write branch — final_score is TRACK-SCOPED (only apps with
-  -- matching role_applied get the régua, since per-track cohorts have distinct scales).
   IF v_is_leader_extra THEN
     UPDATE public.selection_applications
     SET leader_extra_pert_target = v_target,
@@ -254,7 +250,6 @@ BEGIN
   LOOP
     v_result_obj := public._compute_pert_cutoff_core(v_cycle.id, 'researcher', true, 'objective_score_avg', NULL);
     v_result_le := public._compute_pert_cutoff_core(v_cycle.id, 'leader', true, 'leader_extra_pert_score', NULL);
-    -- p246 #229b: also compute final_score régua per track (researcher cohort + leader cohort)
     v_result_fs_researcher := public._compute_pert_cutoff_core(v_cycle.id, 'researcher', true, 'final_score', NULL);
     v_result_fs_leader := public._compute_pert_cutoff_core(v_cycle.id, 'leader', true, 'final_score', NULL);
     v_results := v_results || jsonb_build_array(jsonb_build_object(
@@ -391,7 +386,6 @@ BEGIN
         'apps_with_score', COUNT(*) FILTER (WHERE leader_extra_pert_score IS NOT NULL),
         'apps_total', COUNT(*)
       ) FROM public.selection_applications WHERE cycle_id = v_cycle_id),
-      -- p246 #229b: final_score régua per track (separate cohorts: researcher pool vs leader pool)
       'final_score_cutoff_researcher', (SELECT jsonb_build_object(
         'target_score', MAX(final_score_pert_target),
         'band_lower', MAX(final_score_pert_band_lower),
@@ -450,7 +444,6 @@ BEGIN
           'member_photo_url', (SELECT m.photo_url FROM public.members m WHERE lower(m.email) = lower(a.email) LIMIT 1),
           'leader_extra_pert_score', a.leader_extra_pert_score
         ) || jsonb_build_object(
-          -- p246 #229b: interview_score + final_score per-app PERT fields (chunk 2 to stay under PG 100-arg cap)
           'interview_score', a.interview_score,
           'final_score_pert_target', a.final_score_pert_target,
           'final_score_pert_band_lower', a.final_score_pert_band_lower,
