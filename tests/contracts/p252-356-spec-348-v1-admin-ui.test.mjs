@@ -372,23 +372,13 @@ describe('p252 #356 — SPEC #348 Child #3 admin UI (interview_booking_url)', ()
       return;
     }
 
+    // NOTE: do NOT chain .catch() on sb.rpc() — PostgrestBuilder is a thenable,
+    // not a Promise, so .catch() throws "not a function". Use try/catch around
+    // await (or just check the {error} envelope returned by await).
+
     it('live admin_update_member_audited contains interview_booking_url branch', async () => {
-      const { data, error } = await sb.rpc('_audit_list_public_function_bodies').catch(() => ({ data: null, error: { message: 'helper RPC absent — skip' } }));
-      if (error || !data) {
-        // Fallback: use pg_proc lookup if helper RPC isn't exposed
-        const { data: row, error: pgErr } = await sb
-          .from('pg_proc') // virtual; if RLS-locked, will error
-          .select('prosrc')
-          .eq('proname', 'admin_update_member_audited')
-          .maybeSingle()
-          .catch(() => ({ data: null, error: 'no pg_proc access' }));
-        if (pgErr || !row) {
-          // No live introspection path — accept static body assertion as authoritative
-          return;
-        }
-        assert.match(row.prosrc, /interview_booking_url/);
-        return;
-      }
+      const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
+      if (error || !Array.isArray(data)) return; // helper RPC absent — static body assertion still authoritative
       const fn = data.find(r => r.function_name === 'admin_update_member_audited');
       if (fn) {
         assert.match(fn.body, /interview_booking_url/, 'live body must contain new field');
@@ -396,8 +386,8 @@ describe('p252 #356 — SPEC #348 Child #3 admin UI (interview_booking_url)', ()
     });
 
     it('live get_member_detail member jsonb exposes interview_booking_url', async () => {
-      const { data, error } = await sb.rpc('_audit_list_public_function_bodies').catch(() => ({ data: null, error: 'helper RPC absent — skip' }));
-      if (error || !data) return; // skip gracefully — static body assertion still covers
+      const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
+      if (error || !Array.isArray(data)) return; // helper RPC absent — static body assertion still authoritative
       const fn = data.find(r => r.function_name === 'get_member_detail');
       if (fn) {
         assert.match(fn.body, /'interview_booking_url'\s*,\s*m\.interview_booking_url/);
