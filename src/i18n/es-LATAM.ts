@@ -5037,6 +5037,13 @@ const esLATAM: Record<string, string> = {
   'admin.selection.pertBandBelow': 'Bajo',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
   'admin.selection.leaderExtraDisabledChip': 'Regla líder: n={n}<10',
+  // p247 #229b Frontend — regla final por candidato + visibilidad de nota de entrevista
+  'admin.selection.colInterviewScore': 'Nota Entrevista',
+  'admin.selection.colInterviewScoreHint': 'Nota consolidada de la entrevista (interview_score). Renderizada inline sin chip de regla — PERT Objetiva es el gate de entrada a la entrevista; PERT Final es la comparación post-entrevista.',
+  'admin.selection.colFinal': 'Final',
+  'admin.selection.colFinalHint': 'Score Final del candidato + chip de regla por pista (researcher/leader), calculado por el cohort PERT de la propia pista (p246 #229b Foundation).',
+  'admin.selection.finalScoreCutoffTooltip': 'Regla final (PERT) calculada por pista desde p246 (refactor #229b). Researcher pool y leader pool tienen distribuciones distintas; no las mezclamos. Cuando cohort_n<10, la regla queda inhabilitada para esa pista.',
+  'admin.selection.finalScoreDisabledChip': 'Regla final: n={n}<10',
   'admin.selection.startScreening': 'Iniciar Triaje',
   'admin.selection.slugRequired': 'Slug obligatorio',
   'admin.selection.postSaved': 'Post guardado',
