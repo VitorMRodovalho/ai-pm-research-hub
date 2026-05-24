@@ -5355,6 +5355,14 @@ const ptBR: Record<string, string> = {
   'admin.memberEdit.toast.reactivated': 'Membro reativado 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Motivo da inativação de {name} (opcional):',
 
+  // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
+  'admin.member.bookingUrl.label': 'URL de agendamento de entrevista',
+  'admin.member.bookingUrl.placeholder': 'https://calendar.app.google/...',
+  'admin.member.bookingUrl.help': 'Usada na trilha pesquisador(a) para entrevistas individuais. A trilha líder usa o link a nível de ciclo.',
+  'admin.member.bookingUrl.invalid': 'A URL precisa começar com http:// ou https://',
+  'admin.member.bookingUrl.empty': '(não definida)',
+  'admin.member.bookingUrl.savedToast': 'URL de agendamento salva ✅',
+
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Comparativo cross-initiative do ciclo atual (tribos de pesquisa, grupos de trabalho, comitês, grupos de estudo, congressos). Use o filtro para escolher o tipo. Apenas GP/DM.',
   'admin.tribes.denied': 'Acesso restrito a GP/DM',

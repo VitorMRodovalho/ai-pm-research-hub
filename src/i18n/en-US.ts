@@ -5349,6 +5349,14 @@ const enUS: Record<string, string> = {
   'admin.memberEdit.toast.reactivated': 'Member reactivated 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Reason to deactivate {name} (optional):',
 
+  // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
+  'admin.member.bookingUrl.label': 'Interview booking URL',
+  'admin.member.bookingUrl.placeholder': 'https://calendar.app.google/...',
+  'admin.member.bookingUrl.help': 'Used for researcher-track interviews; leader-track uses the cycle-level link.',
+  'admin.member.bookingUrl.invalid': 'URL must start with http:// or https://',
+  'admin.member.bookingUrl.empty': '(not set)',
+  'admin.member.bookingUrl.savedToast': 'Booking URL saved ✅',
+
   // ── Admin pages — Tier-2 sweep (page subtitles, denied messages) ──
   'admin.tribes.subtitle': 'Cross-initiative comparison for current cycle (research tribes, workgroups, committees, study groups, congresses). Use the filter to choose a type. GP/DM only.',
   'admin.tribes.denied': 'Restricted to GP/DM',
