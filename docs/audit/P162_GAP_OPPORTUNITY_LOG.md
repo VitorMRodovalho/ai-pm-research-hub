@@ -2538,3 +2538,42 @@ Itens 1, 2, 3, 4, 7, 8, 10, 11, 12 = P2 ou maior. Items 3 + 4 + 12 são pré-con
 - **PR**: `governance/p241-watch-240-a-submit-interview-scores-relax` → main (standard CI gate path, 0 bypass).
 - **Verify-on-next-boot**: HEAD includes PR #TBD · `supabase/migrations/20260805000026_p241_watch_240_a_submit_interview_scores_relax_status_gate.sql` present · `tests/contracts/p241-watch-240-a-submit-interview-scores-relax.test.mjs` present · package.json whitelist contains new test in both `"test"` + `"test:contracts"` · npm test 1953/1887/0/66 offline · invariants 19/19=0 · `pg_proc.submit_interview_scores` body length 6522 · live md5 of normalized prosrc = `f9cf4bde13a3145f6702d5543661cf79` · `submit_interview_scores` overload_count=1 · supabase_migrations.schema_migrations has version `20260805000026` registered with name `p241_watch_240_a_submit_interview_scores_relax_status_gate` + statements populated (1 element) · no shadow rows in supabase_migrations.schema_migrations at `20260524*` (cleaned mid-session via SEDIMENT-238.A recipe).
 - **Cross-ref**: WATCH-240.A in `memory/handoff_p240_post_p239b_close.md` · p240 trigger migration 20260805000025 · p113 fix migration 20260517060000 (previous owner of `submit_interview_scores` body) · sibling RPC `mark_interview_status()` (touches same row, still uses precondition gate) · sibling RPC `schedule_interview()` (touches same row, V4-authored, already correctly advances app status) · P162 entry #208 RESOLVED-#251 (parent — established the trigger as canonical owner of app status sync).
+
+---
+
+### 210. RESOLVED-WATCH-240.C — Cycle 4 PERT cutoff audit + cron posture documented (p242)
+
+- **Date**: 2026-05-24 (p242)
+- **Status**: RESOLVED as **informational** — calculation gap closed (manual recompute + cron tomorrow); advance gap is governance-by-design (PM committee owns `finalize_decisions`).
+- **Origin**: WATCH-240.C carry from p240/p241. PM framed in p242 boot as *"11 apps cycle4 precisam do avanço/cálculo PERT cutoff"*. Audit reframed: calculation was simply never run live (cron jobid 47 `recompute-pert-cutoffs-weekly` installed p228 Sat 2026-05-23 ≈22:00 UTC; first scheduled fire Mon 2026-05-25 13:00 UTC ≈22h post-audit — no Monday window elapsed between install and audit time). 0 runs in 30d is *not a bug*, just brand-new.
+- **Action taken**:
+  - Manual invocation of `recompute_all_active_pert_cutoffs()` at 2026-05-24 15:40:38 UTC. Returned per-cycle results: cycle4-2026 researcher target=155.42, band=[139.88, 170.96], cohort_n=19, rows_updated=38; cycle4-2026 leader_extra method=disabled (cohort_n=6 < 10 threshold, expected per p219 Phase 1); cycle3-2026-b2 researcher target=155.78, band=[140.20, 171.36], cohort_n=18, rows_updated=2; cycle3-2026-b2 leader_extra method=disabled.
+  - Audit doc `docs/audit/CYCLE4_PERT_CUTOFF_P242_WATCH_240_C.md` shipped (status × band crosstab + 8-app detail of stuck-in-screening + cron health table + verify-after-first-fire SQL recipe + suggested `finalize_decisions` JSON skeleton for PM committee).
+- **Cycle 4 above-target breakdown (the PM's "11 apps")**: 1 in interview_done + 3 in interview_pending + 1 in interview_scheduled + 1 in rejected + 5 in screening = 11 ✓. The 6 already in `interview_*` will progress through the canonical interview workflow (p240 trigger + p241 hoist now keep them moving). The **5 still in `screening`** (Henrique 227, João 171, Francisleila 164, Cristiano 163, Edinan 157.50) are the actionable backlog for the PM committee at next meeting.
+- **Cycle 4 status × band crosstab (post-recompute)**: 38 total / 11 above_target / 5 in_band_below_target / 21 below_band / 0 emails sent. 8 still in screening = 5 above-target + 1 in-band borderline (Hector 140.50) + 2 below-band (Alexandre 119.50, Carla 117.50).
+- **What was NOT touched (per PM Option A scope)**:
+  - No migrations, no schema changes, no code changes.
+  - No status advance writes — `finalize_decisions(cycle_id, jsonb)` requires PM committee role (auth gate on `can_by_member`), my service-role context can't satisfy.
+  - No cron schedule changes — jobid 47 already correctly configured, just hasn't had its first window.
+  - No `cutoff_approved_email_sent_at` dispatch fix — orthogonal (0/38 emails sent because no app reached `objective_done` via the canonical path; will fire naturally once committee runs `finalize_decisions`).
+- **PM action items** (deferred to committee at next meeting):
+  1. Run `finalize_decisions('08c1e301-9f7b-4d01-a13c-43ac7775c0f7'::uuid, <jsonb>)` for the 8 cycle4 screening apps using the suggested classification in the audit doc (5 approve / 1 in_band_review / 2 below_cutoff). Exact `p_decisions` jsonb shape per the RPC body parser — PM consults RPC or invokes from authenticated MCP-Claude session.
+  2. Cycle3-b2 minor: verify the 2 cycle3-b2 apps still in scope are the late-evaluation candidates from p240 backfill (`WATCH-240.B` parallel carry).
+- **Cron forward-look + verify-after-first-fire**:
+  - Mon 2026-05-25 13:00 UTC: jobid 47 first fire. Recipe in audit doc: `SELECT runid, start_time, end_time, status FROM cron.job_run_details WHERE jobid=47 ORDER BY start_time DESC LIMIT 3;` + `SELECT max(pert_calc_at) FROM selection_applications WHERE cycle_id IN (cycle4, cycle3-b2)` — both should advance within ~1 minute of cron start_time.
+  - If first fire fails: investigate cron extension health + `recompute_all_active_pert_cutoffs()` permissions. (Likely fine — the function is SECDEF and `cron.job` runs as the cron owner, typically postgres.)
+- **Sediment learnings (0 NEW this session)**:
+  - SEDIMENT-238.A / 238.B respected (no migration, no apply_migration).
+  - SEDIMENT-186.C N/A (no new test files).
+  - SEDIMENT-235.A respected (PR title `Closes WATCH-240.C` is an internal tag; no auto-close keyword on any open GH issue).
+  - SEDIMENT-241.A N/A (no DB-gated tests added).
+  - Observation: `get_pert_cutoff_summary(uuid, text)` RPC gates on `can_by_member('manage_application')` (or similar) via auth.uid() — service_role context returns `{"error":"access_denied"}`. Documented for any future MCP smoke pattern (sibling pattern to SEDIMENT-226.C — `SET LOCAL request.jwt.claims` workaround if needed).
+- **Carries forward (open follow-ups)**:
+  1. **0/38 emails for cutoff_approved**: column exists but no dispatch ever fired for cycle4. Will resolve naturally once PM runs `finalize_decisions` for the 8 stuck-in-screening apps. If dispatch STILL doesn't fire post-`finalize_decisions`, a new investigation issue should spawn (likely the trigger or EF hook needs debugging).
+  2. **WATCH-240.B unchanged**: cycle3-2026-b2 close audit — PM should verify the 4 p240-backfilled rows are legitimate late-evaluations.
+  3. **Band-judgment policy memo**: 1 cycle4 borderline case (Hector 140.50) raises the question of band-resolution policy (committee call vs auto-approve vs auto-reject). PM may want a written memo for future cycles — not urgent.
+  4. **Cron observability MCP tool**: a `get_selection_cron_health()` tool surfacing jobid 47/48 last_run + runs_30d in admin dashboard could replace manual `cron.job_run_details` queries. Defer until PM signals demand.
+  5. **All p239b carries unchanged**: #333 W4 invariant U still blocked on PM sequencing call (wait Eduardo response 30d vs immediate allowlist); #334 W5 Angeline legal-ops external 3-5d; #335 ADR-0094 blocked on #333.
+- **PR**: `agent/p242-watch-240-c-pert-cutoff-audit` → main (docs-only, standard CI gate path, 0 bypass).
+- **Verify-on-next-boot**: HEAD includes PR #TBD · `docs/audit/CYCLE4_PERT_CUTOFF_P242_WATCH_240_C.md` present · cycle4 + cycle3-b2 apps have `pert_calc_at IS NOT NULL` (post-recompute) · `cron.job_run_details` for jobid 47 has ≥1 row after Mon 2026-05-25 13:00 UTC · ISSUE_REGISTRY "Selection reliability Cycle 4" cluster narrative mentions `p242 WATCH-240.C closed (audit)`.
+- **Cross-ref**: WATCH-240.C in `memory/handoff_p241_post_p240_close.md` (origin) and `memory/handoff_p240_post_p239b_close.md` (precursor) · p219 Phase 1 (cohort_n=10 threshold) · p228 W2 Leaf 4 (cron `recompute-pert-cutoffs-weekly` installed + `cutoff_approved_email_sent_at` column foundation) · p230 fast-follow carries (auto-trigger design for `selection_cutoff_approved` — still open as enhancement) · `finalize_decisions(p_cycle_id uuid, p_decisions jsonb)` canonical RPC · `selection_applications.cutoff_approved_email_sent_at` column.
