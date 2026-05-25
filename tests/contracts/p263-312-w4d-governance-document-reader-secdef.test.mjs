@@ -317,13 +317,6 @@ describe('p263 #312-W4d — get_governance_document_reader SECDEF + route rewire
   });
 
   describe('DB-gated live smoke (skips without SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)', () => {
-    it('function is registered in pg_proc as expected', { skip: !sb }, async () => {
-      const { data, error } = await sb.rpc('execute_sql' /* not used */).catch(e => ({ error: e }));
-      // Use raw SQL via REST is not available; instead probe via list_governance_library shape parity test below
-      // No-op assertion to keep this test as a scaffold
-      assert.ok(true);
-    });
-
     it('Frontiers (draft, current_version_id=NULL) hides from member but shows to admin via direct table assertion', { skip: !sb }, async () => {
       // Service-role bypasses RLS — verify the row state matches expectation
       const { data, error } = await sb
