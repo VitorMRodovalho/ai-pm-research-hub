@@ -1,0 +1,5 @@
+---
+// #315 Wave 3 (#314) — ES locale redirect to /governance/documents canonical
+const qs = Astro.url.search ? Astro.url.search + '&lang=es-LATAM' : '?lang=es-LATAM';
+return Astro.redirect('/governance/documents' + qs, 302);
+---
