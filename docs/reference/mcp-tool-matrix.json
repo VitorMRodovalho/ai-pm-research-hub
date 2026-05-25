@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T03:44:43.599Z",
+  "generated_at": "2026-05-25T01:15:44.346Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 304,
   "runtime_status": "drift: 3 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context], 0 runtime-only []",
