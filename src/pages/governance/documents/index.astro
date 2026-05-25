@@ -1,0 +1,80 @@
+---
+/**
+ * /governance/documents — biblioteca canônica de documentos de governança
+ * para membros ativos. Consome `list_governance_library` (Wave 1a M3, p256).
+ *
+ * #315 Wave 3 (#314). Visibility classes filtradas server-side; admin_only e
+ * audit_restricted nunca chegam a non-admin; file_id/drive_url/content/
+ * pdf_url nunca aparecem no payload (P0-Q8 forward-defense).
+ *
+ * Alias: /documents (P2-Q3 ratified Wave 3) — redireciona via 301 para esta
+ * rota canônica.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import GovernanceLibrary from '../../../components/governance/GovernanceLibrary';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import { buildPageI18n } from '../../../i18n/pageI18n';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const i18nBundle = buildPageI18n(['governance', 'common'], lang);
+
+const libraryStrings = {
+  pageTitle: t('governance.library.pageTitle', lang),
+  pageIntro: t('governance.library.pageIntro', lang),
+  filtersHeading: t('governance.library.filtersHeading', lang),
+  filterDocType: t('governance.library.filterDocType', lang),
+  filterStatus: t('governance.library.filterStatus', lang),
+  filterAll: t('governance.library.filterAll', lang),
+  filterClear: t('governance.library.filterClear', lang),
+  loading: t('governance.library.loading', lang),
+  errorPrefix: t('governance.library.errorPrefix', lang),
+  emptyTitle: t('governance.library.emptyTitle', lang),
+  emptyHint: t('governance.library.emptyHint', lang),
+  cardEffective: t('governance.library.cardEffective', lang),
+  cardApproved: t('governance.library.cardApproved', lang),
+  cardOpenReader: t('governance.library.cardOpenReader', lang),
+  cardNoDescription: t('governance.library.cardNoDescription', lang),
+  docTypes: {
+    manual: t('governance.library.docType.manual', lang),
+    cooperation_agreement: t('governance.library.docType.cooperation_agreement', lang),
+    framework_reference: t('governance.library.docType.framework_reference', lang),
+    cooperation_addendum: t('governance.library.docType.cooperation_addendum', lang),
+    volunteer_addendum: t('governance.library.docType.volunteer_addendum', lang),
+    policy: t('governance.library.docType.policy', lang),
+    volunteer_term_template: t('governance.library.docType.volunteer_term_template', lang),
+    executive_summary: t('governance.library.docType.executive_summary', lang),
+    project_charter: t('governance.library.docType.project_charter', lang),
+    editorial_guide: t('governance.library.docType.editorial_guide', lang),
+    governance_guideline: t('governance.library.docType.governance_guideline', lang),
+  },
+  statusLabels: {
+    draft: t('governance.library.status.draft', lang),
+    pending_proposer_consent: t('governance.library.status.pending_proposer_consent', lang),
+    under_review: t('governance.library.status.under_review', lang),
+    approved: t('governance.library.status.approved', lang),
+    active: t('governance.library.status.active', lang),
+    superseded: t('governance.library.status.superseded', lang),
+    withdrawn: t('governance.library.status.withdrawn', lang),
+    revoked: t('governance.library.status.revoked', lang),
+  },
+  visibilityLabels: {
+    public: t('governance.library.visibility.public', lang),
+    active_members: t('governance.library.visibility.active_members', lang),
+    legal_scoped: t('governance.library.visibility.legal_scoped', lang),
+    admin_only: t('governance.library.visibility.admin_only', lang),
+    audit_restricted: t('governance.library.visibility.audit_restricted', lang),
+  },
+  ackLabels: {
+    informational: t('governance.library.ack.informational', lang),
+    binding: t('governance.library.ack.binding', lang),
+    legal_signature: t('governance.library.ack.legal_signature', lang),
+  },
+};
+---
+<BaseLayout title={t('governance.library.pageTitle', lang)} activePage="governance" lang={lang}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <GovernanceLibrary client:load langPrefix={langPrefix} strings={libraryStrings} />
+  </main>
+</BaseLayout>

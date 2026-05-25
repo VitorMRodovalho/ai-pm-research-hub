@@ -1,0 +1,5 @@
+---
+// #315 Wave 3 (#314) — /en/documents alias 301 to /en/governance/documents
+const qs = Astro.url.search || '';
+return Astro.redirect('/en/governance/documents' + qs, 301);
+---
