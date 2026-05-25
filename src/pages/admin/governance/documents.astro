@@ -11,9 +11,81 @@
  * recebe i18n bundle via define:vars (sem REST round-trip).
  */
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import DocumentIntakeWizard from '../../../components/governance/DocumentIntakeWizard';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// #315 Wave 2 (#310) — Tier-1 intake wizard strings bundle for React island
+const intakeStrings = {
+  ctaOpen: t('governance.docs.intake.ctaOpen', lang),
+  modalTitle: t('governance.docs.intake.modalTitle', lang),
+  modalSubtitle: t('governance.docs.intake.modalSubtitle', lang),
+  fieldTitle: t('governance.docs.intake.fieldTitle', lang),
+  fieldTitlePlaceholder: t('governance.docs.intake.fieldTitlePlaceholder', lang),
+  fieldDocType: t('governance.docs.intake.fieldDocType', lang),
+  fieldDocTypeHint: t('governance.docs.intake.fieldDocTypeHint', lang),
+  fieldAuthor: t('governance.docs.intake.fieldAuthor', lang),
+  fieldAuthorPlaceholder: t('governance.docs.intake.fieldAuthorPlaceholder', lang),
+  fieldAuthorHint: t('governance.docs.intake.fieldAuthorHint', lang),
+  fieldVisibility: t('governance.docs.intake.fieldVisibility', lang),
+  fieldVisibilityHint: t('governance.docs.intake.fieldVisibilityHint', lang),
+  fieldDescription: t('governance.docs.intake.fieldDescription', lang),
+  fieldDescriptionPlaceholder: t('governance.docs.intake.fieldDescriptionPlaceholder', lang),
+  advancedToggle: t('governance.docs.intake.advancedToggle', lang),
+  fieldProposerAckOffline: t('governance.docs.intake.fieldProposerAckOffline', lang),
+  fieldProposerAckOfflineHint: t('governance.docs.intake.fieldProposerAckOfflineHint', lang),
+  fieldProposerMemberId: t('governance.docs.intake.fieldProposerMemberId', lang),
+  fieldProposerMemberIdHint: t('governance.docs.intake.fieldProposerMemberIdHint', lang),
+  ackPreviewLabel: t('governance.docs.intake.ackPreviewLabel', lang),
+  ackInformational: t('governance.docs.intake.ackInformational', lang),
+  ackBinding: t('governance.docs.intake.ackBinding', lang),
+  ackLegalSignature: t('governance.docs.intake.ackLegalSignature', lang),
+  initialStatusLabel: t('governance.docs.intake.initialStatusLabel', lang),
+  initialStatusPendingProposer: t('governance.docs.intake.initialStatusPendingProposer', lang),
+  initialStatusDraft: t('governance.docs.intake.initialStatusDraft', lang),
+  cancelBtn: t('governance.docs.intake.cancelBtn', lang),
+  submitBtn: t('governance.docs.intake.submitBtn', lang),
+  submittingLabel: t('governance.docs.intake.submittingLabel', lang),
+  errorLabel: t('governance.docs.intake.errorLabel', lang),
+  successRedirect: t('governance.docs.intake.successRedirect', lang),
+  validationRequired: t('governance.docs.intake.validationRequired', lang),
+  docTypes: {
+    manual: t('governance.docs.intake.docType.manual', lang),
+    cooperation_agreement: t('governance.docs.intake.docType.cooperation_agreement', lang),
+    framework_reference: t('governance.docs.intake.docType.framework_reference', lang),
+    cooperation_addendum: t('governance.docs.intake.docType.cooperation_addendum', lang),
+    volunteer_addendum: t('governance.docs.intake.docType.volunteer_addendum', lang),
+    policy: t('governance.docs.intake.docType.policy', lang),
+    volunteer_term_template: t('governance.docs.intake.docType.volunteer_term_template', lang),
+    executive_summary: t('governance.docs.intake.docType.executive_summary', lang),
+    project_charter: t('governance.docs.intake.docType.project_charter', lang),
+    editorial_guide: t('governance.docs.intake.docType.editorial_guide', lang),
+    governance_guideline: t('governance.docs.intake.docType.governance_guideline', lang),
+  },
+  visibilityClasses: {
+    public: {
+      label: t('governance.docs.intake.visibility.public', lang),
+      hint: t('governance.docs.intake.visibility.publicHint', lang),
+    },
+    active_members: {
+      label: t('governance.docs.intake.visibility.active_members', lang),
+      hint: t('governance.docs.intake.visibility.active_membersHint', lang),
+    },
+    legal_scoped: {
+      label: t('governance.docs.intake.visibility.legal_scoped', lang),
+      hint: t('governance.docs.intake.visibility.legal_scopedHint', lang),
+    },
+    admin_only: {
+      label: t('governance.docs.intake.visibility.admin_only', lang),
+      hint: t('governance.docs.intake.visibility.admin_onlyHint', lang),
+    },
+    audit_restricted: {
+      label: t('governance.docs.intake.visibility.audit_restricted', lang),
+      hint: t('governance.docs.intake.visibility.audit_restrictedHint', lang),
+    },
+  },
+};
 
 // p130 T-14: bundle de strings consumido pelo <script is:inline> abaixo.
 // Evita um round-trip REST para resolver i18n no client. Resolve no server,
@@ -125,10 +197,11 @@ const i18n = {
           {t('governance.docs.intro', lang)}
         </p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 items-center">
         <a href={`${langPrefix}/admin/governance/ip-ratification`} class="text-[11px] text-[var(--text-muted)] hover:text-navy no-underline px-3 py-1.5 rounded border border-[var(--border-default)] bg-white">
           {t('governance.docs.adminLifecycle', lang)}
         </a>
+        <DocumentIntakeWizard client:load langPrefix={langPrefix} strings={intakeStrings} />
       </div>
     </header>
 
