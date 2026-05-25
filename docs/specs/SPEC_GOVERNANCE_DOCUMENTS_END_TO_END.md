@@ -930,6 +930,8 @@ As ondas abaixo sao sequenciais por dependencia, mas podem ter trabalho paralelo
 
 ### Onda 0 - Decisao e congelamento da spec
 
+> **STATUS: RATIFIED 2026-05-24** — Tier P0 (10/10) + Tier P1 (7/7) closed by PM via GitHub. See **§19** below for the canonical ratification record, three amendments (A1/A2/A3 — `acknowledgement_mode`, `pending_proposer_consent` state, declaration enforcement by instrument), and the Wave 1a footprint. Council pre-review evidence: [#315 comment-4530590590](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/315#issuecomment-4530590590) and [comment-4530613476](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/315#issuecomment-4530613476).
+
 Objetivo: fechar #315 antes de qualquer migration ou UI.
 
 Escopo:
@@ -1153,7 +1155,7 @@ Gate de saida:
 
 ## 18. Definition of Done
 
-- [ ] #315 aprovado com matriz de decisoes.
+- [x] #315 aprovado com matriz de decisoes. *(Ratified 2026-05-24 — see §19.)*
 - [ ] Frontiers pode ser cadastrado sem SQL manual.
 - [ ] Documento aprovado aparece para membros ativos.
 - [ ] Termos/templates referenciam versoes travadas.
@@ -1161,3 +1163,154 @@ Gate de saida:
 - [ ] PDF/DOCX/auditoria apontam para a mesma versao.
 - [ ] Certificados/declaracoes usam evidence bundle travado.
 - [ ] Corpus atual inventariado para backfill.
+
+## 19. Wave 0 Ratification State (2026-05-24)
+
+> Ratified by PM via GitHub thread on #315. This section is the canonical record; PR `docs(governance): ratify #315 Wave 0 decision matrix` carried it into main. Full PM response captured at [#315 comment-4530613476](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/315#issuecomment-4530613476); council pre-review at [comment-4530590590](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/315#issuecomment-4530590590).
+
+### 19.1 Tier P0 — 10/10 ratified
+
+| Q | Decision | Status |
+|---|---|---|
+| P0-Q1 | Frontiers `doc_type = editorial_guide` | R |
+| P0-Q2 | 5 structural visibility classes (`public` · `active_members` · `legal_scoped` · `admin_only` · `audit_restricted`) + `required_action text NULL` for V4 hook | R |
+| P0-Q3 | Atomic `visibility_class IS NULL → DENY` migration (backfill → NOT NULL → fail-closed RLS swap in same tx) | R |
+| P0-Q4 | `acknowledgement_mode` per-document (not strictly per-doc_type) | A — see Amendment A1 |
+| P0-Q5 | ADR-0004 `organization_id` backfill on existing `governance_documents` / `document_versions` / `approval_chains` / `approval_signoffs` before any new gov DDL | R |
+| P0-Q6 | Separate `approved` and `active` statuses + invariant V (status/chain coherence) added to `check_schema_invariants()` | R |
+| P0-Q7 | `proposer_consent` signoff row at intake (Option B over Option A `on_behalf_of_member_id` audit column) | A — see Amendment A2 |
+| P0-Q8 | Drive `file_id` internal-only; `artifact_handle uuid` is the public surface; SECDEF `request_artifact_access` mediates URL generation | R |
+| P0-Q9 | Evidence bundle items via typed sidecar tables + ON DELETE RESTRICT (architectural lock now; implementation in Wave 6) | R |
+| P0-Q10 | `closing_gate_signoff_id` + `approved_at` on `governance_documents` (NOT denormalized `approved_by` per ADR-0012) | R |
+
+### 19.2 Tier P1 — 7/7 ratified
+
+| Q | Decision | Final |
+|---|---|---|
+| P1-Q1 | `ip_policy` / `privacy_policy` as `policy` + `metadata.subtype` | metadata.subtype |
+| P1-Q2 | Ship `governance_guideline` doc_type in Wave 1 (alongside `editorial_guide`) | ship Wave 1 |
+| P1-Q3 | `metadata.template_role = 'instance' \| 'template'` (avoid `template` as doc_type to prevent naming conflict with `volunteer_term_template`) | template_role |
+| P1-Q4 | Drive v1 = plain-text `file_id` + `artifact_handle` only; grant orchestration deferred to #301 / Wave 5 | plain text v1 |
+| P1-Q5 | Ratify full 7-declaration list as normative model | A — see Amendment A3 |
+| P1-Q6 | Intake Tier 1 = 5 fields (title, doc_type, author_label, visibility_class, description); submitter read-only | R |
+| P1-Q7 | Acknowledgement via inline card on biblioteca/documento (not modal, not header badge) | inline card |
+
+### 19.3 Amendments — operationalized into schema deltas
+
+#### Amendment A1 (P0-Q4): `acknowledgement_mode` is per-document, not strictly per-doc_type
+
+Ciência informativa non-blocking for `editorial_guide` / `governance_guideline` / templates operacionais. Binding aceite/ratificação for `ip_policy` / `volunteer_term_template` / `cooperation_agreement` when the document requires formal acceptance. For `privacy_policy`: **context-dependent** — ciência or aceite per coleta/termo context, without presuming legal signature always.
+
+**Schema delta** (lands in Wave 1a.M2):
+
+```sql
+ALTER TABLE governance_documents
+  ADD COLUMN acknowledgement_mode text NOT NULL
+  CHECK (acknowledgement_mode IN ('informational','binding','legal_signature'));
+```
+
+Default-per-doc_type table (intake RPC pre-fills; GP can override at intake-time):
+
+| doc_type | Default | Override allowed? |
+|---|---|---|
+| `editorial_guide` | `informational` | No |
+| `governance_guideline` | `informational` | No |
+| `manual` | `informational` | Yes (binding allowed for major Manual revisions) |
+| `policy` (ip_policy subtype) | `binding` | Yes |
+| `policy` (privacy_policy subtype) | **context-dependent** (intake wizard asks "bound to specific coleta/termo?") | Yes |
+| `volunteer_term_template` | `binding` | No (legal_signature is upgrade) |
+| `cooperation_agreement` | `legal_signature` | No |
+| `project_charter` | `informational` | Yes |
+
+#### Amendment A2 (P0-Q7): New status state `pending_proposer_consent`
+
+If the proponente cannot sign on platform at intake time, the intake produces a row in state `pending_proposer_consent`.
+
+**Schema delta** (lands in Wave 1a.M2):
+
+```sql
+-- 8 status values
+status text NOT NULL CHECK (status IN (
+  'draft',
+  'pending_proposer_consent',  -- NEW per A2
+  'under_review',
+  'approved',
+  'active',
+  'superseded',
+  'withdrawn',
+  'revoked'
+));
+```
+
+Status machine:
+- Intake without proposer ack → `pending_proposer_consent`.
+- Proposer signs in-app OR via offline attestation registered by GP → `draft`.
+- `pending_proposer_consent` documents are NOT eligible for `under_review` (enforced via invariant V' or trigger).
+
+Invariant V (P0-Q6) refined: `status IN ('approved','active') → current_ratified_chain_id IS NOT NULL`. Invariant V' (added per A2): `status = 'pending_proposer_consent' → NOT EXISTS (SELECT 1 FROM approval_chains WHERE document_id = id AND status NOT IN ('cancelled'))`.
+
+The intake RPC `create_governance_document_intake` accepts optional `proposer_ack_offline boolean`:
+- `true` → immediately creates `proposer_consent` signoff with `signoff_type='acknowledge'`, `metadata->>'method'='offline_gp_attestation'`; status starts at `draft`.
+- `false` (default) → status starts at `pending_proposer_consent` until proposer signs in-app.
+
+#### Amendment A3 (P1-Q5): Declaration enforcement varies by target instrument
+
+Full 7-item declaration list ratified as normative model. Enforcement varies per `target_instrument`:
+- `linkedin_post`, `linkedin_newsletter`, `blog`: all 7 = `warning` (minimum operational with metadata).
+- `formal_article`, `journal_submission`: all 7 = `required` (mandatory pre-submission).
+- `governance_document`: `pmi_disclaimer` + `third_party_pii_consent` = `required`; others N/A.
+
+**Schema delta** (architectural lock now; concrete table ships in Wave 4):
+
+```sql
+CREATE TABLE content_product_declaration_requirements (
+  target_instrument text NOT NULL,
+  declaration_kind text NOT NULL CHECK (declaration_kind IN (
+    'ai_use',                              -- spec §9
+    'employer_consent',                    -- spec §9
+    'conflict_of_interest',                -- spec §9
+    'originality_no_prior_publication',    -- legal #1
+    'periodical_license_acceptance',       -- legal #2
+    'pmi_disclaimer',                      -- legal #3
+    'third_party_pii_consent'              -- legal #4 (LGPD Art. 9)
+  )),
+  enforcement_level text NOT NULL CHECK (enforcement_level IN ('warning','required')),
+  PRIMARY KEY (target_instrument, declaration_kind)
+);
+```
+
+Wave 1a reserves a placeholder column `target_instrument text` on the future `content_products` table; concrete enforcement table ships in Wave 4.
+
+### 19.4 Tier P2 — deferred to consuming wave
+
+| Q | Topic | Defer to |
+|---|---|---|
+| P2-Q1 | `review_mode` defaults per instrument | Wave 4 |
+| P2-Q2 | Mandatory `independent_blind` for revista/artigo formal | Wave 4 |
+| P2-Q3 | `/documents` alias route | Wave 3 |
+| P2-Q4 | Backfill order (Manual → PI → Privacy → Termo → Acordos → Charters → Frontiers → Templates) | Wave 7 |
+| P2-Q5 | PI Track A/B/C trilateral protocol (autor / Núcleo / periódico) | Wave 4 OR CR-050 v2 |
+| P2-Q6 | Public verify page payload + rate limiting | Wave 6 |
+| P2-Q7 | Missing personas (GP-transition / pre-active volunteer / alumni) | Wave 4 |
+
+### 19.5 Wave 1a footprint (post-ratification, ready to scaffold)
+
+Three migrations:
+
+- **1a.M1** — ADR-0004 backfill: ALTER `governance_documents`, `document_versions`, `approval_chains`, `approval_signoffs` add `organization_id` (backfill Núcleo IA org UUID; NOT NULL).
+- **1a.M2** — Taxonomy + visibility + status machine + invariants:
+  - Extend `doc_type` CHECK with `editorial_guide`, `governance_guideline` (P0-Q1 + P1-Q2).
+  - Drop+recreate `status` CHECK with 8 values per A2 + P0-Q6.
+  - Add `visibility_class text NOT NULL` (5 values per P0-Q2 — backfill + NOT NULL gate).
+  - Add `required_action text NULL` (P0-Q2).
+  - Add `acknowledgement_mode text NOT NULL` with default-per-doc_type backfill (A1).
+  - Add `effective_from`, `effective_until`, `approved_at`, `closing_gate_signoff_id` (P0-Q6 + P0-Q10).
+  - Atomic RLS swap: drop `document_versions_read_published` + create fail-closed variant in same tx (P0-Q3).
+  - `check_schema_invariants()` extension: invariant V + V' (P0-Q6 + A2).
+- **1a.M3** — Intake + library RPCs:
+  - `create_governance_document_intake(p_payload jsonb)` — SECDEF, gates `manage_event` via `can_by_member()`. Accepts 5 Tier-1 fields (P1-Q6) + optional `proposer_ack_offline` (A2). Writes `proposer_consent` signoff per A2; status starts at `draft` or `pending_proposer_consent` accordingly. Contract test asserts FK source columns (SEDIMENT-239b.A).
+  - `list_governance_library(p_filters jsonb)` — SECDEF reader, filters by `visibility_class` + active membership. Never returns `admin_only` / `audit_restricted` to non-admin. Forward-defense test asserts `file_id` absence from response shape (P0-Q8).
+
+Wave 1b (deferred to follow-up): `document_version_dependencies`, `governance_document_artifacts` (with `file_id`/`artifact_handle` separation per P0-Q8), `content_products` (or `publication_ideas.metadata` MVP per P1-Q4), `document_comments` blind-review columns (for Wave 4 enforcement of invariant 20 — see C6 in council pre-review).
+
+Out of v1: Wave 5 (MCP/Drive grants), Wave 6 (evidence bundles + certificates), Wave 7 (semantic layer + corpus backfill). Track in cluster narrative; do not pull into v1 sprint.
