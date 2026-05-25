@@ -121,17 +121,17 @@ test('R description names approve_selection_application as the canonical contrac
     'R must reference approve_selection_application (the canonical RPC it defends)');
 });
 
-// ─── 8. Function COMMENT cites the new count (19 invariants) ───
-test('check_schema_invariants COMMENT cites 19 invariants', () => {
+// ─── 8. Function COMMENT cites the new count (20 invariants — V' added p256) ───
+test('check_schema_invariants COMMENT cites 20 invariants', () => {
   // Multiple migrations may COMMENT ON the function; pick the LATEST
   // (highest-timestamp migration that sets the comment).
   const commentMatches = [...allSQL.matchAll(/COMMENT ON FUNCTION public\.check_schema_invariants\(\)\s+IS\s+'([^']+)'/g)];
   assert.ok(commentMatches.length > 0, 'COMMENT ON FUNCTION must be set in some migration');
   const latest = commentMatches[commentMatches.length - 1];
-  assert.ok(/19 schema invariants/i.test(latest[1]),
-    'Latest COMMENT must reflect the new count (18 → 19); got: ' + latest[1].slice(0, 80));
-  assert.ok(/Issue #205/.test(latest[1]),
-    'Latest COMMENT must reference Issue #205 as the source of T');
+  assert.ok(/20 schema invariants/i.test(latest[1]),
+    'Latest COMMENT must reflect the new count (19 → 20); got: ' + latest[1].slice(0, 80));
+  assert.ok(/V_prime|Wave 1a|#315/.test(latest[1]),
+    'Latest COMMENT must reference V_prime / Wave 1a / #315 as the source of V prime');
 });
 
 // ─── 9. Invariant block ordering: R + S come after the original 16 ───
