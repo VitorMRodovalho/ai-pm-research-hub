@@ -1314,3 +1314,28 @@ Three migrations:
 Wave 1b (deferred to follow-up): `document_version_dependencies`, `governance_document_artifacts` (with `file_id`/`artifact_handle` separation per P0-Q8), `content_products` (or `publication_ideas.metadata` MVP per P1-Q4), `document_comments` blind-review columns (for Wave 4 enforcement of invariant 20 — see C6 in council pre-review).
 
 Out of v1: Wave 5 (MCP/Drive grants), Wave 6 (evidence bundles + certificates), Wave 7 (semantic layer + corpus backfill). Track in cluster narrative; do not pull into v1 sprint.
+
+### 19.6 Wave 1b W4d footprint — reader hardening (p263 #380)
+
+One migration:
+
+- **W4d.M1** — `get_governance_document_reader(p_document_id uuid)` RETURNS jsonb — single-doc SECDEF reader for `/governance/document/[id].astro`. Enforces 3 gates in body (privacy-preserving null-envelope on any block — no oracle between 404 and 403):
+  - **Active membership** (mirror `list_governance_library`): `members WHERE auth_id = auth.uid() AND is_active = true` — RAISE `Unauthorized: no active member record` ERRCODE `42501` on miss.
+  - **Visibility predicate** (mirror gd_read RLS + p256 M3 reader) — 5-class ladder: `public` and `active_members` → any active member; `legal_scoped` → admin (`manage_member`) OR signer with `member_document_signatures.is_current = true`; `admin_only` → admin; `audit_restricted` → platform admin (`manage_platform`). On block → `{ok:true, document:null, current_version:null}`.
+  - **Status default-exclusion** (mirror p262 W4c — 4-status set): non-admin sees only `('active','approved','under_review','superseded')`; `manage_member` bypasses to see all 8 statuses. On block → null-envelope.
+  - **Version locked_at HARD-GATE** (mirror `document_versions_read_published` RLS): member view requires `dv.locked_at IS NOT NULL`; admin bypass sees unlocked drafts. When `current_version_id IS NULL` the SELECT is skipped (scalar version locals default to NULL — record-style locals would RAISE "not-yet-assigned").
+  - **Payload P0-Q8 forward-defense**: response shape NEVER includes `file_id`, `drive_url`, `pdf_url`, `docusign_envelope_id`, `partner_entity_id`, `content_markdown`, `content_diff_json`, `signed_at`, `signatories`, `parties`. Document object exposes 13 fields (id + title + description + doc_type + status + visibility_class + acknowledgement_mode + effective_from + effective_until + approved_at + current_version_id + current_ratified_version_id). Current_version object exposes 6 fields including `content_html`.
+- **Route rewire** — `src/pages/governance/document/[id].astro` drops two table-direct SELECTs (`governance_documents`, `document_versions`) and replaces both with `sb.rpc('get_governance_document_reader', { p_document_id: DOC_ID })` (one round-trip). Loading/error/empty UX states preserved verbatim.
+
+Frontiers smoke (live, post-deploy):
+- Vitor admin (`manage_member`) → `document=object` with `status='draft'`, `current_version=null` (Frontiers `current_version_id IS NULL`).
+- Non-admin member → `document=null` (status default-exclusion blocks draft).
+- Manual R2 (`status=active`, locked version) → non-admin member sees full document + `content_html_length=2167` + 0 forbidden columns in payload.
+- Unknown UUID → null-envelope (no oracle).
+- Anon/service-role → gate fires (Unauthorized).
+
+Known regression preserved (deferred to W4e #381): curators (`curate_content` without `manage_member`) cannot read drafts through this reader. Dedicated curator-draft-read surface ships in #381. This reader is the **member-safe surface**; curator/reviewer paths continue via `get_document_detail` (composite admin RPC) + chain workflow RPCs.
+
+Invariants: 21/21 violation_count=0 live post-deploy. RPC is a read helper; doesn't mutate governed table state.
+
+Cross-refs: #312 audit umbrella + #315 Governance Documents v1 + #96 Frontiers + #380 (this child W4d) + #379 (W4c GAP-259.A predecessor) + #378 (W4a gate templates) + #377 (W4b sign_proposer_consent) + p256 M2/M3 (RLS + library RPC) + p262 W4c (status default-exclusion).
