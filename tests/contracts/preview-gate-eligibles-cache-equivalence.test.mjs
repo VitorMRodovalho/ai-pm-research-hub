@@ -127,12 +127,16 @@ test(
 );
 
 test(
+  // p262 #312-W4a: executive_summary now has a gate template (resolve_default_gates returns
+  // 2 gates). Switch the negative example to a clearly-fake doc_type so the assertion intent
+  // ("non-cacheable doc_types return NULL") is preserved without coupling to which specific
+  // doc_types lack templates.
   canRun
-    ? 'preview_gate_eligibles returns NULL for non-cacheable doc_types (executive_summary)'
+    ? 'preview_gate_eligibles returns NULL for non-cacheable doc_types (unknown doc_type)'
     : skipMsg,
   { skip: !canRun },
   async () => {
-    const result = await callPreviewRpc('executive_summary', null);
+    const result = await callPreviewRpc('nonexistent_doc_type_for_test', null);
     assert.equal(
       result,
       null,
