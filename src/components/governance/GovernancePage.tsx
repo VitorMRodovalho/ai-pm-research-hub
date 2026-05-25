@@ -3,13 +3,17 @@ import { usePageI18n } from '../../i18n/usePageI18n';
 import { canFor } from '../../lib/permissions';
 import ManualDocumentViewer from './ManualDocumentViewer';
 import CRList from './CRList';
-import DocumentsList from './DocumentsList';
 import GovernanceApprovalTab from './GovernanceApprovalTab';
 
-type View = 'document' | 'approvals' | 'changes' | 'documents';
+// #315 Wave 3 (#314): the `documents` tab was retired — the biblioteca now
+// lives at the canonical /governance/documents route and consumes the
+// list_governance_library RPC. The legacy `?view=documents` URL is handled
+// at the top of `boot()` via window.location redirect (preserves existing
+// bookmarks).
+type View = 'document' | 'approvals' | 'changes';
 
 const VIEW_MAP: Record<string, View> = {
-  document: 'document', approvals: 'approvals', changes: 'changes', documents: 'documents',
+  document: 'document', approvals: 'approvals', changes: 'changes',
   // Legacy compat
   manual: 'document', crs: 'changes',
 };
@@ -52,7 +56,6 @@ export default function GovernancePage() {
   const [view, setViewState] = useState<View>(getViewFromURL);
   const [sections, setSections] = useState<any[]>([]);
   const [crs, setCrs] = useState<any[]>([]);
-  const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
   // p131: count de chains de governança onde o user atual tem eligible_gates
@@ -72,6 +75,24 @@ export default function GovernancePage() {
     let cancelled = false;
     let retries = 0;
 
+    // #315 Wave 3 (#314): legacy ?view=documents bookmarks/links redirect
+    // to the canonical /governance/documents biblioteca (consumes
+    // list_governance_library RPC instead of get_governance_documents).
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'documents') {
+        const lp = window.location.pathname.startsWith('/en')
+          ? '/en'
+          : window.location.pathname.startsWith('/es')
+            ? '/es'
+            : '';
+        params.delete('view');
+        const qs = params.toString();
+        window.location.replace(`${lp}/governance/documents${qs ? '?' + qs : ''}`);
+        return;
+      }
+    }
+
     async function boot() {
       const sb = getSb();
       const m = (window as any).navGetMember?.();
@@ -88,14 +109,12 @@ export default function GovernancePage() {
 
         // Only load auth-gated data if member is present
         if (m) {
-          const [crRes, docRes, pendRes] = await Promise.all([
+          const [crRes, pendRes] = await Promise.all([
             sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
-            sb.rpc('get_governance_documents'),
             sb.rpc('get_pending_ratifications'),
           ]);
           if (!cancelled) {
             setCrs(Array.isArray(crRes.data) ? crRes.data : []);
-            setDocs(Array.isArray(docRes.data) ? docRes.data : []);
             // p131: filtra rows onde realmente há gate eligível para o user
             const pending = Array.isArray(pendRes.data) ? pendRes.data : [];
             setPendingRatificationsCount(
@@ -162,7 +181,9 @@ export default function GovernancePage() {
     { key: 'document', icon: '📖', labelKey: 'governance.manual_tab', fallback: 'Manual' },
     { key: 'approvals', icon: '🗳️', labelKey: 'governance.approvals_tab', fallback: 'Aprovações', authOnly: true },
     { key: 'changes', icon: '📋', labelKey: 'governance.cr_tab', fallback: 'Solicitações de Mudança', authOnly: true },
-    { key: 'documents', icon: '📄', labelKey: 'governance.documents_tab', fallback: 'Documentos', authOnly: true },
+    // #315 Wave 3 (#314): retired `documents` view — biblioteca now lives at
+    // /governance/documents. The cross-link below in the view body offers a
+    // direct path; the legacy ?view=documents URL redirects there too.
   ];
   const views = isVisitor ? allViews.filter(v => !v.authOnly) : allViews;
 
@@ -239,8 +260,29 @@ export default function GovernancePage() {
       {activeView === 'changes' && (
         <CRList crs={crs} sections={sections} member={member} canSubmit={canSubmit} canReview={canReview} t={t} getSb={getSb} onReload={reload} />
       )}
-      {activeView === 'documents' && (
-        <DocumentsList docs={docs} t={t} />
+
+      {/* #315 Wave 3 (#314) — cross-link to the canonical biblioteca for
+          authenticated members. Replaces the retired `documents` tab. */}
+      {!isVisitor && activeView === 'document' && (
+        <a
+          href={`${lp}/governance/documents`}
+          className="block rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 no-underline hover:border-navy transition-colors"
+          data-testid="governance-library-crosslink"
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-navy">
+                {t('governance.documents_tab', 'Documentos')}
+              </h3>
+              <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
+                {t('governance.library.crosslinkHint', 'Veja a biblioteca de documentos de governança vigentes (Manual, políticas, termos, acordos).')}
+              </p>
+            </div>
+            <span className="text-[12px] font-bold text-navy">
+              {t('governance.library.crosslinkCta', 'Abrir biblioteca →')}
+            </span>
+          </div>
+        </a>
       )}
     </div>
   );
