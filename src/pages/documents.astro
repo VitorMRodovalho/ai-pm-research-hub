@@ -1,0 +1,6 @@
+---
+// #315 Wave 3 (#314) — /documents alias ratified per P2-Q3
+// 301 permanent redirect to the canonical /governance/documents biblioteca.
+const qs = Astro.url.search || '';
+return Astro.redirect('/governance/documents' + qs, 301);
+---
