@@ -232,7 +232,13 @@ describe('p256 M2 — taxonomy + visibility + status + RLS swap + V invariant pr
       return;
     }
 
-    it("V' present, V absent, all invariants violation_count=0", async () => {
+    it("V' present, V activated (post-p257) — all invariants violation_count=0", async () => {
+      // Note: this DB-gated test was originally written in p256 (Wave 1a M2) to assert
+      // "V' present, V ABSENT" (V deferred to Wave 1b first leaf #367). p257 (#367)
+      // ratchets V from deferred → activated. Test now asserts both V' and V are
+      // present + violation_count=0. The static forward-defense at line ~210 that
+      // checks the p256 M2 MIGRATION FILE does NOT contain V is still correct
+      // (V lives in p257's 20260805000039, NOT in p256's 20260805000036).
       const { data, error } = await sb.rpc('check_schema_invariants');
       if (error) {
         // graceful skip on permission error
@@ -240,15 +246,16 @@ describe('p256 M2 — taxonomy + visibility + status + RLS swap + V invariant pr
         throw error;
       }
       assert.ok(Array.isArray(data), 'check_schema_invariants must return array');
-      assert.ok(data.length >= 20, `expected at least 20 invariants (was ${data.length}); parallel branch additions OK`);
+      assert.ok(data.length >= 21, `expected at least 21 invariants post-p257 V activation (was ${data.length}); parallel branch additions OK`);
 
-      // PM #4 (a): V' present by name
+      // PM #4 (a): V' (V_prime) present by name — preserved from Wave 1a M2
       const vPrime = data.find(r => r.invariant_name === 'V_prime_pending_proposer_consent_no_open_chain');
       assert.ok(vPrime, "V' (V_prime_pending_proposer_consent_no_open_chain) must be present");
 
-      // PM #4 (b): no other V_ invariant (V deferred Wave 1b)
-      const otherV = data.find(r => /^V_/.test(r.invariant_name) && r.invariant_name !== 'V_prime_pending_proposer_consent_no_open_chain');
-      assert.equal(otherV, undefined, `V invariant must be absent — only V' ships in Wave 1a (got: ${otherV?.invariant_name})`);
+      // PM #4 (b): V (V_status_chain_coherence) present by name — activated p257 Wave 1b first leaf (#367)
+      const v = data.find(r => r.invariant_name === 'V_status_chain_coherence');
+      assert.ok(v, "V (V_status_chain_coherence) must be present post-p257 Wave 1b first leaf #367");
+      assert.equal(v.violation_count, 0, `V must have violation_count=0 post-synthetic-chain-backfill (got: ${v.violation_count})`);
 
       // PM #4 (c): all rows violation_count = 0
       const violations = data.filter(r => r.violation_count > 0);
