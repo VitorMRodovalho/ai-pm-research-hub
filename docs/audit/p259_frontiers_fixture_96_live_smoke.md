@@ -134,6 +134,27 @@ But the default unfiltered view (when no filter is set) shows all 8 statuses, in
 
 **Recommendation**: Option (a) at PM dispatch — preserves member-facing biblioteca as "ready-to-engage docs only" while keeping the RPC orthogonal to UI choices (an admin-side caller can still request `status=draft` explicitly). Defer to Wave 1b expansion sprint OR a narrow follow-up leaf.
 
+### PM decision (session close, 2026-05-25)
+
+**Option (a) ratified**. `list_governance_library` MUST exclude the following statuses from the default member-facing library view:
+
+- `draft`
+- `pending_proposer_consent`
+- `withdrawn`
+- `revoked`
+
+Explicit `p_filters.status` override allowed ONLY for admin/audit contexts (admin pages OR explicit MCP calls with one of those statuses requested by name), NOT for the member library default.
+
+**Rationale (PM verbatim)**: "a biblioteca membro deve representar documentos consultáveis/vigentes, não fila de intake/revisão".
+
+**Implementation scope (separate Wave 1b leaf, NOT this PR)**:
+
+- Server-side WHERE clause in `list_governance_library` body: `AND (v_filter_status IS NOT NULL OR gd.status IN ('active','approved','under_review','superseded'))`.
+- Forward-defense contract test: explicit assertion that the unfiltered call (`list_governance_library('{}'::jsonb)`) does NOT return any doc with `status IN ('draft','pending_proposer_consent','withdrawn','revoked')` from a member-caller context.
+- Admin/audit override: the explicit `p_filters.status='pending_proposer_consent'` (or any other excluded status) MUST still return matching docs — the exclusion is "default-only", not "always".
+- Live verification post-deploy: re-run `list_governance_library('{}'::jsonb)` as Vitor → Frontiers `18ec4690-…` must NO LONGER appear; `list_governance_library('{"status":"pending_proposer_consent"}'::jsonb)` MUST still return it.
+- Out of scope for #312 Wave 4 audit — this is a follow-up leaf separate from the audit jornada.
+
 ## Carries (pre-existing, unchanged from p258 close)
 
 | Carry | Source | Status |
