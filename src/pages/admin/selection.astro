@@ -1552,17 +1552,17 @@ const SEL_I18N = {
       tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
-    // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
+    // p272 #365d hotfix — REMOVED the internal track-rank re-sort that was silently
+    // overwriting the upstream sort from applyFilters() (sortCol/sortAsc). The bug was:
+    // user clicks "Pesquisa" header, applyFilters() sorts filteredRows by objective_score
+    // DESC, renderTable() then [...]filteredRows.sort(track-rank-asc) re-orders it back,
+    // and the visible table never reflected the user's click. Source of truth for row
+    // order is now applyFilters().filteredRows.sort(sortCol/sortAsc) — single sort, no
+    // override. useLeaderRank/useResearcherRank are kept because the row template uses
+    // them to build rankDisplay ("L#N" / "P#N" / interleaved) per active filter.
     const useLeaderRank = filterRole === 'leader';
     const useResearcherRank = filterRole === 'researcher';
-    const displayRows = [...filteredRows].sort((a: any, b: any) => {
-      const ra = useLeaderRank ? a.rank_leader : useResearcherRank ? a.rank_researcher : (a.rank_leader || a.rank_researcher);
-      const rb = useLeaderRank ? b.rank_leader : useResearcherRank ? b.rank_researcher : (b.rank_leader || b.rank_researcher);
-      if (ra == null && rb == null) return 0;
-      if (ra == null) return 1;
-      if (rb == null) return -1;
-      return ra - rb;
-    });
+    const displayRows = filteredRows;
 
     tbody.innerHTML = displayRows.map(r => {
       const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
