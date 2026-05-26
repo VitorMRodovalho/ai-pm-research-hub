@@ -24,6 +24,12 @@ Historical state (p216 close, was current before p222):
 - Claude.ai connector: verified working
 - Health observability: `get_invitation_health` (W7) + `get_lgpd_cron_health` (W8) + `get_digest_health` (W9 issue #99) — Pattern 43 saturation reached
 
+## MCP tool name ↔ RPC name divergences (alias map)
+
+Most MCP tools share the underlying RPC name (e.g., `submit_evaluation` tool → `submit_evaluation` RPC). A handful diverge intentionally to give consumers a more discoverable tool name without renaming the SQL surface. Known divergences:
+
+- `sign_ratification_gate` (MCP tool) → `public.sign_ip_ratification` (RPC). Registered at `supabase/functions/nucleo-mcp/index.ts:5337` and dispatched via `sb.rpc("sign_ip_ratification", { ... })`. The tool name reads better for cross-document consumers ("sign a gate on a ratification chain") while the RPC keeps the IP-3d-era body name. **Implication for migrations**: fixes to `sign_ip_ratification` body apply transparently to all consumers (MCP host calling `sign_ratification_gate`, native UI calling the RPC directly). Do NOT rename either side — the divergence is stable and consumer-breaking to undo. Verified during p269 SEDIMENT-268.A audit (`approval_signoffs.organization_id` remediation).
+
 ## Pre-Deploy Check (MANDATORY)
 
 ### 1. Duplicate tool names
