@@ -489,7 +489,6 @@ DECLARE
   v_product public.content_products%ROWTYPE;
   v_source_summary jsonb;
 BEGIN
-  -- Active membership gate
   SELECT m.id INTO v_caller_member_id
   FROM public.members m
   WHERE m.auth_id = auth.uid() AND m.is_active = true;
@@ -498,16 +497,13 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized: no active member record' USING ERRCODE = '42501';
   END IF;
 
-  -- Authority gates (V4 ADR-0011 / ADR-0007)
   v_caller_is_admin := public.can_by_member(v_caller_member_id, 'manage_member');
   v_caller_is_curator := public.can_by_member(v_caller_member_id, 'curate_content');
 
-  -- Fetch product
   SELECT * INTO v_product
   FROM public.content_products
   WHERE id = p_product_id;
 
-  -- Privacy-preserving null-envelope on miss (no oracle between 404 and 403)
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', true, 'product', NULL, 'source_summary', NULL);
   END IF;
@@ -515,7 +511,6 @@ BEGIN
   v_is_proposer := (v_product.proposer_member_id IS NOT NULL
                     AND v_product.proposer_member_id = v_caller_member_id);
 
-  -- Status visibility gate
   IF NOT (v_caller_is_admin OR v_caller_is_curator OR v_is_proposer) THEN
     IF v_product.status NOT IN (
       'published'::public.content_product_status,
@@ -525,7 +520,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- Resolve source summary (light pointer per source_kind)
   v_source_summary := CASE v_product.source_kind
     WHEN 'governance_document_version' THEN (
       SELECT jsonb_build_object(
@@ -626,7 +620,6 @@ DECLARE
   v_offset int;
   v_result jsonb;
 BEGIN
-  -- Active membership gate
   SELECT m.id INTO v_caller_member_id
   FROM public.members m
   WHERE m.auth_id = auth.uid() AND m.is_active = true;
@@ -638,7 +631,6 @@ BEGIN
   v_caller_is_admin := public.can_by_member(v_caller_member_id, 'manage_member');
   v_caller_is_curator := public.can_by_member(v_caller_member_id, 'curate_content');
 
-  -- Parse filter arrays (NULL if missing/empty)
   v_status_filter := (
     SELECT array_agg(value::text)
     FROM jsonb_array_elements_text(COALESCE(p_filters->'status', '[]'::jsonb))
@@ -1013,7 +1005,6 @@ BEGIN
          (SELECT array_agg(member_id ORDER BY member_id) FROM (SELECT member_id FROM drift LIMIT 10) s)
   FROM drift;
 
-  -- T (p212, #205): Member has exactly one primary email in member_emails
   RETURN QUERY
   WITH primary_email_counts AS (
     SELECT m.id AS member_id,
@@ -1033,8 +1024,6 @@ BEGIN
          (SELECT array_agg(member_id ORDER BY member_id) FROM (SELECT member_id FROM drift LIMIT 10) s)
   FROM drift;
 
-  -- V' (p256, #315 Wave 1a M2 — A2 + P0-Q7): status=pending_proposer_consent
-  -- must not have any non-cancelled approval_chains rows.
   RETURN QUERY
   WITH drift AS (
     SELECT gd.id AS doc_id FROM public.governance_documents gd
@@ -1051,7 +1040,6 @@ BEGIN
          (SELECT array_agg(doc_id ORDER BY doc_id) FROM (SELECT doc_id FROM drift LIMIT 10) s)
   FROM drift;
 
-  -- V (p257, #315 Wave 1b first leaf — #367 Step 5): status/chain coherence.
   RETURN QUERY
   WITH drift AS (
     SELECT gd.id AS doc_id FROM public.governance_documents gd
@@ -1064,10 +1052,6 @@ BEGIN
          (SELECT array_agg(doc_id ORDER BY doc_id) FROM (SELECT doc_id FROM drift LIMIT 10) s)
   FROM drift;
 
-  -- W (p265, #382 W4f Foundation — ADR-0099 §6 step 9):
-  -- content_products row must satisfy chk_content_products_source_integrity CHECK semantics.
-  -- The CHECK constraint itself enforces atomically; this invariant is forward-defense
-  -- providing ratchet visibility for monitoring (mirrors V/V'/T pattern).
   RETURN QUERY
   WITH drift AS (
     SELECT cp.id AS product_id
