@@ -375,12 +375,14 @@ describe('p257 #367 Wave 1b first leaf — synthetic-chain backfill + V invarian
   });
 
   describe('DB-gated — live invariant table state (post-M1+M2)', () => {
-    it('check_schema_invariants() returns 21 rows (V activated as 21st)', async (t) => {
+    it('check_schema_invariants() returns ≥21 rows (V activated as 21st in p257; W added p265 — count grows over time)', async (t) => {
       if (!sb) { t.skip('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set'); return; }
       const { data, error } = await sb.rpc('check_schema_invariants');
       assert.equal(error, null, `RPC error: ${error?.message}`);
-      assert.equal(data.length, 21,
-        `Expected 21 invariants, got ${data.length}. Body: ${data.map(r => r.invariant_name).join(', ')}`);
+      assert.ok(data.length >= 21,
+        `Expected ≥21 invariants (V is the 21st added p257), got ${data.length}. Body: ${data.map(r => r.invariant_name).join(', ')}`);
+      const vStatus = data.find(r => r.invariant_name === 'V_status_chain_coherence');
+      assert.ok(vStatus, 'V_status_chain_coherence (p257 first leaf addition) must be present');
     });
 
     it('V_status_chain_coherence present + violation_count = 0', async (t) => {
