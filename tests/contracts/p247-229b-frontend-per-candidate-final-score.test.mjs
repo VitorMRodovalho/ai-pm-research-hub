@@ -105,14 +105,14 @@ describe('p247 #229b Frontend — per-candidate final-score régua + interview s
       );
     });
 
-    it('colspan in empty/error state bumped to 15 (was 13 pre-p247)', () => {
-      const colspan15Count = (SELECTION_PAGE.match(/colspan="15"/g) || []).length;
+    it('colspan in empty/error state bumped to 16 (was 15 pre-p270, was 13 pre-p247)', () => {
+      const colspan16Count = (SELECTION_PAGE.match(/colspan="16"/g) || []).length;
       assert.ok(
-        colspan15Count >= 2,
-        `expected colspan="15" in both error + empty state placeholders (got ${colspan15Count})`
+        colspan16Count >= 2,
+        `expected colspan="16" in both error + empty state placeholders post-p270 (+1 Rank Obj col) (got ${colspan16Count})`
       );
-      const colspan13Count = (SELECTION_PAGE.match(/colspan="13"/g) || []).length;
-      assert.equal(colspan13Count, 0, 'no leftover colspan="13" — must all be bumped to 15 post-p247 (+2 cols)');
+      const colspan15Count = (SELECTION_PAGE.match(/colspan="15"/g) || []).length;
+      assert.equal(colspan15Count, 0, 'no leftover colspan="15" — must all be bumped to 16 post-p270 (+1 col on top of p247 baseline)');
     });
   });
 

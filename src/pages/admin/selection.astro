@@ -45,6 +45,8 @@ const SEL_I18N = {
   // p247 #229b Frontend — per-candidate final-score cutoff
   finalScoreCutoffTooltip: t('admin.selection.finalScoreCutoffTooltip', lang),
   finalScoreDisabledChip: t('admin.selection.finalScoreDisabledChip', lang),
+  // p270 #365b — objective rank per track (server-side ROW_NUMBER over PARTITION BY role_applied)
+  colObjectiveRankHint: t('admin.selection.colObjectiveRankHint', lang),
   consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
   consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
   consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
@@ -350,6 +352,7 @@ const SEL_I18N = {
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_rank" title={t('admin.selection.colObjectiveRankHint', lang)}>{t('admin.selection.colObjectiveRank', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
@@ -614,6 +617,8 @@ const SEL_I18N = {
     // p247 #229b Frontend fallbacks
     finalScoreCutoffTooltip: 'Régua final (PERT) calculada por trilha desde p246 (refactor #229b). Researcher pool e leader pool têm distribuições diferentes; não misturamos. Quando cohort_n<10, a régua fica indisponível para aquela trilha.',
     finalScoreDisabledChip: 'Régua final: n={n}<10',
+    // p270 #365b objective rank per track fallback
+    colObjectiveRankHint: 'Rank dentro da trilha (pesquisador vs pesquisador, líder vs líder) ordenado por nota objetiva no ciclo. Estável independente de filtros UI — sempre reflete a cohort completa do ciclo.',
     consentPendingBadge: 'sem consent IA',
     consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
     consentRevokedBadge: 'consent revogado',
@@ -1356,7 +1361,7 @@ const SEL_I18N = {
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="15" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -1544,7 +1549,7 @@ const SEL_I18N = {
       }
     }
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="15" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
     // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
@@ -1657,6 +1662,7 @@ const SEL_I18N = {
           <div class="${r.final_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.final_score != null ? Number(r.final_score).toFixed(1) : '—'}</div>
           ${finalScoreChip(r)}
         </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold" title="${esc(T.colObjectiveRankHint || '')}">${r.objective_rank != null ? `#${r.objective_rank}` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>

@@ -5173,6 +5173,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.colResearch': 'Investigación',
   'admin.selection.colLeaderShort': 'Líder',
   'admin.selection.colRank': 'Rank',
+  'admin.selection.colObjectiveRank': 'Rank Obj',
+  'admin.selection.colObjectiveRankHint': 'Rango dentro de la propia pista (investigador vs investigador, líder vs líder) ordenado por nota objetiva en el ciclo. Estable independiente de filtros UI — siempre refleja la cohort completa del ciclo.',
   'admin.selection.colStatus': 'Estado',
   'admin.selection.colMyEval': 'Mi eval.',
   'admin.selection.colPipeline': 'Pipeline',
