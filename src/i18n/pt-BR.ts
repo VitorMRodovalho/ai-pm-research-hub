@@ -5178,6 +5178,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.colResearch': 'Pesquisa',
   'admin.selection.colLeaderShort': 'Líder',
   'admin.selection.colRank': 'Rank',
+  'admin.selection.colObjectiveRank': 'Rank Obj',
+  'admin.selection.colObjectiveRankHint': 'Rank dentro da trilha (pesquisador vs pesquisador, líder vs líder) ordenado por nota objetiva no ciclo. Estável independente de filtros UI — sempre reflete a cohort completa do ciclo.',
   'admin.selection.colStatus': 'Status',
   'admin.selection.colMyEval': 'Minha aval.',
   'admin.selection.colPipeline': 'Pipeline',
