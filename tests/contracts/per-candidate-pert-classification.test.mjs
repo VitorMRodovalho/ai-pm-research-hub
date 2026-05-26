@@ -67,19 +67,25 @@ describe('p245 #229a per-candidate PERT classification', () => {
   });
 
   describe('per-app TD render', () => {
-    it('research_score TD calls pertBandChip(r.research_score, currentCycle?.pert_cutoff)', () => {
+    // p249 #365 hotfix: the objective PERT column ("Pesquisa") must read r.objective_score
+    // (selection_applications.objective_score_avg via p246 dashboard payload), NOT
+    // r.research_score. Researcher-track research_score became composite (objective +
+    // interview ≡ final_score) after the score canonicalization work, so feeding it into
+    // the objective PERT helpers makes the chip color/band/delta compare the final score
+    // against the objective cutoff — silently misleading PM cut/no-cut decisions.
+    it('objective_score TD calls pertBandChip(r.objective_score, currentCycle?.pert_cutoff)', () => {
       assert.match(
         SELECTION_PAGE,
-        /\$\{pertBandChip\(r\.research_score, currentCycle\?\.pert_cutoff\)\}/,
-        'research_score TD must call pertBandChip with cycle pert_cutoff (objective rule)'
+        /\$\{pertBandChip\(r\.objective_score, currentCycle\?\.pert_cutoff\)\}/,
+        'objective_score TD must call pertBandChip with cycle pert_cutoff (objective rule)'
       );
     });
 
-    it('research_score TD uses pertFullTooltip in TD title', () => {
+    it('objective_score TD uses pertFullTooltip in TD title', () => {
       assert.match(
         SELECTION_PAGE,
-        /<td class="px-4 py-2\.5 text-\[12px\] font-mono" title="\$\{esc\(pertFullTooltip\(r\.research_score, currentCycle\?\.pert_cutoff\)\)\}"/,
-        'research_score TD title must use pertFullTooltip helper (enriched: target + banda + cohort + method)'
+        /<td class="px-4 py-2\.5 text-\[12px\] font-mono" title="\$\{esc\(pertFullTooltip\(r\.objective_score, currentCycle\?\.pert_cutoff\)\)\}"/,
+        'objective_score TD title must use pertFullTooltip helper (enriched: target + banda + cohort + method)'
       );
     });
 
@@ -103,6 +109,31 @@ describe('p245 #229a per-candidate PERT classification', () => {
         SELECTION_PAGE,
         /bandClassify\(r\.leader_score, currentCycle\?\.pert_cutoff\)/,
         'PM rule (#229a): leader_score must NOT be classified against pert_cutoff'
+      );
+    });
+
+    // p249 #365 forward-defense: the bug at the root of #365 was that the objective PERT
+    // helpers were fed r.research_score (which is now researcher-track composite ≡
+    // objective + interview ≡ final_score for interviewed rows). Re-introducing this
+    // mapping silently miscolors the objective band chip — verified live on cycle4-2026
+    // 2026-05-25 with 10 researcher rows where research_score - objective_score_avg
+    // equals interview_score exactly. Lock the regression class: neither pertBandChip nor
+    // bandColorClass nor pertFullTooltip may receive r.research_score against pert_cutoff.
+    it('objective PERT helpers must NOT receive r.research_score against currentCycle?.pert_cutoff (#365 hotfix)', () => {
+      assert.doesNotMatch(
+        SELECTION_PAGE,
+        /pertBandChip\(r\.research_score, currentCycle\?\.pert_cutoff\)/,
+        '#365: pertBandChip must NOT be fed r.research_score (composite ≡ final) against the objective cutoff'
+      );
+      assert.doesNotMatch(
+        SELECTION_PAGE,
+        /bandColorClass\(r\.research_score, currentCycle\?\.pert_cutoff\)/,
+        '#365: bandColorClass must NOT be fed r.research_score (composite ≡ final) against the objective cutoff'
+      );
+      assert.doesNotMatch(
+        SELECTION_PAGE,
+        /pertFullTooltip\(r\.research_score, currentCycle\?\.pert_cutoff\)/,
+        '#365: pertFullTooltip must NOT be fed r.research_score (composite ≡ final) against the objective cutoff'
       );
     });
   });
