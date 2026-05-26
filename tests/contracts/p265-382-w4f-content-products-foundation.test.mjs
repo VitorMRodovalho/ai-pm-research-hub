@@ -309,10 +309,13 @@ describe('p265 #382 W4f Foundation — content_products canonical surface (ADR-0
       assert.ok(rows.every(r => r.publication_metadata?.backfill_source === 'publication_submissions'));
     });
 
-    it('check_schema_invariants() reports 22 invariants with W violation_count=0', { skip: !sb }, async () => {
+    it('check_schema_invariants() includes W invariant with violation_count=0 (>= 22 invariants total)', { skip: !sb }, async () => {
       const { data, error } = await sb.rpc('check_schema_invariants');
       assert.equal(error, null);
-      assert.equal(data.length, 22);
+      // Forward-compatible ratchet: this test was written at p265 when the count
+      // was 22 (W was the latest); subsequent sessions add invariants (e.g., p266
+      // adds X for blind-review). Assert lower bound + spot-check W still present.
+      assert.ok(data.length >= 22, `expected >= 22 invariants (count was 22 at p265 close); current count ${data.length}`);
       const w = data.find(r => r.invariant_name === 'W_content_product_source_integrity');
       assert.ok(w, 'W invariant present');
       assert.equal(w.violation_count, 0);
