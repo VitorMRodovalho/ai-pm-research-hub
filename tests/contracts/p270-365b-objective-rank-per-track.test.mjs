@@ -125,7 +125,7 @@ describe('p270 #365b objective rank per track', () => {
     it('TH header declares data-sort="objective_rank" with colObjectiveRank label + colObjectiveRankHint title', () => {
       assert.match(
         PAGE,
-        /<th[^>]*data-sort="objective_rank"[^>]*title=\{t\('admin\.selection\.colObjectiveRankHint', lang\)\}[^>]*>\{t\('admin\.selection\.colObjectiveRank', lang\)\}<\/th>/,
+        /<th[^>]*data-sort="objective_rank"[^>]*title=\{t\('admin\.selection\.colObjectiveRankHint', lang\)\}[^>]*>\{t\('admin\.selection\.colObjectiveRank', lang\)\}(?:<span[^<]*<\/span>)?<\/th>/,
         'new TH must be sortable + i18n labeled + tooltip-hinted'
       );
     });
