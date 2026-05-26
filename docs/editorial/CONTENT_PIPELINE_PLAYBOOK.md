@@ -180,8 +180,9 @@ Matriz sugerida inicial:
 
 > **Status:** Pre-launch. Aguarda fechamento de [issue #96 Gate 0](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) (CR-050 ratificada + Termo R3-C4 + decisão de marca + decisões 1-6 do GP+Fabrício). Esta seção é placeholder editorial — atualizar valores `__TBD__` quando decisões caírem.
 >
-> **Spec técnico:** `docs/specs/SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md` — SQL prep para Gate 1.
-> **ADR governance:** `docs/adr/ADR-0021-newsletter-frontiers-governance.md` (Proposed).
+> **Spec canônico (atual):** `docs/specs/SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md` §9 — Guia Frontiers como `editorial_guide` + pivô `content_products` para issues derivadas (Wave 4f, PR #396/#398).
+> **Spec histórico (OBSOLETE):** `docs/specs/SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md` — SQL prep Apr-21 pré-Wave-4f. SQL Block 2 (`publication_ideas`) nunca foi shipped; foi superseded por `content_products`.
+> **ADR governance:** `docs/adr/ADR-0021-newsletter-frontiers-governance.md` (Partially Accepted: F1/F2/F3/F7 + cadência ratificados; F4/F5/F6 dependem de Gate 0 jurídico ou pipeline #94/#95 não-shipped).
 
 | Campo | Valor | Status |
 |---|---|---|
@@ -192,7 +193,7 @@ Matriz sugerida inicial:
 | Voice | Profissional, neutro, institucional | ✅ Locked |
 | Audiência | PM profissional BR+LATAM+internacional + academia PM+IA | ✅ Locked |
 | Hero tribe | NULL (transversal) | ✅ Locked |
-| Licensing default | CC BY-SA 4.0 (recomendação Claude) | 🟡 Aguarda confirmação GP via tabela comparativa #96 |
+| Licensing default | **`CC BY-SA 4.0`** | ✅ **Locked (GP 2026-05-25, p267)** — ratificada via #96 audit; ver ADR-0021 F3 Accepted |
 | Termo aplicável | R3-C4 v1.0 (provisório) | 🟡 Time Claude resolve quinta 2026-04-23 |
 | Política de PI | CR-050 v2.2 | 🔴 precisa estar ratificada antes do launch |
 | Busca marca formal | NÃO pre-launch (GP 2026-04-21) | ✅ Desescalada — monitoramento passivo suficiente |
