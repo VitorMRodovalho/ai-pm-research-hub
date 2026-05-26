@@ -5130,17 +5130,17 @@ const esLATAM: Record<string, string> = {
   'admin.selection.pdfInvalidBadge': '⚠ PDF inválido',
   'admin.selection.pdfInvalidTooltip': 'Archivo en storage tiene menos de 1000 bytes — probable error Azure SAS o candidato adjuntó link/placeholder en vez de CV. Revise cv_extracted_text para contenido alternativo.',
   'admin.selection.pertCutoffLabel': 'Corte',
-  'admin.selection.pertCutoffTooltip': 'Corte = PERT (Mín+4×Med+Máx)/8 de aprobados activos en ciclos anteriores. Banda ±10% es el rango de calibración entre evaluadores. Filas con final_score bajo la banda son rojas; dentro = amarillo; arriba = verde.',
+  'admin.selection.pertCutoffTooltip': 'Corte = PERT (2×Mín+4×Med+2×Máx)/8 de la cohorte actual del ciclo/pista. Banda = 75% del PERT hasta el PERT: bajo el piso queda rojo; dentro de la banda amarillo; arriba del PERT verde.',
   'admin.selection.pertCutoffEmpty': 'Corte no calculado (cohort < 10)',
   // p232 #229 Phase 2 — leader_extra cohort separated from objective
   'admin.selection.leaderExtraCutoffLabel': 'Corte Líder',
-  'admin.selection.leaderExtraCutoffTooltip': 'Corte del pilar Líder (leader_extra) = PERT de los puntajes Líder de aprobados activos en ciclos anteriores. Se rastrea separadamente del corte objetivo desde p209 (refactor #229) para no distorsionar la comparación cohort entre dimensiones.',
+  'admin.selection.leaderExtraCutoffTooltip': 'Corte del pilar Líder (leader_extra) = PERT de los puntajes Líder en la cohorte actual del ciclo/pista. Banda = 75% del PERT hasta el PERT; se rastrea separadamente del corte objetivo desde p209 (refactor #229).',
   'admin.selection.leaderExtraCutoffEmpty': 'Corte Líder no calculado (cohort < 10 o sin evaluaciones)',
   // p245 #229a — per-candidate PERT classification badges
   'admin.selection.pertBandAbove': 'Sobre',
   'admin.selection.pertBandWithin': 'En banda',
   'admin.selection.pertBandBelow': 'Bajo',
-  'admin.selection.pertBandTooltipFull': 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
+  'admin.selection.pertBandTooltipFull': 'Score {score} · Banda = 75% del PERT hasta el PERT ({lower}–{upper}; PERT {target}) · cohort n={n} · método {method}',
   'admin.selection.leaderExtraDisabledChip': 'Regla líder: n={n}<10',
   // p247 #229b Frontend — regla final por candidato + visibilidad de nota de entrevista
   'admin.selection.colInterviewScore': 'Nota Entrevista',

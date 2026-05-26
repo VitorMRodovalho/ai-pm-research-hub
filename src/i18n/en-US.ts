@@ -5129,17 +5129,17 @@ const enUS: Record<string, string> = {
   'admin.selection.pdfInvalidBadge': '⚠ Invalid PDF',
   'admin.selection.pdfInvalidTooltip': 'Storage file is under 1000 bytes — likely Azure SAS error or candidate attached link/placeholder instead of resume. Check cv_extracted_text for alternative content.',
   'admin.selection.pertCutoffLabel': 'Cutoff',
-  'admin.selection.pertCutoffTooltip': 'Cutoff = PERT (Min+4×Avg+Max)/8 of approved active members in prior cycles. ±10% band is the cross-evaluator calibration range. Rows with final_score below the band are red; within = yellow; above = green.',
+  'admin.selection.pertCutoffTooltip': 'Cutoff = PERT (2×Min+4×Avg+2×Max)/8 of the current cycle/track cohort. Band = 75% of PERT through PERT: below the floor is red; inside the band is yellow; above PERT is green.',
   'admin.selection.pertCutoffEmpty': 'Cutoff not computed (cohort < 10)',
   // p232 #229 Phase 2 — leader_extra cohort separated from objective
   'admin.selection.leaderExtraCutoffLabel': 'Leader Cutoff',
-  'admin.selection.leaderExtraCutoffTooltip': 'Leader pillar cutoff (leader_extra) = PERT of leader scores of approved active members in prior cycles. Tracked separately from the objective cutoff since p209 (refactor #229) to avoid distorting cross-dimension cohort comparisons.',
+  'admin.selection.leaderExtraCutoffTooltip': 'Leader pillar cutoff (leader_extra) = PERT of leader scores in the current cycle/track cohort. Band = 75% of PERT through PERT; tracked separately from the objective cutoff since p209 (refactor #229).',
   'admin.selection.leaderExtraCutoffEmpty': 'Leader cutoff not computed (cohort < 10 or no evaluations)',
   // p245 #229a — per-candidate PERT classification badges
   'admin.selection.pertBandAbove': 'Above',
   'admin.selection.pertBandWithin': 'In band',
   'admin.selection.pertBandBelow': 'Below',
-  'admin.selection.pertBandTooltipFull': 'Score {score} · Band {lower}–{upper} (target {target}) · cohort n={n} · method {method}',
+  'admin.selection.pertBandTooltipFull': 'Score {score} · Band = 75% of PERT through PERT ({lower}–{upper}; PERT {target}) · cohort n={n} · method {method}',
   'admin.selection.leaderExtraDisabledChip': 'Leader rule: n={n}<10',
   // p247 #229b Frontend — per-candidate final-score cutoff + interview score visibility
   'admin.selection.colInterviewScore': 'Interview Score',
