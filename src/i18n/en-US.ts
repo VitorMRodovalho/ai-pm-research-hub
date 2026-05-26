@@ -5172,6 +5172,8 @@ const enUS: Record<string, string> = {
   'admin.selection.colResearch': 'Research',
   'admin.selection.colLeaderShort': 'Leader',
   'admin.selection.colRank': 'Rank',
+  'admin.selection.colObjectiveRank': 'Obj Rank',
+  'admin.selection.colObjectiveRankHint': 'Rank within own track (researcher vs researcher, leader vs leader) ordered by objective score in the cycle. Stable regardless of UI filters — always reflects the full cycle cohort.',
   'admin.selection.colStatus': 'Status',
   'admin.selection.colMyEval': 'My eval.',
   'admin.selection.colPipeline': 'Pipeline',
