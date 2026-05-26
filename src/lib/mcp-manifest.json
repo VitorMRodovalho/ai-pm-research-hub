@@ -186,7 +186,7 @@
     },
     {
       "name": "compute_pert_cutoff",
-      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. The weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
+      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = current-cycle applications with the requested score dimension populated, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. The weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -340,7 +340,7 @@
     },
     {
       "name": "get_pert_cutoff_summary",
-      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the calibration band of approved members per dimension. Admin/curator (manage_member).",
+      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (current-cycle applications by role/dimension) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the current-cycle calibration band per dimension. Admin/curator (manage_member).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -1803,7 +1803,7 @@
     },
     {
       "name": "get_evaluation_form",
-      "description": "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of approved active members from prior cycles), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.",
+      "description": "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of current-cycle applications by role/dimension), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1880,14 +1880,14 @@
     },
     {
       "name": "submit_evaluation",
-      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of approved active members from prior cycles) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.",
+      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of current-cycle applications by role/dimension) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
     },
     {
       "name": "submit_interview_scores",
-      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of approved active members) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
+      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of current-cycle applications) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
