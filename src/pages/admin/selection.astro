@@ -346,7 +346,7 @@ const SEL_I18N = {
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colTrack', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">{t('admin.selection.colResearch', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">{t('admin.selection.colResearch', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}</th>
@@ -1561,7 +1561,7 @@ const SEL_I18N = {
 
     tbody.innerHTML = displayRows.map(r => {
       const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
-      const researchScore = r.research_score != null ? Number(r.research_score).toFixed(1) : '—';
+      const objectiveScore = r.objective_score != null ? Number(r.objective_score).toFixed(1) : '—';
       const leaderScore = r.leader_score != null ? Number(r.leader_score).toFixed(1) : '—';
       // Track-aware rank
       let rankDisplay: string;
@@ -1642,9 +1642,9 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.research_score, currentCycle?.pert_cutoff))}">
-          <div class="${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${researchScore}</div>
-          ${pertBandChip(r.research_score, currentCycle?.pert_cutoff)}
+        <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.objective_score, currentCycle?.pert_cutoff))}">
+          <div class="${r.objective_score != null ? `font-semibold ${bandColorClass(r.objective_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${objectiveScore}</div>
+          ${pertBandChip(r.objective_score, currentCycle?.pert_cutoff)}
         </td>
         <td class="px-4 py-2.5 text-[12px] font-mono">
           <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
