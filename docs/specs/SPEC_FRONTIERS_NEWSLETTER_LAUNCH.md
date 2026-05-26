@@ -1,6 +1,18 @@
 # SPEC — Newsletter Frontiers Launch (Gate 1 prep)
 
-> **Status:** Pre-aprovação — todos os SQL blocks abaixo são **DRAFT**, NÃO devem ser aplicados em prod até Gate 0 da [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) estar 100% verde (CR-050 v2.2 ratificada + Termo R3-C4/aditivo + busca marca + decisões 1-6 do GP+Fabrício).
+> 🟠 **OBSOLETE / SUPERSEDED (2026-05-25, p267).** Este SPEC foi escrito em 2026-04-21 (sessão 9908f3) baseado em primitivos que foram superseded pela Wave 4f:
+> - **SQL Block 2 (`publication_ideas` primitivo) NUNCA foi aplicado em prod.** Foi superseded pelo primitivo `content_products` (Foundation PR #396 + Primitives PR #398, p265/p266 — ADR-0099 §6/§7).
+> - **SQL Block 1 (`blog_posts.category` +3)** segue válido como aditivo isolado, mas não é o pivô para Frontiers issues.
+> - **SQL Block 3 (`publication_series` seed)** foi aplicado em algum momento entre Apr-21 e May-25 — slug `frontiers-newsletter` existe live; mantém-se como referência editorial mas não é o pivô de produto.
+> - **SQL Block 4 (rename research-stream)** segue válido como housekeeping não-relacionado a Frontiers.
+>
+> **Pivô canônico atual:** cada issue Frontiers = 1 `content_products` row com `source_kind='governance_document_version'` apontando para v1 ratificado do Guia, `target_instrument='linkedin_newsletter'`, `target_language_policy` trilíngue EN+PT+ES, `review_mode` per decisão C2 (collaborative vs independent_blind, ainda pendente). As 3 declarações obrigatórias (F4) migram para shape jsonb em `publication_metadata` se/quando ratificadas.
+>
+> **SPEC canônico atualizado:** [`SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md`](./SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md) §9 (caso de aceite Frontiers como `editorial_guide`).
+>
+> **Mantido neste repo** como histórico das decisões pré-Wave-4f (rastro do plano Apr-21 → May-25, contexto narrativo da #96). NÃO usar como playbook executável.
+
+> **Status (histórico):** Pre-aprovação — todos os SQL blocks abaixo são **DRAFT**, NÃO devem ser aplicados em prod até Gate 0 da [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) estar 100% verde (CR-050 v2.2 ratificada + Termo R3-C4/aditivo + busca marca + decisões 1-6 do GP+Fabrício).
 >
 > **Propósito:** ter Gate 1 (integração plataforma) executável em <30min uma vez que Gate 0 cair. Esta spec é o playbook técnico — copia-cola direto após decisões.
 >
@@ -18,7 +30,7 @@ Não executar nada deste documento sem confirmar:
 - [x] **Decisão 2** idioma: **trilíngue EN+PT+ES** ✅
 - [x] **Decisão 6** série da plataforma: sim ✅
 - [x] **Cadência**: biweekly ✅
-- [ ] **Decisão 3** licensing: escolher via comparativo (recomendação CC BY-SA 4.0)
+- [x] **Decisão 3** licensing: **`CC BY-SA 4.0`** ✅ ratificada (GP 2026-05-25, p267 — ver ADR-0021 F3 Accepted)
 - [ ] **Decisão 4** nome termo aditivo: aguarda quinta-feira (time Claude)
 - [~] **Busca marca formal USPTO/INPI:** **DESESCALADA** por decisão GP — monitoramento passivo (Google Alerts + busca livre INPI/USPTO 30min + disclaimer) é suficiente pre-launch. Revisitar quando atingir 10+ issues OU 1000+ subscribers OU primeiro contato comercial.
 - [ ] (Decisão 5 = autor piloto issue #1 não bloqueia Gate 1, é Gate 2)
@@ -33,7 +45,7 @@ Não executar nada deste documento sem confirmar:
 | `__SLUG__` | `frontiers-newsletter` | 1 | ✅ **Locked** |
 | `__LANGUAGE_POLICY__` | **Trilíngue nativo EN+PT+ES** (alinhado com plataforma i18n) | 2 | ✅ **Locked** — upgrade vs bilíngue original |
 | `__CADENCE__` | `biweekly` (a cada 2 semanas) | cadence | ✅ **Locked** — upgrade vs monthly do Guia |
-| `__CC_LICENSE__` | `CC BY-SA 4.0` (recomendado) | 3 | 🟡 Aguarda GP confirmar via comparativo |
+| `__CC_LICENSE__` | `CC BY-SA 4.0` | 3 | ✅ **Locked (GP 2026-05-25, p267)** — ratificada via #96 audit; ver ADR-0021 F3 Accepted |
 | `__TERM_REF__` | `Termo R3-C4 v1.0` (provisório) | 4 | 🟡 Time Claude resolve quinta-feira 2026-04-23 |
 | Autor piloto issue #1 | TBD (Gate 2, não bloqueia Gate 1) | 5 | 🟡 Não-bloqueante |
 | Busca marca formal | **Não necessária pre-launch** — monitoramento passivo suficiente | F7 | ✅ **Downgraded** do plano original |
