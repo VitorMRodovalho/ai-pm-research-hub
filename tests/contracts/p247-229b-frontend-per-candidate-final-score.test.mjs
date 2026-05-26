@@ -64,7 +64,7 @@ describe('p247 #229b Frontend — per-candidate final-score régua + interview s
     it('TH "colInterviewScore" with data-sort="interview_score" + colInterviewScoreHint title', () => {
       assert.match(
         SELECTION_PAGE,
-        /data-sort="interview_score" title=\{t\('admin\.selection\.colInterviewScoreHint', lang\)\}>\{t\('admin\.selection\.colInterviewScore', lang\)\}<\/th>/,
+        /data-sort="interview_score" title=\{t\('admin\.selection\.colInterviewScoreHint', lang\)\}>\{t\('admin\.selection\.colInterviewScore', lang\)\}(?:<span[^<]*<\/span>)?<\/th>/,
         'TH for Nota Entrevista must be sortable + carry i18n hint tooltip'
       );
     });
@@ -72,7 +72,7 @@ describe('p247 #229b Frontend — per-candidate final-score régua + interview s
     it('TH "colFinal" with data-sort="final_score" + colFinalHint title', () => {
       assert.match(
         SELECTION_PAGE,
-        /data-sort="final_score" title=\{t\('admin\.selection\.colFinalHint', lang\)\}>\{t\('admin\.selection\.colFinal', lang\)\}<\/th>/,
+        /data-sort="final_score" title=\{t\('admin\.selection\.colFinalHint', lang\)\}>\{t\('admin\.selection\.colFinal', lang\)\}(?:<span[^<]*<\/span>)?<\/th>/,
         'TH for Score Final must be sortable + carry i18n hint tooltip'
       );
     });
