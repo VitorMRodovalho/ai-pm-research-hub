@@ -1,0 +1,994 @@
+<h1 id="guia-editorial--frontiers-in-ai--project-mgmt">Guia Editorial — Frontiers in AI &amp; Project Mgmt</h1>
+<h2 id="v1x--pivot-to-content_products-adr-0099--trilingual--biweekly--cc-by-sa-40--c2c3c4-ratificadas-p268">v1.x — pivot to <code>content_products</code> (ADR-0099) · trilingual · biweekly · CC BY-SA 4.0 · C2/C3/C4 ratificadas (p268)</h2>
+<blockquote>
+<p><strong>Status (this draft):</strong> authored 2026-05-25 (p267), patched 2026-05-26 (p268). Target storage: <code>governance_documents.id = 18ec4690-4f5a-4cab-904d-451e2c7245bf</code> (<code>doc_type=editorial_guide</code>, <code>status=draft</code>, <code>current_version_id=NULL</code>). Once locked via <code>lock_document_version</code>, the editorial_guide gate template fires 3 internal gates (<code>curator</code> + <code>leader_awareness</code> + <code>submitter_acceptance</code>); no PMI Boards/witnesses required for this <code>doc_type</code>.</p>
+<p><strong>Resolves (D-decisions ratified pre-v1):</strong> F1 (Frontiers as a platform-governed series, not parallel pipeline) · F2 (trilingual EN/PT/ES native parity) · F3 (CC BY-SA 4.0 as default license) · F7 (formal trademark search de-escalated; passive monitoring + defensive disclaimer) · cadence biweekly · pivot to <code>content_products</code> canonical surface (ADR-0099 §2.1) — <code>publication_ideas</code> NOT used; the SQL Block 2 of <code>SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md</code> is <strong>OBSOLETE / SUPERSEDED</strong>.</p>
+<p><strong>Resolves (C-decisions ratified in v1.x, p268):</strong></p>
+<ul>
+<li><strong>C2</strong> — <code>review_mode</code> default por <code>target_instrument</code> ratificado conforme tabela em §5 (<code>sequential</code> para long-form / <code>collaborative</code> para short-form / <code>independent_blind</code> para externos magazine/journal).</li>
+<li><strong>C3</strong> — shape jsonb das 3 declarações obrigatórias = <strong>flat keys top-level</strong> em <code>content_products.publication_metadata</code>. Exemplo concreto em §6.</li>
+<li><strong>C4</strong> — originalidade = <strong>mecanismo híbrido ratificado</strong>: curadoria manual sempre + <code>check_idea_originality</code> (#95) quando shipped (flag <code>originality_warning=true</code>, não bloqueia).</li>
+</ul>
+<p><strong>Still pending external (Gate 0 jurídico):</strong> CR-050 v2.2 (Política de PI) ratification + R3-C4/aditivo for volunteer term covering Case Studies + CC licensing + AI disclosure + employer consent. The Guide cannot publish issue #1 before Gate 0 closes.</p>
+<p><strong>Still pending decision (C5, deferred to v2):</strong> C5 pilot author for issue #1 — decisão diferida até Gate 0 jurídico cair (CR-050 + R3-C4 ratificadas). Sem sentido nomear autor pre-Gate-0; quando ratificarem, abrir issue dedicada <code>frontiers-issue-1-pilot</code>.</p>
+<p><strong>Author of this draft:</strong> Vitor Maia Rodovalho (PM); proposer-of-record on <code>governance_documents.proposer_member_id</code> is Fabricio Costa (<code>92d26057-…</code>).</p>
+</blockquote>
+<hr />
+<h1 id="1-propósito--escopo--purpose--scope--propósito--alcance">1. Propósito + escopo · Purpose + scope · Propósito + alcance</h1>
+<section lang="pt-BR">
+
+<h2 id="1-propósito--escopo-pt-br--canonical">1. Propósito + escopo (PT-BR — canonical)</h2>
+<p>Este Guia define <strong>como o Núcleo IA &amp; GP produz, revisa, publica e arquiva conteúdo editorial sob a marca <em>Frontiers in AI &amp; Project Mgmt</em></strong> — uma newsletter quinzenal trilíngue (EN/PT/ES) e os produtos editoriais derivados (artigos, posts LinkedIn, recaps de webinar, frameworks, estudos de caso, entrevistas, papers de tribo).</p>
+<p>O escopo do Guia inclui:</p>
+<ul>
+<li>Padrão editorial (voz, tom, audiência, formatos aceitos).</li>
+<li>Cadência e calendário.</li>
+<li>Política trilíngue (paridade nativa, não tradução automática).</li>
+<li>Tipos de conteúdo aceitos e mapeamento para o primitivo <code>content_products</code> da plataforma (ADR-0099).</li>
+<li>Princípios autorais e declarações obrigatórias (uso de IA, consentimento do empregador, conflitos de interesse).</li>
+<li>Licenciamento default e regime de exceção.</li>
+<li>Fluxo de revisão por modo (<code>review_mode</code>) e estados (<code>status</code>).</li>
+<li>Governança editorial (curadoria, lideranças cientes, aceite do GP) e relação com a governança jurídica do Núcleo (Política de PI, Termo de Adesão Voluntário, Manual de Governança).</li>
+<li>Marca e disclaimers defensivos.</li>
+<li>Manutenção e cadência de revisão deste próprio Guia.</li>
+</ul>
+<p>O escopo <strong>não inclui</strong>: marketing pago, programas de afiliado, conteúdo patrocinado, qualquer modalidade comercial. Frontiers é uma newsletter aberta, sem fins lucrativos, governada como parte da operação do Núcleo IA &amp; GP.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="1-purpose--scope-en--native-parity">1. Purpose + scope (EN — native parity)</h2>
+<p>This Guide defines <strong>how Núcleo IA &amp; GP produces, reviews, publishes and archives editorial content under the <em>Frontiers in AI &amp; Project Mgmt</em> brand</strong> — a biweekly trilingual newsletter (EN/PT/ES) and its derived editorial products (articles, LinkedIn posts, webinar recaps, frameworks, case studies, interviews, tribe research papers).</p>
+<p>The scope of this Guide includes:</p>
+<ul>
+<li>Editorial standard (voice, tone, audience, accepted formats).</li>
+<li>Cadence and calendar.</li>
+<li>Trilingual policy (native parity, not machine translation).</li>
+<li>Accepted content types and their mapping to the platform <code>content_products</code> primitive (ADR-0099).</li>
+<li>Authorship principles and mandatory declarations (AI usage, employer consent, conflicts of interest).</li>
+<li>Default license and exception regime.</li>
+<li>Review flow by mode (<code>review_mode</code>) and state (<code>status</code>).</li>
+<li>Editorial governance (curator, leader awareness, GP submitter acceptance) and how it relates to the Núcleo's legal governance (IP Policy, Volunteer Agreement, Governance Manual).</li>
+<li>Brand and defensive disclaimers.</li>
+<li>Maintenance and review cadence of this Guide itself.</li>
+</ul>
+<p>The scope <strong>does not include</strong>: paid marketing, affiliate programs, sponsored content, or any commercial modality. Frontiers is an open, non-commercial newsletter, governed as part of Núcleo IA &amp; GP operations.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="1-propósito--alcance-es--paridad-nativa">1. Propósito + alcance (ES — paridad nativa)</h2>
+<p>Esta Guía define <strong>cómo el Núcleo IA &amp; GP produce, revisa, publica y archiva contenido editorial bajo la marca <em>Frontiers in AI &amp; Project Mgmt</em></strong> — un boletín quincenal trilingüe (EN/PT/ES) y los productos editoriales derivados (artículos, posts de LinkedIn, recaps de webinars, frameworks, estudios de caso, entrevistas, papers de tribus de investigación).</p>
+<p>El alcance de esta Guía incluye:</p>
+<ul>
+<li>Estándar editorial (voz, tono, audiencia, formatos aceptados).</li>
+<li>Cadencia y calendario.</li>
+<li>Política trilingüe (paridad nativa, no traducción automática).</li>
+<li>Tipos de contenido aceptados y su mapeo al primitivo <code>content_products</code> de la plataforma (ADR-0099).</li>
+<li>Principios autorales y declaraciones obligatorias (uso de IA, consentimiento del empleador, conflictos de interés).</li>
+<li>Licencia predeterminada y régimen de excepción.</li>
+<li>Flujo de revisión por modo (<code>review_mode</code>) y estado (<code>status</code>).</li>
+<li>Gobernanza editorial (curador, lideranças informadas, aceptación del GP) y su relación con la gobernanza jurídica del Núcleo (Política de PI, Acuerdo de Voluntariado, Manual de Gobernanza).</li>
+<li>Marca y disclaimers defensivos.</li>
+<li>Mantenimiento y cadencia de revisión de esta propia Guía.</li>
+</ul>
+<p>El alcance <strong>no incluye</strong>: marketing pagado, programas de afiliados, contenido patrocinado, ni ninguna modalidad comercial. Frontiers es un boletín abierto, no comercial, gobernado como parte de la operación del Núcleo IA &amp; GP.</p>
+</section>
+
+<hr />
+<h1 id="2-posicionamento-editorial--editorial-positioning--posicionamiento-editorial">2. Posicionamento editorial · Editorial positioning · Posicionamiento editorial</h1>
+<section lang="pt-BR">
+
+<h2 id="2-posicionamento-editorial-pt-br">2. Posicionamento editorial (PT-BR)</h2>
+<p><strong>Audiência primária:</strong> PMs profissionais no Brasil, América Latina e mercados internacionais que usam IA no dia a dia da gestão de projetos. Inclui pesquisadores, líderes de tribo, executivos PMI, membros voluntários do Núcleo e o público externo interessado em PM aumentado por IA.</p>
+<p><strong>Audiência secundária:</strong> academia (programas de PM + IA), times de comms PMI capítulos, redes de inovação corporativa.</p>
+<p><strong>Voz:</strong> profissional, neutra, institucional. Trilíngue nativa (não traduzida).</p>
+<p><strong>Tom:</strong> rigoroso sem ser hermético; concreto sem ser superficial; opiniões fortes apresentadas com fundamentação. Evitar marketing-speak e hype gratuito.</p>
+<p><strong>Promessa editorial:</strong> cada issue traz pelo menos um artefato útil — um framework reutilizável, um estudo de caso replicável, uma análise comparativa de ferramentas, uma síntese de pesquisa, uma entrevista com profissional sênior, ou um recap de evento com extração de insights práticos.</p>
+<p><strong>Anti-promessa (o que Frontiers NÃO é):</strong> não é peer-reviewed journal científico; não é canal de divulgação corporativa; não é coluna de opinião pessoal sem fundamentação; não é catálogo de cursos ou certificações.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="2-editorial-positioning-en">2. Editorial positioning (EN)</h2>
+<p><strong>Primary audience:</strong> professional PMs in Brazil, Latin America and international markets who use AI day-to-day in project management. Includes researchers, tribe leaders, PMI executives, Núcleo volunteer members, and external audiences interested in AI-augmented PM.</p>
+<p><strong>Secondary audience:</strong> academia (PM + AI programs), PMI chapter comms teams, corporate innovation networks.</p>
+<p><strong>Voice:</strong> professional, neutral, institutional. Trilingual native (not translated).</p>
+<p><strong>Tone:</strong> rigorous without being arcane; concrete without being superficial; strong opinions defended with substance. Avoid marketing-speak and gratuitous hype.</p>
+<p><strong>Editorial promise:</strong> each issue ships at least one usable artifact — a reusable framework, a replicable case study, a comparative tool analysis, a research synthesis, a senior-practitioner interview, or an event recap with extracted practical insights.</p>
+<p><strong>Anti-promise (what Frontiers is NOT):</strong> not a peer-reviewed scientific journal; not a corporate PR channel; not personal opinion columns without grounding; not a catalog of courses or certifications.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="2-posicionamiento-editorial-es">2. Posicionamiento editorial (ES)</h2>
+<p><strong>Audiencia primaria:</strong> PMs profesionales en Brasil, América Latina y mercados internacionales que usan IA en la gestión de proyectos del día a día. Incluye investigadores, líderes de tribu, ejecutivos PMI, miembros voluntarios del Núcleo y audiencias externas interesadas en PM aumentado por IA.</p>
+<p><strong>Audiencia secundaria:</strong> academia (programas de PM + IA), equipos de comunicación de capítulos PMI, redes de innovación corporativa.</p>
+<p><strong>Voz:</strong> profesional, neutra, institucional. Trilingüe nativa (no traducida).</p>
+<p><strong>Tono:</strong> riguroso sin ser hermético; concreto sin ser superficial; opiniones fuertes defendidas con sustancia. Evitar marketing-speak y hype gratuito.</p>
+<p><strong>Promesa editorial:</strong> cada issue entrega al menos un artefacto útil — un framework reutilizable, un estudio de caso replicable, un análisis comparativo de herramientas, una síntesis de investigación, una entrevista con un profesional sénior, o un recap de evento con extracción de insights prácticos.</p>
+<p><strong>Anti-promesa (lo que Frontiers NO es):</strong> no es un journal científico peer-reviewed; no es un canal de PR corporativo; no es una columna de opinión personal sin fundamentación; no es un catálogo de cursos o certificaciones.</p>
+</section>
+
+<hr />
+<h1 id="3-cadência-e-calendário--cadence--calendar--cadencia-y-calendario">3. Cadência e calendário · Cadence + calendar · Cadencia y calendario</h1>
+<section lang="pt-BR">
+
+<h2 id="3-cadência-pt-br">3. Cadência (PT-BR)</h2>
+<p><strong>Cadência ratificada:</strong> <strong>biweekly</strong> (uma issue a cada 2 semanas), 26 issues/ano. Ratificada pelo GP em 2026-04-21 como upgrade vs. mensal originalmente proposto.</p>
+<p><strong>Calendário operacional:</strong></p>
+<ul>
+<li><strong>Semana A</strong> (dia 1): publica issue N.</li>
+<li><strong>Semana A</strong> (dias 2–5): kickoff editorial da issue N+1 (curador + autor designado).</li>
+<li><strong>Semana A</strong> (dias 6–7) + <strong>Semana B</strong> (dias 8–10): autoria + revisão por pares.</li>
+<li><strong>Semana B</strong> (dias 11–12): revisão de lideranças cientes + aceite do GP.</li>
+<li><strong>Semana B</strong> (dia 14): publicação de issue N+1 (= dia 1 do próximo ciclo).</li>
+</ul>
+<p>Issues atrasadas re-entram no ciclo seguinte (não duplica). Issues canceladas viram <code>archived</code> no <code>content_products</code>; nova issue ocupa o slot do ciclo.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="3-cadence-en">3. Cadence (EN)</h2>
+<p><strong>Ratified cadence:</strong> <strong>biweekly</strong> (one issue every 2 weeks), 26 issues/year. Ratified by GP on 2026-04-21 as an upgrade vs. the originally-proposed monthly cadence.</p>
+<p><strong>Operational calendar:</strong></p>
+<ul>
+<li><strong>Week A</strong> (day 1): publishes issue N.</li>
+<li><strong>Week A</strong> (days 2–5): editorial kickoff of issue N+1 (curator + assigned author).</li>
+<li><strong>Week A</strong> (days 6–7) + <strong>Week B</strong> (days 8–10): authorship + peer review.</li>
+<li><strong>Week B</strong> (days 11–12): leader-awareness review + GP submitter acceptance.</li>
+<li><strong>Week B</strong> (day 14): issue N+1 publishes (= day 1 of next cycle).</li>
+</ul>
+<p>Late issues re-enter the next cycle (no duplication). Cancelled issues become <code>archived</code> in <code>content_products</code>; a new issue takes the cycle slot.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="3-cadencia-es">3. Cadencia (ES)</h2>
+<p><strong>Cadencia ratificada:</strong> <strong>biweekly</strong> (un issue cada 2 semanas), 26 issues/año. Ratificada por el GP el 2026-04-21 como upgrade vs. la cadencia mensual originalmente propuesta.</p>
+<p><strong>Calendario operacional:</strong></p>
+<ul>
+<li><strong>Semana A</strong> (día 1): publica issue N.</li>
+<li><strong>Semana A</strong> (días 2–5): kickoff editorial del issue N+1 (curador + autor asignado).</li>
+<li><strong>Semana A</strong> (días 6–7) + <strong>Semana B</strong> (días 8–10): autoría + revisión por pares.</li>
+<li><strong>Semana B</strong> (días 11–12): revisión de lideranças informadas + aceptación del GP.</li>
+<li><strong>Semana B</strong> (día 14): publicación del issue N+1 (= día 1 del próximo ciclo).</li>
+</ul>
+<p>Los issues atrasados re-entran al ciclo siguiente (no se duplican). Los issues cancelados se vuelven <code>archived</code> en <code>content_products</code>; un nuevo issue toma el slot del ciclo.</p>
+</section>
+
+<hr />
+<h1 id="4-política-trilíngue--trilingual-policy--política-trilingüe">4. Política trilíngue · Trilingual policy · Política trilingüe</h1>
+<section lang="pt-BR">
+
+<h2 id="4-política-trilíngue-pt-br">4. Política trilíngue (PT-BR)</h2>
+<p><strong>Princípio:</strong> paridade nativa EN/PT/ES — não tradução automática.</p>
+<p><strong>Operacionalização:</strong> cada issue gera 3 produtos publicados simultaneamente. Cada produto é uma <code>content_products</code> row distinta, agrupada via <code>derived_group_id</code> self-FK (ADR-0099 §2.3) com o produto-semente apontando para si mesmo. As outras 2 línguas apontam para a semente.</p>
+<p><strong>Fonte canônica:</strong> EN é a fonte canônica editorial — quando há divergência interpretativa, o texto EN prevalece. PT e ES são versões nativas paralelas, não traduções subordinadas.</p>
+<p><strong>Tempo de revisão:</strong> 60–90 min por issue para tradução + revisão humana (~20–30 min por idioma). Não publicar uma issue até que as 3 línguas estejam prontas — atrasar a issue inteira é preferível a publicar parcialmente.</p>
+<p><strong>Tradução assistida por LLM é permitida</strong>, mas SEMPRE com revisão humana fluente no idioma de destino. Marcar <code>metadata.translation_assistance</code> com modelo + escopo quando usada.</p>
+<p><strong>Glossário trilíngue</strong> (mantido em <code>wiki_pages</code> ou anexado ao Guia em versões futuras): termos PM + IA com tradução validada (ex: "stakeholder" → "parte interessada" PT / "parte interesada" ES; "backlog" mantém termo em EN nas 3 línguas, etc.). v1 não inclui glossário — fica para v2.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="4-trilingual-policy-en">4. Trilingual policy (EN)</h2>
+<p><strong>Principle:</strong> native EN/PT/ES parity — not machine translation.</p>
+<p><strong>Operationalization:</strong> each issue produces 3 simultaneously-published products. Each product is a distinct <code>content_products</code> row, grouped via <code>derived_group_id</code> self-FK (ADR-0099 §2.3) with the seed product pointing at itself. The other 2 languages point at the seed.</p>
+<p><strong>Canonical source:</strong> EN is the editorial canonical source — when interpretive divergence arises, the EN text prevails. PT and ES are parallel native versions, not subordinate translations.</p>
+<p><strong>Review time:</strong> 60–90 min per issue for translation + human review (~20–30 min per language). Do not publish an issue until all 3 languages are ready — delay the whole issue rather than publish partial.</p>
+<p><strong>LLM-assisted translation is allowed</strong>, but ALWAYS with human review by a fluent speaker of the target language. Mark <code>metadata.translation_assistance</code> with model + scope when used.</p>
+<p><strong>Trilingual glossary</strong> (maintained in <code>wiki_pages</code> or attached to the Guide in future versions): PM + AI terms with validated translation (e.g., "stakeholder" → "parte interessada" PT / "parte interesada" ES; "backlog" stays in EN across all 3 languages). v1 does not include the glossary — deferred to v2.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="4-política-trilingüe-es">4. Política trilingüe (ES)</h2>
+<p><strong>Principio:</strong> paridad nativa EN/PT/ES — no traducción automática.</p>
+<p><strong>Operacionalización:</strong> cada issue genera 3 productos publicados simultáneamente. Cada producto es una <code>content_products</code> row distinta, agrupada vía <code>derived_group_id</code> self-FK (ADR-0099 §2.3) con el producto-semilla apuntando a sí mismo. Las otras 2 lenguas apuntan a la semilla.</p>
+<p><strong>Fuente canónica:</strong> EN es la fuente canónica editorial — cuando hay divergencia interpretativa, el texto EN prevalece. PT y ES son versiones nativas paralelas, no traducciones subordinadas.</p>
+<p><strong>Tiempo de revisión:</strong> 60–90 min por issue para traducción + revisión humana (~20–30 min por idioma). No publicar un issue hasta que las 3 lenguas estén listas — atrasar el issue completo es preferible a publicar parcialmente.</p>
+<p><strong>Traducción asistida por LLM está permitida</strong>, pero SIEMPRE con revisión humana por hablante fluente del idioma destino. Marcar <code>metadata.translation_assistance</code> con modelo + alcance cuando se use.</p>
+<p><strong>Glosario trilingüe</strong> (mantenido en <code>wiki_pages</code> o adjunto a la Guía en versiones futuras): términos PM + IA con traducción validada (ej.: "stakeholder" → "parte interessada" PT / "parte interesada" ES; "backlog" se mantiene en EN en las 3 lenguas). v1 no incluye el glosario — diferido a v2.</p>
+</section>
+
+<hr />
+<h1 id="5-tipos-de-conteúdo--content-types--tipos-de-contenido">5. Tipos de conteúdo · Content types · Tipos de contenido</h1>
+<section lang="pt-BR">
+
+<h2 id="5-tipos-de-conteúdo-aceitos-pt-br">5. Tipos de conteúdo aceitos (PT-BR)</h2>
+<p>Cada tipo mapeia 1:1 para um <code>target_instrument</code> do <code>content_products</code> (ADR-0099 §2.4). A primeira issue de cada tipo passa por revisão editorial dupla (curador + GP) antes de estabilizar o padrão.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Tipo do Guia</th>
+<th><code>target_instrument</code></th>
+<th>Tamanho típico</th>
+<th><code>review_mode</code> default sugerido*</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Lead Article</td>
+<td><code>linkedin_newsletter</code> ou <code>hub_article</code></td>
+<td>1.500–3.500 palavras</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Supporting Insight</td>
+<td><code>linkedin_post</code> ou <code>hub_article</code></td>
+<td>400–900 palavras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Framework / Model</td>
+<td><code>hub_article</code></td>
+<td>1.200–2.500 palavras</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Case Study / Use Case</td>
+<td><code>hub_article</code> ou <code>magazine_article</code></td>
+<td>1.500–3.000 palavras</td>
+<td><code>sequential</code> (ou <code>independent_blind</code> se enviada a magazine externa)</td>
+</tr>
+<tr class="odd">
+<td>Webinar &amp; Event Recap</td>
+<td><code>hub_article</code> ou <code>linkedin_post</code></td>
+<td>800–1.500 palavras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="even">
+<td>Expert Interview</td>
+<td><code>hub_article</code> ou <code>podcast_episode</code></td>
+<td>1.200–2.500 palavras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Research Stream Insight</td>
+<td><code>linkedin_newsletter</code></td>
+<td>600–1.200 palavras</td>
+<td><code>sequential</code></td>
+</tr>
+</tbody>
+</table>
+<p>* <code>review_mode</code> default <strong>ratificado (p268, C2)</strong>. A tabela acima é a fonte canônica de defaults; cada <code>content_products</code> row pode override em casos pontuais com justificativa em <code>publication_metadata.review_mode_override_reason</code>.</p>
+<p><code>source_kind</code> (ADR-0099 §2.2) por origem:</p>
+<ul>
+<li>Conteúdo derivado deste Guia ratificado → <code>source_kind='governance_document_version'</code> apontando para a v ratificada do Guia.</li>
+<li>Conteúdo derivado de paper/relatório de tribo → <code>source_kind='board_item'</code>.</li>
+<li>Entrevista, recap, conteúdo de parceiro → <code>source_kind='external'</code> com <code>source_external_uri</code> populado.</li>
+<li>One-off (raro) → <code>source_kind='none'</code>.</li>
+</ul>
+</section>
+
+<section lang="en">
+
+<h2 id="5-accepted-content-types-en">5. Accepted content types (EN)</h2>
+<p>Each type maps 1:1 to a <code>target_instrument</code> of <code>content_products</code> (ADR-0099 §2.4). The first issue of each type passes through dual editorial review (curator + GP) before the pattern stabilizes.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Guide type</th>
+<th><code>target_instrument</code></th>
+<th>Typical length</th>
+<th>Suggested default <code>review_mode</code>*</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Lead Article</td>
+<td><code>linkedin_newsletter</code> or <code>hub_article</code></td>
+<td>1,500–3,500 words</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Supporting Insight</td>
+<td><code>linkedin_post</code> or <code>hub_article</code></td>
+<td>400–900 words</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Framework / Model</td>
+<td><code>hub_article</code></td>
+<td>1,200–2,500 words</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Case Study / Use Case</td>
+<td><code>hub_article</code> or <code>magazine_article</code></td>
+<td>1,500–3,000 words</td>
+<td><code>sequential</code> (or <code>independent_blind</code> if submitted to external magazine)</td>
+</tr>
+<tr class="odd">
+<td>Webinar &amp; Event Recap</td>
+<td><code>hub_article</code> or <code>linkedin_post</code></td>
+<td>800–1,500 words</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="even">
+<td>Expert Interview</td>
+<td><code>hub_article</code> or <code>podcast_episode</code></td>
+<td>1,200–2,500 words</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Research Stream Insight</td>
+<td><code>linkedin_newsletter</code></td>
+<td>600–1,200 words</td>
+<td><code>sequential</code></td>
+</tr>
+</tbody>
+</table>
+<p>* Default <code>review_mode</code> is <strong>ratified (p268, C2)</strong>. The table above is the canonical source of defaults; each <code>content_products</code> row may override in pointed cases with justification in <code>publication_metadata.review_mode_override_reason</code>.</p>
+<p><code>source_kind</code> (ADR-0099 §2.2) by origin:</p>
+<ul>
+<li>Content derived from this ratified Guide → <code>source_kind='governance_document_version'</code> pointing at the ratified version of the Guide.</li>
+<li>Content derived from tribe research paper/report → <code>source_kind='board_item'</code>.</li>
+<li>Interview, recap, partner content → <code>source_kind='external'</code> with <code>source_external_uri</code> populated.</li>
+<li>One-off (rare) → <code>source_kind='none'</code>.</li>
+</ul>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="5-tipos-de-contenido-aceptados-es">5. Tipos de contenido aceptados (ES)</h2>
+<p>Cada tipo mapea 1:1 a un <code>target_instrument</code> de <code>content_products</code> (ADR-0099 §2.4). El primer issue de cada tipo pasa por revisión editorial doble (curador + GP) antes de estabilizar el patrón.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Tipo de la Guía</th>
+<th><code>target_instrument</code></th>
+<th>Tamaño típico</th>
+<th><code>review_mode</code> predeterminado sugerido*</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Lead Article</td>
+<td><code>linkedin_newsletter</code> o <code>hub_article</code></td>
+<td>1.500–3.500 palabras</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Supporting Insight</td>
+<td><code>linkedin_post</code> o <code>hub_article</code></td>
+<td>400–900 palabras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Framework / Model</td>
+<td><code>hub_article</code></td>
+<td>1.200–2.500 palabras</td>
+<td><code>sequential</code></td>
+</tr>
+<tr class="even">
+<td>Case Study / Use Case</td>
+<td><code>hub_article</code> o <code>magazine_article</code></td>
+<td>1.500–3.000 palabras</td>
+<td><code>sequential</code> (o <code>independent_blind</code> si se envía a magazine externa)</td>
+</tr>
+<tr class="odd">
+<td>Webinar &amp; Event Recap</td>
+<td><code>hub_article</code> o <code>linkedin_post</code></td>
+<td>800–1.500 palabras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="even">
+<td>Expert Interview</td>
+<td><code>hub_article</code> o <code>podcast_episode</code></td>
+<td>1.200–2.500 palabras</td>
+<td><code>collaborative</code></td>
+</tr>
+<tr class="odd">
+<td>Research Stream Insight</td>
+<td><code>linkedin_newsletter</code></td>
+<td>600–1.200 palabras</td>
+<td><code>sequential</code></td>
+</tr>
+</tbody>
+</table>
+<p>* El <code>review_mode</code> predeterminado está <strong>ratificado (p268, C2)</strong>. La tabla anterior es la fuente canónica de predeterminados; cada <code>content_products</code> row puede sobrescribirse en casos puntuales con justificación en <code>publication_metadata.review_mode_override_reason</code>.</p>
+<p><code>source_kind</code> (ADR-0099 §2.2) por origen:</p>
+<ul>
+<li>Contenido derivado de esta Guía ratificada → <code>source_kind='governance_document_version'</code> apuntando a la versión ratificada de la Guía.</li>
+<li>Contenido derivado de paper/reporte de tribu → <code>source_kind='board_item'</code>.</li>
+<li>Entrevista, recap, contenido de socio → <code>source_kind='external'</code> con <code>source_external_uri</code> poblado.</li>
+<li>One-off (raro) → <code>source_kind='none'</code>.</li>
+</ul>
+</section>
+
+<hr />
+<h1 id="6-princípios-autorais--authorship-principles--principios-autorales">6. Princípios autorais · Authorship principles · Principios autorales</h1>
+<section lang="pt-BR">
+
+<h2 id="6-princípios-autorais--3-declarações-obrigatórias-pt-br">6. Princípios autorais + 3 declarações obrigatórias (PT-BR)</h2>
+<p>Todo autor que submete material para o Frontiers concorda com 3 princípios:</p>
+<ol type="1">
+<li><strong>Honestidade intelectual</strong> — fontes citadas com rigor; opiniões claramente marcadas como tal; dados verificáveis ou marcados como anedóticos.</li>
+<li><strong>Atribuição</strong> — coautores reconhecidos; ferramentas de IA usadas declaradas; material de terceiros licenciado ou de domínio público.</li>
+<li><strong>Não-prejuízo</strong> — material não expõe pessoas, parceiros ou empregadores sem consentimento documentado; não viola NDA; não infringe propriedade intelectual de terceiros.</li>
+</ol>
+<p><strong>3 declarações obrigatórias</strong> a serem capturadas em <code>content_products.publication_metadata jsonb</code> (<strong>shape ratificado p268, C3 — flat keys no top-level</strong>). Sem as 3 declarações o produto não avança além de <code>drafted</code>. Exemplo concreto:</p>
+<pre class="json"><code>{
+  &quot;ai_usage_declaration&quot;: &quot;Claude Opus 4.7 usado para sugestão de outline + revisão de prosa em ~30% do produto final; redação substantiva humana.&quot;,
+  &quot;employer_consent_confirmed&quot;: true,
+  &quot;conflicts_of_interest&quot;: &quot;PMP ativo + sem sponsors/vendor relationships relevantes neste tema.&quot;,
+  &quot;cc_license&quot;: &quot;CC BY-SA 4.0&quot;
+}</code></pre>
+<p>As 3 chaves (<code>ai_usage_declaration</code> / <code>employer_consent_confirmed</code> / <code>conflicts_of_interest</code>) ficam no top-level de <code>publication_metadata</code>, junto com <code>cc_license</code> (§7) e quaisquer outras chaves técnicas (<code>review_mode_override_reason</code>, <code>translation_assistance</code>, <code>originality_warning</code>, <code>originality_review_notes</code>). Pattern alinhado com p213 ADR-0095 (sediment-aligned) e consulta jsonb-friendly via operador <code>?</code>.</p>
+<ul>
+<li><strong><code>ai_usage_declaration</code></strong> — descrição textual: qual(is) ferramenta(s) de IA generativa foi(ram) usada(s); escopo (ex: ideação, redação, edição, tradução, ilustração); aproximação do percentual do produto final atribuível a IA. Política mãe: CR-050 v2.2 §4 (sob ratificação).</li>
+<li><strong><code>employer_consent_confirmed</code></strong> — boolean atestando que material proprietário do empregador (se houver) tem autorização documentada para uso público no Frontiers. Protege autor e Núcleo contra ação de NDA. Quando <code>true</code>, autor deve manter prova (e-mail, política interna pública, autorização escrita) acessível em caso de auditoria.</li>
+<li><strong><code>conflicts_of_interest</code></strong> — string listando afiliações relevantes do autor: certificações PMI ativas, sponsors, empregador atual, relacionamentos de vendor, posições em conselhos, holdings financeiras em ferramentas mencionadas. Padrão emprestado de arXiv/IEEE.</li>
+</ul>
+<p>Quando <code>source_kind='governance_document_version'</code> apontando para este Guia, esses 3 campos são obrigatórios no produto. Quando <code>source_kind='external'</code> (entrevista, parceiro), os 3 campos são fortemente recomendados mas a obrigatoriedade é decidida caso a caso pelo curador.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="6-authorship-principles--3-mandatory-declarations-en">6. Authorship principles + 3 mandatory declarations (EN)</h2>
+<p>Every author who submits material for Frontiers agrees to 3 principles:</p>
+<ol type="1">
+<li><strong>Intellectual honesty</strong> — sources cited rigorously; opinions clearly flagged as such; data either verifiable or labeled as anecdotal.</li>
+<li><strong>Attribution</strong> — co-authors credited; AI tools used declared; third-party material licensed or public-domain.</li>
+<li><strong>No-harm</strong> — material does not expose people, partners or employers without documented consent; does not violate NDA; does not infringe third-party IP.</li>
+</ol>
+<p><strong>3 mandatory declarations</strong> captured in <code>content_products.publication_metadata jsonb</code> (<strong>shape ratified p268, C3 — flat keys at top level</strong>). Without all 3 declarations the product cannot advance beyond <code>drafted</code>. Concrete example:</p>
+<pre class="json"><code>{
+  &quot;ai_usage_declaration&quot;: &quot;Claude Opus 4.7 used for outline suggestion + prose revision on ~30% of the final product; substantive writing human.&quot;,
+  &quot;employer_consent_confirmed&quot;: true,
+  &quot;conflicts_of_interest&quot;: &quot;Active PMP + no relevant sponsors/vendor relationships on this topic.&quot;,
+  &quot;cc_license&quot;: &quot;CC BY-SA 4.0&quot;
+}</code></pre>
+<p>The 3 keys (<code>ai_usage_declaration</code> / <code>employer_consent_confirmed</code> / <code>conflicts_of_interest</code>) sit at the top level of <code>publication_metadata</code>, alongside <code>cc_license</code> (§7) and other technical keys (<code>review_mode_override_reason</code>, <code>translation_assistance</code>, <code>originality_warning</code>, <code>originality_review_notes</code>). Pattern aligned with p213 ADR-0095 (sediment-aligned) and jsonb-friendly via the <code>?</code> operator.</p>
+<ul>
+<li><strong><code>ai_usage_declaration</code></strong> — text description: which generative AI tool(s) were used; scope (e.g., ideation, drafting, editing, translation, illustration); approximate percentage of final product attributable to AI. Parent policy: CR-050 v2.2 §4 (under ratification).</li>
+<li><strong><code>employer_consent_confirmed</code></strong> — boolean attesting that any proprietary employer material has documented authorization for public use on Frontiers. Protects author and Núcleo from NDA action. When <code>true</code>, author must keep proof (email, public internal policy, written authorization) accessible for audit.</li>
+<li><strong><code>conflicts_of_interest</code></strong> — string listing relevant author affiliations: active PMI certifications, sponsors, current employer, vendor relationships, board positions, financial holdings in tools mentioned. Pattern borrowed from arXiv/IEEE.</li>
+</ul>
+<p>When <code>source_kind='governance_document_version'</code> pointing at this Guide, these 3 fields are mandatory on the product. When <code>source_kind='external'</code> (interview, partner), the 3 fields are strongly recommended but mandatoriness is decided case-by-case by the curator.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="6-principios-autorales--3-declaraciones-obligatorias-es">6. Principios autorales + 3 declaraciones obligatorias (ES)</h2>
+<p>Todo autor que somete material para Frontiers acuerda con 3 principios:</p>
+<ol type="1">
+<li><strong>Honestidad intelectual</strong> — fuentes citadas con rigor; opiniones claramente marcadas como tales; datos verificables o etiquetados como anecdóticos.</li>
+<li><strong>Atribución</strong> — coautores reconocidos; herramientas de IA usadas declaradas; material de terceros licenciado o de dominio público.</li>
+<li><strong>No daño</strong> — el material no expone personas, socios ni empleadores sin consentimiento documentado; no viola NDA; no infringe la propiedad intelectual de terceros.</li>
+</ol>
+<p><strong>3 declaraciones obligatorias</strong> capturadas en <code>content_products.publication_metadata jsonb</code> (<strong>shape ratificado p268, C3 — flat keys en el top-level</strong>). Sin las 3 declaraciones el producto no avanza más allá de <code>drafted</code>. Ejemplo concreto:</p>
+<pre class="json"><code>{
+  &quot;ai_usage_declaration&quot;: &quot;Claude Opus 4.7 usado para sugerir outline + revisar prosa en ~30% del producto final; redacción sustantiva humana.&quot;,
+  &quot;employer_consent_confirmed&quot;: true,
+  &quot;conflicts_of_interest&quot;: &quot;PMP activo + sin sponsors/relaciones de vendor relevantes en este tema.&quot;,
+  &quot;cc_license&quot;: &quot;CC BY-SA 4.0&quot;
+}</code></pre>
+<p>Las 3 claves (<code>ai_usage_declaration</code> / <code>employer_consent_confirmed</code> / <code>conflicts_of_interest</code>) están en el top-level de <code>publication_metadata</code>, junto con <code>cc_license</code> (§7) y otras claves técnicas (<code>review_mode_override_reason</code>, <code>translation_assistance</code>, <code>originality_warning</code>, <code>originality_review_notes</code>). Patrón alineado con p213 ADR-0095 (sediment-aligned) y jsonb-friendly vía el operador <code>?</code>.</p>
+<ul>
+<li><strong><code>ai_usage_declaration</code></strong> — descripción textual: cuáles herramientas de IA generativa fueron usadas; alcance (p.ej. ideación, redacción, edición, traducción, ilustración); aproximación del porcentaje del producto final atribuible a IA. Política madre: CR-050 v2.2 §4 (bajo ratificación).</li>
+<li><strong><code>employer_consent_confirmed</code></strong> — boolean atestiguando que material propietario del empleador (si lo hubiera) tiene autorización documentada para uso público en Frontiers. Protege al autor y al Núcleo contra acción de NDA. Cuando es <code>true</code>, el autor debe mantener prueba (e-mail, política interna pública, autorización escrita) accesible en caso de auditoría.</li>
+<li><strong><code>conflicts_of_interest</code></strong> — string listando afiliaciones relevantes del autor: certificaciones PMI activas, sponsors, empleador actual, relaciones de vendor, posiciones en consejos, holdings financieras en herramientas mencionadas. Patrón tomado de arXiv/IEEE.</li>
+</ul>
+<p>Cuando <code>source_kind='governance_document_version'</code> apunta a esta Guía, estos 3 campos son obligatorios en el producto. Cuando <code>source_kind='external'</code> (entrevista, socio), los 3 campos son fuertemente recomendados pero la obligatoriedad se decide caso por caso por el curador.</p>
+</section>
+
+<hr />
+<h1 id="7-licenciamento--licensing--licenciamiento">7. Licenciamento · Licensing · Licenciamiento</h1>
+<section lang="pt-BR">
+
+<h2 id="7-licenciamento-pt-br">7. Licenciamento (PT-BR)</h2>
+<p><strong>Default ratificado (GP 2026-05-25, p267):</strong> <code>CC BY-SA 4.0</code> (Creative Commons Attribution-ShareAlike 4.0 International) para o conteúdo deste Guia e para todos os produtos editoriais derivados publicados sob a marca Frontiers, salvo exceção formal aprovada.</p>
+<p><strong>Racional:</strong> atribuição obrigatória + obras derivadas devem manter mesma licença; permite uso comercial por terceiros (alinhado com posicionamento aberto da newsletter); evita ambiguidades operacionais de licenças non-commercial; alinha com a governança de conhecimento aberto do Núcleo.</p>
+<p><strong>Operacionalização técnica:</strong> cada <code>content_products</code> row deve registrar a licença efetiva em <code>publication_metadata</code> jsonb (chave sugerida <code>cc_license</code>). Valor default <code>cc_license = "CC BY-SA 4.0"</code>; alterações requerem registro em <code>admin_audit_log</code> com justificativa (pattern alinhado com SEDIMENT-239b.A — source de toda coluna gravada deve ser auditável).</p>
+<p><strong>Exceção formal:</strong> alteração de licença para uma issue específica (ex.: <code>CC BY-NC 4.0</code> para conteúdo derivado de obra de terceiros que exige non-commercial; ou licença proprietária para material patrocinado em contexto excepcional) requer:</p>
+<ol type="1">
+<li>Justificativa textual em <code>publication_metadata.cc_license_exception_reason</code>.</li>
+<li>Aprovação documentada do curador editorial + GP.</li>
+<li>Audit row em <code>admin_audit_log</code> com <code>action='content_product.cc_license_overridden'</code>.</li>
+<li>Disclaimer visível na publicação informando a licença efetiva da issue.</li>
+</ol>
+<p><strong>Compatibilidade com Gate 0 jurídico:</strong> a licença CC BY-SA 4.0 só será operacionalizável após CR-050 v2.2 (Política de PI) e R3-C4 (aditivo do Termo de Adesão Voluntário) entrarem em status <code>active</code>. Até lá, este Guia documenta a intenção; nenhuma issue pode ser publicada legalmente.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="7-licensing-en">7. Licensing (EN)</h2>
+<p><strong>Ratified default (GP 2026-05-25, p267):</strong> <code>CC BY-SA 4.0</code> (Creative Commons Attribution-ShareAlike 4.0 International) for the content of this Guide and for all editorial products derived under the Frontiers brand, save for formally-approved exceptions.</p>
+<p><strong>Rationale:</strong> mandatory attribution + derivative works must keep same license; allows third-party commercial use (aligned with the open positioning of the newsletter); avoids operational ambiguities of non-commercial licenses; aligns with Núcleo's open-knowledge governance.</p>
+<p><strong>Technical operationalization:</strong> every <code>content_products</code> row must record the effective license in <code>publication_metadata</code> jsonb (suggested key <code>cc_license</code>). Default value <code>cc_license = "CC BY-SA 4.0"</code>; changes require an <code>admin_audit_log</code> row with justification (pattern aligned with SEDIMENT-239b.A — source of every written column must be auditable).</p>
+<p><strong>Formal exception:</strong> changing the license for a specific issue (e.g., <code>CC BY-NC 4.0</code> for content derived from a third-party work that requires non-commercial; or proprietary license for exceptional sponsored material) requires:</p>
+<ol type="1">
+<li>Text justification in <code>publication_metadata.cc_license_exception_reason</code>.</li>
+<li>Documented approval from editorial curator + GP.</li>
+<li>Audit row in <code>admin_audit_log</code> with <code>action='content_product.cc_license_overridden'</code>.</li>
+<li>Visible disclaimer on the publication declaring the effective license of the issue.</li>
+</ol>
+<p><strong>Compatibility with legal Gate 0:</strong> the CC BY-SA 4.0 license is operationalizable only after CR-050 v2.2 (IP Policy) and R3-C4 (Volunteer Agreement addendum) reach <code>active</code> status. Until then, this Guide documents the intent; no issue can be legally published.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="7-licenciamiento-es">7. Licenciamiento (ES)</h2>
+<p><strong>Default ratificado (GP 2026-05-25, p267):</strong> <code>CC BY-SA 4.0</code> (Creative Commons Attribution-ShareAlike 4.0 International) para el contenido de esta Guía y para todos los productos editoriales derivados publicados bajo la marca Frontiers, salvo excepción formalmente aprobada.</p>
+<p><strong>Racional:</strong> atribución obligatoria + obras derivadas deben mantener la misma licencia; permite uso comercial por terceros (alineado con el posicionamiento abierto del boletín); evita ambigüedades operacionales de las licencias non-commercial; alinea con la gobernanza de conocimiento abierto del Núcleo.</p>
+<p><strong>Operacionalización técnica:</strong> cada <code>content_products</code> row debe registrar la licencia efectiva en <code>publication_metadata</code> jsonb (clave sugerida <code>cc_license</code>). Valor predeterminado <code>cc_license = "CC BY-SA 4.0"</code>; los cambios requieren una row en <code>admin_audit_log</code> con justificación (patrón alineado con SEDIMENT-239b.A — la fuente de toda columna escrita debe ser auditable).</p>
+<p><strong>Excepción formal:</strong> cambiar la licencia para un issue específico (p.ej., <code>CC BY-NC 4.0</code> para contenido derivado de obra de terceros que exige non-commercial; o licencia propietaria para material patrocinado en contexto excepcional) requiere:</p>
+<ol type="1">
+<li>Justificación textual en <code>publication_metadata.cc_license_exception_reason</code>.</li>
+<li>Aprobación documentada del curador editorial + GP.</li>
+<li>Audit row en <code>admin_audit_log</code> con <code>action='content_product.cc_license_overridden'</code>.</li>
+<li>Disclaimer visible en la publicación declarando la licencia efectiva del issue.</li>
+</ol>
+<p><strong>Compatibilidad con Gate 0 jurídico:</strong> la licencia CC BY-SA 4.0 es operacionalizable solo después de que CR-050 v2.2 (Política de PI) y R3-C4 (aditivo del Acuerdo de Voluntariado) alcancen el estado <code>active</code>. Hasta entonces, esta Guía documenta la intención; ningún issue puede ser publicado legalmente.</p>
+</section>
+
+<hr />
+<h1 id="8-fluxo-end-to-end--end-to-end-flow--flujo-de-extremo-a-extremo">8. Fluxo end-to-end · End-to-end flow · Flujo de extremo a extremo</h1>
+<section lang="pt-BR">
+
+<h2 id="8-fluxo-end-to-end-pt-br">8. Fluxo end-to-end (PT-BR)</h2>
+<p>Cada issue percorre 6 estados (ADR-0099 §2.6 — <code>content_products.status</code>):</p>
+<pre><code>idea → drafted → under_review → approved → published
+                      ↓             ↓
+                                 archived (terminal)</code></pre>
+<p><strong>Transição <code>under_review → drafted</code> é permitida</strong> (revisão retorna para reedição). <strong><code>published → archived</code> NÃO é permitida</strong> (correções emitem nova row em <code>archived</code> + nova row apontando para a mesma <code>source_*</code> + <code>target_instrument</code> como sibling).</p>
+<p>Por modo de revisão (<code>review_mode</code>):</p>
+<ul>
+<li><strong><code>collaborative</code></strong> (default sugerido para Supporting Insight, Webinar Recap, Expert Interview, LinkedIn post): todos os revisores veem comentários uns dos outros + o produto. Comentários encadeados ajudam a polir.</li>
+<li><strong><code>sequential</code></strong> (default sugerido para Lead Article, Framework, Case Study, LinkedIn Newsletter, Research Stream): comentários visíveis para o time, mas avanço de estado é stage-by-stage (curador → líder → GP).</li>
+<li><strong><code>independent_blind</code></strong> (default sugerido para Case Study enviado a magazine externa, journal acadêmico): revisor A não vê parecer de revisor B até depois de submeter o próprio. Cada revisor vê o produto + seu próprio rascunho de parecer; pareceres dos siblings revelados apenas após submissão. Implementado via primitivos blind_review_* (PR #398, p266 — ADR-0099 §2.7 + §7).</li>
+</ul>
+<p><strong>Default <code>review_mode</code> por <code>target_instrument</code></strong> ainda pendente C2; tabela §5 reflete recomendação atual.</p>
+<p><strong>Sem chain <code>approval_chains</code>:</strong> cada <code>content_products</code> row NÃO carrega autoridade governamental — é output editorial, não documento ratificado. Não tem <code>approval_chain</code> formal. A "ratificação editorial" é o conjunto signatures <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> capturadas via primitivos da plataforma (ADR-0086 para curation + ADR-0099 §2.7 para blind-review).</p>
+</section>
+
+<section lang="en">
+
+<h2 id="8-end-to-end-flow-en">8. End-to-end flow (EN)</h2>
+<p>Each issue passes through 6 states (ADR-0099 §2.6 — <code>content_products.status</code>):</p>
+<pre><code>idea → drafted → under_review → approved → published
+                      ↓             ↓
+                                 archived (terminal)</code></pre>
+<p><strong>Transition <code>under_review → drafted</code> is allowed</strong> (review returns for re-edit). <strong><code>published → archived</code> is NOT allowed</strong> (corrections issue a new row in <code>archived</code> + a new row pointing at the same <code>source_*</code> + <code>target_instrument</code> as sibling).</p>
+<p>By review mode (<code>review_mode</code>):</p>
+<ul>
+<li><strong><code>collaborative</code></strong> (suggested default for Supporting Insight, Webinar Recap, Expert Interview, LinkedIn post): all reviewers see each other's comments + the product. Threaded comments help polish.</li>
+<li><strong><code>sequential</code></strong> (suggested default for Lead Article, Framework, Case Study, LinkedIn Newsletter, Research Stream): comments visible to the team, but state advances stage-by-stage (curator → leader → GP).</li>
+<li><strong><code>independent_blind</code></strong> (suggested default for Case Study submitted to external magazine, academic journal): reviewer A does not see reviewer B's parecer until after submitting their own. Each reviewer sees the product + their own draft parecer; siblings' pareceres revealed only after submission. Implemented via blind_review_* primitives (PR #398, p266 — ADR-0099 §2.7 + §7).</li>
+</ul>
+<p><strong>Default <code>review_mode</code> per <code>target_instrument</code></strong> still pending C2; §5 table reflects current recommendation.</p>
+<p><strong>No <code>approval_chains</code>:</strong> each <code>content_products</code> row does NOT carry governmental authority — it is editorial output, not a ratified document. It does not have a formal <code>approval_chain</code>. "Editorial ratification" is the set of signatures <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> captured via platform primitives (ADR-0086 for curation + ADR-0099 §2.7 for blind-review).</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="8-flujo-de-extremo-a-extremo-es">8. Flujo de extremo a extremo (ES)</h2>
+<p>Cada issue atraviesa 6 estados (ADR-0099 §2.6 — <code>content_products.status</code>):</p>
+<pre><code>idea → drafted → under_review → approved → published
+                      ↓             ↓
+                                 archived (terminal)</code></pre>
+<p><strong>La transición <code>under_review → drafted</code> está permitida</strong> (la revisión vuelve para re-edición). <strong><code>published → archived</code> NO está permitida</strong> (las correcciones emiten una nueva row en <code>archived</code> + una nueva row apuntando a la misma <code>source_*</code> + <code>target_instrument</code> como sibling).</p>
+<p>Por modo de revisión (<code>review_mode</code>):</p>
+<ul>
+<li><strong><code>collaborative</code></strong> (predeterminado sugerido para Supporting Insight, Webinar Recap, Expert Interview, LinkedIn post): todos los revisores ven los comentarios de los demás + el producto. Comentarios encadenados ayudan a pulir.</li>
+<li><strong><code>sequential</code></strong> (predeterminado sugerido para Lead Article, Framework, Case Study, LinkedIn Newsletter, Research Stream): comentarios visibles para el equipo, pero el avance de estado es stage-by-stage (curador → líder → GP).</li>
+<li><strong><code>independent_blind</code></strong> (predeterminado sugerido para Case Study enviado a magazine externa, journal académico): el revisor A no ve el parecer del revisor B hasta después de someter el propio. Cada revisor ve el producto + su propio borrador de parecer; los pareceres de los siblings se revelan solo después de la sumisión. Implementado vía primitivos blind_review_* (PR #398, p266 — ADR-0099 §2.7 + §7).</li>
+</ul>
+<p><strong>El <code>review_mode</code> predeterminado por <code>target_instrument</code></strong> está aún pendiente C2; la tabla §5 refleja la recomendación actual.</p>
+<p><strong>Sin <code>approval_chains</code>:</strong> cada <code>content_products</code> row NO carga autoridad gubernamental — es output editorial, no un documento ratificado. No tiene <code>approval_chain</code> formal. La "ratificación editorial" es el conjunto de firmas <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> capturadas vía primitivos de la plataforma (ADR-0086 para curation + ADR-0099 §2.7 para blind-review).</p>
+</section>
+
+<hr />
+<h1 id="9-originalidade-e-curadoria--originality--curation--originalidad-y-curaduría">9. Originalidade e curadoria · Originality + curation · Originalidad y curaduría</h1>
+<section lang="pt-BR">
+
+<h2 id="9-originalidade--curadoria-pt-br">9. Originalidade + curadoria (PT-BR)</h2>
+<p><strong>Princípio:</strong> Frontiers não publica derivativos triviais de conteúdo já amplamente disponível em outros canais (LinkedIn de PMs com audiência grande, posts virais de IA, traduções diretas de Substacks famosos). O diferencial editorial é síntese, análise comparativa, dados originais, opinião defendida com substância.</p>
+<p><strong>Mecanismo (ratificado p268, C4 — híbrido):</strong></p>
+<ul>
+<li><strong>Opção a — automatizada:</strong> chamar <code>check_idea_originality(title, summary)</code> (issue #95, ainda não shipped) na transição <code>idea → drafted</code>. Se a função detectar cluster denso de 3+ fontes externas convergentes, marca <code>originality_warning=true</code> no <code>publication_metadata</code>. Curador pode aprovar mesmo assim, mas decisão fica registrada no audit log.</li>
+<li><strong>Opção b — manual:</strong> curador editorial faz busca livre (Google + LinkedIn + arXiv recentes) sobre o tema antes de aprovar <code>idea → drafted</code>. Registra confirmação textual em <code>publication_metadata.originality_review_notes</code>.</li>
+</ul>
+<p>v1.x ratifica o mecanismo híbrido: opção (b) manual é <strong>sempre obrigatória</strong> independente do estado de #95; opção (a) automatizada é <strong>complementar</strong> quando #95 estiver shipped (flag <code>originality_warning=true</code> em <code>publication_metadata</code>, decisão final permanece com o curador, audit trail registrado). Sem #95 shipped, opção (b) é o único trilho — sem bloqueio do launch.</p>
+<p><strong>Independente da opção escolhida:</strong> o critério é "agregar valor além do que já existe", não "ser literalmente o primeiro a escrever sobre o tema". Síntese rigorosa de múltiplas fontes é tão valiosa quanto análise primária; o que não vale é repetir o que outro PM já disse melhor sem agregar nada.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="9-originality--curation-en">9. Originality + curation (EN)</h2>
+<p><strong>Principle:</strong> Frontiers does not publish trivial derivatives of content already widely available in other channels (large-audience PM LinkedIn posts, viral AI posts, direct translations of famous Substacks). The editorial differential is synthesis, comparative analysis, original data, opinion defended with substance.</p>
+<p><strong>Mechanism (ratified p268, C4 — hybrid):</strong></p>
+<ul>
+<li><strong>Option a — automated:</strong> call <code>check_idea_originality(title, summary)</code> (issue #95, not yet shipped) at the <code>idea → drafted</code> transition. If the function detects a dense cluster of 3+ convergent external sources, mark <code>originality_warning=true</code> in <code>publication_metadata</code>. Curator can still approve, but the decision is recorded in the audit log.</li>
+<li><strong>Option b — manual:</strong> editorial curator performs free search (Google + LinkedIn + recent arXiv) on the topic before approving <code>idea → drafted</code>. Records text confirmation in <code>publication_metadata.originality_review_notes</code>.</li>
+</ul>
+<p>v1.x ratifies the hybrid mechanism: option (b) manual is <strong>always mandatory</strong> regardless of #95 state; option (a) automated is <strong>complementary</strong> when #95 ships (flag <code>originality_warning=true</code> in <code>publication_metadata</code>, final decision stays with the curator, audit trail captured). Without #95 shipped, option (b) is the only rail — no launch blocker.</p>
+<p><strong>Regardless of option:</strong> the criterion is "add value beyond what exists", not "be literally first to write on the topic". Rigorous synthesis of multiple sources is as valuable as primary analysis; what doesn't count is repeating what another PM already said better without adding anything.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="9-originalidad--curaduría-es">9. Originalidad + curaduría (ES)</h2>
+<p><strong>Principio:</strong> Frontiers no publica derivativos triviales de contenido ya ampliamente disponible en otros canales (posts de LinkedIn de PMs con gran audiencia, posts virales de IA, traducciones directas de Substacks famosos). El diferencial editorial es síntesis, análisis comparativo, datos originales, opinión defendida con sustancia.</p>
+<p><strong>Mecanismo (ratificado p268, C4 — híbrido):</strong></p>
+<ul>
+<li><strong>Opción a — automatizada:</strong> llamar <code>check_idea_originality(title, summary)</code> (issue #95, aún no shipped) en la transición <code>idea → drafted</code>. Si la función detecta un cluster denso de 3+ fuentes externas convergentes, marca <code>originality_warning=true</code> en <code>publication_metadata</code>. El curador puede aprobar igualmente, pero la decisión queda registrada en el audit log.</li>
+<li><strong>Opción b — manual:</strong> el curador editorial hace búsqueda libre (Google + LinkedIn + arXiv reciente) sobre el tema antes de aprobar <code>idea → drafted</code>. Registra confirmación textual en <code>publication_metadata.originality_review_notes</code>.</li>
+</ul>
+<p>v1.x ratifica el mecanismo híbrido: la opción (b) manual es <strong>siempre obligatoria</strong> independientemente del estado de #95; la opción (a) automatizada es <strong>complementaria</strong> cuando #95 esté shipped (flag <code>originality_warning=true</code> en <code>publication_metadata</code>, la decisión final queda con el curador, audit trail registrado). Sin #95 shipped, la opción (b) es el único riel — sin bloqueo del launch.</p>
+<p><strong>Independiente de la opción:</strong> el criterio es "agregar valor más allá de lo existente", no "ser literalmente el primero en escribir sobre el tema". La síntesis rigurosa de múltiples fuentes es tan valiosa como el análisis primario; lo que no vale es repetir lo que otro PM ya dijo mejor sin agregar nada.</p>
+</section>
+
+<hr />
+<h1 id="10-governança-e-dependências-externas--governance--external-dependencies--gobernanza-y-dependencias-externas">10. Governança e dependências externas · Governance + external dependencies · Gobernanza y dependencias externas</h1>
+<section lang="pt-BR">
+
+<h2 id="10-governança-e-dependências-externas-pt-br">10. Governança e dependências externas (PT-BR)</h2>
+<p><strong>Gate 0 jurídico — bloqueador formal para publicar issue #1:</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>Dependência</th>
+<th>Status (2026-05-25)</th>
+<th>Bloqueia?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CR-050 v2.2 (Política de PI sucessora)</td>
+<td><code>under_review</code> em <code>governance_documents</code></td>
+<td>🔴 SIM</td>
+</tr>
+<tr class="even">
+<td>R3-C4 (aditivo do Termo de Adesão Voluntário) ou Termo R3-C4 v1.0</td>
+<td>Em redação pelo time Claude (estimado 2026-04-23)</td>
+<td>🔴 SIM</td>
+</tr>
+<tr class="odd">
+<td>Manual de Governança R3</td>
+<td><code>draft</code> (sem versões ainda)</td>
+<td>🟡 NÃO direto, mas referenciado</td>
+</tr>
+<tr class="even">
+<td>Conformidade LGPD (Art. 18 cycle)</td>
+<td>✅ shipped (consent + export + delete + anonymize)</td>
+<td>🟢</td>
+</tr>
+</tbody>
+</table>
+<p>Sem CR-050 + R3-C4 ratificados, <strong>nenhuma issue Frontiers pode publicar legalmente</strong>. Este Guia v1 documenta o pivô para <code>content_products</code> (ADR-0099) e ratifica decisões editoriais; a operacionalização de produtos espera Gate 0.</p>
+<p><strong>Governança editorial interna (3 gates <code>editorial_guide</code>):</strong></p>
+<ul>
+<li><code>curator</code> (threshold=all) — curadores designados aprovam a versão deste Guia.</li>
+<li><code>leader_awareness</code> (threshold=0, informativo) — lideranças de tribo recebem ciência da nova versão.</li>
+<li><code>submitter_acceptance</code> (threshold=1) — GP do Núcleo aceita formalmente.</li>
+</ul>
+<p>Esses gates aplicam-se <strong>a este Guia editorial</strong>, NÃO aos <code>content_products</code> derivados. Produtos derivados usam <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> via primitivos de curation (ADR-0086 + ADR-0099).</p>
+<p><strong>Cadência de revisão deste Guia:</strong> anual (na virada de ciclo) OU ad-hoc quando: (a) Gate 0 jurídico cair; (b) C2–C5 forem decididos; (c) novo <code>target_instrument</code> for adotado; (d) incidente editorial relevante.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="10-governance--external-dependencies-en">10. Governance + external dependencies (EN)</h2>
+<p><strong>Legal Gate 0 — formal blocker for publishing issue #1:</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>Dependency</th>
+<th>Status (2026-05-25)</th>
+<th>Blocks?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CR-050 v2.2 (successor IP Policy)</td>
+<td><code>under_review</code> in <code>governance_documents</code></td>
+<td>🔴 YES</td>
+</tr>
+<tr class="even">
+<td>R3-C4 (Volunteer Agreement addendum) or Term R3-C4 v1.0</td>
+<td>Being drafted by the Claude team (ETA 2026-04-23)</td>
+<td>🔴 YES</td>
+</tr>
+<tr class="odd">
+<td>Governance Manual R3</td>
+<td><code>draft</code> (no versions yet)</td>
+<td>🟡 NOT direct, but referenced</td>
+</tr>
+<tr class="even">
+<td>LGPD compliance (Art. 18 cycle)</td>
+<td>✅ shipped (consent + export + delete + anonymize)</td>
+<td>🟢</td>
+</tr>
+</tbody>
+</table>
+<p>Without ratified CR-050 + R3-C4, <strong>no Frontiers issue can publish legally</strong>. This v1 Guide documents the pivot to <code>content_products</code> (ADR-0099) and ratifies editorial decisions; operationalization of products waits for Gate 0.</p>
+<p><strong>Internal editorial governance (3 <code>editorial_guide</code> gates):</strong></p>
+<ul>
+<li><code>curator</code> (threshold=all) — designated curators approve the version of this Guide.</li>
+<li><code>leader_awareness</code> (threshold=0, informational) — tribe leaders receive awareness of the new version.</li>
+<li><code>submitter_acceptance</code> (threshold=1) — Núcleo GP formally accepts.</li>
+</ul>
+<p>These gates apply <strong>to this editorial Guide</strong>, NOT to derived <code>content_products</code>. Derived products use <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> via curation primitives (ADR-0086 + ADR-0099).</p>
+<p><strong>Review cadence of this Guide:</strong> annual (at cycle turn) OR ad-hoc when: (a) legal Gate 0 falls; (b) C2–C5 are decided; (c) a new <code>target_instrument</code> is adopted; (d) a relevant editorial incident occurs.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="10-gobernanza-y-dependencias-externas-es">10. Gobernanza y dependencias externas (ES)</h2>
+<p><strong>Gate 0 jurídico — bloqueador formal para publicar el issue #1:</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>Dependencia</th>
+<th>Estado (2026-05-25)</th>
+<th>¿Bloquea?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CR-050 v2.2 (Política de PI sucesora)</td>
+<td><code>under_review</code> en <code>governance_documents</code></td>
+<td>🔴 SÍ</td>
+</tr>
+<tr class="even">
+<td>R3-C4 (aditivo del Acuerdo de Voluntariado) o Acuerdo R3-C4 v1.0</td>
+<td>En redacción por el equipo Claude (ETA 2026-04-23)</td>
+<td>🔴 SÍ</td>
+</tr>
+<tr class="odd">
+<td>Manual de Gobernanza R3</td>
+<td><code>draft</code> (sin versiones aún)</td>
+<td>🟡 NO directo, pero referenciado</td>
+</tr>
+<tr class="even">
+<td>Conformidad LGPD (Art. 18 cycle)</td>
+<td>✅ shipped (consent + export + delete + anonymize)</td>
+<td>🟢</td>
+</tr>
+</tbody>
+</table>
+<p>Sin CR-050 + R3-C4 ratificados, <strong>ningún issue Frontiers puede publicarse legalmente</strong>. Esta Guía v1 documenta el pivote a <code>content_products</code> (ADR-0099) y ratifica decisiones editoriales; la operacionalización de productos espera Gate 0.</p>
+<p><strong>Gobernanza editorial interna (3 gates de <code>editorial_guide</code>):</strong></p>
+<ul>
+<li><code>curator</code> (threshold=all) — los curadores designados aprueban la versión de esta Guía.</li>
+<li><code>leader_awareness</code> (threshold=0, informativo) — los líderes de tribu reciben aviso de la nueva versión.</li>
+<li><code>submitter_acceptance</code> (threshold=1) — el GP del Núcleo acepta formalmente.</li>
+</ul>
+<p>Estos gates aplican <strong>a esta Guía editorial</strong>, NO a los <code>content_products</code> derivados. Los productos derivados usan <code>peer_review</code> + <code>leader_review</code> + <code>submitter_acceptance</code> vía primitivos de curation (ADR-0086 + ADR-0099).</p>
+<p><strong>Cadencia de revisión de esta Guía:</strong> anual (en el cierre de ciclo) O ad-hoc cuando: (a) caiga el Gate 0 jurídico; (b) se decidan C2–C5; (c) se adopte un nuevo <code>target_instrument</code>; (d) ocurra un incidente editorial relevante.</p>
+</section>
+
+<hr />
+<h1 id="11-marca-disclaimers-e-responsabilidade--brand-disclaimers--responsibility--marca-disclaimers-y-responsabilidad">11. Marca, disclaimers e responsabilidade · Brand, disclaimers + responsibility · Marca, disclaimers y responsabilidad</h1>
+<section lang="pt-BR">
+
+<h2 id="11-marca-disclaimers-e-responsabilidade-pt-br">11. Marca, disclaimers e responsabilidade (PT-BR)</h2>
+<p><strong>Marca:</strong> "Frontiers in AI &amp; Project Mgmt" (slug <code>frontiers-newsletter</code>). Busca formal USPTO/INPI desescalada por decisão GP (2026-04-21, F7) — monitoramento passivo (Google Alerts + busca livre INPI/USPTO 30min + disclaimer) é suficiente pre-launch.</p>
+<p><strong>Gatilhos que destravam busca formal (revisitar F7):</strong> 10+ issues publicadas OU 1000+ subscribers OU primeiro contato comercial/sponsorship OU qualquer cease-and-desist OU expansão para mercado EUA/Europa OU publicação em journals formais com peer review.</p>
+<p><strong>Disclaimer obrigatório no masthead de toda issue:</strong></p>
+<blockquote>
+<p><em>Frontiers in AI &amp; Project Mgmt — published by Núcleo IA &amp; GP, an independent community hub affiliated with PMI Brasil. Not affiliated with Frontiers Media SA or its journals. Editorial content reflects the views of authors, not of PMI or any sponsor.</em></p>
+</blockquote>
+<p><strong>Responsabilidade autoral:</strong> o autor é responsável pelo conteúdo de sua issue. O Núcleo IA &amp; GP atua como curador editorial e plataforma de publicação, não como editor responsável no sentido jurídico estrito. Erros factuais devem ser corrigidos via nova issue marcada como <code>archived</code> (correção) + nova publicação (ADR-0099 §2.6).</p>
+<p><strong>Conteúdo de terceiros:</strong> material licenciado de terceiros (imagens, citações longas, dados proprietários) deve ter licença/permissão documentada. Em caso de dúvida, perguntar ao curador antes de submeter.</p>
+</section>
+
+<section lang="en">
+
+<h2 id="11-brand-disclaimers--responsibility-en">11. Brand, disclaimers + responsibility (EN)</h2>
+<p><strong>Brand:</strong> "Frontiers in AI &amp; Project Mgmt" (slug <code>frontiers-newsletter</code>). Formal USPTO/INPI search de-escalated by GP decision (2026-04-21, F7) — passive monitoring (Google Alerts + free INPI/USPTO 30min search + disclaimer) is sufficient pre-launch.</p>
+<p><strong>Triggers that unlock formal search (revisit F7):</strong> 10+ issues published OR 1000+ subscribers OR first commercial/sponsorship contact OR any cease-and-desist OR expansion to US/Europe markets OR publication in formal peer-reviewed journals.</p>
+<p><strong>Mandatory disclaimer in every issue masthead:</strong></p>
+<blockquote>
+<p><em>Frontiers in AI &amp; Project Mgmt — published by Núcleo IA &amp; GP, an independent community hub affiliated with PMI Brasil. Not affiliated with Frontiers Media SA or its journals. Editorial content reflects the views of authors, not of PMI or any sponsor.</em></p>
+</blockquote>
+<p><strong>Authorship responsibility:</strong> the author is responsible for the content of their issue. Núcleo IA &amp; GP acts as editorial curator and publication platform, not as legally-strict responsible publisher. Factual errors must be corrected via a new issue marked <code>archived</code> (correction) + new publication (ADR-0099 §2.6).</p>
+<p><strong>Third-party content:</strong> licensed third-party material (images, long citations, proprietary data) must have documented license/permission. When in doubt, ask the curator before submitting.</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="11-marca-disclaimers-y-responsabilidad-es">11. Marca, disclaimers y responsabilidad (ES)</h2>
+<p><strong>Marca:</strong> "Frontiers in AI &amp; Project Mgmt" (slug <code>frontiers-newsletter</code>). Búsqueda formal USPTO/INPI desescalada por decisión del GP (2026-04-21, F7) — monitoreo pasivo (Google Alerts + búsqueda libre INPI/USPTO 30min + disclaimer) es suficiente pre-launch.</p>
+<p><strong>Gatillos que desbloquean búsqueda formal (revisitar F7):</strong> 10+ issues publicados O 1000+ subscribers O primer contacto comercial/sponsorship O cualquier cease-and-desist O expansión a mercados EE.UU./Europa O publicación en journals formales con peer review.</p>
+<p><strong>Disclaimer obligatorio en el masthead de todo issue:</strong></p>
+<blockquote>
+<p><em>Frontiers in AI &amp; Project Mgmt — published by Núcleo IA &amp; GP, an independent community hub affiliated with PMI Brasil. Not affiliated with Frontiers Media SA or its journals. Editorial content reflects the views of authors, not of PMI or any sponsor.</em></p>
+</blockquote>
+<p><strong>Responsabilidad autoral:</strong> el autor es responsable por el contenido de su issue. Núcleo IA &amp; GP actúa como curador editorial y plataforma de publicación, no como editor responsable en sentido jurídico estricto. Los errores factuales deben corregirse vía nuevo issue marcado como <code>archived</code> (corrección) + nueva publicación (ADR-0099 §2.6).</p>
+<p><strong>Contenido de terceros:</strong> material licenciado de terceros (imágenes, citas largas, datos propietarios) debe tener licencia/permiso documentado. En caso de duda, preguntar al curador antes de someter.</p>
+</section>
+
+<hr />
+<h1 id="12-manutenção-do-guia--maintenance-of-the-guide--mantenimiento-de-la-guía">12. Manutenção do Guia · Maintenance of the Guide · Mantenimiento de la Guía</h1>
+<section lang="pt-BR">
+
+<h2 id="12-manutenção-do-guia-pt-br">12. Manutenção do Guia (PT-BR)</h2>
+<p><strong>Versão atual:</strong> v1.x (este draft — patch p268 com C2/C3/C4 ratificadas; aguarda Gate 0 jurídico + C5 + #95 para v2).</p>
+<p><strong>Cadência:</strong> revisão anual no final do ciclo + ad-hoc se Gate 0 cair, C2-C5 forem decididos, ou se incidente editorial demandar mudança.</p>
+<p><strong>Próximas versões esperadas:</strong></p>
+<ul>
+<li><strong>v1.x patch (este — p268):</strong> absorvidas C2 (default <code>review_mode</code> ratificado) + C3 (shape jsonb flat-keys ratificado) + C4 (originalidade híbrida ratificada). C5 (autor-piloto issue #1) <strong>deferido</strong> até Gate 0.</li>
+<li><strong>v2 (médio prazo, pós-Gate-0):</strong> absorver CR-050 v2.2 ratificada + R3-C4 ratificado; adicionar glossário trilíngue; expandir Section 5 com <code>target_instrument</code> adicionais conforme experimentação.</li>
+<li><strong>v3+ (longo prazo):</strong> reflexão sobre 1 ano de operação; ajustar cadência se biweekly for inviável; revisitar F7 (marca) se gatilhos disparados.</li>
+</ul>
+<p><strong>Mantenedores designados:</strong></p>
+<ul>
+<li><strong>Editor-chefe:</strong> Fabricio Costa (proposer-of-record do Guia; co-autor original do docx 2026-04-21).</li>
+<li><strong>Co-mantenedor:</strong> GP Vitor Maia Rodovalho (orquestração da v1 reconciliada + decisões pendentes C2-C5).</li>
+<li><strong>Curadores assistentes:</strong> a serem nomeados quando Frontiers entrar em operação ativa (Gate 2 da #96).</li>
+</ul>
+<p><strong>Como propor mudança neste Guia:</strong> abrir issue com label <code>editorial-guide-frontiers</code>; descrever mudança proposta + racional + impacto em produtos já publicados (se houver). Mantenedores avaliam e, se aceito, criam novo <code>document_versions</code> draft via <code>upsert_document_version</code>, depois <code>lock_document_version</code> para iniciar chain interno (3 gates <code>editorial_guide</code>).</p>
+</section>
+
+<section lang="en">
+
+<h2 id="12-maintenance-of-the-guide-en">12. Maintenance of the Guide (EN)</h2>
+<p><strong>Current version:</strong> v1.x (this draft — p268 patch with C2/C3/C4 ratified; awaits legal Gate 0 + C5 + #95 for v2).</p>
+<p><strong>Cadence:</strong> annual review at cycle end + ad-hoc if Gate 0 falls, C2-C5 are decided, or an editorial incident requires change.</p>
+<p><strong>Expected next versions:</strong></p>
+<ul>
+<li><strong>v1.x patch (this — p268):</strong> absorbed C2 (default <code>review_mode</code> ratified) + C3 (jsonb flat-keys shape ratified) + C4 (hybrid originality ratified). C5 (pilot author for issue #1) <strong>deferred</strong> until Gate 0.</li>
+<li><strong>v2 (medium term, post-Gate-0):</strong> absorb ratified CR-050 v2.2 + ratified R3-C4; add trilingual glossary; expand Section 5 with additional <code>target_instrument</code> as experimentation matures.</li>
+<li><strong>v3+ (long term):</strong> reflection on 1 year of operation; adjust cadence if biweekly is infeasible; revisit F7 (brand) if triggers fired.</li>
+</ul>
+<p><strong>Designated maintainers:</strong></p>
+<ul>
+<li><strong>Editor-in-chief:</strong> Fabricio Costa (proposer-of-record of the Guide; co-author of original 2026-04-21 docx).</li>
+<li><strong>Co-maintainer:</strong> GP Vitor Maia Rodovalho (orchestration of reconciled v1 + pending decisions C2-C5).</li>
+<li><strong>Assistant curators:</strong> to be named when Frontiers enters active operation (Gate 2 of #96).</li>
+</ul>
+<p><strong>How to propose changes to this Guide:</strong> open an issue with label <code>editorial-guide-frontiers</code>; describe proposed change + rationale + impact on already-published products (if any). Maintainers evaluate and, if accepted, create new <code>document_versions</code> draft via <code>upsert_document_version</code>, then <code>lock_document_version</code> to start the internal chain (3 <code>editorial_guide</code> gates).</p>
+</section>
+
+<section lang="es-LA">
+
+<h2 id="12-mantenimiento-de-la-guía-es">12. Mantenimiento de la Guía (ES)</h2>
+<p><strong>Versión actual:</strong> v1.x (este draft — patch p268 con C2/C3/C4 ratificadas; espera el Gate 0 jurídico + C5 + #95 para v2).</p>
+<p><strong>Cadencia:</strong> revisión anual al final del ciclo + ad-hoc si cae el Gate 0, se deciden C2-C5, o un incidente editorial demande cambio.</p>
+<p><strong>Próximas versiones esperadas:</strong></p>
+<ul>
+<li><strong>v1.x patch (este — p268):</strong> absorbidas C2 (<code>review_mode</code> predeterminado ratificado) + C3 (shape jsonb flat-keys ratificado) + C4 (originalidad híbrida ratificada). C5 (autor-piloto del issue #1) <strong>diferido</strong> hasta el Gate 0.</li>
+<li><strong>v2 (mediano plazo, post-Gate-0):</strong> absorber CR-050 v2.2 ratificada + R3-C4 ratificado; agregar glosario trilingüe; expandir la Sección 5 con <code>target_instrument</code> adicionales conforme la experimentación madure.</li>
+<li><strong>v3+ (largo plazo):</strong> reflexión sobre 1 año de operación; ajustar cadencia si biweekly es inviable; revisitar F7 (marca) si los gatillos se dispararon.</li>
+</ul>
+<p><strong>Mantenedores designados:</strong></p>
+<ul>
+<li><strong>Editor-en-jefe:</strong> Fabricio Costa (proposer-of-record de la Guía; coautor original del docx 2026-04-21).</li>
+<li><strong>Co-mantenedor:</strong> GP Vitor Maia Rodovalho (orquestación de la v1 reconciliada + decisiones pendientes C2-C5).</li>
+<li><strong>Curadores asistentes:</strong> a ser nombrados cuando Frontiers entre en operación activa (Gate 2 de #96).</li>
+</ul>
+<p><strong>Cómo proponer cambios a esta Guía:</strong> abrir issue con label <code>editorial-guide-frontiers</code>; describir el cambio propuesto + racional + impacto en productos ya publicados (si los hay). Los mantenedores evalúan y, si se acepta, crean nuevo <code>document_versions</code> draft vía <code>upsert_document_version</code>, luego <code>lock_document_version</code> para iniciar el chain interno (3 gates de <code>editorial_guide</code>).</p>
+</section>
+
+<hr />
+<h2 id="apêndice-a--mapeamento-decisão-ratificada--seção-do-guia">Apêndice A — Mapeamento decisão ratificada × seção do Guia</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Decisão</th>
+<th>Onde ratificada</th>
+<th>Seção do Guia v1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>F1 — Frontiers como série da plataforma</td>
+<td>ADR-0021 (2026-04-21)</td>
+<td>§1, §10</td>
+</tr>
+<tr class="even">
+<td>F2 — trilíngue nativo EN/PT/ES</td>
+<td>ADR-0021 (2026-04-21)</td>
+<td>§1, §4</td>
+</tr>
+<tr class="odd">
+<td>F3 — CC BY-SA 4.0</td>
+<td>ADR-0021 (2026-05-25, p267)</td>
+<td>§7</td>
+</tr>
+<tr class="even">
+<td>F4 — 3 declarações obrigatórias + C3 shape</td>
+<td>ADR-0021 (Proposed, Gate 0 unblock) + p268 C3 ratificada (flat keys)</td>
+<td>§6</td>
+</tr>
+<tr class="odd">
+<td>F5 — 7 stages mapeados</td>
+<td>ADR-0021 (Proposed; obsoleto post-pivot — agora 6 status ADR-0099 §2.6)</td>
+<td>§8</td>
+</tr>
+<tr class="even">
+<td>F6 + C4 — originality check híbrido</td>
+<td>ADR-0021 (Proposed) + p268 C4 ratificada (manual + #95 quando shipped)</td>
+<td>§9</td>
+</tr>
+<tr class="odd">
+<td>C2 — <code>review_mode</code> default por instrumento</td>
+<td>p268 (2026-05-26)</td>
+<td>§5</td>
+</tr>
+<tr class="even">
+<td>F7 — busca formal desescalada</td>
+<td>ADR-0021 (2026-04-21)</td>
+<td>§11</td>
+</tr>
+<tr class="odd">
+<td>Cadência biweekly</td>
+<td>ADR-0021 (2026-04-21)</td>
+<td>§3</td>
+</tr>
+<tr class="even">
+<td>Pivot para <code>content_products</code></td>
+<td>ADR-0099 (2026-05-26, p264.W4g #383)</td>
+<td>§1, §5, §7, §8</td>
+</tr>
+<tr class="odd">
+<td>ADR-0099 §6 implementation</td>
+<td>PR #396 (2026-05-26, p265.W4f Foundation)</td>
+<td>§5, §8</td>
+</tr>
+<tr class="even">
+<td>ADR-0099 §7 blind-review primitives</td>
+<td>PR #398 (2026-05-26, p266.W4f Primitives)</td>
+<td>§8</td>
+</tr>
+</tbody>
+</table>
+<h2 id="apêndice-b--pendências-explícitas-v1x--v2">Apêndice B — Pendências explícitas v1.x → v2</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Pendência</th>
+<th>Origem</th>
+<th>Resolução esperada em</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><del>C2 — <code>review_mode</code> default por <code>target_instrument</code></del></td>
+<td>✅ ratificada p268 (tabela §5)</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td><del>C3 — shape jsonb das 3 declarações em <code>publication_metadata</code></del></td>
+<td>✅ ratificada p268 (flat keys §6)</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td><del>C4 — originality check #95 vs manual</del></td>
+<td>✅ ratificada p268 (híbrido §9)</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>C5 — autor piloto da issue #1</td>
+<td>PM decision (Gate 2 da #96) — diferida até Gate 0 cair</td>
+<td>v2</td>
+</tr>
+<tr class="odd">
+<td>Gate 0 — CR-050 v2.2 ratificada</td>
+<td>Externo (jurídico)</td>
+<td>v2</td>
+</tr>
+<tr class="even">
+<td>Gate 0 — R3-C4 (aditivo Termo Voluntário)</td>
+<td>Externo (time Claude → jurídico)</td>
+<td>v2</td>
+</tr>
+<tr class="odd">
+<td>Glossário trilíngue PM+IA</td>
+<td>Editorial work</td>
+<td>v2</td>
+</tr>
+<tr class="even">
+<td>#95 <code>check_idea_originality</code> shipped</td>
+<td>Issue #95 W1-W4 backlog</td>
+<td>depende de roadmap (complementar a C4)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Fim da v1. Este draft é authored 2026-05-25 (p267 + p268) e tem como destino <code>governance_documents.id = 18ec4690-4f5a-4cab-904d-451e2c7245bf</code>. Não é uma versão lacrada (<code>locked_at = NULL</code>); permanece editável até <code>lock_document_version</code> ser invocada.</em></p>
