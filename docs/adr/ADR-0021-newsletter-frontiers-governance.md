@@ -1,9 +1,9 @@
 # ADR-0021: Newsletter Frontiers Governance — addendum operacional ao Pipeline (ADR-0020)
 
-- Status: Partially Accepted (2026-04-21 pós-decisões GP) / Pending Termo R3 (quinta 2026-04-23)
-- Data: 2026-04-21
-- Revisão: 2026-04-21 24h — GP decidiu F1, F2 (trilíngue upgrade), F7 (busca formal desescalada), cadência biweekly. Pendente D3 (licensing comparativo apresentado), D4 (termo — quinta)
-- Autor: Claude (debug session 9908f3) — aguarda aprovação Fabrício + ratificação CR-050 + Termo R3-C4
+- Status: Partially Accepted — F1, F2, F7, cadência (2026-04-21 GP) + **F3/D3 Accepted (2026-05-25 GP, p267 — ver #96 audit)** / Pending Gate 0 jurídico externo (ratificação Política de PI sucessora CR-050 v2.2 + Termo de Adesão Voluntário, ambos `under_review` em `governance_documents`)
+- Data: 2026-04-21 (revisões: 2026-04-21 24h, 2026-05-25 p267)
+- Revisão: 2026-04-21 24h — GP decidiu F1, F2 (trilíngue upgrade), F7 (busca formal desescalada), cadência biweekly. Pendente D3 (licensing comparativo apresentado), D4 (termo — quinta). **2026-05-25 (p267) — D3 ratificado: `CC BY-SA 4.0` como licença default do Guia Editorial Frontiers e dos produtos editoriais derivados, salvo exceção formal aprovada.**
+- Autor: Claude (debug session 9908f3, 2026-04-21) — revisão e ratificação D3 em sessão p267 (2026-05-25)
 - Escopo: Formaliza decisões editoriais e operacionais específicas da Newsletter "Frontiers in AI & Project Mgmt" (proposta por Fabrício em docx 2026-04-21) dentro do framework do Publication Pipeline (ADR-0020). Resolve 4 conflitos identificados em análise dual (Claude A jurídico/PI + Claude B operacional/editorial), consolidados em [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96).
 
 ## Contexto
@@ -57,19 +57,28 @@ Frontiers **vira instância** de `publication_series`, não pipeline paralelo. H
 
 **Operacionalização:** `publication_ideas.target_languages = ARRAY['en-US','pt-BR','es-LATAM']` mandatório para `series_id = 'frontiers-newsletter'`. App-level check + `blog_posts.title/excerpt/body_html` jsonb exige 3 chaves populadas antes de `published`.
 
-### F3 — Licensing default: CC BY-SA 4.0 (recomendado)
+### F3 — Licensing default: CC BY-SA 4.0 — **Accepted (2026-05-25, p267)**
 
-3 opções:
+3 opções consideradas:
 
-| License | Comercial OK? | Share-alike? | Recomendação |
+| License | Comercial OK? | Share-alike? | Avaliação |
 |---|---|---|---|
-| CC BY 4.0 | ✅ | ❌ | Mais permissiva, terceiros podem comercializar sem retornar |
-| **CC BY-SA 4.0** | ✅ | ✅ | Defensiva: derivativos devem manter mesma licença |
+| CC BY 4.0 | ✅ | ❌ | Mais permissiva; terceiros podem comercializar sem retornar |
+| **CC BY-SA 4.0** ← adotada | ✅ | ✅ | Defensiva: derivativos devem manter mesma licença |
 | CC BY-NC 4.0 | ❌ | ❌ | Restritiva: bloqueia uso comercial mesmo educacional |
 
-**Decisão proposta:** CC BY-SA 4.0 — equilíbrio entre reach (qualquer um pode usar) e proteção (derivativos abertos).
+**Decisão ratificada (GP Vitor, 2026-05-25, p267):** `CC BY-SA 4.0` como licença default do Guia Editorial Frontiers e dos produtos editoriais Frontiers, salvo exceção formal aprovada.
 
-**Operacionalização:** `publication_ideas.metadata->>'cc_license'` validado contra enum `['CC BY 4.0','CC BY-SA 4.0','CC BY-NC 4.0']` antes de `tribe_review`.
+**Racional do GP (verbatim):**
+- promove reutilização aberta com atribuição;
+- preserva reciprocidade em derivados;
+- alinha com governança de conhecimento do Núcleo;
+- evita ambiguidades operacionais do non-commercial;
+- é compatível com o posicionamento de newsletter/publicação aberta.
+
+**Operacionalização pós-Wave-4f (2026-05):** o pivô canônico para produtos editoriais é `content_products` (Foundation PR #396 + Primitives PR #398, p265/p266). Cada issue Frontiers como `content_products` row deve carregar a licença em `publication_metadata` jsonb (chave sugerida `cc_license`). A `publication_ideas` table referenciada na operacionalização original deste ADR nunca foi shipped e foi superseded por `content_products` — ver SPEC canônico `docs/specs/SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md` §9 + nota OBSOLETE em `SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md`.
+
+**Exceção formal:** alteração de licença em `publication_metadata` de uma issue específica requer registro em `admin_audit_log` (mecanismo MCP ou inline UI) — pattern alinhado com discipline de write-paths SECDEF (SEDIMENT-239b.A: source de toda coluna FK auditável).
 
 ### F4 — 3 declarações obrigatórias no template de submissão
 
