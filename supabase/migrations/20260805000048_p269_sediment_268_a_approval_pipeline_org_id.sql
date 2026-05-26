@@ -341,10 +341,8 @@ BEGIN
     'signer_is_eu_resident', v_is_eu,
     'ue_consent_recorded', COALESCE(p_ue_consent_49_1_a, false),
     'ue_consent_required_by_policy', v_ue_consent_required,
-    -- RF-III evidence
     'referenced_policy_version_id', v_policy_version_id,
     'referenced_policy_version_label', v_policy_version_label,
-    -- RF-V evidence (ato concludente CC Art. 111)
     'notification_id', v_notif_id,
     'notification_created_at', v_notif_created_at,
     'notification_read_at', v_notif_read_at,
