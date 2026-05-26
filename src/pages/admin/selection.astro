@@ -345,20 +345,20 @@ const SEL_I18N = {
               <thead>
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colTrack', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">{t('admin.selection.colResearch', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_rank" title={t('admin.selection.colObjectiveRankHint', lang)}>{t('admin.selection.colObjectiveRank', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="role_applied">{t('admin.selection.colTrack', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="chapter">{t('admin.selection.chapter', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">{t('admin.selection.colResearch', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_rank" title={t('admin.selection.colObjectiveRankHint', lang)}>{t('admin.selection.colObjectiveRank', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>{t('admin.selection.colPipeline', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.colInterviewHint', lang)}>{t('admin.selection.colInterview', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colOnboarding', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.actions', lang)}</th>
                 </tr>
@@ -4578,14 +4578,38 @@ const SEL_I18N = {
       searchTimeout = setTimeout(() => { filterSearch = ((e.target as HTMLInputElement).value || '').trim(); applyFilters(); }, 300);
     });
 
-    // Column sorting
+    // Column sorting — p271 #365c UX hotfix
+    // First-click direction depends on column semantics:
+    //   - text fields (name/track/chapter) and ranks → ASC first (rank #1 = best;
+    //     alphabetical scans expected to start from A);
+    //   - scores and dates → DESC first (best/latest expected first for cut decisions).
+    // Sort only reorders the currently filtered rows — it does NOT recompute ranks
+    // (objective_rank + rank_researcher + rank_leader come from the backend cohort
+    // and remain canonical regardless of filter/sort state).
+    const SORT_ASC_FIRST = new Set([
+      'applicant_name', 'role_applied', 'chapter', 'objective_rank', 'rank',
+    ]);
+    function defaultSortAsc(col: string): boolean { return SORT_ASC_FIRST.has(col); }
+
+    function updateSortIndicators() {
+      document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
+        const arrow = th.querySelector<HTMLSpanElement>('.sort-arrow');
+        if (!arrow) return;
+        arrow.textContent = th.dataset.sort === sortCol ? (sortAsc ? '↑' : '↓') : '';
+      });
+    }
+
     document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const col = th.dataset.sort!;
-        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = col === 'applicant_name'; }
+        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = defaultSortAsc(col); }
+        updateSortIndicators();
         applyFilters();
       });
     });
+
+    // Initial indicator render — reflects default sortCol='final_score', sortAsc=false → ↓ on Final
+    updateSortIndicators();
 
     // Delegated click actions
     document.addEventListener('click', (e: MouseEvent) => {
