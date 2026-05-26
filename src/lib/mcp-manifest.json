@@ -186,7 +186,7 @@
     },
     {
       "name": "compute_pert_cutoff",
-      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = current-cycle applications with the requested score dimension populated, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. The weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
+      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = current-cycle applications with the requested score dimension populated, filtered by role. Band = 75% of PERT through PERT. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. The weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -340,7 +340,7 @@
     },
     {
       "name": "get_pert_cutoff_summary",
-      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (current-cycle applications by role/dimension) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the current-cycle calibration band per dimension. Admin/curator (manage_member).",
+      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper (75% of PERT through PERT) + cohort_n (current-cycle applications by role/dimension) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the current-cycle calibration band per dimension. Admin/curator (manage_member).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
