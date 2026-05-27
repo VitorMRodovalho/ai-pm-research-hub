@@ -666,6 +666,11 @@ const SEL_I18N = {
       toastReasonRequired: 'Informe o motivo do reagendamento',
       toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
       toastErrorReschedule: 'Erro ao solicitar reagendamento',
+      cutoffInviteBtn: '📧 Enviar convite p/ agendar',
+      cutoffInviteSent: '✓ Convite enviado em',
+      cutoffInviteToast: 'Convite enviado para',
+      cutoffInviteError: 'Erro ao enviar convite',
+      cutoffInviteConfirm: 'Enviar convite de agendamento para',
       tabPmiProfile: '📊 PMI',
       loadingPmiProfile: 'Carregando perfil PMI…',
       pmiProfileEmpty: 'Sem dados PMI enriquecidos. Phase B ainda não rodou, candidato não-membro PMI, ou perfil community privado.',
@@ -3954,6 +3959,20 @@ const SEL_I18N = {
             <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackMirrorBtn}</button>
           </div>`;
         }
+        // p271 #411 Wave 1a F1 — cutoff-approved invite: badge OR dispatch button when no interview row exists yet.
+        // Gate per SPEC: status IN ('screening','interview_pending') AND cutoff_approved_email_sent_at IS NULL
+        // (this branch already enforces empty interviews list). Idempotency delegated to RPC's already_sent
+        // short-circuit; UI does not re-call without explicit override (deferred from Wave 1a per PM).
+        const cutoffSentAt = row.cutoff_approved_email_sent_at;
+        const cutoffEligibleStatus = ['screening', 'interview_pending'].includes(row.status);
+        if (cutoffSentAt) {
+          const when = new Date(cutoffSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+          html += `<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-4 text-[12px] text-emerald-800 font-semibold" data-testid="cutoff-invite-sent-badge">${T.modal.cutoffInviteSent} ${esc(when)} SP</div>`;
+        } else if (cutoffEligibleStatus) {
+          html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+            <button id="cutoff-invite-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.cutoffInviteBtn}</button>
+          </div>`;
+        }
         // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
         // está em status que permite entrevista (interview_pending+). Cria row com now+30min
         // e re-renderiza para exibir o scoring form.
@@ -4010,6 +4029,29 @@ const SEL_I18N = {
           } catch (e: any) {
             toast(e.message || 'Erro ao iniciar entrevista', 'error');
             btn.disabled = false; btn.textContent = '▶ Iniciar avaliação ao vivo';
+          }
+        });
+
+        // p271 #411 Wave 1a F1 — wire cutoff-approved dispatch button (notify_selection_cutoff_approved RPC).
+        // Optimistic local stamp so the re-render shows the badge immediately; dashboard reload syncs the
+        // table column on next return-to-list. Idempotency: RPC short-circuits with already_sent envelope
+        // if a second click races; we still optimistically stamp with previously_sent_at.
+        scoringDiv.querySelector('#cutoff-invite-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          const name = (btn.dataset.appName || row.applicant_name || '').trim();
+          if (!confirm(`${T.modal.cutoffInviteConfirm} ${name}?`)) return;
+          btn.disabled = true; btn.textContent = '⏳ Enviando…';
+          try {
+            const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: row.id });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            row.cutoff_approved_email_sent_at = data?.dispatched_at || data?.previously_sent_at || new Date().toISOString();
+            toast(`${T.modal.cutoffInviteToast} ${name}`);
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || T.modal.cutoffInviteError, 'error');
+            btn.disabled = false; btn.textContent = T.modal.cutoffInviteBtn;
           }
         });
         return;
