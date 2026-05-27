@@ -230,14 +230,40 @@ describe('p271 #411 Wave 1a — cutoff-approved modal button', () => {
     });
   });
 
-  describe('T object wiring (frontmatter fallback)', () => {
-    it('frontmatter T.modal declares the 5 cutoffInvite* keys', () => {
+  describe('T object wiring (frontmatter fallback + runtime bridge)', () => {
+    it('fallback T.modal declares the 5 cutoffInvite* keys with literal pt-BR strings', () => {
       assert.match(PAGE, /cutoffInviteBtn:\s*'📧 Enviar convite p\/ agendar'/);
       assert.match(PAGE, /cutoffInviteSent:\s*'✓ Convite enviado em'/);
       assert.match(PAGE, /cutoffInviteToast:\s*'Convite enviado para'/);
       assert.match(PAGE, /cutoffInviteError:\s*'Erro ao enviar convite'/);
       assert.match(PAGE, /cutoffInviteConfirm:\s*'Enviar convite de agendamento para'/);
     });
+
+    // p275 #411 W1a hotfix — bug surfaced in prod: badge rendered "undefined 26/05/2026, 22:13 SP"
+    // because the runtime T object (served to browser) is built via the t('admin.selection.modal.X', lang)
+    // bridge AT THE TOP of the frontmatter, separate from the fallback T at line ~666.
+    // Adding keys to ONLY the fallback leaves T.modal.cutoffInviteSent = undefined at runtime.
+    // This block locks the regression class so ANY new modal key in the future also lands in BOTH slots.
+    it('runtime T.modal bridge wires the 5 cutoffInvite* keys via t() helper', () => {
+      assert.match(PAGE, /cutoffInviteBtn:\s*t\('admin\.selection\.modal\.cutoffInviteBtn',\s*lang\)/);
+      assert.match(PAGE, /cutoffInviteSent:\s*t\('admin\.selection\.modal\.cutoffInviteSent',\s*lang\)/);
+      assert.match(PAGE, /cutoffInviteToast:\s*t\('admin\.selection\.modal\.cutoffInviteToast',\s*lang\)/);
+      assert.match(PAGE, /cutoffInviteError:\s*t\('admin\.selection\.modal\.cutoffInviteError',\s*lang\)/);
+      assert.match(PAGE, /cutoffInviteConfirm:\s*t\('admin\.selection\.modal\.cutoffInviteConfirm',\s*lang\)/);
+    });
+
+    // Forward-defense: each key must appear EXACTLY twice in selection.astro (once in runtime bridge,
+    // once in fallback). Anything less means one slot was forgotten; anything more is suspicious.
+    for (const key of ['cutoffInviteBtn','cutoffInviteSent','cutoffInviteToast','cutoffInviteError','cutoffInviteConfirm']) {
+      it(`${key} appears in BOTH T slots (count exactly 2 in source)`, () => {
+        const occurrences = PAGE.match(new RegExp(`\\b${key}:`, 'g')) || [];
+        assert.strictEqual(
+          occurrences.length,
+          2,
+          `expected ${key}: to appear 2x (runtime bridge + fallback); found ${occurrences.length} — likely missed one T slot`
+        );
+      });
+    }
   });
 
   describe('i18n parity across 3 dictionaries (SEDIMENT-235.A: all 3 langs in same PR)', () => {
