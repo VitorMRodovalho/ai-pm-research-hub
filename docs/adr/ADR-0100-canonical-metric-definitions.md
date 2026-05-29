@@ -76,6 +76,8 @@ code (`'cycle3-2026'`). This single rule retires D10, D11, and the YTD-literal f
 | **cycle_xp + rank** | cycle points = points in window; rank `ORDER BY cycle_points DESC` **in cycle mode** (not lifetime), deterministic tiebreak `member_id`; pool = `gamification_opt_out=false AND eligible-this-cycle` | current cycle | honored except admin carve-out |
 | **trail_completion** | `completed_trail_courses / NULLIF(count(is_trail courses),0)`; **dynamic** trail total (no hardcoded 6); native initiatives → `N/A`, never `0%` | all-time | n/a |
 | **cpmai_certified** | `COUNT(DISTINCT member_id)` with a CPMAI credential; one source (decide: `gamification_points` category vs `members.cpmai_certified` boolean — dictionary picks ONE) | param (cycle or all-time, stated) | n/a |
+| **champions** | champion recognition XP/count; ONE canonical source — decide between `champions_awarded` (table, source of truth for ranking/profile/admin) and `gamification_points` pillar='champions' (leaderboard/tribe). Today they are dual-written with NO reconciliation; the leaderboard chip reads 0 rows structurally. Pick one + add a parity invariant. (issue #424) | current cycle (ranking) / all-time (leaderboard) | honored except admin/leader carve-out |
+| **webinars_completed** | `COUNT(*)` from the **`webinars` table** (the architectural source of truth, decision #4) — NOT `events WHERE type='webinar'`, which the portfolio KPI currently reads (live 4 vs 7) | param window | n/a |
 
 ### 2.3 Canonical views / functions (v1)
 
@@ -139,3 +141,34 @@ Spec-only. Implementation is the Bucket B program, triaged against the active sp
 The dictionary §2.2 is the contract; the views §2.3 are the mechanism; the per-PR sequence §3 is
 the rollout. Reopen/version this ADR if a metric's canonical definition is contested during a
 per-metric PR.
+
+---
+
+## 6. Gamification-probe addenda (2026-05-29)
+
+A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found five issues
+(GI-1..GI-5) that map onto this dictionary:
+
+- **GI-3 (cycle binding) — partially shipped.** `exec_portfolio_health` now resilient-resolves the
+  cycle code (migration `20260805000057`): a code with no targets (incl. the live
+  `cycles.is_current` code `cycle_3`, whose targets live under `cycle3-2026`) falls back to the
+  latest cycle_code that has targets instead of returning an empty metric set. STILL OPEN: the
+  deeper namespace reconciliation (`cycles.cycle_code='cycle_3'` vs `portfolio_kpi_targets='cycle3-2026'`,
+  same cycle, parallel namespaces) — a data/architectural decision, not made in the resilience fix.
+- **GI-5 (KPI headlines) — partially shipped.** Removed the false chapters "Superada"
+  (`kpis.ts`, live 7 < target 8). The remaining `webinars_completed` wrong-table read is now a
+  dictionary line item (read the `webinars` table per decision #4). Labeling target-as-headline
+  values explicitly as "Meta" is a deferred frontend/UX decision (issue, Lane C).
+- **GI-4 (trail 42% vs 44%)** = the `active_member` + `trail_completion` dictionary lines. The
+  homepage `certification_trail` card (`calc_trail_completion_pct`, role-exclusion blocklist,
+  cohort 39) and the `#trailKPI` ranking average (`get_public_trail_ranking`, inclusion rule,
+  cohort 37) disagree purely on cohort membership (2 `operational_role='guest'` members with 0/6
+  in the first but not the second). Both must derive from ONE eligibility predicate
+  (`v_active_members` / a shared `trail_eligible_members`), and `calc_trail_completion_pct` must
+  read `count(courses WHERE is_trail)` instead of a hardcoded `6.0`.
+- **GI-1 (tribe coaching columns)** — `trail_completion` hardcoded `0` in both
+  `get_tribe_gamification`/`get_initiative_gamification` (compute it under the `trail_completion`
+  line); badge/cert columns read 0 despite real Credly badges (cert/badge dictionary convergence);
+  champions column dead (champions line). Coaching-depth additions tracked in the coaching issue.
+- **GI-2 (champions)** — see the new `champions` dictionary line + the discrete champions issue
+  (operational unblock + single source + parity invariant).

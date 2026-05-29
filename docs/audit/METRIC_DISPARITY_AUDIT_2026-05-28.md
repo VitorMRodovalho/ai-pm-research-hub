@@ -159,8 +159,22 @@ parameterized `get_impact_hours_canonical`, `get_attendance_rate`, `v_tribe_rost
 
 ---
 
+## GAMIFICATION PROBE (2026-05-29)
+
+Follow-up live-DB deep-dive on PM-flagged gamification concerns (workflow `wf_63279b1b-7b8`).
+
+| ID | Sev | Finding (live evidence) | Disposition |
+|---|---|---|---|
+| **GI-4** | medium | Homepage PMIxAI 6-badge trail shows **42% vs 44%** in two places — KpiSection `certification_trail` (`calc_trail_completion_pct`, cohort 39) vs TrailSection `#trailKPI` (`get_public_trail_ranking`, cohort 37). Cause = **cohort split, not rounding/denominator** (all agree on 6): the 2 extra members in A are Angeline Prado + Mario Henrique Trentim (`operational_role='guest'`, 0/6) — A's blocklist includes guest, B's inclusion rule excludes them. | → #419 (active_member + trail_completion lines) |
+| **GI-2** | — (reframe) | Champions is **NOT broken plumbing** — join/revoke/cycle all correct. It's **zero adoption** (`champions_awarded` = 1 row, REVOKED smoke test; 0 active ever) + **award path blocked** (`admin/gamification.astro:637` — tribe_leader lacks permission) + **dual disconnected sources** with no reconciliation (leaderboard 🏆 chip reads `gamification_points` pillar='champions' = 0 rows structurally; ranking reads `champions_awarded`). | → #424 |
+| **GI-1** | high | Tribe leader coaching view INADEQUATE: champions_points=0 everywhere; **badge_points/cert_points=0 despite real Credly badges** (João Coelho Júnior: 9 badges → 0/0; 15 active members platform-wide have badges, 0 badge points); `trail_completion` **hardcoded 0** in both tribe RPCs (tribe 8 shows 0% with Leticia 6/6); missing attendance-rate/inactivity/per-course-trail. | → #425 + #419 |
+| **GI-3** | high→**shipped** | `exec_portfolio_health` default `cycle3-2026` vs `cycles.is_current='cycle_3'` (parallel namespaces, same cycle); `exec_portfolio_health('cycle_3')` returned **0 metrics** → KPI grid would silently zero. **SHIPPED** migration `20260805000057`: resilient resolution (unknown code → fall back to latest target set; smoke: `cycle_3`/bogus now both return 9). Namespace reconciliation still open → #419. | **PR #422** + #419 |
+| **GI-5** | medium→**partial** | KpiSection chapters card said **"15 · Meta era 8 · Superada"** but live = **7** (target 8) → false claim. **SHIPPED** `kpis.ts` chapters → value '8', no surpassedFromGoal. Remaining: webinars KPI reads wrong table (`events.type='webinar'`=4 vs `webinars` table=7) → #419; "label target-as-headline as Meta" = deferred UX. | **PR #422** + #419 |
+
+Distinguish REAL mismatch (GI-2/3/4 + trail/badge/champions of GI-1 — numbers differ / columns dead live) from LATENT drift (tribe-vs-home trail matches 0/23 today; cycle_points window) — latent flagged in the dictionary, no PR spent yet.
+
 ## Provenance
 
-Workflow run `wf_e008b3d8-e12` (task `w12k6vhgq`). Memory:
+Workflow runs `wf_e008b3d8-e12` (cross-surface) + `wf_63279b1b-7b8` (gamification probe) (task `w12k6vhgq`). Memory:
 `memory/project_metric_disparity_audit_2026_05_28.md`. Bucket A migration
 `20260805000055`. Bucket B design: `docs/adr/ADR-0100-canonical-metric-definitions.md`.
