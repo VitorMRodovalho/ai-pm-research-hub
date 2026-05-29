@@ -128,7 +128,7 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
       </section>
 
       <!-- Section 2: Rules table -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 mb-6">
+      <section id="gam-rules-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 mb-6">
         <h2 class="text-sm font-bold text-navy mb-3">{GAM_I18N.rulesHeading}</h2>
         <div id="gam-rules-table" class="overflow-x-auto">
           <p class="text-[.7rem] text-[var(--text-muted)]">{GAM_I18N.loading}</p>
@@ -136,7 +136,7 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
       </section>
 
       {/* p171 #13 — Category activity panel (canary: never-fired rules + idle drift) */}
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+      <section id="gam-activity-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
         <div class="flex items-start justify-between mb-2 gap-3 flex-wrap">
           <div class="flex-1 min-w-0">
             <h2 class="text-sm font-bold text-navy">{GAM_I18N.activityHeading}</h2>
@@ -703,8 +703,32 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
   }
 
   function applyGate(m: any) {
-    if (hasPermission(m, 'admin.gamification')) showPanel();
+    if (hasPermission(m, 'admin.gamification')) { showPanel(); restrictSurfaceOptions(m); }
+    else if (hasPermission(m, 'champion.award')) { showChampionAwardOnly(); restrictSurfaceOptions(m); }
     else showDenied();
+  }
+
+  // Scoped champion-award access (audit GI-2 / #424): a leader with an initiative-scoped
+  // award_champion grant (e.g. tribe_leader's volunteer×leader engagement, which already passes
+  // can_by_member('award_champion','initiative', ...)) reaches ONLY the champion-award flow —
+  // NOT the org-wide rules/activity admin sections. The RPC enforces own-initiative scoping.
+  function showChampionAwardOnly() {
+    document.getElementById('gam-loading')?.classList.add('hidden');
+    document.getElementById('gam-denied')?.classList.add('hidden');
+    document.getElementById('gam-panel')?.classList.remove('hidden');
+    document.getElementById('gam-rules-section')?.classList.add('hidden');
+    document.getElementById('gam-activity-section')?.classList.add('hidden');
+    loadChampions();
+    loadCriteriaCatalog().then(() => renderCriteria());
+    maybeAutoOpenFromUrl();
+  }
+
+  // Without an org-scope grant (champion.award_general), only tribe/deliverable surfaces are
+  // allowed — drop the 'general' option so the modal can't offer a surface the RPC will reject.
+  function restrictSurfaceOptions(m: any) {
+    if (!hasPermission(m, 'champion.award_general')) {
+      document.getElementById('gam-surface')?.querySelector('option[value="general"]')?.remove();
+    }
   }
 
   async function boot() {
