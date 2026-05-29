@@ -2212,6 +2212,37 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   // ── RANKING (W140: uses get_attendance_panel for corrected denominators) ──
   let RANKING_DATA: any[] = [];
 
+  // C+B visibility (audit D2 follow-up, migration 20260805000056): non-privileged callers get
+  // ONLY their own row + an anonymous cohort aggregate. Render a private "sua presença" standing
+  // card instead of exposing the nominal list (which only leadership sees).
+  function renderStandingCard(m: any) {
+    const el = document.getElementById('ranking-list')!;
+    const rf = document.getElementById('ranking-role-filter') as HTMLElement | null;
+    const df = document.getElementById('ranking-designation-filter') as HTMLElement | null;
+    if (rf) rf.style.display = 'none';
+    if (df) df.style.display = 'none';
+    const totalMand = (m.general_mandatory || 0) + (m.tribe_mandatory || 0);
+    const totalAtt = (m.general_attended || 0) + (m.tribe_attended || 0);
+    const pct = m.combined_pct ?? 0;
+    const pctColor = pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600';
+    const avg = m.cohort_avg_pct ?? 0;
+    const ahead = m.cohort_percentile ?? 0;
+    const size = m.cohort_size ?? 0;
+    el.innerHTML = `
+      <div class="space-y-4">
+        <div class="text-center py-2">
+          <div class="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-1">Sua presença</div>
+          <div class="text-4xl font-extrabold ${pctColor}">${pct}%</div>
+          <div class="text-[12px] text-[var(--text-muted)] mt-1">${totalAtt}/${totalMand} reuniões obrigatórias</div>
+        </div>
+        <div class="rounded-lg bg-[var(--surface-section-cool)] p-3 text-[12px] text-[var(--text-secondary)] space-y-1">
+          <div class="flex justify-between"><span>Média da coorte (${size} membros)</span><span class="font-bold">${avg}%</span></div>
+          <div class="flex justify-between"><span>Você está à frente de</span><span class="font-bold">${ahead}% da coorte</span></div>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] text-center leading-relaxed">O ranking nominal completo é visível apenas à liderança. Você vê sua posição relativa de forma anônima.</p>
+      </div>`;
+  }
+
   function renderRankingRows(data: any[]) {
     const el = document.getElementById('ranking-list')!;
     if (!data.length) {
@@ -2255,6 +2286,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const { data, error } = await sb.rpc('get_attendance_panel');
       if (error) throw error;
       RANKING_DATA = data || [];
+      // C+B: a row carrying cohort_size means the caller is non-privileged (self + anonymous
+      // aggregate only). Render the private standing card and skip the nominal list + filters.
+      const standingRow = RANKING_DATA.find((r: any) => r.cohort_size != null);
+      if (standingRow) { renderStandingCard(standingRow); return; }
       renderRankingRows(RANKING_DATA);
 
       // Bind role + designation filters

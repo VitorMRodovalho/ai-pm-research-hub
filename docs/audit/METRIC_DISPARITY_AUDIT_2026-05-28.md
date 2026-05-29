@@ -78,12 +78,27 @@ Contract test: `tests/contracts/p276-bucket-a-lgpd-auth-hardening.test.mjs` (14 
 4 DB-gated; forward-defense locks the opt-out clause, the anon gate, and the pipeline gate).
 
 > Note: today **0 active members are opted-out**, so D1 has no visible effect yet — it is
-> forward-defense restoring the consent mechanism. The combined-attendance-% ranking still
-> shows **all** members' % to every authenticated member; whether that ranking itself should
-> be restricted is a **product/privacy decision for the PM** (D2 closed the clear-cut
-> anon + dropout-risk leak, not this softer policy question). `manage_partner` is broad
+> forward-defense restoring the consent mechanism. `manage_partner` is broad
 > (researchers hold it), so the initiative grid mirror is mostly consistency + own-engagement
 > semantics; tightening `manage_partner` is a separate cross-cutting decision.
+
+### Attendance-ranking visibility — RESOLVED (model C+B, shipped 2026-05-28)
+
+The open product/privacy question ("should the combined-% ranking show all members' % to every
+authenticated member?") was decided by the PM: **model C+B**, migration
+`20260805000056_p277_attendance_ranking_visibility_cb.sql`.
+
+- **C:** a non-privileged caller now gets **only their own row** + an **anonymous cohort
+  aggregate** (`cohort_avg_pct`, `cohort_percentile`, `cohort_size`) — no peer names/%. Leadership
+  (`manage_event`) + GP keep the full nominal ranking. This **completes D2**: without other
+  members' raw `combined_pct`, the `< 50` dropout-risk flag can no longer be re-derived by eye.
+- **B:** the gamification opt-out keeps its XP-leaderboard meaning; leaders intentionally retain
+  operational attendance visibility (legitimate interest), so opt-out does not blind a leader.
+- The aggregate is computed from the existing `computed` CTE — **no new inline attendance
+  formula** (ADR-0100 discipline). The leftover anon/PUBLIC execute grant was revoked. The
+  `/attendance` Ranking tab renders a private "sua presença" standing card for rank-and-file.
+- LGPD basis: data minimization (Art. 6 III) — members keep the motivational signal (own % vs
+  anonymous cohort) without seeing any third party's personal attendance datum.
 
 ---
 
