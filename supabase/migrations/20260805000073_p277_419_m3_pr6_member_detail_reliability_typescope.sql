@@ -47,6 +47,10 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.get_attendance_rate(uuid, date) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_attendance_rate(uuid, date) TO service_role;
+COMMENT ON FUNCTION public.get_attendance_rate(uuid, date) IS
+  'RELIABILITY per-member: present / (present+absent), excused excluded, over RECORDED rows at event types '
+  '{geral,kickoff,tribo,lideranca} within cycles.is_current (open => CURRENT_DATE). p277 #419 PR6 added the '
+  'event-type scope + removed the 2026-03-01 date-literal fallback so it converges with engagement.';
 
 -- ── 2. get_attendance_reliability_summary — type-scope the `recorded` CTE (same 4-arg sig) ────────────
 CREATE OR REPLACE FUNCTION public.get_attendance_reliability_summary(p_scope text DEFAULT 'global', p_scope_id integer DEFAULT NULL, p_cycle_start date DEFAULT NULL, p_chapter text DEFAULT NULL)
@@ -180,28 +184,48 @@ BEGIN
     -- Raw present/absent/excused/no_record over the member's ELIGIBLE events (type-scoped, member-scoped).
     -- recent[] lists eligible events with present = att.present = true (not "a row exists") + an excused flag.
     'attendance', (
-      WITH att AS (
+      -- TWO populations, kept separate so each metric's raw counts reconcile with its own rate (PR6 review MED):
+      --   elig = the member's ELIGIBLE events (pairs with engagement / Participacao)
+      --   rec  = the member's type-scoped RECORDED rows = exactly get_attendance_rate's population (pairs with
+      --          reliability / Confiabilidade). rec mirrors get_attendance_rate's WHERE (member + cycle window +
+      --          type set); reliability_pct itself stays the canonical primitive (no inline rate re-impl).
+      WITH elig AS (
         SELECT a.present, a.excused
         FROM public._attendance_eligible_events(p_member_id) el
         LEFT JOIN public.attendance a ON a.member_id = p_member_id AND a.event_id = el.event_id
+      ),
+      rec AS (
+        SELECT a.present, a.excused
+        FROM public.attendance a
+        JOIN public.events e ON e.id = a.event_id
+        WHERE a.member_id = p_member_id
+          AND e.date >= (SELECT c.cycle_start FROM public.cycles c WHERE c.is_current = true LIMIT 1)
+          AND e.date <= CURRENT_DATE
+          AND e.status IS DISTINCT FROM 'cancelled'
+          AND e.type IN ('geral', 'kickoff', 'tribo', 'lideranca')
       )
       SELECT jsonb_build_object(
         'engagement_pct', ROUND(COALESCE(public.get_attendance_engagement_rate(p_member_id), 0) * 100, 1),
         'reliability_pct', ROUND(COALESCE(public.get_attendance_rate(p_member_id), 0) * 100, 1),
-        'eligible_total', count(*),
-        'present', count(*) FILTER (WHERE present = true),
-        'absent', count(*) FILTER (WHERE present = false AND excused IS NOT TRUE),
-        'excused', count(*) FILTER (WHERE excused = true),
-        'no_record', count(*) FILTER (WHERE present IS NULL),
+        -- engagement breakdown (eligible population):
+        'eligible_total', (SELECT count(*) FROM elig),
+        'present', (SELECT count(*) FILTER (WHERE present = true) FROM elig),
+        'absent', (SELECT count(*) FILTER (WHERE present = false AND excused IS NOT TRUE) FROM elig),
+        'excused', (SELECT count(*) FILTER (WHERE excused = true) FROM elig),
+        'no_record', (SELECT count(*) FILTER (WHERE present IS NULL) FROM elig),
+        -- reliability breakdown (recorded population — reconciles with reliability_pct):
+        'recorded_total', (SELECT count(*) FROM rec),
+        'recorded_present', (SELECT count(*) FILTER (WHERE present = true) FROM rec),
+        'recorded_absent', (SELECT count(*) FILTER (WHERE present = false AND excused IS NOT TRUE) FROM rec),
+        'recorded_excused', (SELECT count(*) FILTER (WHERE excused = true) FROM rec),
         'recent', (SELECT COALESCE(jsonb_agg(jsonb_build_object(
           'event_name', ev.title, 'event_date', el.event_date,
-          'present', COALESCE(a.present, false), 'excused', COALESCE(a.excused, false)
+          'present', a.present, 'excused', COALESCE(a.excused, false)
         ) ORDER BY el.event_date DESC), '[]'::jsonb)
         FROM (SELECT * FROM public._attendance_eligible_events(p_member_id) ORDER BY event_date DESC LIMIT 20) el
         JOIN public.events ev ON ev.id = el.event_id
         LEFT JOIN public.attendance a ON a.event_id = el.event_id AND a.member_id = p_member_id)
       )
-      FROM att
     ),
     'publications', (SELECT COALESCE(jsonb_agg(jsonb_build_object(
       'id', ps.id, 'title', ps.title, 'status', ps.status,

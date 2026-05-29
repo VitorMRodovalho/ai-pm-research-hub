@@ -58,11 +58,16 @@ test('m3 PR6: get_member_detail attendance → two-metric + raw counts (same sig
   assert.match(body, /SET search_path TO ''/, 'empty search_path preserved (public.-qualified refs)');
   assert.match(code, /'engagement_pct', ROUND\(COALESCE\(public\.get_attendance_engagement_rate\(p_member_id\), 0\) \* 100, 1\)/);
   assert.match(code, /'reliability_pct', ROUND\(COALESCE\(public\.get_attendance_rate\(p_member_id\), 0\) \* 100, 1\)/);
-  for (const k of ['present', 'absent', 'excused', 'no_record', 'eligible_total']) {
+  // two populations (PR6 review MED): engagement breakdown (eligible) + reliability breakdown (recorded)
+  for (const k of ['present', 'absent', 'excused', 'no_record', 'eligible_total',
+                   'recorded_total', 'recorded_present', 'recorded_absent', 'recorded_excused']) {
     assert.ok(code.includes(`'${k}'`), `attendance raw count key ${k}`);
   }
-  // recent[] now built from the member's eligible events
+  // rec CTE = the member's type-scoped recorded rows (mirrors get_attendance_rate's population, reconciles reliability_pct)
+  assert.match(code, /rec AS \([\s\S]*?WHERE a\.member_id = p_member_id[\s\S]*?e\.type IN \('geral', 'kickoff', 'tribo', 'lideranca'\)[\s\S]*?\)/);
+  // recent[] from the member's eligible events, present nullable (no COALESCE to false → distinguishes no-record)
   assert.match(code, /'recent',[\s\S]*?public\._attendance_eligible_events\(p_member_id\)/);
+  assert.match(code, /'present', a\.present, 'excused', COALESCE\(a\.excused, false\)/);
   assert.match(body, /NOTIFY\s+pgrst/);
 });
 
@@ -80,11 +85,15 @@ test('m3 PR6 FE: MemberDetailIsland renders Participação + Confiabilidade w/ r
   assert.match(comp, /engagement_pct: number; reliability_pct: number/);
   assert.match(comp, /data\.attendance\.engagement_pct/);
   assert.match(comp, /data\.attendance\.reliability_pct/);
+  // engagement card pairs with the eligible breakdown; reliability card pairs with the RECORDED breakdown (PR6 review MED)
   assert.match(comp, /data\.attendance\.present[\s\S]*data\.attendance\.absent[\s\S]*data\.attendance\.excused/);
+  assert.match(comp, /data\.attendance\.recorded_present[\s\S]*data\.attendance\.recorded_absent[\s\S]*data\.attendance\.recorded_excused/);
   assert.match(comp, /Participação/);
   assert.match(comp, /Confiabilidade/);
-  // excused distinguished in the recent table (not just present/absent)
-  assert.match(comp, /evt\.excused \?/);
+  // recent table: 4-state (excused / present / absent / no-record dash), not 2-state
+  assert.match(comp, /evt\.excused \?[\s\S]*evt\.present === true \?[\s\S]*evt\.present === false \?/);
+  // engagement headline uses the file's standard teal accent (text-teal-500), not the darker brand text-teal
+  assert.match(comp, /text-teal-500">\{data\.attendance\.engagement_pct\}/);
   // old buggy fields no longer read
   assert.ok(!/data\.attendance\.rate\b/.test(comp), 'old .rate read gone');
   assert.ok(!/data\.attendance\.attended\b/.test(comp), 'old .attended read gone');
