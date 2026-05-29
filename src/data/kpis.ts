@@ -12,7 +12,7 @@ export interface Kpi {
 }
 
 export const KPIS: Kpi[] = [
-  { value: '15',     labelKey: 'data.kpi.chapters', surpassedFromGoal: '8' },
+  { value: '8',      labelKey: 'data.kpi.chapters' },
   { value: '3',      labelKey: 'data.kpi.partners' },
   { value: '70%',    labelKey: 'data.kpi.certTrail' },
   { value: '2',      labelKey: 'data.kpi.cpmai' },
