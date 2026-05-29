@@ -120,7 +120,6 @@ BEGIN
     jsonb_build_object(
       'id', m.id, 'name', m.name, 'chapter', m.chapter, 'operational_role', m.operational_role,
       'xp_total', COALESCE((SELECT SUM(points) FROM public.gamification_points WHERE member_id = m.id), 0),
-      -- p277 PR3b: canonical per-member engagement rate (was tribe-scoped recorded + LEAST guard)
       'attendance_rate', COALESCE(public.get_attendance_engagement_rate(m.id), 0),
       'cpmai_certified', COALESCE(m.cpmai_certified, false),
       'last_activity_at', GREATEST(m.updated_at, (SELECT MAX(a2.created_at) FROM public.attendance a2 WHERE a2.member_id = m.id))
@@ -159,7 +158,6 @@ BEGIN
   WHERE i.legacy_tribe_id = p_tribe_id AND e.date >= v_cycle_start AND e.date <= CURRENT_DATE;
 
   IF v_total_meetings > 0 AND v_members_active > 0 THEN
-    -- p277 PR3b: canonical tribe engagement rate (was members×meetings + LEAST guard)
     v_attendance_rate := COALESCE((public.get_attendance_engagement_summary('tribe', p_tribe_id) ->> 'avg_rate')::numeric, 0);
 
     SELECT ROUND(COUNT(*) FILTER (WHERE a.present = true)::numeric / NULLIF(v_total_meetings, 0), 1)
