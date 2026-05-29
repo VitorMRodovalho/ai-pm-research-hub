@@ -47,9 +47,11 @@ const CR_I18N = {
   curSlaOk: t('cycleReport.curSlaOk', lang),
   attColTribe: t('cycleReport.attColTribe', lang),
   attColMembers: t('cycleReport.attColMembers', lang),
-  attColGeneralPct: t('cycleReport.attColGeneralPct', lang),
-  attColTribePct: t('cycleReport.attColTribePct', lang),
-  attColCombinedPct: t('cycleReport.attColCombinedPct', lang),
+  attColEngagement: t('cycleReport.attColEngagement', lang),
+  attColReliability: t('cycleReport.attColReliability', lang),
+  attEngagementLbl: t('cycleReport.attEngagementLbl', lang),
+  attReliabilityLbl: t('cycleReport.attReliabilityLbl', lang),
+  attEngagementHint: t('cycleReport.attEngagementHint', lang),
   attColAtRisk: t('cycleReport.attColAtRisk', lang),
   footerTemplate: t('cycleReport.footerTemplate', lang),
   roleLabels: {
@@ -207,8 +209,9 @@ const CR_I18N = {
     curReviewed: 'Revisados', curApproved: 'Aprovados', curInReview: 'Em Revisão',
     curAvgTime: 'Tempo Médio', curSlaOk: 'SLA OK',
     attColTribe: 'Tribo', attColMembers: 'Membros',
-    attColGeneralPct: 'Geral %', attColTribePct: 'Tribo %',
-    attColCombinedPct: 'Combinado %', attColAtRisk: 'Em Risco',
+    attColEngagement: 'Participação %', attColReliability: 'Confiabilidade %',
+    attEngagementLbl: 'Participação (geral)', attReliabilityLbl: 'Confiabilidade de registro',
+    attEngagementHint: 'presença / encontros esperados', attColAtRisk: 'Em Risco',
     footerTemplate: 'Gerado em {date} · Núcleo IA & GP · nucleoia.vitormr.dev',
     roleLabels: {
       researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo',
@@ -517,31 +520,51 @@ const CR_I18N = {
     }
 
     // Attendance by tribe
+    // p277 #419 m3 PR5a: attendance is now an object {engagement, reliability, by_tribe[]} (decoupled from
+    // get_attendance_summary / combined_pct). Headline = Participação (engagement); Confiabilidade shown as
+    // the ops diagnostic WITH raw P/A/E counts (admin surface — D10-compliant).
     const attEl = document.getElementById('cr-attendance');
-    if (attEl && Array.isArray(r.attendance) && r.attendance.length > 0) {
+    const att = (r.attendance && !Array.isArray(r.attendance)) ? r.attendance : {};
+    const engG = att.engagement || {};
+    const relG = att.reliability || {};
+    const byTribe = Array.isArray(att.by_tribe) ? att.by_tribe : [];
+    if (attEl && byTribe.length > 0) {
+      const engPct = engG.avg_rate != null ? (Number(engG.avg_rate) * 100).toFixed(1) : '—';
+      const relPct = relG.avg_rate != null ? (Number(relG.avg_rate) * 100).toFixed(1) : '—';
       attEl.innerHTML = `
+        <div class="flex flex-wrap gap-3 mb-3">
+          <div class="rounded-lg px-3 py-2 bg-[var(--surface-base)] border border-[var(--border-subtle)]">
+            <div class="text-[10px] uppercase font-bold text-[var(--text-muted)]">${T.attEngagementLbl}</div>
+            <div class="text-lg font-extrabold text-teal">${engPct}%</div>
+            <div class="text-[9px] text-[var(--text-muted)]">${T.attEngagementHint} · n=${engG.cohort_n || 0} · ⚠ ${engG.at_risk_count || 0}</div>
+          </div>
+          <div class="rounded-lg px-3 py-2 bg-[var(--surface-base)] border border-[var(--border-subtle)]">
+            <div class="text-[10px] uppercase font-bold text-[var(--text-muted)]">${T.attReliabilityLbl}</div>
+            <div class="text-lg font-extrabold text-[var(--text-secondary)]">${relPct}%</div>
+            <div class="text-[9px] text-[var(--text-muted)]">P ${relG.present_total || 0} · A ${relG.absent_total || 0} · E ${relG.excused_total || 0}</div>
+          </div>
+        </div>
         <table class="w-full text-xs">
           <thead>
             <tr class="bg-[var(--surface-base)]">
               <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColTribe}</th>
               <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColMembers}</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColGeneralPct}</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColTribePct}</th>
-              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColCombinedPct}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColEngagement}</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColReliability}</th>
               <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">${T.attColAtRisk}</th>
             </tr>
           </thead>
           <tbody>
-            ${r.attendance.map((a: any) => {
-              const combined = Number(a.avg_combined_pct) || 0;
+            ${byTribe.map((a: any) => {
+              const e = Number(a.engagement_pct) || 0;
+              const rel = Number(a.reliability_pct) || 0;
               const risk = Number(a.at_risk_count) || 0;
-              const color = combined >= 75 ? 'text-emerald-600' : combined >= 50 ? 'text-amber-600' : 'text-red-600';
+              const color = e >= 75 ? 'text-emerald-600' : e >= 50 ? 'text-amber-600' : 'text-red-600';
               return `<tr class="border-t border-[var(--border-subtle)]">
                 <td class="px-3 py-2 font-semibold text-[var(--text-primary)]">${a.tribe_name}</td>
                 <td class="px-3 py-2 text-center">${a.members_count}</td>
-                <td class="px-3 py-2 text-center">${a.avg_geral_pct}%</td>
-                <td class="px-3 py-2 text-center">${a.avg_tribe_pct}%</td>
-                <td class="px-3 py-2 text-center font-bold ${color}">${combined}%</td>
+                <td class="px-3 py-2 text-center font-bold ${color}">${e}%</td>
+                <td class="px-3 py-2 text-center text-[var(--text-secondary)]">${rel}% <span class="text-[9px] text-[var(--text-muted)]">(P${a.present_total || 0}/A${a.absent_total || 0}/E${a.excused_total || 0})</span></td>
                 <td class="px-3 py-2 text-center">${risk > 0 ? `<span class="text-red-600 font-bold">${risk}</span>` : '—'}</td>
               </tr>`;
             }).join('')}
