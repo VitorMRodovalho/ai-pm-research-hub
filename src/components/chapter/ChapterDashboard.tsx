@@ -17,47 +17,47 @@ const T: Record<string, Record<string, string>> = {
   'pt-BR': {
     subtitle: 'Visão executiva da contribuição do seu capítulo ao Núcleo.',
     cycle: 'Ciclo 3', print: 'Imprimir', selectChapter: 'Selecionar capítulo',
-    members: 'Membros Ativos', output: 'Produção Científica', attendance: 'Taxa de Presença',
+    members: 'Membros Ativos', output: 'Produção Científica', attendance: 'Participação',
     hours: 'Horas Contribuídas', pdu: 'PDUs (máx 25)', certs: 'Certificações PMI',
     partnerships: 'Parcerias', gamification: 'Gamificação', avgXp: 'XP Médio',
     active: 'Ativas', negotiation: 'Em negociação', trail: 'Trilha IA',
     compTitle: 'Seu Capítulo vs Média do Núcleo', compChapter: 'Capítulo', compHub: 'Núcleo',
     membersTitle: 'Membros do Capítulo', name: 'Nome', role: 'Papel', xp: 'XP',
-    attendanceLbl: 'Presença', trailLbl: 'Trilha', topTitle: 'Top Contribuidores',
+    trailLbl: 'Trilha', topTitle: 'Top Contribuidores',
     noData: 'Sem dados para este capítulo.', loading: 'Carregando...',
     observers: 'Observadores', alumni: 'Alumni', completed: 'Cards concluídos',
     publications: 'Publicações', hubAvg: 'vs Núcleo', other: 'Outros',
-    activeParticipation: 'ativos', eventsPerMember: 'eventos/membro',
+    reliabilityLbl: 'Confiabilidade',
   },
   'en-US': {
     subtitle: 'Executive view of your chapter contribution to the Hub.',
     cycle: 'Cycle 3', print: 'Print', selectChapter: 'Select chapter',
-    members: 'Active Members', output: 'Research Output', attendance: 'Attendance Rate',
+    members: 'Active Members', output: 'Research Output', attendance: 'Participation',
     hours: 'Hours Contributed', pdu: 'PDUs (max 25)', certs: 'PMI Certifications',
     partnerships: 'Partnerships', gamification: 'Gamification', avgXp: 'Avg XP',
     active: 'Active', negotiation: 'In negotiation', trail: 'AI Trail',
     compTitle: 'Your Chapter vs Hub Average', compChapter: 'Chapter', compHub: 'Hub',
     membersTitle: 'Chapter Members', name: 'Name', role: 'Role', xp: 'XP',
-    attendanceLbl: 'Attendance', trailLbl: 'Trail', topTitle: 'Top Contributors',
+    trailLbl: 'Trail', topTitle: 'Top Contributors',
     noData: 'No data for this chapter.', loading: 'Loading...',
     observers: 'Observers', alumni: 'Alumni', completed: 'Cards completed',
     publications: 'Publications', hubAvg: 'vs Hub', other: 'Other',
-    activeParticipation: 'active', eventsPerMember: 'events/member',
+    reliabilityLbl: 'Reliability',
   },
   'es-LATAM': {
     subtitle: 'Vista ejecutiva de la contribución de su capítulo al Hub.',
     cycle: 'Ciclo 3', print: 'Imprimir', selectChapter: 'Seleccionar capítulo',
-    members: 'Miembros Activos', output: 'Producción Científica', attendance: 'Tasa de Asistencia',
+    members: 'Miembros Activos', output: 'Producción Científica', attendance: 'Participación',
     hours: 'Horas Contribuidas', pdu: 'PDUs (máx 25)', certs: 'Certificaciones PMI',
     partnerships: 'Alianzas', gamification: 'Gamificación', avgXp: 'XP Promedio',
     active: 'Activas', negotiation: 'En negociación', trail: 'Ruta IA',
     compTitle: 'Su Capítulo vs Promedio del Hub', compChapter: 'Capítulo', compHub: 'Hub',
     membersTitle: 'Miembros del Capítulo', name: 'Nombre', role: 'Rol', xp: 'XP',
-    attendanceLbl: 'Asistencia', trailLbl: 'Ruta', topTitle: 'Top Contribuidores',
+    trailLbl: 'Ruta', topTitle: 'Top Contribuidores',
     noData: 'Sin datos para este capítulo.', loading: 'Cargando...',
     observers: 'Observadores', alumni: 'Egresados', completed: 'Cards completados',
     publications: 'Publicaciones', hubAvg: 'vs Hub', other: 'Otros',
-    activeParticipation: 'activos', eventsPerMember: 'eventos/miembro',
+    reliabilityLbl: 'Confiabilidad',
   },
 };
 
@@ -123,8 +123,8 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
         data: {
           labels: [t.members, t.attendance, t.avgXp],
           datasets: [
-            { label: t.compChapter, data: [p.active || 0, a.rate_pct || 0, g.avg_xp || 0], backgroundColor: '#0d9488' },
-            { label: t.compHub, data: [p.hub_total || 0, 70, g.hub_avg_xp || 0], backgroundColor: '#94a3b8' },
+            { label: t.compChapter, data: [p.active || 0, a.engagement?.avg_rate != null ? Math.round(a.engagement.avg_rate * 100) : 0, g.avg_xp || 0], backgroundColor: '#0d9488' },
+            { label: t.compHub, data: [p.hub_total || 0, a.hub_engagement_pct || 0, g.hub_avg_xp || 0], backgroundColor: '#94a3b8' },
           ],
         },
         options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
@@ -175,7 +175,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 metric-cards">
         <MetricCard icon="👥" label={t.members} value={p.active || 0} sub={`${p.observers || 0} ${t.observers} · ${p.alumni || 0} ${t.alumni}`} />
         <MetricCard icon="📄" label={t.output} value={o.board_cards_completed || 0} sub={`${o.publications_submitted || 0} ${t.publications}`} />
-        <MetricCard icon="📊" label={t.attendance} value={`${a.rate_pct || 0}%`} sub={`${t.activeParticipation} · ~${a.avg_events_per_member || 0} ${t.eventsPerMember}`} />
+        <MetricCard icon="📊" label={t.attendance} value={`${a.engagement?.avg_rate != null ? Math.round(a.engagement.avg_rate * 100) : 0}%`} sub={`${t.reliabilityLbl} ${a.reliability?.avg_rate != null ? Math.round(a.reliability.avg_rate * 100) : '—'}% · P${a.reliability?.present_total ?? 0}/A${a.reliability?.absent_total ?? 0}/E${a.reliability?.excused_total ?? 0}`} />
         <MetricCard icon="⏱️" label={t.hours} value={`${h.total_hours || 0}h`} sub={`${t.pdu}: ${h.pdu_equivalent || 0}`} />
         <MetricCard icon="🎓" label={t.certs} value={c.total_certs || 0} sub={`PMP: ${c.pmp || 0} · CPMAI: ${c.cpmai || 0}${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0) > 0 ? ` · ${t.other}: ${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0)}` : ''}`} />
         <MetricCard icon="🤝" label={t.partnerships} value={pr.total || 0} sub={`${pr.active || 0} ${t.active} · ${pr.negotiation || 0} ${t.negotiation}${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0) > 0 ? ` · ${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0)} ${t.other}` : ''}`} />
@@ -216,7 +216,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
                 <th className="px-3 py-2 text-left font-bold text-[var(--text-secondary)]">{t.name}</th>
                 <th className="px-2 py-2 text-center font-bold text-[var(--text-secondary)]">{t.role}</th>
                 <th className="px-2 py-2 text-center font-bold text-[var(--text-secondary)]">{t.xp}</th>
-                <th className="px-2 py-2 text-center font-bold text-[var(--text-secondary)]">{t.attendanceLbl}</th>
+                <th className="px-2 py-2 text-center font-bold text-[var(--text-secondary)]">{t.attendance}</th>
                 <th className="px-2 py-2 text-center font-bold text-[var(--text-secondary)]">{t.trailLbl}</th>
               </tr>
             </thead>
