@@ -172,3 +172,21 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
   champions column dead (champions line). Coaching-depth additions tracked in the coaching issue.
 - **GI-2 (champions)** — see the new `champions` dictionary line + the discrete champions issue
   (operational unblock + single source + parity invariant).
+
+## 7. Ratified PM decisions (during #419 implementation)
+
+- **2026-05-29 — `active_member` first converges (metric 2).** Shipped `v_active_members` view
+  (`is_active AND current_cycle_active`) + converged 3 real-drift org-level RPCs
+  (get_platform_usage, get_sustainability_projections, get_pilot_metrics: 53→52). The legacy
+  `public.active_members` view (is_active-only, consumed by BoardEngine/AttendanceForm + FK metadata)
+  was deliberately NOT reused — v_ prefix avoids a silent consumer break; its reconciliation is a
+  separate open decision.
+- **2026-05-29 — CARVE-OUT (PM-ratified): chapter dashboards keep `member_status`.** The
+  chapter dashboards (get_chapter_dashboard people.active/by_role) and the admin members roster
+  (MemberListIsland) intentionally count "active members" by `member_status = 'active'` (the member
+  LIFECYCLE enum), NOT the canonical cycle-activity predicate. This is a deliberate, ratified
+  carve-out: chapter/admin lifecycle views answer "who is an active member of the chapter" (lifecycle),
+  which is a different question from "who is active in the current cycle" (the org-level canonical
+  headline). The `active_member` canonical convergence therefore applies to ORG-LEVEL headcounts only;
+  chapter/admin member_status counts are out of scope by design. Revisit only if the chapter program
+  decides its dashboards should track cycle-activity instead of lifecycle.
