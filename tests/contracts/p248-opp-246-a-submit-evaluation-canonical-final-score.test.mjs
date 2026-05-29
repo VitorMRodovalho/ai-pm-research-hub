@@ -192,9 +192,13 @@ describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naï
           .maybeSingle();
         if (error) assert.fail(`probe error: ${error.message}`);
         assert.ok(data, 'Francisleila row must exist');
-        // Tolerate small float noise: leader_score canonical is 158.30, final_score must match
-        assert.equal(Number(data.final_score), Number(data.leader_score), 'final_score must equal leader_score (canonical)');
-        assert.ok(Math.abs(Number(data.final_score) - 158.30) < 0.01, `Francisleila final_score expected ~158.30 canonical, got ${data.final_score}`);
+        // OPP-246.A invariant: final_score is the CANONICAL compute (= leader_score for a leader
+        // app), never a naïve interview+leader sum. The specific value is transient — it evolves
+        // as the candidate is (re-)evaluated (was 158.30 at the p248 cleanup; Francisleila has since
+        // been interviewed and her canonical leader_score moved, with final_score correctly
+        // tracking it). Assert the canonical RELATIONSHIP, not a frozen number (the frozen 158.30
+        // is preserved as immutable history in the p248 reconciliation audit row, asserted below).
+        assert.equal(Number(data.final_score), Number(data.leader_score), 'final_score must equal leader_score (canonical — no naïve-sum drift, the OPP-246.A invariant)');
       });
 
       it('canonical reconciliation audit row present + idempotent', async () => {

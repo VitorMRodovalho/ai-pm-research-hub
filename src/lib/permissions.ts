@@ -80,6 +80,8 @@ export type Permission =
   | 'gamification.calculate'
   | 'gamification.view_ranking'
   | 'gamification.view_own'
+  | 'champion.award'           // award tribe/deliverable champions (initiative-scoped grantor)
+  | 'champion.award_general'   // also award the general (org-wide) surface
   // ── Content ──
   | 'content.submit_publication'
   | 'content.curate'
@@ -118,6 +120,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'event.create', 'event.edit', 'event.attendance_batch', 'event.view_all',
     'gamification.sync', 'gamification.calculate',
     'gamification.view_ranking', 'gamification.view_own',
+    'champion.award', 'champion.award_general',
     'content.submit_publication', 'content.curate',
     'content.view_publications', 'content.blog_manage',
     'data.export_own_lgpd', 'data.export_all_lgpd',
@@ -155,6 +158,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'event.create', 'event.edit', 'event.attendance_batch', 'event.view_own_tribe',
     'gamification.view_ranking', 'gamification.view_own',
     'content.submit_publication', 'content.view_publications',
+    'champion.award',
     'data.view_tribe_members', 'data.export_own_lgpd',
     'workspace.access', 'workspace.view_tribe_dashboard',
   ],
@@ -208,6 +212,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.governance.view', 'admin.gamification',
     'board.view_all', 'board.view_global',
     'data.view_members', 'data.view_analytics',
+    'champion.award', 'champion.award_general',
     'event.view_all',
   ],
   curator: [
@@ -217,6 +222,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   comms_leader: [
     'board.view_global',
     'admin.gamification',
+    'champion.award', 'champion.award_general',
   ],
   comms_member: [
     'board.view_global',

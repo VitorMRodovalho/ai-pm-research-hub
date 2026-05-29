@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { marked } from 'marked';
+import { hasPermission } from '../../lib/permissions';
 
 interface Meeting {
   id: string;
@@ -48,6 +49,12 @@ const L: Record<string, Record<string, string>> = {
     byTribe: 'Por tribo',
     recorded: 'Gravados',
     withMinutes: 'Com ata',
+    championsTitle: 'Champions da noite',
+    championsHint: 'Marque quem se destacou nesta reunião. A lista alimenta a premiação de Champion (presentes, ranqueados por contribuição no ciclo).',
+    championsSave: 'Salvar champions',
+    championsSaved: 'Champions salvos',
+    championsNone: 'Sem presentes para sugerir.',
+    championsLoading: 'Carregando candidatos...',
   },
   'en-US': {
     title: 'Meeting Minutes',
@@ -72,6 +79,12 @@ const L: Record<string, Record<string, string>> = {
     byTribe: 'By tribe',
     recorded: 'Recorded',
     withMinutes: 'With minutes',
+    championsTitle: 'Champions of the night',
+    championsHint: 'Tag who stood out in this meeting. The list feeds the Champion award (present members, ranked by cycle contribution).',
+    championsSave: 'Save champions',
+    championsSaved: 'Champions saved',
+    championsNone: 'No present members to suggest.',
+    championsLoading: 'Loading candidates...',
   },
   'es-LATAM': {
     title: 'Actas de Reunión',
@@ -96,6 +109,12 @@ const L: Record<string, Record<string, string>> = {
     byTribe: 'Por tribu',
     recorded: 'Grabados',
     withMinutes: 'Con acta',
+    championsTitle: 'Champions de la noche',
+    championsHint: 'Marca quién se destacó en esta reunión. La lista alimenta la premiación de Champion (presentes, ordenados por contribución del ciclo).',
+    championsSave: 'Guardar champions',
+    championsSaved: 'Champions guardados',
+    championsNone: 'Sin presentes para sugerir.',
+    championsLoading: 'Cargando candidatos...',
   },
 };
 
@@ -105,6 +124,88 @@ interface ComplianceData {
   total_recorded: number;
   total_with_minutes: number;
   overall_pct: number;
+}
+
+interface ChampionCandidate { member_id: string; member_name: string; designation_summary: string; }
+
+// p277 F2 — "champions da noite" capture. Shows present-member candidates (force-derived from
+// get_event_champion_suggestions), pre-checks the currently-saved ones, and persists the picks via
+// set_event_champions → events.suggested_champion_ids → award modal (F3 override) → award_champion.
+function ChampionPicker({ eventId, sb, labels }: { eventId: string; sb: any; labels: Record<string, string> }) {
+  const [candidates, setCandidates] = useState<ChampionCandidate[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setSaved(false);
+    (async () => {
+      try {
+        const [pool, current] = await Promise.all([
+          sb.rpc('get_event_champion_suggestions', { p_event_id: eventId, p_force_derive: true }),
+          sb.rpc('get_event_champion_suggestions', { p_event_id: eventId, p_force_derive: false }),
+        ]);
+        if (!alive) return;
+        const cands: ChampionCandidate[] = pool.data || [];
+        setCandidates(cands);
+        const currentIds = new Set((current.data || []).map((r: any) => r.member_id));
+        setSelected(new Set(cands.filter((c) => currentIds.has(c.member_id)).map((c) => c.member_id)));
+      } catch { /* gate may reject; the section is permission-gated upstream anyway */ }
+      if (alive) setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [eventId, sb]);
+
+  const toggle = (id: string) => setSelected((prev) => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data, error } = await sb.rpc('set_event_champions', { p_event_id: eventId, p_champion_ids: Array.from(selected) });
+      if (error || data?.error) throw new Error(error?.message || data?.error || 'erro');
+      setSaved(true);
+      (window as any).toast?.(labels.championsSaved, 'success');
+    } catch (e: any) {
+      (window as any).toast?.(`${labels.championsTitle}: ${e?.message || 'erro'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-[var(--border-default)] pt-4">
+      <h3 className="text-sm font-bold text-navy mb-1">🏆 {labels.championsTitle}</h3>
+      <p className="text-[11px] text-[var(--text-muted)] mb-2">{labels.championsHint}</p>
+      {loading ? (
+        <p className="text-[11px] text-[var(--text-muted)]">{labels.championsLoading}</p>
+      ) : candidates.length === 0 ? (
+        <p className="text-[11px] text-[var(--text-muted)]">{labels.championsNone}</p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {candidates.map((c) => (
+              <button key={c.member_id} type="button" onClick={() => toggle(c.member_id)} title={c.designation_summary}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-colors ${selected.has(c.member_id) ? 'bg-navy text-white border-navy' : 'bg-[var(--surface-base)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
+                {selected.has(c.member_id) ? '✓ ' : ''}{c.member_name}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={save} disabled={saving}
+            className="px-4 py-2 rounded-lg bg-navy text-white text-xs font-semibold cursor-pointer border-0 hover:opacity-90 disabled:opacity-50 transition-opacity">
+            {saving ? '…' : `${labels.championsSave} (${selected.size})`}
+          </button>
+          {saved && <span className="ml-2 text-[11px] text-emerald-600 font-semibold">✓ {labels.championsSaved}</span>}
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
@@ -118,8 +219,22 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [includeEmpty, setIncludeEmpty] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [member, setMember] = useState<any>(null);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+
+  useEffect(() => {
+    setMember((window as any).navGetMember?.() || null);
+    const onMember = (e: any) => setMember(e?.detail || null);
+    window.addEventListener('nav:member', onMember as EventListener);
+    return () => window.removeEventListener('nav:member', onMember as EventListener);
+  }, []);
+
+  // p277 F2: leaders (manage_event) or initiative-scoped grantors (champion.award) can tag the
+  // "champions da noite" on a meeting → feeds set_event_champions → the award modal (F3 override).
+  const canCurateChampions = !!member && (hasPermission(member, 'manage_event') || hasPermission(member, 'champion.award'));
+  const closeDetail = () => { closeDetail(); setSelectedEventId(null); };
 
   const loadMeetings = useCallback(async () => {
     const sb = getSb();
@@ -177,7 +292,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
     const sb = getSb();
     if (!sb) return;
     const { data } = await sb.rpc('get_meeting_detail', { p_event_id: meetingId });
-    if (data && !data.error) setSelectedMeeting(data);
+    if (data && !data.error) { setSelectedEventId(meetingId); setSelectedMeeting(data); }
   };
 
   // Group meetings by tribe
@@ -289,7 +404,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
       {/* Detail modal */}
       {selectedMeeting && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-start justify-center p-4 overflow-y-auto"
-             onClick={(e) => { if (e.target === e.currentTarget) setSelectedMeeting(null); }}>
+             onClick={(e) => { if (e.target === e.currentTarget) closeDetail(); }}>
           <div className="bg-[var(--surface-card)] rounded-2xl max-w-3xl w-full mt-12 shadow-xl">
             <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-start justify-between gap-3">
               <div>
@@ -300,7 +415,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                   {` · ${selectedMeeting.attendee_count} ${l.attendees}`}
                 </div>
               </div>
-              <button onClick={() => setSelectedMeeting(null)} className="text-2xl text-[var(--text-muted)] hover:text-navy">×</button>
+              <button onClick={() => closeDetail()} className="text-2xl text-[var(--text-muted)] hover:text-navy">×</button>
             </div>
             <div className="p-5 max-h-[70vh] overflow-y-auto space-y-4">
               {selectedMeeting.event.youtube_url && (
@@ -332,6 +447,9 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                 </div>
               ) : (
                 <div className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg">{l.noMinutes}</div>
+              )}
+              {canCurateChampions && selectedEventId && (
+                <ChampionPicker eventId={selectedEventId} sb={getSb()} labels={l} />
               )}
             </div>
             {/* Print button */}
