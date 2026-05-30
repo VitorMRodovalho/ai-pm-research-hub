@@ -14,18 +14,22 @@
 -- (1) get_attendance_panel was the LAST surface still on a divergent model: it selected candidate events by
 --     TAGS (general_meeting / tribe_meeting) and scoped eligibility via is_event_mandatory_for_member
 --     (event_audience_rules). That model is alive (334 rules, 73+152 tagged events) but produced a DIFFERENT
---     global number — panel 81.5% / 83.2% operational vs the canonical home/tribe/chapter/cycle/member-detail
+--     global number — panel operational avg = 70.5% vs the canonical home/tribe/chapter/cycle/member-detail
 --     76.2%. The 3 panel consumers (HomepageHero widget, workspace AttendanceDashboard, /attendance ranking)
---     silently disagreed with every other surface. Root causes of 76.2 vs 81.5: (a) the audience-rule model
---     under-counts denominators for managers + NULL-tribe members (e.g. Roberto Macêdo read 100% on the panel
---     — mandatory for only 2 events — vs 22.2% everywhere else; Vitor's denom 24 audience vs 44 type), and
---     (b) tag candidate set != type candidate set (only 12 of 24 'geral' events carry the general_meeting tag).
---     PM decision B: TYPE-BASED is canonical (simplest, least maintenance, already shipped on 5 surfaces).
---     This rewrites the panel onto _attendance_eligible_events. Roberto now reads 22.2% on the panel too
---     (consistent with his home/member-detail). Most members unchanged (already 100% attendance). The exact
---     18-col TABLE shape, the D2 active-member gate, privileged/own-row visibility, and the C+B anonymous
---     cohort aggregate (avg/percentile/size) are preserved VERBATIM. general bucket = eligible non-tribo
---     (geral/kickoff/lideranca — mirrors the old general_meeting tag grouping); tribe bucket = eligible tribo.
+--     silently disagreed with every other surface. The two models select DIFFERENT candidate events (tag-set
+--     vs type-set — e.g. only ~10 events carry the general_meeting tag vs 14 of type geral/kickoff/lideranca)
+--     and scope eligibility differently (audience-rules + curator exclusion vs per-member type eligibility), so
+--     the numbers drifted. PM decision B: TYPE-BASED is canonical (simplest, least maintenance, already shipped
+--     on 5 surfaces). This rewrites the panel onto _attendance_eligible_events — panel operational avg now 76.2%
+--     (== home calc_attendance_pct 76.2 == get_attendance_engagement_summary('global') 76.19). MEASURED
+--     antes->depois: panel op avg 70.5 -> 76.2; Roberto Macêdo (curator) 0 -> 22.2 (the old panel excluded
+--     curators from its mandatory denominator → 0; the type-based panel computes his rate but still labels him
+--     'curator' in typology + excludes him from the cohort aggregate, consistent with his home/member-detail
+--     22.2%); 34 -> 41 rows with nonzero combined_pct. The exact 18-col TABLE shape, the D2 active-member gate,
+--     privileged/own-row visibility, and the C+B anonymous cohort aggregate (avg/percentile/size) are preserved
+--     VERBATIM (live: non-priv researcher gets 1 own row + cohort_avg 76.2 / size 40 / percentile). general
+--     bucket = eligible non-tribo (geral/kickoff/lideranca — mirrors the old general_meeting tag grouping);
+--     tribe bucket = eligible tribo.
 --     Excused excluded from denominators (D1). CREATE OR REPLACE → existing ACL (anon/authenticated/
 --     service_role EXECUTE; anon gated to empty rows in-body) preserved; no GRANT/REVOKE here by design.
 -- (2) DROP get_attendance_summary(date,date,integer): orphan since PR5a decoupled exec_cycle_report. Verified

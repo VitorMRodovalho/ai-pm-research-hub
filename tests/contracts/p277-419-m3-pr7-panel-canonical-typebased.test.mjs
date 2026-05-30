@@ -3,13 +3,14 @@
  *
  * PM decision B (2026-05-29): TYPE-BASED (_attendance_eligible_events) is the canonical Participação model.
  * get_attendance_panel was the last surface on a divergent model (tag-candidate + event_audience_rules eligibility
- * → 81.5%/83.2% vs the canonical 76.2%). Rewritten onto _attendance_eligible_events; the 18-col TABLE shape +
- * D2 gate + privileged/own-row visibility + C+B cohort aggregate preserved verbatim. get_attendance_summary
+ * → operational avg 70.5% vs the canonical 76.2%). Rewritten onto _attendance_eligible_events; the 18-col TABLE
+ * shape + D2 gate + privileged/own-row visibility + C+B cohort aggregate preserved verbatim. get_attendance_summary
  * (orphan since PR5a) DROPPED.
  *
- * Live smoke: panel operational avg 83.2 → 76.2 (== home calc_attendance_pct 76.2 == engagement_global 76.19).
- * Roberto Macêdo 100 → 22.2 (now consistent with home/member-detail). Non-priv researcher (Ligia) still gets
- * exactly 1 own row + cohort_avg 76.2/size 40. anon → 0 rows. summary gone. Phase-C md5 file==live.
+ * Live smoke (MEASURED): panel operational avg 70.5 → 76.2 (== home calc_attendance_pct 76.2 == engagement_global
+ * 76.19). Roberto Macêdo (curator, excluded from the old panel's mandatory denom) 0 → 22.2 (now consistent with
+ * home/member-detail). Non-priv researcher (Ligia) gets exactly 1 own row + own_combined 94.7 / cohort_avg 76.2 /
+ * cohort_size 40 / percentile 92. anon → 0 rows. summary gone. Phase-C md5 file==live (25a00caced…).
  *
  * Migration: supabase/migrations/20260805000074_p277_419_m3_pr7_panel_canonical_typebased.sql
  * Cross-ref: SPEC_419_M3_ATTENDANCE_TWO_METRIC.md §5 surfaces 2/11 + §7 PR7 + the Canonical Principle section.
