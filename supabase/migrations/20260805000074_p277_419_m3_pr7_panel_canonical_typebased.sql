@@ -71,7 +71,7 @@ BEGIN
   RETURN QUERY
   WITH active AS (
     SELECT m.id, m.name AS m_name, tr.name AS t_name, m.tribe_id AS t_id,
-           m.operational_role AS op_role,
+           m.operational_role AS op_role, m.current_cycle_active AS cca,
            (m.designations IS NOT NULL AND m.designations @> ARRAY['curator']::text[]) AS is_curator
     FROM public.members m LEFT JOIN public.tribes tr ON tr.id = m.tribe_id
     WHERE m.is_active = true
@@ -96,7 +96,7 @@ BEGIN
     WHERE a.present = true GROUP BY a.member_id
   ),
   computed AS (
-    SELECT a.id, a.m_name, a.t_name, a.t_id, a.op_role, a.is_curator,
+    SELECT a.id, a.m_name, a.t_name, a.t_id, a.op_role, a.is_curator, a.cca,
       COALESCE(pm.g_mand,0) AS g_mand, COALESCE(pm.g_att,0) AS g_att,
       CASE WHEN COALESCE(pm.g_mand,0)>0 THEN ROUND(pm.g_att::numeric/pm.g_mand*100,1) ELSE 0 END AS g_pct,
       COALESCE(pm.t_mand,0) AS t_mand, COALESCE(pm.t_att,0) AS t_att,
@@ -109,18 +109,26 @@ BEGIN
     LEFT JOIN per_member pm ON pm.mid = a.id
     LEFT JOIN last_att la ON la.member_id = a.id
   ),
-  -- C+B anonymous aggregate: comparable population = members with eligible events, excl curators.
+  -- C+B anonymous aggregate (PR7 review MED): the peer population MUST equal the CANONICAL engagement cohort
+  -- (current_cycle_active + operational union {researcher,tribe_leader,manager}, non-curator, with eligible
+  -- events) so the non-privileged standing card's cohort_avg_pct == the public home headline 76.2. Using the
+  -- looser "any active member with eligible events" set dragged it to 53.7 (50 ppl incl observers / NULL-tribe
+  -- researchers outside the cycle) — a cross-surface disagreement on the same metric to the same user. The
+  -- NOMINAL ranking (privileged leaders, the final SELECT below) is unaffected — leaders still see ALL active.
   cohort AS (
     SELECT ROUND(AVG(c.c_pct), 1) AS avg_pct, COUNT(*)::int AS sz
     FROM computed c
     WHERE (c.g_mand + c.t_mand) > 0 AND NOT c.is_curator
+      AND c.cca = true AND c.op_role IN ('researcher','tribe_leader','manager')
   ),
   caller AS (
     SELECT
       ROUND(100.0 * (
         SELECT COUNT(*) FROM computed c2
-        WHERE (c2.g_mand + c2.t_mand) > 0 AND NOT c2.is_curator AND c2.c_pct < c.c_pct
-      ) / NULLIF((SELECT COUNT(*) FROM computed c3 WHERE (c3.g_mand + c3.t_mand) > 0 AND NOT c3.is_curator), 0), 0) AS ahead_pct
+        WHERE (c2.g_mand + c2.t_mand) > 0 AND NOT c2.is_curator
+          AND c2.cca = true AND c2.op_role IN ('researcher','tribe_leader','manager') AND c2.c_pct < c.c_pct
+      ) / NULLIF((SELECT COUNT(*) FROM computed c3 WHERE (c3.g_mand + c3.t_mand) > 0 AND NOT c3.is_curator
+          AND c3.cca = true AND c3.op_role IN ('researcher','tribe_leader','manager')), 0), 0) AS ahead_pct
     FROM computed c WHERE c.id = v_caller_id
   )
   SELECT c.id, c.m_name, c.t_name, c.t_id, c.op_role,

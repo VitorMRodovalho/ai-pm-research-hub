@@ -64,6 +64,18 @@ test('m3 PR7: D2 gate + privileged/own-row visibility + C+B cohort aggregate pre
   assert.ok(!/GRANT|REVOKE/.test(code), 'no grant churn (preserve existing ACL for authenticated callers)');
 });
 
+test('m3 PR7 (review MED): C+B cohort population == canonical engagement cohort (not the looser active+eligible set)', () => {
+  // The anonymous peer aggregate (cohort/caller CTEs) must filter to current_cycle_active + the operational union,
+  // so the non-privileged standing card's cohort_avg matches the public home headline 76.2 (was 53.7 over 50 ppl).
+  // All 3 cohort-defining clauses (cohort, caller numerator, caller denominator) carry the canonical filter.
+  const canonicalFilter = /c(?:2|3)?\.cca = true AND c(?:2|3)?\.op_role IN \('researcher','tribe_leader','manager'\)/g;
+  const hits = code.match(canonicalFilter) || [];
+  assert.ok(hits.length >= 3, `canonical cohort filter on all 3 cohort clauses (found ${hits.length})`);
+  // current_cycle_active threaded through active → computed for the filter to reference
+  assert.match(code, /m\.current_cycle_active AS cca/);
+  assert.match(code, /SELECT a\.id, a\.m_name, a\.t_name, a\.t_id, a\.op_role, a\.is_curator, a\.cca/);
+});
+
 test('m3 PR7: orphan get_attendance_summary dropped', () => {
   assert.match(body, /DROP FUNCTION IF EXISTS public\.get_attendance_summary\(date, date, integer\)/);
   assert.match(body, /NOTIFY\s+pgrst/);
