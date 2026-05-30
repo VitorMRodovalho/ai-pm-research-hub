@@ -88,6 +88,29 @@ a meaningful "of your sealed roster, % present".
 
 ---
 
+## 3b. CANONICAL ELIGIBILITY PRINCIPLE (PM ratified 2026-05-29 — prerequisite for ALL future metrics)
+
+**`public._attendance_eligible_events(member, cycle_start)` is the SINGLE source of attendance eligibility.**
+It is **type-based**: candidate events are `{geral, kickoff, tribo, lideranca}` in the `cycles.is_current`
+window (open ⇒ `CURRENT_DATE`); per-member scoping is `geral/kickoff` → all operational; `tribo` → own tribe
+via `get_member_tribe` (resolved through `initiatives.legacy_tribe_id`); `lideranca` → `can_by_member('manage_event')`.
+
+**No surface may reintroduce a parallel eligibility model** — specifically NOT the tag-based one
+(`general_meeting`/`tribe_meeting` via `event_tag_assignments`) nor the `event_audience_rules` /
+`is_event_mandatory_for_member` one. Both were live and produced a **divergent** global number (panel operational
+avg **70.5%** vs the canonical **76.2%**) because the two models select different candidate events (tag-set vs
+type-set — e.g. ~10 events carry the `general_meeting` tag vs 14 of type `geral/kickoff/lideranca`) and scope
+eligibility differently (audience-rules + curator exclusion vs per-member type eligibility). **Decision (Option B):**
+type-based wins — simplest, least maintenance, self-consistent, already shipped on 5 surfaces. PR7 converged the
+last hold-out (`get_attendance_panel`, the 3 consumers home-widget/workspace/ranking) onto it (measured **70.5 →
+76.2**, now == home `calc_attendance_pct` 76.2 == `engagement_global` 76.19; Roberto Macêdo, a curator the old panel
+excluded, **0 → 22.2** consistent with his home/member-detail) and dropped the orphan `get_attendance_summary`. The
+**PR10 p175 gate** forward-defends this principle (no new tag/audience-rule attendance eligibility in any RPC). The
+richer `event_audience_rules` precision is parked as a possible *future* enhancement only after a data-quality audit
+of rule + tag coverage — never as a second live model.
+
+---
+
 ## 4. RPC architecture
 
 | Primitive | Status | Role |
