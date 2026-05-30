@@ -3,7 +3,18 @@ description: Rules for SQL migrations, RPCs, and database changes
 globs: supabase/**/*.sql, src/lib/database.gen.ts
 ---
 
+---
+description: Database rules — GC-097 pre-commit validation, RPC signature changes, DDL via apply_migration (not execute_sql), LGPD/RLS, V4 authority audit
+paths:
+  - "supabase/migrations/**"
+  - "supabase/functions/**"
+  - "**/*.sql"
+---
+
 # Database Rules
+
+> Path-scoped (2026-05-30): loads only when SQL/migration/EF files are in context. If it loads on every session
+> anyway, the harness ignores `paths:` — verify with `/memory`. (See `reference_process_fix_and_context_hygiene_2026_05_30`.)
 
 ## Pre-Commit Validation (GC-097)
 1. Check FK constraints: `SELECT constraint_name, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'TABLE'::regclass AND contype = 'f';`
