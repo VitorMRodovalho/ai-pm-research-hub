@@ -319,7 +319,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         if (!myRow) { attEl.innerHTML = `<div class="text-sm text-white/50">${i18nNoData}</div>`; return; }
         const gPct = myRow.general_pct || 0;
         const tPct = myRow.tribe_pct || 0;
-        const tribeEvents = myRow.tribe_events_count ?? myRow.tribe_total ?? 0;
+        const tribeEvents = myRow.tribe_mandatory ?? 0;
         const tribeDisplay = tribeEvents > 0 ? `${tPct}%` : '—';
         const combined = myRow.combined_pct || 0;
         const color = combined >= 75 ? '#10B981' : combined >= 50 ? '#F59E0B' : '#EF4444';
