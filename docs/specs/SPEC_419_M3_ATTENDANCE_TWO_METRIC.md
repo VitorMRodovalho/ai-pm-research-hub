@@ -88,6 +88,27 @@ a meaningful "of your sealed roster, % present".
 
 ---
 
+## 3b. CANONICAL ELIGIBILITY PRINCIPLE (PM ratified 2026-05-29 — prerequisite for ALL future metrics)
+
+**`public._attendance_eligible_events(member, cycle_start)` is the SINGLE source of attendance eligibility.**
+It is **type-based**: candidate events are `{geral, kickoff, tribo, lideranca}` in the `cycles.is_current`
+window (open ⇒ `CURRENT_DATE`); per-member scoping is `geral/kickoff` → all operational; `tribo` → own tribe
+via `get_member_tribe` (resolved through `initiatives.legacy_tribe_id`); `lideranca` → `can_by_member('manage_event')`.
+
+**No surface may reintroduce a parallel eligibility model** — specifically NOT the tag-based one
+(`general_meeting`/`tribe_meeting` via `event_tag_assignments`) nor the `event_audience_rules` /
+`is_event_mandatory_for_member` one. Both were live and produced a **divergent** global number (panel 81.5%/83.2%
+vs the canonical 76.2%) because (a) audience-rules under-count denominators for managers + NULL-tribe members
+(e.g. Roberto Macêdo read 100% on the panel vs 22.2% everywhere else) and (b) the tag candidate set ≠ the type
+candidate set (only 12 of 24 `geral` events carry the `general_meeting` tag). **Decision (Option B):** type-based
+wins — simplest, least maintenance, self-consistent, already shipped on 5 surfaces. PR7 converged the last
+hold-out (`get_attendance_panel`, the 3 consumers home-widget/workspace/ranking) onto it (81.5 → 76.2) and dropped
+the orphan `get_attendance_summary`. The **PR10 p175 gate** forward-defends this principle (no new
+tag/audience-rule attendance eligibility in any RPC). The richer `event_audience_rules` precision is parked as a
+possible *future* enhancement only after a data-quality audit of rule + tag coverage — never as a second live model.
+
+---
+
 ## 4. RPC architecture
 
 | Primitive | Status | Role |
