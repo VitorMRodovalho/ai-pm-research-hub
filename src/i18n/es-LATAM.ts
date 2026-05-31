@@ -5223,7 +5223,7 @@ const esLATAM: Record<string, string> = {
   'admin.selection.importJsonCorrelationCycle': 'Ciclo',
   'admin.selection.importJsonCorrelationApplied': 'Aplicado en',
   'admin.selection.importJsonErrorsHeader': 'Errores del worker (por scope)',
-  'admin.selection.importJsonIngestResultWarning': 'Aviso del JSON enviado (resultado de la Phase A extract)',
+  'admin.selection.importJsonIngestResultWarning': 'Aviso de la extracción (script Phase A) — no afecta a este import, que se completó con éxito',
   'admin.selection.opportunityIdField': 'Opportunity ID (del PMI VEP)',
   'admin.selection.defaultRole': 'Rol default',
   'admin.selection.dropZoneText': 'Arrastra el CSV aquí o haz clic para seleccionar',
