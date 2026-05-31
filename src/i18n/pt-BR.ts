@@ -5228,7 +5228,7 @@ const ptBR: Record<string, string> = {
   'admin.selection.importJsonCorrelationCycle': 'Ciclo',
   'admin.selection.importJsonCorrelationApplied': 'Aplicado em',
   'admin.selection.importJsonErrorsHeader': 'Erros do worker (por escopo)',
-  'admin.selection.importJsonIngestResultWarning': 'Aviso do JSON enviado (resultado da Phase A extract)',
+  'admin.selection.importJsonIngestResultWarning': 'Aviso da extração (script Phase A) — não afeta este import, que foi concluído com sucesso',
   'admin.selection.opportunityIdField': 'Opportunity ID (do PMI VEP)',
   'admin.selection.defaultRole': 'Papel default',
   'admin.selection.dropZoneText': 'Arraste o CSV aqui ou clique para selecionar',

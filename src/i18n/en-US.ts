@@ -5222,7 +5222,7 @@ const enUS: Record<string, string> = {
   'admin.selection.importJsonCorrelationCycle': 'Cycle',
   'admin.selection.importJsonCorrelationApplied': 'Applied at',
   'admin.selection.importJsonErrorsHeader': 'Worker errors (by scope)',
-  'admin.selection.importJsonIngestResultWarning': 'Uploaded JSON warning (Phase A extract result)',
+  'admin.selection.importJsonIngestResultWarning': 'Extraction warning (Phase A script) — does not affect this import, which completed successfully',
   'admin.selection.opportunityIdField': 'Opportunity ID (from PMI VEP)',
   'admin.selection.defaultRole': 'Default role',
   'admin.selection.dropZoneText': 'Drop the CSV here or click to select',
