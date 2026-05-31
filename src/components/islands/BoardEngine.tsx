@@ -341,7 +341,7 @@ export default function BoardEngine(props: BoardEngineProps) {
             {activeItem ? (
               <div className="bg-[var(--surface-card)] rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
                 <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2">{activeItem.title}</h4>
-                {activeItem.assignee_name && <p className="text-[10px] text-[var(--text-muted)] mt-1">👤 {activeItem.assignee_name}</p>}
+                {(activeItem.assignments?.length || activeItem.assignee_name) && <p className="text-[10px] text-[var(--text-muted)] mt-1">👤 {activeItem.assignments?.length ? activeItem.assignments.map((a) => a.name).join(', ') : activeItem.assignee_name}</p>}
               </div>
             ) : null}
           </DragOverlay>
