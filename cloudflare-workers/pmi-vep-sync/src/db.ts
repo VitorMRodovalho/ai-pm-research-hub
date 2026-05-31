@@ -310,7 +310,8 @@ export async function upsertSelectionApplication(
 ): Promise<UpsertResult> {
   const { data: existing } = await db
     .from('selection_applications')
-    .select('id, cycle_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
+    // email + vep_reconciled_at needed for the #444 reconciled-email freeze below.
+    .select('id, cycle_id, email, vep_reconciled_at, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
     .eq('vep_application_id', payload.vep_application_id)
     .eq('vep_opportunity_id', payload.vep_opportunity_id)
     .maybeSingle();
@@ -321,7 +322,17 @@ export async function upsertSelectionApplication(
     const commonRefresh = {
       pmi_id: payload.pmi_id,
       applicant_name: payload.applicant_name,
-      email: payload.email,
+      // #444: freeze the email once an admin has manually reconciled this app to a
+      // member (vep_reconciled_at set). The worker matches by COMPOUND KEY
+      // (vep_application_id, vep_opportunity_id), NOT by email, so a PMI re-sync
+      // would otherwise overwrite a reconciled email↔member link back to the raw
+      // PMI email — silently breaking invariant R_approved_application_has_member
+      // and red-lighting CI for unrelated PRs on every cycle import (live case:
+      // Paulo Alves, app 6259ced2, clobbered pejota81 over the reconciled
+      // paulo-junior on the 2026-05-30 sync). Writing back the existing value is a
+      // deliberate no-op that preserves the reconciliation across every future sync;
+      // non-reconciled rows refresh email from PMI exactly as before.
+      email: existing.vep_reconciled_at ? existing.email : payload.email,
       phone: payload.phone,
       linkedin_url: payload.linkedin_url,
       resume_url: payload.resume_url,
