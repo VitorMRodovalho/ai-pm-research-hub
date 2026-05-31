@@ -52,7 +52,7 @@
     "@tiptap/extension-image": "^3.22.2",
     "@tiptap/extension-link": "^3.22.2",
     "@tiptap/extension-placeholder": "^3.22.2",
-    "@tiptap/pm": "^3.22.2",
+    "@tiptap/pm": "^3.24.0",
     "@tiptap/react": "^3.22.2",
     "@tiptap/starter-kit": "^3.22.2",
     "@turbodocx/html-to-docx": "^1.20.1",
