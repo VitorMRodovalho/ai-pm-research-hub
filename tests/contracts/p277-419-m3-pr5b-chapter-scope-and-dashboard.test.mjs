@@ -99,7 +99,8 @@ test('m3 PR5b DB: chapter scope returns the member_status=active cohort engageme
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO' });
   assert.ok(!error, error?.message);
-  assert.equal(Number(data.cohort_n), 20, 'PMI-GO chapter cohort (member_status=active) = 20');
+  // Drift-tolerant band (p277 PR11): PMI-GO active chapter cohort drifts w/ roster (live 2026-05-31: 19, was 20).
+  assert.ok(Number(data.cohort_n) >= 12 && Number(data.cohort_n) <= 28, `PMI-GO active chapter cohort (got ${data.cohort_n})`);
   const r = Number(data.avg_rate);
   assert.ok(r > 0.40 && r < 0.60, `PMI-GO engagement ~0.50 (got ${r})`);
   assert.ok(Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count still present on 4-arg');
@@ -114,7 +115,9 @@ test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no 
   // 1-arg global call must still resolve unambiguously to the 4-arg fn
   const { data: g, error: e2 } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global' });
   assert.ok(!e2, e2?.message);
-  assert.equal(Number(g.cohort_n), 37, 'global cohort still 37 (PR2-PR4 callers unbroken)');
+  // Drift-tolerant band (p277 PR11): global cohort drifts w/ roster (live 2026-05-31: 35, was 37); the point of
+  // this assertion is that the 1-arg call still resolves to the 4-arg fn (no ambiguous overload), cohort non-broken.
+  assert.ok(Number(g.cohort_n) >= 30 && Number(g.cohort_n) <= 45, `global cohort ~mid-30s, PR2-PR4 callers unbroken (got ${g.cohort_n})`);
 });
 
 test('m3 PR5b DB: get_chapter_dashboard auth gate intact (unauthenticated → error envelope)', { skip: dbGated ? false : skipMsg }, async () => {
