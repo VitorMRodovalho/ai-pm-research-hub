@@ -115,8 +115,11 @@ test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort 37 + ~76% gl
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global' });
   assert.ok(!error, error?.message);
   assert.ok(data && Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count key present');
-  assert.equal(Number(data.cohort_n), 37, 'operational cohort = 37');
+  // Drift-tolerant band (p277 PR11): the operational cohort + global engagement drift with the roster
+  // (live 2026-05-31: cohort 35, rate 0.7991; were 37 / ~0.76 at PR5a ship — 2 members lost operational_role).
+  // DB-gated exact-count baselines must not red CI on normal attrition.
+  assert.ok(Number(data.cohort_n) >= 30 && Number(data.cohort_n) <= 45, `operational cohort ~mid-30s (got ${data.cohort_n})`);
   const rate = Number(data.avg_rate);
-  assert.ok(rate >= 0.74 && rate <= 0.78, `global engagement ~0.76 (got ${rate})`);
+  assert.ok(rate >= 0.70 && rate <= 0.90, `global engagement high-70s/low-80s (got ${rate})`);
   assert.ok(Number(data.at_risk_count) >= 0, 'at_risk_count numeric');
 });
