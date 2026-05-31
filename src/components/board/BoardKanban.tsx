@@ -125,10 +125,10 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
         </div>
       )}
 
-      {/* Assignee + Reviewer */}
+      {/* Assignee(s) + Reviewer — prefer the multi-role "Participantes" (assignments); fall back to legacy single assignee_id (#440) */}
       <div className="flex items-center gap-2 mb-1">
-        {item.assignee_name && (
-          <span className="text-[10px] text-[var(--text-secondary)]">👤 {item.assignee_name}</span>
+        {(item.assignments?.length || item.assignee_name) && (
+          <span className="text-[10px] text-[var(--text-secondary)]">👤 {item.assignments?.length ? item.assignments.map((a) => a.name).join(', ') : item.assignee_name}</span>
         )}
         {item.reviewer_name && (
           <span className="text-[10px] text-purple-500">🔍 {item.reviewer_name}</span>
