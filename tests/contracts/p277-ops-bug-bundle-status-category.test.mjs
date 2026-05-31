@@ -1,12 +1,16 @@
-// Contract test — p277 ops-bug bundle: meeting decisions (#450) + offboarding (#449)
-// Guards the two runtime-failure fixes in migration 20260805000076:
-//  #450 register_decision + create_action_item(kind='decision') wrote status='completed',
-//       invalid under meeting_action_items_status_check = {open,done,cancelled,carried_over}.
-//       Fix: 'completed' -> 'done'.
-//  #449 _offboarding_create_stub fell through to NULL reason_category_code (NOT NULL + FK)
-//       for free-text reasons matching no heuristic. Fix: coalesce(v_inferred_category,'other').
-// Static-source assertions (offline) + DB-gated smoke.
+// Contract test — p277 ops-bug bundle (#449 offboarding category + #450 meeting decision status)
+// Guards migration 20260805000078 (MINIMAL scope, PM-ratified 2026-05-31).
 //
+// #450 register_decision + create_action_item(kind='decision') wrote status='completed',
+//      invalid under meeting_action_items_status_check = {open,done,cancelled,carried_over}
+//      -> every decision-registration RPC failed (23514). Fix: 'completed' -> 'done'.
+// #449 _offboarding_create_stub (AFTER UPDATE trigger) fell through to NULL reason_category_code
+//      (NOT NULL + FK offboard_reason_categories) for free-text reasons -> whole offboard rolled
+//      back (23502). Fix: COALESCE(v_inferred_category,'other'). offboard_member also passed the
+//      phantom 'administrative' (not a real code) -> changed to the real code 'other'.
+//      admin_offboard_member is restored to its original body (precision deferred).
+//
+// Static-source assertions (offline-safe) + a DB-gated smoke.
 // Registered in package.json "test" + "test:contracts".
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,63 +20,70 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..');
-const MIG = join(REPO, 'supabase', 'migrations', '20260805000076_ops_bug_bundle_status_and_category.sql');
+const MIG = join(REPO, 'supabase', 'migrations',
+  '20260805000078_ops_bug_bundle_meeting_status_offboarding_category.sql');
+const src = readFileSync(MIG, 'utf8');
 
-const migSrc = readFileSync(MIG, 'utf8');
-
-// ── #450 static-source assertions (always run, offline-safe) ──────────────────
-test('#450 register_decision inserts the valid terminal status done', () => {
-  assert.match(migSrc, /register_decision[\s\S]*'decision', 'done'/, "register_decision must use 'done'");
+// ── #450 — valid meeting status ───────────────────────────────────────────────
+test('#450 register_decision writes the valid terminal status done', () => {
+  assert.match(src, /'decision', 'done'/, "register_decision must INSERT status 'done'");
 });
 
-test('#450 create_action_item decision branch maps to done', () => {
-  assert.match(migSrc, /when p_kind = 'decision' then 'done' else 'open' end/, "decision branch must yield 'done'");
+test('#450 create_action_item decision branch yields done', () => {
+  assert.match(src, /WHEN p_kind = 'decision' THEN 'done' ELSE 'open' END/,
+    "create_action_item decision branch must yield 'done'");
 });
 
-test('#450 no meeting action item is written with the invalid completed status', () => {
-  // The only valid terminal statuses are {open,done,cancelled,carried_over}.
-  // 'completed' must not appear as a meeting_action_items status literal.
-  assert.doesNotMatch(migSrc, /'decision', 'completed'/, 'register_decision must not write completed');
-  assert.doesNotMatch(migSrc, /then 'completed' else 'open'/, 'create_action_item must not write completed');
+test('#450 the invalid completed status is gone from meeting-item writes', () => {
+  assert.doesNotMatch(src, /'decision', 'completed'/, 'register_decision must not write completed');
+  assert.doesNotMatch(src, /THEN 'completed' ELSE 'open'/, 'create_action_item must not write completed');
 });
 
-// ── #449 static-source assertions ─────────────────────────────────────────────
-test('#449 _offboarding_create_stub coalesces a missing category to other', () => {
-  assert.match(migSrc, /coalesce\(v_inferred_category, 'other'\)/, "must coalesce to the valid 'other' code");
+// ── #449 — offboarding category never NULL, never phantom ──────────────────────
+test('#449 trigger coalesces a missing/invalid category to the real code other', () => {
+  assert.match(src, /COALESCE\(v_inferred_category, 'other'\)/,
+    "trigger must fall back to the valid 'other' code, never NULL");
 });
 
-test('#449 heuristic inference is preserved (no regression)', () => {
-  // the ILIKE heuristics must still map known reasons before falling back to 'other'
-  assert.match(migSrc, /ilike '%mudança%'[\s\S]*'relocation'/, 'relocation heuristic retained');
-  assert.match(migSrc, /ilike '%trabalho%'[\s\S]*'career_change'/, 'career_change heuristic retained');
+test('#449 offboard_member passes the real category code, not the phantom administrative', () => {
+  assert.match(src, /p_reason_category => 'other'/, "offboard_member must pass 'other'");
+  assert.doesNotMatch(src, /administrative/, "the phantom 'administrative' code must be gone");
 });
 
-// ── invariants preserved on all three CREATE OR REPLACE ───────────────────────
-test('all three functions preserve SECURITY DEFINER + empty search_path', () => {
-  const secdef = migSrc.match(/SECURITY DEFINER/g) || [];
-  const sp = migSrc.match(/SET search_path TO ''/g) || [];
-  assert.equal(secdef.length, 3, 'three SECURITY DEFINER');
-  assert.equal(sp.length, 3, "three SET search_path TO ''");
+test('#449 admin_offboard_member is restored to its original reason write (minimal scope)', () => {
+  // minimal scope keeps the original behaviour: status_change_reason = COALESCE(detail, category)
+  assert.match(src, /status_change_reason = COALESCE\(p_reason_detail, p_reason_category\)/,
+    'admin_offboard_member must keep its original status_change_reason expression');
+});
+
+// ── invariants preserved on every CREATE OR REPLACE ───────────────────────────
+test('all five functions preserve SECURITY DEFINER + search_path', () => {
+  // newline-anchored so the header comment's prose "SECURITY DEFINER" is not counted
+  assert.equal((src.match(/\n SECURITY DEFINER\n/g) || []).length, 5, 'five SECURITY DEFINER clauses');
+  assert.equal((src.match(/SET search_path TO 'public', 'pg_temp'/g) || []).length, 5,
+    "five SET search_path TO 'public', 'pg_temp'");
 });
 
 test('signatures are preserved exactly (minimum-diff CREATE OR REPLACE)', () => {
-  assert.match(migSrc, /register_decision\(p_event_id uuid, p_decision_text text, p_decision_maker_id uuid, p_rationale text\)/);
-  assert.match(migSrc, /create_action_item\(p_event_id uuid, p_description text, p_assignee_id uuid, p_due_date date, p_board_item_id uuid, p_checklist_item_id uuid, p_kind text\)/);
-  assert.match(migSrc, /_offboarding_create_stub\(p_member_id uuid, p_reason text, p_reason_category_code text, p_initiated_by uuid, p_notes text\)/);
+  assert.match(src, /register_decision\(p_event_id uuid, p_title text, p_description text DEFAULT NULL::text, p_related_card_ids uuid\[\] DEFAULT NULL::uuid\[\]\)/);
+  assert.match(src, /create_action_item\(p_event_id uuid, p_description text, p_assignee_id uuid DEFAULT NULL::uuid, p_due_date date DEFAULT NULL::date, p_board_item_id uuid DEFAULT NULL::uuid, p_checklist_item_id uuid DEFAULT NULL::uuid, p_kind text DEFAULT 'action'::text\)/);
+  assert.match(src, /_offboarding_create_stub\(\)\n RETURNS trigger/);
+  assert.match(src, /admin_offboard_member\(p_member_id uuid, p_new_status text, p_reason_category text, p_reason_detail text DEFAULT NULL::text, p_reassign_to uuid DEFAULT NULL::uuid\)/);
+  assert.match(src, /offboard_member\(p_member_id uuid, p_new_status text, p_reason text, p_effective_date date DEFAULT NULL::date\)/);
 });
 
 // ── DB-gated smoke (skips offline when SUPABASE_SERVICE_ROLE_KEY absent) ───────
 const HAS_DB = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPA_URL = process.env.SUPABASE_URL || 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
 
-test("#449 the 'other' offboarding category exists and is active", { skip: !HAS_DB }, async () => {
-  const res = await fetch(`${SUPA_URL}/rest/v1/offboarding_reason_categories?code=eq.other&is_active=eq.true&select=code`, {
-    headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-  });
+test("#449 the coalesce fallback 'other' is a valid active offboard category", { skip: !HAS_DB }, async () => {
+  const res = await fetch(
+    `${SUPA_URL}/rest/v1/offboard_reason_categories?code=eq.other&is_active=eq.true&select=code`,
+    { headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+    } });
   assert.equal(res.status, 200);
   const rows = await res.json();
-  assert.equal(rows.length, 1, "the coalesce fallback 'other' must be a valid active category code");
+  assert.equal(rows.length, 1, "'other' must be a valid active category for the fallback to be FK-safe");
 });
