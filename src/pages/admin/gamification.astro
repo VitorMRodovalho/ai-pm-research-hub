@@ -631,10 +631,9 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
   // p162 Track B' G3b — leader digest CTA "Conferir Champion" deep-links here
   // with ?award_event_id=<uuid>&surface=tribe (default kind=event). Auto-opens
   // the grant modal pre-filled. Honors permission gate — if showDenied path
-  // wins, the params are ignored. Backlog item: tribe_leader operational role
-  // does not currently hold `admin.gamification` permission, so the auto-open
-  // succeeds only for managers/deputy_managers/comms_leaders. PM follow-up
-  // pending (whether to widen permission or build a leaner /champion/award page).
+  // wins, the params are ignored. (#424 RESOLVED: tribe_leaders reach this via the
+  // scoped `champion.award` gate in applyGate → showChampionAwardOnly; the RPC
+  // enforces own-initiative scoping. No `admin.gamification` needed.)
   function maybeAutoOpenFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get('award_event_id');
