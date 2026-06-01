@@ -427,6 +427,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let sb: any = null;
   let currentMember: any = null;
   let membersMap: Map<string, any> = new Map();
+  let _canonicalMemberCount: number | null = null; // M4-D (#419): canonical roster member_count — single source for the header badge
   let canEdit = false;
   let tribeData: any = null;
   let currentCycleCode = '';
@@ -507,7 +508,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       : buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
     const quadrantLabel = _tribe?.quadrant_name_i18n?.[_langCode] || _tribe?.quadrant_name || I18N.quadrantLabel || '';
     const tribeDescription = _tribe?.notes || I18N.tribeDesc || '—';
-    const memberCount = membersMap.size;
+    const memberCount = _canonicalMemberCount ?? membersMap.size; // M4-D (#419): prefer the canonical RPC count; fall back to the client map pre-load
     const linkedIn = leader?.linkedin_url || '';
 
     el.innerHTML = `
@@ -528,7 +529,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             </div>
           </div>
           <div class="flex-shrink-0 text-center">
-            <div class="text-[.68rem] text-[var(--text-secondary)] font-semibold">👥 ${memberCount}</div>
+            <div id="tribe-header-member-count" class="text-[.68rem] text-[var(--text-secondary)] font-semibold">👥 ${memberCount}</div>
           </div>
         </div>
         <div class="px-5 pb-4 pt-0 border-t border-[var(--border-subtle)]">
@@ -630,6 +631,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         ? await sb.rpc('get_initiative_stats', { p_initiative_id: INITIATIVE_ID })
         : await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE_ID });
       if (!data) return;
+      // M4-D (#419): single-source the header badge onto the canonical RPC member_count
+      // (was membersMap.size, which also counts selection candidates → diverged from this card).
+      _canonicalMemberCount = data.member_count ?? null;
+      const _hdrCount = document.getElementById('tribe-header-member-count');
+      if (_hdrCount) _hdrCount.textContent = `👥 ${data.member_count ?? 0}`;
       const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
       const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">

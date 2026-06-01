@@ -5678,6 +5678,7 @@ const enUS: Record<string, string> = {
   'comp.tribe.back': '← Back',
   'comp.tribe.noMeeting': '🔴 No meeting scheduled — configure tribe schedule',
   'comp.tribe.members': 'Tribe Members',
+  'comp.tribe.activemembers': 'active',
   'comp.tribe.noCards': 'No cards in this tribe',
   'comp.tribe.approved': 'Approved',
   'comp.tribe.noData': 'No data',
