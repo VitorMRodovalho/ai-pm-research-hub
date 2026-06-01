@@ -140,7 +140,7 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label={t('comp.tribe.members', 'Membros')} value={members.total || 0} sub={`${members.active || 0} ativos`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
+        <KpiCard label={t('comp.tribe.members', 'Membros')} value={members.total || 0} sub={`${members.active || 0} ${t('comp.tribe.activemembers', 'ativos')}`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
         <KpiCard label={t('comp.tribe.attendance', 'Presença')} value={(engagement.total_meetings || 0) > 0 ? `${Math.round((engagement.attendance_rate || 0) * 100)}%` : '—'} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
         <KpiCard label="Cards" value={production.total_cards || 0} sub={`${production.articles_approved || 0} aprovados`} color="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300" />
         <KpiCard label="XP Total" value={gamification.tribe_total_xp || 0} sub={`média ${gamification.tribe_avg_xp || 0}`} color="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300" />

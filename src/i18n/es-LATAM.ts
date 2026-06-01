@@ -5679,6 +5679,7 @@ const esLATAM: Record<string, string> = {
   'comp.tribe.back': '← Volver',
   'comp.tribe.noMeeting': '🔴 Sin reunión programada — configure los horarios de la tribu',
   'comp.tribe.members': 'Miembros de la Tribu',
+  'comp.tribe.activemembers': 'activos',
   'comp.tribe.noCards': 'Sin cards en esta tribu',
   'comp.tribe.approved': 'Aprobados',
 
