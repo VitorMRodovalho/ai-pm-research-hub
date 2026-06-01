@@ -58,20 +58,22 @@ test('M4-A static: reuses the existing tribe<->initiative resolvers (no duplicat
 });
 
 // ── BEHAVIOURAL (DB-gated) ───────────────────────────────────────────────────────
-test('M4-A behavioural: tribe 8 roster = 6 and INCLUDES the curator Roberto (role-not-kind)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-A behavioural: tribe 8 roster = 5, EXCLUDES the observer-kind curator Roberto (participants-only, mig 088)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: initId, error: e0 } = await sb.rpc('resolve_initiative_id', { p_tribe_id: 8 });
   assert.ifError(e0);
   const { data: count, error: e1 } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   assert.ifError(e1);
-  assert.equal(count, 6, 'tribe-8 canonical roster = 6');
+  // mig 088 (PM 2026-06-01) revised the canonical roster to PARTICIPANTS-ONLY (added kind<>'observer'):
+  // the observer-kind curator Roberto no longer counts as a member. tribe-8 6 → 5.
+  assert.equal(count, 5, 'tribe-8 canonical roster = 5 (participants-only; observers excluded)');
 
   const { data: rows, error: e2 } = await sb
-    .from('v_initiative_roster').select('name, role').eq('initiative_id', initId);
+    .from('v_initiative_roster').select('name, role, kind').eq('initiative_id', initId);
   assert.ifError(e2);
-  assert.ok(rows.some((r) => r.name === 'Roberto Macêdo'),
-    'the curator Roberto (role=curator/kind=observer) IS in the roster — the row kind=volunteer wrongly drops');
-  assert.equal(rows.filter((r) => r.role === 'observer').length, 0, 'no role=observer rows');
+  assert.ok(!rows.some((r) => r.name === 'Roberto Macêdo'),
+    'the observer-kind curator Roberto (role=curator/kind=observer) is EXCLUDED — observers are not participating members');
+  assert.equal(rows.filter((r) => r.role === 'observer' || r.kind === 'observer').length, 0, 'no observer rows (role OR kind)');
 });
 
 test('M4-A behavioural: helper count == COUNT(DISTINCT person) over the view, per initiative', { skip: dbGated ? false : skipMsg }, async () => {
