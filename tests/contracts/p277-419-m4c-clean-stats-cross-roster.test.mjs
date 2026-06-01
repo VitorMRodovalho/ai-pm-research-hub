@@ -117,12 +117,12 @@ test('M4-C-clean DB: exec_cross auth gate intact (unauthenticated rejected)', { 
   assert.ok(error, 'no-auth caller must be rejected (manage_platform gate unchanged)');
 });
 
-test('M4-C-clean DB: get_tribe_stats(8).member_count == roster primitive == 6 (incl curator Roberto)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-C-clean DB: get_tribe_stats(8).member_count == roster primitive == 5 (participants-only, mig 088)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: TRIBE8 });
   const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   const { data: stats } = await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE8 });
-  assert.equal(Number(roster), 6, 'tribe-8 canonical roster = 6');
+  assert.equal(Number(roster), 5, 'tribe-8 canonical roster = 5 (participants-only, mig 088: observer-kind curator excluded)');
   assert.equal(Number(stats.member_count), Number(roster), 'get_tribe_stats.member_count reads the primitive');
 });
 
