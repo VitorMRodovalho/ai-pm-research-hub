@@ -106,13 +106,13 @@ test('M4-C DB: auth gate intact (unauthenticated service-role caller rejected)',
   assert.ok(error, 'no-auth caller must be rejected (member not found) — gate not changed by PR4-C');
 });
 
-test('M4-C DB: tribe-8 canonical roster == 6 (incl curator); the value members.total now returns', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-C DB: tribe-8 canonical roster == 5 (participants-only, mig 088); the value members.total now returns', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: initId, error: e0 } = await sb.rpc('resolve_initiative_id', { p_tribe_id: 8 });
   assert.ifError(e0);
   const { data: roster, error: e1 } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   assert.ifError(e1);
-  assert.equal(Number(roster), 6, 'tribe-8 canonical roster = 6 (curator Roberto included; was 5 under kind=volunteer)');
+  assert.equal(Number(roster), 5, 'tribe-8 canonical roster = 5 (participants-only, mig 088: observer-kind curator Roberto excluded)');
 });
 
 test('M4-C DB: only tribe 8 changed — other tribes stable (drift-tolerant)', { skip: dbGated ? false : skipMsg }, async () => {

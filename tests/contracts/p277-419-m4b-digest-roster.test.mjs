@@ -51,7 +51,7 @@ test('M4-B static: same-signature CREATE OR REPLACE (no DROP), rest of the diges
 });
 
 // ── BEHAVIOURAL (DB-gated) ───────────────────────────────────────────────────────
-test('M4-B behavioural: tribe-8 digest active_members == roster count (6), not the cca-alone 7', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-B behavioural: tribe-8 digest active_members == roster count (5, participants-only), not cca-alone 7', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: digest, error: e1 } = await sb.rpc('get_weekly_tribe_digest', { p_tribe_id: 8 });
   assert.ifError(e1);
@@ -61,7 +61,7 @@ test('M4-B behavioural: tribe-8 digest active_members == roster count (6), not t
   const { data: rosterCount } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
 
   assert.equal(active, Number(rosterCount), 'digest active_members == canonical roster count');
-  assert.equal(active, 6, 'tribe-8 active_members = 6 (offboarded Maria no longer counted)');
+  assert.equal(active, 5, 'tribe-8 active_members = 5 (participants-only, mig 088: observer-kind curator excluded; offboarded Maria also not counted)');
 
   // the rest of the digest still computes (a representative non-roster aggregate is present + numeric)
   assert.equal(typeof Number(digest.aggregates.cards_overdue_total), 'number', 'cards_overdue_total still computes');

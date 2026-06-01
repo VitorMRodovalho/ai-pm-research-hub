@@ -72,7 +72,7 @@ code (`'cycle3-2026'`). This single rule retires D10, D11, and the YTD-literal f
 | **impact_hours** | `SUM(COALESCE(duration_actual, duration_minutes)/60) FILTER (present = true AND excused IS NOT TRUE)`, ROUND 1; **no** 60-min fallback | param window (default current cycle) | n/a |
 | **attendance_engagement** *(Participação — the headline; every audience surface)* | per `(member, event)` `present=true`; denominator = **eligible** past non-cancelled events from `_attendance_eligible_events` — a no-show that left **no row still counts as absent**; **excused excluded** (neutral, D1); fraction 0..1 ROUND 2 (surfaces ×100); cohort aggregate = **AVG-of-member-rates** (D2). Live global **76.9%** (cohort 37). | `cycles.is_current` (open ⇒ `CURRENT_DATE`), type set `{geral,kickoff,tribo,lideranca}` | n/a |
 | **attendance_reliability** *(Confiabilidade de registro — ops/self diagnostic, NEVER a headline until roster sealing)* | `present=true` over events that **have a recorded** non-excused row (`a.id exists AND excused IS NOT TRUE`); excused removed both sides. **There is no `attendance.status` column** — both metrics use the `present`/`excused` pair. Structurally ≈100% until absent-row capture (live **99.2%**, only **5** genuine absent rows cohort-wide). **Visibility (D10):** member-self + admin only, **always with raw present/absent/excused counts**; public/headline **BANNED** until `seal_event_attendance` coverage is real (PR10 hard-gate). | same window + type set | n/a |
-| **tribe_roster / member_count** | DISTINCT persons with an **active, non-observer** engagement on the initiative, `is_active`; resolve legacy `tribe_id` ↔ engagements onto **engagements** (ADR-0005) | current cycle | n/a |
+| **tribe_roster / member_count** | DISTINCT persons with an **active, participating** engagement — `status='active' AND role<>'observer' AND kind<>'observer'` (**participants only**; observers — including curators/reviewers whose `kind='observer'` — do NOT count as members; PM revision 2026-06-01, see §7); resolve legacy `tribe_id` ↔ engagements (ADR-0005) | current cycle | n/a |
 | **lifetime_xp** | `SUM(gamification_points.points)` all-time | all-time | honored on member + public surfaces; admin carve-out documented |
 | **cycle_xp + rank** | cycle points = points in window; rank `ORDER BY cycle_points DESC` **in cycle mode** (not lifetime), deterministic tiebreak `member_id`; pool = `gamification_opt_out=false AND eligible-this-cycle` | current cycle | honored except admin carve-out |
 | **trail_completion** | `completed_trail_courses / NULLIF(count(is_trail courses),0)`; **dynamic** trail total (no hardcoded 6); native initiatives → `N/A`, never `0%` | all-time | n/a |
@@ -264,17 +264,25 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
     (portfolio/kpi/cycle_report/annual/public_impact: 0/0/4·0/0/4 → all 7). Event-type classifiers + the
     upcoming-events digest filter + the radar listing intentionally left.
 
-  Two recommend-and-proceed decisions: **D-M4-AXIS** (reconcile `get_member_tribe` kind→role, isolated PR,
-  re-smoke metric-3 cohort_n) · **D-M8-COMPLETED** ("realized" = `scheduled_at < now()`; the webinars table has
+  Two recommend-and-proceed decisions: **D-M4-AXIS** (reconcile `get_member_tribe` kind→role) — **RESOLVED
+  2026-06-01: NOT applied.** Grounding showed `get_member_tribe` is the attendance-eligibility resolver
+  (feeds `_attendance_eligible_events` → all of metric-3); switching it to the role axis would make the
+  observer-kind curator Roberto (0/13 tribe-8 `tribo` attendance) a mandatory attendee → tribe-8 engagement
+  0.842→0.717, a false no-show signal. Instead the **member definition** was unified onto the **kind** axis
+  (participants-only, §2.2; mig 088), which eliminates the role-vs-kind divergence; `get_member_tribe` and
+  metric-3 are left untouched. · **D-M8-COMPLETED** ("realized" = `scheduled_at < now()`; the webinars table has
   no done/completed status). **Ship order:** PR8 webinars (#456, done) → PR7 champions parity (#457) →
   PR6 trail+cpmai → PR4 member_count (5/7→6) → PR5 XP rank/pillar (biggest: 46/49 reorder).
 
   **antes → depois (live-grounded 2026-05-31, cycle_3):**
   - **Metric 8 webinars:** portfolio 0→7 · kpi 0→7 · cycle_report 4/0→7/0 · annual 0→7 · public_impact 4→7
     (webinars table = 7 vs events.type='webinar' = 4).
-  - **Metric 4 member_count (tribe 8):** canonical (DISTINCT person, active engagement, role≠observer) = 6;
-    `exec_tribe_dashboard` (kind='volunteer') = 5 (drops curator Roberto); `get_weekly_tribe_digest`
-    (current_cycle_active alone) = 7 (adds offboarded Maria). [PENDING — PR4]
+  - **Metric 4 member_count (tribe 8):** SHIPPED via the single primitive `v_initiative_roster` (PR4-A→D, migs
+    082–086), then **revised to participants-only** (mig 088, PM 2026-06-01): `status='active' AND role<>'observer'
+    AND kind<>'observer'` = **5** for tribe-8 (the observer-kind curator Roberto does NOT count; the original
+    role-only rule gave 6). Every surface (get_tribe_stats / exec_tribe_dashboard / get_weekly_tribe_digest /
+    exec_cross) rides the primitive ⇒ 5. Natives also revised: LATAM 5→3, Grupo 4→3 (observer-kind reviewers
+    excluded), Mesa 4 (unchanged). D-M4-AXIS NOT applied; metric-3 frozen (global engagement 0.7991 unchanged).
   - **Metric 5 XP rank:** cycle-#1 earner (Marcos, 425 cycle XP) shows at lifetime rank 14/15; 46 of 49 pooled
     members reorder once cycle-mode ranks on cycle XP; ties (Fernando 415 = Débora 415) lack a deterministic
     tiebreak. Taxonomy JOIN 100% (0 of 19,910 unmatched). [PENDING — PR5]
