@@ -239,4 +239,42 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
   **Remaining:** PR10 (p175 gate extension — inline-rate forward-defense + the D10 reliability-visibility hard-gate +
   grant ladder) and PR11 (seal track — `events.roster_sealed_at` + `seal_event_attendance`, coordinating
   `sync_attendance_points` no-XP-for-sealed-absents + `detect_and_notify_detractors`). Only after real seal coverage
-  may reliability be promoted from diagnostic to a shown indicator.
+  may reliability be promoted from diagnostic to a shown indicator. **[UPDATE 2026-05-31: metric 3 COMPLETE —
+  PR1–PR11 all shipped.]**
+
+- **2026-05-31 — metrics 4-8 design ratified + rollout started.** Design produced by an 11-agent
+  map+adversarial-verify workflow + main-loop re-grounding; full SPEC at
+  `docs/specs/SPEC_419_M4_M8_CANONICAL_METRICS.md`. Four dictionary decisions ratified:
+  - **cpmai (D-M6-CPMAI):** the cpmai GOAL metric counts members who **certified during the goal year** —
+    `members.cpmai_certified = true AND cpmai_certified_at` within the goal year (resolved from the cycle, not a
+    literal). A member who entered already holding CPMAI (cert dated before the goal year) appears on the
+    **certificate wall (all-time)** but NOT in the goal metric. **PMI-GO-board-pactuated business rule.** Live:
+    wall = 2 (Marcos 2026-03-04 + Pedro 2025-10-23); goal-year-2026 = 1 (Marcos only). Canonical source = the
+    dated boolean, NOT the gamification `cert_cpmai` ledger, NOT a date-free count.
+  - **champions (D-M7-SOURCE):** `champions_awarded` ledger is canonical; `gamification_points`
+    category='champion_'||surface is a derived projection. Parity invariant added (PR7, test-only — both sources
+    empty live so 0 visible change). **#424 item 1 (award-path unblock) was already shipped** (scoped
+    `champion.award` gate; backend already authorizes `volunteer/leader@initiative`) — no seed change.
+  - **trail_completion (D-M6-TRAIL):** canonical = partial-credit average over a **shared** cohort (drop the
+    home card's guest inclusion so home == ranking) with a **dynamic** is_trail total (no hardcoded 6); native
+    initiatives → N/A. Live: home `calc_trail_completion_pct` = 44 (binary all-6, hardcoded /6.0, cohort 37
+    incl. 2 guests) vs ranking `get_public_trail_ranking` = 46.66 (partial-avg, cohort 35, dynamic 6).
+  - **webinars (metric 8) — SHIPPED PR #456:** canonical count off the `webinars` table via
+    `get_webinars_count(p_start, p_end, p_mode)`; 5 count surfaces repointed off `events.type='webinar'`
+    (portfolio/kpi/cycle_report/annual/public_impact: 0/0/4·0/0/4 → all 7). Event-type classifiers + the
+    upcoming-events digest filter + the radar listing intentionally left.
+
+  Two recommend-and-proceed decisions: **D-M4-AXIS** (reconcile `get_member_tribe` kind→role, isolated PR,
+  re-smoke metric-3 cohort_n) · **D-M8-COMPLETED** ("realized" = `scheduled_at < now()`; the webinars table has
+  no done/completed status). **Ship order:** PR8 webinars (#456, done) → PR7 champions parity (#457) →
+  PR6 trail+cpmai → PR4 member_count (5/7→6) → PR5 XP rank/pillar (biggest: 46/49 reorder).
+
+  **antes → depois (live-grounded 2026-05-31, cycle_3):**
+  - **Metric 8 webinars:** portfolio 0→7 · kpi 0→7 · cycle_report 4/0→7/0 · annual 0→7 · public_impact 4→7
+    (webinars table = 7 vs events.type='webinar' = 4).
+  - **Metric 4 member_count (tribe 8):** canonical (DISTINCT person, active engagement, role≠observer) = 6;
+    `exec_tribe_dashboard` (kind='volunteer') = 5 (drops curator Roberto); `get_weekly_tribe_digest`
+    (current_cycle_active alone) = 7 (adds offboarded Maria). [PENDING — PR4]
+  - **Metric 5 XP rank:** cycle-#1 earner (Marcos, 425 cycle XP) shows at lifetime rank 14/15; 46 of 49 pooled
+    members reorder once cycle-mode ranks on cycle XP; ties (Fernando 415 = Débora 415) lack a deterministic
+    tiebreak. Taxonomy JOIN 100% (0 of 19,910 unmatched). [PENDING — PR5]
