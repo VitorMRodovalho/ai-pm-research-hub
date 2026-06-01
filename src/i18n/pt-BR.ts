@@ -5684,6 +5684,7 @@ const ptBR: Record<string, string> = {
   'comp.tribe.back': '← Voltar',
   'comp.tribe.noMeeting': '🔴 Sem reunião agendada — configure os horários da tribo',
   'comp.tribe.members': 'Membros da Tribo',
+  'comp.tribe.activemembers': 'ativos',
   'comp.tribe.noCards': 'Nenhum card na tribo',
   'comp.tribe.approved': 'Aprovados',
   'comp.tribe.noData': 'Sem dados',
