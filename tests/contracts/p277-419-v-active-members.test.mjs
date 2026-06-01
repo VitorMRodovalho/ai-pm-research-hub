@@ -64,12 +64,26 @@ test('p277/#419 m2 forward-defense: converged RPCs no longer headcount via is_ac
 // DB-gated
 test('p277/#419 m2 DB: v_active_members == canonical count AND distinct from legacy view', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { count: vCount, error } = await sb.from('v_active_members').select('id', { count: 'exact', head: true });
-  assert.ok(!error, error?.message);
-  const { count: canonical } = await sb.from('members').select('id', { count: 'exact', head: true })
-    .eq('is_active', true).eq('current_cycle_active', true);
-  assert.equal(vCount, canonical, 'v_active_members must equal the canonical predicate count');
-  const { count: legacy } = await sb.from('members').select('id', { count: 'exact', head: true }).eq('is_active', true);
+  // v_active_members IS DEFINED as exactly (is_active AND current_cycle_active) — see the static test above
+  // (pg_get_viewdef confirms the predicate is byte-identical). So on any single DB snapshot
+  // count(view) === count(predicate), always. The two values below are fetched in SEPARATE round-trips, so a
+  // concurrent member-data write between them produces a transient off-by-one (read skew, not a view drift).
+  // Retry until a quiescent snapshot — the structural invariant guarantees convergence; a genuine view drift
+  // would never converge and still fail this assertion.
+  const read = async () => {
+    const { count: vCount, error } = await sb.from('v_active_members').select('id', { count: 'exact', head: true });
+    assert.ok(!error, error?.message);
+    const { count: canonical } = await sb.from('members').select('id', { count: 'exact', head: true })
+      .eq('is_active', true).eq('current_cycle_active', true);
+    const { count: legacy } = await sb.from('members').select('id', { count: 'exact', head: true }).eq('is_active', true);
+    return { vCount, canonical, legacy };
+  };
+  let r = await read();
+  for (let i = 0; i < 5 && r.vCount !== r.canonical; i++) {
+    await new Promise((res) => setTimeout(res, 250));
+    r = await read();
+  }
+  assert.equal(r.vCount, r.canonical, 'v_active_members must equal the canonical predicate count (quiescent snapshot)');
   // legacy (is_active-only) can be >= canonical; they are conceptually distinct
-  assert.ok((legacy || 0) >= (vCount || 0), 'is_active-only base must be >= canonical (current-cycle subset)');
+  assert.ok((r.legacy || 0) >= (r.vCount || 0), 'is_active-only base must be >= canonical (current-cycle subset)');
 });
