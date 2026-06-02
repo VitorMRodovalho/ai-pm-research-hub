@@ -4103,6 +4103,8 @@ const esLATAM: Record<string, string> = {
   'comp.adminDash.deliverables': 'Entregas',
   'comp.adminDash.impactHours': 'Horas de Impacto',
   'comp.adminDash.chapters': 'Capítulos',
+  'comp.adminDash.chaptersInNegotiation': 'en negociación',
+  'comp.adminDash.chaptersEngaged': 'comprometidos',
   'comp.adminDash.title': 'Dashboard del Núcleo',
   'comp.adminDash.currentCycle': 'Ciclo actual',
   'comp.adminDash.generated': 'Generado',

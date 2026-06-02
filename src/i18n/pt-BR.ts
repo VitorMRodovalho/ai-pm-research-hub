@@ -4107,6 +4107,8 @@ const ptBR: Record<string, string> = {
   'comp.adminDash.deliverables': 'Entregas',
   'comp.adminDash.impactHours': 'Horas de Impacto',
   'comp.adminDash.chapters': 'Capítulos',
+  'comp.adminDash.chaptersInNegotiation': 'em negociação',
+  'comp.adminDash.chaptersEngaged': 'engajados',
   'comp.adminDash.title': 'Dashboard do Núcleo',
   'comp.adminDash.currentCycle': 'Ciclo atual',
   'comp.adminDash.generated': 'Gerado',
