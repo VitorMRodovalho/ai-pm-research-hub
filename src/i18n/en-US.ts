@@ -1415,7 +1415,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.meetingLink': 'Meeting link',
   'attendance.modal.timeStart': 'Start time',
   'attendance.modal.timeStartHint': 'Brasília time (BRT) · empty = tribe slot default',
-  'attendance.modal.natureRecurringHint': '🔁 This creates 1 event. To repeat automatically, use the "Create Series" tab.',
+  'attendance.modal.natureRecurringHint': '🔁 This creates only 1 event. Click here to create a recurring (weekly) series →',
   'attendance.modal.recordedMeeting': '🔴 Recorded meeting',
   'attendance.modal.recordedMeetings': '🔴 Recorded meetings',
   'attendance.modal.createEvent': 'Create Event',
