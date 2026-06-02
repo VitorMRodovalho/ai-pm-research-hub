@@ -147,6 +147,12 @@ const SEL_I18N = {
     cutoffInviteToast: t('admin.selection.modal.cutoffInviteToast', lang),
     cutoffInviteError: t('admin.selection.modal.cutoffInviteError', lang),
     cutoffInviteConfirm: t('admin.selection.modal.cutoffInviteConfirm', lang),
+    // #472 corr.3 — admin offline-interview record
+    offlineInterviewBtn: t('admin.selection.modal.offlineInterviewBtn', lang),
+    offlineInterviewHint: t('admin.selection.modal.offlineInterviewHint', lang),
+    offlineInterviewDateLabel: t('admin.selection.modal.offlineInterviewDateLabel', lang),
+    offlineInterviewToast: t('admin.selection.modal.offlineInterviewToast', lang),
+    offlineInterviewError: t('admin.selection.modal.offlineInterviewError', lang),
     // p152 W4 P2: PMI Profile tab
     tabPmiProfile: t('admin.selection.modal.tabPmiProfile', lang),
     loadingPmiProfile: t('admin.selection.modal.loadingPmiProfile', lang),
@@ -676,6 +682,11 @@ const SEL_I18N = {
       cutoffInviteToast: 'Convite enviado para',
       cutoffInviteError: 'Erro ao enviar convite',
       cutoffInviteConfirm: 'Enviar convite de agendamento para',
+      offlineInterviewBtn: '📅 Registrar entrevista realizada (offline)',
+      offlineInterviewHint: 'A entrevista aconteceu fora da plataforma? Informe a data em que ocorreu para criar o registro e liberar o lançamento da nota (bypass auditado do gate de status).',
+      offlineInterviewDateLabel: 'Data da entrevista',
+      offlineInterviewToast: 'Entrevista offline registrada — formulário de nota disponível',
+      offlineInterviewError: 'Erro ao registrar entrevista offline',
       tabPmiProfile: '📊 PMI',
       loadingPmiProfile: 'Carregando perfil PMI…',
       pmiProfileEmpty: 'Sem dados PMI enriquecidos. Phase B ainda não rodou, candidato não-membro PMI, ou perfil community privado.',
@@ -3983,11 +3994,29 @@ const SEL_I18N = {
         // e re-renderiza para exibir o scoring form.
         const canStartLive = ['interview_pending', 'interview_scheduled', 'interview_done'].includes(row.status)
           || formData?.application?.status === 'interview_pending';
+        // #472 corr.3 — offline path: a PRE-INTERVIEW candidate with no interview
+        // row yet (interview happened off-platform). ALLOW-LIST mirrors the
+        // schedule_interview bypass guard exactly — never offered for a later-stage
+        // (interview_done/final_eval) or decided/terminal status, so a completed
+        // evaluation can't be regressed by creating a new 'scheduled' row.
+        const OFFLINE_ELIGIBLE = ['screening', 'submitted', 'objective_eval', 'objective_cutoff'];
+        const canRecordOffline = !canStartLive && OFFLINE_ELIGIBLE.includes(row.status);
         if (canStartLive) {
           html += `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
             <p class="text-sm text-amber-800 font-semibold mb-2">Sem entrevista agendada</p>
             <p class="text-[12px] text-amber-700 mb-3">Para pontuar a entrevista (objetiva ou live), crie o registro abaixo. Cria com horário atual + 30min como duração — você pode ajustar depois.</p>
             <button id="start-live-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">▶ Iniciar avaliação ao vivo</button>
+          </div>`;
+        } else if (canRecordOffline) {
+          html += `<div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mt-4">
+            <p class="text-sm text-orange-800 font-semibold mb-1">${T.modal.offlineInterviewBtn}</p>
+            <p class="text-[12px] text-orange-700 mb-3">${T.modal.offlineInterviewHint}</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="text-[12px] text-orange-800 font-semibold">${T.modal.offlineInterviewDateLabel}
+                <input type="date" id="offline-interview-date" max="${new Date().toLocaleDateString('sv')}" value="${new Date().toLocaleDateString('sv')}" class="ml-1 px-2 py-1 rounded-lg border border-orange-300 text-[12px]" />
+              </label>
+              <button id="record-offline-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.offlineInterviewBtn}</button>
+            </div>
           </div>`;
         } else if (!isDualTrack) {
           html += '<p class="text-sm text-[var(--text-muted)] mt-4">Nenhuma entrevista agendada ainda.</p>';
@@ -4034,6 +4063,35 @@ const SEL_I18N = {
           } catch (e: any) {
             toast(e.message || 'Erro ao iniciar entrevista', 'error');
             btn.disabled = false; btn.textContent = '▶ Iniciar avaliação ao vivo';
+          }
+        });
+
+        // #472 corr.3 — wire offline-interview record button: bypass-gate schedule at
+        // the chosen past date, then reuse the proven score form (submit_interview_scores).
+        scoringDiv.querySelector('#record-offline-interview-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          const dateInput = scoringDiv.querySelector('#offline-interview-date') as HTMLInputElement | null;
+          const dateStr = dateInput?.value;
+          if (!dateStr) { toast(T.modal.offlineInterviewDateLabel, 'error'); return; }
+          // anchor at local noon so the date doesn't shift across the UTC boundary
+          const scheduledAt = new Date(dateStr + 'T12:00:00').toISOString();
+          btn.disabled = true; btn.textContent = '⏳ Registrando…';
+          try {
+            const { data, error } = await sb.rpc('schedule_interview', {
+              p_application_id: row.id,
+              p_interviewer_ids: [MEMBER.id],
+              p_scheduled_at: scheduledAt,
+              p_duration_minutes: 30,
+              p_bypass_gate: true,
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            toast(T.modal.offlineInterviewToast);
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || T.modal.offlineInterviewError, 'error');
+            btn.disabled = false; btn.textContent = T.modal.offlineInterviewBtn;
           }
         });
 
