@@ -88,12 +88,14 @@ test('#479 behavioural: get_chapter_metrics relationships hold', { skip: dbGated
   const signed = Number(m.signed), inNeg = Number(m.in_negotiation), engaged = Number(m.engaged);
   assert.ok(Number.isInteger(signed) && signed >= 0, 'signed is a non-negative integer');
   assert.equal(engaged, signed + inNeg, 'engaged == signed + in_negotiation');
-  // signed must equal the canonical active pmi_chapter partner rows
+  // signed must equal the canonical active DOMESTIC pmi_chapter partner rows.
+  // #481 made all three metrics domestic-only (is_international=false) so engaged == signed + in_negotiation
+  // stays exact even if an international chapter is ever onboarded to status='active'.
   const { count: activeCount, error: e1 } = await sb
     .from('partner_entities').select('id', { count: 'exact', head: true })
-    .eq('entity_type', 'pmi_chapter').eq('status', 'active');
+    .eq('entity_type', 'pmi_chapter').eq('status', 'active').eq('is_international', false);
   assert.ifError(e1);
-  assert.equal(signed, Number(activeCount), 'signed == active pmi_chapter partner_entities');
+  assert.equal(signed, Number(activeCount), 'signed == active domestic pmi_chapter partner_entities');
 });
 
 test('#479 behavioural: get_webinars_count realized == webinars status=completed', { skip: dbGated ? false : skipMsg }, async () => {

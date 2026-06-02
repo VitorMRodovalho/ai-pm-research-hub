@@ -79,6 +79,8 @@ code (`'cycle3-2026'`). This single rule retires D10, D11, and the YTD-literal f
 | **cpmai_certified** | `COUNT(DISTINCT member_id)` with a CPMAI credential; one source (decide: `gamification_points` category vs `members.cpmai_certified` boolean — dictionary picks ONE) | param (cycle or all-time, stated) | n/a |
 | **champions** | champion recognition XP/count; ONE canonical source — decide between `champions_awarded` (table, source of truth for ranking/profile/admin) and `gamification_points` pillar='champions' (leaderboard/tribe). Today they are dual-written with NO reconciliation; the leaderboard chip reads 0 rows structurally. Pick one + add a parity invariant. (issue #424) | current cycle (ranking) / all-time (leaderboard) | honored except admin/leader carve-out |
 | **webinars_completed** | `COUNT(*)` from the **`webinars` table** (the architectural source of truth, decision #4) — NOT `events WHERE type='webinar'`, which the portfolio KPI currently reads (live 4 vs 7) | param window | n/a |
+| **webinars_realized** (#479) | `get_webinars_count(start,end,'realized')` = `COUNT(*) WHERE status='completed'` on the `webinars` table. #479 corrected the M8 `080` premise (`scheduled_at < now()`) — the table DOES carry a `completed` status (CHECK domain `planned\|confirmed\|completed\|cancelled`). `planned`=`status IN (planned,confirmed)`. Live 2026-06-02: realized=0, planned=7. | param window | n/a |
+| **chapters** (signed/in_negotiation/engaged) (#479/#481) | `get_chapter_metrics()` off `partner_entities WHERE entity_type='pmi_chapter'`, **all three domestic-only** (`AND NOT is_international`): **signed**=`status='active'`; **in_negotiation**=`status='negotiation'`; **engaged**=`status IN (active,negotiation)` = signed+in_negotiation (identity holds exactly). International chapters (PMI-WDC) excluded via the explicit `partner_entities.is_international` flag (#481 — retired the brittle `name ILIKE '%washington%'` match). NOT `count(DISTINCT members.chapter)` (=7 incl `Outro`/`PMI-SP` noise). `get_public_impact_data.chapters_summary` enumerates the **signed domestic** chapters (not members.chapter). Live 2026-06-02: signed=5, in_negotiation=10, engaged=15. | current | n/a |
 
 ### 2.3 Canonical views / functions (v1)
 
@@ -286,3 +288,28 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
   - **Metric 5 XP rank:** cycle-#1 earner (Marcos, 425 cycle XP) shows at lifetime rank 14/15; 46 of 49 pooled
     members reorder once cycle-mode ranks on cycle XP; ties (Fernando 415 = Débora 415) lack a deterministic
     tiebreak. Taxonomy JOIN 100% (0 of 19,910 unmatched). [PENDING — PR5]
+
+- **2026-06-02 — chapters metric canonicalized + webinar "realized" redefined (#479, PR #480).** The chapter
+  count had forked across surfaces as `count(DISTINCT members.chapter)` (=7, incl. the free-text noise `Outro`
+  and the non-signed `PMI-SP`). Canonical source is now `get_chapter_metrics()` off `partner_entities`
+  (`entity_type='pmi_chapter'`): signed=5 (active partner rows) / in_negotiation=10 / engaged=15. The webinar
+  "realized" definition was **corrected** from the M8 `080` time-based `scheduled_at < now()` (which falsely
+  assumed the table had no done state) to the **status-based** `status='completed'` (live realized=0). 4 RENDERED
+  surfaces repointed (get_admin_dashboard / exec_portfolio_health / get_public_impact_data / get_kpi_dashboard).
+- **2026-06-02 — #481 finished the systemic cleanup (mig `20260805000094`).** (1) The 3 UNRENDERED chapter RPCs
+  (`get_homepage_stats` / `get_public_platform_stats` / `get_executive_kpis`) repointed off the members.chapter
+  fork onto `get_chapter_metrics()->>'signed'` (each 7→5). (2) Added `partner_entities.is_international` (backfilled
+  PMI-WDC) and switched `get_chapter_metrics` from the brittle `name ILIKE '%washington%'` match to
+  `NOT is_international` on **all three** branches (council review: applying it to `signed` too — not just
+  in_negotiation/engaged — keeps `engaged == signed + in_negotiation` exact if an international chapter is ever
+  onboarded to active; figures unchanged today, 5/10/15). (3) `get_public_impact_data.chapters_summary`
+  unified onto the 5 signed domestic chapters (was members.chapter, 7 rows incl. noise) so the public grid matches the
+  headline; **PII-neutral** — the 2 dropped noise rows had a null sponsor, and the 5 retained sponsor names are public
+  chapter ambassadors (same exposure class as the leader/author names the same RPC already publishes). (4) Two schema
+  invariants added: **Y_chapter_pipeline_parity** (MEMBERSHIP parity — every active domestic `pmi_chapter` in
+  `partner_entities` ↔ an active `chapters` row by `name = 'PMI-' || code`, both directions; catches single-table
+  inserts/archives even when counts coincide) + **Z_webinar_status_domain** (`webinars.status` within the CHECK domain).
+  (5) `get_cycle_evolution`'s
+  per-cycle chapter literals documented (COMMENT) as editorial point-in-time history (NOT the current canonical
+  metric; cycle_3=5 aligns with signed). **DEFERRED (low):** `get_admin_dashboard`'s 3× inline `get_chapter_metrics()`
+  call (perf nit, negligible at 16 rows) — rewriting a 7.2k-char rendered surface for ~zero gain is pure risk.
