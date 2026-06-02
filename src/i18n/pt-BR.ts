@@ -1302,6 +1302,7 @@ const ptBR: Record<string, string> = {
   'team.sponsors.sub': 'Liderança dos capítulos & pontos focais',
   'team.founders': 'Fundadores',
   'team.founders.sub': 'a história que trouxe o Núcleo até aqui',
+  'team.founders.inactiveNote': 'jornada inicial',
   'team.loading': 'Carregando time...',
   'team.projectTeam': 'Equipe de Projeto',
   'team.projectTeam.sub': 'gestão, operações e comunicação do ciclo atual',
