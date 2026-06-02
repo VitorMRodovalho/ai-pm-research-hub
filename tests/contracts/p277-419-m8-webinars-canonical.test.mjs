@@ -122,14 +122,17 @@ test('M8 behavioural: helper modes match the webinars table', { skip: dbGated ? 
   assert.ok(typeof all === 'number' && all >= 0, 'helper returns a non-negative integer');
 });
 
-test('M8 behavioural: get_public_impact_data.webinars == webinars-table count', { skip: dbGated ? false : skipMsg }, async () => {
+// #479 SUPERSEDES the M8 all-count for this surface: the public webinars headline now shows REALIZED
+// (status='completed'), not every table row. PM decision 2026-06-02 ("Realizados = 0"); migration
+// 20260805000093 switched get_public_impact_data.webinars from get_webinars_count(...,'all') to 'realized'.
+test('M8/479 behavioural: get_public_impact_data.webinars == realized (status=completed) count', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: impact, error } = await sb.rpc('get_public_impact_data');
   assert.ifError(error);
-  const { data: allCount, error: e1 } = await sb.rpc('get_webinars_count', { p_start: null, p_end: null, p_mode: 'all' });
+  const { data: realizedCount, error: e1 } = await sb.rpc('get_webinars_count', { p_start: null, p_end: null, p_mode: 'realized' });
   assert.ifError(e1);
-  assert.equal(Number(impact.webinars), Number(allCount),
-    'public impact webinars equals the canonical all-count');
+  assert.equal(Number(impact.webinars), Number(realizedCount),
+    'public impact webinars equals the canonical realized (completed) count (#479 supersedes M8 all-count)');
 });
 
 test('M8 behavioural: kpi dashboard "Webinars Realizados" == realized helper', { skip: dbGated ? false : skipMsg }, async () => {
