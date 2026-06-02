@@ -67,6 +67,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="number" id="rec-weeks" value="12" min="1" max="52"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.repeatUntil', lang)}</label>
+          <input type="date" id="rec-until"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          <span class="text-[10px] text-[var(--text-muted)]">{t('attendance.modal.repeatUntilHint', lang)}</span>
+        </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.recurringLink', lang)}</label>
           <input type="url" id="rec-link" placeholder="https://meet.google.com/..." value="https://meet.google.com/dzo-phoj-tid"
