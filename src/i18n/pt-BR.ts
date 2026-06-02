@@ -1419,7 +1419,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.meetingLink': 'Link da reunião',
   'attendance.modal.timeStart': 'Horário',
   'attendance.modal.timeStartHint': 'Horário de Brasília (BRT) · vazio = padrão da tribo',
-  'attendance.modal.natureRecurringHint': '🔁 Isto cria 1 evento. Para repetir automaticamente, use a aba "Criar Série".',
+  'attendance.modal.natureRecurringHint': '🔁 Isto cria apenas 1 evento. Clique aqui para criar uma série recorrente (semanal) →',
   'attendance.modal.recordedMeeting': '🔴 Reunião gravada',
   'attendance.modal.recordedMeetings': '🔴 Reuniões gravadas',
   'attendance.modal.createEvent': 'Criar Evento',

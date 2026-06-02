@@ -1096,6 +1096,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'open-recurring':
           openRecurringModal();
           break;
+        case 'switch-to-recurring':
+          // From the single-event modal's 'recorrente' hint → jump to the weekly-series modal.
+          closeModal('modal-new-event');
+          openRecurringModal();
+          break;
         case 'refresh-events':
           loadEvents();
           break;

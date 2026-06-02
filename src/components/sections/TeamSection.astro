@@ -161,6 +161,8 @@ const ROLE_COLORS: Record<string, string> = {
     linkedin_url: string | null;
     tribe_id: number | null;
     current_cycle_active: boolean;
+    member_status: string | null;
+    is_founder: boolean | null;
   }
 
   // ── 3-axis helpers ──
@@ -230,7 +232,11 @@ const ROLE_COLORS: Record<string, string> = {
   function teamSection(id: string, label: string, sublabel: string, headingColor: string, members: Member[], opts?: { muteInactive?: boolean; inactiveNote?: string }): string {
     if (!members.length) return '';
     const cards = members.map(m => {
-      const muted = !!opts?.muteInactive && m.current_cycle_active === false;
+      // Mute by lifecycle status (member_status), not current_cycle_active — a terminal member
+      // (alumni/inactive) can still carry current_cycle_active=true (anomaly #483), so status is
+      // the robust "no longer active" signal for the muted/honored treatment. #482 follow-up.
+      const notActive = (m.member_status != null && m.member_status !== 'active') || m.current_cycle_active === false;
+      const muted = !!opts?.muteInactive && notActive;
       return memberCard(m, undefined, muted ? { muted: true, note: opts?.inactiveNote } : undefined);
     }).join('');
     return `<div id="${id}" class="mt-10 w-full">
@@ -361,8 +367,9 @@ const ROLE_COLORS: Record<string, string> = {
     // Sponsors + Chapter Liaisons: grouped together in chapter cards
     const sponsors = allMembers.filter(m => hasDesig(m, 'sponsor') || hasDesig(m, 'chapter_liaison'));
 
-    // Founders: designation includes founder
-    const founders = allMembers.filter(m => hasDesig(m, 'founder'));
+    // Founders: durable is_founder flag (survives offboarding — invariant C clears the 'founder'
+    // designation on terminal status, so the designation can't be used here). #482 follow-up.
+    const founders = allMembers.filter(m => m.is_founder === true);
 
     el.innerHTML =
       projectTeamSection(gp, commsTeam)
@@ -379,7 +386,7 @@ const ROLE_COLORS: Record<string, string> = {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootTeam, 200); return; }
     const { data } = await sb.from('public_members')
-      .select('name, chapter, operational_role, designations, photo_url, linkedin_url, tribe_id, current_cycle_active')
+      .select('name, chapter, operational_role, designations, photo_url, linkedin_url, tribe_id, current_cycle_active, member_status, is_founder')
       .neq('operational_role', 'guest')
       .order('name');
     if (data) renderTeam(data);
