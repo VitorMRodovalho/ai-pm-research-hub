@@ -1,7 +1,7 @@
 # Backlog Roadmap — June 2026
 
 **Date:** 2026-06-02
-**Status:** Proposed for PM ratification (sequencing layer, not an implementation contract)
+**Status:** **Ratified 2026-06-02 by PM** (sequencing layer, not an implementation contract) — merged via PR #477. Tracking umbrella: #478.
 **Sources:**
 - Per-issue analysis (summary, dependencies, business-decision gate, readiness, effort, recommended wave) from the deep multi-agent backlog analysis **`wf_388b2ff1`** (2026-06-02), raw result archived at `docs/drafts/backlog_roadmap_analysis_raw_wf_388b2ff1_2026-06-02.json`.
 - Open-issue denominator and the out-of-cohort list **live-queried** via `gh issue list --state open` on **2026-06-02** (this is the grounded source of truth for counts below).
@@ -27,8 +27,13 @@ the 60 are placed into coordinated waves with full per-issue detail (Appendix A)
 with a disposition each, and the blockers among them are pulled forward (Appendix B). Coverage is reconciled to
 60 + 47 = 107 in §6.
 
+> **Ratification-time recount (2026-06-02):** a fresh `gh issue list --state open` at merge returns **108**, not 107.
+> The single delta is **#478** — this roadmap's own tracking umbrella, created as a meta-issue *after* the analysis.
+> It is intentionally **not** a backlog line-item (it tracks execution of this very doc), so the work backlog remains
+> **107 = 60 + 47**. Net: `108 live = 107 backlog (covered below) + 1 self-referential tracking issue (#478)`.
+
 ```
-107 open issues (live, 2026-06-02)
+107 backlog work items  (of 108 live; the +1 is #478, this roadmap's tracking umbrella)
 ├── 60  analyzed cohort (wf_388b2ff1) ........... Waves 0–5 + triage  → Appendix A
 └── 47  out-of-cohort (older, #90–#194) ......... programs + triage   → Appendix B
         └── of which 7 are blockers of the 60 ... pulled forward      → §1.3
@@ -260,7 +265,8 @@ Carried from `CLAUDE.md` + project rules, restated so the roadmap is self-contai
 
 ## 6. "Nothing left behind" — coverage ledger
 
-**107 open issues (live, 2026-06-02) = 60 analyzed + 47 out-of-cohort.** Every issue appears exactly once below.
+**107 backlog work items = 60 analyzed + 47 out-of-cohort** (108 live at ratification; the +1 is #478, this
+roadmap's tracking umbrella — see the recount note in §1.1). Every backlog issue appears exactly once below.
 
 ### Appendix A — the 60 analyzed cohort → wave/disposition
 
@@ -362,7 +368,10 @@ landing, not a per-issue analysis.
 Appendix A:  60  (analyzed cohort, each mapped to a wave/disposition)
 Appendix B:  47  (10 curatorship + 11 lifecycle + 5 infra/MCP + 7 calendar + 3 gov-docs + 8 strategic + 3 misc)
              ───
-Total:      107  ≡ live `gh issue list --state open` count (2026-06-02)  ✓
+Backlog:    107  (work items covered by this roadmap)
+   +1       #478 (this roadmap's tracking umbrella — meta-issue, not backlog)
+             ───
+Total:      108  ≡ live `gh issue list --state open` count (2026-06-02, ratification recount)  ✓
 Pulled forward from B → A waves: #161, #166, #181, #188, #190, #191, #192  (7)
 ```
 
