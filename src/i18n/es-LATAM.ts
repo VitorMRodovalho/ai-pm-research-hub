@@ -1298,6 +1298,7 @@ const esLATAM: Record<string, string> = {
   'team.sponsors.sub': 'Liderazgo de los capítulos y puntos focales',
   'team.founders': 'Fundadores',
   'team.founders.sub': 'la historia que trajo el Núcleo hasta aquí',
+  'team.founders.inactiveNote': 'jornada inicial',
   'team.loading': 'Cargando equipo...',
   'team.projectTeam': 'Equipo de Proyecto',
   'team.projectTeam.sub': 'gestión, operaciones y comunicación del ciclo actual',

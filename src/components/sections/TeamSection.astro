@@ -89,6 +89,7 @@ const ROLE_COLORS: Record<string, string> = {
   sponsorsSub: t('team.sponsors.sub', lang),
   founders: t('team.founders', lang),
   foundersSub: t('team.founders.sub', lang),
+  foundersInactiveNote: t('team.founders.inactiveNote', lang),
   projectTeam: t('team.projectTeam', lang),
   projectTeamSub: t('team.projectTeam.sub', lang),
   projectManagement: t('team.projectManagement', lang),
@@ -195,13 +196,18 @@ const ROLE_COLORS: Record<string, string> = {
       .join('');
   }
 
-  function memberCard(m: Member, subtitle?: string): string {
+  function memberCard(m: Member, subtitle?: string, cardOpts?: { muted?: boolean; note?: string }): string {
     const safeName = String(m?.name || 'Membro sem nome');
     const initials = safeName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    // #479-followup: non-active founders stay in the legacy "Fundadores" roll, honored with a
+    // subtle desaturation + caption (recommended over renaming to "Fundadores Ativos" — founding
+    // is permanent history). Opt-in per section via teamSection opts; other groups unaffected.
+    const muted = !!cardOpts?.muted;
+    const photoCls = muted ? ' grayscale opacity-60' : '';
     const photo = m.photo_url
-      ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white/10" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-        + `<div style="display:none" class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]">${initials}</div>`
-      : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]">${initials}</div>`;
+      ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white/10${photoCls}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div style="display:none" class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]${photoCls}">${initials}</div>`
+      : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]${photoCls}">${initials}</div>`;
     const li = m.linkedin_url
       ? `<a href="${m.linkedin_url}" target="_blank" class="text-teal text-[.65rem] no-underline">🔗</a>`
       : '';
@@ -209,23 +215,31 @@ const ROLE_COLORS: Record<string, string> = {
     const sub = subtitle
       ? `<div class="text-[.55rem] font-bold uppercase tracking-wider mt-0.5" style="color:#FF610F">${subtitle}</div>`
       : `<div class="text-[.6rem] text-[var(--text-muted)]">${m.chapter || ''}</div>`;
+    const note = muted && cardOpts?.note
+      ? `<div class="text-[.5rem] italic text-white/35 mt-0.5">${cardOpts.note}</div>`
+      : '';
     return `<div class="text-center w-[90px]">
       ${photo}
-      <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${safeName.split(' ').slice(0, 2).join(' ')} ${li}</div>
+      <div class="text-[.7rem] font-semibold mt-1.5 leading-tight${muted ? ' text-white/60' : ''}">${safeName.split(' ').slice(0, 2).join(' ')} ${li}</div>
       ${sub}
+      ${note}
       <div class="flex justify-center gap-[3px] mt-1">${dots}</div>
     </div>`;
   }
 
-  function teamSection(id: string, label: string, sublabel: string, headingColor: string, members: Member[]): string {
+  function teamSection(id: string, label: string, sublabel: string, headingColor: string, members: Member[], opts?: { muteInactive?: boolean; inactiveNote?: string }): string {
     if (!members.length) return '';
+    const cards = members.map(m => {
+      const muted = !!opts?.muteInactive && m.current_cycle_active === false;
+      return memberCard(m, undefined, muted ? { muted: true, note: opts?.inactiveNote } : undefined);
+    }).join('');
     return `<div id="${id}" class="mt-10 w-full">
       <div class="flex items-baseline gap-2.5 mb-3">
         <h3 class="text-[1.05rem] font-extrabold" style="color:${headingColor}">${label}</h3>
         <span class="text-[.75rem] text-white/50">${sublabel}</span>
       </div>
       <div class="flex flex-wrap gap-4 justify-center">
-        ${members.map(m => memberCard(m)).join('')}
+        ${cards}
       </div>
     </div>`;
   }
@@ -357,7 +371,7 @@ const ROLE_COLORS: Record<string, string> = {
       + teamSection('team-ambassadors', i18n.ambassadors, i18n.ambassadorsSub, HEADING_COLORS.emerald, ambassadors)
       + teamSection('team-curators', i18n.curators, i18n.curatorsSub, HEADING_COLORS.amber, curators)
       + sponsorsSection(sponsors)
-      + teamSection('team-founders', i18n.founders, i18n.foundersSub, HEADING_COLORS.violet, founders);
+      + teamSection('team-founders', i18n.founders, i18n.foundersSub, HEADING_COLORS.violet, founders, { muteInactive: true, inactiveNote: i18n.foundersInactiveNote });
   }
 
   // ── Boot ──
