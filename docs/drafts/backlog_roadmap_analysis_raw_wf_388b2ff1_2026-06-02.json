@@ -1,0 +1,1364 @@
+{
+  "summary": "Deep multi-agent analysis of all 60 open issues → coordinated phased roadmap",
+  "agentCount": 7,
+  "logs": [],
+  "result": [
+    {
+      "cluster": "A-selection",
+      "program": "Selection reliability (ciclo 4)",
+      "issues": [
+        {
+          "number": 260,
+          "title": "[P0][bug] selection notifications stuck in digest path; cutoff booking trigger and interview-overdue gaps",
+          "type": "bug",
+          "priority": "P0",
+          "status": "open",
+          "summary": "25+ candidate-facing selection notifications routed as digest and consumed by weekly digest without transactional send; cutoff_approved booking trigger missing; stale interviews orphaned.",
+          "depends_on": [],
+          "blocks": [
+            348,
+            357,
+            411
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "PM policy decisions required on: (1) which selection_* types are transactional vs digest; (2) whether candidate-facing emails bypass suppress_all preference; (3) whether to implement selection_cutoff_approved trigger. Blocks email reliability and interview booking flow.",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 292,
+          "title": "program: P0 Selection Reliability Sprint — Cycle 4",
+          "type": "plan",
+          "priority": "P0",
+          "status": "open",
+          "summary": "Roadmap document defining 5 sequential workstreams with evidence packs, handoff blocks, and explicit deferrals to prevent partial-candidate state.",
+          "depends_on": [],
+          "blocks": [
+            260,
+            251,
+            116,
+            179,
+            230,
+            229
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "PM directive to run P0 sprint before lower-risk feature work. Sequence: Read-Only Evidence → Communications Fix → Booking End-to-End → Approval/Onboarding/Agreement → PERT Phase 2.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 0"
+        },
+        {
+          "number": 300,
+          "title": "REFACTOR: external_reviewer onboarding flow — unify Auth invite + campaign pipeline + persons dedup + MCP coverage + V4 carve-outs (10 gaps p225)",
+          "type": "bug",
+          "priority": "high",
+          "status": "open",
+          "summary": "10 structural gaps in external_reviewer onboarding (4 HIGH severity: duplicate persons, broken MCP tools, token expiry, Supabase Auth bypass; 5 MEDIUM; 1 low). Mario Trentim case shows silent failures and missing governance tracking.",
+          "depends_on": [],
+          "blocks": [
+            179
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Triage which gaps tackle first. HIGH gaps 1-4 block reliable onboarding with tracking; medium gaps are incremental PRs.",
+          "readiness": "needs-triage",
+          "effort": "L",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 347,
+          "title": "spec: booking routing policy and interviewer calendar registry",
+          "type": "spec",
+          "priority": "high",
+          "status": "open",
+          "summary": "Define booking URL routing policy (researcher 1:1 vs leader/committee) and create calendar registry instead of single cycle-level URL. 4-step implementation plan with non-goals.",
+          "depends_on": [],
+          "blocks": [
+            348,
+            411
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "PM decision on dual-interviewer intent (Vitor+Fabricio per event) — intentional or accidental? Determines Step 2 routing design. Current cycle4 blocked unblocked with Núcleo link as temporary unblocker.",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 348,
+          "title": "Roadmap: booking URL per-evaluator/track + auto-select in notify_selection_cutoff_approved + Hub reschedule/cancel",
+          "type": "roadmap",
+          "priority": "high",
+          "status": "open",
+          "summary": "4-step roadmap: (1) DONE—Núcleo link unblocks 5 cutoff dispatches; (2) register per-evaluator URLs (Step 2 schema); (3) auto-select routing in notify_selection_cutoff_approved (Step 3 RPC); (4) Hub reschedule/cancel UI (Step 4).",
+          "depends_on": [
+            347
+          ],
+          "blocks": [
+            356,
+            357,
+            411
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "PM decision on dual-interviewer intent (blocks Step 2 schema). Sequence locked: each step depends on prior.",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 356,
+          "title": "SPEC #348 Child #3 — Admin UI: edit members.interview_booking_url on /admin/members/[id]",
+          "type": "spec",
+          "priority": "high",
+          "status": "open",
+          "summary": "Add editable text input for interview_booking_url on admin member edit page + i18n keys × 3 langs. Validation regex ^https?://, no DB CHECK.",
+          "depends_on": [
+            348
+          ],
+          "blocks": [
+            411
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "None; implementation-ready after #348 schema.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 357,
+          "title": "SPEC #348 Child #4 — Cycle4-2026 committee reseed: Vitor + Fabricio researcher (URLs NULL)",
+          "type": "spec",
+          "priority": "high",
+          "status": "open",
+          "summary": "One-shot DML migration seeding selection_committee for cycle4 with 2 de facto evaluators (Vitor 51, Fabricio 40 evals). Idempotent, URLs NULL until #356 populated.",
+          "depends_on": [
+            348
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None; data-driven from evaluation audit.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 365,
+          "title": "bug(selection): objective PERT column uses researcher composite score instead of objective score",
+          "type": "bug",
+          "priority": "high",
+          "status": "open",
+          "summary": "Flavio Oliveira row shows Pesquisa=288.5 (composite/final) instead of objective=184.5; PERT chip compares to wrong cutoff. Frontend field mapping issue.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None; QA/read-only audit first to confirm DB payload, then fix frontend field binding.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 375,
+          "title": "p243 cron validation: could not validate (MCP call failed) — manual check needed",
+          "type": "bug",
+          "priority": "high",
+          "status": "open",
+          "summary": "Cron fire validation spawned agent lacks OAuth credentials for nucleo-ia MCP. Manual SQL validation needed for PERT recompute cron (jobid 47).",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Fix scheduled validation: create service-role–gated read RPC OR attach service-role JWT to spawned agent session.",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 411,
+          "title": "selection: interview invite lifecycle — UI wiring + cron automation (rescue cutoff_approved orphan path)",
+          "type": "spec",
+          "priority": "high",
+          "status": "open",
+          "summary": "7 above-target researchers stuck 21d with no UI dispatch button. Add modal dispatch button + toolbar filters + bulk dispatch + stuck-scheduled rescue + 2 crons (cutoff-pending daily, stuck-scheduled-rescue daily).",
+          "depends_on": [
+            260,
+            348
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Skip in-band auto-invite (PM directive—only above-target). Cron safety cap 50/day cutoff, 20/day rescue.",
+          "readiness": "ready",
+          "effort": "L",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 441,
+          "title": "VEP import: service_history parado desde 2026-05-12 + tabela pmi_chapter_memberships ausente em prod (2 zeros silenciosos)",
+          "type": "bug",
+          "priority": "medium",
+          "status": "open",
+          "summary": "VEP import counters always return 0 for service_history (stalled 2026-05-12) and pmi_chapter_memberships (table doesn't exist in prod). Silent failure, non-blocking main import.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Investigate: does extract_pmi_volunteer.js still emit payload fields? Apply missing migration OR remove dead code path.",
+          "readiness": "needs-triage",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 447,
+          "title": "get_my_application_status casa só por e-mail primário — apps reconciliadas com e-mail alternado ficam invisíveis no self-view do candidato",
+          "type": "bug",
+          "priority": "medium",
+          "status": "open",
+          "summary": "RPC matches application by primary email only; reconciled apps with canonical email=alternate remain invisible to candidate self-view. Paulo case (pejota81→paulo-junior) already remedied point-wise in #446.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None; expand RPC WHERE clause to include member_emails alternates (class-durable fix).",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 472,
+          "title": "Seleção: entrevistas off-platform não viram selection_interviews + status dessincronizado (candidatos pontuados presos em submitted)",
+          "type": "bug",
+          "priority": "P0",
+          "status": "open",
+          "summary": "6 interconnected bugs: (B1) off-platform interviews don't create selection_interviews rows; (B2) 5 candidates scored but stuck in submitted; (B3) 5 with completed objetiva stuck in screening/submitted; (B4) no admin path to register past interviews; (B5) 3 above-target never dispatched; (B6) selection_topic_views dead.",
+          "depends_on": [],
+          "blocks": [
+            260,
+            411
+          ],
+          "overlaps_or_dup": [
+            260
+          ],
+          "business_decision": "PM mandate: (1) reconcile Calendar↔selection_interviews cron; (2) freeze status on VEP re-import; (3) admin UI for offline interview registration with manage_platform bypass; (4) retroactive advance logic.",
+          "readiness": "needs-decision",
+          "effort": "XL",
+          "recommended_wave": "Wave 1"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Define selection_* notification routing policy (transactional candidate-facing vs digest vs admin-facing vs suppressed) and decide whether candidate-facing emails bypass notify_delivery_mode_pref=suppress_all.",
+          "owner": "PM (Product governance)",
+          "blocks": "Issues #260, #348, #411; candidate-facing communications reliability"
+        },
+        {
+          "decision": "Dual-interviewer intent for researcher interviews (Vitor+Fabricio per event intentional or accidental?). Determines booking URL routing schema (per-evaluator pool vs committee link).",
+          "owner": "PM + GP (Selection committee)",
+          "blocks": "Issues #348 Step 2 schema design, #357 committee reseed, #411 notification routing"
+        },
+        {
+          "decision": "Implement selection_cutoff_approved trigger (2 objective evaluations + PERT >= cutoff → automatic invite to interview booking with booking URL).",
+          "owner": "PM + Foundation",
+          "blocks": "Issues #260, #348, #411; unblocks interview booking lifecycle"
+        },
+        {
+          "decision": "Auto-dispatch policy for above-target candidates: cron-driven or PM-gated per candidate? Current PM directive: skip in-band, only above-target, 50/day safety cap.",
+          "owner": "PM + GP",
+          "blocks": "Issue #411 Wave 2a cron automation; fairness/governance question"
+        },
+        {
+          "decision": "Freeze application.status during VEP re-import (do not rebind to submitted if app already advanced). Pattern mirrors #446 email freeze.",
+          "owner": "Foundation + Integration",
+          "blocks": "Issue #472 (B2 root cause); data integrity post-import"
+        },
+        {
+          "decision": "Reconcile Calendar↔selection_interviews: cron/edge-function to sync nucleoia@pmigo.org.br events + evaluator-shared calendars with selection_interviews rows.",
+          "owner": "Foundation + Integration",
+          "blocks": "Issue #472 (B1); unreliable interview capture off-platform"
+        }
+      ],
+      "recommended_sequence": "Workstream sequence per #292 with phased interdependencies: (1) Wave 0—PM triages #292 roadmap + decides #260/#472/#348 policy questions; (2) Wave 1 readiness phase—(a) Read-only audit (#251/#260 evidence pack, #365/#375 validates), (b) #260 communications fix (policy + safe replay), (c) #472 B1/B3/B4 database fixes (Calendar sync cron, status freeze, admin offline path), (d) #411 UI dispatch + crons (above-target automation), (e) #347/#348 booking spec + #356/#357 implementation (committee reseed + UI); (3) Wave 1 parallel—#300 external_reviewer fixes (10 gaps), #441/#447 import/reconciliation bugs; (4) Wave 2—#229 PERT Phase 2 deferred until live trust blockers stabilized. Explicit deferrals: #243 (calibration spec-only), #254 (video reconciliation blocked by #221/#218 consent), new AI/video features (blocked by LGPD Art. 11). Delivery order: Evidence→Policy→Fixes→UI→Crons→Hardening.",
+      "cross_cluster_dependencies": [
+        "#251 (read-only audit, sibling in same sprint)",
+        "#116 (interview booking smoke, sequenced after #348)",
+        "#179 (approval contract, sequenced after #260 policy)",
+        "#230 (volunteer agreement lifecycle, sequenced after #179)",
+        "#229 (PERT Phase 2, deferred to Wave 2 post-trust-stabilization)",
+        "#221/#218 (consent/LGPD gating #254 video reconciliation, not in this cluster)",
+        "#446 (PR: email freeze for #447, precedent for status freeze in #472)"
+      ]
+    },
+    {
+      "cluster": "B-metrics",
+      "program": "Canonical metrics (ADR-0100)",
+      "issues": [
+        {
+          "number": 419,
+          "title": "Bucket B: implement ADR-0100 canonical metric definitions (impact_hours/active_members/attendance_rate/roster/XP/trail/cpmai)",
+          "type": "Epic/Umbrella",
+          "priority": "P0-Stop-the-line",
+          "status": "open",
+          "summary": "Migrate metric definitions from inline RPC re-implementation to canonical SQL views (one metric per PR). Metrics 1-4, 6, 8 shipped (impact_hours, active_members, attendance_rate two-metric model, tribe_roster/member_count, trail_completion, cpmai, webinars); metric 5 (XP rank/pillar cycle-mode ordering + deterministic tiebreak) pending.",
+          "depends_on": [],
+          "blocks": [
+            420,
+            421,
+            424,
+            425
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "ADR-0100 ratified 2026-05-28; metrics 4-8 design ratified 2026-05-31 by PM workflow; participant-only member definition (excl. observer-kind curators) ratified 2026-06-01.",
+          "readiness": "blocked",
+          "effort": "XL",
+          "recommended_wave": "Wave 0 stop-the-line"
+        },
+        {
+          "number": 420,
+          "title": "Bucket A follow-ups: dead dropout alert (PT/EN token fork) + attendance present-detection bugs + hardcoded cycle default",
+          "type": "Bug-Fix",
+          "priority": "P0-High",
+          "status": "open",
+          "summary": "Four discrete correctness defects from the audit: D14 (dropout alert matches English tokens but live events are 100% Portuguese — returns zero rows), D6 (attendance present-detection via `a.id IS NOT NULL` instead of `a.present=true` — overstates by ~4.5%), D12 (attendee_count includes absent rows), D10 (hardcoded cycle default needs verification and window-source resolution).",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [
+            425
+          ],
+          "business_decision": "None; D10 requires confirmation that cycle3-2026 and portfolio-target cycles are separate namespaces.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 421,
+          "title": "Cross-surface metric/data disparity audit (2026-05-28) — surface-wide remediation tracker",
+          "type": "Audit/Tracker",
+          "priority": "P0-High",
+          "status": "open",
+          "summary": "Umbrella tracker for the 2026-05-28 disparity audit results. Bucket A consent/security items (D1/D2/D3/get_member_cycle_xp) shipped in migration 20260805000055; remaining Bucket A correctness tracked in #420; Bucket B systemic metric forks tracked in #419.",
+          "depends_on": [
+            419,
+            420
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Open product/privacy decision: combined-attendance-% ranking still shows all members' % to every authenticated member — whether to restrict is a product call (D2 closed the clear-cut leaks).",
+          "readiness": "blocked",
+          "effort": "XL",
+          "recommended_wave": "Wave 0 stop-the-line"
+        },
+        {
+          "number": 424,
+          "title": "Champions gamification: usable award path + single reconciled XP source (parity invariant)",
+          "type": "Feature/Enhancement",
+          "priority": "P1",
+          "status": "open",
+          "summary": "Two structural issues: (1) award path operationally blocked — tribe_leader does NOT hold admin.gamification permission, preventing champions awards today (product/permission gap, not metric-definition); (2) dual disconnected XP sources (champions_awarded table vs gamification_points pillar) with no reconciliation — parity invariant + single canonical source required (folds into #419 ADR-0100 dictionary).",
+          "depends_on": [
+            419
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Two decisions: (A) widen award_champion grant to right roles OR ship lean /champion/award page for leaders; (B) pick ONE canonical source for champion XP (belongs in ADR-0100 metric 7 line item).",
+          "readiness": "needs-decision",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 425,
+          "title": "Tribe gamification tab -> per-member coaching cockpit (dead/misleading columns + missing primitives)",
+          "type": "Feature/Enhancement",
+          "priority": "P1",
+          "status": "open",
+          "summary": "Tribe leader gamification tab is a scoreboard, not a coaching tool. Three categories of gaps: (1) dead/misleading columns (champions_points=0 everywhere, badge/cert points =0 despite Credly badges, trail_completion hardcoded 0), (2) missing coaching primitives (attendance rate, streak/inactivity flag, per-course trail breakdown, last-activity date), (3) latent dual-source risks (trail_progress vs course_progress; cycle_points windowing).",
+          "depends_on": [
+            419
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [
+            420
+          ],
+          "business_decision": "None explicit; features fold into #419 canonical metrics (trail_completion metric 6, attendance_rate metric 3, badge/cert alignment).",
+          "readiness": "blocked",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "ADR-0100 canonical metric definitions ratified (2026-05-28); metrics 4-8 design + rollout sequence ratified 2026-05-31 by PM workflow.",
+          "owner": "PM (Vitor Maia Rodovalho)",
+          "blocks": "#419 implementation sequence and #420/#421/#424/#425 dependencies"
+        },
+        {
+          "decision": "Member definition unified onto kind axis: participants-only (status='active' AND role<>'observer' AND kind<>'observer'), excl. observer-kind curators. Ratified 2026-06-01.",
+          "owner": "PM",
+          "blocks": "#419 metric 4 (member_count) finalization and #425 coaching cockpit design"
+        },
+        {
+          "decision": "Champions award path: widen admin.gamification grant to right roles (tribe_leader) OR ship /champion/award page. Metric 7 single canonical source required (champions_awarded table).",
+          "owner": "PM + Backend",
+          "blocks": "#424 operational unblock and #419 metric 7 parity invariant"
+        },
+        {
+          "decision": "Attendance combined-% ranking visibility: all members' % shown to every authenticated member. Whether to restrict is a product/privacy call (D2 closed consent/security leaks; this is architectural).",
+          "owner": "PM + Privacy",
+          "blocks": "#421 audit closure and #425 coaching tab design"
+        }
+      ],
+      "recommended_sequence": "\nIMMEDIATE (Wave 0 stop-the-line):\n1. Complete #419 metric 5 (XP rank/pillar) — pending PR, highest-impact reorder across gamification surfaces. Completes the core metric dictionary rollout.\n2. Confirm D10 window-source issue in #420 — verify cycle3-2026/4-2026 namespace separation and resolve portfolio-target cycle default from is_current (unblocks #420 remaining fixes).\n\nSHORT-TERM (Wave 1, 1-2 sprints):\n3. Fix #420 Bucket A correctness defects (D14 PT/EN token fork, D6/D12 attendance present-detection, D10 hardcoded cycle) — discrete fixes, unblocks metrics alignment.\n4. Unblock #424 award path via permission grant or /champion/award page (product decision required). Parity invariant test already shipped; canonical source decided in #419.\n\nMID-TERM (Wave 2, 2-3 sprints):\n5. Build #425 coaching cockpit with canonical metric sources from #419 (attendance_rate, trail_completion, badge/cert, per-member drill-down, inactivity flags). Surfaces will be consistent once #420 & #419 complete.\n6. Close #421 audit via #419/#420 completions and product decision on attendance-% visibility (#421 open question).\n\nDEPENDENCIES ACROSS CLUSTERS:\n- #419 unblocks #420, #424, #425 (each depends on canonical metric definitions).\n- #420 unblocks #421 (remaining Bucket A fixes complete the audit remediation).\n- #424 award-path decision unblocks both #424 and #419 metric 7 (champions parity).\n- #425 is Feature-dependent but not blocking any platform invariants.\n",
+      "cross_cluster_dependencies": [
+        "#472 corrections (selection pipeline) — PRs #473-#476 merged; corr-5 (consistency cron + retire selection_topic_views) remains (separate cluster, parallel track)",
+        "#419 metrics 1-6 + metric 8 + gate shipped; metric 7 (champions) parity test in #419 (#457); metric 5 (XP rank) pending (#419 core blocker)",
+        "#420 Bucket A defects are PREREQUISITE for metrics alignment — attend-guard + dropout-alert + cycle defaults must be fixed before surfaces converge"
+      ]
+    },
+    {
+      "cluster": "C-governance-legal",
+      "program": "Governance documents + legal/ANPD",
+      "issues": [
+        {
+          "number": 209,
+          "title": "governance: drive permission revocation cascade on member offboarding",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Implement cascading Google Drive permission revocation for offboarded members (LGPD Art. 16 compliance) via weekly cron + approval gate. Includes audit table, 2 edge functions, 3 MCP tools.",
+          "depends_on": [
+            204
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Approval gate model required (no automatic revocation) — mirrors admin_reactivate_member pattern post-G2. Security decision: GP approval before revocation; compliance owner: DPO coordination path.",
+          "readiness": "ready",
+          "effort": "L",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 301,
+          "title": "curatorship: temporary Drive grants for submitted artifacts",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Ensure submitted curation artifacts are accessible to curators via temporary Google Drive permission grants; revoke when curation completes. Implements least-privilege handoff + audit ledger.",
+          "depends_on": [
+            190,
+            201
+          ],
+          "blocks": [
+            201
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Least-privilege authority: curators get access only to submitted artifacts, not entire tribe folder (unless folder was submitted). Role source: can_by_member('curate_content') not hardcoded designations.",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 308,
+          "title": "governance: curator contribution evidence bundles and bilingual certificates",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Architecture audit and design for packaging curator review evidence (artifact snapshots, review criteria, decisions, feedback) into bilingual certificates/statements. Semantic layer for curatorship evidence.",
+          "depends_on": [
+            190,
+            201,
+            301,
+            181
+          ],
+          "blocks": [
+            311
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Planning issue gate: ADR or governance spec required before implementation child issues. Manual section amendments must be proposed. Bilingual output (PT-BR + EN-US) defined at template/snapshot level, not post-issuance.",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 311,
+          "title": "governance evidence: function/action evidence bundles for all Núcleo roles and certificate tiers",
+          "type": "feature",
+          "priority": "high",
+          "status": "open",
+          "summary": "Generic evidence-bundle model spanning all Núcleo roles (GP, leader, curator, author, editor, speaker, etc.) to back certificates, declarations, and audit exports. Data-driven, role-period-action-artifact-linked.",
+          "depends_on": [
+            308,
+            181,
+            166
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Function held vs actions performed must be sourced from V4 engagements/history, not current operational_role. Evidence must distinguish both. Frontiers Editorial Guide acceptance case sets business requirements.",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 315,
+          "title": "governance documents: taxonomy, visibility and acknowledgement decision spec",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Explicit decision spec for document taxonomy (types like editorial_guide, privacy_policy), visibility classes (public, active_members, role-scoped, admin-only), and acknowledgement semantics (informational vs ratification vs signature).",
+          "depends_on": [
+            310,
+            312,
+            314
+          ],
+          "blocks": [
+            310,
+            312,
+            314,
+            311
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "PM decision matrix required covering 7 decision axes: doc_type, visibility_class, status semantics, acknowledgement mode, template/signed relationship, version dependency graph, corpus backfill. Frontiers Editorial Guide type/gate/visibility must be chosen.",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 333,
+          "title": "[Task]: Wave 4 invariant U — voice biometric consent enforcement in check_schema_invariants() (C3 of #221/#218 decomposition)",
+          "type": "task",
+          "priority": "medium",
+          "status": "blocked",
+          "summary": "Add invariant U to check_schema_invariants() enforcing that every pmi_video_screenings row with transcription has matching application with consent_voice_biometric_at NOT NULL AND not revoked.",
+          "depends_on": [
+            332,
+            221,
+            218
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "PM sequencing decision: (a) C2 #332 before C3 (cleaner, blocks #333 on #332 completion) OR (b) C3 first with allowlist of 1 known row, removed after C2 completes. Either unblocks after PM call.",
+          "readiness": "blocked",
+          "effort": "S",
+          "recommended_wave": "Wave 4"
+        },
+        {
+          "number": 334,
+          "title": "[Task]: Wave 5 Angeline legal-ops chain — ANPD Art. 48 + notification template + DPO + Adendo Privacidade (C4 of #221/#218 decomposition)",
+          "type": "task",
+          "priority": "high",
+          "status": "blocked",
+          "summary": "Legal-ops async cycle (external: Angeline legal counsel). Blocks: ANPD Art. 48 §1 pre-disclosure determination, Art. 18 §IV notification template, DPO appointment stance, Adendo Privacidade Principal publication.",
+          "depends_on": [
+            221,
+            218,
+            332
+          ],
+          "blocks": [
+            332
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "External async dependency: Angeline opinion needed on 5 items (ANPD, notification template, DPO, policy addendum, speaker term). PM must initiate contact + track completion. Blocks C2 final ship (C2 uses interim text until C4 template arrives).",
+          "readiness": "blocked",
+          "effort": "S",
+          "recommended_wave": "Wave 5"
+        },
+        {
+          "number": 335,
+          "title": "[Task]: ADR-0094 Initiative Collaboration Hub — Draft → Proposed → Accepted (C5 of #221/#218 decomposition)",
+          "type": "task",
+          "priority": "medium",
+          "status": "blocked",
+          "summary": "Author missing ADR-0094 Initiative Collaboration Hub (refs #212 spec, W1 shipped p207 but ADR never written). Status: Draft → Proposed → Accepted via Tier 3 council 5/5 ratification.",
+          "depends_on": [
+            331,
+            332,
+            333,
+            212,
+            221,
+            218
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "ADR cannot reach Accepted until C1/C2/C3 siblings close (engineering + UI + retroactive + invariant live). C4 (legal-ops) not required for ADR Accepted. Tier 3 council invocation mandatory post-author.",
+          "readiness": "blocked",
+          "effort": "S",
+          "recommended_wave": "Backlog/triage"
+        },
+        {
+          "number": 403,
+          "title": "BUG-268.B — Tier 2 governance document INSERT RPCs broken after W1a M2 (confirm_manual_version + link_attachment_to_governance)",
+          "type": "bug",
+          "priority": "high",
+          "status": "open",
+          "summary": "Two RPCs (confirm_manual_version + link_attachment_to_governance) missing NOT NULL columns (organization_id, visibility_class, acknowledgement_mode) added by W1a migrations — latently broken since p256.",
+          "depends_on": [
+            315
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Semantic decision required on defaults: (a) default acknowledgement_mode per doc_type (manual=informational? cooperation_agreement=legal_signature?) OR (b) deprecate these RPCs in favor of create_governance_document_intake. Decision scope belongs to #315; this issue scopes patch once decided.",
+          "readiness": "blocked",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 455,
+          "title": "Backfill de Certificados Alumni (trail-aware) para alumni legados",
+          "type": "task",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Backfill certificates for 17 legacy alumni (offboarded end of Cycle 2, before auto-emit introduced) by re-executing native trail-aware emitter. Ensures consistent certs with correct cycle/tribe/attendance data.",
+          "depends_on": [
+            449,
+            451
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Root cause: manual emit via MCP breaks because (1) cycle param expects INTEGER not string, (2) no endpoint returns historical trail by cycle, (3) preview validation insufficient. Fix scope: refactor native emitter to reusable issue_alumni_certificate(member_id) + parallel fixes to MCP tools (cycle string→int, get_all_certificates populate array, new get_member_trail).",
+          "readiness": "needs-triage",
+          "effort": "M",
+          "recommended_wave": "Wave 3"
+        },
+        {
+          "number": 459,
+          "title": "[Feature]: Expor corpo normativo de governance_documents via Model Context Protocol (leitura)",
+          "type": "feature",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Add MCP read capability (get_document_version_content or include_content flag in get_document_detail) to retrieve full normative body (HTML + rendered Markdown) of governance documents. Currently impossible to read agreement clauses via MCP.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "RLS must be respected; asymmetry (can write/diff but not read) is design gap. Use case: redacting derived instruments from clause text (e.g., Memorando de Entendimento from bilateral agreement clause 12.2). Bilingual (PT-BR + EN-US) support via template/snapshot level.",
+          "readiness": "needs-triage",
+          "effort": "S",
+          "recommended_wave": "Wave 2"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Drive permission revocation cascade requires human approval gate (no automatic revocation); mirrors admin_reactivate_member pattern post-G2. Security authority: GP approval before Drive permission revoked.",
+          "owner": "Security/DPO coordination",
+          "blocks": "Issue #209 ready state; offboarding LGPD Art. 16 compliance"
+        },
+        {
+          "decision": "Governance documents taxonomy, visibility classes, and acknowledgement semantics must be explicitly decided in decision matrix (7 axes: doc_type, visibility_class, status flow, acknowledgement mode, template/current relationship, version dependency, backfill inventory). Frontiers Editorial Guide type + gate + visibility must be chosen.",
+          "owner": "PM (governance domain)",
+          "blocks": "Issues #310, #312, #314, #311, #403 cannot proceed until #315 decision matrix is approved"
+        },
+        {
+          "decision": "Evidence bundles and contribution certificates must source function/period from V4 engagements/history, not current operational_role cache. Actions must reference immutable artifact snapshots. Bilingual output (PT-BR + EN-US) defined at template level, not post-issuance.",
+          "owner": "PM (governance) + Engineering (V4 engagements)",
+          "blocks": "Issues #308, #311 planning; downstream child issues cannot be created until architecture ADR/spec approved"
+        },
+        {
+          "decision": "ANPD Art. 48 §1 pre-disclosure requirement, Art. 18 §IV notification template, DPO appointment stance, and Adendo Privacidade Principal must come from legal counsel (Angeline). Typical 3-5 business days async cycle.",
+          "owner": "PM (legal ops) → Angeline (external counsel)",
+          "blocks": "Issue #334 and downstream C2 #332 final ship (C2 uses interim text until template arrives from #334)"
+        },
+        {
+          "decision": "Wave 4 invariant U registration sequencing: (a) C2 #332 before C3 #333 (cleaner but blocks #333 on #332) OR (b) C3 first with allowlist of 1 known row, removed after C2 completes. PM must choose.",
+          "owner": "PM (engineering roadmap)",
+          "blocks": "Issue #333 readiness state; invariant registration cannot proceed without sequencing call"
+        },
+        {
+          "decision": "Confirm_manual_version + link_attachment_to_governance RPCs missing organization_id + visibility_class + acknowledgement_mode columns. Fix requires semantic defaults decision (per #315) on whether defaults vary by doc_type or if these RPCs should be deprecated in favor of create_governance_document_intake.",
+          "owner": "PM (governance) + Engineering (deprecated path assessment)",
+          "blocks": "Issue #403 fix scope; pending #315 decision matrix"
+        },
+        {
+          "decision": "Alumni certificate backfill blocked by MCP tool gaps: (1) issue_certificate must accept cycle as string + validate in preview, (2) get_all_certificates must populate certificates array, (3) new get_member_trail needed. Refactor native emitter to reusable issue_alumni_certificate(member_id).",
+          "owner": "Engineering (MCP fixes) + GP (backfill coordination)",
+          "blocks": "Issue #455 cannot proceed until MCP capability gaps fixed"
+        }
+      ],
+      "recommended_sequence": "\n**Phase 1 (Foundation — decision gates):**\n1. **#315 (PM decision matrix)** — governance documents taxonomy, visibility, acknowledgement. BLOCKS all downstream #310/#312/#314/#311/#403.\n2. **#334 (Angeline legal-ops)** — initiate async cycle; blocks #332 final ship. Parallel with Phase 1.\n\n**Phase 2 (Cascading governance)**\nOnce #315 decisions locked:\n3. **#209 (Drive offboarding cascade)** — LGPD Art. 16, approval gate, audit ledger. (Wave 1 ready; size L).\n4. **#403 (fix confirm_manual_version + link_attachment_to_governance)** — patch RPCs once #315 semantic defaults chosen (size S).\n5. **#301 (Drive grants for curation)** — temporary access for submitted artifacts; least-privilege handoff (Wave 2; size M).\n\n**Phase 3 (Evidence + certificates)**\n6. **#308 (curator evidence bundles)** — architecture audit + design. Planning issue; blocks #311. (Size L).\n7. **#311 (evidence bundles all roles)** — generic model backed by #308 design. (Size L).\n8. **#455 (alumni certificate backfill)** — refactor native emitter + MCP fixes, re-emit for 17 legacy alumni (Wave 3; size M).\n9. **#459 (MCP read document body)** — add governance_documents content retrieval via MCP. (Wave 2; size S).\n\n**Phase 4 (Spec + ratification)**\n10. **#333 (invariant U registration)** — once sequencing decision made by PM (Wave 4; size S; currently blocked).\n11. **#335 (ADR-0094)** — author after C1/C2/C3 (Wave 1a/1b/1c) close; council ratification required (size S).\n\n**Cross-cluster dependencies:**\n- #209 ↔ #204 (parent: offboarding framework)\n- #301 ↔ #190/#201 (curatorship modal/queue state foundations)\n- #308/#311 ↔ #181 (counter-signature/certificate evidence)\n- #308/#311 ↔ #166 (semantic layer roadmap)\n- #333 ↔ #332/#331 (C-selection-pipeline Wave 4 invariant siblings)\n- #334 ↔ #332 (legal-ops blocks C2 final; C2 uses interim text)\n- #335 ↔ #212 (Initiative Collaboration Hub spec; #221/#218 W1 completion required)\n- #403 ↔ #315 (semantic defaults required before RPC fix scoped)\n- #455 ↔ #449/#451 (offboarding fixes; MCP tool gaps parallel)\n",
+      "cross_cluster_dependencies": [
+        "#204 (offboarding framework parent)",
+        "#190 #201 (curatorship modal/queue state)",
+        "#181 (counter-signature/certificate evidence)",
+        "#166 (semantic layer roadmap)",
+        "#212 (Initiative Collaboration Hub spec)",
+        "#221 #218 (LGPD W1 completion; p236 decomposition)",
+        "#331 #332 (C-selection-pipeline Wave 4 invariant siblings)",
+        "#449 #451 (offboarding fixes parallel to #455)"
+      ]
+    },
+    {
+      "cluster": "D-rls-bugs",
+      "program": "RLS / data-integrity / live bugs",
+      "issues": [
+        {
+          "number": 201,
+          "title": "curatorship: show submitted artifact links and source context in review modal",
+          "type": "bug/feature-gap",
+          "priority": "high",
+          "status": "open",
+          "summary": "Curation review modal hides submitted artifact links (board_items.attachments) and source context (initiative/tribe, checklist evidence, Drive folders), breaking one-place review experience. Curators must hunt through separate board/Drive to evaluate submissions.",
+          "depends_on": [
+            190,
+            188
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "",
+          "readiness": "needs-triage",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 227,
+          "title": "bug: selection-resumes RLS policy calls can(auth.uid()) but can() expects persons.id — all CV downloads 400 for authenticated admins",
+          "type": "bug/rls-violation",
+          "priority": "high",
+          "status": "open",
+          "summary": "RLS policy on selection-resumes bucket passes auth.uid() to can() function, but can() expects persons.id. Since auth.uid() ≠ persons.id, policy always denies SELECT for all admins including Vitor/Fabricio (verified live). Violates ADR-0007 canonical authority contract. CV download returns 400.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Foundation lane authority — fix is isolated migration (Option A: translate auth.uid→persons.id inline; Option B: add can_by_auth_uid SECDEF helper). ADR-0007 audit mandates Option B for future-defense.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 0"
+        },
+        {
+          "number": 231,
+          "title": "[Bug]: invariants R/S behavioural test leaks synth rows despite tx=rollback (sediment p207 recurrence)",
+          "type": "bug/test-infrastructure",
+          "priority": "medium",
+          "status": "open",
+          "summary": "PostgREST Prefer: tx=rollback does not rollback rows inserted by SECDEF functions. Synthetic test rows (%@invariant.test) persists post-CI, causing invariants R+S to report false violations (3rd recurrence: p206, p207, p209 post-#215). Blocks CI trust.",
+          "depends_on": [],
+          "blocks": [
+            220,
+            148
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Test infrastructure decision: confirm tx=rollback behavior on SECDEF vs non-SECDEF functions, then adopt explicit try/finally cleanup pattern instead of relying on HTTP rollback semantics.",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 245,
+          "title": "rls/governance: role conflict — curador + ponto focal blocks /admin/curatorship (Roberto Macêdo report)",
+          "type": "bug/rls-gate",
+          "priority": "high",
+          "status": "open",
+          "summary": "Roberto Macêdo cannot access /admin/curatorship despite carrying both curator operational_role AND ponto focal designation. System fails to resolve dual authority. Blocks curatorship SLA (Débora's article deadline 26/mai).",
+          "depends_on": [
+            161,
+            191,
+            192
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Product/governance decision: is operational_role single-valued with lateral designations (current model, needs bugfix in gate), or should curator + ponto focal coexist in operational_role? Decision unblocks both role-conflict detection (#161) and multi-role access gates.",
+          "readiness": "blocked",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 246,
+          "title": "ux/realtime: /attendance does not refresh in real time during live meetings (Jefferson report)",
+          "type": "bug/realtime",
+          "priority": "high",
+          "status": "open",
+          "summary": "Attendance grid page requires manual F5 refresh to show new presence marks during live meetings. Supabase Realtime subscription not firing/dispatching for attendance table changes. Distinct from #156/#157. Likely RLS blocking Realtime broadcast payload.",
+          "depends_on": [],
+          "blocks": [
+            247
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "",
+          "readiness": "needs-triage",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 247,
+          "title": "attendance: Jefferson Pinto incorrectly marked absent — audit data + identify root cause",
+          "type": "audit/data-integrity",
+          "priority": "high",
+          "status": "open",
+          "summary": "Jefferson was incorrectly marked absent in a meeting where he was present, skewing gamification leaderboard. Manual correction applied by Vitor. Root cause unclear: symptomatic of #246 (realtime UI showing wrong state) or register_attendance RPC writing wrong row?",
+          "depends_on": [
+            246
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Audit must determine: was wrong row inserted manually (UX issue → #246 dependency) or by automated flow (RPC bug)? Drives fix scope and priority.",
+          "readiness": "blocked",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 440,
+          "title": "Board: 'Responsável' (assignee_id) diverges from 'Participantes' (board_item_assignments) — modelo de assignee duplicado/não-sincronizado",
+          "type": "bug/data-model",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Board item has two unsynchronized assignee models: board_items.assignee_id (single, falls back to creator) vs board_item_assignments (multi-role junction). create_board_item chumps creator into assignee_id; picker for 'Participantes' only writes junction, never updates assignee_id. Kanban/drag overlay render wrong assignee because they read assignee_id instead of assignments[].",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Product/data-model decision: is junction multi-role canonical (deprecate assignee_id, audit all consumers) or keep single assignee_id and sync picker + create_board_item? No data loss; fix depends on model choice.",
+          "readiness": "needs-decision",
+          "effort": "M",
+          "recommended_wave": "Backlog/triage"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Foundation lane RLS fix: select canonical authority pattern (Option A: inline translation auth.uid→persons.id; Option B: add can_by_auth_uid SECDEF helper). ADR-0007 audit mandates Option B for future-defense and consistency with rls_can family.",
+          "owner": "Foundation lane lead / DB architect",
+          "blocks": "#227 (all CV downloads return 400 for admins)"
+        },
+        {
+          "decision": "Role model: confirm whether operational_role must remain single-valued (with lateral designations in members.designations) or support curator + ponto focal coexistence. Affects role gate in /admin/curatorship and dual-authority gates generally (#161).",
+          "owner": "Product lead / PM Núcleo",
+          "blocks": "#245 (Roberto curatorship access), #161 (multi-role gate audit), #192 (review-per-curator enforcement)"
+        },
+        {
+          "decision": "Assignee model canonical form: keep single assignee_id (sync picker + create_board_item) or migrate to multi-role assignments junction? No data loss; scope depends on choice.",
+          "owner": "Product lead / Board PM",
+          "blocks": "#440 (assignee divergence fix)"
+        },
+        {
+          "decision": "Test infrastructure: adopt explicit try/finally cleanup in behavioural tests instead of relying on PostgREST Prefer: tx=rollback for SECDEF function row cleanup. Update sediment to document tx=rollback limitation on SECDEF.",
+          "owner": "QA/CI lead",
+          "blocks": "#231 (CI trust / invariants false positives)"
+        }
+      ],
+      "recommended_sequence": "Wave 0 (stop-the-line): #227 (RLS bug blocking all admin CV access; isolated Foundation migration; ready). Wave 1 (high-impact operational): #245 (curatorship SLA blocker, needs product decision), #246 (realtime attendance, operational block for all tribe leaders), #247 (attendance audit, depends on #246 diagnosis), #231 (test infrastructure confidence, blocks CI). Wave 2 (feature/UX): #201 (curation modal context). Backlog/triage: #440 (needs product model decision; no data loss, medium priority).",
+      "cross_cluster_dependencies": [
+        "#188 (MCP curator tools context)",
+        "#190 (curation_queue_state semantic layer)",
+        "#161 (multi-role gate audit, overlaps #245)",
+        "#191 (legacy curation APIs, related #245)",
+        "#192 (review-per-curator enforcement, intersects #245)",
+        "#156 (attendance vs events divergence, context for #246)",
+        "#157 (cancelled-event display, context for #246)",
+        "#168 (TAP intake, source for #245/#246/#247)",
+        "#220 (CI green blocker for #231)",
+        "#148 (CI green blocker for #231)"
+      ]
+    },
+    {
+      "cluster": "E-infra-calendar-ux",
+      "program": "Initiative hub / calendar / events / UX",
+      "issues": [
+        {
+          "number": 204,
+          "title": "initiative: gemini integration + drive/calendar governance (mai-jul/2026)",
+          "type": "task",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Umbrella initiative coordinating 6 sub-issues (205–210) across multimodal AI, Drive/Calendar governance, and alternate email schema. P1 blocker: #205 (shipped+closed). Depends on completion of all 6 sub-issues for acceptance.",
+          "depends_on": [
+            205,
+            206,
+            207,
+            208,
+            209,
+            210
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "PM ratified architecture (2026-05-20): dual-model (Claude primary tool-use, Gemini 3.5 Flash for video/audio/long-doc). All identity lookups via DB (no regex heuristic client-side). Decision owner: PM",
+          "readiness": "needs-triage",
+          "effort": "XL",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 210,
+          "title": "governance: calendar recurrence cleanup — focal points vs special guests (uses member_resolve_email)",
+          "type": "task",
+          "priority": "P2",
+          "status": "blocked",
+          "summary": "Manual audit EF for recurrence attendee classification (member/inactive/non-member) using `member_resolve_email` RPC. Generates CSV report for GP line-by-line approval. Removes non-members + demotes observers to optional attendees.",
+          "depends_on": [
+            205
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [
+            92,
+            116
+          ],
+          "business_decision": "PM explicit (2026-05-20): classification MUST come from DB via RPC, not regex. Owner: PM (approval gate on CSV)",
+          "readiness": "blocked",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 211,
+          "title": "platform: initiative edit-metadata UI (whatsapp_url / drive_folder / recurring_meeting_time)",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Add initiative settings tab to expose metadata editing (WhatsApp URL, Drive folder link button, recurring meeting cadence). Surfaces PM bottleneck: metadata-only editable via SQL/MCP today. Required for multi-hub scalability.",
+          "depends_on": [],
+          "blocks": [
+            212
+          ],
+          "overlaps_or_dup": [
+            212
+          ],
+          "business_decision": "PM requirement (p205 #169): self-service initiative management for future hub admins (PMI-CE, PMI-MG). Owner: PM",
+          "readiness": "needs-decision",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 212,
+          "title": "spec: initiative-as-collaboration-hub — external members + drive lifecycle sync + metadata governance",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "SPEC ONLY (not implementation): architecture for external member identity (G1), Drive permission sync on engagement lifecycle (G2), metadata UI integration (G3), Google API governance (G4). Scopes #211 + adds new gaps. Vassouras use case (students collaborating on boards).",
+          "depends_on": [
+            211
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [
+            211
+          ],
+          "business_decision": "G1 (external member model): partner_contact engagement vs lightweight identity layer — decision pending PM + architect review. G2 (Drive sync trigger): engagement INSERT/revoke → permission grant/remove — pending ratification. Owner: PM + architect (ADR to be drafted)",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 217,
+          "title": "BUG-212.A: engagement welcome email link 404 — /iniciativas/ → /initiative/",
+          "type": "bug",
+          "priority": "high",
+          "status": "open",
+          "summary": "Function `_enqueue_engagement_welcome` has hardcoded `/iniciativas/` (Portuguese plural) instead of `/initiative/` (English singular). ALL engagement emails land on 404. Cross-cutting — affects all engagement kinds.",
+          "depends_on": [],
+          "blocks": [
+            212
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "None — straightforward fix. Owner: any infra agent",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 0"
+        },
+        {
+          "number": 248,
+          "title": "ux: calendar renders day \"19\" with strikethrough/cancelled style (Klemz report)",
+          "type": "bug",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Calendar visual bug: day \"19\" renders with strikethrough, confusing members about event presence. Root likely CSS condition mismatch or cancelled event propagation to calendar cell.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [
+            157
+          ],
+          "business_decision": "None — UX bug requiring frontend investigation.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 0"
+        },
+        {
+          "number": 249,
+          "title": "agenda/timezone: T4 meeting shown as Tuesday but actually Wednesday (Fernando report 25/abr)",
+          "type": "bug",
+          "priority": "medium",
+          "status": "open",
+          "summary": "T4 (Cultura & Change) recurring meeting displays day-of-week incorrectly. Open since 25-Apr (35 days). Likely timezone UTC→local conversion bug or BYDAY recurrence mismatch. Status: possibly fixed silently (needs verification from Fernando).",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None — verify with Fernando whether bug persists in current deploy.",
+          "readiness": "needs-triage",
+          "effort": "S",
+          "recommended_wave": "Wave 0"
+        },
+        {
+          "number": 414,
+          "title": "feat(events): generator de recorrência com intervalo parametrizável (semanal/quinzenal/mensal)",
+          "type": "feature",
+          "priority": "medium",
+          "status": "open",
+          "summary": "RPC enhancement: add `p_interval_days` parameter to `create_recurring_weekly_events` (or rename to `create_recurring_events`). Enables biweekly (14d), monthly (30d), etc. recurrences instead of hardcoded 7d. Leadership meeting is biweekly; current RPC only supports weekly.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None — internal enhancement.",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 415,
+          "title": "feat(observability): cron de stockout de recorrência (alerta < N dias do last_date)",
+          "type": "feature",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Daily cron detecting recurrence series nearing expiry (last_date + 30 days remaining). Calculates modal gap from history, fires alert to `operational_alerts` table. Prevents silent series-empty scenario (e.g., leadership meeting #4..N missing until day-of).",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "None — observability feature.",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 416,
+          "title": "feat(integrations): sync bidirecional Google Calendar para events (ingest + create)",
+          "type": "feature",
+          "priority": "low",
+          "status": "open",
+          "summary": "ADR + OAuth + EF for optional sync with Google Calendar. Ingest phase: read PM's calendar(s), create/update `events` rows. Write-back (phase 2): publish events from Núcleo UI to GCal. Addresses PM workflow friction (manual copy-paste between systems).",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Sync priority: GCal wins on conflict (phase 1). Multi-tenant support deferred. Owner: architect (ADR required)",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Backlog/triage"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Identity classification for calendar attendees (member/inactive/non-member) MUST use DB-backed RPC (member_resolve_email), NOT client-side regex heuristics. Required for #210 calendar cleanup.",
+          "owner": "PM (ratified 2026-05-20)",
+          "blocks": "#210, #212"
+        },
+        {
+          "decision": "Dual-model AI strategy: Claude primary for tool-use complexity, Gemini 3.5 Flash variant for video/audio/long-doc. Pilot decision in #206. All AI processing logged via ai_processing_log (LGPD Art. 37).",
+          "owner": "PM (discussed at I/O 2026-05-19 follow-up)",
+          "blocks": "#204, #206"
+        },
+        {
+          "decision": "External member identity model (G1 in #212): PENDING. Two options: (a) extend partner_contact engagement, (b) lightweight identity layer. Requires architecture session with PM + architect.",
+          "owner": "PM + architect (decision pending)",
+          "blocks": "#212, future work on #211"
+        },
+        {
+          "decision": "Google Calendar sync conflict resolution (phase 1 #416): GCal wins on edit collision. Multi-tenant deferred to phase 2.",
+          "owner": "Architect (ADR pending)",
+          "blocks": "#416"
+        },
+        {
+          "decision": "Calendar recurrence: support arbitrary interval (weekly/biweekly/monthly) via parametrized RPC. Needed for Leadership meeting (biweekly, but RPC only supports 7d).",
+          "owner": "Infra agent",
+          "blocks": "#414 (internal, no hard blocker)"
+        }
+      ],
+      "recommended_sequence": "\n**Wave 0 (Stop-the-line — S effort, ready for immediate pickup):**\n1. #217 (BUG engagement email 404) — 1 migration fix; unblocks all engagement notifications\n2. #248 (Calendar day 19 strikethrough) — frontend debug; visual UX regression\n3. #249 (T4 day-of-week bug) — verify with Fernando if persists; if yes, debug timezone logic\n\n**Wave 1 (P1/P2, depend on #205 CLOSED + business decisions):**\n4. #210 (Calendar recurrence cleanup) — blocked on #205 (CLOSED as of context); unblock immediately. Enables #210 execution. Gate: P2 but critical for #204 umbrella.\n5. #414 (Parametrized recurrence interval) — decouple from #210; enables biweekly Leadership series (required post-cleanup)\n6. #415 (Recurrence stockout cron) — observability to prevent future silent series expiry (learned from leadership meeting gap 28-May)\n\n**Wave 2 (P2, depends on architecture clarity):**\n7. #212 (SPEC: initiative collaboration hub) — blocks #211; requires architecture decision on G1 + G2. Assign L-effort spec work to agent + PM pairing session.\n8. #211 (Initiative metadata UI) — unblock after #212 spec is approved; M-effort; unblocks multi-hub scalability\n\n**Backlog/Triage (P3, low, deferred):**\n9. #416 (Google Calendar sync) — low priority; nice-to-have; requires ADR + OAuth setup; defer beyond Wave 2\n10. #206, #207, #208, #209 — components of #204 umbrella (multimodal AI, Drive cascade) — tracked separately; not in this cluster's critical path yet\n\n**Cross-cluster dependencies to track:**\n- #204 umbrella: #210 is the only Calendar issue in the cluster that feeds into #204's ARM impact\n- #206, #207, #208, #209 (sub-issues of #204): open, tracked in separate cluster\n- #92, #116: historical ARM-5 blockers on Calendar; cross-check with #210 before implementation\n- #157: similar cancelled-event visual bug; may share CSS root cause with #248\n\n**Note on #204 (Umbrella):**\n#204 is open and in Wave 1, but #205 (Foundation blocker) is already CLOSED. #204's acceptance criteria depend on closure of #206–#210. This cluster (#210, #211, #212, #217) feeds into #204. Recommend updating #204's status after #210 ships (mark as 1/6 sub-issues resolved).\n",
+      "cross_cluster_dependencies": [
+        "#204 (Umbrella: gemini + drive/calendar governance) — parent initiative; #210 is a sub-issue",
+        "#205 (Foundation: member_resolve_email RPC) — CLOSED; unblocks #210, #212",
+        "#206, #207, #208, #209 (Sub-issues of #204) — multimodal AI, YouTube ingest, Meet transcripts, Drive cascade — tracked in separate cluster, not in E-infra-calendar-ux",
+        "#92, #116 (Historical ARM-5 Calendar blockers) — cross-check before #210 implementation to avoid re-work",
+        "#157 (Cancelled events in rosters) — may share CSS/rendering root cause with #248 (day 19 strikethrough)"
+      ]
+    },
+    {
+      "cluster": "F-mcp-ai",
+      "program": "MCP / AI / Gemini / connector",
+      "issues": [
+        {
+          "number": 206,
+          "title": "mcp-ai: evaluate gemini 3.5 flash on multimodal AI workloads (video/audio/long-doc)",
+          "type": "task",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Experimental edge function variant pmi-ai-analyze-flash35 to pilot Gemini 3.5 Flash (1M context, native video, URL YouTube direct) on multimodal workloads vs Gemini 2.5 Flash + Sonnet 4.6. Comparison report + ADR go/no-go decision required.",
+          "depends_on": [
+            204
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Go/no-go decision on tri-model AI architecture (adding Gemini 3.5 Flash to existing Gemini 2.5 Flash + Sonnet 4.6 dual-model setup) — owner: PM, blocks 207 (YouTube ingestion fallback route)",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 207,
+          "title": "mcp-ai: youtube channel ingestion pipeline → knowledge base",
+          "type": "feature",
+          "priority": "P3",
+          "status": "open",
+          "summary": "Daily cron to ingest YouTube playlists via Gemini 3.5 Flash (URL direct, no download), extract chapters/topics/quotes/timestamps into knowledge_assets_latest. Members can semantic search 50+ hours of webinars.",
+          "depends_on": [
+            206,
+            204
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Pre-condition: validate that knowledge_search_text is actually used by members (usage low = defer whole feature). Owner: PM, blocks feasibility check before engineering. Also: fallback to Whisper+Claude if #206 decides no-go on Gemini 3.5 Flash.",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 208,
+          "title": "mcp-ai: meet transcripts (gp drive) → create_meeting_notes pipeline",
+          "type": "feature",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Pipeline processing Meet transcripts from GP's Drive (folder 1JHbKSD_bxmDlVz1yzp42Zj1Ft-U_U2e7) via Claude Haiku JSON-schema, with mandatory human gate per item (process/skip/private). Persists via existing create_meeting_notes + register_decision + create_action_item RPCs.",
+          "depends_on": [
+            204
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Privacy gate design (file-by-file review by GP before processing) is load-bearing — must confirm GP approves gate UX. Owner: GP + PM, blocks implementation until privacy model is finalized.",
+          "readiness": "needs-decision",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 234,
+          "title": "stabilize MCP connector refresh and evaluate official Claude listing",
+          "type": "task",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Stabilize Claude.ai custom connector OAuth refresh (commit 7192b01e advertises offline_access + refresh_token). Verify 7+ day continuity without relogin after fresh reconnect. Evaluate official Claude Connectors Directory submission.",
+          "depends_on": [],
+          "blocks": [
+            280
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Strategic decision: keep as private/custom connector OR submit to Claude Connectors Directory (requires documentation URL, privacy/security pages, support contact, demo account). Owner: PM + DevOps, blocks #280 semantic gateway work pending clarity on submission scope.",
+          "readiness": "needs-decision",
+          "effort": "M",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 280,
+          "title": "SPEC: Semantic MCP Gateway + internal capability registry",
+          "type": "task",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Design semantic MCP Gateway with capability profiles (core, selection, governance, knowledge, profile, admin, full) to unblock Perplexity + make tool list compatible with strict clients (H0-H5 transport/schema/size hypotheses). Replace universal 299-tool catalog with curated profiles.",
+          "depends_on": [
+            234,
+            283
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Gateway design approach (full-catalog vs. capability profiles; public store submission vs. private connector) depends on #234 + #283 decisions. Owner: PM + Arch, blocks implementation until connector readiness matrix is approved.",
+          "readiness": "blocked",
+          "effort": "L",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 283,
+          "title": "SPEC-280.A: Connector store readiness matrix for Semantic MCP Gateway",
+          "type": "task",
+          "priority": "P2",
+          "status": "open",
+          "summary": "Audit OpenAI/Anthropic/Perplexity/xAI/Manus official docs. Build connector readiness matrix: directory availability, auth, transport, schema, safety, review flow. Convert to 'most restrictive wins' MCP design rules and public docs checklist.",
+          "depends_on": [],
+          "blocks": [
+            280
+          ],
+          "overlaps_or_dup": [],
+          "business_decision": "Clarify strategy: are we aiming for public official store listings (OpenAI/Anthropic/Perplexity/xAI) or private/custom-only? Decision drives scope of readiness matrix. Owner: PM, blocks #280 design work.",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Tri-model AI architecture: approve Gemini 3.5 Flash addition to existing Gemini 2.5 Flash + Sonnet 4.6 dual-model setup (or reject and fallback to single-model Sonnet 4.6 only)",
+          "owner": "PM",
+          "blocks": "207 (YouTube ingestion fallback route); 206 (pilot execution); overall ARM-11 maturity progression"
+        },
+        {
+          "decision": "Private custom connector (keep current Claude.ai setup) vs. official submission path (Claude Connectors Directory + possibly OpenAI/Perplexity/xAI store listings)",
+          "owner": "PM + DevOps",
+          "blocks": "234 (connector stabilization scope); 280 (gateway design depth); 283 (readiness matrix scope)"
+        },
+        {
+          "decision": "YouTube ingestion feature: validate actual member usage of knowledge_search_text. If low usage, defer entire feature; if high, proceed with Gemini 3.5 Flash OR Whisper+Claude fallback",
+          "owner": "PM",
+          "blocks": "207 (go/no-go); affects resource allocation Wave 2"
+        },
+        {
+          "decision": "Meet transcripts privacy gate: confirm GP approval of file-by-file (process/skip/private) review UX before engineering. Establish LGPD consent logic for transcripts mentioning candidates",
+          "owner": "GP + PM",
+          "blocks": "208 (implementation); LGPD compliance gates"
+        }
+      ],
+      "recommended_sequence": "\n1. **Wave 1 executive decisions (required before engineering starts)**:\n   - #206: PM decides Gemini 3.5 Flash go/no-go (pilot execution scope). If go, run pilot immediately (effort M, ~1 week). Unblocks #207 fallback route + informs ARM-11 maturity.\n   - #234 + #283: PM clarifies official store submission strategy (OpenAI/Anthropic/Perplexity/xAI vs. custom-only). This determines #280 design depth. #283 is a pure research task (effort S, ~3 days); #280 design follows.\n   - #208: GP + PM finalize privacy gate UX (file-by-file review, LGPD logic). Once approved, engineering can proceed (effort M, ~1 week).\n\n2. **Wave 1 execution (parallel, post-decisions)**:\n   - #206 pilot (if go): 1 week, unblocks #207 fallback + provides cost/quality data for ADR.\n   - #208 implementation: 1 week, independent track.\n   - #283 research: 3 days (parallel with other Wave 1 work).\n\n3. **Wave 1→2 transition**:\n   - #234 stabilization (post-hotfix 7192b01e deploy): 3-5 days. Verify 7-day OAuth continuity. Unblocks #280.\n\n4. **Wave 2 execution**:\n   - #280 semantic gateway design + #207 YouTube ingestion (both depend on #234 + #283 decisions): effort L + L, ~2-3 weeks combined.\n\n**Cross-cluster dependency alert**: #206, #207, #208 all depend on parent #204 (MCP AI core). Confirm #204 is not blocked before starting Wave 1.\n",
+      "cross_cluster_dependencies": [
+        "#206 → #207: Gemini 3.5 Flash go/no-go decision blocks YouTube ingestion fallback route selection",
+        "#206 → #208: Indirect — both depend on #204 (MCP AI core); prioritize #206 + #208 in parallel as independent features",
+        "#234 → #280: OAuth connector stabilization + official submission strategy decision must precede semantic gateway design",
+        "#283 → #280: Connector readiness matrix (spec/research) must complete before #280 can define 'most restrictive wins' MCP rules",
+        "All six issues → #204 (parent): MCP AI core. Confirm #204 status before Wave 1 kickoff",
+        "#206 → #472 / #473-#476: Adjacent AI/selection pipeline corrections completed this week. #206 pilot is orthogonal (Gemini 3.5 evaluation, not selection core).",
+        "#280 semantic gateway → future ARM-12 (Observability dashboard): MCP tool discovery/profiling layer will inform observability UI"
+      ]
+    },
+    {
+      "cluster": "G-govops-bypass-misc",
+      "program": "Governance ops / bypass / misc tasks",
+      "issues": [
+        {
+          "number": 195,
+          "title": "notifications: ratify canonical weekly digest path before adding curation section",
+          "type": "task",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Decision required: which of 2 digest paths (DB/RPC vs Edge Function) is canonical before adding curation section. Drift/duplication risk if only one updated.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Governance decision required: PM to designate canonical digest path (RPC-driven get_weekly_member_digest vs Edge Function send-notification-digest); blocks curation digest rollout",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 196,
+          "title": "docs: update curatorship permissions and stale site map counts",
+          "type": "documentation",
+          "priority": "high",
+          "status": "open",
+          "summary": "Docs drift: PERMISSIONS_MATRIX outdated (2026-03-15), references old tier/designation model instead of V4 curate_content. SITE_MAP lists stale MCP/EF/cron counts.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 1"
+        },
+        {
+          "number": 200,
+          "title": "analytics: add Cloudflare traffic tab for nucleoia subdomain",
+          "type": "feature",
+          "priority": "medium",
+          "status": "open",
+          "summary": "Add /admin/analytics Cloudflare Traffic tab (web analytics distinct from product adoption). Requires hostname filtering to nucleoia.vitormr.dev, period comparison, time-series charts, no PII/token exposure.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Product decision confirmed: traffic analytics in /admin/analytics (not /admin/adoption); MVP scope and non-goals documented. Ready for development once auth/caching strategy finalized.",
+          "readiness": "ready",
+          "effort": "M",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 226,
+          "title": "[Task]: BUG-225.A — clean up 3 pre-existing CI drift fails (validate job orphan + SECDEF + body-hash)",
+          "type": "task",
+          "priority": "high",
+          "status": "blocked",
+          "summary": "3 CI validate job fails blocking merges without --admin: (1) 2 orphan functions (_test_invariants_with_synthetic_breach, _trg_pmi_video_screening_voice_consent_check) from open PRs #215/#219, (2) SECDEF+REVOKE+RLS drift in can() function, (3) 20+ functions with body-hash drift from p106+ sessions.",
+          "depends_on": [
+            215
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "Infrastructure decision: PM/Tech Lead to approve drift recovery strategy — Option A (wait PR#215 merge + capture migration), Option B (drop functions), or Option C (allowlist). Blocks all merges without --admin bypass.",
+          "readiness": "needs-decision",
+          "effort": "L",
+          "recommended_wave": "Wave 0 stop-the-line"
+        },
+        {
+          "number": 233,
+          "title": "Canonical analytics rebuild — replace p59-dropped chain on /admin/analytics",
+          "type": "task",
+          "priority": "medium",
+          "status": "blocked",
+          "summary": "Rebuild 6-RPC analytics chain (5 dropped in p59 + 1 exec_role_transitions alive). Create canonical sources for Funil/Impacto/Delta Certs/ROI/Quality. Frontend wiring via new safeRpc calls and test updates.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "PM spec required before dev start: confirm canonical sources per card, attribution window for ROI, quality criteria, orchestrator vs parallel RPC strategy. References p211 PM ask; blocks analytics feature completion.",
+          "readiness": "blocked",
+          "effort": "L",
+          "recommended_wave": "Backlog/triage"
+        },
+        {
+          "number": 235,
+          "title": "platform: bypass-audit v2 — refine direct-push counting + check_runs at-merge-time semantics",
+          "type": "task",
+          "priority": "low",
+          "status": "open",
+          "summary": "v1 bypass audit (#232) overcounted (61 vs 16 real). v2 refine: check parent commit validate status for direct pushes; use at-merge-time check_run status (not latest) for --admin detection. Fixes doc-update noise.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Wave 2"
+        },
+        {
+          "number": 374,
+          "title": "[bypass-audit] Week 2026-W22 — 17 events (⚠️ THRESHOLD EXCEEDED (17 > 2))",
+          "type": "task",
+          "priority": "high",
+          "status": "open",
+          "summary": "Auto-generated weekly bypass audit: 17 direct commits (all docs/governance/selection updates + 2 fixes). Threshold exceeded (>2); requires PM review per bypass-protocol.md. All by Vitor (single author).",
+          "depends_on": [
+            235
+          ],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "PM to review legitimacy of each direct push against bypass-protocol.md criteria. Stop-gap: distinguish doc updates / P162 log entries / drift captures (non-bypass) from real protocol violations. v2 audit (#235) should auto-filter noise.",
+          "readiness": "needs-decision",
+          "effort": "S",
+          "recommended_wave": "Wave 0 stop-the-line"
+        },
+        {
+          "number": 469,
+          "title": "[bypass-audit] Week 2026-W23 — 0 events (✓ zero bypass events (clean week))",
+          "type": "task",
+          "priority": "low",
+          "status": "open",
+          "summary": "Auto-generated weekly bypass audit: zero bypass events, clean week. No action required; continued discipline confirmed.",
+          "depends_on": [],
+          "blocks": [],
+          "overlaps_or_dup": [],
+          "business_decision": "",
+          "readiness": "ready",
+          "effort": "S",
+          "recommended_wave": "Backlog/triage"
+        }
+      ],
+      "key_business_decisions": [
+        {
+          "decision": "Designate canonical weekly digest path (RPC-driven get_weekly_member_digest vs Edge Function send-notification-digest)",
+          "owner": "PM",
+          "blocks": "Issue #195 acceptance + curation digest rollout (#195, #197, #198+)"
+        },
+        {
+          "decision": "Approve CI drift recovery strategy: (A) wait PR#215 merge + capture migration, (B) drop orphan functions, or (C) allowlist temp",
+          "owner": "Tech Lead / PM",
+          "blocks": "Issue #226 resolution; all merges without --admin bypass (regression to normal workflow)"
+        },
+        {
+          "decision": "Specify canonical analytics sources + attribution windows + quality criteria before dev start",
+          "owner": "PM",
+          "blocks": "Issue #233 development; /admin/analytics feature completion"
+        },
+        {
+          "decision": "Review 17 direct commits from W22 against bypass-protocol.md; identify legitimacy of docs/governance/selection pushes",
+          "owner": "PM",
+          "blocks": "Issue #374 resolution; bypass discipline signal + v2 audit tuning"
+        }
+      ],
+      "recommended_sequence": "**Wave 0 (stop-the-line):** Start with #226 + #374 in parallel. #226 is CI blocker (validates that drift fixes work; decision needed on strategy A/B/C). #374 is governance signal requiring PM review — use findings to refine v2 audit (#235). Once #374 reviewed + decisions made on legitimacy, backpressure should ease on direct-push discipline. **Wave 1 (immediate):** #195 (PM decision on canonical digest + doc sync) + #196 (docs cleanup, ready to execute). Both unblock curation roadmap. **Wave 2 (next sprint):** #200 (Cloudflare analytics, ready) + #235 (v2 audit refinement, S-effort). #200 can proceed in parallel once /admin/adoption scope is confirmed as separate. #235 tightens weekly automation signal. **Backlog/triage:** #233 (analytics rebuild, blocked on PM spec) + #469 (audit confirmation, closed once discipline holds). Recommend consolidating #233 with #200 discussion to avoid orphaned dropped-RPC cleanup in future.",
+      "cross_cluster_dependencies": [
+        "#472 (selection pipeline fixes corr-1/5)",
+        "#419 (metrics M5 XP leaderboard, #424/#425 follow-ups)",
+        "#215 (PR merged, orphan #1 source resolved)",
+        "#219 (PR closed, orphan #2 source — function drop pending)",
+        "#225 (PR merged, L2 over-restore partially unwound)",
+        "#220 (PR merged, browser_guards CI drift)",
+        "#213 (PR #215 source)",
+        "#218 (PR #219 source)",
+        "#205 (P162 log closed in p213-p216 sessions)",
+        "#227 (forward-defense RLS validation, p211)",
+        "#216 (/profile ReferenceError, p211 fix)",
+        "#232 (v1 audit evidence for #235)",
+        "#213 orphan drop + #218 orphan drop"
+      ]
+    }
+  ]
+}
