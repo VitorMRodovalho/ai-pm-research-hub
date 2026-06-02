@@ -207,6 +207,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgEventCreated: t('attendance.msg.eventCreated', lang),
   msgEventCreateError: t('attendance.msg.eventCreateError', lang),
   msgFillTemplateDate: t('attendance.msg.fillTemplateDate', lang),
+  msgUntilBeforeStart: t('attendance.msg.untilBeforeStart', lang),
   msgEventsCreated: t('attendance.msg.eventsCreated', lang),
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
@@ -312,6 +313,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgEventCreated: 'Evento criado ✅',
     msgEventCreateError: 'Erro ao criar evento',
     msgFillTemplateDate: 'Preencha template e data de início',
+    msgUntilBeforeStart: 'A data final deve ser igual ou posterior à data de início',
     msgEventsCreated: '{n} eventos criados ✅',
     msgRecurringError: 'Erro ao criar série',
     msgEventUpdated: 'Evento atualizado ✅',
@@ -1625,6 +1627,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       typeSelect.disabled = false;
       tribeSelCreate.disabled = false;
     }
+    // Discoverability: 'recorrente' nature is a label only — point users to the 'Criar Série' tab.
+    const natureSelect = document.getElementById('ev-nature') as HTMLSelectElement;
+    const natureHint = document.getElementById('ev-nature-hint');
+    const syncNatureHint = () => natureHint?.classList.toggle('hidden', natureSelect.value !== 'recorrente');
+    natureSelect.onchange = syncNatureHint;
+    syncNatureHint();
     openModal('modal-new-event');
   }
 
@@ -1685,6 +1693,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
+    (document.getElementById('rec-until') as HTMLInputElement).value = '';
     openModal('modal-recurring');
   }
 
@@ -1694,12 +1703,23 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
     const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
-    const weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    let weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    const until = (document.getElementById('rec-until') as HTMLInputElement).value || null;
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
     const tagIds = getSelectedTagIds('rec-selected-tags');
     if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
+    // 'Repetir até' (optional): derive the weekly occurrence count from the end-date (inclusive),
+    // clamped to the RPC's 1..52 range. Overrides the 'weeks' field. Keeps the series weekly (no RPC change).
+    if (until) {
+      const s = new Date(start + 'T00:00:00');
+      const u = new Date(until + 'T00:00:00');
+      if (u < s) return toast(I18N.msgUntilBeforeStart, 'error');
+      const computed = Math.floor((u.getTime() - s.getTime()) / (7 * 86400000)) + 1;
+      weeks = Math.min(Math.max(computed, 1), 52);
+    }
+    if (!Number.isFinite(weeks) || weeks < 1) return toast(I18N.msgFillTemplateDate, 'error');
 
     try {
       const { data, error } = await sb.rpc('create_recurring_weekly_events', {
