@@ -15,6 +15,8 @@ interface DashboardData {
     cpmai_target: number | null;
     chapters_current: number;
     chapters_target: number | null;
+    chapters_in_negotiation: number;
+    chapters_engaged: number;
   };
   alerts: Array<{
     severity: 'high' | 'medium' | 'low';
@@ -158,6 +160,8 @@ export default function AdminDashboardIsland() {
       color: 'rgb(249 115 22)', // orange-500
       href: '/admin/chapter-report',
       progress: kpis.chapters_target ? kpis.chapters_current / kpis.chapters_target : undefined,
+      // #479: headline = signed chapters; sublabel surfaces the pipeline (in-negotiation) + engaged total
+      sublabel: `+${kpis.chapters_in_negotiation} ${t('comp.adminDash.chaptersInNegotiation', 'em negociação')} · ${kpis.chapters_engaged} ${t('comp.adminDash.chaptersEngaged', 'engajados')}`,
     },
   ];
 
@@ -192,6 +196,9 @@ export default function AdminDashboardIsland() {
                 <span className="text-xs uppercase tracking-wider text-[var(--text-muted)]">{card.label}</span>
               </div>
               <div className="text-3xl font-black text-[var(--text-primary)]">{card.value}</div>
+              {card.sublabel && (
+                <div className="mt-1 text-[11px] text-[var(--text-muted)]">{card.sublabel}</div>
+              )}
               {card.progress !== undefined && (
                 <div className="mt-3 h-1.5 rounded-full bg-[var(--border-default)] overflow-hidden">
                   <div

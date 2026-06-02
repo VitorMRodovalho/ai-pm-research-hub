@@ -4102,6 +4102,8 @@ const enUS: Record<string, string> = {
   'comp.adminDash.deliverables': 'Deliverables',
   'comp.adminDash.impactHours': 'Impact Hours',
   'comp.adminDash.chapters': 'Chapters',
+  'comp.adminDash.chaptersInNegotiation': 'in negotiation',
+  'comp.adminDash.chaptersEngaged': 'engaged',
   'comp.adminDash.title': 'Hub Dashboard',
   'comp.adminDash.currentCycle': 'Current cycle',
   'comp.adminDash.generated': 'Generated',
