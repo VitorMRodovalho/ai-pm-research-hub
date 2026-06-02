@@ -73,12 +73,13 @@ test('R extension: sanity DO asserts R=0 post-apply', () => {
 });
 
 // ── DB-gated ───────────────────────────────────────────────────────────────────
-test('DB: check_schema_invariants reports R=0 and 23 invariants, 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: check_schema_invariants reports R=0 and 25 invariants, 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
   assert.ok(Array.isArray(data), 'returns rows');
-  assert.strictEqual(data.length, 23, `expected 23 invariants, got ${data.length}`);
+  // 23 through p277; #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25.
+  assert.strictEqual(data.length, 25, `expected 25 invariants, got ${data.length}`);
   const r = data.find(x => x.invariant_name === 'R_approved_application_has_member');
   assert.ok(r, 'R present');
   assert.strictEqual(r.violation_count, 0, 'R must have 0 violations (alternate-email match honored)');

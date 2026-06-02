@@ -472,10 +472,11 @@ describe('p266 #382 W4f Primitives — blind-review primitives (ADR-0099 §7)', 
       assert.equal(parecerCount, 0);
     });
 
-    it('check_schema_invariants() reports 23 invariants with X violation_count=0', { skip: !sb }, async () => {
+    it('check_schema_invariants() reports 25 invariants with X violation_count=0', { skip: !sb }, async () => {
       const { data, error } = await sb.rpc('check_schema_invariants');
       assert.equal(error, null);
-      assert.equal(data.length, 23);
+      // 23 at p266 (X-add); #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25.
+      assert.equal(data.length, 25);
       const x = data.find(r => r.invariant_name === 'X_blind_review_pareceres_session_product_match');
       assert.ok(x, 'X invariant present');
       assert.equal(x.violation_count, 0);
