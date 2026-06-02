@@ -1415,7 +1415,7 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.meetingLink': 'Enlace de la reunión',
   'attendance.modal.timeStart': 'Hora de inicio',
   'attendance.modal.timeStartHint': 'Hora de Brasília (BRT) · vacío = por defecto de la tribu',
-  'attendance.modal.natureRecurringHint': '🔁 Esto crea 1 evento. Para repetir automáticamente, usa la pestaña "Crear Serie".',
+  'attendance.modal.natureRecurringHint': '🔁 Esto crea solo 1 evento. Haz clic aquí para crear una serie recurrente (semanal) →',
   'attendance.modal.recordedMeeting': '🔴 Reunión grabada',
   'attendance.modal.recordedMeetings': '🔴 Reuniones grabadas',
   'attendance.modal.createEvent': 'Crear Evento',
