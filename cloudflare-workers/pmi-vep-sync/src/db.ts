@@ -277,6 +277,62 @@ export interface UpsertResult {
   prior_cycle_id?: string;
 }
 
+// =====================================================================
+// #472 correction #2 — re-import status freeze (B2 root cause)
+// =====================================================================
+
+/**
+ * Canonical selection-pipeline ladder + terminal set.
+ *
+ * Kept byte-aligned with `recompute_application_status` (migration
+ * 20260805000090): the worker writes status on same-cycle re-import and the
+ * daily heal-cron recomputes it from facts — if their status models diverged
+ * they would fight (worker clobbers → cron heals → worker clobbers …). The
+ * parity contract test (`p472-vep-reimport-status-freeze`) asserts these two
+ * literals equal the migration's `v_ladder` + terminal `NOT IN (...)` list.
+ */
+const SELECTION_STATUS_LADDER = [
+  'submitted', 'screening', 'objective_eval', 'objective_cutoff',
+  'interview_pending', 'interview_scheduled', 'interview_done', 'final_eval',
+];
+const SELECTION_TERMINAL_STATUSES = new Set([
+  'approved', 'rejected', 'converted', 'withdrawn', 'cancelled', 'waitlist', 'interview_noshow',
+]);
+
+/**
+ * Decide the selection_applications.status to persist on a SAME-CYCLE VEP
+ * re-import (#472 correction #2, B2 root cause).
+ *
+ * VEP only knows its own buckets (→ submitted | approved | rejected | cancelled,
+ * defaulting to 'submitted'); it is blind to the platform-internal pipeline
+ * (screening … final_eval). A naive `status = payload.status` therefore knocks an
+ * advanced candidate back to 'submitted' on every re-sync — they vanish from the
+ * final ranking (live evidence: all 37 in-flight apps carry vep_status_raw=
+ * 'Submitted', the bucket the mapper emits as 'submitted').
+ *
+ * Rule — forward-only + terminal-safe (symmetric with the heal-cron):
+ *   • existing terminal  → freeze (never re-open a decided app via re-import).
+ *   • incoming is a VEP exit (not on the in-flight ladder) → accept only from the
+ *     pristine 'submitted' intake; otherwise freeze (a PMI opportunity expiry must
+ *     not reject a candidate already mid-pipeline — the platform owns exits past
+ *     intake).
+ *   • both in-flight → forward-only: write incoming only if it ranks strictly
+ *     ahead of existing, else freeze. (VEP can't emit a forward in-flight stage,
+ *     so in practice every advanced app is frozen — exactly the B2 fix.)
+ */
+export function resolveReimportStatus(
+  existing: string | null | undefined,
+  incoming: string
+): string {
+  if (!existing) return incoming;                                  // defensive (status is NOT NULL on update)
+  if (SELECTION_TERMINAL_STATUSES.has(existing)) return existing;  // terminal-safe
+  const exRank = SELECTION_STATUS_LADDER.indexOf(existing);
+  if (exRank === -1) return existing;                              // unknown/non-domain existing → freeze
+  const inRank = SELECTION_STATUS_LADDER.indexOf(incoming);
+  if (inRank === -1) return existing === 'submitted' ? incoming : existing;  // VEP exit only from intake
+  return inRank > exRank ? incoming : existing;                              // forward-only
+}
+
 /**
  * Upsert selection_applications by COMPOUND KEY (vep_application_id, vep_opportunity_id).
  *
@@ -310,8 +366,9 @@ export async function upsertSelectionApplication(
 ): Promise<UpsertResult> {
   const { data: existing } = await db
     .from('selection_applications')
-    // email + vep_reconciled_at needed for the #444 reconciled-email freeze below.
-    .select('id, cycle_id, email, vep_reconciled_at, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
+    // email + vep_reconciled_at → #444 reconciled-email freeze;
+    // status → #472 corr.#2 re-import status freeze (both applied below).
+    .select('id, cycle_id, email, status, vep_reconciled_at, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
     .eq('vep_application_id', payload.vep_application_id)
     .eq('vep_opportunity_id', payload.vep_opportunity_id)
     .maybeSingle();
@@ -412,7 +469,14 @@ export async function upsertSelectionApplication(
         // Wave 3 synth (S-DA-1): application_date refreshed on re-import
         // (PMI may move app across lifecycle timestamps — submitted/expired/withdrawn)
         application_date: payload.application_date,
-        status: payload.status,
+        // #472 corr.#2 — freeze status (forward-only + terminal-safe): a blind
+        // same-cycle re-sync must not regress an advanced candidate back to
+        // 'submitted'. VEP is blind to the internal pipeline (every in-flight app
+        // carries vep_status_raw='Submitted' → mapper emits 'submitted'), so the
+        // pre-fix `status: payload.status` erased scored candidates from the final
+        // ranking. Symmetric with recompute_application_status (mig 20260805000090)
+        // so the worker and the daily heal-cron never fight.
+        status: resolveReimportStatus(existing.status, payload.status),
         imported_at: payload.imported_at,
       })
       .eq('id', existing.id);
