@@ -1298,6 +1298,7 @@ const enUS: Record<string, string> = {
   'team.sponsors.sub': 'Chapter leadership & focal points',
   'team.founders': 'Founders',
   'team.founders.sub': 'the history that brought the Hub to life',
+  'team.founders.inactiveNote': 'founding journey',
   'team.loading': 'Loading team...',
   'team.projectTeam': 'Project Team',
   'team.projectTeam.sub': 'management, operations, and communications for the current cycle',
