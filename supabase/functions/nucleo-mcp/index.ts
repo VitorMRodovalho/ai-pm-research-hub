@@ -1222,17 +1222,33 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 13: create_meeting_notes (unified — writes to events.minutes_text via upsert_event_minutes RPC)
-  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions (comma-separated) — appended to content"), action_items: z.string().optional().describe("Action items (comma-separated) — appended to content") }, async (params: any) => {
+  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside a decision are preserved verbatim."), action_items: z.string().optional().describe("Action items, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside an action are preserved verbatim.") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
-    // Build full content with optional decisions and action items
+    // Build full content with optional decisions and action items.
+    // #170: split list params on NEWLINE only — never on bare "," — because meeting notes use
+    // commas inside clauses and responsible-party lists ("Fabrício, Fernando e Sávio"), and the
+    // old comma-split shredded single decisions/actions into bogus bullets (corrupted Fabricio's notes).
+    const splitItems = (raw?: string): string[] =>
+      raw ? String(raw).split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean) : [];
     let fullContent = params.content;
-    const decisions = params.decisions ? String(params.decisions).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
-    const actionItems = params.action_items ? String(params.action_items).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+    const decisions = splitItems(params.decisions);
+    const actionItems = splitItems(params.action_items);
     if (decisions.length > 0) fullContent += "\n\n### Decisões\n" + decisions.map((d: string) => `- ${d}`).join("\n");
     if (actionItems.length > 0) fullContent += "\n\n### Ações\n" + actionItems.map((a: string) => `- [ ] ${a}`).join("\n");
+    // #170: refuse to persist serialization-corruption markers — fail BEFORE the DB write so a bad
+    // payload never reaches events.minutes_text. U+FFFD never appears in valid UTF-8 prose; a bare
+    // "[object Object]" *line* means a non-string was passed and String()-ified (a real bullet, not
+    // prose that merely mentions the term — anchored to a whole line to avoid false positives).
+    const hasReplacementChar = fullContent.includes("�");
+    const hasObjectArtifact = /^\s*(?:-\s*(?:\[ \]\s*)?)?\[object Object\]\s*$/m.test(fullContent);
+    if (hasReplacementChar || hasObjectArtifact) {
+      const label = hasReplacementChar ? "replacement character (U+FFFD)" : "[object Object]";
+      await logUsage(sb, member.id, "create_meeting_notes", false, `Rejected: corruption marker ${label}`, start);
+      return err(`Refusing to save meeting notes — content contains a corruption marker (${label}). Re-send clean UTF-8 text.`);
+    }
     // Use the unified upsert_event_minutes RPC (has audit log + edit history + researcher timeframe)
     const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: fullContent });
     if (error) { await logUsage(sb, member.id, "create_meeting_notes", false, error.message, start); return err(error.message); }
