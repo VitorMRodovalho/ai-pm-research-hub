@@ -65,14 +65,21 @@ NOTIFY pgrst, 'reload schema';
 
 ### Migrations
 
+> **Supabase CLI floor: ≥ 2.100.1.** Versions ≤ 2.100.0 fork-bomb during
+> `migration repair`/`list` when the `supabase-go` binary is not co-located with
+> the shim (upstream supabase/cli#5282 — OOM-killed two sessions on 2026-05-19,
+> issue #155). Check `supabase --version`; if below the floor, upgrade before
+> running any migration command. Defense-in-depth: run the CLI under a memory/task
+> cap (below) so a future runaway is contained instead of taking down the host.
+
 ```bash
-# Ver estado das migrations
-npx supabase migration list
+# Ver estado das migrations (memory/task-capped — guards against the #155 fork-bomb)
+systemd-run --user --scope -p MemoryMax=2G -p TasksMax=20 -- npx supabase migration list
 
 # Se aplicou SQL direto no Dashboard, criar migration de repair:
 # 1. Salvar o SQL em supabase/migrations/YYYYMMDDHHMMSS_descricao.sql
-# 2. Marcar como aplicada:
-npx supabase migration repair YYYYMMDDHHMMSS --status applied
+# 2. Marcar como aplicada (também capped):
+systemd-run --user --scope -p MemoryMax=2G -p TasksMax=20 -- npx supabase migration repair YYYYMMDDHHMMSS --status applied
 ```
 
 ### Backup
