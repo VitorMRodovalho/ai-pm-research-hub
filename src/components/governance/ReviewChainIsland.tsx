@@ -387,7 +387,10 @@ export default function ReviewChainIsland({ chainId, externalReviewMode = false 
 
   return (
     <div className="space-y-4">
-      {(isCommentOnlyMode || externalReviewMode) && (
+      {/* #171: the "signing restricted" banner is only true for pure commenters. An eligible
+          signer (eligibleGates>0) lands here via the member route and CAN sign below — don't
+          show them a banner that falsely says signing is restricted. */}
+      {(isCommentOnlyMode || externalReviewMode) && eligibleGates.length === 0 && (
         <div className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-900">
           <div className="flex items-start gap-3">
             <span aria-hidden="true" className="text-base leading-5">📋</span>
