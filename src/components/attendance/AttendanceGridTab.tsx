@@ -332,7 +332,7 @@ export default function AttendanceGridTab() {
         const updated = JSON.parse(JSON.stringify(prev)) as GridData;
         for (const tribe of updated.tribes) {
           for (const m of tribe.members) {
-            if (m.member_id === memberId) {
+            if (m.id === memberId) {
               m.attendance[eventId] = nextState as any;
             }
           }
@@ -418,7 +418,7 @@ export default function AttendanceGridTab() {
         const updated = JSON.parse(JSON.stringify(prev)) as GridData;
         for (const tribe of updated.tribes) {
           for (const m of tribe.members) {
-            if (m.member_id === memberId) m.attendance[eventId] = state as any;
+            if (m.id === memberId) m.attendance[eventId] = state as any;
           }
         }
         return updated;
@@ -597,6 +597,73 @@ export default function AttendanceGridTab() {
       }
     })();
   }, []);
+
+  /* #246: live-refresh the grid via Supabase Realtime on the attendance table.
+     Without this, presence marks made by other leaders (or in another tab) only appear
+     after a manual reload. Requires public.attendance in the supabase_realtime publication
+     (migration 20260805000099). Patches the same data.tribes[].members[].attendance[eventId]
+     cell the optimistic toggle writes, keyed by member id + event id. The acting user's own
+     write echoes back here too, but the `changed` guard makes it a no-op (already applied
+     optimistically), so there is no flicker. NOTE: derived stats (member rate %, tribe avg,
+     KPI cards) are NOT recomputed here — same as the optimistic toggle path; they refresh on
+     the next full grid load. */
+  useEffect(() => {
+    if (!memberReady) return;
+    let channel: any = null;
+    let cancelled = false;
+    (async () => {
+      const sb = await waitForSb();
+      if (!sb || cancelled) return;
+      channel = sb
+        .channel('attendance_grid_live')
+        .on(
+          'postgres_changes' as any,
+          { event: '*', schema: 'public', table: 'attendance' },
+          (payload: any) => {
+            const isDelete = payload?.eventType === 'DELETE';
+            const row = isDelete ? payload?.old : payload?.new;
+            const eventId: string | undefined = row?.event_id;
+            const memberId: string | undefined = row?.member_id;
+            if (!eventId || !memberId) return;
+            const nextState: 'present' | 'absent' | 'excused' | 'na' =
+              isDelete ? 'na' : row.excused ? 'excused' : row.present ? 'present' : 'absent';
+            setData(prev => {
+              if (!prev) return prev;
+              // Only act if this member + event are displayed in the current grid.
+              const eventShown = prev.events.some(e => e.id === eventId);
+              if (!eventShown) return prev;
+              let changed = false;
+              for (const tb of prev.tribes) {
+                for (const m of tb.members) {
+                  if (m.id === memberId && m.attendance[eventId] !== nextState) changed = true;
+                }
+              }
+              if (!changed) return prev; // member off-grid, or echo of an already-applied write
+              const updated = JSON.parse(JSON.stringify(prev)) as GridData;
+              for (const tb of updated.tribes) {
+                for (const m of tb.members) {
+                  if (m.id === memberId) m.attendance[eventId] = nextState;
+                }
+              }
+              return updated;
+            });
+            // keep the excuse-reason tooltip map in sync (REPLICA IDENTITY FULL carries excuse_reason)
+            const key = `${eventId}:${memberId}`;
+            if (!isDelete && row.excused && row.excuse_reason) {
+              setExcuseReasons(prev => ({ ...prev, [key]: row.excuse_reason }));
+            } else {
+              // not excused, deleted, OR excused-without-reason → drop any stale cached reason
+              setExcuseReasons(prev => { const n = { ...prev }; delete n[key]; return n; });
+            }
+          },
+        )
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) { const sb = getSb(); sb?.removeChannel(channel); }
+    };
+  }, [memberReady]);
 
   /* Flatten tribes->members */
   const flatRows = useMemo<FlatRow[]>(() => {
