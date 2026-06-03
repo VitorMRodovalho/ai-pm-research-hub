@@ -34,8 +34,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
           <input type="hidden" id="rec-selected-tags" value="">
         </div>
-        <!-- Legacy type field (hidden, auto-derived from primary tag) -->
-        <input type="hidden" id="rec-type" value="general_meeting">
+        <!-- Legacy type field (hidden, auto-derived from primary tag). #492: default to a
+             DB-valid type ('geral'); createRecurring normalizes legacy values + forces 'tribo'
+             for tribe-specific series. -->
+        <input type="hidden" id="rec-type" value="geral">
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
           <select id="rec-audience"
@@ -44,6 +46,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <option value="tribe">Tribo específica</option>
             <option value="leadership">Por papel (liderança)</option>
             <option value="curators">Curadores</option>
+          </select>
+        </div>
+        <!-- #492: tribe-picker, revealed only when audience = 'tribe' -->
+        <div class="flex flex-col gap-1.5" id="rec-tribe-wrap" style="display:none;">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.audience.tribe', lang)}</label>
+          <select id="rec-tribe-select"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+            <option value="">— Selecione a tribo —</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">

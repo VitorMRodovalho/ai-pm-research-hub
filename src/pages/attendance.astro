@@ -1201,6 +1201,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (target instanceof HTMLSelectElement) {
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+        if (target.id === 'rec-audience') toggleRecTribePicker();
         if (target.id === 'events-tribe-filter') {
           VISIBLE_COUNT = PAGE_SIZE;
           renderEvents();
@@ -1524,7 +1525,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           external_event: 'all',
         };
         const mapped = audienceMap[primaryTag.name];
-        if (mapped) (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
+        if (mapped) {
+          (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
+          // #492: a programmatic .value change does NOT fire 'change' → sync the recurring tribe-picker
+          if (audienceId === 'rec-audience') toggleRecTribePicker();
+        }
       }
     }
   }
@@ -1540,22 +1545,24 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     updateTagSelection(pickerId, containerId, hiddenInputId);
   }
 
-  async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string) {
+  async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string, targetTribeId?: number | null) {
     if (tagIds.length) {
       await sb.rpc('assign_event_tags', { p_event_id: eventId, p_tag_ids: tagIds });
     }
-    const audienceRules = buildAudienceRules(audienceValue);
+    const audienceRules = buildAudienceRules(audienceValue, targetTribeId);
     if (audienceRules.length) {
       await sb.rpc('set_event_audience', { p_event_id: eventId, p_rules: audienceRules });
     }
   }
 
-  function buildAudienceRules(audienceValue: string): any[] {
+  function buildAudienceRules(audienceValue: string, targetTribeId?: number | null): any[] {
     const rules: any[] = [];
     if (audienceValue === 'all_active_operational') {
       rules.push({ attendance_type: 'mandatory', target_type: 'all_active_operational', target_value: null });
     } else if (audienceValue === 'tribe') {
-      rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: MEMBER?.tribe_id ? String(MEMBER.tribe_id) : null });
+      // #492: bind to the SELECTED tribe for the series, falling back to the caller's tribe.
+      const tid = (targetTribeId ?? MEMBER?.tribe_id) ?? null;
+      rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: tid ? String(tid) : null });
     } else if (audienceValue === 'role') {
       ['manager', 'deputy_manager', 'tribe_leader'].forEach(r => {
         rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: r });
@@ -1695,10 +1702,23 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── RECURRING ──
+  // #492: reveal the tribe-picker only for tribe-specific series; ensure tribes are loaded.
+  function toggleRecTribePicker() {
+    const aud = (document.getElementById('rec-audience') as HTMLSelectElement | null)?.value;
+    const wrap = document.getElementById('rec-tribe-wrap');
+    if (wrap) wrap.style.display = aud === 'tribe' ? 'flex' : 'none';
+    if (aud === 'tribe') ensureTribesLoaded();
+  }
+
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
     (document.getElementById('rec-until') as HTMLInputElement).value = '';
+    ensureTribesLoaded().then(() => {
+      const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+      if (sel && !sel.value && MEMBER?.tribe_id) sel.value = String(MEMBER.tribe_id);
+    });
+    toggleRecTribePicker();
     openModal('modal-recurring');
   }
 
@@ -1715,6 +1735,22 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
     const tagIds = getSelectedTagIds('rec-selected-tags');
     if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
+
+    // #492: normalize to a DB-valid events.type (events_type_check). rec-type is a hidden legacy
+    // field; the audience is the user-facing control. Force 'tribo' for tribe-specific series.
+    const VALID_TYPES = ['geral','tribo','iniciativa','lideranca','kickoff','comms','parceria','entrevista','1on1','evento_externo','webinar'];
+    const LEGACY_TYPE: Record<string, string> = { general_meeting: 'geral', tribe_meeting: 'tribo', leadership_meeting: 'lideranca', webinar: 'webinar', other: 'geral' };
+    let dbType = VALID_TYPES.includes(type) ? type : (LEGACY_TYPE[type] || 'geral');
+    let tribeId: number | null = null;
+    if (audience === 'tribe') {
+      dbType = 'tribo';
+      const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+      tribeId = sel && sel.value ? parseInt(sel.value, 10) : null;
+      if (!tribeId) return toast('Selecione a tribo para a série específica de tribo.', 'error');
+    } else if (dbType === 'tribo') {
+      // #492: a 'tribo' type without a tribe audience has no tribe to bind → fall back to 'geral'
+      dbType = 'geral';
+    }
     // 'Repetir até' (optional): derive the weekly occurrence count from the end-date (inclusive),
     // clamped to the RPC's 1..52 range. Overrides the 'weeks' field. Keeps the series weekly (no RPC change).
     if (until) {
@@ -1728,11 +1764,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     try {
       const { data, error } = await sb.rpc('create_recurring_weekly_events', {
-        p_type: type, p_title_template: titleTpl, p_start_date: start,
+        p_type: dbType, p_title_template: titleTpl, p_start_date: start,
         p_time_start: timeStart,
         p_duration_minutes: duration, p_n_weeks: weeks,
         p_meeting_link: link,
-        p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+        p_tribe_id: tribeId,
         p_is_recorded: recorded,
         p_audience_level: audience
       });
@@ -1741,7 +1777,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         // W140: assign tags and audience to all created events
         if (tagIds.length && data.event_ids?.length) {
           for (const eid of data.event_ids) {
-            await assignEventTagsAndAudience(eid, tagIds, audience);
+            await assignEventTagsAndAudience(eid, tagIds, audience, tribeId);
           }
         }
         closeModal('modal-recurring');
@@ -1761,7 +1797,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
     _tribesCache = data || [];
     // Populate both edit and create tribe selects
-    for (const selId of ['edit-ev-tribe-select', 'ev-tribe-select']) {
+    for (const selId of ['edit-ev-tribe-select', 'ev-tribe-select', 'rec-tribe-select']) {
       const sel = document.getElementById(selId) as HTMLSelectElement;
       if (sel) {
         while (sel.options.length > 1) sel.remove(1);
