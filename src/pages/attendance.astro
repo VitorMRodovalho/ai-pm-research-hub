@@ -1096,11 +1096,6 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'open-recurring':
           openRecurringModal();
           break;
-        case 'switch-to-recurring':
-          // From the single-event modal's 'recorrente' hint → jump to the weekly-series modal.
-          closeModal('modal-new-event');
-          openRecurringModal();
-          break;
         case 'refresh-events':
           loadEvents();
           break;
@@ -1639,12 +1634,6 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       typeSelect.disabled = false;
       tribeSelCreate.disabled = false;
     }
-    // Discoverability: 'recorrente' nature is a label only — point users to the 'Criar Série' tab.
-    const natureSelect = document.getElementById('ev-nature') as HTMLSelectElement;
-    const natureHint = document.getElementById('ev-nature-hint');
-    const syncNatureHint = () => natureHint?.classList.toggle('hidden', natureSelect.value !== 'recorrente');
-    natureSelect.onchange = syncNatureHint;
-    syncNatureHint();
     openModal('modal-new-event');
   }
 
