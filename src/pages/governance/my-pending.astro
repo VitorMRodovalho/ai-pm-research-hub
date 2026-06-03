@@ -126,7 +126,10 @@ const i18nBundle = buildPageI18n(['governance', 'common'], lang);
               '</p>' +
               '<div class="flex gap-1 flex-wrap mt-2">' + gates + '</div>' +
             '</div>' +
-            '<a href="' + langPrefix + '/admin/governance/documents/' + esc(r.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-2 no-underline hover:opacity-90 flex-shrink-0">Revisar e assinar →</a>' +
+            /* #171: member route (BaseLayout, no admin shell) — ReviewChainIsland still renders
+               sign buttons for any eligible gate. Sending non-admin signers to /admin/ read as
+               "no access" (Ana Carla, leader_awareness gate). */
+            '<a href="' + langPrefix + '/governance/documents/' + esc(r.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-2 no-underline hover:opacity-90 flex-shrink-0">Revisar e assinar →</a>' +
           '</div>' +
         '</li>'
       );
