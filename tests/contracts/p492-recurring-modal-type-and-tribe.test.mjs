@@ -55,3 +55,10 @@ test('#492 static: tribe-picker is populated + toggled by audience', () => {
   assert.match(attRaw, /function toggleRecTribePicker/, 'toggleRecTribePicker exists');
   assert.match(attRaw, /target\.id === 'rec-audience'/, 'audience change toggles the picker');
 });
+
+test('#494 stopgap: single-event modal no longer offers "recorrente" as a nature (recurring = the dedicated Criar Série journey)', () => {
+  const NEM = resolve(ROOT, 'src/components/attendance/NewEventModal.astro');
+  const nemRaw = existsSync(NEM) ? readFileSync(NEM, 'utf8') : '';
+  assert.ok(nemRaw, 'NewEventModal.astro readable');
+  assert.doesNotMatch(nemRaw, /<option value="recorrente"/, 'single-event nature dropdown must not offer recorrente');
+});
