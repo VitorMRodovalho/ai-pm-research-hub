@@ -89,7 +89,8 @@ describe('p281 #411 Wave 1d — stuck-interview rescue', () => {
     it('SEDIMENT-239b.A — admin_audit_log.actor_id sourced from v_caller.id (NOT auth.uid())', () => {
       const auditIdx = MIG.indexOf('INSERT INTO public.admin_audit_log');
       assert.ok(auditIdx > -1, 'must write an audit row');
-      const auditBlock = MIG.slice(auditIdx, auditIdx + 400);
+      const auditBlock = MIG.slice(auditIdx, auditIdx + 600);
+      assert.ok(auditBlock.length >= 200, 'auditBlock slice too short — extend the window');
       assert.match(auditBlock, /v_caller\.id,\s*\n\s*'selection\.stuck_interview_rescued'/, 'actor_id is the resolved caller id');
       assert.doesNotMatch(auditBlock, /auth\.uid\(\)/, 'never insert auth.uid() as actor_id (it is auth.users id, wrong FK)');
     });

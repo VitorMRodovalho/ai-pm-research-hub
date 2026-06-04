@@ -89,6 +89,17 @@ BEGIN
     END IF;
   END IF;
 
+  -- Rescue is valid ONLY for a genuinely stuck application (status interview_scheduled).
+  -- Guards against re-inviting an app that already advanced (interview_done / final_eval /
+  -- approved / rejected / waitlist) but still carries a stale past-scheduled interview row —
+  -- which would otherwise discard completed scoring and email a decided candidate. Matches the
+  -- meta.interview_stuck predicate (mig 103) that gates the F2 chip + F4 button, and the Wave 2b
+  -- cron must filter app.status='interview_scheduled' to avoid calling into this RAISE.
+  IF v_app.status <> 'interview_scheduled' THEN
+    RAISE EXCEPTION 'Application % is in status % — rescue only valid from interview_scheduled', p_application_id, v_app.status
+      USING ERRCODE = 'P0023';
+  END IF;
+
   -- Find the stuck interview: latest scheduled, past, never conducted.
   SELECT * INTO v_interview
   FROM public.selection_interviews
@@ -114,11 +125,12 @@ BEGIN
   WHERE id = v_interview.id;
 
   -- Step 2a: send the application back to interview_pending so it re-enters the invite queue
-  -- (mirrors mark_interview_status cancel path; only from a non-terminal interview state).
+  -- (mirrors mark_interview_status cancel path). The status guard above already pinned the app
+  -- to interview_scheduled, so this only ever moves interview_scheduled -> interview_pending.
   UPDATE public.selection_applications
   SET status = 'interview_pending', updated_at = now()
   WHERE id = p_application_id
-    AND status IN ('interview_scheduled', 'interview_done');
+    AND status = 'interview_scheduled';
 
   -- Step 2b: clear the notify idempotency guard so the invite can be re-dispatched.
   UPDATE public.selection_applications

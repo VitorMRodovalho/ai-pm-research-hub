@@ -1459,7 +1459,7 @@ const SEL_I18N = {
       if (filterInterviewToday && r.meta?.has_interview_today !== true) return false;
       // p279 #411 W1b: "Sem entrevista" — candidates without an active interview who are not yet decided
       // (the cutoff-invite dispatch queue). interview_status none|needs_reschedule AND not terminal-ish.
-      if (filterNoInterview && !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'interview_done', 'final_eval'].includes(r.status))) return false;
+      if (filterNoInterview && !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'converted', 'interview_done', 'final_eval', 'waitlist', 'cancelled', 'withdrawn'].includes(r.status))) return false;
       // p279 #411 W1b: "Stuck scheduled" — interview lapsed (server-computed meta.interview_stuck:
       //   app.status=interview_scheduled AND a scheduled interview is past + not conducted).
       if (filterStuckScheduled && r.meta?.interview_stuck !== true) return false;
@@ -1566,8 +1566,8 @@ const SEL_I18N = {
           if (n > 0) parts.push(`${n} sem entrevista hoje`);
         }
         if (filterNoInterview) {
-          const n = allRows.filter((r: any) => !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'interview_done', 'final_eval'].includes(r.status))).length;
-          if (n > 0) parts.push(`${n} com entrevista/decididos`);
+          const n = allRows.filter((r: any) => !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'converted', 'interview_done', 'final_eval', 'waitlist', 'cancelled', 'withdrawn'].includes(r.status))).length;
+          if (n > 0) parts.push(`${n} já agendados ou decididos`);
         }
         if (filterStuckScheduled) {
           const n = allRows.filter((r: any) => r.meta?.interview_stuck !== true).length;

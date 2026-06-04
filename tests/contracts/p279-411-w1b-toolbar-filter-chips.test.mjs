@@ -133,10 +133,13 @@ describe('p279 #411 Wave 1b — toolbar filter chips', () => {
     });
 
     it('applyFilters predicate — Sem entrevista: interview_status none|needs_reschedule AND not terminal', () => {
+      // none|needs_reschedule interview_status, excluding decided/terminal statuses. The terminal
+      // exclusion set must include waitlist/cancelled/withdrawn (code-review hardening) so the chip
+      // does not inflate the queue with candidates who must never receive a scheduling invite.
       assert.match(
         PAGE,
-        /filterNoInterview && !\(\['none', 'needs_reschedule'\]\.includes\(r\.interview_status\) && !\['rejected', 'approved', 'interview_done', 'final_eval'\]\.includes\(r\.status\)\)/,
-        'predicate must match the SPEC F2 "Sem entrevista" definition'
+        /filterNoInterview && !\(\['none', 'needs_reschedule'\]\.includes\(r\.interview_status\) && !\[[^\]]*'waitlist'[^\]]*'cancelled'[^\]]*'withdrawn'[^\]]*\]\.includes\(r\.status\)\)/,
+        'predicate must exclude terminal statuses incl. waitlist/cancelled/withdrawn (SPEC F2 + review hardening)'
       );
     });
 
