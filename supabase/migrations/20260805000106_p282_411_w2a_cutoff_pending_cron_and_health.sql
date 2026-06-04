@@ -197,7 +197,8 @@ BEGIN
      OR COALESCE((v_cutoff_job->>'active')::boolean, false) = false
      OR COALESCE((v_rescue_job->>'registered')::boolean, false) = false
      OR COALESCE((v_rescue_job->>'active')::boolean, false) = false
-     OR v_cutoff_last IS NULL THEN
+     OR v_cutoff_last IS NULL
+     OR v_rescue_last IS NULL THEN   -- either cron never-fired = not-yet-proven = yellow
     v_signal := 'yellow';
   END IF;
   IF (v_pending_cutoff > 0 AND (v_cutoff_last IS NULL OR v_cutoff_last < now() - interval '26 hours'))
