@@ -305,9 +305,9 @@ const SCORING_I18N = {
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <h3 class="text-sm font-bold text-navy">{t('gamification.lb.title', lang)}</h3>
           <div class="inline-flex items-center gap-1.5 bg-[var(--surface-base)] rounded-full p-1 border border-[var(--border-default)]">
-            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-[var(--text-secondary)] border-0 cursor-pointer"
+            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
-            <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
+            <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-[var(--text-secondary)] border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
@@ -546,7 +546,10 @@ const SCORING_I18N = {
   let sb: any = null;
   let MEMBER: any = null;
   let leaderboardData: any[] = [];
-  let leaderboardMode: 'cycle' | 'lifetime' = 'lifetime';
+  // #419 M5 D1: default the member leaderboard to the current cycle (matches the
+  // now-cycle-scoped rank). The 'Todos os tempos' toggle still shows lifetime.
+  // The button active-state at :308-311 is pre-set to cycle=active to match this.
+  let leaderboardMode: 'cycle' | 'lifetime' = 'cycle';
   let tribeMode: 'cycle' | 'lifetime' = 'cycle';
   let lifetimePointsByMember: Record<string, number> = {};
   let trailProgressByMember = new Map();
