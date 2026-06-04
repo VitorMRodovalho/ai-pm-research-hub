@@ -3190,6 +3190,36 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: notify_selection_cutoff_approved — dispatch the "agendar entrevista" invite (#411 W3 MCP exposure)
+  mcp.tool("notify_selection_cutoff_approved", "Dispatches the cutoff-approved 'agendar sua entrevista' invite email to a candidate who cleared the objective cutoff. Authority (enforced in the RPC): committee lead OR manage_member. Idempotent — returns reason:'already_sent' if the invite already went out (cutoff_approved_email_sent_at set). Track-aware booking URL routing (researcher LRD round-robin / leader cycle URL). Use for one-off manual dispatch; the daily cron selection-cutoff-pending-daily handles the strictly-above-target cohort automatically.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "notify_selection_cutoff_approved", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("notify_selection_cutoff_approved", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "notify_selection_cutoff_approved", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: selection_rescue_stuck_interview — cancel lapsed interview + re-invite (#411 W1d/W3)
+  mcp.tool("selection_rescue_stuck_interview", "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.", {
+    application_id: z.string().describe("Selection application UUID (must be in interview_scheduled with a past, not-conducted scheduled interview)")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "selection_rescue_stuck_interview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("selection_rescue_stuck_interview", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "selection_rescue_stuck_interview", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: submit_interview_scores — final interview rubric scores (confirm gate)
   mcp.tool("submit_interview_scores", "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of approved active members) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.", {
     interview_id: z.string().describe("Interview UUID"),
@@ -4021,6 +4051,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_digest_health", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "get_digest_health", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "get_digest_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_cutoff_dispatch_health — selection interview-invite cron health (#411 W2a)
+  mcp.tool("get_cutoff_dispatch_health", "Returns selection interview-invite cron health: last-7-run trend (dispatched/rescued counts) for selection-cutoff-pending-daily (14:00 UTC) + selection-stuck-scheduled-rescue-daily (15:00 UTC), each cron's registration/active state + last_run_at, the live pending cohorts (above-target awaiting invite + stuck-scheduled >48h), and a green/yellow/red health_signal (red = pending work with the relevant cron silent >26h; yellow = a cron unregistered/never-fired). Authority: view_internal_analytics. Use to triage 'are cutoff invites / stuck rescues going out?' or detect cron silence.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cutoff_dispatch_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_cutoff_dispatch_health");
+    if (error) { await logUsage(sb, member.id, "get_cutoff_dispatch_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_cutoff_dispatch_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_cutoff_dispatch_health", true, undefined, start);
     return ok(data);
   });
 
