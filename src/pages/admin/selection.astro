@@ -147,6 +147,12 @@ const SEL_I18N = {
     cutoffInviteToast: t('admin.selection.modal.cutoffInviteToast', lang),
     cutoffInviteError: t('admin.selection.modal.cutoffInviteError', lang),
     cutoffInviteConfirm: t('admin.selection.modal.cutoffInviteConfirm', lang),
+    rescueStuckTitle: t('admin.selection.modal.rescueStuckTitle', lang),
+    rescueStuckHint: t('admin.selection.modal.rescueStuckHint', lang),
+    rescueStuckBtn: t('admin.selection.modal.rescueStuckBtn', lang),
+    rescueStuckConfirm: t('admin.selection.modal.rescueStuckConfirm', lang),
+    rescueStuckToast: t('admin.selection.modal.rescueStuckToast', lang),
+    rescueStuckError: t('admin.selection.modal.rescueStuckError', lang),
     // #472 corr.3 — admin offline-interview record
     offlineInterviewBtn: t('admin.selection.modal.offlineInterviewBtn', lang),
     offlineInterviewHint: t('admin.selection.modal.offlineInterviewHint', lang),
@@ -308,6 +314,9 @@ const SEL_I18N = {
           <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
           <button id="filter-hide-shadow-vep" class="px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-amber-700 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20" data-active="true" title={t('admin.selection.hideShadowVepHint', lang)}>{t('admin.selection.hideShadowVep', lang)}</button>
           <button id="filter-interview-today" class="px-3 py-1 rounded-full font-semibold border border-purple-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-purple-500/10" data-active="false" title={t('admin.selection.interviewTodayHint', lang)}>{t('admin.selection.interviewToday', lang)}</button>
+          <!-- p279 #411 W1b: F2 toolbar filter chips — surface the interview-invite lifecycle gaps -->
+          <button id="filter-no-interview" class="px-3 py-1 rounded-full font-semibold border border-sky-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-sky-500/10" data-active="false" title={t('admin.selection.noInterviewHint', lang)}>{t('admin.selection.noInterview', lang)}</button>
+          <button id="filter-stuck-scheduled" class="px-3 py-1 rounded-full font-semibold border border-rose-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-rose-500/10" data-active="false" title={t('admin.selection.stuckScheduledHint', lang)}>{t('admin.selection.stuckScheduled', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
@@ -386,6 +395,8 @@ const SEL_I18N = {
             <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">{t('admin.selection.bulkApprove', lang)}</button>
             <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">{t('admin.selection.bulkReject', lang)}</button>
             <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">{t('admin.selection.bulkWaitlist', lang)}</button>
+            <!-- p279 #411 W1c: F3 bulk cutoff-invite dispatch (loops notify_selection_cutoff_approved) -->
+            <button id="bulk-cutoff-invite" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" title={t('admin.selection.bulkCutoffInviteHint', lang)}>{t('admin.selection.bulkCutoffInvite', lang)}</button>
           </div>
           <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.bulkFeedback', lang)} />
         </div>
@@ -682,6 +693,12 @@ const SEL_I18N = {
       cutoffInviteToast: 'Convite enviado para',
       cutoffInviteError: 'Erro ao enviar convite',
       cutoffInviteConfirm: 'Enviar convite de agendamento para',
+      rescueStuckTitle: '⚠ Entrevista agendada expirada',
+      rescueStuckHint: 'A entrevista agendada passou da data sem ser conduzida nem cancelada. Reenviar cancela o agendamento perdido e envia um novo convite de agendamento ao candidato.',
+      rescueStuckBtn: '🔄 Reenviar (cancela agendamento perdido)',
+      rescueStuckConfirm: 'Cancelar a entrevista perdida e reenviar o convite a',
+      rescueStuckToast: 'Entrevista anterior cancelada · novo convite enviado',
+      rescueStuckError: 'Erro ao reenviar convite',
       offlineInterviewBtn: '📅 Registrar entrevista realizada (offline)',
       offlineInterviewHint: 'A entrevista aconteceu fora da plataforma? Informe a data em que ocorreu para criar o registro e liberar o lançamento da nota (bypass auditado do gate de status).',
       offlineInterviewDateLabel: 'Data da entrevista',
@@ -894,6 +911,9 @@ const SEL_I18N = {
   let filterHideShadowVep = true;
   // p152 W3+: "Entrevistas hoje" quick filter (default OFF; PM ativa no dia)
   let filterInterviewToday = false;
+  // p279 #411 W1b: F2 chips — surface the interview-invite lifecycle gaps (default OFF)
+  let filterNoInterview = false;
+  let filterStuckScheduled = false;
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -1437,6 +1457,12 @@ const SEL_I18N = {
       if (filterHideShadowVep && r.extra_flags?.is_shadow_vep === true) return false;
       // p152 W3+: "Entrevistas hoje" — uses meta.has_interview_today (canonical SP-tz check in RPC)
       if (filterInterviewToday && r.meta?.has_interview_today !== true) return false;
+      // p279 #411 W1b: "Sem entrevista" — candidates without an active interview who are not yet decided
+      // (the cutoff-invite dispatch queue). interview_status none|needs_reschedule AND not terminal-ish.
+      if (filterNoInterview && !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'interview_done', 'final_eval'].includes(r.status))) return false;
+      // p279 #411 W1b: "Stuck scheduled" — interview lapsed (server-computed meta.interview_stuck:
+      //   app.status=interview_scheduled AND a scheduled interview is past + not conducted).
+      if (filterStuckScheduled && r.meta?.interview_stuck !== true) return false;
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -1538,6 +1564,14 @@ const SEL_I18N = {
         if (filterInterviewToday) {
           const n = allRows.filter((r: any) => r.meta?.has_interview_today !== true).length;
           if (n > 0) parts.push(`${n} sem entrevista hoje`);
+        }
+        if (filterNoInterview) {
+          const n = allRows.filter((r: any) => !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'interview_done', 'final_eval'].includes(r.status))).length;
+          if (n > 0) parts.push(`${n} com entrevista/decididos`);
+        }
+        if (filterStuckScheduled) {
+          const n = allRows.filter((r: any) => r.meta?.interview_stuck !== true).length;
+          if (n > 0) parts.push(`${n} sem agendamento expirado`);
         }
         if (filterMyEval === 'pending_mine') {
           const n = allRows.filter((r: any) => r.my_eval_status === 'submitted').length;
@@ -3806,6 +3840,51 @@ const SEL_I18N = {
     loadDashboard();
   }
 
+  // p279 #411 W1c: F3 bulk cutoff-invite dispatch. Loops notify_selection_cutoff_approved per
+  // selected app with per-iteration try/catch (one failure never aborts the loop). Eligibility
+  // mirrors the F1 render gate (screening / interview_pending) so a stray selection of a
+  // rejected/approved row never emails them. The RPC's own already_sent idempotency envelope is
+  // surfaced as "Já dispatchados", NOT counted as an error.
+  async function executeBulkCutoffInvite() {
+    const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
+    const ids = Array.from(checks).map(c => c.value);
+    if (!ids.length) return;
+    const ELIGIBLE = ['screening', 'interview_pending'];
+    const eligibleIds: string[] = [];
+    let skippedIneligible = 0;
+    for (const id of ids) {
+      const r = allRows.find((x: any) => x.id === id);
+      if (r && ELIGIBLE.includes(r.status)) eligibleIds.push(id);
+      else skippedIneligible++;
+    }
+    if (!eligibleIds.length) {
+      toast(`Nenhum dos ${ids.length} selecionados está elegível (screening / interview_pending)`, 'error');
+      return;
+    }
+    const names = eligibleIds.map(id => (allRows.find((x: any) => x.id === id)?.applicant_name || '').trim() || '?');
+    const preview = names.slice(0, 3).join(', ') + (names.length > 3 ? ` e mais ${names.length - 3}` : '');
+    if (!confirm(`Enviar convite de agendamento para ${eligibleIds.length} candidato(s): ${preview}?`)) return;
+    const btn = document.getElementById('bulk-cutoff-invite') as HTMLButtonElement | null;
+    const orig = btn?.textContent || '📧 Enviar convite';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando…'; }
+    let sent = 0, already = 0, errors = 0;
+    for (const id of eligibleIds) {
+      try {
+        const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: id });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        if (data?.reason === 'already_sent') already++;
+        else sent++;
+      } catch { errors++; }
+    }
+    const parts = [`Enviados: ${sent}`, `Já dispatchados: ${already}`];
+    if (errors) parts.push(`Erros: ${errors}`);
+    if (skippedIneligible) parts.push(`Ignorados (inelegíveis): ${skippedIneligible}`);
+    toast(parts.join(' · '));
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+    loadDashboard();
+  }
+
   /* ── evaluation results ──────────────────────────── */
   async function loadEvaluationResults(applicationId: string) {
     const container = document.getElementById('eval-form-container');
@@ -4158,6 +4237,16 @@ const SEL_I18N = {
       </div>`;
 
       // History timeline — all interviews with per-row actions
+      // p281 #411 W1d F4 — stuck-interview rescue banner (server flag meta.interview_stuck:
+      // app in interview_scheduled with a scheduled interview that is past + not conducted).
+      if (row.meta?.interview_stuck === true) {
+        html += `<div class="bg-rose-50 border border-rose-300 rounded-xl p-4 mb-3" data-testid="rescue-stuck-banner">
+          <p class="text-sm text-rose-800 font-bold mb-1">${T.modal.rescueStuckTitle}</p>
+          <p class="text-[12px] text-rose-700 mb-3">${T.modal.rescueStuckHint}</p>
+          <button id="rescue-stuck-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.rescueStuckBtn}</button>
+        </div>`;
+      }
+
       html += '<details open class="bg-[var(--surface-base)] rounded-xl mb-3 border border-[var(--border-subtle)]"><summary class="px-3 py-2 text-[12px] font-bold text-navy cursor-pointer select-none">📋 Histórico de entrevistas</summary><div class="px-3 pb-3 space-y-2">';
       for (const intv of interviewsByDate) {
         const label = STATUS_LABELS[`interview_${intv.status}`] || intv.status;
@@ -4323,6 +4412,26 @@ const SEL_I18N = {
             loadDashboard();
           } catch (e: any) { toast(e.message || 'Erro', 'error'); }
         });
+      });
+
+      // p281 #411 W1d F4 — wire the stuck-interview rescue button (atomic cancel + reset + re-dispatch
+      // via selection_rescue_stuck_interview RPC). Confirm-gated; one click does all three steps.
+      scoringDiv.querySelector('#rescue-stuck-btn')?.addEventListener('click', async (ev) => {
+        const btn = ev.currentTarget as HTMLButtonElement;
+        const name = (btn.dataset.appName || row.applicant_name || '').trim();
+        if (!confirm(`${T.modal.rescueStuckConfirm} ${name}?`)) return;
+        btn.disabled = true; btn.textContent = '⏳ Reenviando…';
+        try {
+          const { data, error } = await sb.rpc('selection_rescue_stuck_interview', { p_application_id: row.id });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          toast(T.modal.rescueStuckToast);
+          loadInterviewForm(row);
+          loadDashboard();
+        } catch (e: any) {
+          toast(e.message || T.modal.rescueStuckError, 'error');
+          btn.disabled = false; btn.textContent = T.modal.rescueStuckBtn;
+        }
       });
 
       // p152 W4: toggle Agendar section override
@@ -4663,6 +4772,30 @@ const SEL_I18N = {
       applyFilters();
     });
 
+    // p279 #411 W1b: "Sem entrevista" toggle (default OFF — cutoff-invite dispatch queue)
+    document.getElementById('filter-no-interview')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterNoInterview = !filterNoInterview;
+      btn.dataset.active = filterNoInterview ? 'true' : 'false';
+      btn.classList.toggle('bg-sky-500/10', filterNoInterview);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterNoInterview);
+      btn.classList.toggle('text-sky-700', filterNoInterview);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterNoInterview);
+      applyFilters();
+    });
+
+    // p279 #411 W1b: "Stuck scheduled" toggle (default OFF — lapsed-interview rescue queue)
+    document.getElementById('filter-stuck-scheduled')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterStuckScheduled = !filterStuckScheduled;
+      btn.dataset.active = filterStuckScheduled ? 'true' : 'false';
+      btn.classList.toggle('bg-rose-500/10', filterStuckScheduled);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterStuckScheduled);
+      btn.classList.toggle('text-rose-700', filterStuckScheduled);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterStuckScheduled);
+      applyFilters();
+    });
+
     document.getElementById('filter-myeval-toggle')?.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('.filter-myeval-btn');
       if (!btn) return;
@@ -4752,6 +4885,9 @@ const SEL_I18N = {
         if (decision) executeBulkDecision(decision);
       });
     });
+
+    // p279 #411 W1c: bulk cutoff-invite dispatch button
+    document.getElementById('bulk-cutoff-invite')?.addEventListener('click', () => executeBulkCutoffInvite());
 
     // Recalculate rankings (Gap 5)
     document.getElementById('recalc-rankings-btn')?.addEventListener('click', async () => {
