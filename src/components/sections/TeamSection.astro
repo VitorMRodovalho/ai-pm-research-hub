@@ -263,8 +263,10 @@ const ROLE_COLORS: Record<string, string> = {
     const inner = sorted.map(ch => {
       const logo = CHAPTER_LOGOS[ch];
       const logoEl = logo
-        ? `<img src="${logo}" class="h-9 max-w-[120px] object-contain mb-2" alt="${ch}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-           <div style="display:none" class="text-[.85rem] font-extrabold mb-2" style="color:${HEADING_COLORS.crimson}">${ch}</div>`
+        ? `<div class="bg-white rounded-lg inline-flex items-center justify-center px-3 mb-2" style="height:48px;min-width:120px">
+             <img src="${logo}" class="max-h-8 max-w-[140px] object-contain" alt="${ch}" onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling.style.display='block'">
+           </div>
+           <div style="display:none;color:${HEADING_COLORS.crimson}" class="text-[.85rem] font-extrabold mb-2">${ch}</div>`
         : `<div class="text-[.8rem] font-extrabold mb-2" style="color:${HEADING_COLORS.crimson}">${ch}</div>`;
       return `<div class="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 min-w-[160px]">
         <div class="text-center mb-3">${logoEl}</div>
