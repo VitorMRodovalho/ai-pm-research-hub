@@ -241,13 +241,18 @@ test('p239b #332: mcp-tool-matrix.json lists both new tools', () => {
   assert.ok(names.has('lgpd_execute_retroactive_deletion'), 'matrix must include lgpd_execute_retroactive_deletion');
 });
 
-test('p239b #332: MCP_TOOL_MATRIX.md header reflects new total (302 → 304 = 301 /mcp + 3 /semantic)', () => {
+test('p239b #332: MCP_TOOL_MATRIX.md H1 count is self-consistent with the json row count', () => {
   assert.ok(existsSync(MATRIX_MD_PATH), 'matrix md must exist');
   const md = readFileSync(MATRIX_MD_PATH, 'utf8');
-  // The script generates "MCP 304-Tool Contract Matrix" in the H1 + "Total tools (static parser): 304".
-  assert.match(md, /MCP\s+304-Tool\s+Contract\s+Matrix/i, 'matrix MD H1 must reflect new 304 total (301 /mcp + 3 /semantic)');
-  // Markdown bold `**Total tools (static parser):**` — allow optional ** between : and the count.
-  assert.match(md, /Total tools \(static parser\):\**\s*304/i, 'matrix MD summary must declare 304 total');
+  // Anti-brittleness (mcp.md: "the exact tool count changes every session — never recite it"):
+  // derive the expected number from the freshly-generated json rather than a hardcoded literal,
+  // so adding/removing a tool never breaks this gate. As of p282/p283 (#411 W3, +3 selection
+  // tools) the count is 307 (304 /mcp + 3 /semantic); the json is the source of truth.
+  const json = JSON.parse(readFileSync(MATRIX_JSON_PATH, 'utf8'));
+  const total = Array.isArray(json) ? json.length : (json.tools?.length ?? json.rows?.length ?? json.total);
+  assert.ok(typeof total === 'number' && total > 0, 'json must yield a numeric tool total');
+  assert.match(md, new RegExp(`MCP\\s+${total}-Tool\\s+Contract\\s+Matrix`, 'i'), `matrix MD H1 must reflect the json total (${total})`);
+  assert.match(md, new RegExp(`Total tools \\(static parser\\):\\**\\s*${total}`, 'i'), `matrix MD summary must declare ${total}`);
 });
 
 // ─── 10. Forward-defense: future PRs cannot silently drop either tool ────────
