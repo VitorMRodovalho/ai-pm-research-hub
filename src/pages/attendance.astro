@@ -1196,7 +1196,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (target instanceof HTMLSelectElement) {
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
-        if (target.id === 'rec-audience') toggleRecTribePicker();
+        if (target.id === 'rec-audience') toggleRecAudiencePickers();
         if (target.id === 'events-tribe-filter') {
           VISIBLE_COUNT = PAGE_SIZE;
           renderEvents();
@@ -1522,8 +1522,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         const mapped = audienceMap[primaryTag.name];
         if (mapped) {
           (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
-          // #492: a programmatic .value change does NOT fire 'change' → sync the recurring tribe-picker
-          if (audienceId === 'rec-audience') toggleRecTribePicker();
+          // #492: a programmatic .value change does NOT fire 'change' → sync the recurring scope-pickers
+          if (audienceId === 'rec-audience') toggleRecAudiencePickers();
         }
       }
     }
@@ -1691,23 +1691,35 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── RECURRING ──
-  // #492: reveal the tribe-picker only for tribe-specific series; ensure tribes are loaded.
-  function toggleRecTribePicker() {
+  // #492/#494: reveal the tribe- OR initiative-picker for scoped series; lazy-load the matching cache.
+  function toggleRecAudiencePickers() {
     const aud = (document.getElementById('rec-audience') as HTMLSelectElement | null)?.value;
-    const wrap = document.getElementById('rec-tribe-wrap');
-    if (wrap) wrap.style.display = aud === 'tribe' ? 'flex' : 'none';
+    const tribeWrap = document.getElementById('rec-tribe-wrap');
+    const initWrap = document.getElementById('rec-initiative-wrap');
+    if (tribeWrap) tribeWrap.style.display = aud === 'tribe' ? 'flex' : 'none';
+    if (initWrap) initWrap.style.display = aud === 'initiative' ? 'flex' : 'none';
     if (aud === 'tribe') ensureTribesLoaded();
+    if (aud === 'initiative') ensureInitiativesLoaded();
   }
 
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
     (document.getElementById('rec-until') as HTMLInputElement).value = '';
+    // #494: reset the scope selects on every open. <select>s aren't form-reset and closeModal only
+    // toggles CSS, so an abandoned prior selection would otherwise persist and silently bind a new
+    // series. Reset audience→'all' + clear both pickers, then let the tribe-default logic re-apply.
+    (document.getElementById('rec-audience') as HTMLSelectElement).value = 'all';
+    const recTribeReset = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+    if (recTribeReset) recTribeReset.value = '';
+    const recInitReset = document.getElementById('rec-initiative-select') as HTMLSelectElement | null;
+    if (recInitReset) recInitReset.value = '';
     ensureTribesLoaded().then(() => {
       const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
       if (sel && !sel.value && MEMBER?.tribe_id) sel.value = String(MEMBER.tribe_id);
     });
-    toggleRecTribePicker();
+    ensureInitiativesLoaded(); // #494: populate rec-initiative-select for the initiative scope
+    toggleRecAudiencePickers();
     openModal('modal-recurring');
   }
 
@@ -1731,11 +1743,19 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const LEGACY_TYPE: Record<string, string> = { general_meeting: 'geral', tribe_meeting: 'tribo', leadership_meeting: 'lideranca', webinar: 'webinar', other: 'geral' };
     let dbType = VALID_TYPES.includes(type) ? type : (LEGACY_TYPE[type] || 'geral');
     let tribeId: number | null = null;
+    let initiativeId: string | null = null; // #494: set for the 'initiative' scope; linked post-create
     if (audience === 'tribe') {
       dbType = 'tribo';
       const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
       tribeId = sel && sel.value ? parseInt(sel.value, 10) : null;
       if (!tribeId) return toast('Selecione a tribo para a série específica de tribo.', 'error');
+    } else if (audience === 'initiative') {
+      // #494: initiative series — mirror the single-event p169 path. create_recurring_weekly_events
+      // accepts only p_tribe_id, so create with type='iniciativa'/no tribe, then UPDATE initiative_id.
+      dbType = 'iniciativa';
+      const sel = document.getElementById('rec-initiative-select') as HTMLSelectElement | null;
+      initiativeId = sel && sel.value ? sel.value : null;
+      if (!initiativeId) return toast('Selecione a iniciativa para a série.', 'error');
     } else if (dbType === 'tribo') {
       // #492: a 'tribo' type without a tribe audience has no tribe to bind → fall back to 'geral'
       dbType = 'geral';
@@ -1763,10 +1783,24 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       });
       if (error) throw error;
       if (data?.success) {
+        // #494: link the initiative to every event in the series (parity with the single-event p169
+        // UPDATE). audience_level='initiative' is already written by the RPC via p_audience_level.
+        if (initiativeId && data.event_ids?.length) {
+          const { error: linkErr } = await sb.from('events')
+            .update({ initiative_id: initiativeId })
+            .in('id', data.event_ids);
+          if (linkErr) console.warn('initiative link failed:', linkErr);
+        }
         // W140: assign tags and audience to all created events
         if (tagIds.length && data.event_ids?.length) {
+          // #494: for the 'initiative' scope, write the SAME 'all_active_operational' audience rule the
+          // single-event path uses (createEvent), so a recurring initiative series and a single
+          // initiative event gate self-checkin (register_own_presence) identically. NOTE (pre-existing,
+          // out of scope): the recurring 'all'/'leadership'/'curators' scopes still write no
+          // event_audience rule, and a proper target_type='initiative' model is a separate follow-up.
+          const ruleAudience = audience === 'initiative' ? 'all_active_operational' : audience;
           for (const eid of data.event_ids) {
-            await assignEventTagsAndAudience(eid, tagIds, audience, tribeId);
+            await assignEventTagsAndAudience(eid, tagIds, ruleAudience, tribeId);
           }
         }
         closeModal('modal-recurring');
@@ -1810,7 +1844,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       .neq('status', 'archived')
       .order('title');
     _initiativesCache = data || [];
-    for (const selId of ['edit-ev-initiative-select', 'ev-initiative-select']) {
+    for (const selId of ['edit-ev-initiative-select', 'ev-initiative-select', 'rec-initiative-select']) {
       const sel = document.getElementById(selId) as HTMLSelectElement;
       if (sel) {
         while (sel.options.length > 1) sel.remove(1);
