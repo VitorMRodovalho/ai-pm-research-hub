@@ -44,6 +44,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="all">Todos os operacionais ativos</option>
             <option value="tribe">Tribo específica</option>
+            <option value="initiative">Iniciativa específica</option>
             <option value="leadership">Por papel (liderança)</option>
             <option value="curators">Curadores</option>
           </select>
@@ -54,6 +55,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <select id="rec-tribe-select"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="">— Selecione a tribo —</option>
+          </select>
+        </div>
+        <!-- #494: initiative-picker, revealed only when audience = 'initiative' (parity with the
+             single-event modal's iniciativa path; series links via post-create UPDATE of event_ids). -->
+        <div class="flex flex-col gap-1.5" id="rec-initiative-wrap" style="display:none;">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.whichInitiative', lang)}</label>
+          <select id="rec-initiative-select"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+            <option value="">— Selecione a iniciativa —</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
