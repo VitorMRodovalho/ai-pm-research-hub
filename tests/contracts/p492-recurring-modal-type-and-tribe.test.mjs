@@ -52,7 +52,8 @@ test('#492 static: p_tribe_id comes from the selected tribe, not the dead type c
 
 test('#492 static: tribe-picker is populated + toggled by audience', () => {
   assert.match(attRaw, /'rec-tribe-select'/, 'rec-tribe-select is populated by ensureTribesLoaded');
-  assert.match(attRaw, /function toggleRecTribePicker/, 'toggleRecTribePicker exists');
+  // #494 renamed toggleRecTribePicker → toggleRecAudiencePickers (now toggles tribe OR initiative).
+  assert.match(attRaw, /function toggleRecAudiencePickers/, 'toggleRecAudiencePickers exists');
   assert.match(attRaw, /target\.id === 'rec-audience'/, 'audience change toggles the picker');
 });
 
