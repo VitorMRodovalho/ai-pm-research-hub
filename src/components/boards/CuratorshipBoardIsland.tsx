@@ -94,7 +94,7 @@ function daysUntilDue(dueAt: string | null | undefined): number | null {
 // get_curation_dashboard delivers attachments as an array of {url,name,kind,embed}
 // (legacy rows may store a bare string). Normalize both into a {url,name} list.
 function normalizeAttachments(
-  a?: Array<{ url: string; name?: string }> | string | null,
+  a?: Array<{ url: string; name?: string; [k: string]: unknown }> | string | null,
 ): Array<{ url: string; name?: string }> {
   if (!a) return [];
   if (typeof a === 'string') return a.trim() ? [{ url: a.trim() }] : [];
@@ -376,8 +376,8 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
 
             {/* #201: submitted artifact link(s) + source context — without these the curator
                 cannot reach the peça being reviewed. */}
-            <section className="space-y-2">
-              <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1"><Paperclip size={13} /> {t('curation.artifact.title', 'Artefatos submetidos')}</h4>
+            <section className="space-y-2 rounded-lg border border-teal/30 bg-teal/5 p-3">
+              <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1"><Paperclip size={13} aria-hidden="true" /> {t('curation.artifact.title', 'Artefatos submetidos')}</h4>
               {(() => {
                 const atts = normalizeAttachments(item.attachments);
                 if (atts.length === 0) {
@@ -385,13 +385,20 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
                 }
                 return (
                   <ul className="space-y-1">
-                    {atts.map((a, i) => (
-                      <li key={i}>
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-xs text-teal hover:underline inline-flex items-center gap-1 break-all">
-                          <ExternalLink size={12} className="flex-shrink-0" /> {a.name || a.url}
-                        </a>
-                      </li>
-                    ))}
+                    {atts.map((a, i) => {
+                      // Show the artifact name when present; otherwise a truncated URL (the full
+                      // URL stays the href + title), so a bare Drive link stays legible on mobile.
+                      const label = a.name || (a.url.length > 56 ? a.url.slice(0, 53) + '…' : a.url);
+                      let ariaLabel = a.name || 'Link externo';
+                      try { if (!a.name) ariaLabel = new URL(a.url).hostname + ' — link externo'; } catch { /* malformed URL — keep fallback */ }
+                      return (
+                        <li key={`${a.url}-${i}`}>
+                          <a href={a.url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} title={a.url} className="text-xs text-teal hover:underline inline-flex items-center gap-1 break-all">
+                            <ExternalLink size={12} aria-hidden="true" className="flex-shrink-0" /> {label}
+                          </a>
+                        </li>
+                      );
+                    })}
                   </ul>
                 );
               })()}

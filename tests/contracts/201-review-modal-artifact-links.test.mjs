@@ -32,8 +32,10 @@ test('#201: review modal renders artifact links + empty-state', () => {
 });
 
 test('#201: artifact links open safely (target=_blank + noopener noreferrer)', () => {
-  assert.match(island, /href=\{a\.url\}\s+target="_blank"\s+rel="noopener noreferrer"/,
-    'artifact links must be safe external links');
+  // assert attributes independently — robust to JSX attribute reordering
+  assert.match(island, /href=\{a\.url\}/, 'artifact link uses the url as href');
+  assert.match(island, /target="_blank"/, 'opens in a new tab');
+  assert.match(island, /rel="noopener noreferrer"/, 'safe external-link rel');
 });
 
 test('#201: normalizeAttachments handles array, bare string, and null shapes', () => {
