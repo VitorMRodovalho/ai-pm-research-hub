@@ -25,6 +25,9 @@ import { createClient } from '@supabase/supabase-js';
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000098_245_curation_view_gates_curate_content.sql');
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+// #185 Item-2: list_curation_board (the 4th, previously-ungated curation reader) gated 2026-06-05.
+const MIG185 = resolve(ROOT, 'supabase/migrations/20260805000112_185_gate_list_curation_board.sql');
+const mig185Raw = existsSync(MIG185) ? readFileSync(MIG185, 'utf8') : '';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -73,7 +76,34 @@ test('#245 static: no view RPC narrows to a curate_content-ONLY gate (symmetric 
     'no curation view RPC may gate on curate_content alone (must keep the write_board/write OR-arm)');
 });
 
+test('#185 Item-2 static: migration 112 exists and gates list_curation_board', () => {
+  assert.ok(existsSync(MIG185), 'migration 20260805000112 exists');
+  assert.match(mig185Raw,
+    /CREATE OR REPLACE FUNCTION public\.list_curation_board[\s\S]*?can_by_member\(v_member_id, 'curate_content'\)[\s\S]{0,80}OR[\s\S]{0,80}can_by_member\(v_member_id, 'write_board'\)/,
+    'list_curation_board gate is additive (curate_content OR write_board)');
+  assert.match(mig185Raw, /RAISE EXCEPTION 'Not authenticated'/,
+    'list_curation_board raises when caller is not a member');
+});
+
+test('#185 Item-2 static: list_curation_board does not narrow to a single-capability gate', () => {
+  assert.doesNotMatch(mig185Raw, /IF NOT public\.can_by_member\(v_member_id, 'curate_content'\) THEN/,
+    'list_curation_board must keep the write_board OR-arm (no curate_content-only narrowing)');
+  assert.doesNotMatch(mig185Raw, /IF NOT public\.can_by_member\(v_member_id, 'write_board'\) THEN/,
+    'list_curation_board must keep the curate_content OR-arm (no write_board-only gate)');
+});
+
 // ── BEHAVIOURAL (DB-gated) ────────────────────────────────────────────────────────
+test('#185 Item-2 behavioural: list_curation_board denies an unauthenticated caller (leak closed)',
+  { skip: dbGated ? false : skipMsg }, async () => {
+    const sb = client();
+    // Service-role => auth.uid() is NULL => v_member_id IS NULL => 'Not authenticated' fires.
+    // Pre-fix this RPC had NO gate and returned all hub_resources rows to any caller.
+    const { error } = await sb.rpc('list_curation_board');
+    assert.ok(error, 'list_curation_board must now gate (was ungated)');
+    assert.match(String(error.message || ''), /Not authenticated|Curatorship access required/,
+      `expected the curation gate to fire, got: ${JSON.stringify(error)}`);
+  });
+
 test('#245 behavioural: the unblocked population exists (curate_content=true, write_board=false)',
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = client();
