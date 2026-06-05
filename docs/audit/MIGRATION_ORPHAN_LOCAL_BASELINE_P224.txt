@@ -3,11 +3,12 @@
 # Versions present as local .sql files BUT no corresponding row in
 # supabase_migrations.schema_migrations.
 #
-# Discovery: WATCH-AUDIT-HIGH-17 (P162 log #185). 15 entries at p224 baseline.
+# Discovery: WATCH-AUDIT-HIGH-17 (P162 log #185). 15 entries at p224 baseline;
+# CURRENT = 8 after the 2026-06-05 #527 ratchet (see ratchet note below).
 #
 # 3 clusters identified in p224:
 #  - p64 incident-revert + Pacote M (Apr 26-27, 3 files)
-#  - p125-E1/E2/p126-E3 selection PMI 3D series (May 18, 11 files)
+#  - p125-E1/E2/p126-E3 selection PMI 3D series (May 18, 11 files; E1 7 removed #527)
 #  - TAP CPMAI R00 seed content (Jun 18, 1 file)
 #
 # Risk: functional = NONE today (DDL applied via path that bypassed
@@ -18,16 +19,16 @@
 # Ratchet DOWN: register version via `supabase migration repair --status
 # applied <version>` + bump baseline.
 # Ratchet UP: prohibited (file should never exist without registration).
+#
+# Ratcheted DOWN 2026-06-05 (#527, follow-up to #441): the 7 p125-E1 files
+# (20260518000000–20260518060000) were DELETED — all unapplied, the
+# pmi_chapter_memberships table they referenced was never created, and every
+# live object they defined is captured by later APPLIED p131/p176/p195
+# migrations. Baseline 15 → 8. Remaining May-18 entries (070000–100000) are
+# the separate p125-E2 / p126-E3 series (still unapplied; out of scope).
 20260426234500
 20260427000000
 20260427000100
-20260518000000
-20260518010000
-20260518020000
-20260518030000
-20260518040000
-20260518050000
-20260518060000
 20260518070000
 20260518080000
 20260518090000

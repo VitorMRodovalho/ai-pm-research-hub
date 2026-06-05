@@ -13,12 +13,12 @@
  * table DOES exist; only its external feed (extract_pmi_volunteer.js) stalled, which is a
  * PMI-side issue, not a dead local path.
  *
- * Cross-ref: #441. The entangled UNAPPLIED p125-E1 migration files (which still cross-
- * reference the table) are a separate cleanup flagged on the issue — not touched here.
+ * Cross-ref: #441, #527. The entangled UNAPPLIED p125-E1 migration files (which cross-
+ * referenced the table) were DELETED in #527 — locked by the file-removal forward-defense below.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const ROOT = process.cwd();
@@ -46,4 +46,25 @@ test('#441: service_history + person-resolution paths are RETAINED', () => {
   assert.match(db, /function insertServiceHistory/, 'insertServiceHistory must be retained');
   assert.match(db, /function findPersonIdByEmail/, 'findPersonIdByEmail must be retained');
   assert.match(mapper, /function mapServiceHistory/, 'mapServiceHistory must be retained');
+});
+
+test('#527: the 7 unapplied p125-E1 migration files stay removed', () => {
+  // All 7 were unapplied (no schema_migrations row), pmi_chapter_memberships was never
+  // created, and every live object they defined is captured by later APPLIED p131/p176/p195
+  // migrations — so the files were dead and removed. Forward-defense against accidental
+  // reintroduction (which would re-add orphan-local drift + point at a non-existent table).
+  const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
+  const REMOVED = [
+    '20260518000000_p125_e1_selection_applications_pmi_3d_columns.sql',
+    '20260518010000_p125_e1_pmi_chapter_memberships.sql',
+    '20260518020000_p125_e1_service_history_table.sql',
+    '20260518030000_p125_e1_invariants_extension.sql',
+    '20260518040000_p125_e1_anonymize_bifurcated_cron.sql',
+    '20260518050000_p125_e1_anonymize_inactive_members_cascade.sql',
+    '20260518060000_p125_e1_age_band_constraint_gender_freeze.sql',
+  ];
+  for (const f of REMOVED) {
+    assert.ok(!existsSync(resolve(MIGRATIONS, f)),
+      `${f} must stay deleted — unapplied, pmi_chapter_memberships never created, superseded by p131 (#527)`);
+  }
 });

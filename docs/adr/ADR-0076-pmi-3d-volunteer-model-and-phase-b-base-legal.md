@@ -254,6 +254,14 @@ Migration E1 e Worker E2 deployment **devem ser atômicos** (Risk 3 do pre-morte
 
 ## Implementação
 
+> **⚠️ Status (atualizado 2026-06-05 — #527 / follow-up #441):** as 7 migrations E1 abaixo
+> **nunca foram aplicadas** e seus **arquivos foram removidos** do repositório. A tabela
+> `pmi_chapter_memberships` (linha 2) jamais foi criada; o caminho de código do worker que a
+> consumia foi aposentado em #523 (decisão A1). Todos os objetos que ainda existem em produção
+> (22 colunas Phase-B em `selection_applications`, tabela `selection_application_service_history`,
+> `import_vep_applications()`, `anonymize_inactive_members()`) foram recapturados por migrations
+> p131/p176/p195 já aplicadas. A tabela abaixo permanece como **registro histórico do plano original**.
+
 E1 migrations (7 files, sequential timestamps):
 
 | # | Migration | Timestamp | Contents |
