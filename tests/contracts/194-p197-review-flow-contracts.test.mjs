@@ -82,7 +82,9 @@ test('#194 complete_leader_review: decision enum + transitions + peer-reset on r
 test('#194 submit_for_curation: gate + status guard + SLA + curation_pending', () => {
   const b = latestFunctionBody('submit_for_curation');
   assert.ok(b, 'submit_for_curation body located');
-  assert.match(b, /can_by_member\(v_caller\.id, 'participate_in_governance_review'\)[\s\S]{0,120}operational_role = 'tribe_leader'/, 'gate: gov-review OR tribe_leader');
+  // ADR-0041 "Path Y" approved exception: tribe_leader operational handoff is an intentional
+  // OR-arm alongside the V4 can() gate here — do NOT "clean up" the operational_role token.
+  assert.match(b, /can_by_member\(v_caller\.id, 'participate_in_governance_review'\)[\s\S]{0,120}operational_role = 'tribe_leader'/, 'gate: gov-review OR tribe_leader (Path Y)');
   assert.match(b, /curation_status NOT IN \('leader_review', 'draft'\)/, 'only from leader_review/draft');
   assert.match(b, /curation_status = 'curation_pending'/, '→ curation_pending');
   assert.match(b, /curation_due_at = now\(\) \+ make_interval\(days =>/, 'sets SLA from board_sla_config');
@@ -97,7 +99,8 @@ test('#194 submit_curation_review: gov-review gate + decisions + rubric + per-ro
   assert.match(b, /p_decision NOT IN \('approved', 'returned_for_revision', 'rejected'\)/, 'decision enum');
   assert.match(b, /curation_status <> 'curation_pending'/, 'only from curation_pending');
   assert.match(b, /'clarity','originality','adherence','relevance','ethics'/, 'rubric criteria');
-  assert.match(b, /must be 1-5/, 'rubric 1-5 validation');
+  // Assert the structural guard, not the (translatable) RAISE message.
+  assert.match(b, /v_score IS NULL OR v_score < 1 OR v_score > 5/, 'rubric 1-5 validation guard');
   assert.match(b, /publish_board_item_from_curation/, 'approved quorum → publish');
   // #192 contract: per-round distinct-curator consensus
   assert.match(b, /count\(DISTINCT curator_id\)[\s\S]*?review_round = v_current_round/, 'per-round distinct-curator consensus');
