@@ -46,9 +46,12 @@
 ALTER TABLE public.curation_review_log
   ADD COLUMN IF NOT EXISTS review_round int NOT NULL DEFAULT 1;
 
-ALTER TABLE public.curation_review_log
-  ADD CONSTRAINT curation_review_log_one_per_curator_per_round
-  UNIQUE (board_item_id, curator_id, review_round);
+DO $$ BEGIN
+  ALTER TABLE public.curation_review_log
+    ADD CONSTRAINT curation_review_log_one_per_curator_per_round
+    UNIQUE (board_item_id, curator_id, review_round);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.submit_curation_review(p_item_id uuid, p_decision text, p_criteria_scores jsonb DEFAULT '{}'::jsonb, p_feedback_notes text DEFAULT NULL::text)
  RETURNS uuid

@@ -21,6 +21,9 @@ import { createClient } from '@supabase/supabase-js';
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000113_192_one_review_per_curator_per_round.sql');
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+// Companion: get_curation_dashboard display counters made round-aware to match the gate.
+const MIG114 = resolve(ROOT, 'supabase/migrations/20260805000114_192_dashboard_round_aware_counters.sql');
+const mig114Raw = existsSync(MIG114) ? readFileSync(MIG114, 'utf8') : '';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -56,6 +59,24 @@ test('#192 static: RPC pre-checks duplicate review in the same round', () => {
   assert.match(migRaw,
     /INSERT INTO curation_review_log \([\s\S]*?\breview_round\b[\s\S]*?v_current_round[\s\S]*?RETURNING id INTO v_log_id/,
     'review_round (col) + v_current_round (value) are written onto the inserted log row');
+});
+
+test('#192 static: ADD CONSTRAINT is idempotent (DO/EXCEPTION guard)', () => {
+  assert.match(migRaw, /EXCEPTION WHEN duplicate_object THEN NULL/,
+    'constraint add is wrapped so a re-apply is a no-op');
+});
+
+test('#192 static: get_curation_dashboard counters are round-aware (companion mig 114)', () => {
+  assert.ok(existsSync(MIG114), 'migration 20260805000114 exists');
+  assert.match(mig114Raw, /'reviews_approved',\s*\(SELECT count\(DISTINCT crl\.curator_id\)/,
+    'reviews_approved counts DISTINCT curators (matches the publish gate)');
+  assert.match(mig114Raw, /'reviews_approved'[\s\S]*?ble\.action = 'reviewer_assigned'/,
+    'reviews_approved is filtered to the current round');
+  assert.match(mig114Raw, /'review_count'[\s\S]*?ble\.action = 'reviewer_assigned'/,
+    'review_count is round-scoped');
+  // regression guard: the old all-rounds count(*) form for reviews_approved must be gone
+  assert.doesNotMatch(mig114Raw, /'reviews_approved', \(SELECT count\(\*\) FROM curation_review_log crl WHERE crl\.board_item_id = bi\.id AND crl\.decision = 'approved'\)/,
+    'old all-rounds reviews_approved count(*) must be replaced');
 });
 
 // ── DB-GATED ──────────────────────────────────────────────────────────────────────
