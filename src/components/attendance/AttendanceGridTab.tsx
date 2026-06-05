@@ -479,6 +479,9 @@ export default function AttendanceGridTab() {
     // p87 Sprint UX: long-press 300ms opens modal with 3-state choice + reason input
     let pressTimer: ReturnType<typeof setTimeout> | null = null;
     const pointerDownHandler = (e: PointerEvent) => {
+      // #519 review: ignore the visible ⋮ affordance — it has its own click handler; starting
+      // the long-press timer here would trigger the cell active:scale-95 jank on press.
+      if ((e.target as HTMLElement)?.closest('[data-excuse-affordance]')) return;
       const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
       if (!target) return;
       longPressFiredRef.current = false;
@@ -875,8 +878,8 @@ export default function AttendanceGridTab() {
                   {manage && (
                     <span data-excuse-affordance
                       aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                      title={t('attendance.grid.cellMenu', 'Presente / Ausente / Falta justificada (com motivo)')}
-                      className="absolute -top-1 -right-0.5 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                      title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
+                      className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
                   )}
                 </span>
               );
@@ -1772,8 +1775,8 @@ function SmartTribeSection({
                             {manage && (
                               <span data-excuse-affordance
                                 aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                                title={t('attendance.grid.cellMenu', 'Presente / Ausente / Falta justificada (com motivo)')}
-                                className="absolute -top-1 -right-0.5 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                                title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
+                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
                             )}
                           </span>
                         </td>
@@ -1901,8 +1904,8 @@ function MobileCardList({
                             {manage && (
                               <span data-excuse-affordance
                                 aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                                title={t('attendance.grid.cellMenu', 'Presente / Ausente / Falta justificada (com motivo)')}
-                                className="absolute -top-1 -right-0.5 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                                title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
+                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
                             )}
                           </span>
                         </td>
