@@ -16,11 +16,12 @@
 --
 -- Fix (structural prevention + one-time reconciliation):
 --   1) extend the B-trigger to also reset current_cycle_active=false for
---      observer/alumni/inactive — covers ALL paths that touch member_status
---      (offboard RPC, admin update, bulk status change, direct UPDATE OF
---      member_status), since the trigger is BEFORE INSERT OR UPDATE OF
---      member_status,operational_role,is_active,designations.
---   2) one-time DML to clear the rows already drifted (the 3 above).
+--      observer/alumni/inactive — covers ALL paths that touch member_status.
+--   2) add current_cycle_active to the trigger's UPDATE OF column list so a
+--      direct `SET current_cycle_active=true` (without touching member_status/
+--      is_active/role/designations) ALSO fires the coercion — hermetic against
+--      any future direct-write path (council MEDIUM, PR #544).
+--   3) one-time DML to clear the rows already drifted (the 3 above).
 --
 -- NOT in scope (routed to #419/#421 canonical "active now" predicate): the
 -- get_gamification_leaderboard / get_public_leaderboard cohort gate keys on
@@ -53,6 +54,16 @@ BEGIN
   IF NEW.member_status IN ('observer','alumni','inactive') AND NEW.designations IS NOT NULL AND array_length(NEW.designations, 1) > 0 THEN NEW.designations := '{}'::text[]; END IF;
   RETURN NEW;
 END; $function$;
+
+GRANT EXECUTE ON FUNCTION public.sync_member_status_consistency() TO authenticated;
+
+-- add current_cycle_active to the trigger's UPDATE OF list so the coercion is
+-- hermetic against a standalone `SET current_cycle_active` write.
+DROP TRIGGER IF EXISTS trg_sync_member_status_consistency ON public.members;
+CREATE TRIGGER trg_sync_member_status_consistency
+  BEFORE INSERT OR UPDATE OF member_status, operational_role, is_active, designations, current_cycle_active
+  ON public.members
+  FOR EACH ROW EXECUTE FUNCTION sync_member_status_consistency();
 
 -- one-time reconciliation of the existing drift (3 rows at migration time)
 UPDATE public.members

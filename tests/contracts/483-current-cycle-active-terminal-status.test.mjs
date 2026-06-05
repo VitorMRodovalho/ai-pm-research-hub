@@ -84,7 +84,9 @@ test('#483 DB: no terminal-status member has current_cycle_active=true', { skip:
     .eq('current_cycle_active', true)
     .not('name', 'ilike', '%_synthetic%');
   assert.equal(error, null, error ? `members query failed: ${error.message}` : '');
-  const drift = (data || []).filter((m) => m.name !== 'VP Desenvolvimento Profissional (PMI-GO)');
+  // No name carve-out: any terminal-status member with CCA=true is real drift we want to catch.
+  // (synthetic test fixtures excluded above to avoid cross-test noise.)
+  const drift = data || [];
   assert.equal(
     drift.length,
     0,

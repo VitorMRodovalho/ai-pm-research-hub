@@ -10,7 +10,9 @@
 `members.member_status` is the lifecycle state. It drives `is_active`,
 `operational_role`, `designations`, and `current_cycle_active` (CCA) via the
 `sync_member_status_consistency()` BEFORE trigger
-(`BEFORE INSERT OR UPDATE OF member_status, operational_role, is_active, designations`).
+(`BEFORE INSERT OR UPDATE OF member_status, operational_role, is_active, designations, current_cycle_active`
+— `current_cycle_active` added to the column list in #483 so a standalone
+`SET current_cycle_active` write still fires the coercions).
 
 | status | `is_active` | re-engageable? | how it is set | meaning |
 |---|---|---|---|---|
