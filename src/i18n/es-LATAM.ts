@@ -5071,6 +5071,8 @@ const esLATAM: Record<string, string> = {
   'diversity.loading': 'Cargando...',
 
   // ── Curation Rubric Labels ──
+  'curation.artifact.title': 'Artefactos enviados',
+  'curation.artifact.empty': 'Ningún enlace de artefacto adjunto.',
   'curation.rubric.clarity': 'Claridad',
   'curation.rubric.clarityTip': '¿Comprensible sin contexto adicional?',
   'curation.rubric.originality': 'Originalidad',
