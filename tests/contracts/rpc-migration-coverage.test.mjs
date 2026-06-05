@@ -89,7 +89,9 @@ const MIGRATION_ORPHAN_LOCAL_BASELINE_PATH = resolve(
 );
 // p224 baseline: 15 local .sql files without corresponding row in
 // supabase_migrations.schema_migrations. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI R00 seed (1).
-const MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE = 15;
+// Ratcheted DOWN to 8 on 2026-06-05 (#527): the 7 p125-E1 files (20260518000000–060000) were
+// deleted — all unapplied; pmi_chapter_memberships never created; live objects captured by p131/p176/p195.
+const MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE = 8;
 
 const MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH = resolve(
   ROOT,
