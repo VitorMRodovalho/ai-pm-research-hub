@@ -5141,8 +5141,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ===== BOARD/CARD CRUD (issue #83 P2) =====
-  // 5 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
-  // archive_card / restore_card / advance_card_curation / create_mirror_card / update_card_forecast.
+  // 4 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
+  // archive_card / restore_card / create_mirror_card / update_card_forecast.
+  // (#191: advance_card_curation removed — see the removal note below.)
   // Tool layer gates with write_board (baseline); each RPC enforces stricter authority internally
   // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
 
