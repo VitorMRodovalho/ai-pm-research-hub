@@ -4612,7 +4612,7 @@ const ptBR: Record<string, string> = {
   'attendance.grid.modal.reasonPlaceholder': 'Motivo (recomendado)',
   'attendance.grid.modal.reasonAriaLabel': 'Motivo da falta justificada',
   'attendance.grid.modal.reasonHint': 'Recomendado para registro de auditoria. Não obrigatório.',
-  'attendance.grid.bulkExcused': 'Marcar Off',
+  'attendance.grid.bulkExcused': 'Justificar em Lote',
   'attendance.grid.bulkExcusedTitle': 'Marcar Falta Justificada em Lote',
   'attendance.grid.bulkExcusedSubmit': 'Marcar como Falta Justificada',
   'attendance.grid.bulkDateFrom': 'De',

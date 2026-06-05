@@ -444,6 +444,15 @@ export default function AttendanceGridTab() {
     }
   }, [excusedModal, excuseReasons, t]);
 
+  // #529: the excused modal is now openable via keyboard (focused ⋮ + Enter/Space), so it
+  // must be closable via keyboard too — Escape closes it (mirror of the backdrop click).
+  useEffect(() => {
+    if (!excusedModal) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setExcusedModal(null); };
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [excusedModal]);
+
   /* Document-level click delegation for attendance cells */
   useEffect(() => {
     const clickHandler = (e: MouseEvent) => {
@@ -511,7 +520,8 @@ export default function AttendanceGridTab() {
       // #529: keyboard parity for the visible ⋮ excused affordance — when it is the
       // focused element, open the 3-option modal instead of toggling the cell (mirror of
       // the click handler). Checked FIRST so a focused affordance never falls through to
-      // the cell's present/absent toggle.
+      // the cell's present/absent toggle. (Cell + ⋮ are each tabIndex=0 → two tab stops per
+      // cell, intentional: each action is keyboard-distinct.)
       const excuseEl = (e.target as HTMLElement)?.closest('[data-excuse-affordance]') as HTMLElement | null;
       if (excuseEl) {
         e.preventDefault();
@@ -880,7 +890,7 @@ export default function AttendanceGridTab() {
                   : ev.title;
               return (
                 <span
-                  className={`relative inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none' : ''}`}
+                  className={`relative inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none focus-visible:ring-2 focus-visible:ring-navy/50 focus:outline-none' : ''}`}
                   title={titleText}
                   {...(manage ? {
                     'data-toggle-event': ev.id,
@@ -1436,6 +1446,7 @@ export default function AttendanceGridTab() {
             <div className="space-y-2">
               <button
                 type="button"
+                autoFocus
                 onClick={() => handleSetState('present')}
                 className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-green-200 dark:border-green-800 transition-colors"
               >
@@ -1775,7 +1786,7 @@ function SmartTribeSection({
                       return (
                         <td key={ev.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
                           <span
-                            className={`relative inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none' : ''}`}
+                            className={`relative inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none focus-visible:ring-2 focus-visible:ring-navy/50 focus:outline-none' : ''}`}
                             title={titleText}
                             {...(manage
                               ? {
@@ -1905,7 +1916,7 @@ function MobileCardList({
                         <td key={ev.id} className="px-0.5 text-center">
                           <span
                             title={titleText}
-                            className={`relative inline-flex items-center justify-center w-9 h-8 text-[10px] rounded ${st.bg} ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none active:scale-95 transition-transform' : ''}`}
+                            className={`relative inline-flex items-center justify-center w-9 h-8 text-[10px] rounded ${st.bg} ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30 select-none focus-visible:ring-2 focus-visible:ring-navy/50 focus:outline-none active:scale-95 transition-transform' : ''}`}
                             {...(manage
                               ? {
                                   'data-toggle-event': ev.id,

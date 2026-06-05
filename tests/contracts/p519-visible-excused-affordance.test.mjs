@@ -51,11 +51,16 @@ test('#529: the ⋮ affordance is keyboard-operable (role/tabindex/focus + keyHa
   assert.match(src, /focus-visible:ring/, 'the ⋮ affordance must carry a visible focus style');
   const kh = src.indexOf('const keyHandler');
   assert.ok(kh !== -1, 'keyHandler must exist');
-  const khSlice = src.slice(kh, kh + 1400);
+  // Bound the slice to the keyHandler definition itself (it ends where it is registered via
+  // addEventListener('keydown', keyHandler)) so the assertions stay robust as the body grows.
+  const reg = src.indexOf("'keydown', keyHandler", kh);
+  const khSlice = src.slice(kh, reg > kh ? reg : kh + 2000);
   assert.match(khSlice, /closest\('\[data-excuse-affordance\]'\)/,
     'keyHandler must branch on the focused ⋮ affordance (Enter/Space)');
   assert.match(khSlice, /setExcusedModal\(/,
     'keyHandler affordance branch must open the excused modal, not toggle the cell');
+  assert.match(khSlice, /handleToggle\(/,
+    'keyHandler must keep the cell present/absent toggle fallback branch');
 });
 
 test('#529: attendance excused/help i18n keys are registered in all 3 locales', () => {

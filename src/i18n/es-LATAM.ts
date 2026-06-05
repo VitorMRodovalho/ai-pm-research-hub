@@ -4616,7 +4616,7 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.bulkSkippedAll': 'Ningún evento modificado — {n} eventos ya tienen asistencia registrada. Marque "Sobrescribir existentes" para forzar.',
   'attendance.grid.bulkSuccess': '{n} eventos marcados como falta justificada',
   'attendance.grid.bulkSuccessPreserved': ' ({skipped} preservados)',
-  'attendance.grid.overrideExisting': 'Sobrescribir marcas existentes (presente/ausente ya registrados)',
+  'attendance.grid.overrideExisting': 'Sobrescribir marcas existentes (presente/ausente ya registradas)',
   'attendance.grid.selectMember': 'Seleccione miembro...',
   'attendance.grid.selectMemberLabel': 'Miembro',
 
