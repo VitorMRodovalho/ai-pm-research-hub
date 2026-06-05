@@ -79,6 +79,7 @@ interface GridEvent {
   tribe_name: string;
   duration_minutes: number;
   week_number: number;
+  is_cancelled: boolean;
 }
 
 interface GridMember {
@@ -1598,7 +1599,9 @@ function SmartTribeSection({
   excuseReasons: Record<string, string>;
 }) {
   const relevantEvents = useMemo(
-    () => allEvents.filter((evt) => rows.some((row) => row.original.attendance[evt.id] !== 'na')),
+    // #546: retain cancelled events even when all cells are 'na' — otherwise the
+    // (now correctly all-'na') cancelled column vanishes entirely from the smart grid.
+    () => allEvents.filter((evt) => evt.is_cancelled || rows.some((row) => row.original.attendance[evt.id] !== 'na')),
     [allEvents, rows],
   );
 
@@ -1729,7 +1732,10 @@ function SmartTribeSection({
                       className="px-2 py-2 text-center text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
                       style={{ width: 52 }}
                     >
-                      <span title={`${fullTypeName} — ${ev.title}`} className="cursor-help font-extrabold">
+                      <span
+                        title={ev.is_cancelled ? t('attendance.roster.cancelled', 'Meeting cancelled — no attendance tracking') : `${fullTypeName} — ${ev.title}`}
+                        className={`cursor-help font-extrabold${ev.is_cancelled ? ' line-through opacity-60' : ''}`}
+                      >
                         {abbr}
                       </span>
                     </th>
@@ -1775,6 +1781,19 @@ function SmartTribeSection({
                       {r.chapter}
                     </td>
                     {relevantEvents.map((ev) => {
+                      // #546: cancelled events have no attendance state (all 'na') — render a
+                      // non-clickable 🚫 with no toggle/⋮ affordance so rates stay unaffected.
+                      if (ev.is_cancelled) {
+                        return (
+                          <td key={ev.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
+                            <span
+                              className="inline-flex items-center justify-center w-full h-full text-xs opacity-50"
+                              aria-label={t('attendance.roster.cancelled', 'Meeting cancelled — no attendance tracking')}
+                              title={t('attendance.roster.cancelled', 'Meeting cancelled — no attendance tracking')}
+                            >🚫</span>
+                          </td>
+                        );
+                      }
                       const cellKey = `${ev.id}:${r.memberId}`;
                       const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[cellKey] : undefined;
                       const st = statusCell(r.attendance[ev.id], !!reason);
