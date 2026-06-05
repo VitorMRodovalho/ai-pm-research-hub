@@ -25,7 +25,15 @@ Reconciled against live GitHub (`gh issue list --state closed --search "closed:>
 
 **All 39 closed since 2026-05-29** — the remainder were filed + closed *after* 05-29 and never dispatched from this board, so they had no row here: #155, #170, #196, #217, #226, #227, #231, #245, #247, #249, #292, #356, #357, #365, #374, #375, #403, #411, #419, #420, #423, #441, #444, #447, #449, #450, #465, #472, #479, #481, #492, #500, #503, #511, #517, #518, #519, #527, #529.
 
-**Onda 0 (stop-the-line, per #478) essentially cleared:** #226 #374 #227 #217 #249 #419 #292 all closed; only #248 + #421 remain. The 7 roadmap blockers (#188/#190/#161/#191/#192/#181/#166) are **all still OPEN** — Wave-1 dispatch stays gated on them + the **G10 #315 governance matrix** PM decisions (biggest lever).
+**Onda 0 (stop-the-line, per #478) essentially cleared:** #226 #374 #227 #217 #249 #419 #292 all closed; only #248 + #421 remain.
+
+### Session-2 update (2026-06-05 PM) — Curatorship p197 cluster swept
+
+**9 curatorship issues CLOSED** as atomic reviewed PRs (#533–#542, 0 `--admin`, all `validate`+`browser_guards` green, council-reviewed): **#193** (PR #533 — drop dead auto-publish trigger + phantom FSM states) · **#185** (#534 — gate the ungated `list_curation_board`, 330-row leak) · **#192** (#535 — one-review-per-curator-per-round + round-aware dashboard counters) · **#186** (#536 — committee broadcast on `curation_pending`, immediate email) · **#194** (#537 — p197 review-flow contract tests) · **#189** (#538 — pipeline visual ↔ DB FSM) · **#201** (#539 — artifact links in review modal) · **#187** (#540 — V4 `can_curate` reviewer picker) · **#191** (#542 — removed broken `advance_card_curation` MCP tool, 304→303). **Deployed**: frontend Worker ver `167184df` (routes 200) + EF `nucleo-mcp` (MCP tools/list **303**, /health **303**, `advance_card_curation` gone). Invariants 25/25=0 throughout. **Open: 80.**
+
+**7 roadmap blockers → 5 remain**: #191 + #192 CLOSED this session; **#188 / #190 / #161 / #181 / #166 still OPEN** — Wave-1 dispatch stays gated on them + the **G10 #315 governance matrix** PM decisions (biggest lever). Remaining curatorship cluster: #188 (curator MCP tools — soft-blocked by #162), #190 (curation_queue_state semantic layer — SPEC-FIRST), #195 (digest), #300/#301/#308 (external-reviewer / Drive-grants / evidence — deferred).
+
+**Deferred follow-ups filed-in-spirit (next ready-leaf candidates):** delete orphan `TribeKanbanIsland.tsx` (needs 3 ui-stabilization tests re-pointed to BoardEngine + `comp.kanban.*` i18n removal) · strip the now-unused `comp.kanban.*` i18n keys · regenerate `src/lib/database.gen.ts` (stale — missing `get_board_members.can_curate`) · `get_board_members` `is_superadmin` Priority-4 conjunct (ADR-0011, pre-existing) · `submit_curation_review` `IF v_caller IS NULL` rowtype bug (dead auth path, safe — falls through to the gov-review gate) · `can_by_member`-in-loop perf for `get_board_members`/`notify_on_curation_status_change` at >100-member scale · `#185` Item-1 closed by-design (broad queue gate kept).
 
 ---
 
