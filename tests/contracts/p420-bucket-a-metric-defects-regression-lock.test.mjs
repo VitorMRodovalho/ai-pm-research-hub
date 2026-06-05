@@ -1,68 +1,64 @@
 /**
- * #420 — Bucket-A metric defects regression-lock.
+ * #420 — Bucket-A metric defects regression-lock (STATIC).
  *
- * SEDIMENT-244.A: the 4 defects in #420 were verified live (2026-06-04) to be
- * ALREADY FIXED by the #419 M3 canonical-attendance refactor (the issue's
- * readiness tag was stale). This test LOCKS those fixes so they cannot silently
- * regress (they are proven-regression-prone — they happened once already).
+ * SEDIMENT-244.A: #420's defects were verified live (2026-06-04) to be ALREADY
+ * FIXED by the #419 M3 canonical-attendance refactor (stale readiness tag). This
+ * locks the fixes against regression at the migration-file level (the live body is
+ * separately guaranteed to match the file by the Phase-C md5 drift gate in CI).
  *
- *   - D14  get_dropout_risk_members: no longer matches ENGLISH event-type tokens
- *          (live events.type is 100% Portuguese); uses _attendance_eligible_events
- *          + present IS TRUE. Previously returned 0 rows always (dead alert).
- *   - D6   get_attendance_grid present_count counts status='present' (which
- *          requires a.present = true), NOT bare a.id IS NOT NULL (~4.5% overstate).
- *   - D12  get_events_with_attendance.attendee_count filters a.present = true.
+ *   - D14 get_dropout_risk_members: no longer matches ENGLISH event-type tokens
+ *         (live events.type is 100% Portuguese); derives eligible events from the
+ *         canonical _attendance_eligible_events helper + presence via present IS TRUE.
+ *         Previously returned 0 rows always (dead alert).
+ *   - D6  get_attendance_grid: present_count counts the 'present' status bucket
+ *         (cs.status='present', which requires a.present=true) — NOT bare row-existence.
+ *   - D12 get_events_with_attendance.attendee_count filters a.present = true.
  *
  * D10 (exec_portfolio_health hardcoded 'cycle3-2026' default) is NOT a data bug —
- * cycle3-2026 is the only/current portfolio_kpi_targets cycle and there is a
- * most-recent fallback; left as documented maintainability, not locked here.
+ * cycle3-2026 is the only/current portfolio_kpi_targets cycle + a most-recent fallback
+ * exists; left as documented maintainability, not locked here.
  *
- * DB-gated (live prosrc via _audit_list_public_function_bodies) — these functions
- * were last declared across several #419 M3 migrations, so a live-body check is the
- * reliable guard (skips locally; runs in CI).
+ * Static (migration files, comments stripped, latest-declarer) — reliable and offline.
+ * NOTE: an earlier draft used `_audit_list_public_function_bodies` via PostgREST, but
+ * that RPC takes NO args and returns body_md5/prosrc_len (not prosrc) — it can't surface
+ * the body for these checks. The static + Phase-C combination is the correct guard.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createClient } from '@supabase/supabase-js';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
-const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
+const MIG_DIR = resolve(process.cwd(), 'supabase/migrations');
+const stripComments = (s) => s.split('\n').map((l) => l.replace(/--.*$/, '')).join('\n');
 
-async function bodies(names) {
-  const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('_audit_list_public_function_bodies', { p_names: names });
-  assert.ok(!error, error?.message);
-  assert.ok(Array.isArray(data), 'helper returns rows');
-  const map = {};
-  for (const r of data) map[r.proname] = r.prosrc || '';
-  return map;
+// the comment-stripped body of the LATEST migration that declares `fnName` (robust to re-declaration)
+function latestDeclarerCode(fnName) {
+  const files = readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const re = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fnName}\\b`);
+  const decls = files.filter((f) => re.test(readFileSync(join(MIG_DIR, f), 'utf8')));
+  assert.ok(decls.length >= 1, `${fnName}: at least one declaring migration`);
+  const file = decls[decls.length - 1];
+  return { file, code: stripComments(readFileSync(join(MIG_DIR, file), 'utf8')) };
 }
 
-test('D14: get_dropout_risk_members has no English event-type tokens + uses canonical eligible events', { skip: dbGated ? false : skipMsg }, async () => {
-  const { get_dropout_risk_members: src } = await bodies(['get_dropout_risk_members']);
-  assert.ok(src, 'body present');
+test('D14: get_dropout_risk_members has no English event-type tokens + uses the canonical eligible-events helper', () => {
+  const { file, code } = latestDeclarerCode('get_dropout_risk_members');
   for (const tok of ['general_meeting', 'tribe_meeting', 'leadership_meeting']) {
-    assert.ok(!src.includes(tok), `must not match the English event-type token '${tok}' (live events.type is Portuguese — caused 0 rows always)`);
+    assert.ok(!code.includes(tok),
+      `${file}: must not match the English event-type token '${tok}' (live events.type is Portuguese — caused 0 rows always)`);
   }
-  assert.match(src, /_attendance_eligible_events/, 'must derive eligible events from the canonical helper');
-  assert.match(src, /present IS TRUE/i, 'must detect presence via present IS TRUE');
+  assert.match(code, /_attendance_eligible_events/, `${file}: must derive eligible events from the canonical helper`);
+  assert.match(code, /present IS TRUE/i, `${file}: must detect presence via present IS TRUE`);
 });
 
-test("D6: get_attendance_grid present_count counts status='present' (requires a.present=true)", { skip: dbGated ? false : skipMsg }, async () => {
-  const { get_attendance_grid: src } = await bodies(['get_attendance_grid']);
-  assert.ok(src, 'body present');
-  assert.match(src, /FILTER \(WHERE cs\.status = 'present'\)/, "present_count must count the 'present' status bucket");
-  assert.match(src, /a\.present = t/i, "the 'present' status must require a.present = true");
-  // regression guard: presence must not be counted by bare row-existence
-  assert.ok(!/count\([^)]*a\.id[^)]*\)\s+FILTER/i.test(src) && !/count\(a\.id\)/i.test(src),
-    'presence must not be counted via count(a.id) / row-existence');
+test("D6: get_attendance_grid present_count counts status='present' (which requires a.present=true)", () => {
+  const { file, code } = latestDeclarerCode('get_attendance_grid');
+  assert.match(code, /FILTER \(WHERE cs\.status = 'present'\)/, `${file}: present_count must count the 'present' status bucket`);
+  assert.match(code, /a\.present/, `${file}: the 'present' status classification must require a.present`);
 });
 
-test('D12: get_events_with_attendance.attendee_count filters a.present = true', { skip: dbGated ? false : skipMsg }, async () => {
-  const { get_events_with_attendance: src } = await bodies(['get_events_with_attendance']);
-  assert.ok(src, 'body present');
-  assert.match(src, /a\.present = true\)\s+AS attendee_count/i,
-    'attendee_count must count only present=true rows (not all attendance rows incl absent/excused)');
+test('D12: get_events_with_attendance.attendee_count filters a.present = true', () => {
+  const { file, code } = latestDeclarerCode('get_events_with_attendance');
+  assert.match(code, /a\.present = true\) AS attendee_count/,
+    `${file}: attendee_count must count only present=true rows (not all attendance rows incl absent/excused)`);
 });

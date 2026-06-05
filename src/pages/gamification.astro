@@ -1079,7 +1079,9 @@ const SCORING_I18N = {
       }
 
     const total = data.reduce((s: number, p: any) => s + p.points, 0);
-    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
+    // #503: this value renders under mpCurrentCycleLabel (:1093) — must be the CYCLE aggregate,
+    // not .total_points (lifetime). leaderboardData carries cycle_points from get_gamification_leaderboard.
+    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.cycle_points || 0;
     const level = getLevel(total);
       const myCredly = aggregateCredlyByMember(
         (data || []).filter((p: any) => String(p.reason || '').startsWith('Credly:'))
