@@ -49,8 +49,12 @@ test('#193 static: rewritten get_curation_dashboard contains no phantom revision
     'migration recreates get_curation_dashboard');
   // The function BODY must filter only curation_pending. The header comment may mention the
   // word in prose; assert the items WHERE clause uses the single canonical value.
-  assert.match(migRaw, /WHERE bi\.curation_status = 'curation_pending'/,
+  // Anchor on the items subquery (FROM board_items bi ... WHERE) so this can't pass
+  // on the summary sub-selects alone.
+  assert.match(migRaw, /FROM board_items bi\b[\s\S]{0,600}WHERE bi\.curation_status = 'curation_pending'/,
     'items query filters only curation_pending (phantom removed)');
+  assert.doesNotMatch(migRaw, /curation_status IN \('curation_pending', 'revision_requested'\)/,
+    'no residual phantom IN-clause');
 });
 
 test('#193 static: migration preserves the additive curate_content OR write_board gate (#245)', () => {

@@ -35,9 +35,11 @@
 --   touches these objects).
 --
 -- ROLLBACK:
---   CREATE the auto_publish_approved_article() function + trg_auto_publish_approved
---   trigger from migration 20260427110000 (or its latest capture), and restore
---   the items WHERE clause to IN ('curation_pending','revision_requested').
+--   Re-CREATE auto_publish_approved_article() from its latest capture
+--   (20260427200000_adr0015_phase3b_drop_4_safe_tables.sql; original source
+--   20260312200000_w90_curation_audit_trail.sql) + re-CREATE trg_auto_publish_approved
+--   from 20260319100019_w114_public_publications.sql, and restore the items WHERE
+--   clause to IN ('curation_pending','revision_requested').
 --
 -- CROSS-REF: #193, #189 (visual alignment, separate PR), p197 FSM,
 --   20260805000098 (#245 prior get_curation_dashboard capture).
