@@ -63,6 +63,8 @@ test('#187 db: get_board_members returns a can_curate boolean that matches can_b
     assert.ifError(error);
     assert.ok(Array.isArray(rows) && rows.length > 0, 'board has members');
     assert.ok('can_curate' in rows[0], 'rows expose can_curate');
+    assert.ok(rows.some((r) => r.can_curate === true),
+      'at least one curate_content member is visible in the board list (alignment check is exercised)');
     // can_curate must equal the canonical V4 authority for every row
     for (const r of rows.slice(0, 12)) {
       const { data: canV4, error: e2 } = await sb.rpc('can_by_member', { p_member_id: r.id, p_action: 'curate_content' });
