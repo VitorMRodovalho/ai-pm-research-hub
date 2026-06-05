@@ -1552,16 +1552,26 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   function buildAudienceRules(audienceValue: string, targetTribeId?: number | null): any[] {
     const rules: any[] = [];
-    if (audienceValue === 'all_active_operational') {
+    // #500: accept BOTH the internal vocab (all_active_operational/role/specific_members) AND the
+    // user-facing modal vocab (all/leadership/curators/tribe/initiative). The modal scopes
+    // all/leadership/curators previously fell through to [] → no event_audience rule written →
+    // register_own_presence self-checkin fell open.
+    if (audienceValue === 'all_active_operational' || audienceValue === 'all' || audienceValue === 'initiative') {
+      // 'initiative' has no target_type in the audience model → gate as all_active_operational (parity w/ #494).
       rules.push({ attendance_type: 'mandatory', target_type: 'all_active_operational', target_value: null });
     } else if (audienceValue === 'tribe') {
       // #492: bind to the SELECTED tribe for the series, falling back to the caller's tribe.
       const tid = (targetTribeId ?? MEMBER?.tribe_id) ?? null;
       rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: tid ? String(tid) : null });
-    } else if (audienceValue === 'role') {
+    } else if (audienceValue === 'role' || audienceValue === 'leadership') {
       ['manager', 'deputy_manager', 'tribe_leader'].forEach(r => {
         rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: r });
       });
+    } else if (audienceValue === 'curators') {
+      // Curation authority is designation-based (curate_content). register_own_presence matches a
+      // target_type='role' rule against operational_role OR the member's designations[], so
+      // target_value='curate_content' correctly gates the curator cohort.
+      rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: 'curate_content' });
     } else if (audienceValue === 'specific_members') {
       rules.push({ attendance_type: 'mandatory', target_type: 'specific_members', target_value: null });
     }
@@ -1791,16 +1801,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
             .in('id', data.event_ids);
           if (linkErr) console.warn('initiative link failed:', linkErr);
         }
-        // W140: assign tags and audience to all created events
-        if (tagIds.length && data.event_ids?.length) {
-          // #494: for the 'initiative' scope, write the SAME 'all_active_operational' audience rule the
-          // single-event path uses (createEvent), so a recurring initiative series and a single
-          // initiative event gate self-checkin (register_own_presence) identically. NOTE (pre-existing,
-          // out of scope): the recurring 'all'/'leadership'/'curators' scopes still write no
-          // event_audience rule, and a proper target_type='initiative' model is a separate follow-up.
-          const ruleAudience = audience === 'initiative' ? 'all_active_operational' : audience;
+        // W140 + #500: write the audience rule for EVERY created event (not only tagged ones) so
+        // recurring all/leadership/curators/tribe series gate self-checkin (register_own_presence)
+        // instead of falling open. assignEventTagsAndAudience no-ops tag assignment when tagIds is
+        // empty; set_event_audience replaces (DELETE+INSERT) so re-running over a trigger-written rule
+        // is idempotent. 'initiative' has no audience target_type → gate as all_active_operational (#494).
+        if (data.event_ids?.length) {
+          // Pass the raw modal `audience`: buildAudienceRules owns the FULL vocab translation
+          // (incl. initiative→all_active_operational) — single source of truth, no call-site remap.
           for (const eid of data.event_ids) {
-            await assignEventTagsAndAudience(eid, tagIds, ruleAudience, tribeId);
+            await assignEventTagsAndAudience(eid, tagIds, audience, tribeId);
           }
         }
         closeModal('modal-recurring');
