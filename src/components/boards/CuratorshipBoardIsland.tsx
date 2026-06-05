@@ -30,6 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   CheckCircle2, RotateCcw, XCircle, Clock, AlertTriangle,
   FileText, User, Star, ChevronDown, ChevronUp, Loader2, RefreshCw,
+  Paperclip, ExternalLink,
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -55,7 +56,9 @@ type BoardItem = {
   updated_at?: string | null;
   curation_status?: string | null;
   curation_due_at?: string | null;
-  attachments?: { url: string }[] | string | null;
+  attachments?: Array<{ url: string; name?: string; kind?: string; embed?: string }> | string | null;
+  board_name?: string | null;
+  tags?: string[] | null;
   review_count?: number;
   review_history?: ReviewHistoryEntry[] | null;
 };
@@ -82,9 +85,24 @@ import { useMemberContext } from '../../hooks/useBoardPermissions';
 import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
+// Module-level (not a JSX literal) so the i18n jsx-no-literals gate stays clean.
+const TAG_PREFIX = '#';
+
 function daysUntilDue(dueAt: string | null | undefined): number | null {
   if (!dueAt) return null;
   return Math.ceil((new Date(dueAt).getTime() - Date.now()) / 86400000);
+}
+
+// #201: the curation review modal must surface the submitted artifact link(s).
+// get_curation_dashboard delivers attachments as an array of {url,name,kind,embed}
+// (legacy rows may store a bare string). Normalize both into a {url,name} list.
+function normalizeAttachments(
+  a?: Array<{ url: string; name?: string; [k: string]: unknown }> | string | null,
+): Array<{ url: string; name?: string }> {
+  if (!a) return [];
+  if (typeof a === 'string') return a.trim() ? [{ url: a.trim() }] : [];
+  if (Array.isArray(a)) return a.filter((x) => x && typeof x.url === 'string' && x.url.trim()).map((x) => ({ url: x.url, name: x.name }));
+  return [];
 }
 
 function getCriteria(t: (k: string, f?: string) => string) {
@@ -357,6 +375,42 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
               </div>
               {item.assignee_name ? <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1"><User size={12} /> {item.assignee_name}</p> : null}
               {item.description ? <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-32 overflow-y-auto bg-[var(--surface-base)] rounded-lg p-3">{item.description}</p> : null}
+            </section>
+
+            {/* #201: submitted artifact link(s) + source context — without these the curator
+                cannot reach the peça being reviewed. */}
+            <section className="space-y-2 rounded-lg border border-teal/30 bg-teal/5 p-3">
+              <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1"><Paperclip size={13} aria-hidden="true" /> {t('curation.artifact.title', 'Artefatos submetidos')}</h4>
+              {(() => {
+                const atts = normalizeAttachments(item.attachments);
+                if (atts.length === 0) {
+                  return <p className="text-[11px] text-[var(--text-muted)] italic">{t('curation.artifact.empty', 'Nenhum link de artefato anexado.')}</p>;
+                }
+                return (
+                  <ul className="space-y-1">
+                    {atts.map((a, i) => {
+                      // Show the artifact name when present; otherwise a truncated URL (the full
+                      // URL stays the href + title), so a bare Drive link stays legible on mobile.
+                      const label = a.name || (a.url.length > 56 ? a.url.slice(0, 53) + '…' : a.url);
+                      let ariaLabel = a.name || 'Link externo';
+                      try { if (!a.name) ariaLabel = new URL(a.url).hostname + ' — link externo'; } catch { /* malformed URL — keep fallback */ }
+                      return (
+                        <li key={`${a.url}-${i}`}>
+                          <a href={a.url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} title={a.url} className="text-xs text-teal hover:underline inline-flex items-center gap-1 break-all">
+                            <ExternalLink size={12} aria-hidden="true" className="flex-shrink-0" /> {label}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+              {(item.board_name || (item.tags && item.tags.length > 0)) ? (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {item.board_name ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">{item.board_name}</span> : null}
+                  {(item.tags || []).map((tag) => <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-muted)]">{TAG_PREFIX + tag}</span>)}
+                </div>
+              ) : null}
             </section>
 
             {item.review_history && item.review_history.length > 0 ? (

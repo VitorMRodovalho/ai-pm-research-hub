@@ -5076,6 +5076,8 @@ const ptBR: Record<string, string> = {
   'diversity.loading': 'Carregando...',
 
   // ── Curation Rubric Labels ──
+  'curation.artifact.title': 'Artefatos submetidos',
+  'curation.artifact.empty': 'Nenhum link de artefato anexado.',
   'curation.rubric.clarity': 'Clareza',
   'curation.rubric.clarityTip': 'Compreensível sem contexto adicional?',
   'curation.rubric.originality': 'Originalidade',
