@@ -89,7 +89,9 @@ const MIGRATION_ORPHAN_LOCAL_BASELINE_PATH = resolve(
 );
 // p224 baseline: 15 local .sql files without corresponding row in
 // supabase_migrations.schema_migrations. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI R00 seed (1).
-const MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE = 15;
+// Ratcheted DOWN to 8 on 2026-06-05 (#527): the 7 p125-E1 files (20260518000000–060000) were
+// deleted — all unapplied; pmi_chapter_memberships never created; live objects captured by p131/p176/p195.
+const MIGRATION_ORPHAN_LOCAL_BASELINE_SIZE = 8;
 
 const MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH = resolve(
   ROOT,
@@ -727,9 +729,10 @@ test('Phase C: body-drift allowlist size matches p175 baseline', () => {
 //      Pre-GC-097 era: apply_migration applied DDL to DB without manual
 //      file sync. Body still in statements column (1742/1783 rows).
 //
-//   2. ORPHAN LOCAL: local − tracked. 15 entries at p224 baseline.
-//      Files exist on disk but never registered via `migration repair --status
-//      applied`. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI (1).
+//   2. ORPHAN LOCAL: local − tracked. 15 entries at p224 baseline; CURRENT = 8
+//      (ratcheted 2026-06-05 #527 — the 7 p125-E1 files removed). Files exist on
+//      disk but never registered via `migration repair --status applied`. p224
+//      clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI (1); E1 (7) now gone.
 //
 //   3. EMPTY STATEMENTS: tracked rows with NULL/empty statements. 39 entries
 //      at p224 baseline. Two sub-categories: 12 ALSO missing local file
