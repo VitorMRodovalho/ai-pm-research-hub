@@ -16,13 +16,14 @@
 --   close this leak. #185 Item-1 (tighten to curators-only) closed as by-design.
 --
 -- SCOPE LOCK: gate-only. The RETURN QUERY body (hub_resources projection,
---   p_status filter, ORDER BY, suggest_tags) is reproduced byte-equivalent;
---   only the auth gate is prepended. Signature unchanged (body-only CoR).
+--   p_status filter, ORDER BY, suggest_tags) is reproduced byte-equivalent
+--   from the CURRENT live body (the ADR-0012 artifacts UNION arm was already
+--   retired); only the auth gate is prepended. Signature unchanged (body-only CoR).
 --
 -- INVARIANTS: check_schema_invariants() unaffected (no invariant touches this fn).
 --
--- ROLLBACK: CREATE OR REPLACE list_curation_board from its prior capture
---   (mig 20260311020000 family — ungated body) to remove the gate.
+-- ROLLBACK: CREATE OR REPLACE list_curation_board from its latest pre-gate
+--   capture (20260679000000_p174_qb_drift_correction_5plus_touch.sql) to remove the gate.
 --
 -- CROSS-REF: #185, #245, 20260805000098 (sibling gates), ADR-0007 (can() authority).
 -- =====================================================================
