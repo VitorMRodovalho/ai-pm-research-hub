@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-15 (W85: Comms Dashboard Cockpit — RPC get_comms_dashboard_metrics, Recharts, mesma matriz de acesso comms_leader/comms_member)
+> Última atualização: 2026-06-04 (#196: refresh — curadoria V4 (`curate_content` / `participate_in_governance_review`), distinção entre *discoverability* de nav e autoridade real de backend; contagens MCP/EF/cron des-fixadas → fontes runtime). Anterior: 2026-03-15 (W85: Comms Dashboard Cockpit — RPC get_comms_dashboard_metrics).
 
 ---
 
@@ -39,7 +39,7 @@ sem subir de tier.
 | `comms_member`   | `/admin/comms`, métricas de comunicação (read-only)        |
 | `co_gp`          | Eleva tier para `admin` (rank 4)               |
 | `sponsor`        | Eleva tier para `observer` (rank 2)            |
-| `curator`        | Eleva tier para `observer` (rank 2)            |
+| `curator`        | Eleva tier para `observer` (rank 2). **Autoridade de curadoria (V4)** vem das capabilities `curate_content` (curar conteúdo) + `participate_in_governance_review` (revisão de governança), **derivadas da designação — não do tier**. A nav `/admin/curatorship` é *descobrível* para observer+, mas a curadoria/escrita real exige `curate_content` via `can_by_member()` (ADR-0011; ver #245). |
 | `chapter_liaison`| Eleva tier para `observer` (rank 2)            |
 | `chapter_board`  | Eleva tier para `observer` (rank 2); read-only dashboards, KPIs agregados. Requer email institucional (`@pmiXX.org.br`). Sem detractor status no attendance grid. |
 | `ambassador`     | Sem elevação de tier; listado no Staff          |
