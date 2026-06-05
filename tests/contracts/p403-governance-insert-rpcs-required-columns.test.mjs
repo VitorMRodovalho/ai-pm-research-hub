@@ -163,21 +163,10 @@ test('#403: forward-defense — latest migration declaring each writer keeps all
 });
 
 // ── DB-gated ─────────────────────────────────────────────────────────────────────
-test('DB: live bodies of both writers reference all 3 required columns', { skip: dbGated ? false : skipMsg }, async () => {
-  const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('_audit_list_public_function_bodies', {
-    p_names: ['confirm_manual_version', 'link_attachment_to_governance'],
-  });
-  assert.ok(!error, error?.message);
-  assert.ok(Array.isArray(data), 'helper returns rows');
-  for (const { name } of WRITERS) {
-    const fn = data.find((r) => r.proname === name);
-    assert.ok(fn?.prosrc, `${name}: live body present`);
-    const cols = insertCols(fn.prosrc);
-    assert.ok(cols, `${name}: live INSERT INTO governance_documents column list present`);
-    for (const c of REQUIRED) assert.ok(cols.includes(c), `${name}: live body INSERT must list ${c}`);
-  }
-});
+// NOTE: a live-body column check was intentionally NOT added — `_audit_list_public_function_bodies`
+// takes NO args and returns body_md5/prosrc_len (not prosrc), so the INSERT column list can't be
+// surfaced via PostgREST. The static migration-body assertions above + the Phase-C md5 drift gate
+// (CI) already prove the live bodies match the migration files.
 
 test('DB: governance_documents has the 3 columns NOT NULL (the constraint that broke the RPCs)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
