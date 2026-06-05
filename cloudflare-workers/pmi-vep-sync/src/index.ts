@@ -45,7 +45,6 @@ import {
   getActiveOpportunities,
   upsertSelectionApplication,
   findPersonIdByEmail,
-  upsertPmiChapterMemberships,
   insertServiceHistory,
   setEngagementEndDateSource
 } from './db';
@@ -53,7 +52,6 @@ import { issueOnboardingToken } from './onboarding-token';
 import { dispatchWelcome } from './welcome';
 import {
   mapScriptToNucleo,
-  mapPmiChapterMemberships,
   mapServiceHistory
 } from './script-mapper';
 import { syncResumesParallel, type ResumeSyncResult } from './resume-sync';
@@ -251,7 +249,6 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     // p126 E2 Phase B metrics
     phase_b_processed: 0,
     phase_b_skipped_private: 0,
-    pmi_chapter_memberships_upserted: 0,
     service_history_inserted: 0,
     // p195 Opção B+: resume binary mirror to Supabase Storage
     resumes_synced: 0,
@@ -491,15 +488,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         try {
           const personId = await findPersonIdByEmail(db, mapped.email);
 
-          // pmi_chapter_memberships UPSERT (canonical multi-chapter — Decision 2 hybrid)
           if (personId) {
-            const memberships = mapPmiChapterMemberships(app, personId);
-            if (memberships.length > 0) {
-              const upserted = await upsertPmiChapterMemberships(db, memberships);
-              summary.pmi_chapter_memberships_upserted =
-                (summary.pmi_chapter_memberships_upserted ?? 0) + upserted;
-            }
-
+            // #441 (A1 retire): pmi_chapter_memberships UPSERT removed — the table was never
+            // created (whole p125-E1 series unapplied), so this was dead code calling a
+            // non-existent relation. service_history + engagement fallbacks below stay live.
             // Decision 8 — engagement end_date_source 'pmi_vep' fallback
             // Only set if VEP serviceEndDateUTC present AND source not already 'agreement'
             if (app.serviceEndDateUTC) {

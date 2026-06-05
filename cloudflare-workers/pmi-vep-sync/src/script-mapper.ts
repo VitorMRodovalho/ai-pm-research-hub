@@ -22,7 +22,6 @@ import type {
   ScriptServiceHistoryRow,
   VepOpportunityRow,
   SelectionApplicationUpsert,
-  PmiChapterMembershipUpsert,
   ServiceHistoryInsert
 } from './types';
 
@@ -212,40 +211,6 @@ export function mapScriptToNucleo(
         : null),
     consent_version: consentVersion
   };
-}
-
-/**
- * p126 E2 — Map PMI Community profileMembershipChapters to canonical pmi_chapter_memberships
- * rows for UPSERT into the canonical table.
- *
- * Decision 2 (hybrid storage): selection_applications.pmi_memberships JSONB is the
- * snapshot at submission (immutable); pmi_chapter_memberships table is the canonical
- * live registry queried by E3 cron compliance.
- *
- * Returns empty array if profilePrivate=true (Decision 5) or no memberships data.
- *
- * @param app ScriptApplication with optional profileMembershipChapters
- * @param personId UUID of persons row (resolved by caller via email lookup)
- */
-export function mapPmiChapterMemberships(
-  app: ScriptApplication,
-  personId: string
-): PmiChapterMembershipUpsert[] {
-  if (app.profilePrivate === true) return [];
-  const memberships = app.profileMembershipChapters;
-  if (!memberships || !Array.isArray(memberships) || memberships.length === 0) return [];
-
-  const capturedAt = app.pmiDataFetchedAt ?? new Date().toISOString();
-
-  return memberships
-    .filter(m => m && typeof m.chapterName === 'string' && typeof m.expiryDate === 'string')
-    .map(m => ({
-      person_id: personId,
-      chapter_name: m.chapterName.trim(),
-      expiry_date: m.expiryDate.slice(0, 10),  // ensure YYYY-MM-DD
-      source: 'pmi_community' as const,
-      captured_at: capturedAt
-    }));
 }
 
 /**

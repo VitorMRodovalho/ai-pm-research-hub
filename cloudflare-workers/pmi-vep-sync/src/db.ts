@@ -262,7 +262,6 @@ export async function getActiveOpportunities(db: SupabaseClient): Promise<VepOpp
 
 import type {
   SelectionApplicationUpsert,
-  PmiChapterMembershipUpsert,
   ServiceHistoryInsert
 } from './types';
 
@@ -513,9 +512,9 @@ export async function upsertSelectionApplication(
 
 /**
  * Resolve persons.id from email match. Used to link PMI Community canonical
- * data (pmi_chapter_memberships) to identity model. Returns NULL if no person
- * found (= ghost case; mapper skips canonical UPSERT to preserve invariant
- * I_PMI_CHAPTER_MEMBERSHIPS_ORPHANS).
+ * data (service_history + engagement end_date) to the identity model. Returns
+ * NULL if no person found (= ghost case; callers skip the canonical write to
+ * preserve the orphan invariant). (#441: pmi_chapter_memberships path retired.)
  *
  * Lookup priority:
  *   1. members.email exact match → members.person_id
@@ -553,31 +552,6 @@ export async function findPersonIdByEmail(
     .maybeSingle();
 
   return (bySecondary?.person_id as string) ?? null;
-}
-
-/**
- * UPSERT pmi_chapter_memberships rows for a person. Per migration 2:
- * UNIQUE (person_id, chapter_name) + ON CONFLICT updates expiry_date + captured_at.
- *
- * Returns count of rows touched (UPSERT inserted + updated combined).
- */
-export async function upsertPmiChapterMemberships(
-  db: SupabaseClient,
-  rows: PmiChapterMembershipUpsert[]
-): Promise<number> {
-  if (rows.length === 0) return 0;
-
-  const { error, count } = await db
-    .from('pmi_chapter_memberships')
-    .upsert(rows, {
-      onConflict: 'person_id,chapter_name',
-      count: 'exact'
-    });
-
-  if (error) {
-    throw new Error(`upsertPmiChapterMemberships: ${error.message}`);
-  }
-  return count ?? rows.length;
 }
 
 /**
