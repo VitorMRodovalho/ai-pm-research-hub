@@ -729,9 +729,10 @@ test('Phase C: body-drift allowlist size matches p175 baseline', () => {
 //      Pre-GC-097 era: apply_migration applied DDL to DB without manual
 //      file sync. Body still in statements column (1742/1783 rows).
 //
-//   2. ORPHAN LOCAL: local − tracked. 15 entries at p224 baseline.
-//      Files exist on disk but never registered via `migration repair --status
-//      applied`. 3 clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI (1).
+//   2. ORPHAN LOCAL: local − tracked. 15 entries at p224 baseline; CURRENT = 8
+//      (ratcheted 2026-06-05 #527 — the 7 p125-E1 files removed). Files exist on
+//      disk but never registered via `migration repair --status applied`. p224
+//      clusters: p64 (3) + p125-E1/E2/p126-E3 (11) + TAP CPMAI (1); E1 (7) now gone.
 //
 //   3. EMPTY STATEMENTS: tracked rows with NULL/empty statements. 39 entries
 //      at p224 baseline. Two sub-categories: 12 ALSO missing local file
