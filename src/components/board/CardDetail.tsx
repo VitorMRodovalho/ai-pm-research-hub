@@ -991,13 +991,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   {i18n.curationPipeline || 'Pipeline de Curadoria'}
                 </label>
                 <div className="flex items-center gap-0.5 flex-wrap">
-                  {['ideation', 'research', 'drafting', 'author_review', 'peer_review', 'leader_review', 'curation', 'published'].map((step, idx) => {
+                  {/* #189: pipeline mirrors the real board_items_curation_status_check FSM
+                       (draft → peer_review → leader_review → curation_pending → published).
+                       Block is hidden while curation_status='draft', so draft renders as the
+                       implicit first/done step once an item advances. */}
+                  {['draft', 'peer_review', 'leader_review', 'curation_pending', 'published'].map((step, idx) => {
                     const STEP_LABELS: Record<string, string> = {
-                      ideation: 'Ideação', research: 'Pesquisa', drafting: 'Redação',
-                      author_review: 'Rev. Autores', peer_review: 'Peer Review',
-                      leader_review: 'Rev. Líder', curation: 'Curadoria', published: 'Publicado'
+                      draft: 'Rascunho', peer_review: 'Peer Review',
+                      leader_review: 'Rev. Líder', curation_pending: 'Curadoria', published: 'Publicado'
                     };
-                    const steps = ['ideation', 'research', 'drafting', 'author_review', 'peer_review', 'leader_review', 'curation', 'published'];
+                    const steps = ['draft', 'peer_review', 'leader_review', 'curation_pending', 'published'];
                     const currentIdx = steps.indexOf(item.curation_status || '');
                     const isActive = idx === currentIdx;
                     const isDone = idx < currentIdx;
