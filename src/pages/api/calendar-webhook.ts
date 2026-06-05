@@ -22,9 +22,11 @@
  *   }
  *
  * Behavior:
- *   - Lookup application by email (case-insensitive)
+ *   - Lookup application via match_booking_application(guest_email) — exact
+ *     LOWER(TRIM) match (no `_`/`%` wildcard trap), OPEN/ACTIVE cycle scope, and
+ *     a same-member alternate-email bridge (member_emails). #472 corr.1 mirror.
  *     - If not found → 404 (Apps Script may notify lead via Calendar comment)
- *   - Lookup interviewers by email → members.id array
+ *   - Lookup interviewers via member_emails (citext) → members.id array
  *   - INSERT selection_interviews row (service_role, bypasses RPC auth gate
  *     because: only invoked by trusted Calendar webhook AFTER mark_interview_
  *     status('pending') legítimo flow; gate validation already happened
@@ -81,40 +83,63 @@ export const POST: APIRoute = async ({ request }) => {
 
   const sb = createClient(supabaseUrl, serviceRoleKey);
 
-  // Lookup application by email (case-insensitive). Include all pre-interview pipeline
-  // statuses — candidato pode agendar quando está em qualquer fase ativa do pipeline
-  // antes de aprovado/rejeitado terminal. p92 fix: 'objective_eval' (peer review em curso)
-  // estava ausente após Phase C status transition, causando 404 falsos.
-  const { data: candidates } = await sb.from('selection_applications')
-    .select('id, applicant_name, status, interview_status, cycle_id')
-    .ilike('email', guest_email)
-    .in('status', [
-      'submitted',
-      'screening',
-      'objective_eval',
-      'objective_cutoff',
-      'interview_pending',
-      'interview_scheduled',
-    ])
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  const app = candidates?.[0];
-  if (!app) {
+  // Lookup application via the canonical matcher (#472 corr.1 webhook mirror).
+  // It does LOWER(TRIM(email)) = guest (exact, case-insensitive) so a `_`/`%` in
+  // the address is NOT a wildcard — selection_applications.email is `text`, and
+  // the prior `.ilike('email', guest)` mis-matched real emails like
+  // `j_coelho@id.uff.br`. The matcher also adds the corr.1 robustness: OPEN/ACTIVE
+  // cycle scope, a same-member ALTERNATE-email bridge (member_emails — zero
+  // cross-candidate risk, primary always preferred), and the pre-interview status
+  // allow-list, all in one place shared with the canonical RPC.
+  const { data: matchRows, error: matchErr } = await sb.rpc('match_booking_application', {
+    p_guest_email: guest_email,
+  });
+  if (matchErr) {
+    return jsonResponse({ error: 'match_failed', detail: matchErr.message }, 500);
+  }
+  const matched = (Array.isArray(matchRows) ? matchRows[0] : matchRows) as
+    | { application_id: string; applicant_name: string; app_status: string; interview_status: string | null; cycle_id: string; matched_by: string }
+    | undefined;
+  if (!matched) {
+    // Observability for the corr-5 consistency cron: record the unmatched booking
+    // so the cron can surface "a candidate booked but matched no application" (B1
+    // recurrence). Best-effort — never block the response on the audit write.
+    await sb.from('admin_audit_log').insert({
+      action: 'calendar_booking_unmatched',
+      target_type: 'system',
+      changes: { guest_email, scheduled_at },
+      metadata: { calendar_event_id, source: 'calendar_webhook', reason: 'no matching application in open/active cycle + pre-interview status' },
+    });
     return jsonResponse({
       error: 'application_not_found',
-      hint: 'No selection_applications row matched the guest_email in active pipeline statuses (submitted/screening/objective_eval/objective_cutoff/interview_pending/interview_scheduled)',
+      hint: 'No selection_applications row matched the guest_email (primary or same-member alternate via member_emails) in an OPEN/ACTIVE cycle and a pre-interview status (submitted/screening/objective_eval/objective_cutoff/interview_pending/interview_scheduled)',
       guest_email,
     }, 404);
   }
+  const app = {
+    id: matched.application_id,
+    applicant_name: matched.applicant_name,
+    status: matched.app_status,
+    interview_status: matched.interview_status,
+  };
+  const matchedBy = matched.matched_by;
 
-  // Lookup interviewers (best effort — empty array if not matched)
+  // Lookup interviewers (best effort — empty array if not matched). Resolve via
+  // member_emails (citext, full primary coverage + alternates) so an interviewer
+  // who books from a personal/alternate address still maps to their member_id —
+  // the prior members.email-only lookup left interviewer_ids empty whenever the
+  // Apps Script forwarded the organiser's Gmail rather than their primary email.
   let interviewerIds: string[] = [];
   if (Array.isArray(interviewer_emails) && interviewer_emails.length > 0) {
-    const { data: interviewers } = await sb.from('members')
-      .select('id')
-      .in('email', interviewer_emails);
-    interviewerIds = (interviewers ?? []).map((m: any) => m.id);
+    const normalizedInterviewerEmails = interviewer_emails
+      .filter((e: unknown): e is string => typeof e === 'string' && e.trim().length > 0)
+      .map((e: string) => e.trim().toLowerCase());
+    if (normalizedInterviewerEmails.length > 0) {
+      const { data: interviewers } = await sb.from('member_emails')
+        .select('member_id')
+        .in('email', normalizedInterviewerEmails);
+      interviewerIds = [...new Set((interviewers ?? []).map((m: any) => m.member_id as string))];
+    }
   }
 
   const notes = `Auto-synced from Calendar webhook ${new Date().toISOString()}. Event URL: ${calendar_event_url ?? 'n/a'}. Guests: ${(interviewer_emails ?? []).join(', ') || 'n/a'}.`;
@@ -127,7 +152,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   let interviewId: string;
   if (existing && existing.length > 0) {
-    // Update existing
+    // Update existing. Intentionally wider than the corr-1 RPC (which only
+    // refreshes scheduled_at): a re-fire also re-resolves interviewer_ids, so a
+    // row created before its interviewers were resolvable gets healed on re-fire.
     interviewId = existing[0].id;
     const { error } = await sb.from('selection_interviews').update({
       scheduled_at,
@@ -168,6 +195,16 @@ export const POST: APIRoute = async ({ request }) => {
   }
   await sb.from('selection_applications').update(appUpdates).eq('id', app.id);
 
+  // Observability for the corr-5 consistency cron (parity with the canonical RPC's
+  // audit trail). Best-effort — never block the response on the audit write.
+  await sb.from('admin_audit_log').insert({
+    action: 'calendar_booking_synced',
+    target_type: 'selection_interview',
+    target_id: interviewId,
+    changes: { application_id: app.id, guest_email, previous_app_status: app.status, status_changed: app.status !== 'interview_scheduled' },
+    metadata: { calendar_event_id, source: 'calendar_webhook', matched_by: matchedBy, interviewer_count: interviewerIds.length },
+  });
+
   return jsonResponse({
     success: true,
     interview_id: interviewId,
@@ -175,6 +212,7 @@ export const POST: APIRoute = async ({ request }) => {
     applicant_name: app.applicant_name,
     previous_status: app.status,
     interviewer_count: interviewerIds.length,
+    matched_by: matchedBy,
   }, 200);
 };
 

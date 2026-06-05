@@ -1,18 +1,39 @@
----
-description: MCP server rules and tool patterns
-globs: supabase/functions/nucleo-mcp/**
----
+# MCP Server Rules (nucleo-mcp — /mcp full catalog + /semantic bridge)
 
-# MCP Server Rules (nucleo-mcp v2.76.1)
+## Current State (do NOT pin counts here)
 
-## Current State
-- **293 tools + 4 prompts + 3 resources** (p199-a council fix bundle v2.76.1 — analyze_application_video gains JS-layer `canV4('view_pii')` guard + docstring polish (return envelope shape + force param wording fix) per code-reviewer HIGH; pairs with p199-a HIGH #1 fix in migration 20260519131912 rollback comment (post-smoke live rows make naive rollback non-idempotent — now documents DELETE step + LGPD Art. 37 §3 audit trail caveat); tool count unchanged 293; was p199-a v2.76.0 — +1 tool analyze_application_video (p197d D1 producer): triggers Whisper transcription + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail) per pillar (5 pillars: background + communication + culture_alignment + proactivity + teamwork); generates selection_evaluation_ai_suggestions(evaluation_type='video') consumable via submit_evaluation(ai_suggestion_id=...); idempotent + LGPD-gated via consent_ai_analysis_at; co-shipped with migration 20260519131912 expanding ai_processing_log.purpose CHECK to allow 'video_screening' — pre-fix smoke revealed silent check_violation inside try/catch caused EF to 202-OK with zero rows in any of {ai_processing_log, selection_evaluation_ai_suggestions, pmi_video_screenings.transcription}; post-fix smoke 2026-05-19 13:53 confirmed INSERT path live (ai_processing_log row 'fd8d32df…' created with purpose='video_screening', status='failed' due to OpenAI Whisper 429 quota — NOT code bug, graceful degradation works); was p197c v2.75.0 — +1 tool list_ai_suggestions (consumer surface for ai_suggestion_id) + compute_pert_cutoff refactored into _compute_pert_cutoff_core helper + pg_cron weekly recompute-pert-cutoffs-weekly Mon 13:00 UTC; was p197c v2.74.0 — submit_interview_scores upgraded to rich preview parity with submit_evaluation + get_selection_rankings + get_application_score_breakdown enriched server-side (description bumps only, tool count unchanged 291); was p197b v2.73.0 — +2 tools surfacing PERT cutoff to MCP: get_pert_cutoff_summary + compute_pert_cutoff; was p197 v2.72.0 — submit_evaluation rich preview + new params criterion_notes_json/ai_suggestion_id; was p193 v2.71.0 — get_tribes_comparison upgraded to V4 wrapping exec_cross_initiative_comparison; was v2.70.0 p172 — meeting_close tool extended em p171 #9 Track B aceita suggested_champion_ids[] param; was v2.69.0 p165 — same 289 count; was 284 at p133 close; was 283 post p117 +get_extraction_health for ADR-0075; was 266 post p106 #97 W3 G4; was 217 = 141R + 76W at p77 marathon close — R/W split tracking dropped p106 since heuristic unreliable; total + canonical commit log replaces it)
-- Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
-- Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
-- Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
-- All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working
-- Health observability: `get_invitation_health` (W7) + `get_lgpd_cron_health` (W8) + `get_digest_health` (W9 issue #99) — Pattern 43 saturation reached
+Two surfaces shipped post-p222 #280 (Semantic MCP Gateway bridge):
+- `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~300 tools + 4 prompts + 3 resources).
+- `/semantic` (server: `nucleo-ia-semantic`) — bridge-first public semantic gateway (wave-1: 3 tools), stable
+  envelope `{ok,data,summary,warnings,next_actions,audit}`.
+
+**The exact tool count changes every session — never recite it from memory or pin it here.** Get the live count:
+```bash
+curl -sS -X POST https://nucleoia.vitormr.dev/mcp -H 'Authorization: Bearer test' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -oE '"name":"[^"]+"' | wc -l
+# or structured per-surface report:
+curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health
+```
+The per-session tool-count change-history is archived at `docs/audit/MCP_RULES_TOOLCOUNT_HISTORY_ARCHIVED_2026-05-30.md`.
+
+Worker proxy paths (`nucleoia.vitormr.dev`): `/mcp` → EF `/nucleo-mcp/mcp`; `/mcp/semantic` → EF `/nucleo-mcp/semantic`.
+Both shave the SDK 1.29.0 `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See
+`docs/MCP_SETUP_GUIDE.md` for client routing.
+
+- Transport: `@modelcontextprotocol/sdk@1.29.0` `WebStandardStreamableHTTPServerTransport` (native).
+- Tool params: Zod schemas (`z.string()`, `z.number()`, …) — NOT plain JSON Schema objects.
+- Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT. All tools log to `mcp_usage_log`.
+- Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`.
+
+**Audit-script note:** `scripts/audit-mcp-tool-matrix.mjs` hardcodes the /mcp endpoint and treats all `mcp.tool(`
+calls as a flat list (total = /mcp + 3 /semantic). It flags the 3 semantic tools as "static-only" — expected
+post-bridge, NOT drift; a surface-aware audit is on the #280 follow-up backlog.
+
+## MCP tool name ↔ RPC name divergences (alias map)
+
+Most MCP tools share the underlying RPC name (e.g., `submit_evaluation` tool → `submit_evaluation` RPC). A handful diverge intentionally to give consumers a more discoverable tool name without renaming the SQL surface. Known divergences:
+
+- `sign_ratification_gate` (MCP tool) → `public.sign_ip_ratification` (RPC). Registered at `supabase/functions/nucleo-mcp/index.ts:5337` and dispatched via `sb.rpc("sign_ip_ratification", { ... })`. The tool name reads better for cross-document consumers ("sign a gate on a ratification chain") while the RPC keeps the IP-3d-era body name. **Implication for migrations**: fixes to `sign_ip_ratification` body apply transparently to all consumers (MCP host calling `sign_ratification_gate`, native UI calling the RPC directly). Do NOT rename either side — the divergence is stable and consumer-breaking to undo. Verified during p269 SEDIMENT-268.A audit (`approval_signoffs.organization_id` remediation).
 
 ## Pre-Deploy Check (MANDATORY)
 
@@ -48,10 +69,26 @@ curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-m
 ```
 Expected: HTTP 200 + serverInfo on initialize, AND a non-empty `result.tools[]` array on tools/list. If tools/list returns `{"error":{"code":-32603,"message":"Cannot read properties of undefined..."}}` despite initialize succeeding, you have a Zod 3→4 issue — re-run grep #2 above.
 
+### 4. Contract matrix drift (issue #162, p202)
+
+The MCP tool contract matrix is generated by `scripts/audit-mcp-tool-matrix.mjs` and stored in `docs/reference/MCP_TOOL_MATRIX.md` + `docs/reference/mcp-tool-matrix.json`. Pre-deploy:
+
+```bash
+# Regenerate matrix + cross-check static vs runtime tools/list
+node scripts/audit-mcp-tool-matrix.mjs --runtime
+```
+
+Expected: `[runtime] clean (N runtime ≡ N static)`. If drift is reported (`drift: X static-only, Y runtime-only`), investigate before deploy — common causes:
+- Tool added to `index.ts` but EF not redeployed (static>runtime)
+- Tool removed from `index.ts` but EF still has stale version (runtime>static)
+- Duplicate name collapsed by SDK (rename one)
+
+Re-running the matrix is also useful after migrations that change RPC signatures — diff `mcp-tool-matrix.json` to see which tools call the changed RPC.
+
 ## SDK Compatibility
-- **SDK 1.29.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
-- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned to exact version (was `^4.0`, pinned 2026-04-26 for reproducibility — MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.29.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
-- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). SDK 1.29.0 initially failed on Deno due to non-Zod schemas + old dep versions. After converting tools to Zod and upgrading all deps, 1.28.0 native transport works.
+- **SDK 1.29.0**: stable on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas. (Latest 1.x confirmed via npm `dist-tags.latest` — re-query, don't trust this line; 2.0 is a breaking alpha, do not adopt.)
+- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned exact (MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.29.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
+- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). 1.29.0 native transport works after converting tools to Zod + upgrading deps.
 
 ## Tool Pattern
 ```typescript
@@ -97,12 +134,12 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - GET /mcp → 406 (native transport returns Not Acceptable when no session)
 - Transport handles: initialize, tools/list, tool/call, notifications, SSE streams
 
-## Auto-Refresh (v2.7.1 — server-side token renewal)
+## Auto-Refresh (server-side token renewal)
 - Worker proxy (`src/pages/mcp.ts`) decodes JWT `exp` before forwarding upstream
 - If expired or expiring within 5 minutes, looks up `mcp_refresh:{sub}` from KV
 - Calls Supabase Auth API directly (`/auth/v1/token?grant_type=refresh_token`)
 - Forwards request with new access_token — transparent to MCP host
 - KV keys: `mcp_refresh:{user_id}` with 30-day TTL (set at token issuance + refresh)
 - Token endpoint (`/oauth/token`) stores refresh_token in KV on both `authorization_code` and `refresh_token` grants
-- Supabase JWT TTL is 3600s (1h, not configurable via dashboard) — auto-refresh compensates
+- Supabase JWT TTL is 3600s (1h) — auto-refresh compensates
 - Best practice: never depend on MCP hosts to implement refresh — do it server-side

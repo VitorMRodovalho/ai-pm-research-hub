@@ -2,28 +2,35 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 68 tools (54 read + 14 write) that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes two surfaces: `/mcp` (299 implementation tools for verified clients) and `/mcp/semantic` (a smaller, bridge-first semantic gateway for strict MCP clients). Both surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
-## Universal URL
+## Endpoints
 
-All clients use the same URL:
+| Endpoint | Tools | Purpose | Recommended clients |
+|----------|-------|---------|---------------------|
+| `https://nucleoia.vitormr.dev/mcp` | 299 | Full internal capability registry. Stable for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
+| `https://nucleoia.vitormr.dev/mcp/semantic` | 3 (wave-1) | **Bridge-first semantic gateway (p222 #280 alpha).** Compact, review-ready public contract over the internal registry. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
 
-```
-https://nucleoia.vitormr.dev/mcp
-```
+Both endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients should still default to `/mcp`.
 
-Authentication: OAuth 2.1 — you'll be redirected to log in with the same account you use on the platform (Google, LinkedIn, or Microsoft).
+Wave-1 semantic tools (read-only):
+- `get_my_context` — compact self-scope context (profile, current cycle, gamification, upcoming events, certificates).
+- `search_nucleo_knowledge` — bounded multi-source search across hub resources + wiki + knowledge_assets.
+- `get_board_or_initiative_context` — initiative/board/tribe one-shot summary.
 
 ## Compatibility
 
-| Client | Status | Notes |
-|--------|--------|-------|
-| Claude.ai | ✅ Verified (68 tools) | Web and desktop app. Streamable HTTP SSE. |
-| Claude Code | ✅ Verified | Terminal — see token workaround below |
-| ChatGPT | ✅ Verified (beta) | Settings → Apps → Connectors → Advanced → New App |
-| Perplexity | ✅ Verified | MCP connector in settings. |
-| Cursor / VS Code | ✅ Verified | Settings → MCP → Add. OAuth flow. |
-| Manus AI | ✅ Verified | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
+| Client | Status | Recommended endpoint | Notes |
+|--------|--------|----------------------|-------|
+| Claude.ai | ✅ Verified | `/mcp` (full 299) | Web and desktop. Streamable HTTP SSE. |
+| Claude Code | ✅ Verified | `/mcp` (full 299) | Terminal — see token workaround below. |
+| ChatGPT | ✅ Verified (beta) | `/mcp` (full 299) | Settings → Apps → Connectors → Advanced → New App. Apps SDK submission should target `/mcp/semantic`. |
+| Perplexity | ⚠️ Use `/mcp/semantic` | **`/mcp/semantic`** | Transport: **Streamable HTTP** (not SSE). Auth: OAuth 2.0. Perplexity rejected the 299-tool full catalog (see GH #277 / #280). |
+| Cursor / VS Code | ✅ Verified | `/mcp` (full 299) | Settings → MCP → Add. OAuth flow. |
+| Manus AI | ✅ Verified | `/mcp` (full 299) | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
+| xAI / Grok | 🟡 Custom MCP | `/mcp/semantic` | BYO remote MCP via API; catalog submission not yet documented publicly. |
+| OpenAI Apps SDK review | 🟡 For submission | `/mcp/semantic` | Apps SDK review expects bounded tools + review-account; use semantic surface. |
+| Anthropic Connectors Directory review | 🟡 For submission | `/mcp/semantic` | Directory pre-submission checklist favors short bounded tool catalogs. |
 
 ## Setup by Client
 
@@ -59,7 +66,7 @@ Claude Code doesn't auto-initiate OAuth. Workaround:
 }
 ```
 
-Token expires in 1 hour. Refresh by repeating step 2-3.
+Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth connector flow when available; if using this manual workaround, refresh by repeating step 2-3.
 
 ### Cursor / VS Code
 
@@ -80,9 +87,23 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 
 > Note: ChatGPT MCP support is in beta. If you see "Internal Server Error", this is a known ChatGPT-side issue. The server is compatible — it will work once their beta stabilizes.
 
-## Available Tools (29 total)
+## Representative Tools
 
-### Read Tools (23 — all members)
+The live source of truth is the MCP `tools/list` response. The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 293 tools.
+
+For the **complete machine-generated contract matrix** (tool → domain → RPC dependencies → tables → canV4 gate → external fetches → service_role usage), see:
+
+- [`docs/reference/MCP_TOOL_MATRIX.md`](reference/MCP_TOOL_MATRIX.md) — human-readable markdown
+- [`docs/reference/mcp-tool-matrix.json`](reference/mcp-tool-matrix.json) — structured JSON (consumable by audit tooling)
+
+Re-generate with:
+
+```bash
+node scripts/audit-mcp-tool-matrix.mjs --runtime
+# Cross-checks index.ts static parser vs live tools/list; flags drift.
+```
+
+### Read Tool Examples
 
 | Tool | Description |
 |------|-------------|
@@ -110,7 +131,7 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `get_cycle_report` | Full cycle report — members, tribes, KPIs (admin/GP) |
 | `get_annual_kpis` | Annual KPIs — targets vs actuals (admin/sponsor) |
 
-### Write Tools (12 — tribe leaders, GP, deputy only)
+### Write Tool Examples
 
 | Tool | Description |
 |------|-------------|
@@ -134,17 +155,18 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 - **Row Level Security (RLS)** enforced on every query — you only see data your role permits
 - **No personal data exposed** — emails, phones are excluded from tool responses
 - **Write guards** — only tribe leaders, GP, and deputy can use write tools
-- **Tokens expire** in 1 hour — no persistent access
+- **Access tokens expire** in 1 hour; OAuth clients should use refresh tokens. Claude.ai refreshes through `/oauth/token`, and the `/mcp` proxy also attempts server-side refresh via KV for continuity.
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| "Unauthorized" | Token expired — log in again |
+| "Unauthorized" | Token expired or refresh failed — reconnect the OAuth connector. If this happens in under 24h, check refresh-token metadata/logs; it is not expected steady-state behavior. |
 | "Permission denied" | Your role doesn't have access to that tool |
 | Empty response | You may not have data in that category yet |
 | ChatGPT "Internal Server Error" | Known ChatGPT beta issue — try again later |
 | OAuth window doesn't open | Check browser popup blocker settings |
+| HTTP `403 Error 1010 browser_signature_banned` on `/mcp` or `/.well-known/oauth-*` | Cloudflare BIC block. See [`docs/infra/CLOUDFLARE_MCP_RULES.md`](infra/CLOUDFLARE_MCP_RULES.md) — WAF skip rule + rate limit applied for programmatic clients (Python-urllib, etc.). |
 
 ## Architecture
 

@@ -196,20 +196,27 @@ test('finalize_decisions processes bulk decisions from jsonb array', () => {
     'Must iterate over p_decisions jsonb array');
 });
 
-test('finalize_decisions auto-creates member for approved candidates', () => {
-  const body = findFunctionBody('finalize_decisions');
-  assert.ok(/INSERT\s+INTO\s+(?:public\.)?members/i.test(body),
-    'Must INSERT into members for approved candidates');
-  assert.ok(/v_app\.applicant_name/i.test(body), 'Must use applicant_name for member name');
-  assert.ok(/v_app\.email/i.test(body), 'Must use applicant email');
-  assert.ok(/v_app\.chapter/i.test(body), 'Must use applicant chapter');
-});
-
-test('finalize_decisions reactivates existing inactive members', () => {
-  const body = findFunctionBody('finalize_decisions');
-  assert.ok(/is_active\s*=\s*true/i.test(body), 'Must set is_active = true');
-  assert.ok(/current_cycle_active\s*=\s*true/i.test(body), 'Must set current_cycle_active = true');
-});
+// p220 (issue #220 / BUG-203.A-adjacent, 2026-05-21): The following 4 tests
+// were RELOCATED to `tests/contracts/canonical-approval-orchestration.test.mjs`
+// after p204 (PR #198 issue #179) introduced `approve_selection_application` as
+// the canonical orchestration RPC. `finalize_decisions` now DELEGATES per-decision
+// to canonical RPC instead of doing member/onboarding/notification inline.
+//
+// What moved:
+// - "auto-creates member" → covered by 'upserts member via lower(email) lookup'
+// - "reactivates existing inactive members" → covered by canonical body
+//   (search for `UPDATE public.members SET is_active = true` inside
+//   `approve_selection_application`)
+// - "creates onboarding steps" → covered by 'seeds onboarding, sends
+//   notification, writes audit row' (line 125+ of canonical-approval-orchestration)
+// - "notifies approved members" → covered by same test (line 131-132,
+//   `PERFORM public.create_notification(...'selection_approved')`)
+//
+// Conversion flow (researcher → leader) + conversion offer notification STAY
+// in `finalize_decisions` because they short-circuit the canonical pass (see
+// 'finalize_decisions delegates per-decision when status=approved' in
+// canonical-approval-orchestration.test.mjs line 152-163 for the delegation
+// contract assertion).
 
 test('finalize_decisions handles conversion flow (researcher → leader)', () => {
   const body = findFunctionBody('finalize_decisions');
@@ -224,20 +231,6 @@ test('finalize_decisions sends conversion offer notification', () => {
   const body = findFunctionBody('finalize_decisions');
   assert.ok(/create_notification[\s\S]*?selection_conversion_offer/i.test(body),
     'Must notify candidate with selection_conversion_offer');
-});
-
-test('finalize_decisions creates onboarding steps for approved candidates', () => {
-  const body = findFunctionBody('finalize_decisions');
-  assert.ok(/INSERT\s+INTO\s+(?:public\.)?onboarding_progress/i.test(body),
-    'Must create onboarding_progress records');
-  assert.ok(/sla_deadline/i.test(body), 'Must set sla_deadline');
-  assert.ok(/onboarding_steps/i.test(body), 'Must use cycle onboarding_steps config');
-});
-
-test('finalize_decisions notifies approved members', () => {
-  const body = findFunctionBody('finalize_decisions');
-  assert.ok(/create_notification[\s\S]*?selection_approved/i.test(body),
-    'Must send selection_approved notification');
 });
 
 test('finalize_decisions takes diversity snapshot', () => {

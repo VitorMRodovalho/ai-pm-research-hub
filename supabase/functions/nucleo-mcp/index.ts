@@ -1,5 +1,39 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.76.1 — 293 tools + 4 prompts + 3 resources + usage logging
+// MCP server v2.80.0 — /mcp 303 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
+//   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
+//   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
+// #191 (2026-06-05): removed broken advance_card_curation tool (0 uses; advertised verbs the legacy
+//   advance_board_item_curation RPC rejected). 304 -> 303. Contract tests + /health updated to 303.
+// v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
+//   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
+//   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
+//   path cannot satisfy). lgpd_record_retroactive_notification: anchors the notification dispatch
+//   in pii_access_log (context='lgpd_art_18_retroactive_notification'); audit-row only, no confirm.
+//   lgpd_execute_retroactive_deletion: atomic clear of pmi_video_screenings.transcription + audit
+//   row with deletion_artifacts jsonb; ADR-0018 W1 confirm gate (preview default). Both with JS
+//   layer canV4('manage_member') defense-in-depth (convention match analyze_application_video).
+//   Tool count 299 → 301. /semantic unchanged at 3. Closes #332 W3 — operator path unblocked
+//   without bypassing audit trail (per p239 PM technical explanation re: auth.uid() requirement).
+// v2.79.1 (p232 #229 Phase 2 leader_extra cohort visibility): get_pert_cutoff_summary +
+//   compute_pert_cutoff tools extend score_column z.enum to include 'leader_extra_pert_score'
+//   + descriptions clarify dual-dim model (objective + leader_extra). No new tools (count
+//   unchanged 299/3). RPC bodies extended via migration 20260805000017 to dual-track read/write.
+//   get_application_score_breakdown JSONB now carries 'leader_extra_cutoff' block + top-level
+//   'leader_extra_pert_score'; get_selection_dashboard.cycle carries sibling 'leader_extra_cutoff'.
+// v2.79.0 (p222 #280 alpha — Semantic MCP Gateway bridge): +1 endpoint `app.all("/semantic")`
+//   exposes 3 read-only semantic tools (get_my_context + search_nucleo_knowledge +
+//   get_board_or_initiative_context) via a separate McpServer instance ("nucleo-ia-semantic" v0.1.0).
+//   /mcp surface unchanged (299 tools, regression-safe). Implementation per SPEC-280.B Option A
+//   (register in this monolithic file alongside registerTools/registerKnowledge; future PR can
+//   extract to its own module). Each semantic tool wraps multiple underlying RPCs via Promise.allSettled
+//   with graceful per-source degradation (warnings array surfaces partial failures without breaking
+//   the compound response). Stable envelope: {ok, data, summary, warnings, next_actions, audit}.
+//   Public discovery contract designed against most restrictive store-readiness criteria of OpenAI/
+//   Anthropic/Perplexity/xAI/Manus per SPEC-280.A. /mcp (nucleo-ia-hub) and /semantic (nucleo-ia-semantic)
+//   semver evolve independently. /mcp/full is a future migration target (NOT shipped yet); current
+//   bridge state keeps /mcp as full catalog (no rename).
+// v2.78.0 (p216 GAP-205.D close — write surface completion via migration 20260802000013 + 3 new RPCs)
 // v2.76.1 (p199-a council fix bundle): analyze_application_video gains JS-layer canV4('view_pii')
 //   guard (defense-in-depth, was relying solely on RPC SQL gate — convention match with sibling
 //   analyze_application + generate_interview_briefing). Docstring clarified: returns dispatch
@@ -896,7 +930,7 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
   );
 }
 
-// --- Register 94 tools (70R + 24W) ---
+// --- Register 293 tools (runtime source of truth: MCP tools/list + /health) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -1193,17 +1227,33 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 13: create_meeting_notes (unified — writes to events.minutes_text via upsert_event_minutes RPC)
-  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions (comma-separated) — appended to content"), action_items: z.string().optional().describe("Action items (comma-separated) — appended to content") }, async (params: any) => {
+  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside a decision are preserved verbatim."), action_items: z.string().optional().describe("Action items, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside an action are preserved verbatim.") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
-    // Build full content with optional decisions and action items
+    // Build full content with optional decisions and action items.
+    // #170: split list params on NEWLINE only — never on bare "," — because meeting notes use
+    // commas inside clauses and responsible-party lists ("Fabrício, Fernando e Sávio"), and the
+    // old comma-split shredded single decisions/actions into bogus bullets (corrupted Fabricio's notes).
+    const splitItems = (raw?: string): string[] =>
+      raw ? String(raw).split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean) : [];
     let fullContent = params.content;
-    const decisions = params.decisions ? String(params.decisions).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
-    const actionItems = params.action_items ? String(params.action_items).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+    const decisions = splitItems(params.decisions);
+    const actionItems = splitItems(params.action_items);
     if (decisions.length > 0) fullContent += "\n\n### Decisões\n" + decisions.map((d: string) => `- ${d}`).join("\n");
     if (actionItems.length > 0) fullContent += "\n\n### Ações\n" + actionItems.map((a: string) => `- [ ] ${a}`).join("\n");
+    // #170: refuse to persist serialization-corruption markers — fail BEFORE the DB write so a bad
+    // payload never reaches events.minutes_text. U+FFFD never appears in valid UTF-8 prose; a bare
+    // "[object Object]" *line* means a non-string was passed and String()-ified (a real bullet, not
+    // prose that merely mentions the term — anchored to a whole line to avoid false positives).
+    const hasReplacementChar = fullContent.includes("�");
+    const hasObjectArtifact = /^\s*(?:-\s*(?:\[ \]\s*)?)?\[object Object\]\s*$/m.test(fullContent);
+    if (hasReplacementChar || hasObjectArtifact) {
+      const label = hasReplacementChar ? "replacement character (U+FFFD)" : "[object Object]";
+      await logUsage(sb, member.id, "create_meeting_notes", false, `Rejected: corruption marker ${label}`, start);
+      return err(`Refusing to save meeting notes — content contains a corruption marker (${label}). Re-send clean UTF-8 text.`);
+    }
     // Use the unified upsert_event_minutes RPC (has audit log + edit history + researcher timeframe)
     const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: fullContent });
     if (error) { await logUsage(sb, member.id, "create_meeting_notes", false, error.message, start); return err(error.message); }
@@ -2429,7 +2479,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 67: get_application_score_breakdown — Detailed breakdown of a single application (admin)
-  mcp.tool("get_application_score_breakdown", "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.", {
+  mcp.tool("get_application_score_breakdown", "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Two cutoff bands surface separately: 'pert_cutoff' (objective; reads pert_target_score/band_*) and 'leader_extra_cutoff' (leader_extra dimension; reads leader_extra_pert_target/band_* with leader_extra_score_position ∈ below/within/above). Top-level 'leader_extra_pert_score' also exposed. p232 #229 Phase 2 closed the dual-dimension visibility loop. Admin/GP/curator only.", {
     application_id: z.string().describe("Selection application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -2935,11 +2985,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: get_pert_cutoff_summary — read PERT cutoff state for a cycle (p197b)
-  mcp.tool("get_pert_cutoff_summary", "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Use to assess whether candidates land within the calibration band of approved members. Admin/curator (manage_member).", {
+  // TOOL: get_pert_cutoff_summary — read PERT cutoff state for a cycle (p197b + p232 #229 Phase 2 dual-dim)
+  mcp.tool("get_pert_cutoff_summary", "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the calibration band of approved members per dimension. Admin/curator (manage_member).", {
     cycle_id: z.string().describe("Cycle UUID (from get_selection_cycles output)"),
-    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Which score column to summarize. Default: objective_score_avg")
-  }, async (params: { cycle_id: string; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    score_column: z.enum(["objective_score_avg","final_score","research_score","leader_extra_pert_score"]).optional().describe("Which score column to summarize. Default: objective_score_avg. Use 'leader_extra_pert_score' to read the leader_extra dimension separately (p232 #229 Phase 2).")
+  }, async (params: { cycle_id: string; score_column?: "objective_score_avg"|"final_score"|"research_score"|"leader_extra_pert_score" }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_pert_cutoff_summary", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2951,13 +3001,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: compute_pert_cutoff — admin trigger to recompute PERT cutoff for a cycle (p197b)
-  mcp.tool("compute_pert_cutoff", "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists pert_target_score/pert_band_lower/upper/cohort_n on every application in the cycle. Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Use BEFORE committee final decision to refresh the cutoff band against the current pool of active members.", {
+  // TOOL: compute_pert_cutoff — admin trigger to recompute PERT cutoff for a cycle (p197b + p232 #229 Phase 2 dual-dim)
+  mcp.tool("compute_pert_cutoff", "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Note: the weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).", {
     cycle_id: z.string().describe("Cycle UUID"),
     role: z.enum(["researcher","leader"]).optional().describe("Track being cut. Default: researcher"),
     filter_active_only: z.boolean().optional().describe("Only count active engagements in cohort. Default: true"),
-    score_column: z.enum(["objective_score_avg","final_score","research_score"]).optional().describe("Cohort score column. Default: objective_score_avg")
-  }, async (params: { cycle_id: string; role?: "researcher"|"leader"; filter_active_only?: boolean; score_column?: "objective_score_avg"|"final_score"|"research_score" }) => {
+    score_column: z.enum(["objective_score_avg","final_score","research_score","leader_extra_pert_score"]).optional().describe("Cohort score column. Default: objective_score_avg. Use 'leader_extra_pert_score' to recompute the leader_extra dimension cutoff (p232 #229 Phase 2).")
+  }, async (params: { cycle_id: string; role?: "researcher"|"leader"; filter_active_only?: boolean; score_column?: "objective_score_avg"|"final_score"|"research_score"|"leader_extra_pert_score" }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "compute_pert_cutoff", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -3142,6 +3192,36 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("mark_interview_status", { p_interview_id: params.interview_id, p_status: params.status, p_notes: params.notes ?? null });
     if (error) { await logUsage(sb, member.id, "mark_interview_status", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "mark_interview_status", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: notify_selection_cutoff_approved — dispatch the "agendar entrevista" invite (#411 W3 MCP exposure)
+  mcp.tool("notify_selection_cutoff_approved", "Dispatches the cutoff-approved 'agendar sua entrevista' invite email to a candidate who cleared the objective cutoff. Authority (enforced in the RPC): committee lead OR manage_member. Idempotent — returns reason:'already_sent' if the invite already went out (cutoff_approved_email_sent_at set). Track-aware booking URL routing (researcher LRD round-robin / leader cycle URL). Use for one-off manual dispatch; the daily cron selection-cutoff-pending-daily handles the strictly-above-target cohort automatically.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "notify_selection_cutoff_approved", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("notify_selection_cutoff_approved", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "notify_selection_cutoff_approved", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: selection_rescue_stuck_interview — cancel lapsed interview + re-invite (#411 W1d/W3)
+  mcp.tool("selection_rescue_stuck_interview", "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.", {
+    application_id: z.string().describe("Selection application UUID (must be in interview_scheduled with a past, not-conducted scheduled interview)")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "selection_rescue_stuck_interview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("selection_rescue_stuck_interview", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "selection_rescue_stuck_interview", true, undefined, start);
     return ok(data);
   });
 
@@ -3979,6 +4059,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_cutoff_dispatch_health — selection interview-invite cron health (#411 W2a)
+  mcp.tool("get_cutoff_dispatch_health", "Returns selection interview-invite cron health: last-7-run trend (dispatched/rescued counts) for selection-cutoff-pending-daily (14:00 UTC) + selection-stuck-scheduled-rescue-daily (15:00 UTC), each cron's registration/active state + last_run_at, the live pending cohorts (above-target awaiting invite + stuck-scheduled >48h), and a green/yellow/red health_signal (red = pending work with the relevant cron silent >26h; yellow = a cron unregistered/never-fired). Authority: view_internal_analytics. Use to triage 'are cutoff invites / stuck rescues going out?' or detect cron silence.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cutoff_dispatch_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_cutoff_dispatch_health");
+    if (error) { await logUsage(sb, member.id, "get_cutoff_dispatch_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_cutoff_dispatch_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_cutoff_dispatch_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: get_notifications_analytics — ADR-0022 W3 last-deliverable substrate (p133 ARM-10 hygiene)
   mcp.tool("get_notifications_analytics", "Returns notifications send rates and breakdown for window (default 28d): overall counts, by_delivery_mode (transactional_immediate / digest_weekly / suppress) with send_rate + avg_send_latency_minutes, by_type (top 20) with per-type send_rate, daily timeseries (last 30d). Use to triage 'are notifications being sent?' or which types lag. NOTE: open/click/bounce data lives in campaign_recipients (use get_comms_metrics_by_channel for campaign-level rates). Authority: view_internal_analytics.", {
     window_days: z.number().optional().describe("Window in days (1-365, default 28)")
@@ -4427,6 +4519,102 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_lgpd_cron_health", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "get_lgpd_cron_health", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "get_lgpd_cron_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: lgpd_record_retroactive_notification (p239b #332 W3 — anchors retroactive Art. 18 §IV dispatch in pii_access_log)
+  // RPC body already gates on can_by_member('manage_member'); JS layer adds defense-in-depth canV4 check
+  // (convention match with analyze_application_video p199-a). Audit-row insert only — no confirm gate (ADR-0018 scope is destructive mutations).
+  mcp.tool("lgpd_record_retroactive_notification", "Records a retroactive Art. 18 §IV notification dispatch in pii_access_log (context='lgpd_art_18_retroactive_notification'). Use AFTER PM dispatches the notification email via official channel to anchor the audit chain. PM-only (manage_member). The RPC does NOT send the email — it logs the dispatch event. p_dispatched_at lets PM backdate to the actual send timestamp; defaults to now() if omitted. Returns pii_access_log_id of the created row + target_member_id resolved from applicant email. Pairs with notification template at docs/audit/lgpd-art11-remediation/ (interim_v1 PM-approved; angeline_v1 pending sibling #334).", {
+    p_application_id: z.string().describe("UUID of selection_applications row for the affected candidate"),
+    p_template_version: z.string().describe("Template version label (e.g. 'interim_v1', 'angeline_v1'). Required, non-empty."),
+    p_lang: z.string().describe("Language tag of the dispatched message (e.g. 'pt-BR', 'en-US'). Required, non-empty."),
+    p_notification_method: z.enum(["email","whatsapp","in_person","other"]).optional().describe("Channel of dispatch. Default: 'email'."),
+    p_dispatched_at: z.string().optional().describe("ISO timestamp of the actual send (e.g. '2026-05-24T15:30:00-03:00'). Optional — defaults to now() if omitted. Pass the real send moment to keep the audit timestamp accurate.")
+  }, async (params: { p_application_id: string; p_template_version: string; p_lang: string; p_notification_method?: string; p_dispatched_at?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "lgpd_record_retroactive_notification", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.p_application_id)) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, "Invalid p_application_id", start); return err("p_application_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, "Unauthorized", start); return err("Unauthorized: requires manage_member capability."); }
+    const { data, error } = await sb.rpc("lgpd_record_retroactive_notification", {
+      p_application_id: params.p_application_id,
+      p_template_version: params.p_template_version,
+      p_lang: params.p_lang,
+      p_notification_method: params.p_notification_method || 'email',
+      p_dispatched_at: params.p_dispatched_at || null
+    });
+    if (error) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "lgpd_record_retroactive_notification", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "lgpd_record_retroactive_notification", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: lgpd_execute_retroactive_deletion (p239b #332 W3 — atomic deletion of transcription + audit row, ADR-0018 W1 destructive)
+  // RPC body gates on can_by_member('manage_member') + validates video belongs to application + rejects idempotent no-op.
+  // JS layer adds canV4 defense-in-depth + ADR-0018 confirm gate (preview default; confirm=true required to execute).
+  mcp.tool("lgpd_execute_retroactive_deletion", "Atomically clears pmi_video_screenings.transcription for a specific video row and writes a pii_access_log row (context='lgpd_art_18_deletion_executed') with full deletion_artifacts jsonb evidence. PM-only (manage_member). Use IF the candidate requests Art. 18 §IV deletion within the response window. Validates video_id belongs to application_id + rejects idempotent no-op (already-NULL transcription) to keep audit clean. Drive file removal is a SEPARATE operator step — pass p_drive_deletion_ref (trash confirmation URL or Workspace audit ref) once you've deleted the Drive asset, so the chain stays complete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
+    p_application_id: z.string().describe("UUID of selection_applications row for the affected candidate"),
+    p_video_id: z.string().describe("UUID of pmi_video_screenings row whose transcription must be cleared"),
+    p_deletion_reason: z.string().describe("Required free-text reason (>= 8 chars). E.g. 'Eduardo Luz requested Art. 18 §IV deletion via email 2026-05-30'. Persisted to pii_access_log.reason + deletion_artifacts.deletion_reason."),
+    p_drive_deletion_ref: z.string().optional().describe("Optional Drive deletion reference (trash URL, Workspace audit message-id, or operator note). Captured in deletion_artifacts but NOT used to call the Drive API — operator deletes the Drive asset manually first."),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload showing target row + transcription length + cross-app validation (ADR-0018 W1 cross-MCP injection mitigation).")
+  }, async (params: { p_application_id: string; p_video_id: string; p_deletion_reason: string; p_drive_deletion_ref?: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "lgpd_execute_retroactive_deletion", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.p_application_id)) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Invalid p_application_id", start); return err("p_application_id must be a UUID"); }
+    if (!isUUID(params.p_video_id)) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Invalid p_video_id", start); return err("p_video_id must be a UUID"); }
+    if (!params.p_deletion_reason || params.p_deletion_reason.trim().length < 8) {
+      await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "p_deletion_reason too short", start);
+      return err("p_deletion_reason must be a non-trivial string (>= 8 chars)");
+    }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, "Unauthorized", start); return err("Unauthorized: requires manage_member capability."); }
+    if (params.confirm !== true) {
+      const { data: vs, error: ve } = await sb
+        .from("pmi_video_screenings")
+        .select("id, application_id, pillar, question_index, drive_file_id, drive_file_name, transcription")
+        .eq("id", params.p_video_id)
+        .maybeSingle();
+      if (ve) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, ve.message, start, "preview"); return err(ve.message); }
+      await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", true, undefined, start, "preview");
+      return ok({
+        action: "lgpd_execute_retroactive_deletion",
+        preview: true,
+        target: vs ? {
+          id: vs.id,
+          application_id: vs.application_id,
+          pillar: vs.pillar,
+          question_index: vs.question_index,
+          drive_file_id: vs.drive_file_id,
+          drive_file_name: vs.drive_file_name,
+        } : { id: params.p_video_id, note: "video row not found or inaccessible" },
+        impact: {
+          will_clear_transcription: !!vs?.transcription,
+          old_transcription_len: vs?.transcription ? vs.transcription.length : 0,
+        },
+        cross_app_check: {
+          provided_application_id: params.p_application_id,
+          row_application_id: vs?.application_id || null,
+          matches: vs ? vs.application_id === params.p_application_id : null,
+        },
+        proposed_change: {
+          deletion_reason: params.p_deletion_reason,
+          drive_deletion_ref: params.p_drive_deletion_ref || null,
+        },
+        warning: "Destructive action — will clear pmi_video_screenings.transcription IRREVERSIBLY and write a permanent pii_access_log row with deletion_artifacts evidence. Pass confirm=true in a follow-up call to execute.",
+        next_call: { p_application_id: params.p_application_id, p_video_id: params.p_video_id, p_deletion_reason: params.p_deletion_reason, p_drive_deletion_ref: params.p_drive_deletion_ref || null, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("lgpd_execute_retroactive_deletion", {
+      p_application_id: params.p_application_id,
+      p_video_id: params.p_video_id,
+      p_deletion_reason: params.p_deletion_reason,
+      p_drive_deletion_ref: params.p_drive_deletion_ref || null
+    });
+    if (error) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "lgpd_execute_retroactive_deletion", true, undefined, start);
     return ok(data);
   });
 
@@ -4953,8 +5141,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ===== BOARD/CARD CRUD (issue #83 P2) =====
-  // 5 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
-  // archive_card / restore_card / advance_card_curation / create_mirror_card / update_card_forecast.
+  // 4 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
+  // archive_card / restore_card / create_mirror_card / update_card_forecast.
+  // (#191: advance_card_curation removed — see the removal note below.)
   // Tool layer gates with write_board (baseline); each RPC enforces stricter authority internally
   // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
 
@@ -5011,27 +5200,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ action: "restore_card", status: "restored", card_id: params.card_id, restored_to: params.restore_status || 'backlog', result: data });
   });
 
-  // TOOL: advance_card_curation — wrap advance_board_item_curation. Review pipeline step.
-  mcp.tool("advance_card_curation", "Move a card through its curation review pipeline: assign/approve/reject/request_changes. RPC enforces curator authority and current stage rules.", {
-    card_id: z.string().describe("UUID of the card under curation"),
-    action: z.string().describe("Curation action (e.g., assign|approve|reject|request_changes) — exact vocabulary is enforced by the RPC"),
-    reviewer_id: z.string().optional().describe("Optional UUID of the reviewer (member) to assign for the next step")
-  }, async (params: { card_id: string; action: string; reviewer_id?: string }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "advance_card_curation", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
-    if (params.reviewer_id && !isUUID(params.reviewer_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid reviewer_id", start); return err("reviewer_id must be a UUID"); }
-    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "advance_card_curation", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
-    const { error } = await sb.rpc("advance_board_item_curation", {
-      p_item_id: params.card_id,
-      p_action: params.action,
-      p_reviewer_id: params.reviewer_id || null,
-    });
-    if (error) { await logUsage(sb, member.id, "advance_card_curation", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "advance_card_curation", true, undefined, start);
-    return ok({ action: "advance_card_curation", status: "advanced", card_id: params.card_id, curation_action: params.action });
-  });
+  // #191: advance_card_curation MCP tool REMOVED (legacy-API reconciliation).
+  // It advertised assign|approve|reject|request_changes but wrapped the legacy
+  // advance_board_item_curation RPC, which only accepts request_review|approve_peer|
+  // approve_leader — so every advertised verb errored. 0 lifetime uses (mcp_usage_log).
+  // The canonical curation API is the p197 flow (complete_peer_review / complete_leader_review /
+  // submit_for_curation / submit_curation_review), which CardDetail drives directly.
+  // Tool count: 304 -> 303.
 
   // TOOL: create_mirror_card — wrap create_mirror_card. Cross-board visibility copy.
   mcp.tool("create_mirror_card", "Create a mirror of a card on a different board. The mirror is a linked copy for cross-board visibility (e.g., portfolio mirror of a tribe card). RPC enforces write access to the target board.", {
@@ -6603,6 +6778,543 @@ Retorne APENAS JSON válido conforme schema. Idioma: português brasileiro.`;
     await logUsage(sb, member.id, "list_ai_processing_log", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL: member_resolve_email
+  mcp.tool("member_resolve_email", "ADR-0095: Resolve a member ID by their email (primary or alternate). Auth: authenticated.", {
+    email: z.string().describe("The email address to resolve")
+  }, async (params: { email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_resolve_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    const { data, error } = await sb.rpc("member_resolve_email", {
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_resolve_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_resolve_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_list_emails
+  mcp.tool("member_list_emails", "ADR-0095: List all emails (primary and alternate) associated with a member. Auth: self, manage_member, or view_pii.", {
+    member_id: z.string().describe("The member UUID")
+  }, async (params: { member_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_list_emails", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_list_emails", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_list_emails", {
+      p_member_id: params.member_id,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_list_emails", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_list_emails", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_add_alternate_email
+  mcp.tool("member_add_alternate_email", "ADR-0095: Add an alternate email address to a member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address to add"),
+    kind: z.enum(["personal", "institutional", "chapter", "other"]).describe("The kind of alternate email")
+  }, async (params: { member_id: string; email: string; kind: "personal" | "institutional" | "chapter" | "other" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_add_alternate_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_add_alternate_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_add_alternate_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+      p_kind: params.kind,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_add_alternate_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_add_alternate_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_remove_alternate_email (ADR-0095 GAP-205.D)
+  mcp.tool("member_remove_alternate_email", "ADR-0095 GAP-205.D: Remove an alternate email from a member. Rejects primary (use member_set_primary_email to promote a different alternate first). Returns true if removed, false if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address to remove")
+  }, async (params: { member_id: string; email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_remove_alternate_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_remove_alternate_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_remove_alternate_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_remove_alternate_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_remove_alternate_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_set_primary_email (ADR-0095 GAP-205.D)
+  mcp.tool("member_set_primary_email", "ADR-0095 GAP-205.D: Promote a registered alternate to primary via UPDATE members.email (fires sync trigger; preserves alt kind). Idempotent on already-primary. Raises if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The email address to set as primary (must already be registered as primary or alternate for this member)")
+  }, async (params: { member_id: string; email: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_set_primary_email", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_set_primary_email", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_set_primary_email", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_set_primary_email", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_set_primary_email", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: member_update_alternate_email_kind (ADR-0095 GAP-205.D)
+  mcp.tool("member_update_alternate_email_kind", "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.", {
+    member_id: z.string().describe("The member UUID"),
+    email: z.string().describe("The alternate email address whose kind to change"),
+    new_kind: z.enum(["personal", "institutional", "chapter", "other"]).describe("The new kind value")
+  }, async (params: { member_id: string; email: string; new_kind: "personal" | "institutional" | "chapter" | "other" }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) {
+      await logUsage(sb, null, "member_update_alternate_email_kind", false, "Not authenticated", start);
+      return err("Not authenticated");
+    }
+    if (!isUUID(params.member_id)) {
+      await logUsage(sb, member.id, "member_update_alternate_email_kind", false, "Invalid member_id", start);
+      return err("member_id must be a UUID");
+    }
+    const { data, error } = await sb.rpc("member_update_alternate_email_kind", {
+      p_member_id: params.member_id,
+      p_email: params.email,
+      p_new_kind: params.new_kind,
+    });
+    if (error) {
+      await logUsage(sb, member.id, "member_update_alternate_email_kind", false, error.message, start);
+      return err(error.message);
+    }
+    await logUsage(sb, member.id, "member_update_alternate_email_kind", true, undefined, start);
+    return ok(data);
+  });
+}
+
+// ─── SEMANTIC GATEWAY (p222 #280 alpha) ──────────────────────────────────────
+// Public semantic contract over the internal 299-tool capability registry. Bridge-first:
+// /mcp keeps full catalog (regression-safe); /semantic exposes a compact, store-readiness-
+// designed surface for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors
+// Directory). See docs/specs/SPEC_280A_CONNECTOR_STORE_READINESS.md +
+// docs/specs/SPEC_280B_SEMANTIC_MCP_GATEWAY_IMPLEMENTATION.md.
+//
+// First-wave tools (3, all read-only):
+//   • get_my_context — compact self-scope operating context (profile + cycle + XP + events + certs)
+//   • search_nucleo_knowledge — bounded multi-source search (hub + wiki + knowledge_assets)
+//   • get_board_or_initiative_context — initiative/board/tribe one-shot summary
+//
+// Stable envelope per tool: {ok, data, summary, warnings, next_actions, audit}.
+// Errors return same envelope shape with ok=false + structured error block (NOT raw "Error: ...").
+function buildSemanticError(args: { tool: string; semantic_domain: string; code: string; message: string; action?: string }) {
+  return {
+    ok: false,
+    error: { code: args.code, message: args.message, action: args.action },
+    audit: { tool: args.tool, semantic_domain: args.semantic_domain, generated_at: new Date().toISOString() },
+  };
+}
+
+function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+
+  // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
+  mcp.tool(
+    "get_my_context",
+    "Returns a compact personal operating context for the authenticated user (profile, current cycle, gamification streak + cycle points, next-7-day events, recent certificates, and unread notification count). Self-scope only. Read-only. LGPD-clean — omits raw PII (email/phone/address) by default. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+    {
+      detail_level: z.enum(["summary", "standard"]).optional().describe("'summary' = profile + cycle + unread count. 'standard' = adds gamification + ranking + 3 upcoming events + 5 recent certs. Default: 'standard'."),
+      include_notifications: z.boolean().optional().describe("Include up to 5 unread notifications (LGPD: kept off by default to minimize PII surface). Default: false."),
+    },
+    async (params: { detail_level?: "summary" | "standard"; include_notifications?: boolean }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "get_my_context", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "get_my_context", semantic_domain: "personal", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      const detail = params.detail_level ?? "standard";
+      const withNotifs = params.include_notifications === true;
+      const today = new Date().toISOString().split("T")[0];
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
+      // Council HIGH-1 fix: notifications.payload does not exist — use title/body/link instead.
+      // Council MED-1 fix: drop unused credly_url from members.select (not surfaced in profile).
+      const calls = await Promise.allSettled([
+        sb.from("members").select("name, operational_role, designations, tribe_id, chapter, current_cycle_active, cpmai_certified").eq("id", member.id).single(),
+        sb.rpc("get_current_cycle"),
+        sb.rpc("get_my_gamification_stats"),
+        sb.rpc("get_member_cycle_xp", { p_member_id: member.id }),
+        sb.from("events").select("id, title, date, type").gte("date", today).lte("date", nextWeek).order("date").limit(3),
+        sb.from("certificates").select("id, type, issued_at, pdf_url").eq("member_id", member.id).order("issued_at", { ascending: false }).limit(5),
+        withNotifs
+          ? sb.from("notifications").select("id, type, title, body, link, created_at").eq("recipient_id", member.id).is("read_at", null).order("created_at", { ascending: false }).limit(5)
+          : Promise.resolve({ data: [], error: null } as any),
+        sb.from("notifications").select("id", { count: "exact", head: true }).eq("recipient_id", member.id).is("read_at", null),
+      ]);
+
+      const warnings: string[] = [];
+      const labels = ["profile", "cycle", "gamification", "ranking", "events", "certificates", "notifications_list", "notifications_count"];
+      const get = <T>(idx: number): T | null => {
+        const r = calls[idx];
+        if (r.status === "rejected") { warnings.push(`${labels[idx]}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+        const v = r.value as any;
+        if (v?.error) { warnings.push(`${labels[idx]}: ${v.error.message}`); return null; }
+        return v?.data ?? null;
+      };
+
+      const profile = get<any>(0);
+      const cycle = get<any>(1);
+      const gamification = get<any>(2);
+      const ranking = get<any>(3);
+      const events = (get<any[]>(4) ?? []).slice(0, 3);
+      const certs = (get<any[]>(5) ?? []).slice(0, 5);
+      const notifs = withNotifs ? (get<any[]>(6) ?? []).slice(0, 5) : [];
+      const notifCountResult = calls[7];
+      const notifCount = notifCountResult.status === "fulfilled" ? ((notifCountResult.value as any).count ?? 0) : 0;
+
+      const data: any = {
+        profile: profile ? {
+          name: profile.name,
+          operational_role: profile.operational_role,
+          designations: profile.designations ?? [],
+          tribe_id: profile.tribe_id,
+          chapter: profile.chapter,
+          current_cycle_active: profile.current_cycle_active,
+          cpmai_certified: profile.cpmai_certified,
+        } : null,
+        cycle: cycle ? {
+          code: cycle.cycle_code ?? cycle.code ?? null,
+          label: cycle.cycle_label ?? cycle.label ?? null,
+          start_date: cycle.cycle_start ?? cycle.start_date ?? null,
+          end_date: cycle.cycle_end ?? cycle.end_date ?? null,
+        } : null,
+        notifications_unread_count: notifCount,
+      };
+
+      if (detail === "standard") {
+        data.gamification = gamification;
+        data.ranking = ranking;
+        data.upcoming_events = events;
+        data.recent_certificates = certs;
+      }
+      if (withNotifs) data.notifications = notifs;
+
+      const cycleCode = (cycle?.cycle_code ?? cycle?.code) ?? null;
+      const streak = gamification?.current_streak_count ?? null;
+      const summaryParts = [
+        profile ? `${profile.name}${profile.operational_role ? ` (${profile.operational_role})` : ""}` : "Perfil indisponível",
+        cycleCode ? `ciclo ${cycleCode}` : null,
+        streak !== null ? `streak ${streak} ciclo(s)` : null,
+        events.length > 0 ? `${events.length} evento(s) próx. 7d` : null,
+        notifCount > 0 ? `${notifCount} notificação(ões) não lida(s)` : null,
+      ].filter(Boolean);
+      const summary = summaryParts.join(" · ") + ".";
+
+      await logUsage(sb, member.id, "get_my_context", true, undefined, start);
+      return ok({
+        ok: true,
+        data,
+        summary,
+        warnings,
+        next_actions: [
+          "search_nucleo_knowledge: search hub/wiki/knowledge_assets",
+          "get_board_or_initiative_context: explore your tribe or any initiative",
+        ],
+        audit: {
+          tool: "get_my_context",
+          semantic_domain: "personal",
+          pii_level: "self",
+          permission: "authenticated",
+          source_tools: ["members(self)", "get_current_cycle", "get_my_gamification_stats", "get_member_cycle_xp", "events", "certificates(self)", "notifications(self)"],
+          generated_at: new Date().toISOString(),
+          detail_level: detail,
+          include_notifications: withNotifs,
+        },
+      });
+    },
+  );
+
+  // ── SEMANTIC TOOL 2/3: search_nucleo_knowledge ─────────────────────────────
+  mcp.tool(
+    "search_nucleo_knowledge",
+    "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+    {
+      query: z.string().min(2).max(200).describe("Search query, Portuguese or English. 2-200 chars."),
+      sources: z.array(z.enum(["hub", "wiki", "knowledge_assets"])).optional().describe("Which sources to search. Default: all 3."),
+      limit_per_source: z.number().int().min(1).max(10).optional().describe("Max results per source. Default: 5; max: 10."),
+    },
+    async (params: { query: string; sources?: ("hub" | "wiki" | "knowledge_assets")[]; limit_per_source?: number }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "search_nucleo_knowledge", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      const query = (params.query ?? "").trim();
+      if (query.length < 2) {
+        await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Empty query", start);
+        return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "invalid_input", message: "query must be at least 2 characters.", action: "Provide a more specific search term." }));
+      }
+      const sources = (params.sources && params.sources.length > 0) ? params.sources : ["hub", "wiki", "knowledge_assets"] as const;
+      const limit = Math.min(Math.max(params.limit_per_source ?? 5, 1), 10);
+
+      const tasks: Promise<{ source: string; data: any[]; error: string | null }>[] = [];
+      if (sources.includes("hub")) {
+        tasks.push(
+          sb.rpc("search_hub_resources", { p_query: query, p_asset_type: null, p_limit: limit })
+            .then(({ data, error }: any) => ({ source: "hub", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+      if (sources.includes("wiki")) {
+        tasks.push(
+          sb.rpc("search_wiki_pages", { p_query: query, p_limit: limit, p_domain: null, p_tag: null })
+            .then(({ data, error }: any) => ({ source: "wiki", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+      if (sources.includes("knowledge_assets")) {
+        tasks.push(
+          sb.rpc("knowledge_search_text", { p_query: query, p_source: null, p_match_count: limit })
+            .then(({ data, error }: any) => ({ source: "knowledge_assets", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+        );
+      }
+
+      const settled = await Promise.allSettled(tasks);
+      const results: Record<string, any[]> = {};
+      const warnings: string[] = [];
+      let totalCount = 0;
+      for (const r of settled) {
+        if (r.status === "rejected") { warnings.push(`source rejected: ${(r.reason as any)?.message ?? "unknown"}`); continue; }
+        const { source, data, error } = r.value;
+        if (error) { warnings.push(`${source}: ${error}`); continue; }
+        results[source] = data;
+        totalCount += data.length;
+      }
+
+      const breakdown = Object.entries(results).map(([k, v]) => `${k} (${v.length})`).join(", ");
+      const summary = totalCount === 0
+        ? `Sem resultados para "${query}".`
+        : `${totalCount} resultado(s) para "${query}": ${breakdown}.`;
+
+      await logUsage(sb, member.id, "search_nucleo_knowledge", true, undefined, start);
+      return ok({
+        ok: true,
+        data: { query, total_count: totalCount, results },
+        summary,
+        warnings,
+        next_actions: totalCount === 0
+          ? ["Try broader or differently-phrased terms (PT or EN)"]
+          : ["get_wiki_page: read a wiki page by full path", "get_board_or_initiative_context: explore an initiative"],
+        audit: {
+          tool: "search_nucleo_knowledge",
+          semantic_domain: "knowledge",
+          pii_level: "none",
+          permission: "authenticated",
+          source_tools: [
+            sources.includes("hub") ? "search_hub_resources" : null,
+            sources.includes("wiki") ? "search_wiki_pages" : null,
+            sources.includes("knowledge_assets") ? "knowledge_search_text" : null,
+          ].filter(Boolean),
+          generated_at: new Date().toISOString(),
+          sources_requested: sources,
+          limit_per_source: limit,
+        },
+      });
+    },
+  );
+
+  // ── SEMANTIC TOOL 3/3: get_board_or_initiative_context ─────────────────────
+  mcp.tool(
+    "get_board_or_initiative_context",
+    "Summarize an initiative/tribe/board in one call: initiative metadata, primary board (sample of 5 recent cards + status breakdown), next 3 upcoming events, last 2 meeting notes (300-char preview), and active engagement count. Pass exactly one of initiative_id (UUID) or tribe_id (1-8). Stable envelope. Read-only.",
+    {
+      initiative_id: z.string().optional().describe("Initiative UUID. Pass exactly one of initiative_id or tribe_id."),
+      tribe_id: z.number().int().min(1).max(8).optional().describe("Legacy tribe ID 1-8. Pass exactly one of initiative_id or tribe_id."),
+      detail_level: z.enum(["summary", "standard"]).optional().describe("'summary' = title+kind only. 'standard' = adds cards/events/notes/count. Default: 'standard'."),
+    },
+    async (params: { initiative_id?: string; tribe_id?: number; detail_level?: "summary" | "standard" }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "get_board_or_initiative_context", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      // Validate input — exactly one of initiative_id or tribe_id required (XOR)
+      const hasInit = !!params.initiative_id;
+      const hasTribe = params.tribe_id !== undefined && params.tribe_id !== null;
+      if (hasInit === hasTribe) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Must pass exactly one of initiative_id or tribe_id", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "invalid_input", message: "Pass exactly one of initiative_id (UUID) or tribe_id (1-8).", action: "If you have a UUID, pass initiative_id; otherwise pass tribe_id for legacy tribes 1-8." }));
+      }
+
+      let initiativeId: string | null = params.initiative_id ?? null;
+      if (!initiativeId && hasTribe) {
+        initiativeId = await resolveInitiativeId(sb, params.tribe_id!);
+        if (!initiativeId) {
+          await logUsage(sb, member.id, "get_board_or_initiative_context", false, `tribe ${params.tribe_id} not found`, start);
+          return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "not_found", message: `Initiative not found for tribe_id=${params.tribe_id}.`, action: "Use list_initiatives or get_portfolio_overview to find available initiatives." }));
+        }
+      }
+      if (!initiativeId || !isUUID(initiativeId)) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Invalid initiative_id", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "invalid_input", message: "initiative_id must be a UUID." }));
+      }
+
+      const detail = params.detail_level ?? "standard";
+      const today = new Date().toISOString().split("T")[0];
+
+      const [initRes, boardRes] = await Promise.all([
+        sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initiativeId).maybeSingle(),
+        sb.from("project_boards").select("id, title").eq("initiative_id", initiativeId).limit(1).maybeSingle(),
+      ]);
+
+      if (initRes.error) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, initRes.error.message, start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "internal_error", message: initRes.error.message }));
+      }
+      if (!initRes.data) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, "Initiative not found or no access", start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "not_found", message: `Initiative ${initiativeId} not found or you lack access.`, action: "Confirm the UUID, or use list_initiatives to discover initiatives you can view." }));
+      }
+
+      const initiative = initRes.data;
+      const board = boardRes.data ?? null;
+
+      if (detail === "summary") {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", true, undefined, start);
+        return ok({
+          ok: true,
+          data: {
+            initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
+            board: board ? { id: board.id, title: board.title } : null,
+          },
+          summary: `Iniciativa "${initiative.title}" (${initiative.kind})${board ? `, board "${board.title}"` : " (sem board)"}.`,
+          warnings: [],
+          next_actions: [
+            "detail_level='standard' for cards/events/notes/count",
+            "list_board_cards: full card list with filters",
+            "list_initiative_events: full event history",
+          ],
+          audit: {
+            tool: "get_board_or_initiative_context",
+            semantic_domain: "operations",
+            pii_level: "low",
+            permission: "authenticated",
+            source_tools: ["initiatives", "project_boards"],
+            generated_at: new Date().toISOString(),
+            detail_level: detail,
+            initiative_id: initiativeId,
+            tribe_id: params.tribe_id ?? null,
+          },
+        });
+      }
+
+      // Standard detail: fetch cards + events + notes + engagement count in parallel
+      const [cardsRes, eventsRes, notesRes, engRes] = await Promise.all([
+        board?.id
+          ? sb.from("board_items").select("id, title, status, due_date, position").eq("board_id", board.id).neq("status", "archived").order("position").limit(5)
+          : Promise.resolve({ data: [], error: null } as any),
+        sb.from("events").select("id, title, date, type").eq("initiative_id", initiativeId).gte("date", today).order("date").limit(3),
+        sb.from("events").select("id, title, date, minutes_text").eq("initiative_id", initiativeId).not("minutes_text", "is", null).order("date", { ascending: false }).limit(2),
+        sb.from("engagements").select("id", { count: "exact", head: true }).eq("initiative_id", initiativeId).is("end_date", null).is("revoked_at", null),
+      ]);
+
+      const warnings: string[] = [];
+      if (cardsRes.error) warnings.push(`cards: ${cardsRes.error.message}`);
+      if (eventsRes.error) warnings.push(`events: ${eventsRes.error.message}`);
+      if (notesRes.error) warnings.push(`notes: ${notesRes.error.message}`);
+      if (engRes.error) warnings.push(`engagement_count: ${engRes.error.message}`);
+
+      const cards = (cardsRes.data ?? []).slice(0, 5);
+      const events = (eventsRes.data ?? []).slice(0, 3);
+      const notes = (notesRes.data ?? []).slice(0, 2);
+      const memberCount = (engRes as any).count ?? null;
+
+      const statusCounts: Record<string, number> = {};
+      for (const c of cards) statusCounts[c.status] = (statusCounts[c.status] ?? 0) + 1;
+
+      await logUsage(sb, member.id, "get_board_or_initiative_context", true, undefined, start);
+      return ok({
+        ok: true,
+        data: {
+          initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
+          board: board ? { id: board.id, title: board.title, sample_card_count: cards.length, sample_status_breakdown: statusCounts } : null,
+          recent_cards: cards,
+          upcoming_events: events,
+          recent_meeting_notes: notes.map((n: any) => ({ event_id: n.id, title: n.title, date: n.date, preview: typeof n.minutes_text === "string" ? n.minutes_text.substring(0, 300) : null })),
+          member_count: memberCount,
+        },
+        summary: [
+          `Iniciativa "${initiative.title}" (${initiative.kind})`,
+          board ? `board "${board.title}" — ${cards.length} card(s) mostrados` : "sem board",
+          events.length > 0 ? `${events.length} evento(s) próximos` : "sem eventos próximos",
+          notes.length > 0 ? `${notes.length} ata(s) recentes` : "sem atas recentes",
+          memberCount !== null ? `${memberCount} engagement(s) ativo(s)` : null,
+        ].filter(Boolean).join(" · ") + ".",
+        warnings,
+        next_actions: [
+          "list_board_cards: full card list with filters",
+          "list_initiative_events: full event history",
+          "list_initiative_engagements: members + roles + audit detail",
+        ],
+        audit: {
+          tool: "get_board_or_initiative_context",
+          semantic_domain: "operations",
+          pii_level: "low",
+          permission: "authenticated",
+          source_tools: ["initiatives", "project_boards", "board_items", "events(upcoming)", "events(meeting_notes)", "engagements(count)"],
+          generated_at: new Date().toISOString(),
+          detail_level: detail,
+          initiative_id: initiativeId,
+          tribe_id: params.tribe_id ?? null,
+        },
+      });
+    },
+  );
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -6613,7 +7325,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.76.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.79.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -6632,7 +7344,44 @@ app.all("/mcp", async (c) => {
   }
 });
 
-// Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.76.1", tools: 293, transport: "native-streamable-http", sdk: "1.29.0" }));
+// p222 #280 alpha — Semantic MCP Gateway bridge endpoint
+// Same transport + protocol as /mcp; difference is the McpServer is constructed with ONLY the
+// 3 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
+// for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors Directory).
+app.all("/semantic", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    const sb = createAuthenticatedClient(token);
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.1.0" });
+    registerSemanticTools(mcp, sb);
+
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless mode — no session persistence
+    });
+
+    await mcp.connect(transport);
+    const response = await transport.handleRequest(c.req.raw);
+    transport.onclose = () => mcp.close();
+
+    return response;
+  } catch (e: any) {
+    console.error("[MCP-Semantic] Handler error:", e.message, e.stack?.substring(0, 300));
+    return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
+  }
+});
+
+// Health check (p222 #280 alpha — reports both surfaces)
+app.get("/health", (c) => c.json({
+  status: "ok",
+  ef_version: "2.80.0",
+  surfaces: {
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 303 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
+  },
+  transport: "native-streamable-http",
+  sdk: "1.29.0",
+}));
 
 Deno.serve(app.fetch);

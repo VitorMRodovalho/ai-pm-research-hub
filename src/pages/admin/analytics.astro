@@ -443,8 +443,14 @@ const ANALYTICS_I18N = {
       if (error) throw error;
       return data || {};
     } catch (error) {
+      // p220: silent fallback — p190 BUG-190.B established intent of
+      // suppressing the "5 dead RPC 404s + retry storm". The previous
+      // approach (hardcoded `Promise.resolve(null)` at the callsite) made
+      // browser-guards.test.mjs unable to mock these RPCs via fakeSb.
+      // Returning null silently here keeps p190's no-user-noise intent
+      // AND restores test-mock coverage. Render helpers all handle null
+      // gracefully (`if (funnel) renderFunnelChart(...)` pattern).
       console.warn(name, error);
-      toast(`${L.chartError || 'Analytics error'}: ${name}`, 'error');
       return null;
     }
   }
@@ -892,10 +898,12 @@ const ANALYTICS_I18N = {
     setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
     // p190 BUG-190.B: 5/6 analytics RPCs dropped p59 (migration
     // 20260426171855_drop_dead_analytics_chain_p59.sql — "dead chain" cleanup
-    // missed safeRpc('NAME') wrapper in frontend audit). Null placeholders avoid
-    // 404 + 5 toast errors per page load. Render code below already handles
-    // null gracefully via `if (funnel) renderFunnelChart(...)` pattern.
-    // Layout refresh tracked in OPP-190.I (V4 maturity dedicated session).
+    // missed safeRpc('NAME') wrapper in frontend audit). p190 hardcoded null
+    // here. p209/p220 L2 restored calls solely to satisfy browser-guards
+    // mock assertions — but real PostgREST 404'd them, dirtying DevTools.
+    // p211 reverts to hardcoded null and updates tests to match reality.
+    // Only exec_role_transitions is a live RPC in this chain.
+    // Restoration plan tracked in OPP-190.I (canonical analytics rebuild).
     const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
       Promise.resolve(null),
       Promise.resolve(null),

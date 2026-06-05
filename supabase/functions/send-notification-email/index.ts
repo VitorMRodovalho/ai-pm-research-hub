@@ -494,7 +494,21 @@ Deno.serve(async (req) => {
         .eq('id', notif.recipient_id)
         .single()
 
-      if (memberPrefs?.notify_delivery_mode_pref === 'suppress_all') continue
+      // ADR-0022 Amendment D Leaf 6 (p228 #260, 2026-05-23): candidate-facing
+      // operational selection emails BYPASS suppress_all per PM D-sel-4. Workflow-
+      // critical operational > opt-out preference for the 4 types below. Marketing,
+      // digest, and evaluator/admin-internal types still respect suppress_all.
+      // Source of truth: SQL helper public._is_operational_candidate_facing(text)
+      // matched here for EF-side parity. Update both sides in lock-step.
+      const OPERATIONAL_CANDIDATE_FACING = new Set([
+        'selection_termo_due',
+        'selection_approved',
+        'selection_interview_scheduled',
+        'selection_cutoff_approved',
+      ])
+      const isOperationalCandidateFacing = OPERATIONAL_CANDIDATE_FACING.has(notif.type)
+
+      if (memberPrefs?.notify_delivery_mode_pref === 'suppress_all' && !isOperationalCandidateFacing) continue
 
       // Send email — IP ratification types carry specific title (doc + version + action + submitter)
       // so we use notif.title directly. Other types fall back to TYPE_SUBJECTS generic.

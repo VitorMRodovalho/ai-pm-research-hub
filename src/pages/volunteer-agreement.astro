@@ -287,7 +287,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       btn.textContent = t('volunteer.signing', lang);
 
       try {
-        const { data, error } = await sb.rpc('sign_volunteer_agreement', { p_language: lang });
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 500) : null;
+        const { data, error } = await sb.rpc('sign_volunteer_agreement', { p_language: lang, p_signed_user_agent: ua });
         if (error) throw error;
         if (data?.error === 'already_signed') { app.innerHTML = renderAlreadySigned(lang); return; }
         if (data?.error === 'profile_incomplete') {

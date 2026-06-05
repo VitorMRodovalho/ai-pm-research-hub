@@ -1,0 +1,22 @@
+---
+/**
+ * /governance/documents/[chainId] — External reviewer entry point.
+ *
+ * Same ReviewChainIsland used by /admin/governance/documents/[chainId] but
+ * with externalReviewMode=true: no AdminSidebar, banner explains read+comment-
+ * only scope, export/audit links route to /governance/* siblings.
+ *
+ * p220 BUG-219.A Phase 3 (2026-05-22). Issue #270.
+ */
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import ReviewChainIsland from '../../../../components/governance/ReviewChainIsland';
+import { t, getLangFromURL, type Lang } from '../../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { chainId } = Astro.params;
+---
+<BaseLayout title={t('admin.governance.review.title', lang)} lang={lang}>
+  <div class="max-w-[1600px] mx-auto px-4 py-6">
+    <ReviewChainIsland client:load chainId={chainId || ''} externalReviewMode={true} />
+  </div>
+</BaseLayout>

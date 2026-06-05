@@ -1,5 +1,23 @@
 # Claude Code — Project Rules
 
+## Grounding — numbers must come from a live tool result (MANDATORY)
+
+**IMPORTANT — YOU MUST:** any DB count, %, metric, cohort size, denominator, version number, or test baseline
+that enters a user-decision prompt, an `AskUserQuestion` option, a commit message, a PR body, a SPEC, or a memory
+file MUST be produced by a tool call **in the current turn**. NEVER recite or "correct" a number from memory,
+from `MEMORY.md`, from a handoff, or from a prior turn — **re-query the source of truth** (`execute_sql`
+read-only / MCP RPC / `npm view` / `curl` / `npm test`). A simulation/estimate is NOT a measurement; label it as
+such and never let it become a stated antes/depois.
+
+- If you do not have a fresh tool result for a number, **say so and re-query** — do NOT emit a confident estimate.
+- When **correcting** a wrong number, re-run the query; do not nudge the value from memory (that produces another
+  fabrication — see the 2026-05-30 incident in `reference_process_fix_and_context_hygiene_2026_05_30`).
+- Before an `AskUserQuestion` whose options contain a number, the query that produced it must already be in the
+  transcript above the question.
+- antes→depois: capture BOTH from live queries (BEFORE pre-apply, AFTER post-apply). Never derive "before" by
+  reasoning backward from "after".
+- Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
+
 ## Domain Model V4 (concluído 2026-04-13)
 Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` para decisões e histórico. Decisões-chave:
 - `can()` / `can_by_member()` é a source of truth para autoridade (ADR-0007)
@@ -12,7 +30,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 - **Supabase:** `ldrfrvwhxsmgaabwmaik` (sa-east-1)
 - **Stack:** Astro v6 (Cloudflare Workers) · Supabase Postgres + Edge Functions (Deno) · Cloudflare worker `pmi-vep-sync` (wrangler 4.x)
 - **MCP server:** `nucleo-mcp` em `supabase/functions/nucleo-mcp/` — OAuth 2.1 + custom domain `nucleoia.vitormr.dev/mcp` (ver `.claude/rules/mcp.md`)
-- **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level. Updated tokenizer (1.0-1.35x token mapping). `/ultrareview` for code review.
+- **AI Model:** Claude Opus 4.8 (`claude-opus-4-8`) — released 2026-05-28. xhigh effort level. `/ultrareview` for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA / MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y).
 - **Current state (counts, last commits, session handoffs):** NOT pinned in CLAUDE.md (per Anthropic guidance — frequently-changing data bloats context). Use `/audit` skill, MCP tools `get_admin_dashboard` / `get_invitation_health`, or read `memory/handoff_p*.md` + `git log` when needed.
@@ -68,6 +86,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - i18n: `.claude/rules/i18n.md`
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
+- **Bypass protocol (--admin / direct push)**: `.claude/rules/bypass-protocol.md` (post-p209 governance — Option C Híbrido + weekly cron audit at `.github/workflows/bypass-audit-weekly.yml`)
 - V4 refactor invariants (historical): `.claude/rules/refactor-in-progress.md`
 
 ## Council (multi-agent review structure)

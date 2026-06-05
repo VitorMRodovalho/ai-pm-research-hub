@@ -1,0 +1,21 @@
+---
+/**
+ * /governance/documents/[chainId]/export-pdf — external reviewer PDF export.
+ * Mirrors /admin/governance/documents/[chainId]/export-pdf but uses BaseLayout
+ * (no admin sidebar). Same ChainPDFExportIsland; same get_chain_for_pdf RPC
+ * (broadened to accept p195 carve-out via migration 20260804000000).
+ *
+ * p220 BUG-219.A Phase 3 (2026-05-22). Issue #270.
+ */
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import ChainPDFExportIsland from '../../../../components/governance/ChainPDFExportIsland';
+import { t, getLangFromURL, type Lang } from '../../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { chainId } = Astro.params;
+---
+<BaseLayout title={t('admin.governance.exportPdf.title', lang)} lang={lang}>
+  <div class="max-w-[900px] mx-auto px-4 py-6">
+    <ChainPDFExportIsland client:only="react" chainId={chainId || ''} />
+  </div>
+</BaseLayout>

@@ -45,7 +45,6 @@ import {
   getActiveOpportunities,
   upsertSelectionApplication,
   findPersonIdByEmail,
-  upsertPmiChapterMemberships,
   insertServiceHistory,
   setEngagementEndDateSource
 } from './db';
@@ -53,7 +52,6 @@ import { issueOnboardingToken } from './onboarding-token';
 import { dispatchWelcome } from './welcome';
 import {
   mapScriptToNucleo,
-  mapPmiChapterMemberships,
   mapServiceHistory
 } from './script-mapper';
 import { syncResumesParallel, type ResumeSyncResult } from './resume-sync';
@@ -181,6 +179,18 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: 'missing_applications', message: 'body.applications array required' }, 400);
   }
 
+  // BUG-224.A (#237) council code-reviewer HIGH: surface ORG_ID misconfig at
+  // request time with a clear message rather than letting Postgres throw a
+  // 22P02 invalid_text_representation buried in the per-app error log. The
+  // var is declared as `string` in types.ts, but wrangler does not enforce
+  // [vars] presence at deploy time.
+  if (!env.ORG_ID) {
+    return jsonResponse({
+      error: 'server_misconfig',
+      message: 'env.ORG_ID is required — configure [vars] ORG_ID in wrangler.toml'
+    }, 500);
+  }
+
   const db = createDbClient(env);
 
   // Log this ingest run for observability (cron_run_log)
@@ -239,7 +249,6 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     // p126 E2 Phase B metrics
     phase_b_processed: 0,
     phase_b_skipped_private: 0,
-    pmi_chapter_memberships_upserted: 0,
     service_history_inserted: 0,
     // p195 Opção B+: resume binary mirror to Supabase Storage
     resumes_synced: 0,
@@ -369,6 +378,12 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       } as any, dryDiff.errors);
     }
 
+    // #224 — surface correlation id + Phase A source-export warning so the
+    // admin UI can deep-link and disambiguate the uploaded ingestResult.error
+    // (Phase A) from this dry-run's status (Phase B).
+    dryDiff.run_id = runId;
+    dryDiff.ingest_result_warning = body.ingestResult ?? null;
+
     return jsonResponse(dryDiff, 200);
   }
 
@@ -473,15 +488,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         try {
           const personId = await findPersonIdByEmail(db, mapped.email);
 
-          // pmi_chapter_memberships UPSERT (canonical multi-chapter — Decision 2 hybrid)
           if (personId) {
-            const memberships = mapPmiChapterMemberships(app, personId);
-            if (memberships.length > 0) {
-              const upserted = await upsertPmiChapterMemberships(db, memberships);
-              summary.pmi_chapter_memberships_upserted =
-                (summary.pmi_chapter_memberships_upserted ?? 0) + upserted;
-            }
-
+            // #441 (A1 retire): pmi_chapter_memberships UPSERT removed — the table was never
+            // created (whole p125-E1 series unapplied), so this was dead code calling a
+            // non-existent relation. service_history + engagement fallbacks below stay live.
             // Decision 8 — engagement end_date_source 'pmi_vep' fallback
             // Only set if VEP serviceEndDateUTC present AND source not already 'agreement'
             if (app.serviceEndDateUTC) {
@@ -549,7 +559,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
               source_id: result.id,
               scopes: ['profile_completion', 'video_screening', 'consent_giving'],
               ttl_days: ttlDays,
-              issued_by_worker: WORKER_NAME + '-ingest'
+              issued_by_worker: WORKER_NAME + '-ingest',
+              // BUG-224.A (#237): worker has no JWT context; pass env.ORG_ID
+              // explicitly because onboarding_tokens.organization_id default
+              // auth_org() resolves to NULL under SERVICE_ROLE_KEY auth.
+              organization_id: env.ORG_ID
             });
 
             const welcomeResult = await dispatchWelcome(db, env, {
@@ -598,6 +612,12 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       : 'success';
     await logRunComplete(db, runId, finalStatus, summary as any, summary.errors);
   }
+
+  // #224 — surface correlation id + Phase A source-export warning so the
+  // admin UI can deep-link to cron_run_log and disambiguate the uploaded
+  // ingestResult.error (Phase A export-side) from this Apply call's status.
+  summary.run_id = runId;
+  summary.ingest_result_warning = body.ingestResult ?? null;
 
   return jsonResponse(summary, 200);
 }

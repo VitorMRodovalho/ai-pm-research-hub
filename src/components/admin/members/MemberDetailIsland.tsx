@@ -34,10 +34,11 @@ interface MemberDetail {
     is_active: boolean; tribe_id: number | null; tribe_name: string | null;
     chapter: string; auth_id: string | null; credly_username: string | null;
     last_seen_at: string | null; total_sessions: number; credly_badges: any[];
+    interview_booking_url: string | null;
   };
   cycles: Array<{ cycle: string; tribe_id: number | null; tribe_name: string | null; operational_role: string; designations: string[]; status: string }>;
   gamification: { total_xp: number; rank: number; categories: Array<{ category: string; xp: number; description: string }> } | null;
-  attendance: { total_events: number; attended: number; rate: number; recent: Array<{ event_name: string; event_date: string; present: boolean }> };
+  attendance: { engagement_pct: number; reliability_pct: number; eligible_total: number; present: number; absent: number; excused: number; no_record: number; recorded_total: number; recorded_present: number; recorded_absent: number; recorded_excused: number; recent: Array<{ event_name: string; event_date: string; present: boolean | null; excused: boolean }> };
   publications: Array<{ id: string; title: string; status: string; submitted_at: string; target_type: string }>;
   audit_log: Array<{ action: string; changes: any; actor_name: string; created_at: string }>;
 }
@@ -77,6 +78,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   const [editChapter, setEditChapter] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
+  const [editBookingUrl, setEditBookingUrl] = useState('');
   const [chapters, setChapters] = useState<Chapter[]>([]);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
@@ -108,6 +110,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     setEditChapter(m.chapter || 'PMI-GO');
     setEditActive(m.is_active);
     setEditSuperadmin(m.is_superadmin);
+    setEditBookingUrl(m.interview_booking_url || '');
     setEditing(true);
   };
 
@@ -130,6 +133,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     if (editChapter !== m.chapter) changes.chapter = editChapter;
     if (editActive !== m.is_active) changes.is_active = editActive;
     if (editSuperadmin !== m.is_superadmin) changes.is_superadmin = editSuperadmin;
+    if (editBookingUrl !== (m.interview_booking_url || '')) changes.interview_booking_url = editBookingUrl;
 
     const { error } = await sb.rpc('admin_update_member_audited', {
       p_member_id: memberId,
@@ -298,6 +302,26 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
             </div>
           </div>
 
+          {/* Interview Booking URL (SPEC #348 Child #3 — populates members.interview_booking_url) */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="interview_booking_url" className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              {t('admin.member.bookingUrl.label', 'URL de agendamento de entrevista')}
+            </label>
+            <input
+              id="interview_booking_url"
+              type="url"
+              pattern="^https?://.*"
+              value={editBookingUrl}
+              onChange={e => setEditBookingUrl(e.target.value)}
+              placeholder={t('admin.member.bookingUrl.placeholder', 'https://calendar.app.google/...')}
+              title={t('admin.member.bookingUrl.invalid', 'A URL precisa começar com http:// ou https://')}
+              className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"
+            />
+            <span className="text-[.7rem] text-[var(--text-muted)]">
+              {t('admin.member.bookingUrl.help', 'Usada para entrevistas da trilha pesquisador(a); a trilha líder usa o link do ciclo.')}
+            </span>
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={cancelEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer inline-flex items-center gap-1.5">
@@ -433,9 +457,18 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
       {/* Tab: Presenca */}
       {activeTab === 'attendance' && (
         <div className="space-y-4">
-          <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
-            <div className="text-lg font-bold text-[var(--text-primary)]">
-              Taxa: {data.attendance.rate}% <span className="text-sm font-normal text-[var(--text-muted)]">({data.attendance.attended}/{data.attendance.total_events} eventos)</span>
+          {/* p277 #419 m3 PR6: two-metric per-member — Participação (engagement) headline + Confiabilidade
+              (reliability) diagnostic with raw P/A/E counts (admin surface, D10-compliant). */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
+              <div className="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)]">Participação</div>
+              <div className="text-2xl font-black text-teal-500">{data.attendance.engagement_pct}%</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">{data.attendance.present} presente · {data.attendance.absent} ausente{data.attendance.excused > 0 ? ` · ${data.attendance.excused} justif.` : ''}{data.attendance.no_record > 0 ? ` · ${data.attendance.no_record} s/registro` : ''} / {data.attendance.eligible_total} esperados</div>
+            </div>
+            <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
+              <div className="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)]">Confiabilidade de registro</div>
+              <div className="text-2xl font-black text-[var(--text-secondary)]">{data.attendance.reliability_pct}%</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">P{data.attendance.recorded_present} · A{data.attendance.recorded_absent} · E{data.attendance.recorded_excused} ({data.attendance.recorded_total} registros)</div>
             </div>
           </div>
 
@@ -456,7 +489,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
                   <tr key={i} className="border-t border-[var(--border-default)]">
                     <td className="px-4 py-2.5 text-[var(--text-secondary)]">{fmtDate(evt.event_date)}</td>
                     <td className="px-4 py-2.5 text-[var(--text-primary)]">{evt.event_name}</td>
-                    <td className="px-4 py-2.5 text-center text-base">{evt.present ? '\u2705' : '\u274C'}</td>
+                    <td className="px-4 py-2.5 text-center text-base">{evt.excused ? '\u{1F538}' : evt.present === true ? '\u2705' : evt.present === false ? '\u274C' : '\u2014'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -65,6 +65,7 @@ await test('.well-known/oauth-protected-resource', async () => {
   const json = await res.json();
   assert.equal(json.resource, `${BASE}/mcp`);
   assert.ok(json.scopes_supported?.includes('mcp:tools'));
+  assert.ok(json.scopes_supported?.includes('offline_access'));
 });
 
 await test('.well-known/oauth-authorization-server', async () => {
@@ -74,6 +75,8 @@ await test('.well-known/oauth-authorization-server', async () => {
   assert.equal(json.issuer, BASE);
   assert.ok(json.authorization_endpoint?.includes('/oauth/authorize'));
   assert.ok(json.token_endpoint?.includes('/oauth/token'));
+  assert.ok(json.grant_types_supported?.includes('refresh_token'));
+  assert.ok(json.scopes_supported?.includes('offline_access'));
   assert.ok(json.code_challenge_methods_supported?.includes('S256'));
 });
 

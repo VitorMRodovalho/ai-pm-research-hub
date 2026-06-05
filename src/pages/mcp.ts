@@ -151,6 +151,16 @@ export const ALL: APIRoute = async ({ request }) => {
     if (val) headers.set(key, val);
   }
 
+  // p220: detect tools/list so we can post-process the response to strip
+  // the non-MCP-spec `execution.taskSupport` field added by @modelcontextprotocol/sdk@1.29.0.
+  // Stricter MCP clients (Perplexity) silently drop the entire tools array when
+  // unknown top-level fields appear on each tool — symptom: "No tools to display"
+  // despite tools/list returning 200 with all 299 tools. The field is Anthropic-
+  // internal (Claude Managed Agents task scheduling hint) and not part of the
+  // public MCP spec (https://spec.modelcontextprotocol.io). Strip universally so
+  // every client sees a spec-compliant payload.
+  const isToolsList = typeof reqBody === 'string' && /"method"\s*:\s*"tools\/list"/.test(reqBody);
+
   try {
     const upstream = new Request(UPSTREAM, {
       method: request.method,
@@ -168,7 +178,33 @@ export const ALL: APIRoute = async ({ request }) => {
     const respHeaders = new Headers(res.headers);
     for (const [k, v] of Object.entries(CORS_HEADERS)) respHeaders.set(k, v);
 
-    // For SSE responses, stream through without buffering
+    // p220 — tools/list spec-cleanup: buffer + strip `execution` from each tool
+    // (works for both SSE-wrapped and plain JSON bodies; same regex either way
+    // because the field's JSON serialization is constant).
+    if (isToolsList) {
+      const rawBody = await res.text();
+      // Match optional leading/trailing comma + the constant execution object.
+      // The SDK always emits this field with the exact taskSupport:"forbidden"
+      // value, so a literal regex is safe (no parser cost).
+      const cleanedBody = rawBody
+        .replace(/,\s*"execution"\s*:\s*\{\s*"taskSupport"\s*:\s*"forbidden"\s*\}/g, '')
+        .replace(/"execution"\s*:\s*\{\s*"taskSupport"\s*:\s*"forbidden"\s*\}\s*,?/g, '');
+      const respHeadersOut = new Headers(respHeaders);
+      respHeadersOut.delete('content-length'); // length changed after strip
+      await kvLog("mcp-upstream-tools-list", {
+        status: res.status,
+        contentType,
+        rawLen: rawBody.length,
+        cleanedLen: cleanedBody.length,
+        stripped: rawBody.length - cleanedBody.length,
+      });
+      return new Response(cleanedBody, {
+        status: res.status,
+        headers: respHeadersOut,
+      });
+    }
+
+    // For SSE responses (non tools/list), stream through without buffering
     if (isSSE) {
       await kvLog("mcp-upstream", {
         status: res.status,

@@ -165,6 +165,8 @@ export interface BoardMember {
   operational_role: string;
   board_role?: string;
   designations?: string[];
+  /** #187: V4 curate_content authority (from get_board_members) — canonical curator gate. */
+  can_curate?: boolean;
 }
 
 // ─── Board Summary (for selectors) ──────────────────────────────────────────

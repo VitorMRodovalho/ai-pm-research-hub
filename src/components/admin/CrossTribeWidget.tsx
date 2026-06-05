@@ -92,10 +92,10 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
         tribe_name: it.tribe_name as string,
         leader_name: it.leader,
         member_count: it.member_count,
-        // p195 LOW-194.C: clamp at 100 defensively in case of upstream data anomaly
-        // (numerator/(members×events) could exceed 1.0 if attendance > expected slots).
-        // rateColor thresholds (75/50) still work but UI no longer shows e.g. "130%".
-        attendance_rate: Math.min(Math.round(it.attendance_rate * 100), 100),
+        // p277 PR4: attendance_rate is now canonical engagement (0..1 by construction via
+        // get_attendance_engagement_summary), so the old Math.min(.,100) clamp for the
+        // members×events >1.0 anomaly is no longer needed.
+        attendance_rate: Math.round(it.attendance_rate * 100),
         cards_done: it.cards_completed,
         cards_total: it.total_cards,
         impact_hours: Math.round(it.total_hours),

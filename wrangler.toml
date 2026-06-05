@@ -1,10 +1,22 @@
 name = "platform"
+# Pin the production Cloudflare account so `wrangler deploy` fails fast on a wrong-account
+# login instead of half-uploading assets then erroring on a "missing KV" (code 10041).
+# SEDIMENT-WRANGLER-ACCOUNT (2026-06-05): prod `platform` + SESSION KV 6ffb04524d66… ("platform-session")
+# live under vitor.rodovalho@outlook.com's account 67d4c226…, NOT the personal gmail account
+# 4afb554f… (which has 0 KV namespaces). account_id is not a secret (it appears in dashboard URLs).
+account_id = "67d4c2262aebde75efb5fb6a1bb12cd2"
 main = "@astrojs/cloudflare/entrypoints/server"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [observability]
 enabled = true
+
+# p225 #281 — Cloudflare Browser Rendering binding for forward auto-gen of
+# certificate PDFs via /api/internal/cert-pdf-render/[id]. Requires Workers Paid plan.
+# See ADR-0098, src/pages/api/internal/cert-pdf-render/[id].ts, migration 20260805000005.
+[browser]
+binding = "BROWSER"
 
 [assets]
 directory = "./dist/client/"

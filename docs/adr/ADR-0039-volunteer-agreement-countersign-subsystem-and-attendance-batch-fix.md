@@ -461,3 +461,41 @@ Recomendação: **p69 mesmo**.
 - Parameter-gate vector pattern: 2nd closure (sediment of p68 detection).
 - Phase B'' tally: 83 → 86/246 (~35.0%).
 - 4 SECDEF advisor entries closed: 778 → 774.
+
+---
+
+## Amendment A — Counter-signature hash persistence + sign evidence fields (p203, 2026-05-19)
+
+**Trigger**: P162 audit items #50 + #51 surfaced via P201_MCP_ARCHITECTURE_AUDIT §6.4 live SQL evidence (`33 counter-signed certs / 0 counter_signature_hash persisted / 42 of 42 missing signed_ip+signed_user_agent`).
+
+**Decision**: extend the countersign subsystem with stored evidence so the chain supports a stronger non-repudiation claim, without changing the V4 authority model.
+
+**Changes shipped (issue #181, migration `20260724000000`)**:
+
+1. `ALTER TABLE certificates ADD COLUMN counter_signature_hash text` — additive, nullable, no FK or constraint.
+2. `counter_sign_certificate(p_certificate_id uuid, p_signed_ip text DEFAULT NULL, p_signed_user_agent text DEFAULT NULL)` (DROP+CREATE):
+   - Persists `counter_signature_hash` in the UPDATE (previously computed-and-returned, never stored).
+   - Safely casts `p_signed_ip::inet` inside `BEGIN/EXCEPTION` (NULL on parse failure — never break counter-sign on malformed IP).
+   - Server-side cap `p_signed_user_agent := left(p_signed_user_agent, 500)` (defense vs direct PostgREST / MCP callers that bypass the frontend trim).
+   - `admin_audit_log.changes` payload gains `counter_signature_hash`, `counter_signer_ip`, `counter_signer_user_agent`.
+3. `sign_volunteer_agreement(p_language text DEFAULT 'pt-BR', p_signed_ip text DEFAULT NULL, p_signed_user_agent text DEFAULT NULL)` (DROP+CREATE):
+   - `INSERT INTO certificates` now writes `signed_ip` + `signed_user_agent` (columns existed but were never populated).
+   - Same server-side UA cap + safe inet cast.
+   - `admin_audit_log.changes` gains `signed_ip` + `signed_user_agent`.
+
+**Forward-only**: historic 33 counter-signed rows and 42 signed rows cannot have evidence reconstructed (hash depends on the original `now()` value; client IP/UA was not captured). New rows from `20260724000000` onward persist the proof. Backfill is not in scope.
+
+**Authority preserved**:
+- `counter_sign_certificate` still gates on `can_by_member('manage_member')` OR a `chapter_board` auth_engagement match (no change to who can counter-sign).
+- `sign_volunteer_agreement` still relies on `auth.uid()` → member lookup (signer signs their own term).
+- No new V4 action introduced; no engagement_kind_permissions seed change.
+- No grant change beyond `GRANT EXECUTE TO authenticated` on the new signatures.
+
+**Compatibility**: existing callers passing only `{p_certificate_id}` or `{p_language}` continue to work via `DEFAULT NULL` on the new params. Frontend (`/admin/certificates`, `/volunteer-agreement`) updated to pass `navigator.userAgent.substring(0, 500)` matching the GovernanceApprovalTab.tsx pattern (IP stays NULL until a server-side wrapper is built — separate concern).
+
+**Out of Amendment A scope** (filed as follow-ups):
+- Server-side IP capture via Astro middleware / Cloudflare `CF-Connecting-IP` header.
+- `counter_signer_ip` / `counter_signer_user_agent` as dedicated columns on `certificates` (currently only in audit log).
+- Backfill of 1 legacy certificate with `period_end='2026-06-30'` (data cleanup; current sign body derives `period_end` correctly via VEP/cycle/history).
+
+Status: applied 2026-05-19 via Supabase MCP; `schema_migrations` registered; `check_schema_invariants()` 16/16=0 post-apply; 9 contract tests pass offline.

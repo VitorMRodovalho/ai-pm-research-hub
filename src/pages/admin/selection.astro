@@ -33,6 +33,20 @@ const SEL_I18N = {
   pertCutoffLabel: t('admin.selection.pertCutoffLabel', lang),
   pertCutoffTooltip: t('admin.selection.pertCutoffTooltip', lang),
   pertCutoffEmpty: t('admin.selection.pertCutoffEmpty', lang),
+  leaderExtraCutoffLabel: t('admin.selection.leaderExtraCutoffLabel', lang),
+  leaderExtraCutoffTooltip: t('admin.selection.leaderExtraCutoffTooltip', lang),
+  leaderExtraCutoffEmpty: t('admin.selection.leaderExtraCutoffEmpty', lang),
+  // p245 #229a — per-candidate PERT classification badges
+  pertBandAbove: t('admin.selection.pertBandAbove', lang),
+  pertBandWithin: t('admin.selection.pertBandWithin', lang),
+  pertBandBelow: t('admin.selection.pertBandBelow', lang),
+  pertBandTooltipFull: t('admin.selection.pertBandTooltipFull', lang),
+  leaderExtraDisabledChip: t('admin.selection.leaderExtraDisabledChip', lang),
+  // p247 #229b Frontend — per-candidate final-score cutoff
+  finalScoreCutoffTooltip: t('admin.selection.finalScoreCutoffTooltip', lang),
+  finalScoreDisabledChip: t('admin.selection.finalScoreDisabledChip', lang),
+  // p270 #365b — objective rank per track (server-side ROW_NUMBER over PARTITION BY role_applied)
+  colObjectiveRankHint: t('admin.selection.colObjectiveRankHint', lang),
   consentPendingBadge: t('admin.selection.consentPendingBadge', lang),
   consentPendingTooltip: t('admin.selection.consentPendingTooltip', lang),
   consentRevokedBadge: t('admin.selection.consentRevokedBadge', lang),
@@ -128,6 +142,23 @@ const SEL_I18N = {
     toastReasonRequired: t('admin.selection.modal.toastReasonRequired', lang),
     toastRescheduleSent: t('admin.selection.modal.toastRescheduleSent', lang),
     toastErrorReschedule: t('admin.selection.modal.toastErrorReschedule', lang),
+    cutoffInviteBtn: t('admin.selection.modal.cutoffInviteBtn', lang),
+    cutoffInviteSent: t('admin.selection.modal.cutoffInviteSent', lang),
+    cutoffInviteToast: t('admin.selection.modal.cutoffInviteToast', lang),
+    cutoffInviteError: t('admin.selection.modal.cutoffInviteError', lang),
+    cutoffInviteConfirm: t('admin.selection.modal.cutoffInviteConfirm', lang),
+    rescueStuckTitle: t('admin.selection.modal.rescueStuckTitle', lang),
+    rescueStuckHint: t('admin.selection.modal.rescueStuckHint', lang),
+    rescueStuckBtn: t('admin.selection.modal.rescueStuckBtn', lang),
+    rescueStuckConfirm: t('admin.selection.modal.rescueStuckConfirm', lang),
+    rescueStuckToast: t('admin.selection.modal.rescueStuckToast', lang),
+    rescueStuckError: t('admin.selection.modal.rescueStuckError', lang),
+    // #472 corr.3 — admin offline-interview record
+    offlineInterviewBtn: t('admin.selection.modal.offlineInterviewBtn', lang),
+    offlineInterviewHint: t('admin.selection.modal.offlineInterviewHint', lang),
+    offlineInterviewDateLabel: t('admin.selection.modal.offlineInterviewDateLabel', lang),
+    offlineInterviewToast: t('admin.selection.modal.offlineInterviewToast', lang),
+    offlineInterviewError: t('admin.selection.modal.offlineInterviewError', lang),
     // p152 W4 P2: PMI Profile tab
     tabPmiProfile: t('admin.selection.modal.tabPmiProfile', lang),
     loadingPmiProfile: t('admin.selection.modal.loadingPmiProfile', lang),
@@ -213,6 +244,16 @@ const SEL_I18N = {
     off: t('comp.vepBadge.off', lang),
     offTooltip: t('comp.vepBadge.offTooltip', lang),
   },
+  // #224 — admin JSON import observability labels (consumed by
+  // renderJsonApplyResult + renderJsonDryRunPreview helpers).
+  importJson: {
+    partialTitle: t('admin.selection.importJsonResultPartialTitle', lang),
+    correlationCycle: t('admin.selection.importJsonCorrelationCycle', lang),
+    correlationRunId: t('admin.selection.importJsonCorrelationRunId', lang),
+    correlationApplied: t('admin.selection.importJsonCorrelationApplied', lang),
+    errorsHeader: t('admin.selection.importJsonErrorsHeader', lang),
+    ingestResultWarning: t('admin.selection.importJsonIngestResultWarning', lang),
+  },
 };
 ---
 
@@ -259,6 +300,8 @@ const SEL_I18N = {
           <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
           <!-- p197b: PERT cutoff chip (cohort of approved active members in prior cycles) -->
           <div id="pert-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold cursor-help" title=""></div>
+          <!-- p232 #229 Phase 2: sibling chip for leader_extra dimension cutoff (separate cohort from objective) -->
+          <div id="leader-extra-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold cursor-help" title=""></div>
         </div>
         <!-- p152 W4 OPP-152.6: alert when most rows have rank null (closed cycle reopened com legacy) -->
         <div id="rank-empty-alert" class="hidden mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
@@ -271,6 +314,9 @@ const SEL_I18N = {
           <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
           <button id="filter-hide-shadow-vep" class="px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-amber-700 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20" data-active="true" title={t('admin.selection.hideShadowVepHint', lang)}>{t('admin.selection.hideShadowVep', lang)}</button>
           <button id="filter-interview-today" class="px-3 py-1 rounded-full font-semibold border border-purple-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-purple-500/10" data-active="false" title={t('admin.selection.interviewTodayHint', lang)}>{t('admin.selection.interviewToday', lang)}</button>
+          <!-- p279 #411 W1b: F2 toolbar filter chips — surface the interview-invite lifecycle gaps -->
+          <button id="filter-no-interview" class="px-3 py-1 rounded-full font-semibold border border-sky-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-sky-500/10" data-active="false" title={t('admin.selection.noInterviewHint', lang)}>{t('admin.selection.noInterview', lang)}</button>
+          <button id="filter-stuck-scheduled" class="px-3 py-1 rounded-full font-semibold border border-rose-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-rose-500/10" data-active="false" title={t('admin.selection.stuckScheduledHint', lang)}>{t('admin.selection.stuckScheduled', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
@@ -319,17 +365,20 @@ const SEL_I18N = {
               <thead>
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colTrack', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.chapter', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">{t('admin.selection.colResearch', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="role_applied">{t('admin.selection.colTrack', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="chapter">{t('admin.selection.chapter', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">{t('admin.selection.colResearch', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="interview_score" title={t('admin.selection.colInterviewScoreHint', lang)}>{t('admin.selection.colInterviewScore', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score" title={t('admin.selection.colFinalHint', lang)}>{t('admin.selection.colFinal', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_rank" title={t('admin.selection.colObjectiveRankHint', lang)}>{t('admin.selection.colObjectiveRank', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">{t('admin.selection.colRank', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colStatus', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.personalEvalHint', lang)}>{t('admin.selection.colMyEval', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.workflowIndicators', lang)}>{t('admin.selection.colPipeline', lang)}</th>
                   <th class="px-3 py-2.5 font-bold text-[var(--text-secondary)]" title={t('admin.selection.colInterviewHint', lang)}>{t('admin.selection.colInterview', lang)}</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="application_date">{t('admin.selection.colDate', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.colOnboarding', lang)}</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('admin.selection.actions', lang)}</th>
                 </tr>
@@ -346,6 +395,8 @@ const SEL_I18N = {
             <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">{t('admin.selection.bulkApprove', lang)}</button>
             <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">{t('admin.selection.bulkReject', lang)}</button>
             <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">{t('admin.selection.bulkWaitlist', lang)}</button>
+            <!-- p279 #411 W1c: F3 bulk cutoff-invite dispatch (loops notify_selection_cutoff_approved) -->
+            <button id="bulk-cutoff-invite" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" title={t('admin.selection.bulkCutoffInviteHint', lang)}>{t('admin.selection.bulkCutoffInvite', lang)}</button>
           </div>
           <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.bulkFeedback', lang)} />
         </div>
@@ -493,7 +544,8 @@ const SEL_I18N = {
             </details>
           </div>
 
-          <div id="json-apply-result" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-[12px]"></div>
+          <!-- #224 — Banner color set dynamically by renderJsonApplyResult based on errs > 0 (amber when partial, emerald when clean). -->
+          <div id="json-apply-result" class="hidden rounded-lg p-3 text-[12px]"></div>
         </div>
       </div>
 
@@ -575,6 +627,20 @@ const SEL_I18N = {
     pertCutoffLabel: 'Corte',
     pertCutoffTooltip: 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores.',
     pertCutoffEmpty: 'Corte não calculado (cohort < 10)',
+    leaderExtraCutoffLabel: 'Corte Líder',
+    leaderExtraCutoffTooltip: 'Corte da pilastra Líder (leader_extra) calibrado separadamente do objetivo desde p209 (#229).',
+    leaderExtraCutoffEmpty: 'Corte Líder não calculado (cohort < 10 ou sem avaliações)',
+    // p245 #229a fallbacks
+    pertBandAbove: 'Acima',
+    pertBandWithin: 'Na banda',
+    pertBandBelow: 'Abaixo',
+    pertBandTooltipFull: 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
+    leaderExtraDisabledChip: 'Régua líder: n={n}<10',
+    // p247 #229b Frontend fallbacks
+    finalScoreCutoffTooltip: 'Régua final (PERT) calculada por trilha desde p246 (refactor #229b). Researcher pool e leader pool têm distribuições diferentes; não misturamos. Quando cohort_n<10, a régua fica indisponível para aquela trilha.',
+    finalScoreDisabledChip: 'Régua final: n={n}<10',
+    // p270 #365b objective rank per track fallback
+    colObjectiveRankHint: 'Rank dentro da trilha (pesquisador vs pesquisador, líder vs líder) ordenado por nota objetiva no ciclo. Estável independente de filtros UI — sempre reflete a cohort completa do ciclo.',
     consentPendingBadge: 'sem consent IA',
     consentPendingTooltip: 'Candidato ainda não consentiu análise IA (LGPD Art. 20). Comitê deve baixar PDF manualmente.',
     consentRevokedBadge: 'consent revogado',
@@ -622,6 +688,22 @@ const SEL_I18N = {
       toastReasonRequired: 'Informe o motivo do reagendamento',
       toastRescheduleSent: 'Reagendamento solicitado — email a caminho',
       toastErrorReschedule: 'Erro ao solicitar reagendamento',
+      cutoffInviteBtn: '📧 Enviar convite p/ agendar',
+      cutoffInviteSent: '✓ Convite enviado em',
+      cutoffInviteToast: 'Convite enviado para',
+      cutoffInviteError: 'Erro ao enviar convite',
+      cutoffInviteConfirm: 'Enviar convite de agendamento para',
+      rescueStuckTitle: '⚠ Entrevista agendada expirada',
+      rescueStuckHint: 'A entrevista agendada passou da data sem ser conduzida nem cancelada. Reenviar cancela o agendamento perdido e envia um novo convite de agendamento ao candidato.',
+      rescueStuckBtn: '🔄 Reenviar (cancela agendamento perdido)',
+      rescueStuckConfirm: 'Cancelar a entrevista perdida e reenviar o convite a',
+      rescueStuckToast: 'Entrevista anterior cancelada · novo convite enviado',
+      rescueStuckError: 'Erro ao reenviar convite',
+      offlineInterviewBtn: '📅 Registrar entrevista realizada (offline)',
+      offlineInterviewHint: 'A entrevista aconteceu fora da plataforma? Informe a data em que ocorreu para criar o registro e liberar o lançamento da nota (bypass auditado do gate de status).',
+      offlineInterviewDateLabel: 'Data da entrevista',
+      offlineInterviewToast: 'Entrevista offline registrada — formulário de nota disponível',
+      offlineInterviewError: 'Erro ao registrar entrevista offline',
       tabPmiProfile: '📊 PMI',
       loadingPmiProfile: 'Carregando perfil PMI…',
       pmiProfileEmpty: 'Sem dados PMI enriquecidos. Phase B ainda não rodou, candidato não-membro PMI, ou perfil community privado.',
@@ -727,6 +809,100 @@ const SEL_I18N = {
     if (s > upper) return 'bg-emerald-50 text-emerald-700';
     return 'bg-amber-50 text-amber-700';
   }
+  // p245 #229a: per-candidate PERT classification helpers. Surface the band position
+  // explicitly (not just by color), with delta vs target + enriched tooltip including
+  // cohort_n + method. Leader_extra dimension renders separately with its own cutoff
+  // (or disabled reason when method=disabled, e.g. cohort_n<10 historical threshold).
+  function bandClassify(score: any, cutoff: any): { color: string; label: 'above'|'within'|'below'|'none'; delta: number | null } {
+    if (score == null || !cutoff || cutoff.band_lower == null || cutoff.band_upper == null) {
+      return { color: '', label: 'none', delta: null };
+    }
+    const s = Number(score);
+    if (!Number.isFinite(s)) return { color: '', label: 'none', delta: null };
+    const lower = Number(cutoff.band_lower);
+    const upper = Number(cutoff.band_upper);
+    const target = cutoff.target_score != null ? Number(cutoff.target_score) : null;
+    const delta = target != null ? s - target : null;
+    if (s < lower) return { color: 'bg-red-50 text-red-700', label: 'below', delta };
+    if (s > upper) return { color: 'bg-emerald-50 text-emerald-700', label: 'above', delta };
+    return { color: 'bg-amber-50 text-amber-700', label: 'within', delta };
+  }
+  function formatDelta(d: number | null): string {
+    if (d == null || !Number.isFinite(d)) return '';
+    const sign = d >= 0 ? '+' : '';
+    return `${sign}${d.toFixed(1)}`;
+  }
+  function pertBandChip(score: any, cutoff: any): string {
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') return '';
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}">${esc(labelText)}${esc(deltaText)}</div>`;
+  }
+  function pertFullTooltip(score: any, cutoff: any): string {
+    if (score == null || !cutoff || cutoff.target_score == null) return '';
+    const tpl: string = T.pertBandTooltipFull || 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}';
+    return tpl
+      .replace('{score}', Number(score).toFixed(1))
+      .replace('{lower}', cutoff.band_lower != null ? Number(cutoff.band_lower).toFixed(1) : '—')
+      .replace('{upper}', cutoff.band_upper != null ? Number(cutoff.band_upper).toFixed(1) : '—')
+      .replace('{target}', Number(cutoff.target_score).toFixed(1))
+      .replace('{n}', String(cutoff.cohort_n ?? '?'))
+      .replace('{method}', String(cutoff.method ?? '?'));
+  }
+  function leaderExtraChip(score: any, cutoff: any): string {
+    // PM rule (#229a): never compare leader against the objective rule. Leader_extra
+    // has its own cohort + cutoff (p219 Phase 1 + p232 #229 Phase 2). When the cycle
+    // has insufficient leader-track approved history (cohort_n<10), method=disabled
+    // and we surface the reason instead of a band classification.
+    const cohortN = cutoff && cutoff.cohort_n != null ? Number(cutoff.cohort_n) : null;
+    const method = cutoff?.method;
+    if (method === 'disabled') {
+      const tpl: string = T.leaderExtraDisabledChip || 'Régua líder: n={n}<10';
+      const text = tpl.replace('{n}', String(cohortN ?? '?'));
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600" title="${esc(T.leaderExtraCutoffTooltip || '')}">${esc(text)}</div>`;
+    }
+    if (score == null) return '';
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') {
+      // Score present but cutoff missing — show the score in a neutral chip so PM
+      // still sees the dimension value without implying it passed/failed a rule.
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600">LE ${esc(Number(score).toFixed(1))}</div>`;
+    }
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">LE ${esc(Number(score).toFixed(1))} · ${esc(labelText)}${esc(deltaText)}</div>`;
+  }
+  // p247 #229b Frontend: per-candidate final-score chip using track-resolved per-app cutoff.
+  // Backend (p246) populates r.final_score_pert_* via _compute_pert_cutoff_core scoped by
+  // AND role_applied = p_role, so the chip needs no manual track switching — researcher app
+  // gets researcher cutoff, leader gets leader cutoff. When cohort_n<10, method='disabled'
+  // surfaces the reason rather than a band classification (mirrors leaderExtraChip's
+  // disabled branch). PM rules (#229b dispatch): no régua para entrevista; PERT Objetiva
+  // (Pesquisa) é gate pré-entrevista; PERT Final é comparação pós-entrevista.
+  function finalScoreChip(row: any): string {
+    const score = row?.final_score;
+    const method = row?.final_score_pert_cutoff_method;
+    const cohortN = row?.final_score_pert_cohort_n != null ? Number(row.final_score_pert_cohort_n) : null;
+    if (method === 'disabled') {
+      const tpl: string = T.finalScoreDisabledChip || 'Régua final: n={n}<10';
+      const text = tpl.replace('{n}', String(cohortN ?? '?'));
+      return `<div class="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded bg-gray-50 text-gray-600" title="${esc(T.finalScoreCutoffTooltip || '')}">${esc(text)}</div>`;
+    }
+    if (score == null) return '';
+    const cutoff = {
+      target_score: row?.final_score_pert_target,
+      band_lower: row?.final_score_pert_band_lower,
+      band_upper: row?.final_score_pert_band_upper,
+      cohort_n: cohortN,
+      method,
+    };
+    const { color, label, delta } = bandClassify(score, cutoff);
+    if (label === 'none') return '';
+    const labelText = label === 'above' ? T.pertBandAbove : label === 'below' ? T.pertBandBelow : T.pertBandWithin;
+    const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
+    return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">${esc(labelText)}${esc(deltaText)}</div>`;
+  }
   // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
   // o que ainda falta avaliar e o que já foi decidido.
   let filterHideDecided = true;       // default ON — esconde approved/rejected/etc
@@ -735,6 +911,9 @@ const SEL_I18N = {
   let filterHideShadowVep = true;
   // p152 W3+: "Entrevistas hoje" quick filter (default OFF; PM ativa no dia)
   let filterInterviewToday = false;
+  // p279 #411 W1b: F2 chips — surface the interview-invite lifecycle gaps (default OFF)
+  let filterNoInterview = false;
+  let filterStuckScheduled = false;
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -819,11 +998,13 @@ const SEL_I18N = {
 
   function showDenied() {
     document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-panel')?.classList.add('hidden');
     document.getElementById('sel-denied')?.classList.remove('hidden');
   }
 
   function showPanel() {
     document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-denied')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.remove('hidden');
   }
 
@@ -1163,6 +1344,29 @@ const SEL_I18N = {
             cutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 font-semibold cursor-help';
           }
         }
+        // p232 #229 Phase 2: populate leader_extra cutoff chip (separate cohort from objective)
+        const leCutoffEl = document.getElementById('leader-extra-cutoff-chip');
+        if (leCutoffEl) {
+          const lec = (cycle as any).leader_extra_cutoff || {};
+          if (lec.target_score != null && lec.band_lower != null && lec.band_upper != null) {
+            const target = Number(lec.target_score).toFixed(1);
+            const lower = Number(lec.band_lower).toFixed(1);
+            const upper = Number(lec.band_upper).toFixed(1);
+            leCutoffEl.textContent = `${T.leaderExtraCutoffLabel}: ${target} (${lower}–${upper}, n=${lec.cohort_n}, ${lec.method})`;
+            leCutoffEl.title = T.leaderExtraCutoffTooltip;
+            leCutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold cursor-help';
+          } else {
+            // Only show "empty" state if cycle has any leader_extra activity (apps with score),
+            // otherwise hide the chip entirely to avoid noise on cycles without leader_extra evals.
+            if (lec.apps_with_score && lec.apps_with_score > 0) {
+              leCutoffEl.textContent = T.leaderExtraCutoffEmpty;
+              leCutoffEl.title = T.leaderExtraCutoffTooltip;
+              leCutoffEl.className = 'text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 font-semibold cursor-help';
+            } else {
+              leCutoffEl.className = 'hidden';
+            }
+          }
+        }
       }
 
       allRows = applications;
@@ -1198,7 +1402,7 @@ const SEL_I18N = {
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-6 text-center text-red-500">${T.errorPrefix}: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -1253,6 +1457,12 @@ const SEL_I18N = {
       if (filterHideShadowVep && r.extra_flags?.is_shadow_vep === true) return false;
       // p152 W3+: "Entrevistas hoje" — uses meta.has_interview_today (canonical SP-tz check in RPC)
       if (filterInterviewToday && r.meta?.has_interview_today !== true) return false;
+      // p279 #411 W1b: "Sem entrevista" — candidates without an active interview who are not yet decided
+      // (the cutoff-invite dispatch queue). interview_status none|needs_reschedule AND not terminal-ish.
+      if (filterNoInterview && !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'converted', 'interview_done', 'final_eval', 'waitlist', 'cancelled', 'withdrawn'].includes(r.status))) return false;
+      // p279 #411 W1b: "Stuck scheduled" — interview lapsed (server-computed meta.interview_stuck:
+      //   app.status=interview_scheduled AND a scheduled interview is past + not conducted).
+      if (filterStuckScheduled && r.meta?.interview_stuck !== true) return false;
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -1355,6 +1565,14 @@ const SEL_I18N = {
           const n = allRows.filter((r: any) => r.meta?.has_interview_today !== true).length;
           if (n > 0) parts.push(`${n} sem entrevista hoje`);
         }
+        if (filterNoInterview) {
+          const n = allRows.filter((r: any) => !(['none', 'needs_reschedule'].includes(r.interview_status) && !['rejected', 'approved', 'converted', 'interview_done', 'final_eval', 'waitlist', 'cancelled', 'withdrawn'].includes(r.status))).length;
+          if (n > 0) parts.push(`${n} já agendados ou decididos`);
+        }
+        if (filterStuckScheduled) {
+          const n = allRows.filter((r: any) => r.meta?.interview_stuck !== true).length;
+          if (n > 0) parts.push(`${n} sem agendamento expirado`);
+        }
         if (filterMyEval === 'pending_mine') {
           const n = allRows.filter((r: any) => r.my_eval_status === 'submitted').length;
           if (n > 0) parts.push(`${n} já avaliados`);
@@ -1386,24 +1604,24 @@ const SEL_I18N = {
       }
     }
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || T.noCandidates}</td></tr>`;
       return;
     }
-    // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
+    // p272 #365d hotfix — REMOVED the internal track-rank re-sort that was silently
+    // overwriting the upstream sort from applyFilters() (sortCol/sortAsc). The bug was:
+    // user clicks "Pesquisa" header, applyFilters() sorts filteredRows by objective_score
+    // DESC, renderTable() then [...]filteredRows.sort(track-rank-asc) re-orders it back,
+    // and the visible table never reflected the user's click. Source of truth for row
+    // order is now applyFilters().filteredRows.sort(sortCol/sortAsc) — single sort, no
+    // override. useLeaderRank/useResearcherRank are kept because the row template uses
+    // them to build rankDisplay ("L#N" / "P#N" / interleaved) per active filter.
     const useLeaderRank = filterRole === 'leader';
     const useResearcherRank = filterRole === 'researcher';
-    const displayRows = [...filteredRows].sort((a: any, b: any) => {
-      const ra = useLeaderRank ? a.rank_leader : useResearcherRank ? a.rank_researcher : (a.rank_leader || a.rank_researcher);
-      const rb = useLeaderRank ? b.rank_leader : useResearcherRank ? b.rank_researcher : (b.rank_leader || b.rank_researcher);
-      if (ra == null && rb == null) return 0;
-      if (ra == null) return 1;
-      if (rb == null) return -1;
-      return ra - rb;
-    });
+    const displayRows = filteredRows;
 
     tbody.innerHTML = displayRows.map(r => {
       const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
-      const researchScore = r.research_score != null ? Number(r.research_score).toFixed(1) : '—';
+      const objectiveScore = r.objective_score != null ? Number(r.objective_score).toFixed(1) : '—';
       const leaderScore = r.leader_score != null ? Number(r.leader_score).toFixed(1) : '—';
       // Track-aware rank
       let rankDisplay: string;
@@ -1484,8 +1702,22 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? `font-semibold ${bandColorClass(r.research_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.research_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${researchScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? `font-bold ${bandColorClass(r.leader_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'}" title="${r.leader_score != null && currentCycle?.pert_cutoff?.band_lower != null ? `vs corte ${Number(currentCycle.pert_cutoff.target_score).toFixed(1)} (${Number(currentCycle.pert_cutoff.band_lower).toFixed(1)}–${Number(currentCycle.pert_cutoff.band_upper).toFixed(1)})` : ''}">${leaderScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.objective_score, currentCycle?.pert_cutoff))}">
+          <div class="${r.objective_score != null ? `font-semibold ${bandColorClass(r.objective_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${objectiveScore}</div>
+          ${pertBandChip(r.objective_score, currentCycle?.pert_cutoff)}
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
+          ${leaderExtraChip(r.leader_extra_pert_score, (currentCycle as any)?.leader_extra_cutoff)}
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.interview_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.interview_score != null ? Number(r.interview_score).toFixed(1) : '—'}</div>
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono">
+          <div class="${r.final_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.final_score != null ? Number(r.final_score).toFixed(1) : '—'}</div>
+          ${finalScoreChip(r)}
+        </td>
+        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold" title="${esc(T.colObjectiveRankHint || '')}">${r.objective_rank != null ? `#${r.objective_rank}` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
@@ -3608,6 +3840,51 @@ const SEL_I18N = {
     loadDashboard();
   }
 
+  // p279 #411 W1c: F3 bulk cutoff-invite dispatch. Loops notify_selection_cutoff_approved per
+  // selected app with per-iteration try/catch (one failure never aborts the loop). Eligibility
+  // mirrors the F1 render gate (screening / interview_pending) so a stray selection of a
+  // rejected/approved row never emails them. The RPC's own already_sent idempotency envelope is
+  // surfaced as "Já dispatchados", NOT counted as an error.
+  async function executeBulkCutoffInvite() {
+    const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
+    const ids = Array.from(checks).map(c => c.value);
+    if (!ids.length) return;
+    const ELIGIBLE = ['screening', 'interview_pending'];
+    const eligibleIds: string[] = [];
+    let skippedIneligible = 0;
+    for (const id of ids) {
+      const r = allRows.find((x: any) => x.id === id);
+      if (r && ELIGIBLE.includes(r.status)) eligibleIds.push(id);
+      else skippedIneligible++;
+    }
+    if (!eligibleIds.length) {
+      toast(`Nenhum dos ${ids.length} selecionados está elegível (screening / interview_pending)`, 'error');
+      return;
+    }
+    const names = eligibleIds.map(id => (allRows.find((x: any) => x.id === id)?.applicant_name || '').trim() || '?');
+    const preview = names.slice(0, 3).join(', ') + (names.length > 3 ? ` e mais ${names.length - 3}` : '');
+    if (!confirm(`Enviar convite de agendamento para ${eligibleIds.length} candidato(s): ${preview}?`)) return;
+    const btn = document.getElementById('bulk-cutoff-invite') as HTMLButtonElement | null;
+    const orig = btn?.textContent || '📧 Enviar convite';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando…'; }
+    let sent = 0, already = 0, errors = 0;
+    for (const id of eligibleIds) {
+      try {
+        const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: id });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        if (data?.reason === 'already_sent') already++;
+        else sent++;
+      } catch { errors++; }
+    }
+    const parts = [`Enviados: ${sent}`, `Já dispatchados: ${already}`];
+    if (errors) parts.push(`Erros: ${errors}`);
+    if (skippedIneligible) parts.push(`Ignorados (inelegíveis): ${skippedIneligible}`);
+    toast(parts.join(' · '));
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+    loadDashboard();
+  }
+
   /* ── evaluation results ──────────────────────────── */
   async function loadEvaluationResults(applicationId: string) {
     const container = document.getElementById('eval-form-container');
@@ -3777,16 +4054,48 @@ const SEL_I18N = {
             <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackMirrorBtn}</button>
           </div>`;
         }
+        // p271 #411 Wave 1a F1 — cutoff-approved invite: badge OR dispatch button when no interview row exists yet.
+        // Gate per SPEC: status IN ('screening','interview_pending') AND cutoff_approved_email_sent_at IS NULL
+        // (this branch already enforces empty interviews list). Idempotency delegated to RPC's already_sent
+        // short-circuit; UI does not re-call without explicit override (deferred from Wave 1a per PM).
+        const cutoffSentAt = row.cutoff_approved_email_sent_at;
+        const cutoffEligibleStatus = ['screening', 'interview_pending'].includes(row.status);
+        if (cutoffSentAt) {
+          const when = new Date(cutoffSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+          html += `<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-4 text-[12px] text-emerald-800 font-semibold" data-testid="cutoff-invite-sent-badge">${T.modal.cutoffInviteSent} ${esc(when)} SP</div>`;
+        } else if (cutoffEligibleStatus) {
+          html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+            <button id="cutoff-invite-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.cutoffInviteBtn}</button>
+          </div>`;
+        }
         // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
         // está em status que permite entrevista (interview_pending+). Cria row com now+30min
         // e re-renderiza para exibir o scoring form.
         const canStartLive = ['interview_pending', 'interview_scheduled', 'interview_done'].includes(row.status)
           || formData?.application?.status === 'interview_pending';
+        // #472 corr.3 — offline path: a PRE-INTERVIEW candidate with no interview
+        // row yet (interview happened off-platform). ALLOW-LIST mirrors the
+        // schedule_interview bypass guard exactly — never offered for a later-stage
+        // (interview_done/final_eval) or decided/terminal status, so a completed
+        // evaluation can't be regressed by creating a new 'scheduled' row.
+        const OFFLINE_ELIGIBLE = ['screening', 'submitted', 'objective_eval', 'objective_cutoff'];
+        const canRecordOffline = !canStartLive && OFFLINE_ELIGIBLE.includes(row.status);
         if (canStartLive) {
           html += `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
             <p class="text-sm text-amber-800 font-semibold mb-2">Sem entrevista agendada</p>
             <p class="text-[12px] text-amber-700 mb-3">Para pontuar a entrevista (objetiva ou live), crie o registro abaixo. Cria com horário atual + 30min como duração — você pode ajustar depois.</p>
             <button id="start-live-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">▶ Iniciar avaliação ao vivo</button>
+          </div>`;
+        } else if (canRecordOffline) {
+          html += `<div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mt-4">
+            <p class="text-sm text-orange-800 font-semibold mb-1">${T.modal.offlineInterviewBtn}</p>
+            <p class="text-[12px] text-orange-700 mb-3">${T.modal.offlineInterviewHint}</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="text-[12px] text-orange-800 font-semibold">${T.modal.offlineInterviewDateLabel}
+                <input type="date" id="offline-interview-date" max="${new Date().toLocaleDateString('sv')}" value="${new Date().toLocaleDateString('sv')}" class="ml-1 px-2 py-1 rounded-lg border border-orange-300 text-[12px]" />
+              </label>
+              <button id="record-offline-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.offlineInterviewBtn}</button>
+            </div>
           </div>`;
         } else if (!isDualTrack) {
           html += '<p class="text-sm text-[var(--text-muted)] mt-4">Nenhuma entrevista agendada ainda.</p>';
@@ -3835,6 +4144,58 @@ const SEL_I18N = {
             btn.disabled = false; btn.textContent = '▶ Iniciar avaliação ao vivo';
           }
         });
+
+        // #472 corr.3 — wire offline-interview record button: bypass-gate schedule at
+        // the chosen past date, then reuse the proven score form (submit_interview_scores).
+        scoringDiv.querySelector('#record-offline-interview-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          const dateInput = scoringDiv.querySelector('#offline-interview-date') as HTMLInputElement | null;
+          const dateStr = dateInput?.value;
+          if (!dateStr) { toast(T.modal.offlineInterviewDateLabel, 'error'); return; }
+          // anchor at local noon so the date doesn't shift across the UTC boundary
+          const scheduledAt = new Date(dateStr + 'T12:00:00').toISOString();
+          btn.disabled = true; btn.textContent = '⏳ Registrando…';
+          try {
+            const { data, error } = await sb.rpc('schedule_interview', {
+              p_application_id: row.id,
+              p_interviewer_ids: [MEMBER.id],
+              p_scheduled_at: scheduledAt,
+              p_duration_minutes: 30,
+              p_bypass_gate: true,
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            toast(T.modal.offlineInterviewToast);
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || T.modal.offlineInterviewError, 'error');
+            btn.disabled = false; btn.textContent = T.modal.offlineInterviewBtn;
+          }
+        });
+
+        // p271 #411 Wave 1a F1 — wire cutoff-approved dispatch button (notify_selection_cutoff_approved RPC).
+        // Optimistic local stamp so the re-render shows the badge immediately; dashboard reload syncs the
+        // table column on next return-to-list. Idempotency: RPC short-circuits with already_sent envelope
+        // if a second click races; we still optimistically stamp with previously_sent_at.
+        scoringDiv.querySelector('#cutoff-invite-btn')?.addEventListener('click', async (ev) => {
+          const btn = ev.currentTarget as HTMLButtonElement;
+          const name = (btn.dataset.appName || row.applicant_name || '').trim();
+          if (!confirm(`${T.modal.cutoffInviteConfirm} ${name}?`)) return;
+          btn.disabled = true; btn.textContent = '⏳ Enviando…';
+          try {
+            const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: row.id });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            row.cutoff_approved_email_sent_at = data?.dispatched_at || data?.previously_sent_at || new Date().toISOString();
+            toast(`${T.modal.cutoffInviteToast} ${name}`);
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) {
+            toast(e.message || T.modal.cutoffInviteError, 'error');
+            btn.disabled = false; btn.textContent = T.modal.cutoffInviteBtn;
+          }
+        });
         return;
       }
 
@@ -3876,6 +4237,16 @@ const SEL_I18N = {
       </div>`;
 
       // History timeline — all interviews with per-row actions
+      // p281 #411 W1d F4 — stuck-interview rescue banner (server flag meta.interview_stuck:
+      // app in interview_scheduled with a scheduled interview that is past + not conducted).
+      if (row.meta?.interview_stuck === true) {
+        html += `<div class="bg-rose-50 border border-rose-300 rounded-xl p-4 mb-3" data-testid="rescue-stuck-banner">
+          <p class="text-sm text-rose-800 font-bold mb-1">${T.modal.rescueStuckTitle}</p>
+          <p class="text-[12px] text-rose-700 mb-3">${T.modal.rescueStuckHint}</p>
+          <button id="rescue-stuck-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.rescueStuckBtn}</button>
+        </div>`;
+      }
+
       html += '<details open class="bg-[var(--surface-base)] rounded-xl mb-3 border border-[var(--border-subtle)]"><summary class="px-3 py-2 text-[12px] font-bold text-navy cursor-pointer select-none">📋 Histórico de entrevistas</summary><div class="px-3 pb-3 space-y-2">';
       for (const intv of interviewsByDate) {
         const label = STATUS_LABELS[`interview_${intv.status}`] || intv.status;
@@ -4041,6 +4412,26 @@ const SEL_I18N = {
             loadDashboard();
           } catch (e: any) { toast(e.message || 'Erro', 'error'); }
         });
+      });
+
+      // p281 #411 W1d F4 — wire the stuck-interview rescue button (atomic cancel + reset + re-dispatch
+      // via selection_rescue_stuck_interview RPC). Confirm-gated; one click does all three steps.
+      scoringDiv.querySelector('#rescue-stuck-btn')?.addEventListener('click', async (ev) => {
+        const btn = ev.currentTarget as HTMLButtonElement;
+        const name = (btn.dataset.appName || row.applicant_name || '').trim();
+        if (!confirm(`${T.modal.rescueStuckConfirm} ${name}?`)) return;
+        btn.disabled = true; btn.textContent = '⏳ Reenviando…';
+        try {
+          const { data, error } = await sb.rpc('selection_rescue_stuck_interview', { p_application_id: row.id });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          toast(T.modal.rescueStuckToast);
+          loadInterviewForm(row);
+          loadDashboard();
+        } catch (e: any) {
+          toast(e.message || T.modal.rescueStuckError, 'error');
+          btn.disabled = false; btn.textContent = T.modal.rescueStuckBtn;
+        }
       });
 
       // p152 W4: toggle Agendar section override
@@ -4381,6 +4772,30 @@ const SEL_I18N = {
       applyFilters();
     });
 
+    // p279 #411 W1b: "Sem entrevista" toggle (default OFF — cutoff-invite dispatch queue)
+    document.getElementById('filter-no-interview')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterNoInterview = !filterNoInterview;
+      btn.dataset.active = filterNoInterview ? 'true' : 'false';
+      btn.classList.toggle('bg-sky-500/10', filterNoInterview);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterNoInterview);
+      btn.classList.toggle('text-sky-700', filterNoInterview);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterNoInterview);
+      applyFilters();
+    });
+
+    // p279 #411 W1b: "Stuck scheduled" toggle (default OFF — lapsed-interview rescue queue)
+    document.getElementById('filter-stuck-scheduled')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterStuckScheduled = !filterStuckScheduled;
+      btn.dataset.active = filterStuckScheduled ? 'true' : 'false';
+      btn.classList.toggle('bg-rose-500/10', filterStuckScheduled);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterStuckScheduled);
+      btn.classList.toggle('text-rose-700', filterStuckScheduled);
+      btn.classList.toggle('text-[var(--text-secondary)]', !filterStuckScheduled);
+      applyFilters();
+    });
+
     document.getElementById('filter-myeval-toggle')?.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('.filter-myeval-btn');
       if (!btn) return;
@@ -4401,14 +4816,38 @@ const SEL_I18N = {
       searchTimeout = setTimeout(() => { filterSearch = ((e.target as HTMLInputElement).value || '').trim(); applyFilters(); }, 300);
     });
 
-    // Column sorting
+    // Column sorting — p271 #365c UX hotfix
+    // First-click direction depends on column semantics:
+    //   - text fields (name/track/chapter) and ranks → ASC first (rank #1 = best;
+    //     alphabetical scans expected to start from A);
+    //   - scores and dates → DESC first (best/latest expected first for cut decisions).
+    // Sort only reorders the currently filtered rows — it does NOT recompute ranks
+    // (objective_rank + rank_researcher + rank_leader come from the backend cohort
+    // and remain canonical regardless of filter/sort state).
+    const SORT_ASC_FIRST = new Set([
+      'applicant_name', 'role_applied', 'chapter', 'objective_rank', 'rank',
+    ]);
+    function defaultSortAsc(col: string): boolean { return SORT_ASC_FIRST.has(col); }
+
+    function updateSortIndicators() {
+      document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
+        const arrow = th.querySelector<HTMLSpanElement>('.sort-arrow');
+        if (!arrow) return;
+        arrow.textContent = th.dataset.sort === sortCol ? (sortAsc ? '↑' : '↓') : '';
+      });
+    }
+
     document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const col = th.dataset.sort!;
-        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = col === 'applicant_name'; }
+        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = defaultSortAsc(col); }
+        updateSortIndicators();
         applyFilters();
       });
     });
+
+    // Initial indicator render — reflects default sortCol='final_score', sortAsc=false → ↓ on Final
+    updateSortIndicators();
 
     // Delegated click actions
     document.addEventListener('click', (e: MouseEvent) => {
@@ -4446,6 +4885,9 @@ const SEL_I18N = {
         if (decision) executeBulkDecision(decision);
       });
     });
+
+    // p279 #411 W1c: bulk cutoff-invite dispatch button
+    document.getElementById('bulk-cutoff-invite')?.addEventListener('click', () => executeBulkCutoffInvite());
 
     // Recalculate rankings (Gap 5)
     document.getElementById('recalc-rankings-btn')?.addEventListener('click', async () => {
@@ -4713,21 +5155,153 @@ const SEL_I18N = {
     const wccRows = (d.will_cross_cycle_refresh ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">♻️ <strong>${esc(r.applicant_name)}</strong> · status=${esc(r.existing_status)} (preservado) · cycle=${esc(r.existing_cycle_id?.slice(0,8))}… → partial refresh</div>`).join('');
     const wsRows = (d.will_skip ?? []).map((r: any) => `<div class="py-1 border-b border-gray-100">⏭ ${esc(r.ref)}: ${esc(r.reason)}</div>`).join('');
     detEl.innerHTML = `${wiRows}${wuRows}${wccRows}${wsRows}` || '<p class="text-[var(--text-muted)] italic">Sem detalhes.</p>';
+    // #224 — surface uploaded-JSON Phase A warning + correlation footer in
+    // the dry-run preview too (uploaded ingestResult.error visible at preview
+    // time, not just after Apply). Council code-reviewer L1: wire the same
+    // clipboard handler used in the apply path so the copy button is live
+    // at preview stage too.
+    const previewEl = document.getElementById('json-preview');
+    if (previewEl) {
+      previewEl.querySelectorAll('[data-issue-224]').forEach(n => n.remove());
+      const extra = document.createElement('div');
+      extra.setAttribute('data-issue-224', '1');
+      extra.innerHTML = renderIngestResultWarning(d.ingest_result_warning) + renderCorrelationFooter(d, new Date());
+      previewEl.appendChild(extra);
+      const copyBtn = extra.querySelector('[data-copy-run-id]') as HTMLButtonElement | null;
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          const v = copyBtn.getAttribute('data-copy-run-id');
+          if (!v) return;
+          try {
+            await navigator.clipboard.writeText(v);
+            toast('Run id copiado', 'success');
+          } catch {
+            toast('Falha ao copiar', 'error');
+          }
+        });
+      }
+    }
     document.getElementById('json-preview')?.classList.remove('hidden');
+  }
+
+  // #224 — group worker errors by scope so the admin can see the failure
+  // pattern at a glance (e.g. "3× token_or_welcome" vs "1× resume_sync_failed
+  // + 1× phase_b_canonical"). Falls back to ungrouped list when scope is
+  // missing. Returns HTML for an open <details> block.
+  function renderWorkerErrorsBlock(errors: any[]): string {
+    if (!Array.isArray(errors) || errors.length === 0) return '';
+    const byScope = new Map<string, any[]>();
+    for (const err of errors) {
+      const scope = (err && typeof err.scope === 'string' && err.scope) || 'unknown';
+      const bucket = byScope.get(scope) ?? [];
+      bucket.push(err);
+      byScope.set(scope, bucket);
+    }
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const header = i18n.errorsHeader ?? 'Erros do worker (por escopo)';
+    const scopeBlocks: string[] = [];
+    for (const [scope, items] of byScope.entries()) {
+      const rows = items.map((err: any) => {
+        const ref = err?.ref ? esc(String(err.ref)) : '—';
+        const msg = err?.error ? esc(String(err.error)) : esc(JSON.stringify(err));
+        return `<li class="py-1 border-b border-amber-200/40 last:border-0">
+          <code class="text-[10px] text-amber-900/70">${ref}</code>
+          <span class="ml-2">${msg}</span>
+        </li>`;
+      }).join('');
+      scopeBlocks.push(`
+        <div class="mt-2">
+          <div class="text-[11px] font-bold text-amber-900">
+            ${esc(scope)} <span class="font-normal text-amber-700">(${items.length})</span>
+          </div>
+          <ul class="mt-1 text-[11px] text-amber-900 list-none pl-0">${rows}</ul>
+        </div>
+      `);
+    }
+    return `
+      <details class="mt-3 border border-amber-300 bg-amber-50/60 rounded-lg p-3" open>
+        <summary class="text-[12px] font-bold text-amber-900 cursor-pointer">
+          ⚠️ ${esc(header)} — ${errors.length}
+        </summary>
+        ${scopeBlocks.join('')}
+      </details>
+    `;
+  }
+
+  // #224 — render the Phase A extract result attached to the uploaded JSON.
+  // The extract script tries its own ingest call from the browser (without
+  // x-ingest-secret) and persists the result in `ingestResult`. We surface
+  // it here as a yellow informational banner so the admin disambiguates a
+  // pre-existing source-side error from this Apply call's status.
+  //
+  // Council code-reviewer (PR #236, M1): narrow rendered shape to { error }
+  // only — the uploaded ingestResult may carry arbitrary nested fields that
+  // could include applicant PII. Admin-only page is access-gated, but the
+  // observability goal is satisfied by the single error string; keep the
+  // blast radius small.
+  function renderIngestResultWarning(payload: any): string {
+    if (!payload || typeof payload !== 'object') return '';
+    const errVal = (typeof payload.error === 'string' || typeof payload.error === 'number')
+      ? String(payload.error)
+      : null;
+    if (!errVal) return '';
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const header = i18n.ingestResultWarning ?? 'Aviso da extração (script Phase A) — não afeta este import, que foi concluído com sucesso';
+    return `
+      <div class="mt-3 border border-yellow-300 bg-yellow-50 rounded-lg p-3 text-[11px] text-yellow-900">
+        <div class="font-bold mb-1">ℹ️ ${esc(header)}</div>
+        <div class="text-[10px]"><code>error</code>: ${esc(errVal)}</div>
+      </div>
+    `;
+  }
+
+  // #224 — correlation footer (cycle_code + run_id + apply timestamp) so the
+  // PM has a stable handle to find the cron_run_log row when partial errors
+  // surface. run_id is a UUID; the copy button copies it to the clipboard.
+  function renderCorrelationFooter(d: any, appliedAt: Date): string {
+    const i18n = (window as any).__SEL_I18N?.importJson ?? {};
+    const labelCycle = i18n.correlationCycle ?? 'Ciclo';
+    const labelRun = i18n.correlationRunId ?? 'Run id (cron_run_log)';
+    const labelApplied = i18n.correlationApplied ?? 'Aplicado em';
+    const cycleCode = d.cycle_code ? esc(String(d.cycle_code)) : '—';
+    const runId = d.run_id ? esc(String(d.run_id)) : '—';
+    const ts = appliedAt.toISOString();
+    const copyBtn = d.run_id
+      ? `<button type="button" class="ml-1 text-[10px] underline cursor-pointer" data-copy-run-id="${runId}" title="Copy run_id">📋</button>`
+      : '';
+    return `
+      <div class="mt-3 pt-2 border-t border-gray-200 text-[10px] text-[var(--text-muted)] grid grid-cols-3 gap-2">
+        <div><strong>${esc(labelCycle)}:</strong> ${cycleCode}</div>
+        <div><strong>${esc(labelRun)}:</strong> <code>${runId}</code>${copyBtn}</div>
+        <div><strong>${esc(labelApplied)}:</strong> ${esc(ts)}</div>
+      </div>
+    `;
   }
 
   function renderJsonApplyResult(d: any) {
     const el = document.getElementById('json-apply-result');
     if (!el) return;
     const errs = d.errors?.length ?? 0;
-    el.classList.remove('hidden');
+    const partial = errs > 0;
+    // #224 — switch container palette based on partial-vs-clean state.
+    el.classList.remove('hidden', 'bg-emerald-50', 'border', 'border-emerald-200', 'bg-amber-50', 'border-amber-200');
+    if (partial) {
+      el.classList.add('bg-amber-50', 'border', 'border-amber-200');
+    } else {
+      el.classList.add('bg-emerald-50', 'border', 'border-emerald-200');
+    }
     // p153 hotfix7: surface applications_cross_cycle_refreshed so the PM can see
     // the 65 prior-cycle rows that got partial-refreshed (resume_url SAS + profile
     // data) instead of silently disappearing from the new/updated/skipped totals.
     const crossCycle = d.applications_cross_cycle_refreshed ?? 0;
+    const i18nApply = (window as any).__SEL_I18N?.importJson ?? {};
+    const titleSuccess = '✓ Import concluído';
+    const titlePartial = '⚠️ ' + (i18nApply.partialTitle ?? 'Import concluído com erros parciais');
+    const titleClass = partial ? 'text-amber-900' : 'text-emerald-900';
+    const statsClass = partial ? 'text-amber-800' : 'text-emerald-800';
     el.innerHTML = `
-      <div class="font-bold text-emerald-900 mb-1">✓ Import concluído</div>
-      <div class="grid grid-cols-2 gap-2 text-[11px] text-emerald-800">
+      <div class="font-bold ${titleClass} mb-1">${partial ? titlePartial : titleSuccess}</div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] ${statsClass}">
         <div>processed: <strong>${d.applications_processed ?? 0}</strong></div>
         <div>new: <strong>${d.applications_new ?? 0}</strong></div>
         <div>updated (mesmo ciclo): <strong>${d.applications_updated ?? 0}</strong></div>
@@ -4741,8 +5315,24 @@ const SEL_I18N = {
         <div title="p195 — resumes que falharam download/upload (link Azure pode estar expirado entre Phase A export e este Apply). Re-importe o JSON com link fresco se ${(d.resumes_failed ?? 0) > 0 ? 'crítico' : 'persistir'}.">${(d.resumes_failed ?? 0) > 0 ? '⚠️' : '✓'} resumes falhos: <strong>${d.resumes_failed ?? 0}</strong></div>
         <div title="p195 BUG-195.B — apps cuja application_date caía em ciclo fechado diferente do open atual; Worker auto-redirecionou para o ciclo semanticamente correto.">🔀 cycle redirects: <strong>${d.applications_cycle_redirected ?? 0}</strong></div>
       </div>
-      ${errs > 0 ? `<div class="mt-2 text-[11px] text-amber-700"><strong>${errs} erro(s)</strong> — ver detalhes no cron_run_log do worker.</div>` : ''}
+      ${renderWorkerErrorsBlock(d.errors ?? [])}
+      ${renderIngestResultWarning(d.ingest_result_warning)}
+      ${renderCorrelationFooter(d, new Date())}
     `;
+    // Attach clipboard copy handler for run_id.
+    const copyBtn = el.querySelector('[data-copy-run-id]') as HTMLButtonElement | null;
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const v = copyBtn.getAttribute('data-copy-run-id');
+        if (!v) return;
+        try {
+          await navigator.clipboard.writeText(v);
+          toast('Run id copiado', 'success');
+        } catch {
+          toast('Falha ao copiar', 'error');
+        }
+      });
+    }
   }
 
   function handleCSVFile(file: File) {

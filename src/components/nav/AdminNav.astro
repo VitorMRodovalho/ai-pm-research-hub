@@ -57,7 +57,7 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
 <script>
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
-  import { hasPermission, setSimulation, type OperationalTier, type Designation, TIER_LABELS } from '../../lib/permissions';
+  import { canFor, hasPermission, setSimulation, type OperationalTier, type Designation, TIER_LABELS } from '../../lib/permissions';
 
   // Map admin nav keys to permission strings
   const NAV_PERMISSION_MAP: Record<string, string> = {
@@ -119,7 +119,11 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
 
       const perm = NAV_PERMISSION_MAP[link.key];
       if (perm) {
-        el.style.display = hasPermission(effectiveMember, perm as any) ? '' : 'none';
+        const hasV4Curatorship =
+          link.key === 'curatorship'
+          && !isSimulating
+          && (canFor('curate_content') || canFor('participate_in_governance_review'));
+        el.style.display = (hasPermission(effectiveMember, perm as any) || hasV4Curatorship) ? '' : 'none';
       } else {
         // Fallback to legacy tier check
         const tier = resolveTierFromMember(isSimulating ? effectiveMember : member);

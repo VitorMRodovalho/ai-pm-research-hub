@@ -17,4 +17,10 @@
 #
 # See docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md § Phase C charter.
 
+# === p209 close note ===
+# Initial allowlist entries for _trg_pmi_video_screening_voice_consent_check + submit_evaluation
+# were REMOVED at p209 close after MCP apply_migration round-trip made live body
+# byte-equivalent to migration file 20260802000005. Phase C drift = 0 for both.
+# Baseline reverted to 0.
+
 

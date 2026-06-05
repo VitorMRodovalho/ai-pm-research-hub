@@ -92,7 +92,7 @@ Requires `admin` tier or specific designations. Full governance and management t
 | `/admin/portfolio` | admin | sponsor, curator, chapter_board | Portfolio Gantt + heatmap |
 | `/admin/cycle-report` | admin | sponsor, chapter_liaison | Metricas do ciclo |
 | `/admin/governance-v2` | admin | curator, co_gp | Administracao de CRs |
-| `/admin/curatorship` | observer | — | Board de curadoria |
+| `/admin/curatorship` | observer (nav) | `curate_content` / `participate_in_governance_review` | Board de curadoria — nav *descobrível* p/ observer+, mas curadoria/revisão exigem as capabilities V4 (ADR-0011, #245) |
 | `/admin/sustainability` | admin | sponsor, curator | Sustentabilidade financeira |
 | `/admin/knowledge` | admin | — | Gestao de conhecimento |
 | `/admin/blog` | admin | comms_team | Editor de blog (TipTap) |
@@ -131,9 +131,9 @@ Requires `admin` tier or specific designations. Full governance and management t
 |          Supabase (sa-east-1)                               |
 |  +------------------+  +---------------+  +-------------+  |
 |  | PostgreSQL       |  | Auth          |  | Edge Fns    |  |
-|  | 200+ RPC/SECDEF  |  | Google        |  | 21 deployed |  |
+|  | 200+ RPC/SECDEF  |  | Google        |  | Deno (live) |  |
 |  | RLS per row      |  | LinkedIn      |  | sync-artia  |  |
-|  | pg_cron (4 jobs) |  | Microsoft     |  | sync-credly |  |
+|  | pg_cron (N jobs) |  | Microsoft     |  | sync-credly |  |
 |  +------------------+  +---------------+  +-------------+  |
 +-------------------------------+-----------------------------+
                 |                |
@@ -159,13 +159,13 @@ Requires `admin` tier or specific designations. Full governance and management t
 | **Artia** | REST API | Sincronizacao de portfolio PMI-GO | PMI-GO portfolio sync |
 | **Resend** | REST API | Email campaigns e notificacoes | Email campaigns and notifications |
 | **Credly** | REST API | Sincronizacao de badges e certificacoes | Badge and certification sync |
-| **MCP (64 tools)** | Streamable HTTP | 51 leitura + 13 escrita, OAuth 2.1 | 51 read + 13 write, OAuth 2.1 |
+| **MCP** (`/mcp` registry — contagem muda por release; ver `/health` ou `tools/list`, **não fixar**) | Streamable HTTP | Leitura + escrita, OAuth 2.1 | Read + write, OAuth 2.1 |
 
 ### Verified MCP Hosts / Hosts MCP Verificados
 
 | Host | Status |
 |------|--------|
-| Claude.ai | Verified (64 tools) |
+| Claude.ai | Verified |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |

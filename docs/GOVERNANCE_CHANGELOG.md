@@ -1576,4 +1576,74 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 
 ---
 
+### GC-142 — Onda V4 pós-cutover: autoridade por engagements e capability cache
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado / em consolidação
+
+**Decisão:** Reforçar que `can()` / `can_by_member()` e `get_caller_capabilities()` são a fonte canônica para autoridade operacional, enquanto `operational_role` e `designations` permanecem como cache/UX e compatibilidade. Gates de UI sensíveis devem migrar gradualmente de `hasPermission()`/tier local para `canFor()` quando a decisão depender de escopo ou capacidade V4.
+
+**Justificativa:** Casos p201 mostraram desalinhamento entre autoridade real e UI: Roberto/Sarah tinham `curate_content=true` no banco, mas a ilha de curadoria negava acesso por depender de `hasPermission('admin.curation')`. Herlon mostrou o caso inverso: liderança visual de iniciativa sem autoridade por acordo pendente.
+
+**Impacto técnico:** `CuratorshipBoardIsland` e `AdminNav` passaram a aceitar `canFor('curate_content')` / `canFor('participate_in_governance_review')`. Relatório consolidado em `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`.
+
+---
+
+### GC-143 — Curadoria estruturada e action V4 `curate_content`
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado
+
+**Decisão:** Formalizar Curadoria como domínio operacional com ação V4 `curate_content`, separando a designação histórica `curator` da autoridade runtime. O Comitê de Curadoria usa engagements/capabilities para autorização, com fallback legado apenas durante transição.
+
+**Justificativa:** ADR-0087 fez sweep parcial de 14 funções para `curate_content`; a auditoria p201 confirmou que documentos e UI ainda podiam divergir. A governança requer que curadores como Roberto e Sarah acessem a superfície conforme capacidade real, não por leitura defasada de tier.
+
+**Impacto técnico:** Atualização de gates frontend; backlog mantém `document_*` RLS V3 carry como item separado para ADR/decisão futura. Ver `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` itens #29 e #43.
+
+---
+
+### GC-144 — Hotfixes de presença: semântica de evento vazio e status ambíguo
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado
+
+**Decisão:** Em grades de presença, evento elegível de hoje/passado sem marcação deve ser exibido como falta (`absent`) até que a presença seja registrada. Evento futuro continua `scheduled`; evento cancelado continua `na`.
+
+**Justificativa:** O relato do Marcos Klemz mostrou que a reunião da Tribo 7 de 2026-05-19 aparecia como traço/N/A para todos, embora devesse aparecer como falta até marcação. Em paralelo, `get_attendance_grid` tinha regressão por `status` ambíguo após inclusão de `events.status`.
+
+**Impacto técnico:** Migrations `20260722010000_p201_fix_attendance_grid_status_ambiguity.sql` e `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql`; registros em `docs/RELEASE_LOG.md` e `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` itens #41/#42.
+
+---
+
+### GC-145 — MCP runtime como superfície operacional crítica
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado / em andamento
+
+**Decisão:** Tratar o MCP como superfície operacional crítica com inventário runtime canônico. A contagem oficial é `tools/list`/`/health`, não números manuais em docs. Documentação deve evitar listas exaustivas defasadas e apontar para a fonte runtime quando apropriado.
+
+**Justificativa:** A auditoria p201 confirmou runtime com 293 tools, enquanto README pt/es, AGENTS e guias ainda citavam 64/266/284 em vários pontos. Drift de contagem prejudica QA, onboarding de agentes e auditoria.
+
+**Impacto técnico:** Atualização de `README.md`, `README.pt-BR.md`, `README.es.md`, `AGENTS.md`, `docs/MCP_SETUP_GUIDE.md`, `.claude/agents/platform-guardian.md` e relatório `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`. Backlog mantém script de QA para comparar `tools/list`, `/health` e docs.
+
+---
+
+### GC-146 — Bloqueio Cloudflare MCP/OAuth por Browser Integrity Check
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p201 · **Status:** Implementado (p202, 2026-05-19) — issue #163 close
+
+**Decisão:** Registrar que os endpoints MCP/OAuth (`/mcp`, `/.well-known/oauth-*`, `/oauth/*`) podem ser bloqueados por Cloudflare Browser Integrity Check antes de atingir o Worker. A mitigação implementada é uma regra Cloudflare WAF Skip escopada a esses paths + skip de BIC/Bot Fight/Managed Challenge, compensada por rate limit em `/mcp*`. OAuth/PKCE/JWT/RLS continuam sendo os controles reais de autorização.
+
+**Justificativa:** Requests com fingerprint Python/urllib receberam `403 Error 1010 browser_signature_banned` (re-confirmado em p202 com Ray `9fe75d560886181e-RIC` em `/.well-known/oauth-authorization-server` e Ray `9fe75d585a2f181e-RIC` em `/oauth/authorize`). Requests browser-like/Claude-like chegaram ao Worker e retornaram respostas esperadas. Bloqueios 1010 não aparecem em Worker Observability nem `mcp_usage_log`, então a única evidência observável é Cloudflare Security Events filtrado por Ray ID + path.
+
+**Impacto técnico:** Nenhum código de aplicação alterado. Spec completa em `docs/infra/CLOUDFLARE_MCP_RULES.md` (WAF custom rule `mcp-oauth-skip-bic` + rate limit `mcp-rate-limit` 100 req/min per IP). Aplicação em produção feita via dashboard Cloudflare (zone `vitormr.dev` → Security → WAF) — sem Terraform mantido, então não há artefato no repo além da spec. Smoke pós-fix valida que Python-urllib retorna 200/401 (não 403) nos paths protegidos.
+
+**Resolução:** Ver `docs/infra/CLOUDFLARE_MCP_RULES.md` para spec + verification + rollback. Audit log em `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` item #40 marcado RESOLVED após smoke pós-aplicação.
+
+---
+
+### GC-147 — Semantic Layer Roadmap adotado + 5 ADRs scaffolded (P1)
+**Data:** 2026-05-19 · **Autor:** Vitor Maia Rodovalho (GP) + auditoria p202 · **Status:** Implementado (issue #166 close)
+
+**Decisão:** Adotar `docs/architecture/SEMANTIC_LAYER_ROADMAP.md` como prioritisation canônica das mudanças semânticas pendentes na plataforma. Roadmap mapeia 3 dimensões (facts/dimensions/snapshots) + 7 drift risks ranqueados + P0/P1/P2 prioridades. 5 ADRs P1 scaffoladas em `Status: Proposed` para implementation em sessions dedicadas, cada uma com Context/Decision/Consequences/Acceptance test/Rollback estruturados.
+
+**Justificativa:** MCP audit p201 + matriz 293-tool em #162 expuseram 3 drift classes recorrentes: (1) 24 direct-table MCP tools com risco silent-failure em mutações de schema; (2) facts sem scoping columns (`gamification_points` sem `initiative_id` documentado em ADR-0085 §3); (3) V3→V4 authority carries em `document_*` RLS policies (audit item #29 + ADR-0087 §5). Sem prioritisation canônica, cada session ataca um drift isolado sem coordenação do todo — risco de retrabalho ou cobertura parcial.
+
+**Impacto técnico:** Zero schema/RPC changes nesta session — purely planning/governance. Novos arquivos: `docs/architecture/SEMANTIC_LAYER_ROADMAP.md`, ADR-0088 (gamification_points.initiative_id), ADR-0089 (champion_criteria_catalog), ADR-0090 (effective_cycle_bounds), ADR-0091 (tribe bridge remaining), ADR-0092 (document permissions V4 sweep). Atualizados: `docs/adr/README.md` index, `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` (#29/#34/#38 marked SCAFFOLDED ou RESOLVED). Cada ADR P1 requer ratification PM separada antes de migration land (Q1-Q4 open questions enumeradas no roadmap §6).
+
+**Resolução:** Roadmap status `Adopted`; ADRs P1 status `Proposed`. P2 (direct-table-MCP encapsulation + envelope contracts + per-domain smoke) carry para próximo roadmap pass quando P1 100% landed. Audit item #38 (semantic layer opportunity) RESOLVED como roadmap-format.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

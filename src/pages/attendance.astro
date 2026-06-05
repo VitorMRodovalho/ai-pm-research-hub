@@ -207,6 +207,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgEventCreated: t('attendance.msg.eventCreated', lang),
   msgEventCreateError: t('attendance.msg.eventCreateError', lang),
   msgFillTemplateDate: t('attendance.msg.fillTemplateDate', lang),
+  msgUntilBeforeStart: t('attendance.msg.untilBeforeStart', lang),
   msgEventsCreated: t('attendance.msg.eventsCreated', lang),
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
@@ -313,6 +314,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgEventCreated: 'Evento criado ✅',
     msgEventCreateError: 'Erro ao criar evento',
     msgFillTemplateDate: 'Preencha template e data de início',
+    msgUntilBeforeStart: 'A data final deve ser igual ou posterior à data de início',
     msgEventsCreated: '{n} eventos criados ✅',
     msgRecurringError: 'Erro ao criar série',
     msgEventUpdated: 'Evento atualizado ✅',
@@ -1196,6 +1198,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (target instanceof HTMLSelectElement) {
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+        if (target.id === 'rec-audience') toggleRecAudiencePickers();
         if (target.id === 'events-tribe-filter') {
           VISIBLE_COUNT = PAGE_SIZE;
           renderEvents();
@@ -1519,7 +1522,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           external_event: 'all',
         };
         const mapped = audienceMap[primaryTag.name];
-        if (mapped) (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
+        if (mapped) {
+          (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
+          // #492: a programmatic .value change does NOT fire 'change' → sync the recurring scope-pickers
+          if (audienceId === 'rec-audience') toggleRecAudiencePickers();
+        }
       }
     }
   }
@@ -1535,26 +1542,38 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     updateTagSelection(pickerId, containerId, hiddenInputId);
   }
 
-  async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string) {
+  async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string, targetTribeId?: number | null) {
     if (tagIds.length) {
       await sb.rpc('assign_event_tags', { p_event_id: eventId, p_tag_ids: tagIds });
     }
-    const audienceRules = buildAudienceRules(audienceValue);
+    const audienceRules = buildAudienceRules(audienceValue, targetTribeId);
     if (audienceRules.length) {
       await sb.rpc('set_event_audience', { p_event_id: eventId, p_rules: audienceRules });
     }
   }
 
-  function buildAudienceRules(audienceValue: string): any[] {
+  function buildAudienceRules(audienceValue: string, targetTribeId?: number | null): any[] {
     const rules: any[] = [];
-    if (audienceValue === 'all_active_operational') {
+    // #500: accept BOTH the internal vocab (all_active_operational/role/specific_members) AND the
+    // user-facing modal vocab (all/leadership/curators/tribe/initiative). The modal scopes
+    // all/leadership/curators previously fell through to [] → no event_audience rule written →
+    // register_own_presence self-checkin fell open.
+    if (audienceValue === 'all_active_operational' || audienceValue === 'all' || audienceValue === 'initiative') {
+      // 'initiative' has no target_type in the audience model → gate as all_active_operational (parity w/ #494).
       rules.push({ attendance_type: 'mandatory', target_type: 'all_active_operational', target_value: null });
     } else if (audienceValue === 'tribe') {
-      rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: MEMBER?.tribe_id ? String(MEMBER.tribe_id) : null });
-    } else if (audienceValue === 'role') {
+      // #492: bind to the SELECTED tribe for the series, falling back to the caller's tribe.
+      const tid = (targetTribeId ?? MEMBER?.tribe_id) ?? null;
+      rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: tid ? String(tid) : null });
+    } else if (audienceValue === 'role' || audienceValue === 'leadership') {
       ['manager', 'deputy_manager', 'tribe_leader'].forEach(r => {
         rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: r });
       });
+    } else if (audienceValue === 'curators') {
+      // Curation authority is designation-based (curate_content). register_own_presence matches a
+      // target_type='role' rule against operational_role OR the member's designations[], so
+      // target_value='curate_content' correctly gates the curator cohort.
+      rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: 'curate_content' });
     } else if (audienceValue === 'specific_members') {
       rules.push({ attendance_type: 'mandatory', target_type: 'specific_members', target_value: null });
     }
@@ -1684,9 +1703,35 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── RECURRING ──
+  // #492/#494: reveal the tribe- OR initiative-picker for scoped series; lazy-load the matching cache.
+  function toggleRecAudiencePickers() {
+    const aud = (document.getElementById('rec-audience') as HTMLSelectElement | null)?.value;
+    const tribeWrap = document.getElementById('rec-tribe-wrap');
+    const initWrap = document.getElementById('rec-initiative-wrap');
+    if (tribeWrap) tribeWrap.style.display = aud === 'tribe' ? 'flex' : 'none';
+    if (initWrap) initWrap.style.display = aud === 'initiative' ? 'flex' : 'none';
+    if (aud === 'tribe') ensureTribesLoaded();
+    if (aud === 'initiative') ensureInitiativesLoaded();
+  }
+
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
+    (document.getElementById('rec-until') as HTMLInputElement).value = '';
+    // #494: reset the scope selects on every open. <select>s aren't form-reset and closeModal only
+    // toggles CSS, so an abandoned prior selection would otherwise persist and silently bind a new
+    // series. Reset audience→'all' + clear both pickers, then let the tribe-default logic re-apply.
+    (document.getElementById('rec-audience') as HTMLSelectElement).value = 'all';
+    const recTribeReset = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+    if (recTribeReset) recTribeReset.value = '';
+    const recInitReset = document.getElementById('rec-initiative-select') as HTMLSelectElement | null;
+    if (recInitReset) recInitReset.value = '';
+    ensureTribesLoaded().then(() => {
+      const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+      if (sel && !sel.value && MEMBER?.tribe_id) sel.value = String(MEMBER.tribe_id);
+    });
+    ensureInitiativesLoaded(); // #494: populate rec-initiative-select for the initiative scope
+    toggleRecAudiencePickers();
     openModal('modal-recurring');
   }
 
@@ -1696,29 +1741,81 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
     const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
-    const weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    let weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    const until = (document.getElementById('rec-until') as HTMLInputElement).value || null;
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
     const tagIds = getSelectedTagIds('rec-selected-tags');
     if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
 
+    // #492: normalize to a DB-valid events.type (events_type_check). rec-type is a hidden legacy
+    // field; the audience is the user-facing control. Force 'tribo' for tribe-specific series.
+    const VALID_TYPES = ['geral','tribo','iniciativa','lideranca','kickoff','comms','parceria','entrevista','1on1','evento_externo','webinar'];
+    const LEGACY_TYPE: Record<string, string> = { general_meeting: 'geral', tribe_meeting: 'tribo', leadership_meeting: 'lideranca', webinar: 'webinar', other: 'geral' };
+    let dbType = VALID_TYPES.includes(type) ? type : (LEGACY_TYPE[type] || 'geral');
+    let tribeId: number | null = null;
+    let initiativeId: string | null = null; // #494: set for the 'initiative' scope; linked post-create
+    if (audience === 'tribe') {
+      dbType = 'tribo';
+      const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
+      tribeId = sel && sel.value ? parseInt(sel.value, 10) : null;
+      if (!tribeId) return toast('Selecione a tribo para a série específica de tribo.', 'error');
+    } else if (audience === 'initiative') {
+      // #494: initiative series — mirror the single-event p169 path. create_recurring_weekly_events
+      // accepts only p_tribe_id, so create with type='iniciativa'/no tribe, then UPDATE initiative_id.
+      dbType = 'iniciativa';
+      const sel = document.getElementById('rec-initiative-select') as HTMLSelectElement | null;
+      initiativeId = sel && sel.value ? sel.value : null;
+      if (!initiativeId) return toast('Selecione a iniciativa para a série.', 'error');
+    } else if (dbType === 'tribo') {
+      // #492: a 'tribo' type without a tribe audience has no tribe to bind → fall back to 'geral'
+      dbType = 'geral';
+    }
+    // 'Repetir até' (optional): derive the weekly occurrence count from the end-date (inclusive),
+    // clamped to the RPC's 1..52 range. Overrides the 'weeks' field. Keeps the series weekly (no RPC change).
+    if (until) {
+      const s = new Date(start + 'T00:00:00');
+      const u = new Date(until + 'T00:00:00');
+      if (u < s) return toast(I18N.msgUntilBeforeStart, 'error');
+      const computed = Math.floor((u.getTime() - s.getTime()) / (7 * 86400000)) + 1;
+      weeks = Math.min(Math.max(computed, 1), 52);
+    }
+    if (!Number.isFinite(weeks) || weeks < 1) return toast(I18N.msgFillTemplateDate, 'error');
+
     try {
       const { data, error } = await sb.rpc('create_recurring_weekly_events', {
-        p_type: type, p_title_template: titleTpl, p_start_date: start,
+        p_type: dbType, p_title_template: titleTpl, p_start_date: start,
         p_time_start: timeStart,
         p_duration_minutes: duration, p_n_weeks: weeks,
         p_meeting_link: link,
-        p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+        p_tribe_id: tribeId,
         p_is_recorded: recorded,
         p_audience_level: audience
       });
       if (error) throw error;
       if (data?.success) {
-        // W140: assign tags and audience to all created events
-        if (tagIds.length && data.event_ids?.length) {
+        // #494: link the initiative to every event in the series (parity with the single-event p169
+        // UPDATE). audience_level='initiative' is already written by the RPC via p_audience_level.
+        if (initiativeId && data.event_ids?.length) {
+          const { error: linkErr } = await sb.from('events')
+            .update({ initiative_id: initiativeId })
+            .in('id', data.event_ids);
+          if (linkErr) console.warn('initiative link failed:', linkErr);
+        }
+        // W140 + #500: write the audience rule for EVERY created event (not only tagged ones) so
+        // recurring all/leadership/curators/tribe series gate self-checkin (register_own_presence)
+        // instead of falling open. assignEventTagsAndAudience no-ops tag assignment when tagIds is
+        // empty; set_event_audience replaces (DELETE+INSERT) so re-running over a trigger-written rule
+        // is idempotent. 'initiative' has no audience target_type → gate as all_active_operational (#494).
+        if (data.event_ids?.length) {
+          // buildAudienceRules maps all/leadership/curators; 'initiative' has no audience target_type,
+          // so gate it as all_active_operational — parity with the single-event path (#494). The explicit
+          // remap is kept here (not folded into buildAudienceRules) so the #494 parity test holds;
+          // de-duplicating it is SEDIMENT-500.A (deferred follow-up).
+          const ruleAudience = audience === 'initiative' ? 'all_active_operational' : audience;
           for (const eid of data.event_ids) {
-            await assignEventTagsAndAudience(eid, tagIds, audience);
+            await assignEventTagsAndAudience(eid, tagIds, ruleAudience, tribeId);
           }
         }
         closeModal('modal-recurring');
@@ -1738,7 +1835,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
     _tribesCache = data || [];
     // Populate both edit and create tribe selects
-    for (const selId of ['edit-ev-tribe-select', 'ev-tribe-select']) {
+    for (const selId of ['edit-ev-tribe-select', 'ev-tribe-select', 'rec-tribe-select']) {
       const sel = document.getElementById(selId) as HTMLSelectElement;
       if (sel) {
         while (sel.options.length > 1) sel.remove(1);
@@ -1762,7 +1859,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       .neq('status', 'archived')
       .order('title');
     _initiativesCache = data || [];
-    for (const selId of ['edit-ev-initiative-select', 'ev-initiative-select']) {
+    for (const selId of ['edit-ev-initiative-select', 'ev-initiative-select', 'rec-initiative-select']) {
       const sel = document.getElementById(selId) as HTMLSelectElement;
       if (sel) {
         while (sel.options.length > 1) sel.remove(1);
@@ -2220,6 +2317,37 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   // ── RANKING (W140: uses get_attendance_panel for corrected denominators) ──
   let RANKING_DATA: any[] = [];
 
+  // C+B visibility (audit D2 follow-up, migration 20260805000056): non-privileged callers get
+  // ONLY their own row + an anonymous cohort aggregate. Render a private "sua presença" standing
+  // card instead of exposing the nominal list (which only leadership sees).
+  function renderStandingCard(m: any) {
+    const el = document.getElementById('ranking-list')!;
+    const rf = document.getElementById('ranking-role-filter') as HTMLElement | null;
+    const df = document.getElementById('ranking-designation-filter') as HTMLElement | null;
+    if (rf) rf.style.display = 'none';
+    if (df) df.style.display = 'none';
+    const totalMand = (m.general_mandatory || 0) + (m.tribe_mandatory || 0);
+    const totalAtt = (m.general_attended || 0) + (m.tribe_attended || 0);
+    const pct = m.combined_pct ?? 0;
+    const pctColor = pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600';
+    const avg = m.cohort_avg_pct ?? 0;
+    const ahead = m.cohort_percentile ?? 0;
+    const size = m.cohort_size ?? 0;
+    el.innerHTML = `
+      <div class="space-y-4">
+        <div class="text-center py-2">
+          <div class="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-1">Sua presença</div>
+          <div class="text-4xl font-extrabold ${pctColor}">${pct}%</div>
+          <div class="text-[12px] text-[var(--text-muted)] mt-1">${totalAtt}/${totalMand} reuniões obrigatórias</div>
+        </div>
+        <div class="rounded-lg bg-[var(--surface-section-cool)] p-3 text-[12px] text-[var(--text-secondary)] space-y-1">
+          <div class="flex justify-between"><span>Média da coorte (${size} membros)</span><span class="font-bold">${avg}%</span></div>
+          <div class="flex justify-between"><span>Você está à frente de</span><span class="font-bold">${ahead}% da coorte</span></div>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] text-center leading-relaxed">O ranking nominal completo é visível apenas à liderança. Você vê sua posição relativa de forma anônima.</p>
+      </div>`;
+  }
+
   function renderRankingRows(data: any[]) {
     const el = document.getElementById('ranking-list')!;
     if (!data.length) {
@@ -2263,6 +2391,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const { data, error } = await sb.rpc('get_attendance_panel');
       if (error) throw error;
       RANKING_DATA = data || [];
+      // C+B: a row carrying cohort_size means the caller is non-privileged (self + anonymous
+      // aggregate only). Render the private standing card and skip the nominal list + filters.
+      const standingRow = RANKING_DATA.find((r: any) => r.cohort_size != null);
+      if (standingRow) { renderStandingCard(standingRow); return; }
       renderRankingRows(RANKING_DATA);
 
       // Bind role + designation filters

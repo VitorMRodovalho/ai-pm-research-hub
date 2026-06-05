@@ -212,6 +212,15 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     })();
   }, [data]);
 
+  // #529 parity: the excused modal is now keyboard-openable (focused ⋮ + Enter/Space),
+  // so it must be keyboard-closable too — Escape closes it (mirror of the backdrop click).
+  useEffect(() => {
+    if (!excusedModal) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setExcusedModal(null); };
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [excusedModal]);
+
   const startLongPress = useCallback((eventId: string, memberId: string, memberName: string, current: CellStatus) => {
     longPressFiredRef.current = false;
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -460,8 +469,8 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
           <div>
             <strong>{t('attendance.helpTitle', 'Como marcar presença')}:</strong>{' '}
             {t('attendance.helpClick', 'Clique rápido alterna entre Presente ✅ e Ausente ❌.')}{' '}
-            <strong>{t('attendance.helpLongPress', 'Toque longo (300ms) ou segure o mouse')}</strong>{' '}
-            {t('attendance.helpLongPressDetail', 'abre menu com Falta Justificada ⚠️ + campo de motivo (opcional, recomendado).')}
+            <strong>{t('attendance.helpExcuse', 'O botão ⋮ na célula (ou toque longo)')}</strong>{' '}
+            {t('attendance.helpExcuseDetail', 'abre o menu com Falta Justificada ⚠️ + campo de motivo (opcional, recomendado).')}
           </div>
         </div>
       )}
@@ -548,6 +557,12 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
                       />
                     );
 
+                    // #529 parity: open the excused modal from the visible ⋮ affordance (keyboard + click)
+                    const openExcusedModal = () => {
+                      setExcusedModal({ eventId: ev.id, memberId: member.id, memberName: member.name, current: status });
+                      setReasonDraft(excuseReasons[cellKey] || '');
+                    };
+
                     return (
                       <td
                         key={ev.id}
@@ -556,7 +571,7 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
                       >
                         {canToggleAttendance && status !== 'na' && status !== 'scheduled' ? (
                           <span
-                            className="inline-block select-none"
+                            className="relative inline-block select-none"
                             onPointerDown={() => startLongPress(ev.id, member.id, member.name, status)}
                             onPointerUp={cancelLongPress}
                             onPointerCancel={cancelLongPress}
@@ -565,6 +580,18 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
                           >
                             {cellContent}
                             {reason && <sup className="text-[9px] text-blue-600 ml-0.5" title={reason}>*</sup>}
+                            {/* #529 parity: visible ⋮ excused affordance (keyboard + click), mirrors AttendanceGridTab */}
+                            <span
+                              data-excuse-affordance
+                              role="button"
+                              tabIndex={0}
+                              aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
+                              title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => { e.stopPropagation(); openExcusedModal(); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExcusedModal(); } }}
+                              className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/50"
+                            >⋮</span>
                           </span>
                         ) : cellContent}
                       </td>
@@ -615,6 +642,7 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
             <div className="space-y-2">
               <button
                 type="button"
+                autoFocus
                 onClick={() => handleSetState('present')}
                 className="w-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-green-200 dark:border-green-800 transition-colors"
               >

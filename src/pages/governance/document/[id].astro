@@ -6,8 +6,18 @@
  * Used as Preview target for project_charter (TAPs) from /admin/governance/charters
  * and as the public-facing stakeholder view linked from /initiative/[id].
  *
- * Auth: any authenticated member can read (RLS-gated on governance_documents).
- * Escopo: OPP-153.1 / p153 Wave 2 follow-up.
+ * Auth: any authenticated member can read THROUGH the SECDEF RPC
+ * `get_governance_document_reader(uuid)` (#312-W4d, p263) which enforces:
+ *   - active member gate
+ *   - visibility_class predicate (mirror gd_read RLS)
+ *   - status default-exclusion (4-status set per W4c — admin bypass)
+ *   - version locked_at hard-gate (member view; admin sees unlocked drafts)
+ *
+ * Forbidden columns NEVER reach the client: file_id, drive_url, pdf_url,
+ * docusign_envelope_id, partner_entity_id, content_markdown, content_diff_json,
+ * signed_at, signatories. See migration 20260805000043 for the canonical contract.
+ *
+ * Escopo histórico: OPP-153.1 / p153 Wave 2 follow-up; hardening p263 #380.
  */
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
@@ -79,25 +89,20 @@ const I18N = {
     async function loadDoc() {
       var sb = await waitForSb();
       if (!sb) { showError('Supabase client unavailable.'); return; }
-      var docRes = await sb
-        .from('governance_documents')
-        .select('id, title, version, status, doc_type, current_version_id, initiative_id, updated_at')
-        .eq('id', DOC_ID)
-        .maybeSingle();
-      if (docRes.error) { showError(docRes.error.message || 'fetch failed'); return; }
-      if (!docRes.data) { showEmpty(); return; }
-      var doc = docRes.data;
-      if (!doc.current_version_id) { showError('Doc has no current version.'); return; }
-      var verRes = await sb
-        .from('document_versions')
-        .select('content_html, version_label, authored_at')
-        .eq('id', doc.current_version_id)
-        .maybeSingle();
-      if (verRes.error) { showError(verRes.error.message || 'fetch version failed'); return; }
-      if (!verRes.data || !verRes.data.content_html) { showEmpty(); return; }
+      // p263 #380 W4d: single round-trip via SECDEF reader.
+      // Server-side gate enforces visibility_class + status default-exclusion
+      // + version locked_at — privacy-preserving null-envelope for not-found,
+      // visibility-blocked, status-blocked, and unlocked-for-member cases.
+      var rpcRes = await sb.rpc('get_governance_document_reader', { p_document_id: DOC_ID });
+      if (rpcRes.error) { showError(rpcRes.error.message || 'fetch failed'); return; }
+      var payload = rpcRes.data || {};
+      var doc = payload.document;
+      var ver = payload.current_version;
+      if (!doc) { showEmpty(); return; }
+      if (!ver || !ver.content_html) { showEmpty(); return; }
 
       // Mount HTML — TAP brings its own inline <style>, so we extract body+styles
-      var html = verRes.data.content_html;
+      var html = ver.content_html;
       // Iframe sandboxed rendering for full CSS isolation
       var iframe = document.createElement('iframe');
       iframe.setAttribute('sandbox', 'allow-same-origin');

@@ -17,7 +17,7 @@ export const GET: APIRoute = () => {
     JSON.stringify({
       resource: `${BASE}/mcp`,
       authorization_servers: [BASE],
-      scopes_supported: ["mcp:tools"],
+      scopes_supported: ["mcp:tools", "offline_access"],
     }),
     {
       headers: { "Content-Type": "application/json", ...CORS },

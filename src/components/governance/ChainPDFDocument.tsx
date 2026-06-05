@@ -1,5 +1,5 @@
 /**
- * ChainPDFDocument — IP-4 Chunk 2 (revisado p93c)
+ * ChainPDFDocument — IP-4 Chunk 2 (revisado p93c, p220 #273 tables)
  *
  * Renderiza uma approval_chain como PDF via @react-pdf/renderer.
  *
@@ -10,13 +10,18 @@
  *   - 'draft': sem página de assinaturas, com watermark "RASCUNHO" em
  *     cada página. Para revisores baixarem leitura offline antes de assinar.
  *
- * Parser HTML (p93c):
- *   - Suporta H2/H3/H4, P, LI, BLOCKQUOTE
+ * Parser HTML:
+ *   - Block-level: H2/H3/H4, P, LI, BLOCKQUOTE
+ *   - Tables (p220 #273): <table>/<thead>/<tbody>/<tr>/<th>/<td> rendered as
+ *     flex View rows with bold header row, padded cells, equal column widths.
+ *     Rows kept atomic (wrap=false) so a row never splits across pages.
  *   - Inline: STRONG/B (bold), EM/I (italic), A (link com URL preservado),
  *     BR (newline)
  *   - Blockquote envolve parágrafos com border-left + indent
  *   - Glossário <li><strong>Termo.</strong> definição</li> renderiza com
  *     termo em bold via Text spans
+ *   - ul/ol/details/summary: containers stripped (li survives, summary loses
+ *     heading-like styling) — deferred for follow-up.
  */
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
@@ -64,6 +69,34 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     marginTop: 6,
     marginBottom: 8,
+  },
+  // p220 #273 — table rendering
+  tableContainer: {
+    marginTop: 8,
+    marginBottom: 10,
+    borderTop: '1px solid #cbd5e1',
+    borderLeft: '1px solid #cbd5e1',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottom: '1px solid #cbd5e1',
+  },
+  tableHeaderRow: {
+    backgroundColor: '#eff6ff',
+  },
+  tableCell: {
+    flex: 1,
+    padding: 4,
+    borderRight: '1px solid #cbd5e1',
+  },
+  tableCellText: {
+    fontSize: 9,
+    lineHeight: 1.3,
+  },
+  tableCellHeader: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#1e3a8a',
   },
   link: { color: '#0066cc', textDecoration: 'underline' },
   linkUrl: { fontSize: 8, color: '#6c757d' },
@@ -146,11 +179,12 @@ export type ChainData = {
 // ============================================================================
 
 type Segment = { text: string; bold?: boolean; italic?: boolean; href?: string };
-type Node = {
-  type: 'h2' | 'h3' | 'h4' | 'p' | 'li';
-  segments: Segment[];
-  inQuote: boolean;
-};
+// p220 #273 — table node
+type TableCell = { segments: Segment[]; isHeader: boolean };
+type TableRow = { cells: TableCell[]; isHeader: boolean };
+type Node =
+  | { type: 'h2' | 'h3' | 'h4' | 'p' | 'li'; segments: Segment[]; inQuote: boolean }
+  | { type: 'table'; rows: TableRow[]; inQuote: boolean };
 
 function decodeEntities(text: string): string {
   return text
@@ -248,6 +282,38 @@ function parseInlineSegments(html: string): Segment[] {
     .filter((s) => s.text.length > 0);
 }
 
+// p220 #273 — parse a single <table>...</table> inner HTML into rows + cells.
+// Row classification: rows inside <thead> are header; otherwise rows whose
+// FIRST cell is <th> are header; everything else is body.
+function parseTable(tableInner: string): TableRow[] {
+  const rows: TableRow[] = [];
+  // Detect <thead> range to mark header rows even when cells use <td>
+  const theadMatch = tableInner.match(/<thead[^>]*>([\s\S]*?)<\/thead>/i);
+  const theadRange: [number, number] | null = theadMatch
+    ? [theadMatch.index!, theadMatch.index! + theadMatch[0].length]
+    : null;
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let trm: RegExpExecArray | null;
+  while ((trm = trRegex.exec(tableInner)) !== null) {
+    const trInner = trm[1];
+    const trStart = trm.index;
+    const cells: TableCell[] = [];
+    const cellRegex = /<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi;
+    let cm: RegExpExecArray | null;
+    let rowHasTh = false;
+    while ((cm = cellRegex.exec(trInner)) !== null) {
+      const cellTag = cm[1].toLowerCase();
+      const segments = parseInlineSegments(cm[2]);
+      cells.push({ segments, isHeader: cellTag === 'th' });
+      if (cellTag === 'th') rowHasTh = true;
+    }
+    if (cells.length === 0) continue;
+    const inThead = theadRange != null && trStart >= theadRange[0] && trStart < theadRange[1];
+    rows.push({ cells, isHeader: inThead || rowHasTh });
+  }
+  return rows;
+}
+
 function parseHtml(html: string): Node[] {
   if (!html) return [];
   const normalized = html.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
@@ -261,20 +327,33 @@ function parseHtml(html: string): Node[] {
   function isInQuote(idx: number): boolean {
     return quoteRanges.some(([s, e]) => idx >= s && idx < e);
   }
-  // Extract h2/h3/h4/p/li blocks
+  // p220 #273 — masterRegex matches BOTH <table> blocks AND h2/h3/h4/p/li blocks
+  // in document order. Tables consume their inner content (including any nested
+  // <p>/<li> inside cells) so the block matcher won't double-extract.
+  // Non-greedy `[\s\S]*?` so nested tables match inner-first (TAP rarely nests,
+  // but cheaper safety than backtracking).
   const nodes: Node[] = [];
-  const blockRegex = /<(h[234]|p|li)[^>]*>([\s\S]*?)<\/\1>/gi;
+  const masterRegex = /<table[^>]*>([\s\S]*?)<\/table>|<(h[234]|p|li)[^>]*>([\s\S]*?)<\/\2>/gi;
   let match: RegExpExecArray | null;
-  while ((match = blockRegex.exec(normalized)) !== null) {
-    const tag = match[1].toLowerCase();
-    const inner = match[2];
-    const segments = parseInlineSegments(inner);
-    if (segments.length > 0 && segments.some((s) => s.text.trim().length > 0)) {
-      nodes.push({
-        type: tag as Node['type'],
-        segments,
-        inQuote: isInQuote(match.index),
-      });
+  while ((match = masterRegex.exec(normalized)) !== null) {
+    if (match[1] !== undefined) {
+      // Table match
+      const rows = parseTable(match[1]);
+      if (rows.length > 0) {
+        nodes.push({ type: 'table', rows, inQuote: isInQuote(match.index) });
+      }
+    } else {
+      // Block match (h2/h3/h4/p/li)
+      const tag = match[2].toLowerCase();
+      const inner = match[3];
+      const segments = parseInlineSegments(inner);
+      if (segments.length > 0 && segments.some((s) => s.text.trim().length > 0)) {
+        nodes.push({
+          type: tag as 'h2' | 'h3' | 'h4' | 'p' | 'li',
+          segments,
+          inQuote: isInQuote(match.index),
+        });
+      }
     }
   }
   return nodes;
@@ -315,7 +394,32 @@ function renderSegments(segments: Segment[]) {
   });
 }
 
+function renderTable(n: Extract<Node, { type: 'table' }>, key: string | number) {
+  return (
+    <View key={key} style={styles.tableContainer}>
+      {n.rows.map((row, ri) => (
+        <View
+          key={`r-${ri}`}
+          style={[styles.tableRow, row.isHeader ? styles.tableHeaderRow : undefined]}
+          wrap={false}
+        >
+          {row.cells.map((cell, ci) => (
+            <View key={`c-${ri}-${ci}`} style={styles.tableCell}>
+              <Text style={cell.isHeader || row.isHeader ? styles.tableCellHeader : styles.tableCellText}>
+                {renderSegments(cell.segments)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function renderNode(n: Node, key: string | number) {
+  if (n.type === 'table') {
+    return renderTable(n, key);
+  }
   const baseStyle =
     n.type === 'h2' ? styles.h2 :
     n.type === 'h3' ? styles.h3 :

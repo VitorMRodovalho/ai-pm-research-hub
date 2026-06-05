@@ -1,0 +1,23 @@
+---
+/**
+ * /governance/documents/[chainId]/audit-report — external reviewer audit report.
+ * Mirrors /admin/governance/documents/[chainId]/audit-report but uses BaseLayout.
+ *
+ * Audit report exposes signer PII (pmi_id, email, designations); external
+ * reviewers are Bar-licensed attorneys bound by OAB Art. 7 confidentiality
+ * (see migration 20260804000000 header).
+ *
+ * p220 BUG-219.A Phase 3 (2026-05-22). Issue #270.
+ */
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import ChainAuditReportIsland from '../../../../components/governance/ChainAuditReportIsland';
+import { t, getLangFromURL, type Lang } from '../../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { chainId } = Astro.params;
+---
+<BaseLayout title={t('admin.governance.auditReport.title', lang)} lang={lang}>
+  <div class="max-w-[900px] mx-auto px-4 py-6">
+    <ChainAuditReportIsland client:only="react" chainId={chainId || ''} />
+  </div>
+</BaseLayout>
