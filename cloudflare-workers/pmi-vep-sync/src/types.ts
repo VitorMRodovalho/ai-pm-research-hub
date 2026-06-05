@@ -196,21 +196,6 @@ export interface SelectionApplicationUpsert {
 }
 
 // =====================================================================
-// p126 E2 — pmi_chapter_memberships (canonical 1:N) shape per ADR-0076
-// (Migration 2: 20260518010000_p125_e1_pmi_chapter_memberships.sql)
-// Source of truth for E3 cron compliance D-60/D-30/D-7 queries.
-// =====================================================================
-
-export interface PmiChapterMembershipUpsert {
-  person_id: string;             // FK to persons.id
-  chapter_name: string;          // NOT normalized to chapter_registry FK (per data-architect)
-  chapter_id_pmi?: number | null; // optional PMI numeric ID
-  expiry_date: string;           // YYYY-MM-DD; required
-  source: 'pmi_community' | 'pmi_vep' | 'manual';
-  captured_at: string;           // ISO timestamp
-}
-
-// =====================================================================
 // p126 E2 — selection_application_service_history (1:N HISTÓRICA) shape
 // (Migration 3: 20260518020000_p125_e1_service_history_table.sql)
 // Append-only at submission. AI triage signal V2 Cycle 4+.
@@ -444,7 +429,6 @@ export interface IngestSummary {
   // p126 E2 Phase B metrics
   phase_b_processed?: number;                // applications with Phase B data
   phase_b_skipped_private?: number;          // Decision 5 — profilePrivate=true
-  pmi_chapter_memberships_upserted?: number;
   service_history_inserted?: number;
 
   // p195 Opção B+: resume binary mirror to Supabase Storage
