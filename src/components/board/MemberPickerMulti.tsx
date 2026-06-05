@@ -150,7 +150,8 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                   .filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase()))
                   .filter((m) => {
                     if (selectedRole === 'curation_reviewer') {
-                      return m.designations?.includes('curator');
+                      // #187: V4 curate_content authority (was the legacy `designations` includes 'curator')
+                      return m.can_curate === true;
                     }
                     return true;
                   })
@@ -189,7 +190,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                   })}
                 {members
                   .filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase()))
-                  .filter((m) => selectedRole !== 'curation_reviewer' || m.designations?.includes('curator'))
+                  .filter((m) => selectedRole !== 'curation_reviewer' || m.can_curate === true)
                   .length === 0 && (
                   <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">{i18n.noMemberFound || 'No member found'}</div>
                 )}
