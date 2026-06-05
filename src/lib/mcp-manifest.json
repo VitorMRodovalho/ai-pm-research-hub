@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-05-21T04:23:02.089Z",
+  "generated_at": "2026-06-05T20:35:56.027Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 293,
+  "total": 306,
   "by_domain": {
-    "personal": 20,
-    "tribe": 87,
+    "personal": 21,
+    "tribe": 93,
     "board": 64,
     "events": 15,
     "governance": 22,
     "comms": 12,
     "partners": 11,
     "gamification": 12,
-    "selection": 24,
-    "knowledge": 11,
+    "selection": 26,
+    "knowledge": 12,
     "admin": 1,
-    "health": 14
+    "health": 17
   },
   "by_permission": {
-    "read": 187,
-    "write": 97,
+    "read": 201,
+    "write": 96,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -82,6 +82,13 @@
     {
       "name": "get_my_committee_assignments",
       "description": "Lista applications atribuídas ao caller como membro do comitê de seleção. Mostra i_have_submitted + my_evaluation_rows count.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_context",
+      "description": "Returns a compact personal operating context for the authenticated user (profile, current cycle, gamification streak + cycle points, next-7-day events, recent certificates, and unread notification count). Self-scope only. Read-only. LGPD-clean — omits raw PII (email/phone/address) by default. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -186,7 +193,7 @@
     },
     {
       "name": "compute_pert_cutoff",
-      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = current-cycle applications with the requested score dimension populated, filtered by role. Band = 75% of PERT through PERT. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. The weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
+      "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Note: the weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -340,7 +347,7 @@
     },
     {
       "name": "get_pert_cutoff_summary",
-      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper (75% of PERT through PERT) + cohort_n (current-cycle applications by role/dimension) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the current-cycle calibration band per dimension. Admin/curator (manage_member).",
+      "description": "Returns the PERT cutoff state for a selection cycle: target_score + band_lower/upper + cohort_n (approved active members in prior cycles) + method (dynamic | historical_fallback | disabled) + distribution (below_band / within_band / above_band / not_yet_scored). Two dimensions are tracked separately: objective (default; score_column='objective_score_avg' or 'final_score' or 'research_score') and leader_extra (score_column='leader_extra_pert_score' — reads leader_extra_pert_target/band_*/calc_at/cohort_n). Use to assess whether candidates land within the calibration band of approved members per dimension. Admin/curator (manage_member).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -523,6 +530,48 @@
     {
       "name": "list_visitor_leads",
       "description": "List visitor leads with referrer/promoted/dismissed metadata. Filter by status (new/contacted/promoted/dismissed) and/or chapter_interest. Admin only (manage_member).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_add_alternate_email",
+      "description": "ADR-0095: Add an alternate email address to a member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_list_emails",
+      "description": "ADR-0095: List all emails (primary and alternate) associated with a member. Auth: self, manage_member, or view_pii.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_remove_alternate_email",
+      "description": "ADR-0095 GAP-205.D: Remove an alternate email from a member. Rejects primary (use member_set_primary_email to promote a different alternate first). Returns true if removed, false if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_resolve_email",
+      "description": "ADR-0095: Resolve a member ID by their email (primary or alternate). Auth: authenticated.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_set_primary_email",
+      "description": "ADR-0095 GAP-205.D: Promote a registered alternate to primary via UPDATE members.email (fires sync trigger; preserves alt kind). Idempotent on already-primary. Raises if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_update_alternate_email_kind",
+      "description": "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -815,6 +864,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_board_or_initiative_context",
+      "description": "Summarize an initiative/tribe/board in one call: initiative metadata, primary board (sample of 5 recent cards + status breakdown), next 3 upcoming events, last 2 meeting notes (300-char preview), and active engagement count. Pass exactly one of initiative_id (UUID) or tribe_id (1-8). Stable envelope. Read-only.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_candidate_onboarding_progress",
       "description": "Tribe leader or admin: follow up a specific new member's onboarding progress.",
       "domain": "board",
@@ -992,13 +1048,6 @@
     {
       "name": "add_checklist_item",
       "description": "Add a checklist activity to a card. Optionally assign it to a member with target date. Auto-assigns position (end of list) if omitted.",
-      "domain": "board",
-      "permission": "write",
-      "is_sensitive": false
-    },
-    {
-      "name": "advance_card_curation",
-      "description": "Move a card through its curation review pipeline: assign/approve/reject/request_changes. RPC enforces curator authority and current stage rules.",
       "domain": "board",
       "permission": "write",
       "is_sensitive": false
@@ -1796,14 +1845,14 @@
     },
     {
       "name": "get_application_score_breakdown",
-      "description": "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.",
+      "description": "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Two cutoff bands surface separately: 'pert_cutoff' (objective; reads pert_target_score/band_*) and 'leader_extra_cutoff' (leader_extra dimension; reads leader_extra_pert_target/band_* with leader_extra_score_position ∈ below/within/above). Top-level 'leader_extra_pert_score' also exposed. p232 #229 Phase 2 closed the dual-dimension visibility loop. Admin/GP/curator only.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
     },
     {
       "name": "get_evaluation_form",
-      "description": "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of current-cycle applications by role/dimension), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.",
+      "description": "Returns the evaluation form + full semantic context for an application (p197 enriched): cycle's criteria with computed weights + your draft inlined (criteria_with_weights), cv_extracted_text (parsed PDF), LinkedIn profile (profile_*), PMI service history, pmi_memberships, returning_member_match, AI triage + briefing, pert_cutoff block (target_score + band_lower/upper + cohort_n of approved active members from prior cycles), max_weighted_subtotal ceiling. Use BEFORE submit_evaluation/submit_interview_scores to validate score scale + understand candidate's full background. evaluation_type: 'objective' | 'interview' | 'leader_extra'.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -1851,6 +1900,20 @@
       "is_sensitive": false
     },
     {
+      "name": "notify_selection_cutoff_approved",
+      "description": "Dispatches the cutoff-approved 'agendar sua entrevista' invite email to a candidate who cleared the objective cutoff. Authority (enforced in the RPC): committee lead OR manage_member. Idempotent — returns reason:'already_sent' if the invite already went out (cutoff_approved_email_sent_at set). Track-aware booking URL routing (researcher LRD round-robin / leader cycle URL). Use for one-off manual dispatch; the daily cron selection-cutoff-pending-daily handles the strictly-above-target cohort automatically.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "selection_rescue_stuck_interview",
+      "description": "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.",
+      "domain": "selection",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "manage_selection_committee",
       "description": "Add or remove a member from a selection committee. Authority: requires 'promote' permission (admin/PM). Action 'add' inserts/upserts (default role='evaluator', can_interview=true); 'remove' deletes. Without confirm=true returns a preview (ADR-0018 W1).",
       "domain": "selection",
@@ -1880,14 +1943,14 @@
     },
     {
       "name": "submit_evaluation",
-      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of current-cycle applications by role/dimension) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.",
+      "description": "Submit your evaluation scores for an application. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197) — applicant_name + role + criteria_with_weights (each criterion with its weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (target_score + band_lower/upper of approved active members from prior cycles) + cohort_position (where your subtotal lands vs the cutoff band). With confirm=true: writes to selection_evaluations (irreversible after phase closes). criterion_notes_json (optional) lets you justify per-criterion. ai_suggestion_id (optional) links your submit to an AI suggestion you accepted/adjusted.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
     },
     {
       "name": "submit_interview_scores",
-      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of current-cycle applications) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
+      "description": "Submit your interview rubric scores for an interview. Two-step confirm gate (ADR-0018 W1): without confirm=true returns RICH preview (p197c B1) — applicant_name + criteria_with_weights (each criterion with weight + max + your_score + your_weighted_contribution) + weighted_subtotal_preview (computed) + max_weighted_subtotal (ceiling) + pert_cutoff (cohort target + band of approved active members) + cohort_position (where your subtotal lands vs band) + validation (missing_scores + out_of_range). With confirm=true: writes selection_evaluation (irreversible after phase closes). Use get_evaluation_form(evaluation_type='interview') first to discover the rubric.",
       "domain": "selection",
       "permission": "write",
       "is_sensitive": false
@@ -1963,6 +2026,13 @@
       "is_sensitive": false
     },
     {
+      "name": "search_nucleo_knowledge",
+      "description": "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "search_wiki",
       "description": "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance documents, architectural decisions (ADRs), research, and narrative knowledge.",
       "domain": "knowledge",
@@ -2000,6 +2070,13 @@
     {
       "name": "get_anomaly_report",
       "description": "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_cutoff_dispatch_health",
+      "description": "Returns selection interview-invite cron health: last-7-run trend (dispatched/rescued counts) for selection-cutoff-pending-daily (14:00 UTC) + selection-stuck-scheduled-rescue-daily (15:00 UTC), each cron's registration/active state + last_run_at, the live pending cohorts (above-target awaiting invite + stuck-scheduled >48h), and a green/yellow/red health_signal (red = pending work with the relevant cron silent >26h; yellow = a cron unregistered/never-fired). Authority: view_internal_analytics. Use to triage 'are cutoff invites / stuck rescues going out?' or detect cron silence.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
@@ -2049,6 +2126,20 @@
     {
       "name": "get_weekly_tribe_digest",
       "description": "Returns the weekly tribe-level aggregate digest for leaders/coordinators: privacy-preserving summary (X members overdue, Y cards next week, Z without assignee, tribe health %). No PII per-member. Used by send-weekly-leader-digest cron (Saturday 12:30 UTC).",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "lgpd_execute_retroactive_deletion",
+      "description": "Atomically clears pmi_video_screenings.transcription for a specific video row and writes a pii_access_log row (context='lgpd_art_18_deletion_executed') with full deletion_artifacts jsonb evidence. PM-only (manage_member). Use IF the candidate requests Art. 18 §IV deletion within the response window. Validates video_id belongs to application_id + rejects idempotent no-op (already-NULL transcription) to keep audit clean. Drive file removal is a SEPARATE operator step — pass p_drive_deletion_ref (trash confirmation URL or Workspace audit ref) once you've deleted the Drive asset, so the chain stays complete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "lgpd_record_retroactive_notification",
+      "description": "Records a retroactive Art. 18 §IV notification dispatch in pii_access_log (context='lgpd_art_18_retroactive_notification'). Use AFTER PM dispatches the notification email via official channel to anchor the audit chain. PM-only (manage_member). The RPC does NOT send the email — it logs the dispatch event. p_dispatched_at lets PM backdate to the actual send timestamp; defaults to now() if omitted. Returns pii_access_log_id of the created row + target_member_id resolved from applicant email. Pairs with notification template at docs/audit/lgpd-art11-remediation/ (interim_v1 PM-approved; angeline_v1 pending sibling #334).",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false

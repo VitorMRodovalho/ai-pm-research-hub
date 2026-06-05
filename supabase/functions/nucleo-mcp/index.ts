@@ -1,8 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 304 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 303 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
 // /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
 //   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
-//   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin 304.
+//   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
+// #191 (2026-06-05): removed broken advance_card_curation tool (0 uses; advertised verbs the legacy
+//   advance_board_item_curation RPC rejected). 304 -> 303. Contract tests + /health updated to 303.
 // v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
 //   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
 //   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
@@ -5139,8 +5141,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // ===== BOARD/CARD CRUD (issue #83 P2) =====
-  // 5 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
-  // archive_card / restore_card / advance_card_curation / create_mirror_card / update_card_forecast.
+  // 4 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
+  // archive_card / restore_card / create_mirror_card / update_card_forecast.
+  // (#191: advance_card_curation removed — see the removal note below.)
   // Tool layer gates with write_board (baseline); each RPC enforces stricter authority internally
   // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
 
@@ -5197,27 +5200,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ action: "restore_card", status: "restored", card_id: params.card_id, restored_to: params.restore_status || 'backlog', result: data });
   });
 
-  // TOOL: advance_card_curation — wrap advance_board_item_curation. Review pipeline step.
-  mcp.tool("advance_card_curation", "Move a card through its curation review pipeline: assign/approve/reject/request_changes. RPC enforces curator authority and current stage rules.", {
-    card_id: z.string().describe("UUID of the card under curation"),
-    action: z.string().describe("Curation action (e.g., assign|approve|reject|request_changes) — exact vocabulary is enforced by the RPC"),
-    reviewer_id: z.string().optional().describe("Optional UUID of the reviewer (member) to assign for the next step")
-  }, async (params: { card_id: string; action: string; reviewer_id?: string }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "advance_card_curation", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
-    if (params.reviewer_id && !isUUID(params.reviewer_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid reviewer_id", start); return err("reviewer_id must be a UUID"); }
-    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "advance_card_curation", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
-    const { error } = await sb.rpc("advance_board_item_curation", {
-      p_item_id: params.card_id,
-      p_action: params.action,
-      p_reviewer_id: params.reviewer_id || null,
-    });
-    if (error) { await logUsage(sb, member.id, "advance_card_curation", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "advance_card_curation", true, undefined, start);
-    return ok({ action: "advance_card_curation", status: "advanced", card_id: params.card_id, curation_action: params.action });
-  });
+  // #191: advance_card_curation MCP tool REMOVED (legacy-API reconciliation).
+  // It advertised assign|approve|reject|request_changes but wrapped the legacy
+  // advance_board_item_curation RPC, which only accepts request_review|approve_peer|
+  // approve_leader — so every advertised verb errored. 0 lifetime uses (mcp_usage_log).
+  // The canonical curation API is the p197 flow (complete_peer_review / complete_leader_review /
+  // submit_for_curation / submit_curation_review), which CardDetail drives directly.
+  // Tool count: 304 -> 303.
 
   // TOOL: create_mirror_card — wrap create_mirror_card. Cross-board visibility copy.
   mcp.tool("create_mirror_card", "Create a mirror of a card on a different board. The mirror is a linked copy for cross-board visibility (e.g., portfolio mirror of a tribe card). RPC enforces write access to the target board.", {
@@ -7388,7 +7377,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 304 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 303 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",
