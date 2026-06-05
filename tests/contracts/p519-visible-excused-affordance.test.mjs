@@ -84,3 +84,24 @@ test('#529: attendance excused/help i18n keys are registered in all 3 locales', 
     }
   }
 });
+
+// ── #529 part 2: TribeAttendanceTab ⋮ parity ──
+
+test('#529: TribeAttendanceTab has the ⋮ excused affordance (keyboard + click parity)', () => {
+  const tribeSrc = readFileSync(resolve(process.cwd(), 'src/components/tribes/TribeAttendanceTab.tsx'), 'utf8');
+  assert.match(tribeSrc, /data-excuse-affordance/,
+    'TribeAttendanceTab must render the ⋮ excused affordance (parity with AttendanceGridTab)');
+  const idx = tribeSrc.indexOf('data-excuse-affordance');
+  const slice = tribeSrc.slice(idx, idx + 800);
+  assert.match(slice, /role="button"/, 'the ⋮ must be role=button (focusable)');
+  assert.match(slice, /tabIndex=\{0\}/, 'the ⋮ must be in the tab order');
+  assert.match(slice, /onKeyDown/, 'the ⋮ must have a keyboard handler (Enter/Space)');
+  assert.match(slice, /openExcusedModal\(\)/, 'the ⋮ click/keydown must open the excused modal');
+});
+
+test('#529: TribeAttendanceTab help banner uses the shared helpExcuse* keys (not deprecated helpLongPress*)', () => {
+  const tribeSrc = readFileSync(resolve(process.cwd(), 'src/components/tribes/TribeAttendanceTab.tsx'), 'utf8');
+  assert.match(tribeSrc, /attendance\.helpExcuse'/, 'help banner should reference attendance.helpExcuse');
+  assert.ok(!/attendance\.helpLongPress/.test(tribeSrc),
+    'deprecated helpLongPress* keys (inline-fallback-only) must be removed in favor of the registered helpExcuse* family');
+});
