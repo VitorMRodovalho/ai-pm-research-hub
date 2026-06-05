@@ -95,7 +95,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.recurringLink', lang)}</label>
-          <input type="url" id="rec-link" placeholder="https://meet.google.com/..." value="https://meet.google.com/dzo-phoj-tid"
+          <!-- #517: no hardcoded meeting link — a stale literal (dzo-phoj-tid) was re-propagating into every
+               new series and diverging from the canonical site_config.general_meeting_link. Empty by default;
+               the admin enters the link for the series (placeholder guides). -->
+          <input type="url" id="rec-link" placeholder="https://meet.google.com/..."
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
