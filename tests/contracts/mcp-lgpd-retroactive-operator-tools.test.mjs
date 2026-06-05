@@ -214,11 +214,11 @@ test('p239b #332: ef_version bumped to 2.80.0 (was 2.79.1 pre-p239b)', () => {
   assert.match(EF, /ef_version:\s*"2\.80\.0"/, '/health must report ef_version 2.80.0');
 });
 
-test('p239b #332 + #411: /health surface declares /mcp tools: 304 + version 2.79.0', () => {
+test('p239b #332 + #411 + #191: /health surface declares /mcp tools: 303 + version 2.79.0', () => {
   assert.match(
     EF,
-    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*304\s*\}/,
-    '/health surface report must show 304 tools + version 2.79.0 on /mcp (301 → 304 via #411 exposure)'
+    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*303\s*\}/,
+    '/health surface report must show 303 tools + version 2.79.0 on /mcp (304 → 303 via #191 advance_card_curation removal)'
   );
 });
 
@@ -246,8 +246,8 @@ test('p239b #332: MCP_TOOL_MATRIX.md H1 count is self-consistent with the json r
   const md = readFileSync(MATRIX_MD_PATH, 'utf8');
   // Anti-brittleness (mcp.md: "the exact tool count changes every session — never recite it"):
   // derive the expected number from the freshly-generated json rather than a hardcoded literal,
-  // so adding/removing a tool never breaks this gate. As of p282/p283 (#411 W3, +3 selection
-  // tools) the count is 307 (304 /mcp + 3 /semantic); the json is the source of truth.
+  // so adding/removing a tool never breaks this gate. As of #191 (removed advance_card_curation)
+  // the count is 306 (303 /mcp + 3 /semantic); the json is the source of truth.
   const json = JSON.parse(readFileSync(MATRIX_JSON_PATH, 'utf8'));
   const total = Array.isArray(json) ? json.length : (json.tools?.length ?? json.rows?.length ?? json.total);
   assert.ok(typeof total === 'number' && total > 0, 'json must yield a numeric tool total');
