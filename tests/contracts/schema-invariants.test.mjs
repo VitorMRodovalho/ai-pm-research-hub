@@ -50,7 +50,7 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
   const rows = await callInvariantRpc();
 
   assert.ok(Array.isArray(rows), 'RPC must return an array');
-  assert.ok(rows.length >= 25, `Expected 25+ invariants, got ${rows.length}`);
+  assert.ok(rows.length >= 26, `Expected 26+ invariants, got ${rows.length}`);
 
   const byName = Object.fromEntries(rows.map(r => [r.invariant_name, r]));
   const expected = [
@@ -58,6 +58,7 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
     'A2_observer_role_consistency',
     'A3_active_role_engagement_derivation',
     'B_is_active_status_mismatch',
+    'B2_current_cycle_active_terminal_status',
     'C_designations_in_terminal_status',
     'D_auth_id_mismatch_person_member',
     'E_engagement_active_with_terminal_member',
