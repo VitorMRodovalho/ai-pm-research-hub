@@ -85,6 +85,14 @@ test('#511: every RPC matches by IN(...) over primary UNION member_emails altern
   assert.match(fixCode, /FROM public\.members m\s+WHERE m\.id = v_member_id/);
 });
 
+test('#511: every redeclared RPC retains the auth.uid() fail-closed caller gate', () => {
+  // each of the 5 bodies resolves the caller via `members WHERE auth_id = auth.uid()`
+  // BEFORE the widened email match runs — a future body replacement that drops this
+  // gate while keeping the UNION would be a privilege-escalation regression (security review R3).
+  const gates = fixCode.match(/WHERE auth_id = auth\.uid\(\)/g) || [];
+  assert.ok(gates.length >= 5, `expected >=5 auth.uid() caller gates (one per RPC), found ${gates.length}`);
+});
+
 test('#511: the old primary-only predicates are gone (regression form)', () => {
   assert.ok(
     !/lower\(trim\(a\.email\)\)\s*=\s*lower\(trim\(v_caller\.email\)\)/.test(fixCode),
@@ -105,7 +113,7 @@ test('#511: latest migration declaring each RPC keeps the alternate-email UNION'
     const latest = decls[decls.length - 1]; // readdir sorted ascending → last = highest version
     assert.strictEqual(latest.name, FIX_FILE, `latest declarer of ${fn} should be ${FIX_FILE}, got ${latest.name}`);
     const latestCode = stripComments(latest.content);
-    assert.match(latestCode, /FROM public\.member_emails me\s+WHERE me\.member_id =/,
+    assert.match(latestCode, /FROM public\.member_emails me\s+WHERE me\.member_id = v(?:_caller\.id|_member_id)/,
       `a later migration must not revert ${fn} to primary-email-only matching`);
   }
 });

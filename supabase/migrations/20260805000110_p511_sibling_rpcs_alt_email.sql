@@ -384,3 +384,9 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'application_id', v_app_id, 'resume_url', p_url);
 END; $function$;
+
+-- Review fold (#511): make get_my_selection_result's authenticated EXECUTE explicit.
+-- The other four RPCs carry an explicit GRANT in earlier migrations; this one relied on the
+-- Postgres PUBLIC default only. Idempotent — locks the grant independent of any future
+-- change to the PUBLIC default posture. (prosrc-neutral: does not alter any function body.)
+GRANT EXECUTE ON FUNCTION public.get_my_selection_result() TO authenticated;
