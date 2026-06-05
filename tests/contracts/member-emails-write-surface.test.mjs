@@ -215,8 +215,9 @@ test('GAP-205.D: McpServer version is bumped past p215 (>= 2.78.0)', () => {
 // so the regex now targets the surfaces."/mcp".tools field specifically (was: greedy first
 // `tools: N` after /health which picked up /semantic.tools=3 after the restructure).
 // p239b #332 update: ratchet 299 → 301 to absorb +2 LGPD retroactive operator tools.
-// History: 296 (p215) → 299 (GAP-205.D) → 301 (p239b #332).
-test('GAP-205.D + p239b #332: /health endpoint reports /mcp tools = 301 (matches catalog ratchet)', () => {
+// /health-301→304 update: ratchet 301 → 304 to absorb +3 from the #411 selection-cutoff MCP exposure.
+// History: 296 (p215) → 299 (GAP-205.D) → 301 (p239b #332) → 304 (#411 exposure).
+test('GAP-205.D + #411: /health endpoint reports /mcp tools = 304 (matches catalog ratchet)', () => {
   const healthBlockRe = /app\.get\s*\(\s*"\/health"[\s\S]{0,800}?\}\)\s*\)\s*;/;
   const block = mcpIndex.match(healthBlockRe);
   assert.ok(block, 'Could not find /health endpoint block in nucleo-mcp/index.ts');
@@ -225,9 +226,9 @@ test('GAP-205.D + p239b #332: /health endpoint reports /mcp tools = 301 (matches
   const m = block[0].match(mcpToolsRe);
   assert.ok(m, 'Could not find "/mcp" surface tools count in /health endpoint');
   const count = Number(m[1]);
-  assert.equal(count, 301,
-    `/health /mcp surface tools count must equal 301 (= 296 at p215 close + 3 GAP-205.D + 2 p239b #332 ` +
-    `LGPD retroactive operator tools). Source-of-truth is the runtime tools/list, but the /health label ` +
+  assert.equal(count, 304,
+    `/health /mcp surface tools count must equal 304 (= 296 at p215 close + 3 GAP-205.D + 2 p239b #332 ` +
+    `LGPD retroactive operator tools + 3 #411 selection-cutoff exposure). Source-of-truth is the runtime tools/list, but the /health label ` +
     `should track to avoid the WATCH-205.G drift class.`);
 });
 

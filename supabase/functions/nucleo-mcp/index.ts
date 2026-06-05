@@ -1,5 +1,8 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 301 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 304 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
+//   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
+//   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin 304.
 // v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
 //   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
 //   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
@@ -7385,7 +7388,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 301 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 304 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",

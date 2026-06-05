@@ -191,8 +191,9 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   assert.match(m[0], /"nucleo-ia-hub"/, '/health should report /mcp server name');
   assert.match(m[0], /"nucleo-ia-semantic"/, '/health should report /semantic server name');
   assert.match(m[0], /tools:\s*3/, '/health should report 3 tools on /semantic');
-  // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close).
-  assert.match(m[0], /tools:\s*301/, '/health should report 301 tools on /mcp (was 299 pre-p239b)');
+  // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close);
+  // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3, live tools/list 304).
+  assert.match(m[0], /tools:\s*304/, '/health should report 304 tools on /mcp (was 301 pre-#411 exposure)');
 });
 
 // ─── 7. /mcp regression-safety guarantee ──────────────────────────────────────

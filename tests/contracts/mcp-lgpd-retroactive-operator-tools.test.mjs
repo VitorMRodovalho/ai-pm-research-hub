@@ -214,11 +214,11 @@ test('p239b #332: ef_version bumped to 2.80.0 (was 2.79.1 pre-p239b)', () => {
   assert.match(EF, /ef_version:\s*"2\.80\.0"/, '/health must report ef_version 2.80.0');
 });
 
-test('p239b #332: /health surface declares /mcp tools: 301 + version 2.79.0', () => {
+test('p239b #332 + #411: /health surface declares /mcp tools: 304 + version 2.79.0', () => {
   assert.match(
     EF,
-    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*301\s*\}/,
-    '/health surface report must show 301 tools + version 2.79.0 on /mcp'
+    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*304\s*\}/,
+    '/health surface report must show 304 tools + version 2.79.0 on /mcp (301 → 304 via #411 exposure)'
   );
 });
 
