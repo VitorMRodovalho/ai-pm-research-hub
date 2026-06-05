@@ -5070,6 +5070,8 @@ const enUS: Record<string, string> = {
   'diversity.loading': 'Loading...',
 
   // ── Curation Rubric Labels ──
+  'curation.artifact.title': 'Submitted artifacts',
+  'curation.artifact.empty': 'No artifact link attached.',
   'curation.rubric.clarity': 'Clarity',
   'curation.rubric.clarityTip': 'Understandable without additional context?',
   'curation.rubric.originality': 'Originality',
