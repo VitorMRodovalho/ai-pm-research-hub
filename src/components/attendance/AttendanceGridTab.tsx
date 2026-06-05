@@ -93,6 +93,7 @@ interface GridMember {
   detractor_status: string | null;
   consecutive_absences: number;
   attendance: Record<string, 'present' | 'absent' | 'excused' | 'na'>;
+  member_status?: string;
 }
 
 interface GridTribe {
@@ -131,6 +132,7 @@ interface FlatRow {
   eligibleCount: number;
   presentCount: number;
   attendance: Record<string, 'present' | 'absent' | 'excused' | 'na'>;
+  memberStatus?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -731,6 +733,7 @@ export default function AttendanceGridTab() {
           eligibleCount: m.eligible_count,
           presentCount: m.present_count,
           attendance: m.attendance,
+          memberStatus: m.member_status,
         });
       }
     }
@@ -1772,7 +1775,19 @@ function SmartTribeSection({
                       className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
                       style={{ ...STICKY_LEFT_TD_BASE, left: 36 }}
                     >
-                      {r.name}
+                      <span className={r.memberStatus && r.memberStatus !== 'active' ? 'opacity-60' : ''}>{r.name}</span>
+                      {r.memberStatus && r.memberStatus !== 'active' && (
+                        <span
+                          className="ml-1.5 align-middle text-[10px] font-semibold uppercase text-[var(--text-muted)] px-1 py-0.5 rounded bg-[var(--surface-section-cool)]"
+                          title={t('attendance.grid.historicalMemberHint', 'Former participant — shown because they attended this tribe')}
+                        >
+                          {r.memberStatus === 'alumni'
+                            ? t('attendance.grid.statusAlumni', 'Alumni')
+                            : r.memberStatus === 'inactive'
+                              ? t('attendance.grid.statusInactive', 'Inactive')
+                              : t('attendance.grid.statusObserver', 'Observer')}
+                        </span>
+                      )}
                     </td>
                     <td
                       className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
