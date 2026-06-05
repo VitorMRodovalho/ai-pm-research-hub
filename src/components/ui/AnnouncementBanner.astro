@@ -29,8 +29,9 @@
     const area = document.getElementById('announcements-area');
     if (!area || !data?.length) return;
 
-    // Check dismissed (session storage)
-    const dismissed: string[] = JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]');
+    // Check dismissed (#518: localStorage — persists across logins/new sessions, unlike sessionStorage.
+    // Keyed by the stable announcement UUID, so a new/edited announcement (new id) still re-appears.)
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_announcements') || '[]');
 
     const visible = data.filter((a: any) => !dismissed.includes(a.id));
     if (!visible.length) return;
@@ -84,9 +85,9 @@
   }
 
   (window as any).dismissAnnouncement = (id: string) => {
-    const dismissed: string[] = JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]');
-    dismissed.push(id);
-    sessionStorage.setItem('dismissed_announcements', JSON.stringify(dismissed));
+    const dismissed: string[] = JSON.parse(localStorage.getItem('dismissed_announcements') || '[]');
+    if (!dismissed.includes(id)) dismissed.push(id); // #518: dedup — localStorage persists, avoid unbounded growth across tabs
+    localStorage.setItem('dismissed_announcements', JSON.stringify(dismissed));
     document.querySelectorAll('.ann-banner').forEach((el) => {
       if (el.getAttribute('data-ann-id') === id) el.remove();
     });
