@@ -41,3 +41,41 @@ test('#519: clicking the affordance opens the excused modal (not the present/abs
 test('#519: help banner advertises the visible ⋮ affordance', () => {
   assert.match(src, /attendance\.helpExcuse/, 'help banner should reference the visible excuse affordance');
 });
+
+// ── #529 follow-up: keyboard a11y + 3-locale i18n parity ──
+
+test('#529: the ⋮ affordance is keyboard-operable (role/tabindex/focus + keyHandler branch)', () => {
+  const a11y = src.match(/data-excuse-affordance role="button" tabIndex=\{0\}/g) || [];
+  assert.ok(a11y.length >= 3,
+    `expected role="button" + tabIndex on the ⋮ in all 3 layouts, found ${a11y.length}`);
+  assert.match(src, /focus-visible:ring/, 'the ⋮ affordance must carry a visible focus style');
+  const kh = src.indexOf('const keyHandler');
+  assert.ok(kh !== -1, 'keyHandler must exist');
+  const khSlice = src.slice(kh, kh + 1400);
+  assert.match(khSlice, /closest\('\[data-excuse-affordance\]'\)/,
+    'keyHandler must branch on the focused ⋮ affordance (Enter/Space)');
+  assert.match(khSlice, /setExcusedModal\(/,
+    'keyHandler affordance branch must open the excused modal, not toggle the cell');
+});
+
+test('#529: attendance excused/help i18n keys are registered in all 3 locales', () => {
+  const KEYS = [
+    'attendance.helpTitle', 'attendance.helpClick', 'attendance.helpExcuse', 'attendance.helpExcuseDetail',
+    'attendance.legend_excused', 'attendance.legend_excused_reason', 'attendance.legend_excused_reason_hint',
+    'attendance.grid.cellMenu', 'attendance.grid.confirmDestroyReason', 'attendance.grid.excuseReason',
+    'attendance.grid.excuseReasonLabel', 'attendance.grid.modal.title', 'attendance.grid.modal.present',
+    'attendance.grid.modal.absent', 'attendance.grid.modal.excused', 'attendance.grid.modal.cancel',
+    'attendance.grid.modal.reasonPlaceholder', 'attendance.grid.modal.reasonAriaLabel', 'attendance.grid.modal.reasonHint',
+    'attendance.grid.bulkExcused', 'attendance.grid.bulkExcusedTitle', 'attendance.grid.bulkExcusedSubmit',
+    'attendance.grid.bulkDateFrom', 'attendance.grid.bulkDateTo', 'attendance.grid.bulkNoEvents',
+    'attendance.grid.bulkSkippedAll', 'attendance.grid.bulkSuccess', 'attendance.grid.bulkSuccessPreserved',
+    'attendance.grid.overrideExisting', 'attendance.grid.selectMember', 'attendance.grid.selectMemberLabel',
+  ];
+  for (const loc of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const dict = readFileSync(resolve(process.cwd(), `src/i18n/${loc}.ts`), 'utf8');
+    for (const k of KEYS) {
+      const re = new RegExp(`['"]${k.replace(/\./g, '\\.')}['"]\\s*:`);
+      assert.ok(re.test(dict), `${loc} must register i18n key ${k}`);
+    }
+  }
+});

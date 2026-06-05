@@ -507,15 +507,32 @@ export default function AttendanceGridTab() {
 
     // Keyboard a11y: Enter/Space toggles cell (WCAG 2.1.1)
     const keyHandler = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      // #529: keyboard parity for the visible ⋮ excused affordance — when it is the
+      // focused element, open the 3-option modal instead of toggling the cell (mirror of
+      // the click handler). Checked FIRST so a focused affordance never falls through to
+      // the cell's present/absent toggle.
+      const excuseEl = (e.target as HTMLElement)?.closest('[data-excuse-affordance]') as HTMLElement | null;
+      if (excuseEl) {
+        e.preventDefault();
+        const cell = excuseEl.closest('[data-toggle-event]') as HTMLElement | null;
+        if (cell) {
+          const eventId = cell.dataset.toggleEvent!;
+          const memberId = cell.dataset.toggleMember!;
+          const memberName = cell.dataset.toggleMemberName || 'Membro';
+          const current = cell.dataset.toggleCurrent || 'none';
+          setExcusedModal({ eventId, memberId, memberName, current });
+          setReasonDraft(excuseReasons[`${eventId}:${memberId}`] || '');
+        }
+        return;
+      }
       const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
       if (!target) return;
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        const eventId = target.dataset.toggleEvent!;
-        const memberId = target.dataset.toggleMember!;
-        const current = target.dataset.toggleCurrent || 'none';
-        handleToggle(eventId, memberId, current);
-      }
+      e.preventDefault();
+      const eventId = target.dataset.toggleEvent!;
+      const memberId = target.dataset.toggleMember!;
+      const current = target.dataset.toggleCurrent || 'none';
+      handleToggle(eventId, memberId, current);
     };
 
     document.addEventListener('click', clickHandler);
@@ -876,10 +893,10 @@ export default function AttendanceGridTab() {
                 >
                   {st.label}
                   {manage && (
-                    <span data-excuse-affordance
+                    <span data-excuse-affordance role="button" tabIndex={0}
                       aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
                       title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                      className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                      className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/50">⋮</span>
                   )}
                 </span>
               );
@@ -1773,10 +1790,10 @@ function SmartTribeSection({
                           >
                             {st.label}
                             {manage && (
-                              <span data-excuse-affordance
+                              <span data-excuse-affordance role="button" tabIndex={0}
                                 aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
                                 title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/50">⋮</span>
                             )}
                           </span>
                         </td>
@@ -1902,10 +1919,10 @@ function MobileCardList({
                           >
                             {st.label}
                             {manage && (
-                              <span data-excuse-affordance
+                              <span data-excuse-affordance role="button" tabIndex={0}
                                 aria-label={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
                                 title={t('attendance.grid.cellMenu', 'Marcar: Presente / Ausente / Falta justificada (com motivo)')}
-                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none">⋮</span>
+                                className="absolute top-0 right-0 px-0.5 text-[10px] leading-none font-bold text-[var(--text-muted)] hover:text-navy cursor-pointer select-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/50">⋮</span>
                             )}
                           </span>
                         </td>
@@ -1960,14 +1977,17 @@ function BulkExcusedForm({ members, t, onDone }: { members: FlatRow[]; t: (k: st
       const skipped = data?.events_skipped || 0;
       if (marked === 0 && skipped > 0) {
         (window as any).toast?.(
-          t('attendance.grid.bulkSkippedAll', `Nenhum evento alterado — ${skipped} eventos já têm presença marcada. Marque "Sobrescrever existentes" para forçar.`).replace('{n}', String(skipped)),
+          t('attendance.grid.bulkSkippedAll', 'Nenhum evento alterado — {n} eventos já têm presença marcada. Marque "Sobrescrever existentes" para forçar.').replace('{n}', String(skipped)),
           'warning'
         );
       } else if (marked === 0) {
         (window as any).toast?.(t('attendance.grid.bulkNoEvents', 'Nenhum evento elegível encontrado no período.'), 'warning');
       } else {
         (window as any).toast?.(
-          t('attendance.grid.bulkSuccess', `${marked} eventos marcados como falta justificada${skipped > 0 ? ' (' + skipped + ' preservados)' : ''}`).replace('{n}', String(marked)).replace('{skipped}', String(skipped)),
+          t('attendance.grid.bulkSuccess', '{n} eventos marcados como falta justificada').replace('{n}', String(marked))
+            + (skipped > 0
+                ? t('attendance.grid.bulkSuccessPreserved', ' ({skipped} preservados)').replace('{skipped}', String(skipped))
+                : ''),
           'success'
         );
       }
