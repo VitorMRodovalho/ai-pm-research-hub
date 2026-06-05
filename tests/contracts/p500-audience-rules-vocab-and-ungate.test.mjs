@@ -75,7 +75,11 @@ test('#500: recurring create writes the audience rule for every event (not tag-g
   // assignEventTagsAndAudience loop must be gone.
   assert.doesNotMatch(SRC, /if \(tagIds\.length && data\.event_ids\?\.length\)/,
     'the recurring audience write must not be gated on tagIds.length (caused tag-less series to fall open).');
-  // the loop must now run under an event-only guard
-  assert.match(SRC, /if \(data\.event_ids\?\.length\)\s*\{[\s\S]{0,400}?assignEventTagsAndAudience\(eid/,
-    'recurring create must call assignEventTagsAndAudience(eid, …) under an event-only guard.');
+  // the recurring write must be under an event-only guard...
+  assert.match(SRC, /if \(data\.event_ids\?\.length\)/,
+    'recurring create must guard the audience write on data.event_ids?.length (event-only, not tag-gated).');
+  // ...and the per-event loop must call assignEventTagsAndAudience(eid) (anchor on the loop, robust to
+  // any comment between the guard and the loop).
+  assert.match(SRC, /for \(const eid of data\.event_ids\)[\s\S]{0,140}?assignEventTagsAndAudience\(eid/,
+    'recurring create must call assignEventTagsAndAudience(eid, …) for every created event.');
 });

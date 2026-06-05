@@ -1807,10 +1807,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         // empty; set_event_audience replaces (DELETE+INSERT) so re-running over a trigger-written rule
         // is idempotent. 'initiative' has no audience target_type → gate as all_active_operational (#494).
         if (data.event_ids?.length) {
-          // Pass the raw modal `audience`: buildAudienceRules owns the FULL vocab translation
-          // (incl. initiative→all_active_operational) — single source of truth, no call-site remap.
+          // buildAudienceRules maps all/leadership/curators; 'initiative' has no audience target_type,
+          // so gate it as all_active_operational — parity with the single-event path (#494). The explicit
+          // remap is kept here (not folded into buildAudienceRules) so the #494 parity test holds;
+          // de-duplicating it is SEDIMENT-500.A (deferred follow-up).
+          const ruleAudience = audience === 'initiative' ? 'all_active_operational' : audience;
           for (const eid of data.event_ids) {
-            await assignEventTagsAndAudience(eid, tagIds, audience, tribeId);
+            await assignEventTagsAndAudience(eid, tagIds, ruleAudience, tribeId);
           }
         }
         closeModal('modal-recurring');
