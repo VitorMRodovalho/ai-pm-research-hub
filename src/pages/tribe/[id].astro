@@ -6,6 +6,7 @@ import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
+import TribeKanbanIsland from '../../components/boards/TribeKanbanIsland';
 import BoardEngine from '../../components/islands/BoardEngine';
 import TribeGamificationTab from '../../components/tribes/TribeGamificationTab';
 import TribeAttendanceTab from '../../components/tribes/TribeAttendanceTab';
@@ -1847,7 +1848,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         loadEventsTimeline();
       });
 
-      // Project Board is now handled by React island (BoardEngine).
+      // Project Board is now handled by React island (TribeKanbanIsland).
 
     } catch (e: any) {
       console.error('Tribe dashboard error:', e);
@@ -1889,7 +1890,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // Comms Hub access check removed — Comms Hub lives at /admin/comms-ops
 
-  // Board/Kanban is handled by BoardEngine (React dnd-kit)
+  // Board/Kanban is handled by TribeKanbanIsland (React dnd-kit)
 
   document.addEventListener('click', (e: MouseEvent) => {
     const panel = document.getElementById('tribe-context-switch');
