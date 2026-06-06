@@ -91,9 +91,10 @@ BEGIN
           SELECT COALESCE(jsonb_agg(a.act), '[]'::jsonb) FROM (
             SELECT 'submit_review'::text AS act
               WHERE v_can_govern
+                AND q.curation_status = 'curation_pending'
                 AND NOT EXISTS (SELECT 1 FROM public.curation_review_log crl WHERE crl.board_item_id = q.id AND crl.curator_id = v_member_id AND crl.review_round = q.current_round)
-            UNION ALL SELECT 'assign_reviewer' WHERE v_can_write_board
-            UNION ALL SELECT 'publish' WHERE q.curation_status = 'curation_pending' AND (v_can_curate OR v_can_write_board)
+            UNION ALL SELECT 'assign_reviewer' WHERE v_can_govern
+            UNION ALL SELECT 'publish' WHERE q.curation_status = 'curation_pending' AND v_can_govern
           ) a
         )
       ) ORDER BY

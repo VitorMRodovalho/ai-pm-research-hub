@@ -48,10 +48,11 @@ test('#190: normalized envelope — origin_type + eligible_actions + actionable-
   assert.match(MIG, /'origin_type', 'board_item'/);
   assert.match(MIG, /'eligible_actions',/);
   assert.match(MIG, /curation_status IN \('peer_review', 'leader_review', 'curation_pending'\)/);
-  // eligible_actions are capability-gated, not hardcoded
-  assert.match(MIG, /SELECT 'submit_review'::text AS act\s*\n\s*WHERE v_can_govern/);
-  assert.match(MIG, /SELECT 'assign_reviewer' WHERE v_can_write_board/);
-  assert.match(MIG, /SELECT 'publish' WHERE q\.curation_status = 'curation_pending'/);
+  // eligible_actions predicates must mirror the real write-RPC gates (all gate on
+  // participate_in_governance_review; submit/publish require curation_pending state):
+  assert.match(MIG, /SELECT 'submit_review'::text AS act\s*\n\s*WHERE v_can_govern\s*\n\s*AND q\.curation_status = 'curation_pending'/);
+  assert.match(MIG, /SELECT 'assign_reviewer' WHERE v_can_govern/);
+  assert.match(MIG, /SELECT 'publish' WHERE q\.curation_status = 'curation_pending' AND v_can_govern/);
 });
 
 test('#190: caller capability block is returned', () => {
