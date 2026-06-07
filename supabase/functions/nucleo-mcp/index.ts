@@ -1,10 +1,15 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 303 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 306 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
 // /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
 //   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
 //   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
 // #191 (2026-06-05): removed broken advance_card_curation tool (0 uses; advertised verbs the legacy
 //   advance_board_item_curation RPC rejected). 304 -> 303. Contract tests + /health updated to 303.
+// #188 (2026-06-06): curator-native curation surface — +3 tools (get_curation_queue_state wrapping the
+//   #190 normalized envelope, submit_curation_review, assign_curation_reviewer) + re-gated the
+//   get_curation_dashboard wrapper manage_member -> curate_content OR write_board (was over-restricting
+//   curators; now mirrors the RPC's own gate). 303 -> 306. Count-only (no version bump). Tests + /health
+//   updated to 306; matrix/manifest regenerated.
 // v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
 //   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
 //   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
@@ -504,7 +509,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 57 | get_annual_kpis | — | manage_member \\| manage_partner | KPIs anuais |
 | 58 | get_portfolio_health | cycle_code? | manage_member \\| manage_partner | Saúde trimestral |
 | 59 | get_adoption_metrics | — | manage_member | Métricas de adoção MCP |
-| 60 | get_curation_dashboard | — | manage_member | Curadoria: pendentes, SLA |
+| 60 | get_curation_dashboard | — | curate_content \\| write_board | Curadoria: pendentes, SLA |
 | 61 | get_anomaly_report | — | manage_member | Anomalias de dados |
 | 62 | get_volunteer_funnel | cycle? | manage_member | Funil de seleção |
 | 63 | get_campaign_analytics | send_id? | manage_member \\| write | Métricas de email |
@@ -521,6 +526,9 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 74 | get_wiki_health | — | — | Relatório de saúde da wiki |
 | 75 | list_initiatives | kind?, status? | — | Lista iniciativas (filtro por tipo/status) |
 | 76 | manage_initiative_engagement | initiative_id, person_id, kind, role?, action | manage_member | Add/remove/update membro em iniciativa |
+| 77 | get_curation_queue_state | status? | curate_content \\| write_board \\| participate_in_governance_review | Fila de curadoria normalizada (#190): estado FSM, SLA, eligible_actions por chamador |
+| 78 | submit_curation_review | item_id, decision, criteria_scores?, feedback_notes? | participate_in_governance_review | Submeter revisão estruturada (aprovar/devolver/rejeitar; auto-publica no N-ésimo OK) |
+| 79 | assign_curation_reviewer | item_id, reviewer_id, round | participate_in_governance_review | Designar revisor (curate_content/co_gp) para uma rodada de curadoria |
 
 ## Notas
 - Escrita usa \`canV4(action)\` — permissão derivada de engagements (ADR-0007)
@@ -930,7 +938,7 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
   );
 }
 
-// --- Register 293 tools (runtime source of truth: MCP tools/list + /health) ---
+// --- Register MCP tools (runtime source of truth: MCP tools/list + /health; never hardcode the count here) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -1549,16 +1557,87 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 35: get_curation_dashboard — GP/Admin
-  mcp.tool("get_curation_dashboard", "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Admin only.", {}, async () => {
+  // TOOL 35: get_curation_dashboard — Curators + board writers
+  // #188 re-gate: was manage_member (admin-only over-restriction). The underlying RPC already gates
+  // on curate_content OR write_board; the wrapper now mirrors that so curators can reach their own
+  // dashboard via MCP (the wrapper must not be stricter than the RPC it fronts).
+  mcp.tool("get_curation_dashboard", "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Requires curation or board-write authority.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: requires curate_content or write_board authority."); }
     const { data, error } = await sb.rpc("get_curation_dashboard");
     if (error) { await logUsage(sb, member.id, "get_curation_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_dashboard", true, undefined, start);
     return ok(data);
+  });
+
+  // ===== #188: curator-native curation queue + review tools (wrap the p197/p200 review FSM) =====
+  // Each tool's MCP gate mirrors its RPC's own RAISE conditions exactly (sediment p239d: a wrapper /
+  // advisory gate MUST match the real write-RPC gate). Read = curate_content OR write_board OR
+  // participate_in_governance_review; mutations = participate_in_governance_review.
+
+  // TOOL: get_curation_queue_state — Curators / board writers / governance reviewers.
+  // Wraps the #190 normalized envelope: per-item curation FSM state, SLA, review round/count,
+  // per-caller eligible_actions, and a caller capability block. The stable envelope #188 exposes.
+  mcp.tool("get_curation_queue_state", "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. Read access requires curate_content, write_board, or participate_in_governance_review.", {
+    status: z.string().optional().describe("Filter by curation_status: 'peer_review' | 'leader_review' | 'curation_pending'. Omit for the full active queue.")
+  }, async (params: { status?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_curation_queue_state", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')) || (await canV4(sb, member.id, 'participate_in_governance_review')))) { await logUsage(sb, member.id, "get_curation_queue_state", false, "Unauthorized", start); return err("Unauthorized: requires curate_content, write_board, or participate_in_governance_review."); }
+    const { data, error } = await sb.rpc("get_curation_queue_state", { p_status: params.status || null });
+    if (error) { await logUsage(sb, member.id, "get_curation_queue_state", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_curation_queue_state", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: submit_curation_review — Governance reviewers only. Records a structured review decision
+  // for a curation_pending item; on the Nth approval (reviewers_required) the RPC auto-publishes.
+  mcp.tool("submit_curation_review", "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.", {
+    item_id: z.string().describe("UUID of the board item under curation"),
+    decision: z.enum(["approved", "returned_for_revision", "rejected"]).describe("Review decision"),
+    criteria_scores: z.record(z.string(), z.number()).optional().describe("Optional rubric scores 1-5 per criterion: clarity, originality, adherence, relevance, ethics"),
+    feedback_notes: z.string().optional().describe("Optional reviewer feedback (appended to the item on revision/rejection)")
+  }, async (params: { item_id: string; decision: string; criteria_scores?: Record<string, number>; feedback_notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_curation_review", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.item_id)) { await logUsage(sb, member.id, "submit_curation_review", false, "Invalid item_id", start); return err("item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'participate_in_governance_review'))) { await logUsage(sb, member.id, "submit_curation_review", false, "Unauthorized", start); return err("Unauthorized: requires participate_in_governance_review."); }
+    const { data, error } = await sb.rpc("submit_curation_review", {
+      p_item_id: params.item_id,
+      p_decision: params.decision,
+      p_criteria_scores: params.criteria_scores || null,
+      p_feedback_notes: params.feedback_notes || null,
+    });
+    if (error) { await logUsage(sb, member.id, "submit_curation_review", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "submit_curation_review", true, undefined, start);
+    return ok({ action: "submit_curation_review", review_log_id: data, item_id: params.item_id, decision: params.decision });
+  });
+
+  // TOOL: assign_curation_reviewer — Governance reviewers only. Designates a curator (curate_content
+  // or co_gp) as reviewer for a given review round; blocks designating the item author as sole reviewer.
+  mcp.tool("assign_curation_reviewer", "Assign a reviewer to a board item for a curation review round. Caller requires participate_in_governance_review; the reviewer must hold curate_content (or co_gp). The RPC blocks designating the item author as the sole reviewer for the round.", {
+    item_id: z.string().describe("UUID of the board item"),
+    reviewer_id: z.string().describe("members.id UUID of the curator to assign as reviewer"),
+    round: z.number().int().describe("Review round number (use review_round from get_curation_queue_state)")
+  }, async (params: { item_id: string; reviewer_id: string; round: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "assign_curation_reviewer", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.item_id)) { await logUsage(sb, member.id, "assign_curation_reviewer", false, "Invalid item_id", start); return err("item_id must be a UUID"); }
+    if (!isUUID(params.reviewer_id)) { await logUsage(sb, member.id, "assign_curation_reviewer", false, "Invalid reviewer_id", start); return err("reviewer_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'participate_in_governance_review'))) { await logUsage(sb, member.id, "assign_curation_reviewer", false, "Unauthorized", start); return err("Unauthorized: requires participate_in_governance_review."); }
+    const { error } = await sb.rpc("assign_curation_reviewer", {
+      p_item_id: params.item_id,
+      p_reviewer_id: params.reviewer_id,
+      p_round: params.round,
+    });
+    if (error) { await logUsage(sb, member.id, "assign_curation_reviewer", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "assign_curation_reviewer", true, undefined, start);
+    return ok({ action: "assign_curation_reviewer", item_id: params.item_id, reviewer_id: params.reviewer_id, round: params.round });
   });
 
   // TOOL 36: get_tribe_deliverables — Leaders + Admin
@@ -7377,7 +7456,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 303 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 306 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",
