@@ -233,7 +233,7 @@ const WK = {
   <script id="wk-i18n" type="application/json" set:html={JSON.stringify(WK)}></script>
   <script is:inline define:vars={{ langPrefix }}>window.__LANG_PREFIX = langPrefix;</script>
   <script>
-    import { hasPermission } from '../lib/permissions';
+    import { hasPermission, getSimulation } from '../lib/permissions';
     // p123 i18n nav: prefix preserves /en /es when navigating between sections
     const LP: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
     // ── Workspace Cockpit — client-side orchestration ──
@@ -422,7 +422,13 @@ const WK = {
         const tribeName = myTribeBoard.board_name?.replace(/^Board\s*/i, '') || `${i18n.tribePrefix} ${member.tribe_id}`;
 
         const tribeColor = getTribeColor(member.tribe_id);
-        const isLeader = hasPermission(member, 'board.edit_tribe_items');
+        // #161: V4 scoped write_board on the viewer's own tribe (was global board.edit_tribe_items —
+        // under-granted engagement-derived leaders whose operational_role cache lost the permission).
+        // Simulation overlay: preview the simulated V3 tier (canFor reads real caps).
+        const _simWk = getSimulation();
+        const isLeader = _simWk.active
+          ? hasPermission(member, 'board.edit_tribe_items')
+          : (window as any).__nucleoCanFor?.('write_board', { type: 'tribe', id: member.tribe_id }) === true;
 
         if ($tribeCard) $tribeCard.innerHTML = `
           <a href="/tribe/${member.tribe_id}?tab=board" class="block no-underline group">
