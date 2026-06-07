@@ -11,7 +11,7 @@
  *
  * Bridge-first migration (per #280 PM decision):
  *   - `/mcp` stays as the existing full-catalog endpoint (regression-safe)
- *   - `/mcp/semantic` is the new public semantic gateway (3 read-only tools wave-1)
+ *   - `/mcp/semantic` is the new public semantic gateway (4 read-only tools: 3 wave-1 + get_operational_status wave-2)
  *   - the 299-tool catalog stays internal/dev; future migration moves the full
  *     surface behind `/mcp/full` or `?profile=full` once metrics + docs catch up.
  *
@@ -92,15 +92,15 @@ function semanticBlock() {
   return block;
 }
 
-test('semantic block registers exactly 3 mcp.tool() calls', () => {
+test('semantic block registers exactly 4 mcp.tool() calls', () => {
   const block = semanticBlock();
   const matches = block.match(/mcp\.tool\(\s*"[^"]+"/g) || [];
-  assert.equal(matches.length, 3, `expected 3 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
+  assert.equal(matches.length, 4, `expected 4 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
 });
 
-test('semantic block names the 3 wave-1 tools exactly', () => {
+test('semantic block names the wave-1 + wave-2 tools exactly', () => {
   const block = semanticBlock();
-  for (const name of ['get_my_context', 'search_nucleo_knowledge', 'get_board_or_initiative_context']) {
+  for (const name of ['get_my_context', 'search_nucleo_knowledge', 'get_board_or_initiative_context', 'get_operational_status']) {
     assert.match(block, new RegExp(`mcp\\.tool\\(\\s*"${name}"`), `expected mcp.tool("${name}") in semantic block`);
   }
 });
@@ -110,7 +110,7 @@ test('semantic tools have Zod input schemas (object literal as 3rd arg)', () => 
   // Each tool definition should include at least one z. usage in its inputSchema block.
   // (get_my_context and search_nucleo_knowledge use z.enum/z.string/z.boolean/z.number;
   // get_board_or_initiative_context uses z.string/z.number/z.enum.)
-  for (const name of ['get_my_context', 'search_nucleo_knowledge', 'get_board_or_initiative_context']) {
+  for (const name of ['get_my_context', 'search_nucleo_knowledge', 'get_board_or_initiative_context', 'get_operational_status']) {
     // Capture from the tool declaration up to the async handler keyword to scope to the schema area.
     const m = block.match(new RegExp(`mcp\\.tool\\(\\s*"${name}"[\\s\\S]*?async\\s*\\(`, 'm'));
     assert.ok(m, `did not find ${name} tool declaration`);
@@ -163,9 +163,9 @@ test('ef declares app.all("/semantic") route', () => {
   assert.match(EF, /app\.all\(\s*"\/semantic"\s*,\s*async/, 'expected app.all("/semantic", ...) route');
 });
 
-test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.1.0', () => {
+test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.2.0', () => {
   const block = routeBlock('/semantic');
-  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.1\.0"\s*\}\s*\)/);
+  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.2\.0"\s*\}\s*\)/);
 });
 
 test('/semantic handler registers ONLY registerSemanticTools (not registerTools/registerKnowledge)', () => {
@@ -190,7 +190,7 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   assert.match(m[0], /"\/semantic":/, '/health should report /semantic surface');
   assert.match(m[0], /"nucleo-ia-hub"/, '/health should report /mcp server name');
   assert.match(m[0], /"nucleo-ia-semantic"/, '/health should report /semantic server name');
-  assert.match(m[0], /tools:\s*3/, '/health should report 3 tools on /semantic');
+  assert.match(m[0], /tools:\s*4/, '/health should report 4 tools on /semantic (wave-2 get_operational_status)');
   // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close);
   // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3); then 304 → 303 via #191
   // (removed the broken advance_card_curation tool); then 303 → 306 via #188 (+3 curator-native tools);

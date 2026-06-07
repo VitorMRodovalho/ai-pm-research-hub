@@ -247,7 +247,7 @@ test('p239b #332: MCP_TOOL_MATRIX.md H1 count is self-consistent with the json r
   // Anti-brittleness (mcp.md: "the exact tool count changes every session — never recite it"):
   // derive the expected number from the freshly-generated json rather than a hardcoded literal,
   // so adding/removing a tool never breaks this gate. As of #188 (+3 curator-native /mcp tools)
-  // the flat matrix count is 310 (307 /mcp + 3 /semantic); the json is the source of truth.
+  // the flat matrix count is 311 (307 /mcp + 4 /semantic); the json is the source of truth.
   const json = JSON.parse(readFileSync(MATRIX_JSON_PATH, 'utf8'));
   const total = Array.isArray(json) ? json.length : (json.tools?.length ?? json.rows?.length ?? json.total);
   assert.ok(typeof total === 'number' && total > 0, 'json must yield a numeric tool total');
