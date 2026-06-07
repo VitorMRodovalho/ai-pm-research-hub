@@ -17746,6 +17746,7 @@ export type Database = {
           p_meeting_link?: string
           p_nature?: string
           p_time_start?: string
+          p_timezone?: string
           p_title: string
           p_tribe_id?: number
           p_type: string
@@ -17904,6 +17905,7 @@ export type Database = {
           p_n_weeks?: number
           p_start_date: string
           p_time_start?: string
+          p_timezone?: string
           p_title_template: string
           p_tribe_id?: number
           p_type: string
@@ -18543,6 +18545,7 @@ export type Database = {
           recurrence_group: string
           status: string
           time_start: string
+          timezone: string
           title: string
           tribe_id: number
           type: string

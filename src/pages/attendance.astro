@@ -164,6 +164,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   <RecurringModal />
   <EditEventModal />
   <RosterModal />
+  <!-- #485: shared IANA timezone suggestions for the event modals' tz <input list> (populated client-side) -->
+  <datalist id="iana-tz-list"></datalist>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
 </BaseLayout>
 
@@ -212,6 +214,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
   msgEventSaveError: t('attendance.msg.eventSaveError', lang),
+  msgInvalidTimezone: t('attendance.msg.invalidTimezone', lang),
   msgError: t('attendance.msg.error', lang),
   rosterLoading: t('attendance.roster.loading', lang),
   rosterNoParticipants: t('attendance.roster.noParticipants', lang),
@@ -813,6 +816,42 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     return false;
   }
 
+  // #485: timezone selector helpers. BRT (America/Sao_Paulo) stays the implicit default, so existing
+  // flows are unchanged; non-BRT events get an explicit picker value + a display badge.
+  const DEFAULT_TZ = 'America/Sao_Paulo';
+  function isValidTimeZone(tz: string): boolean {
+    if (!tz) return false;
+    try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch { return false; }
+  }
+  function tzLabel(tz: string): string {
+    // last IANA path segment, underscores → spaces (America/Sao_Paulo → "Sao Paulo", Etc/UTC → "UTC")
+    return (tz || '').split('/').pop()!.replace(/_/g, ' ');
+  }
+  function populateTimezoneDatalist(): void {
+    const dl = document.getElementById('iana-tz-list');
+    if (!dl || dl.childElementCount > 0) return;
+    let zones: string[] = [];
+    try {
+      const supported = (Intl as any).supportedValuesOf;
+      if (typeof supported === 'function') {
+        // events_timezone_check requires a '/', so drop slash-less zones (bare UTC/GMT); Etc/UTC covers UTC.
+        zones = (supported('timeZone') as string[]).filter((z) => z.includes('/'));
+      }
+    } catch { zones = []; }
+    if (!zones.length) {
+      zones = ['America/Sao_Paulo','America/Manaus','America/Rio_Branco','America/Noronha',
+        'America/New_York','America/Los_Angeles','America/Mexico_City','America/Argentina/Buenos_Aires',
+        'America/Bogota','America/Lima','America/Santiago','Europe/Lisbon','Europe/London','Europe/Madrid','Etc/UTC'];
+    }
+    // Americas first (common case for this chapter network), then the rest alphabetical.
+    zones.sort((a, b) => {
+      const aAm = a.startsWith('America/'), bAm = b.startsWith('America/');
+      if (aAm !== bAm) return aAm ? -1 : 1;
+      return a.localeCompare(b);
+    });
+    dl.innerHTML = zones.map((z) => `<option value="${escapeAttr(z)}"></option>`).join('');
+  }
+
   function renderEventCard(ev: any): string {
     const isPast = isEventPast(ev);
     const isCancelled = ev.status === 'cancelled';
@@ -854,6 +893,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const cancelledBadge = isCancelled
       ? ` · <span class="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded" title="${escapeAttr(ev.cancellation_reason || 'Reunião cancelada')}">CANCELADA</span>`
       : '';
+    // #485: surface a non-BRT timezone (BRT events stay badge-free). Shows the naive start time + IANA city.
+    const tzBadge = (ev.timezone && ev.timezone !== DEFAULT_TZ)
+      ? ` · <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded" title="${escapeAttr(ev.timezone)}">🕐 ${ev.time_start ? escapeAttr(String(ev.time_start).substring(0, 5)) + ' ' : ''}${escapeAttr(tzLabel(ev.timezone))}</span>`
+      : '';
     const rowOpacity = isCancelled ? ' opacity-60' : '';
     const titleStrike = isCancelled ? ' line-through' : '';
     return `<div>
@@ -861,7 +904,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <span class="text-xs">${attIcon}</span>
       <div class="flex-1 min-w-0">
         <div class="text-[13px] font-medium text-[var(--text-primary)] truncate${titleStrike}${hasMinutes ? ' cursor-pointer hover:text-navy' : ''}" ${hasMinutes ? `data-action="toggle-minutes" data-event-id="${ev.id}"` : ''}>${ev.title}</div>
-        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast && !isCancelled ? ` · ${ev.attendee_count || 0} presentes` : ''}${ev.initiative_name ? ` · <span class="text-[10px] font-semibold text-purple">📌 ${escapeAttr(ev.initiative_name)}</span>` : ''}${cancelledBadge}${linkHtml}${recHtml} ${badges}</div>
+        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${tzBadge}${isPast && !isCancelled ? ` · ${ev.attendee_count || 0} presentes` : ''}${ev.initiative_name ? ` · <span class="text-[10px] font-semibold text-purple">📌 ${escapeAttr(ev.initiative_name)}</span>` : ''}${cancelledBadge}${linkHtml}${recHtml} ${badges}</div>
       </div>
       <div class="flex gap-1 items-center flex-shrink-0">
         ${ev.i_attended !== true ? (isInCheckinWindow(ev)
@@ -1599,6 +1642,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     (document.getElementById('ev-title') as HTMLInputElement).value = '';
     (document.getElementById('ev-date') as HTMLInputElement).value = today();
     (document.getElementById('ev-time-start') as HTMLInputElement).value = '';
+    (document.getElementById('ev-timezone') as HTMLInputElement).value = ''; // #485: empty = BRT default
     (document.getElementById('ev-duration') as HTMLInputElement).value = '90';
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
     (document.getElementById('ev-type') as HTMLSelectElement).value = 'geral';
@@ -1654,6 +1698,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
     const timeStart = (document.getElementById('ev-time-start') as HTMLInputElement).value || null;
+    const timezone = (document.getElementById('ev-timezone') as HTMLInputElement).value.trim() || null; // #485
+    if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
     const tribeId = type === 'tribo' ? parseInt((document.getElementById('ev-tribe-select') as HTMLSelectElement).value) : null;
@@ -1670,6 +1716,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const { data, error } = await sb.rpc('create_event', {
         p_type: type, p_title: title, p_date: date,
         p_time_start: timeStart,
+        p_timezone: timezone, // #485
         p_duration_minutes: duration,
         p_tribe_id: tribeId,
         p_meeting_link: link,
@@ -1717,6 +1764,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
+    (document.getElementById('rec-timezone') as HTMLInputElement).value = ''; // #485: empty = BRT default
     (document.getElementById('rec-until') as HTMLInputElement).value = '';
     // #494: reset the scope selects on every open. <select>s aren't form-reset and closeModal only
     // toggles CSS, so an abandoned prior selection would otherwise persist and silently bind a new
@@ -1740,6 +1788,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const type = (document.getElementById('rec-type') as HTMLInputElement).value;
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
     const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
+    const timezone = (document.getElementById('rec-timezone') as HTMLInputElement).value.trim() || null; // #485
+    if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
     let weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
     // #414: cadence → RPC interval params. weekly=7d (default/back-compat), biweekly=14d, monthly=1 calendar month.
@@ -1800,6 +1850,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const { data, error } = await sb.rpc('create_recurring_weekly_events', {
         p_type: dbType, p_title_template: titleTpl, p_start_date: start,
         p_time_start: timeStart,
+        p_timezone: timezone, // #485
         p_duration_minutes: duration, p_n_weeks: weeks,
         p_meeting_link: link,
         p_tribe_id: tribeId,
@@ -1920,6 +1971,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     };
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
     (document.getElementById('edit-ev-time-start') as HTMLInputElement).value = ev.time_start || '';
+    (document.getElementById('edit-ev-timezone') as HTMLInputElement).value = ev.timezone || DEFAULT_TZ; // #485
     (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
     (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value = ev.notes || '';
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
@@ -2004,6 +2056,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
     const recurrenceGroup = (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value;
     const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
+    const timezone = (document.getElementById('edit-ev-timezone') as HTMLInputElement).value.trim() || null; // #485
+    if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const notes = (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value.trim() || null;
 
     // If recurring event, ask scope
@@ -2038,6 +2092,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (error) throw error;
         const updateFields: Record<string, any> = { type: editType, nature, visibility };
         if (timeStart) updateFields.time_start = timeStart;
+        updateFields.timezone = timezone || DEFAULT_TZ; // #485: cleared field resets to BRT default
         if (notes !== undefined) updateFields.notes = notes;
         if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
@@ -2052,6 +2107,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         }
         const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
         if (rowUpdateError) throw rowUpdateError;
+        // #485: timezone isn't carried by update_future_events_in_group, so propagate it to future
+        // siblings here (parity with how time_start propagates). This event itself is handled above.
+        await sb.from('events').update({ timezone: timezone || DEFAULT_TZ })
+          .eq('recurrence_group', recurrenceGroup).gt('date', date);
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
         const count = futureData?.updated_count || 0;
@@ -2069,6 +2128,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (data?.success) {
           const updateFields: Record<string, any> = { type: editType, nature, visibility };
           if (timeStart) updateFields.time_start = timeStart;
+          updateFields.timezone = timezone || DEFAULT_TZ; // #485: cleared field resets to BRT default
           if (notes !== undefined) updateFields.notes = notes;
           if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
           if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
@@ -2472,6 +2532,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (interviewToggle) { interviewToggle.classList.remove('hidden'); interviewToggle.classList.add('flex'); }
     }
     showApp();
+    populateTimezoneDatalist(); // #485: fill the shared IANA tz datalist before any event modal opens
     const routeTabBtn = document.querySelector(`[data-tab="${ATTENDANCE_ROUTE.tab}"]`) as HTMLElement | null;
     if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
     await Promise.all([loadTags(), loadKPIs()]);
