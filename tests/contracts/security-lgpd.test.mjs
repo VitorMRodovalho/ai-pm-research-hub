@@ -230,8 +230,10 @@ test('Nav.astro escapes HTML in user name', () => {
 
 // ─── P1-D: Edge Function Retry Logic ───
 
+// send-weekly-member-digest (canonical weekly digest, #195) is intentionally omitted:
+// pure RPC orchestrator (get_weekly_member_digest) that delegates delivery to
+// send-notification-email — no direct Resend fetch, so no fetchWithRetry.
 const EDGE_FUNCTIONS_WITH_RETRY = [
-  'send-notification-digest',
   'send-global-onboarding',
   'verify-credly',
   'sync-comms-metrics',

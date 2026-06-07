@@ -364,3 +364,25 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - p227 audit doc `docs/audit/SELECTION_NOTIFICATIONS_W2_AUDIT_P227.md` — 90d evidence pack
 - #292 sprint umbrella — Selection Reliability Cycle 4 sprint
 - Migration `20260805000008_p228_260_w2_leaf1_selection_notification_catalog_helper_parity.sql` — Leaf 1 shipping migration
+
+## Amendment E — Canonical Weekly Member Digest Path (p278 #195, 2026-06-07)
+
+**Status:** Accepted (PM ratified 2026-06-07, p278 #195)
+**Driver:** Two parallel weekly-digest implementations coexisted — the RPC-driven `get_weekly_member_digest()` (consumed by the live cron) and a separate Edge Function `send-notification-digest` that queried unread notifications and rendered its own grouped HTML. The duplication blocked the curation-summary digest rollout (gate G22 / #195): unclear which path is canonical before extending it.
+
+### Decision
+
+| ID | Decision | Justification |
+|---|---|---|
+| D-dig-1 | **Canonical weekly member digest = RPC `get_weekly_member_digest()` + EF `send-weekly-member-digest`** (cron `send-weekly-member-digest`, jobid 26, `0 12 * * 6`). | This is the live, cron-driven path; the RPC owns the DB-driven content model and is already wired to the scheduled dispatcher. |
+| D-dig-2 | **`send-notification-digest` Edge Function = deprecated + removed.** | Live verification 2026-06-07: absent from the deployed EF list, referenced by zero crons, and zero callers across `supabase/ src/ scripts/ .github/ config.toml` (only its own dir + 2 test fixtures). A dead duplicate. |
+| D-dig-3 | Curation-summary section added to `get_weekly_member_digest()` (currently `has_curation_section=false`, intentionally gated) is the **downstream follow-up unblocked by this ratification** — not part of this cleanup. | Keeps the cleanup atomic; the curation rollout proceeds on the now-canonical path. |
+
+### Implementation
+- Removed `supabase/functions/send-notification-digest/` (orphan EF).
+- Dropped `send-notification-digest` from `tests/contracts/security-lgpd.test.mjs` (`EDGE_FUNCTIONS_WITH_RETRY`) and `tests/edge-functions/ef-contracts.test.mjs` (`EF_CONTRACTS`).
+- Resolves roadmap gate **G22**.
+
+### Cross-refs
+- #195 — canonical digest path ratification + cleanup
+- Gate G22 (`docs/project-governance/BACKLOG_ROADMAP_2026-06.md`)

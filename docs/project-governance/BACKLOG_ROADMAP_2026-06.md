@@ -110,7 +110,7 @@ recorded for traceability; the rest are **OPEN** and owned as noted.
 | **G19** | Connector strategy: private/custom vs official store listings (Claude/OpenAI/Perplexity/xAI) | PM + DevOps | #234, #280, #283 | Wave 1 |
 | **G20** | YouTube ingestion: validate actual member use of `knowledge_search_text` before building | PM | #207 | Wave 2 |
 | **G21** | Meet-transcripts privacy gate UX (file-by-file process/skip/private; LGPD logic for candidate mentions) | GP + PM | #208 | Wave 1 |
-| **G22** | Canonical weekly digest path: RPC `get_weekly_member_digest` vs Edge Function `send-notification-digest` | PM | #195 | Wave 1 |
+| **G22** | ✅ RESOLVED (2026-06-07, #195): canonical = RPC `get_weekly_member_digest` + EF `send-weekly-member-digest` (cron jobid 26); `send-notification-digest` EF deprecated + removed (undeployed, no cron, 0 callers) | PM | #195 | Wave 1 |
 | **G23** | External member identity model (partner_contact vs lightweight identity) + Drive sync trigger on engagement lifecycle | PM + architect (ADR) | #212, #211 | Wave 2 |
 | **G24** | Google Calendar sync conflict resolution (GCal wins phase 1; multi-tenant deferred) | Architect (ADR) | #416 | Triage |
 | **G25** | CI drift recovery strategy: (A) wait PR#215 merge + capture migration, (B) drop orphan functions, (C) allowlist | Tech Lead / PM | #226 | **Wave 0** |
@@ -174,7 +174,7 @@ connector decisions so Wave 2 can build.
 - #206 (M) Gemini 3.5 Flash pilot (**G18**) · #208 (M) Meet transcripts → notes (**G21**) · #234 (M) connector OAuth refresh stability + listing eval (**G19**) · #283 (S) connector store readiness matrix (**G19**).
 
 **G — Governance ops:**
-- #195 (S) ratify canonical digest path (**G22**) · #196 (S) refresh PERMISSIONS_MATRIX + SITE_MAP stale counts.
+- ~~#195 (S) ratify canonical digest path (**G22**)~~ ✅ DONE (2026-06-07, #195) · #196 (S) refresh PERMISSIONS_MATRIX + SITE_MAP stale counts.
 
 **Pulled forward from the 47 (Wave-1 prerequisites):** #161 (multi-role gate audit → #245), #181 (counter-signature
 evidence → #308), #166 (semantic-layer roadmap → #311), and the curation primitives #188/#190/#191/#192 (→ #201/#245/#301).
