@@ -92,7 +92,7 @@ const PRES_I18N = {
   window.__PRES_CTX = { context: context || 'home', tribeId: tribeId || null, initiativeId: initiativeId || null, i18n: PRES_I18N || {} };
 </script>
 <script>
-  import { hasPermission } from '../../lib/permissions';
+  import { hasPermission, canFor, getSimulation, getEffectiveTribeId } from '../../lib/permissions';
   const CTX = (window as any).__PRES_CTX || { context: 'home', tribeId: null, i18n: {} };
   const PI = CTX.i18n;
   let presActive = false;
@@ -106,8 +106,17 @@ const PRES_I18N = {
 
     if (CTX.context === 'tribe') {
       if (isAdmin) return true;
-      return hasPermission(member, 'board.edit_tribe_items')
-        && member.tribe_id === CTX.tribeId;
+      // #161: V4 scoped write_board on the presented tribe/initiative (was global
+      // board.edit_tribe_items && hand-rolled member.tribe_id===CTX.tribeId equality).
+      // Simulation overlay: preview the simulated V3 tier + effective tribe (canFor reads real caps).
+      const sim = getSimulation();
+      if (sim.active) {
+        return hasPermission(member, 'board.edit_tribe_items') && getEffectiveTribeId(member) === CTX.tribeId;
+      }
+      return Boolean(
+        (CTX.initiativeId && canFor('write_board', { type: 'initiative', id: CTX.initiativeId }))
+        || (CTX.tribeId != null && canFor('write_board', { type: 'tribe', id: CTX.tribeId }))
+      );
     }
     return false;
   }
