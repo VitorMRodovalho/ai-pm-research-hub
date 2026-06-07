@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-06-07T01:08:25.074Z",
+  "generated_at": "2026-06-07T14:29:49.883Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 309,
+  "total": 310,
   "by_domain": {
     "personal": 21,
-    "tribe": 93,
+    "tribe": 94,
     "board": 67,
     "events": 15,
     "governance": 22,
@@ -17,7 +17,7 @@
     "health": 17
   },
   "by_permission": {
-    "read": 202,
+    "read": 203,
     "write": 98,
     "admin": 9
   },
@@ -369,6 +369,13 @@
     {
       "name": "get_public_impact_data",
       "description": "Returns public impact data: chapters, members, publications, partners, timeline, recognitions.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_recurrence_stockout",
+      "description": "Lists recurring event series running out of future occurrences (recently active, last date within the horizon, no events beyond it). Returns estimated cadence, last date, next expected date, and suggested next dates to resupply. Requires manage_event.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
