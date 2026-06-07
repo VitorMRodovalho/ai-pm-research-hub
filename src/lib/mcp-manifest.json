@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-06-05T20:35:56.027Z",
+  "generated_at": "2026-06-07T01:08:25.074Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 306,
+  "total": 309,
   "by_domain": {
     "personal": 21,
     "tribe": 93,
-    "board": 64,
+    "board": 67,
     "events": 15,
     "governance": 22,
     "comms": 12,
@@ -17,8 +17,8 @@
     "health": 17
   },
   "by_permission": {
-    "read": 201,
-    "write": 96,
+    "read": 202,
+    "write": 98,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -914,7 +914,14 @@
     },
     {
       "name": "get_curation_dashboard",
-      "description": "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Admin only.",
+      "description": "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Requires curation or board-write authority.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_curation_queue_state",
+      "description": "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. Read access requires curate_content, write_board, or participate_in_governance_review.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1067,6 +1074,13 @@
       "is_sensitive": false
     },
     {
+      "name": "assign_curation_reviewer",
+      "description": "Assign a reviewer to a board item for a curation review round. Caller requires participate_in_governance_review; the reviewer must hold curate_content (or co_gp). The RPC blocks designating the item author as the sole reviewer for the round.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "complete_checklist_item",
       "description": "Toggle a checklist activity as completed (or reopen). RPC allows the activity owner (assigned_to) and also leader/GP/card owner.",
       "domain": "board",
@@ -1188,6 +1202,13 @@
     {
       "name": "restore_card",
       "description": "Restore an archived card back to an active column. Default target status is 'backlog'. RPC performs the admin/leader authority check.",
+      "domain": "board",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "submit_curation_review",
+      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.",
       "domain": "board",
       "permission": "write",
       "is_sensitive": false
