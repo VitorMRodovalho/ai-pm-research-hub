@@ -89,7 +89,7 @@ Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth 
 
 ## Representative Tools
 
-The live source of truth is the MCP `tools/list` response. The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 293 tools.
+The live source of truth is the MCP `tools/list` response. The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 306 tools.
 
 For the **complete machine-generated contract matrix** (tool → domain → RPC dependencies → tables → canV4 gate → external fetches → service_role usage), see:
 
