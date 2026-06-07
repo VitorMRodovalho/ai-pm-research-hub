@@ -66,8 +66,8 @@ test('D12: get_events_with_attendance.attendee_count filters a.present = true', 
 // ── #420 follow-up (2026-05-31 comment): 3 present-blind consumers (mig 20260805000122) ──
 // get_public_impact_data + get_member_attendance_hours summed/counted attendance without filtering
 // present=true (registered-but-absent rows inflated hours by 78.5h: impact 1656→1577.5, total 896→817.7).
-// (get_admin_dashboard's dropout/detractor present-blindness is deferred — its detractor query is
-//  separately broken/dead, needs a rewrite not a present filter.)
+// (get_admin_dashboard's dropout present-blindness + dead detractor query were the deferred 3rd
+//  consumer — now resolved by #555 / mig 20260805000123; locked below.)
 
 test('#420 follow-up: get_member_attendance_hours filters a.present (streak EXISTS + hours aggregate)', () => {
   const { file, code } = latestDeclarerCode('get_member_attendance_hours');
@@ -83,4 +83,21 @@ test('#420 follow-up: get_public_impact_data hours metrics filter a.present', ()
     `${file}: total_attendance_hours must filter a.present`);
   assert.match(code, /FROM attendance a JOIN events e ON e\.id = a\.event_id\s+WHERE a\.present/,
     `${file}: impact_hours must filter a.present`);
+});
+
+// ── #555 (deferred 3rd consumer from #420/#554; mig 20260805000123) ──
+// get_admin_dashboard had TWO present-blind/broken attendance alerts deferred by mig ...122's header.
+
+test('#555: get_admin_dashboard dropout alert filters a.present (Option A) + detractor alert revived (no dead self-negating query)', () => {
+  const { file, code } = latestDeclarerCode('get_admin_dashboard');
+  // Part 1 — dropout-risk 60d subquery must exclude only members who were actually PRESENT
+  // (no-shows now count as at-risk; PM Option A 2026-06-07).
+  assert.match(code, /WHERE e\.date > now\(\) - interval '60 days'\s+AND a\.present IS TRUE/,
+    `${file}: dropout-risk alert must add the present-filter (registered no-shows count as at-risk)`);
+  // Part 2 — detractor alert must use the canonical present-aware eligible-events streak ...
+  assert.match(code, /_attendance_eligible_events/,
+    `${file}: detractor alert must derive eligible events from the canonical helper`);
+  // ... and must NOT contain the dead self-negating NOT EXISTS anti-pattern that never fired.
+  assert.ok(!code.includes('NOT EXISTS (SELECT 1 FROM public.attendance ax'),
+    `${file}: the dead self-negating detractor NOT EXISTS must be gone (it never matched any data)`);
 });
