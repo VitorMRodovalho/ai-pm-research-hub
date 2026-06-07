@@ -56,7 +56,7 @@ Se qualquer invariante ≠ OK, **pare e reporte imediatamente**.
 
 ### 5. Drift docs vs código
 CLAUDE.md (p133+ Anthropic guidance) **NÃO pina counts mutáveis**. Pins canônicos vivem em `.claude/rules/*.md` e em `docs/adr/README.md`. Auditar:
-- **MCP tools**: `grep -c 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts` vs `.claude/rules/mcp.md` (pin atual: "293 tools + 4 prompts + 3 resources" — p199-a v2.76.1)
+- **MCP tools**: `grep -c 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts` (flat = /mcp + 3 /semantic) vs the live `/health` `/mcp.tools` count. `.claude/rules/mcp.md` intentionally does NOT pin a literal ("never recite from memory" — the count drifts every session). Re-query, don't trust a hardcoded number. (For reference only: ~306 /mcp as of 2026-06-06 S5 #188.)
 - **Edge functions**: `ls supabase/functions/ | wc -l` (lembre que `_shared` não é função). Sem pin em rules — referência canônica é git ls-tree
 - **Tests**: baseline em deploy/session audit (pin atual offline: "1449 pass, 0 fail, 46 skip"; DB-aware: "~1501 pass, 0 fail, 5 skip")
 - **ADRs**: `ls docs/adr/ADR-*.md | wc -l` vs `docs/adr/README.md` index (pin atual: 86 ADR files, ADR-0082 skip intentional documented in index)
