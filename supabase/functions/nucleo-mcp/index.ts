@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 307 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 307 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
 // /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
 //   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
 //   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
@@ -13,6 +13,11 @@
 // #415 (2026-06-07): recurrence stockout observability — +1 tool (get_recurrence_stockout, gated
 //   manage_event, wraps the get_recurrence_stockout RPC). 306 -> 307. Count-only (no version bump).
 //   Tests + /health updated to 307; matrix/manifest regenerated.
+// SPEC-280.C (2026-06-07): wave-2 /semantic tool get_operational_status — composite read-only ops
+//   summary (detect_operational_alerts incl. #415 stockout + get_recurrence_stockout + attendance +
+//   cron/sync health) gated manage_platform, PII-clean (member-specific alert details redacted).
+//   /semantic 3 -> 4; /semantic surface version 0.1.0 -> 0.2.0 (capability add on the alpha surface).
+//   /mcp untouched (307). Matrix/manifest regenerated; bridge contract test bumped.
 // v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
 //   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
 //   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
@@ -7411,6 +7416,129 @@ function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClien
       });
     },
   );
+
+  // ── SEMANTIC TOOL 4/4 (SPEC-280.C, wave-2): get_operational_status ─────────
+  mcp.tool(
+    "get_operational_status",
+    "Returns a compact operational-health summary for the chapter (admin): active alerts by severity (incl. recurrence stockout from #415), the recurring-series resupply list, event-attendance health, and cron/sync health signals. Summary-first, read-only. PII-clean — aggregate counts + short messages only; member-specific alert details are redacted. Requires manage_platform; the stockout list and attendance health additionally need manage_event / analytics permissions and are omitted (with a warning) if the caller lacks them. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+    {
+      detail_level: z.enum(["summary", "standard"]).optional().describe("'summary' = alert counts by severity + cron/sync health signals + stockout count. 'standard' = adds the alert list, the recurrence-stockout resupply list, and attendance-health detail. Default: 'summary'."),
+      severity_min: z.enum(["low", "medium", "high"]).optional().describe("Only return alerts at or above this severity. Default: 'low' (all)."),
+    },
+    async (params: { detail_level?: "summary" | "standard"; severity_min?: "low" | "medium" | "high" }) => {
+      const start = Date.now();
+      const member = await getMember(sb);
+      if (!member) {
+        await logUsage(sb, null, "get_operational_status", false, "Not authenticated", start);
+        return ok(buildSemanticError({ tool: "get_operational_status", semantic_domain: "operational", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
+      }
+      if (!(await canV4(sb, member.id, "manage_platform"))) {
+        await logUsage(sb, member.id, "get_operational_status", false, "Unauthorized", start);
+        return ok(buildSemanticError({ tool: "get_operational_status", semantic_domain: "operational", code: "unauthorized", message: "Requires manage_platform.", action: "Ask a chapter admin/GP to run this." }));
+      }
+      const detail = params.detail_level ?? "summary";
+      const sevRank: Record<string, number> = { low: 1, medium: 2, high: 3 };
+      const minRank = sevRank[params.severity_min ?? "low"];
+
+      const calls = await Promise.allSettled([
+        sb.rpc("detect_operational_alerts"),
+        sb.rpc("get_recurrence_stockout", { p_horizon_days: 30 }),
+        sb.rpc("get_event_attendance_health"),
+        sb.rpc("get_digest_health"),
+        sb.rpc("get_lgpd_cron_health"),
+        sb.rpc("get_invitation_health"),
+      ]);
+      const warnings: string[] = [];
+      const labels = ["alerts", "stockout", "attendance_health", "digest_health", "lgpd_cron_health", "invitation_health"];
+      const get = <T>(idx: number): T | null => {
+        const r = calls[idx];
+        if (r.status === "rejected") { warnings.push(`${labels[idx]}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+        const v = r.value as any;
+        if (v?.error) { warnings.push(`${labels[idx]}: ${v.error.message}`); return null; }
+        return v?.data ?? null;
+      };
+
+      const alertsRaw = get<any>(0);
+      const stockout = get<any>(1);
+      const attendanceHealth = get<any>(2);
+      const digest = get<any>(3);
+      const lgpd = get<any>(4);
+      const invitation = get<any>(5);
+
+      // PII-clean (pii_level: none): drop member-identifying fields AND redact the message for the two
+      // member-specific alert types (member_absence_streak / onboarding_overdue embed a name in the text).
+      const PII_FIELDS = ["member_name", "applicant_name", "member_id", "email"];
+      const NAME_EMBEDDING = new Set(["member_absence_streak", "onboarding_overdue"]);
+      const sanitizeAlert = (a: any) => {
+        const out: any = {};
+        for (const k of Object.keys(a ?? {})) { if (!PII_FIELDS.includes(k)) out[k] = a[k]; }
+        if (NAME_EMBEDDING.has(a?.type)) out.message = `${a.type}: detalhe por membro omitido (PII).`;
+        return out;
+      };
+      const allAlerts: any[] = Array.isArray(alertsRaw?.alerts) ? alertsRaw.alerts : [];
+      const filteredAlerts = allAlerts
+        // unknown/future severities fail OPEN (sentinel 99) — never silently hide an alert
+        .filter((a) => (sevRank[a?.severity] ?? 99) >= minRank)
+        .map(sanitizeAlert)
+        .slice(0, 50);
+
+      const bySeverity = alertsRaw?.by_severity ?? { high: 0, medium: 0, low: 0 };
+      const stockoutCount = stockout?.total ?? 0;
+      const health = {
+        digest: digest?.health_signal ?? null,
+        lgpd_cron: lgpd?.health_signal ?? null,
+        invitations: invitation?.health_signal ?? null,
+      };
+
+      const data: any = {
+        alerts_total: alertsRaw?.total ?? filteredAlerts.length,
+        alerts_by_severity: bySeverity,
+        recurrence_stockout_count: stockoutCount,
+        health,
+      };
+      if (detail === "standard") {
+        data.alerts = filteredAlerts;
+        // alerts_by_severity/alerts_total are the FULL distribution (health signal); alerts_shown is the
+        // count actually returned after severity_min + the 50-row cap (avoids a misleading total vs list).
+        data.alerts_shown = filteredAlerts.length;
+        data.recurrence_stockout = Array.isArray(stockout?.stockout) ? stockout.stockout.slice(0, 50) : [];
+        data.attendance_health = attendanceHealth ? {
+          stale_events_no_attendance: attendanceHealth.stale_events_no_attendance ?? null,
+          oldest_stale_date: attendanceHealth.oldest_stale_date ?? null,
+          window_days: attendanceHealth.window_days ?? null,
+        } : null;
+      }
+
+      const healthSignals = [health.digest, health.lgpd_cron, health.invitations].filter(Boolean);
+      const worst = healthSignals.includes("red") ? "red" : healthSignals.includes("yellow") ? "yellow" : (healthSignals.length ? "green" : "n/d");
+      const summary = [
+        `${alertsRaw?.total ?? 0} alerta(s) (${bySeverity.high ?? 0} alta · ${bySeverity.medium ?? 0} média · ${bySeverity.low ?? 0} baixa)`,
+        `crons ${worst}`,
+        stockoutCount > 0 ? `${stockoutCount} série(s) recorrente(s) no fim do estoque` : null,
+      ].filter(Boolean).join(" · ") + ".";
+
+      await logUsage(sb, member.id, "get_operational_status", true, undefined, start);
+      return ok({
+        ok: true,
+        data,
+        summary,
+        warnings,
+        next_actions: [
+          "get_recurrence_stockout: list recurring series to resupply",
+          "get_board_or_initiative_context: drill into a flagged tribe/initiative",
+        ],
+        audit: {
+          tool: "get_operational_status",
+          semantic_domain: "operational",
+          pii_level: "none",
+          permission: "manage_platform",
+          source_tools: ["detect_operational_alerts", "get_recurrence_stockout", "get_event_attendance_health", "get_digest_health", "get_lgpd_cron_health", "get_invitation_health"],
+          generated_at: new Date().toISOString(),
+          detail_level: detail,
+        },
+      });
+    },
+  );
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -7442,7 +7570,7 @@ app.all("/mcp", async (c) => {
 
 // p222 #280 alpha — Semantic MCP Gateway bridge endpoint
 // Same transport + protocol as /mcp; difference is the McpServer is constructed with ONLY the
-// 3 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
+// 4 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
 // for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors Directory).
 app.all("/semantic", async (c) => {
   try {
@@ -7450,7 +7578,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.1.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.2.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -7474,7 +7602,7 @@ app.get("/health", (c) => c.json({
   ef_version: "2.80.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 307 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",
   sdk: "1.29.0",

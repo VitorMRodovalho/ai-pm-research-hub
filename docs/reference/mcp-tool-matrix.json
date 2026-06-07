@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-06-07T14:39:39.941Z",
+  "generated_at": "2026-06-07T16:04:57.889Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 310,
-  "runtime_status": "drift: 3 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context], 0 runtime-only []",
+  "total": 311,
+  "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
   "by_domain": {
     "personal": 21,
     "events": 15,
     "gamification": 12,
     "board": 67,
-    "tribe": 94,
+    "tribe": 95,
     "comms": 12,
     "knowledge": 12,
     "partners": 11,
@@ -4284,6 +4284,27 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
+      "drift": "static-only"
+    },
+    {
+      "name": "get_operational_status",
+      "description": "Returns a compact operational-health summary for the chapter (admin): active alerts by severity (incl. recurrence stockout from #415), the recurring-series resupply list, event-attendance health, and cron/sync health signals. Summary-first, read-only. PII-clean — aggregate counts + short messages only; member-specific alert details are redacted. Requires manage_platform; the stockout list and attendance health additionally need manage_event / analytics permissions and are omitted (with a warning) if the caller lacks them. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "domain": "tribe",
+      "rpcs": [
+        "detect_operational_alerts",
+        "get_digest_health",
+        "get_event_attendance_health",
+        "get_invitation_health",
+        "get_lgpd_cron_health",
+        "get_recurrence_stockout"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_platform"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:",
       "drift": "static-only"
     }
   ]

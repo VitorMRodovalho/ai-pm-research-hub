@@ -22,7 +22,7 @@ Pareto over the trailing 90 days (~1,364 calls):
 
 ## 2. Intent & scope
 
-A single read-only call that returns a **compact operational-health summary** for the chapter: active alerts (incl. recurrence stockout), adoption signals, event/attendance health, and cron/sync health. Summary-first; aggregate counts and short messages only — **no member PII, no raw audit payloads**.
+A single read-only call that returns a **compact operational-health summary** for the chapter: active alerts (incl. recurrence stockout), event/attendance health, and cron/sync health. Summary-first; aggregate counts and short messages only — **no member PII, no raw audit payloads**.
 
 ## 3. Composition (all sources already exist + carry their own gate)
 
@@ -31,10 +31,12 @@ A single read-only call that returns a **compact operational-health summary** fo
 | Source RPC | Contributes | Existing gate |
 |---|---|---|
 | `detect_operational_alerts` | alerts[] + by_severity (incl. `recurrence_stockout` from #415) | `manage_platform` |
-| `get_adoption_metrics` | adoption/retention signals | admin/analytics |
-| `get_event_attendance_health` | event attendance coverage health | admin |
-| `get_recurrence_stockout` | (optional, `detail_level='standard'`) the resupply list behind the stockout alert count | `manage_event` |
-| `get_digest_health` · `get_lgpd_cron_health` · `get_invitation_health` | cron/sync health rollup | admin/health |
+| `get_event_attendance_health` | event attendance coverage health | `view_internal_analytics` / `view_chapter_dashboards` |
+| `get_recurrence_stockout` | (`detail_level='standard'`) the resupply list behind the stockout alert count | `manage_event` |
+| `get_digest_health` · `get_lgpd_cron_health` · `get_invitation_health` | cron/sync health rollup | `view_internal_analytics` |
+
+> **Not composed (decided at build):** `get_adoption_metrics` is NOT a direct RPC — the `/mcp` tool of that name wraps `get_mcp_adoption_stats` (gated `manage_member`; MCP-route metrics, not chapter ops health). Excluded to avoid guessing; can be added later if a chapter-adoption RPC is introduced.
+> **Gate note:** the composite gate is `manage_platform`; the attendance + stockout sources have narrower gates, so a pure `manage_platform` caller may see those degrade to a `warnings[]` entry (graceful, by design). Tracked as a backlog follow-up to broaden `get_event_attendance_health` if needed.
 
 Each source runs under the **caller's JWT**, so each RPC enforces its own gate; a denied/failing source **degrades to a `warnings[]` entry** rather than failing the whole call (wave-1 invariant).
 
@@ -48,7 +50,7 @@ Each source runs under the **caller's JWT**, so each RPC enforces its own gate; 
 ```ts
 {
   detail_level: z.enum(["summary", "standard"]).optional()
-    .describe("'summary' = alert counts by severity + health rollup. 'standard' = adds the alert list + the recurrence-stockout resupply list + adoption/attendance detail. Default: 'summary'."),
+    .describe("'summary' = alert counts by severity + health rollup. 'standard' = adds the alert list + the recurrence-stockout resupply list + attendance detail. Default: 'summary'."),
   severity_min: z.enum(["low", "medium", "high"]).optional()
     .describe("Filter the returned alerts to >= this severity. Default: 'low' (all)."),
 }
@@ -64,9 +66,8 @@ No write params. No free-text. Bounded output (cap alert list, e.g. 50).
   "data": {
     "alerts_by_severity": { "high": 9, "medium": 3, "low": 1 },
     "alerts": [ { "type": "recurrence_stockout", "severity": "high", "message": "Série recorrente (tribo) no fim do estoque: última em 2026-05-30, próxima esperada ~2026-06-06" } ],
-    "health": { "digest": "ok", "lgpd_cron": "ok", "invitations": "ok" },
-    "adoption": { "...": "summary fields only" },
-    "attendance_health": { "...": "summary fields only" }
+    "health": { "digest": "green", "lgpd_cron": "green", "invitations": "green" },
+    "attendance_health": { "stale_events_no_attendance": 0, "oldest_stale_date": null, "window_days": 14 }
   },
   "summary": "12 alertas (9 alta · 3 média · 1 baixa) · crons ok · 8 séries no fim do estoque.",
   "warnings": [],
@@ -79,7 +80,7 @@ No write params. No free-text. Bounded output (cap alert list, e.g. 50).
     "semantic_domain": "operational",
     "pii_level": "none",
     "permission": "manage_platform",
-    "source_tools": ["detect_operational_alerts", "get_adoption_metrics", "get_event_attendance_health", "get_recurrence_stockout", "get_digest_health", "get_lgpd_cron_health", "get_invitation_health"],
+    "source_tools": ["detect_operational_alerts", "get_recurrence_stockout", "get_event_attendance_health", "get_digest_health", "get_lgpd_cron_health", "get_invitation_health"],
     "generated_at": "<iso>"
   }
 }
