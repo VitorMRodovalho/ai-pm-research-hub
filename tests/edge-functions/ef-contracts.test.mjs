@@ -82,12 +82,6 @@ const EF_CONTRACTS = [
     imports: [],
   },
   {
-    name: 'send-notification-digest',
-    tables: ['notification_preferences', 'members', 'notifications'],
-    imports: [],
-    externalServices: ['api.resend.com'],
-  },
-  {
     name: 'import-trello-legacy',
     tables: [],
     imports: [],
