@@ -213,7 +213,7 @@ test('GAP-205.D: McpServer version is bumped past p215 (>= 2.78.0)', () => {
 // ─── 11. /health endpoint tool count matches catalog claim (ratchet) ───
 // p222 #280 update: /health was restructured to report BOTH /mcp and /semantic surfaces,
 // so the regex now targets the surfaces."/mcp".tools field specifically (was: greedy first
-// `tools: N` after /health which picked up /semantic.tools=3 after the restructure).
+// `tools: N` after /health which picked up /semantic.tools=4 after the restructure).
 // p239b #332 update: ratchet 299 → 301 to absorb +2 LGPD retroactive operator tools.
 // /health ratchet history: 296 (p215) → 299 (GAP-205.D) → 301 (p239b #332) → 304 (#411 exposure)
 // → 303 (#191: removed the broken advance_card_curation tool) → 306 (#188: +3 curator-native tools)
