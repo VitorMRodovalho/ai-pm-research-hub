@@ -2080,9 +2080,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           p_visibility: visibility,
           p_type: editType,
           p_nature: nature,
+          p_timezone: timezone || DEFAULT_TZ, // #564: server-side IANA coerce; sets anchor + future siblings
         });
         if (futureError) throw futureError;
         // Also update this specific event's individual fields (title, date, type, etc.)
+        // #564: p_timezone intentionally omitted here — update_future_events_in_group above already set
+        // timezone on the anchor (date >= anchor) and all future siblings via its SECDEF body.
         const { data, error } = await sb.rpc('update_event', {
           p_event_id: id, p_title: title, p_date: date,
           p_duration_minutes: duration, p_meeting_link: link,
@@ -2092,7 +2095,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (error) throw error;
         const updateFields: Record<string, any> = { type: editType, nature, visibility };
         if (timeStart) updateFields.time_start = timeStart;
-        updateFields.timezone = timezone || DEFAULT_TZ; // #485: cleared field resets to BRT default
+        // #564: timezone now set by update_future_events_in_group (anchor + future) — no direct write here.
         if (notes !== undefined) updateFields.notes = notes;
         if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
@@ -2107,10 +2110,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         }
         const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
         if (rowUpdateError) throw rowUpdateError;
-        // #485: timezone isn't carried by update_future_events_in_group, so propagate it to future
-        // siblings here (parity with how time_start propagates). This event itself is handled above.
-        await sb.from('events').update({ timezone: timezone || DEFAULT_TZ })
-          .eq('recurrence_group', recurrenceGroup).gt('date', date);
+        // #564: future-sibling timezone propagation now runs through update_future_events_in_group
+        // (p_timezone) above — SECDEF bypasses RLS, so no silent partial-update on drifted siblings.
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
         const count = futureData?.updated_count || 0;
@@ -2122,13 +2123,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           p_event_id: id, p_title: title, p_date: date,
           p_duration_minutes: duration, p_meeting_link: link,
           p_youtube_url: youtube, p_is_recorded: recorded,
-          p_audience_level: audience
+          p_audience_level: audience,
+          p_timezone: timezone || DEFAULT_TZ // #564: server-side IANA coerce (parity with create_event)
         });
         if (error) throw error;
         if (data?.success) {
           const updateFields: Record<string, any> = { type: editType, nature, visibility };
           if (timeStart) updateFields.time_start = timeStart;
-          updateFields.timezone = timezone || DEFAULT_TZ; // #485: cleared field resets to BRT default
+          // #564: timezone now set server-side by update_event (p_timezone) — no direct write here.
           if (notes !== undefined) updateFields.notes = notes;
           if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
           if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
