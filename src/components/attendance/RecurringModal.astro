@@ -82,6 +82,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="number" id="rec-duration" value="90" min="15" max="480"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
+        <!-- #414: recurrence cadence — semanal (7d) / quinzenal (14d) / mensal (1 calendar month).
+             createRecurring maps this to the RPC's p_interval_days / p_interval_months. -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.frequency', lang)}</label>
+          <select id="rec-frequency"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+            <option value="weekly">{t('attendance.modal.freqWeekly', lang)}</option>
+            <option value="biweekly">{t('attendance.modal.freqBiweekly', lang)}</option>
+            <option value="monthly">{t('attendance.modal.freqMonthly', lang)}</option>
+          </select>
+        </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.weeks', lang)}</label>
           <input type="number" id="rec-weeks" value="12" min="1" max="52"

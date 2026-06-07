@@ -1742,6 +1742,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
     let weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    // #414: cadence → RPC interval params. weekly=7d (default/back-compat), biweekly=14d, monthly=1 calendar month.
+    const freq = (document.getElementById('rec-frequency') as HTMLSelectElement)?.value || 'weekly';
+    const intervalDays = freq === 'biweekly' ? 14 : (freq === 'monthly' ? 0 : 7);
+    const intervalMonths = freq === 'monthly' ? 1 : 0;
     const until = (document.getElementById('rec-until') as HTMLInputElement).value || null;
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
@@ -1772,13 +1776,22 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       // #492: a 'tribo' type without a tribe audience has no tribe to bind → fall back to 'geral'
       dbType = 'geral';
     }
-    // 'Repetir até' (optional): derive the weekly occurrence count from the end-date (inclusive),
-    // clamped to the RPC's 1..52 range. Overrides the 'weeks' field. Keeps the series weekly (no RPC change).
+    // 'Repetir até' (optional): derive the occurrence count from the end-date (inclusive), per the chosen
+    // cadence (#414), clamped to the RPC's 1..52 range. Overrides the 'ocorrências' field.
     if (until) {
       const s = new Date(start + 'T00:00:00');
       const u = new Date(until + 'T00:00:00');
       if (u < s) return toast(I18N.msgUntilBeforeStart, 'error');
-      const computed = Math.floor((u.getTime() - s.getTime()) / (7 * 86400000)) + 1;
+      let computed: number;
+      if (freq === 'monthly') {
+        // count occurrences anchored to the start day-of-month that fall on/before the until date —
+        // conservative, mirroring the weekly floor: the last step overshoots when until's day precedes start's.
+        const monthDiff = (u.getFullYear() - s.getFullYear()) * 12 + (u.getMonth() - s.getMonth());
+        computed = monthDiff + (s.getDate() <= u.getDate() ? 1 : 0);
+      } else {
+        const stepDays = freq === 'biweekly' ? 14 : 7;
+        computed = Math.floor((u.getTime() - s.getTime()) / (stepDays * 86400000)) + 1;
+      }
       weeks = Math.min(Math.max(computed, 1), 52);
     }
     if (!Number.isFinite(weeks) || weeks < 1) return toast(I18N.msgFillTemplateDate, 'error');
@@ -1791,7 +1804,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         p_meeting_link: link,
         p_tribe_id: tribeId,
         p_is_recorded: recorded,
-        p_audience_level: audience
+        p_audience_level: audience,
+        p_interval_days: intervalDays,    // #414
+        p_interval_months: intervalMonths // #414
       });
       if (error) throw error;
       if (data?.success) {

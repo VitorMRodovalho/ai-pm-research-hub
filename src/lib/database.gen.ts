@@ -17897,6 +17897,8 @@ export type Database = {
         Args: {
           p_audience_level?: string
           p_duration_minutes?: number
+          p_interval_days?: number
+          p_interval_months?: number
           p_is_recorded?: boolean
           p_meeting_link?: string
           p_n_weeks?: number
