@@ -310,7 +310,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
   import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel } from '../../lib/tribes/catalog';
-  import { hasPermission } from '../../lib/permissions';
+  import { hasPermission, getSimulation, getEffectiveTribeId } from '../../lib/permissions';
   import { getTribePermissions } from '../../lib/tribePermissions';
   import { marked } from 'marked';
 
@@ -426,6 +426,44 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   let sb: any = null;
   let currentMember: any = null;
+
+  // #161 (2026-06-06): V4 scoped gate for member-contact PII visibility. Mirrors the server RPCs
+  // get_initiative_member_contacts (can view_pii on the initiative) + get_tribe_member_contacts
+  // (org-wide view_pii OR tribe-scoped write). Replaces the V3 global
+  // hasPermission('board.edit_tribe_items') && tribe_id===TRIBE_ID gate that under-granted
+  // engagement-derived leaders of THIS tribe whose operational_role cache lost the permission (p201 class).
+  function canSeeTribeContacts(): boolean {
+    if (!currentMember) return false;
+    if (isHighManagement(currentMember)) return true;
+    // Admin simulation overlay: canFor reads REAL caps (superadmin bypass), so it can't preview a
+    // lower tier. While simulating, decide on the simulated V3 tier + effective (simulated) tribe.
+    const sim = getSimulation();
+    if (sim.active) {
+      return hasPermission(currentMember, 'board.edit_tribe_items') && getEffectiveTribeId(currentMember) === TRIBE_ID;
+    }
+    const cf = (window as any).__nucleoCanFor;
+    if (typeof cf !== 'function') return false;
+    if (INITIATIVE_ID && cf('view_pii', { type: 'initiative', id: INITIATIVE_ID }) === true) return true;
+    if (cf('view_pii', { type: 'tribe', id: TRIBE_ID }) === true) return true;
+    return cf('write', { type: 'tribe', id: TRIBE_ID }) === true;
+  }
+
+  // #161 (2026-06-06): V4 scoped gate for tribe board/edit authority (broadcast tab, minutes/board
+  // edit). Mirrors write_board on the page's initiative (tribe fallback). Replaces the V3 global
+  // hasPermission('board.edit_tribe_items') && tribe_id===TRIBE_ID under-grant pattern.
+  function isLeaderOfThisTribeV4(): boolean {
+    if (!currentMember) return false;
+    // Admin simulation overlay (see canSeeTribeContacts): preview the simulated V3 tier + tribe.
+    const sim = getSimulation();
+    if (sim.active) {
+      return hasPermission(currentMember, 'board.edit_tribe_items') && getEffectiveTribeId(currentMember) === TRIBE_ID;
+    }
+    const cf = (window as any).__nucleoCanFor;
+    if (typeof cf !== 'function') return false;
+    if (INITIATIVE_ID && cf('write_board', { type: 'initiative', id: INITIATIVE_ID }) === true) return true;
+    return cf('write_board', { type: 'tribe', id: TRIBE_ID }) === true;
+  }
+
   let membersMap: Map<string, any> = new Map();
   let _canonicalMemberCount: number | null = null; // M4-D (#419): canonical roster member_count — single source for the header badge
   let canEdit = false;
@@ -980,7 +1018,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
     const contact = contactData[m.id];
     const hasContact = contact && (contact.email || contact.phone);
-    const canSeeContacts = currentMember && (isHighManagement(currentMember) || (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID));
+    const canSeeContacts = canSeeTribeContacts(); // #161: V4 scoped view_pii (was global board.edit_tribe_items)
 
     let contactHtml = '';
     if (canSeeContacts && hasContact) {
@@ -1453,8 +1491,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function checkBroadcastAccess() {
     if (!currentMember) return;
-    const isLeaderOfThisTribe = hasPermission(currentMember, 'board.edit_tribe_items')
-      && currentMember.tribe_id === TRIBE_ID;
+    const isLeaderOfThisTribe = isLeaderOfThisTribeV4(); // #161: V4 scoped write_board (was global board.edit_tribe_items)
     if (isLeaderOfThisTribe || isHighManagement(currentMember)) {
       showBroadcastTab();
       renderBroadcastPanel();
@@ -1613,10 +1650,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       checkEditPermission();
       checkBroadcastAccess();
       renderAccessNote();
-      if (currentMember && !Object.keys(contactData).length
-          && (isHighManagement(currentMember)
-              || (hasPermission(currentMember, 'board.edit_tribe_items')
-                  && currentMember.tribe_id === TRIBE_ID))) {
+      if (!Object.keys(contactData).length && canSeeTribeContacts()) { // #161: V4 scoped view_pii
         try {
           const { data: cd } = INITIATIVE_ID
               ? await sb.rpc('get_initiative_member_contacts', { p_initiative_id: INITIATIVE_ID })
@@ -1811,7 +1845,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       allMembers.forEach((m: any) => membersMap.set(m.id, m));
 
       // Load contact data for leaders/admins (LGPD-gated RPC)
-      if (currentMember && (isHighManagement(currentMember) || (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID))) {
+      if (canSeeTribeContacts()) { // #161: V4 scoped view_pii (was global board.edit_tribe_items)
         try {
           const { data: cd } = INITIATIVE_ID
               ? await sb.rpc('get_initiative_member_contacts', { p_initiative_id: INITIATIVE_ID })
@@ -1884,7 +1918,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         || desigs.includes('comms_member')
       );
     canEdit = isHighManagement(currentMember) ||
-      (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID) ||
+      isLeaderOfThisTribeV4() || // #161: V4 scoped write_board (was global board.edit_tribe_items)
       canOperateComms;
   }
 

@@ -54,9 +54,17 @@ test('p277 F2: get_event_champion_suggestions gains p_force_derive (skips overri
 });
 
 // ── frontend ─────────────────────────────────────────────────────────────────
-test('p277 F2 FE: MeetingsPage gates the picker on manage_event / champion.award', () => {
-  assert.match(page, /import \{ hasPermission \} from '\.\.\/\.\.\/lib\/permissions'/);
-  assert.match(page, /canCurateChampions =[\s\S]*?hasPermission\(member, 'manage_event'\)[\s\S]*?hasPermission\(member, 'champion\.award'\)/i);
+test('p277 F2 FE + #161: MeetingsPage gates the picker on manage_event / award_champion (V4 canFor, org-level mirror)', () => {
+  // #161: migrated from global hasPermission to canFor mirroring set_event_champions, which gates on
+  // can_by_member(manage_event) OR can_by_member(award_champion) = ORG-level (can(...,NULL,NULL)).
+  // The mirror is scopeless canFor (org_actions check), with a V3 hasPermission simulation overlay.
+  assert.match(page, /import \{ canFor, getSimulation, hasPermission \} from '\.\.\/\.\.\/lib\/permissions'/);
+  // V4 real path: scopeless (org-level) canFor on manage_event OR award_champion (matches the RPC's org gate).
+  assert.match(page, /canCurateChampions =[\s\S]*?canFor\('manage_event'\)[\s\S]*?canFor\('award_champion'\)/i,
+    'real path gates on org-level canFor(manage_event) OR canFor(award_champion)');
+  // Simulation overlay: preserves the V3 hasPermission(manage_event|champion.award) preview path.
+  assert.match(page, /_simMtg\.active[\s\S]*?hasPermission\(member, 'manage_event'\)[\s\S]*?hasPermission\(member, 'champion\.award'\)/i,
+    'simulation overlay keeps the V3 tier preview (no regression in simulation mode)');
   assert.match(page, /\{canCurateChampions && selectedEventId && \(\s*<ChampionPicker/i, 'picker only rendered when permitted + an event is open');
 });
 

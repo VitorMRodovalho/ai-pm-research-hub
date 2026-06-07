@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { marked } from 'marked';
-import { hasPermission } from '../../lib/permissions';
+import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 
 interface Meeting {
   id: string;
@@ -231,10 +231,19 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
     return () => window.removeEventListener('nav:member', onMember as EventListener);
   }, []);
 
-  // p277 F2: leaders (manage_event) or initiative-scoped grantors (champion.award) can tag the
-  // "champions da noite" on a meeting → feeds set_event_champions → the award modal (F3 override).
-  const canCurateChampions = !!member && (hasPermission(member, 'manage_event') || hasPermission(member, 'champion.award'));
-  const closeDetail = () => { closeDetail(); setSelectedEventId(null); };
+  // p277 F2 / #161: tagging the "champions da noite" feeds set_event_champions, which gates on
+  // can_by_member('manage_event') OR can_by_member('award_champion') — i.e. ORG-level authority
+  // (can(..., NULL, NULL)), NOT scoped to the event. Mirror with scopeless canFor (org_actions check).
+  // This fixes the V3 over-grant (global hasPermission showed the picker to tribe-scoped holders the
+  // server rejects) AND geral meetings (no tribe/initiative) where a manager must still curate.
+  // Simulation overlay: preview the simulated V3 tier (canFor reads real caps, bypassing simulation).
+  const _simMtg = getSimulation();
+  const canCurateChampions = _simMtg.active
+    ? Boolean(member && (hasPermission(member, 'manage_event') || hasPermission(member, 'champion.award')))
+    : Boolean(member && (canFor('manage_event') || canFor('award_champion')));
+  // #161 drive-by: was `closeDetail()` calling itself (infinite recursion → stack overflow on the ×
+  // button + overlay click, and it never cleared selectedMeeting so the modal couldn't close).
+  const closeDetail = () => { setSelectedMeeting(null); setSelectedEventId(null); };
 
   const loadMeetings = useCallback(async () => {
     const sb = getSb();
