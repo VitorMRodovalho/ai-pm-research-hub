@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 306 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
+// MCP server v2.80.0 — /mcp 307 tools + 4 prompts + 3 resources + /semantic 3 tools (bridge alpha)
 // /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
 //   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
 //   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
@@ -10,6 +10,9 @@
 //   get_curation_dashboard wrapper manage_member -> curate_content OR write_board (was over-restricting
 //   curators; now mirrors the RPC's own gate). 303 -> 306. Count-only (no version bump). Tests + /health
 //   updated to 306; matrix/manifest regenerated.
+// #415 (2026-06-07): recurrence stockout observability — +1 tool (get_recurrence_stockout, gated
+//   manage_event, wraps the get_recurrence_stockout RPC). 306 -> 307. Count-only (no version bump).
+//   Tests + /health updated to 307; matrix/manifest regenerated.
 // v2.80.0 (p239b #332 W3 LGPD Art. 18 §IV retroactive operator surface): +2 tools wrapping the
 //   p238b audit-log infrastructure RPCs so PM can invoke from authenticated MCP-Claude session
 //   (RPCs gate on auth.uid() → can_by_member('manage_member'), which the service-role MCP exec_sql
@@ -1469,6 +1472,20 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("detect_operational_alerts");
     if (error) { await logUsage(sb, member.id, "get_operational_alerts", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_operational_alerts", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_recurrence_stockout (#415) — recurring series running out of future occurrences
+  mcp.tool("get_recurrence_stockout", "Lists recurring event series running out of future occurrences (recently active, last date within the horizon, no events beyond it). Returns estimated cadence, last date, next expected date, and suggested next dates to resupply. Requires manage_event.", {
+    horizon_days: z.number().int().optional().describe("Days ahead within which a series counts as low-on-buffer. Default: 30")
+  }, async (params) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_recurrence_stockout", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_event'))) { await logUsage(sb, member.id, "get_recurrence_stockout", false, "Unauthorized", start); return err("Unauthorized: requires manage_event."); }
+    const { data, error } = await sb.rpc("get_recurrence_stockout", { p_horizon_days: params.horizon_days ?? 30 });
+    if (error) { await logUsage(sb, member.id, "get_recurrence_stockout", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_recurrence_stockout", true, undefined, start);
     return ok(data);
   });
 
@@ -7456,7 +7473,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 306 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 307 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.1.0", tools: 3 },
   },
   transport: "native-streamable-http",

@@ -216,8 +216,9 @@ test('GAP-205.D: McpServer version is bumped past p215 (>= 2.78.0)', () => {
 // `tools: N` after /health which picked up /semantic.tools=3 after the restructure).
 // p239b #332 update: ratchet 299 → 301 to absorb +2 LGPD retroactive operator tools.
 // /health ratchet history: 296 (p215) → 299 (GAP-205.D) → 301 (p239b #332) → 304 (#411 exposure)
-// → 303 (#191: removed the broken advance_card_curation tool) → 306 (#188: +3 curator-native tools).
-test('GAP-205.D + #411 + #191 + #188: /health endpoint reports /mcp tools = 306 (matches catalog ratchet)', () => {
+// → 303 (#191: removed the broken advance_card_curation tool) → 306 (#188: +3 curator-native tools)
+// → 307 (#415: +1 get_recurrence_stockout).
+test('GAP-205.D + #411 + #191 + #188 + #415: /health endpoint reports /mcp tools = 307 (matches catalog ratchet)', () => {
   const healthBlockRe = /app\.get\s*\(\s*"\/health"[\s\S]{0,800}?\}\)\s*\)\s*;/;
   const block = mcpIndex.match(healthBlockRe);
   assert.ok(block, 'Could not find /health endpoint block in nucleo-mcp/index.ts');
@@ -226,9 +227,9 @@ test('GAP-205.D + #411 + #191 + #188: /health endpoint reports /mcp tools = 306 
   const m = block[0].match(mcpToolsRe);
   assert.ok(m, 'Could not find "/mcp" surface tools count in /health endpoint');
   const count = Number(m[1]);
-  assert.equal(count, 306,
-    `/health /mcp surface tools count must equal 306 (303 after #191 advance_card_curation removal, ` +
-    `plus 3 curator-native tools from #188). Source-of-truth is the runtime tools/list, but the /health label ` +
+  assert.equal(count, 307,
+    `/health /mcp surface tools count must equal 307 (306 after #188 curator-native tools, ` +
+    `plus 1 get_recurrence_stockout from #415). Source-of-truth is the runtime tools/list, but the /health label ` +
     `should track to avoid the WATCH-205.G drift class.`);
 });
 
