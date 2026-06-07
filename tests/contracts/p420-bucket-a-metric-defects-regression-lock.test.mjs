@@ -62,3 +62,25 @@ test('D12: get_events_with_attendance.attendee_count filters a.present = true', 
   assert.match(code, /a\.present = true\) AS attendee_count/,
     `${file}: attendee_count must count only present=true rows (not all attendance rows incl absent/excused)`);
 });
+
+// ── #420 follow-up (2026-05-31 comment): 3 present-blind consumers (mig 20260805000122) ──
+// get_public_impact_data + get_member_attendance_hours summed/counted attendance without filtering
+// present=true (registered-but-absent rows inflated hours by 78.5h: impact 1656→1577.5, total 896→817.7).
+// (get_admin_dashboard's dropout/detractor present-blindness is deferred — its detractor query is
+//  separately broken/dead, needs a rewrite not a present filter.)
+
+test('#420 follow-up: get_member_attendance_hours filters a.present (streak EXISTS + hours aggregate)', () => {
+  const { file, code } = latestDeclarerCode('get_member_attendance_hours');
+  assert.match(code, /EXISTS\(SELECT 1 FROM public\.attendance a WHERE a\.event_id = e\.id AND a\.member_id = p_member_id AND a\.present\)/,
+    `${file}: streak presence-EXISTS must require a.present (not bare attendance-row existence)`);
+  assert.match(code, /WHERE a\.member_id = p_member_id AND a\.present/,
+    `${file}: total_hours/total_events aggregate must filter a.present (absent rows earn no hours/credit)`);
+});
+
+test('#420 follow-up: get_public_impact_data hours metrics filter a.present', () => {
+  const { file, code } = latestDeclarerCode('get_public_impact_data');
+  assert.match(code, /WHERE e\.date >= '2026-03-01' AND a\.present/,
+    `${file}: total_attendance_hours must filter a.present`);
+  assert.match(code, /FROM attendance a JOIN events e ON e\.id = a\.event_id\s+WHERE a\.present/,
+    `${file}: impact_hours must filter a.present`);
+});
