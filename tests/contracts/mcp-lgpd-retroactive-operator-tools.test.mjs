@@ -214,11 +214,11 @@ test('p239b #332: ef_version bumped to 2.80.0 (was 2.79.1 pre-p239b)', () => {
   assert.match(EF, /ef_version:\s*"2\.80\.0"/, '/health must report ef_version 2.80.0');
 });
 
-test('p239b #332 + #411 + #191 + #188: /health surface declares /mcp tools: 306 + version 2.79.0', () => {
+test('p239b #332 + #411 + #191 + #188 + #415: /health surface declares /mcp tools: 307 + version 2.79.0', () => {
   assert.match(
     EF,
-    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*306\s*\}/,
-    '/health surface report must show 306 tools + version 2.79.0 on /mcp (303 after #191, +3 via #188 curator-native tools)'
+    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*307\s*\}/,
+    '/health surface report must show 307 tools + version 2.79.0 on /mcp (306 after #188, +1 via #415 get_recurrence_stockout)'
   );
 });
 
@@ -247,7 +247,7 @@ test('p239b #332: MCP_TOOL_MATRIX.md H1 count is self-consistent with the json r
   // Anti-brittleness (mcp.md: "the exact tool count changes every session — never recite it"):
   // derive the expected number from the freshly-generated json rather than a hardcoded literal,
   // so adding/removing a tool never breaks this gate. As of #188 (+3 curator-native /mcp tools)
-  // the flat matrix count is 309 (306 /mcp + 3 /semantic); the json is the source of truth.
+  // the flat matrix count is 310 (307 /mcp + 3 /semantic); the json is the source of truth.
   const json = JSON.parse(readFileSync(MATRIX_JSON_PATH, 'utf8'));
   const total = Array.isArray(json) ? json.length : (json.tools?.length ?? json.rows?.length ?? json.total);
   assert.ok(typeof total === 'number' && total > 0, 'json must yield a numeric tool total');
