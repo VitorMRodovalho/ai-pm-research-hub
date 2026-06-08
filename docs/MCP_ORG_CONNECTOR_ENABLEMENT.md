@@ -1,0 +1,192 @@
+# MCP Org/Team Connector Enablement — Núcleo IA
+
+> **Tracker for GitHub issue [#234](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/234)** ·
+> **Decision: Option B — publish as an org/team connector** (PM, 2026-06-06; recorded in the #234 comment and in
+> `docs/council/decisions/2026-06-07-234-org-connector-enablement.md`). Option C (public Claude Connectors
+> Directory) was **not** chosen.
+>
+> This is the **enablement package**: everything the platform side can deliver is done; the remaining steps are
+> **PM/admin actions inside the Claude.ai organization UI** plus one **member OAuth smoke**. Keep #234 open until
+> both are complete + verified.
+
+## TL;DR
+
+| | |
+|---|---|
+| **What's left** | (a) PM adds the server in Claude.ai **org connector settings**; (b) one non-admin member does an end-to-end OAuth smoke; (c) observe 7-day continuity. |
+| **What's done (platform side)** | OAuth 2.1 DCR + PKCE, server-side auto-refresh (KV, 30-day TTL), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. |
+| **Risk** | Low. No code change required for Option B. The connector already works as a per-user custom connector today. |
+
+---
+
+## 1. Connector metadata (values to register)
+
+Use these exact values when adding the connector in the Claude.ai organization settings.
+
+| Field | Value |
+|-------|-------|
+| **Name** | `Núcleo IA` |
+| **Short description** | Query and manage the AI & PM Research Hub (initiatives, tribes, boards, events, governance, gamification) from your AI assistant in natural language. |
+| **Long description** | Núcleo IA is the MCP server of PMI's Brazilian *AI & Project Management Research Hub*. It exposes the full implementation-tool catalog across personal, tribe, board, events, governance, communications, selection, gamification and knowledge domains, with role-based authority (`can()` / RLS) and full audit logging. OAuth 2.1 + PKCE secures every call; Row Level Security enforces per-member data scope (no PII in tool responses). |
+| **Server URL (`/mcp`)** | `https://nucleoia.vitormr.dev/mcp` — full catalog (recommended default for Claude.ai) |
+| **Semantic URL (`/mcp/semantic`)** | `https://nucleoia.vitormr.dev/mcp/semantic` — bridge-first gateway for strict clients (Claude.ai does not need this) |
+| **Canonical docs URL** | `https://nucleoia.vitormr.dev/docs/mcp` (live tool catalog) · setup guide: [`docs/MCP_SETUP_GUIDE.md`](MCP_SETUP_GUIDE.md) |
+| **Privacy page** | `https://nucleoia.vitormr.dev/privacy` |
+| **Icon** | `https://nucleoia.vitormr.dev/favicon.svg` — ⚠️ see note in §6 (a square PNG may be required by the UI) |
+| **Tool count** | Full catalog — **do not pin a number**; the live per-surface count is at `https://nucleoia.vitormr.dev/mcp` → `tools/list`, or the structured `/health` report (see §2). |
+
+### OAuth 2.1 endpoints (already implemented, no setup needed)
+
+| Purpose | Path |
+|---------|------|
+| Authorization-server discovery | `/.well-known/oauth-authorization-server` |
+| Protected-resource discovery | `/.well-known/oauth-protected-resource` |
+| Dynamic Client Registration (DCR) | `/oauth/register` |
+| Authorize | `/oauth/authorize` → `/oauth/consent` |
+| Token (PKCE verify, refresh) | `/oauth/token` |
+
+- **Grant types advertised:** `authorization_code`, `refresh_token`
+- **Scopes advertised:** `mcp:tools`, `offline_access`
+- **PKCE:** `S256`
+
+### Allowed link origins
+
+Trust is **subdomain-aware** (`host === root` OR `host` ends with `.root`). Roots, from
+`src/lib/oauth-security.ts`:
+
+`claude.ai` · `chatgpt.com` · `openai.com` · `perplexity.ai` · `cursor.com` · `manus.im` · `vitormr.dev`
+(each covers all `*.root` subdomains, e.g. `app.claude.ai`, `claude.com` redirect hosts are matched through
+`claude.ai`/its subdomains) — plus custom schemes `cursor://`, `vscode://`, `vscode-insiders://`, and
+`localhost`/`127.0.0.1` for local dev.
+
+> If Claude.ai's org-connector OAuth callback ever uses a host **not** under one of these roots (watch for a
+> `claude.com` apex or a new redirect host), add it to `TRUSTED_ROOT_HOSTS` in `src/lib/oauth-security.ts` and
+> redeploy the Worker — otherwise the authorize step will reject the redirect_uri.
+
+---
+
+## 2. Workstream A — stabilization (DONE, live evidence)
+
+All measured live on **2026-06-07** (re-measure before relying on any number — see project grounding rules).
+
+**OAuth metadata advertises refresh capability** (the #234 hotfix `7192b01e`, now in `main`):
+
+```
+GET https://nucleoia.vitormr.dev/.well-known/oauth-authorization-server
+  grant_types_supported : [ "authorization_code", "refresh_token" ]
+  scopes_supported      : [ "mcp:tools", "offline_access" ]
+
+GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
+  scopes_supported      : [ "mcp:tools", "offline_access" ]
+```
+
+**Server-side auto-refresh is real** (verified in code, this session):
+
+- `src/pages/mcp.ts` and `src/pages/mcp/semantic.ts` decode the JWT `exp`, and within a 5-minute window look up
+  `mcp_refresh:{sub}` from KV and renew against Supabase Auth — transparent to the MCP host.
+- `src/pages/oauth/token.ts` stores the `refresh_token` in KV with a **30-day TTL** on both the
+  `authorization_code` and `refresh_token` grants.
+- Net effect on the **happy path**: a Claude.ai connector stays alive well beyond 7 days without manual relogin.
+
+> **Known robustness gap (low severity, tracked separately):** the proxy's KV re-store at `mcp.ts:62` /
+> `semantic.ts:60` is gated on `if (data.refresh_token)` and lacks the `|| oldRefreshToken` fallback that
+> `oauth/token.ts:81` already has. In the (rare, non-standard) case Supabase returns an access token with **no**
+> refresh token, a stale rotated token can linger and the next refresh would fail → re-auth. Supabase echoes a new
+> refresh token on every successful rotation, so this is defensive-only and does not affect the realistic path.
+> Hardening is tracked in **[#580](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/580)** (see §7) and
+> should ship as its own Worker-deploy PR, not bundled with docs.
+
+**Tool surfaces (live):** `/mcp` full catalog · `/mcp/semantic` 4 tools (v0.2.0) — exact counts via
+`https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health`.
+
+---
+
+## 3. PM steps — add as an org/team connector (Claude.ai UI)
+
+> These run in the **Claude.ai organization settings** and cannot be done from the codebase. ~10 minutes.
+
+1. **Claude.ai → Settings → Connectors (organization scope)** → *Add custom connector* / *Add MCP server*.
+2. Paste the **Server URL**: `https://nucleoia.vitormr.dev/mcp`.
+3. Fill **Name** / **description** / **icon** / **docs URL** from §1. (DCR is automatic — no client_id/secret to paste.)
+4. Save. Claude.ai performs OAuth discovery against `/.well-known/oauth-*` and registers via `/oauth/register`.
+5. **Authorize once** as the admin: the browser opens `/oauth/authorize` → log in with a Núcleo account → approve
+   consent. This is the "one fresh reconnect" that captures the updated `offline_access` metadata.
+6. Confirm the connector shows **Connected** and tools load (ask Claude e.g. *"what are my upcoming Núcleo events?"*).
+7. **Scope it** to the org/team members who should have access per Claude.ai's connector-sharing controls.
+
+---
+
+## 4. Member OAuth smoke checklist (one non-admin member)
+
+Have a regular member (not the org admin) run this end-to-end to prove the org grant works for non-admins:
+
+- [ ] Member sees the **Núcleo IA** connector available in their Claude.ai (via org sharing).
+- [ ] Member clicks connect → OAuth window opens → logs in with **their own** Núcleo account → approves consent.
+- [ ] Connector shows **Connected**.
+- [ ] Member runs a **read** tool scoped to self — e.g. *"show my Núcleo profile"* (`get_my_profile`) or
+      *"my upcoming events"* (`get_upcoming_events`) — and gets **their** data (RLS scoping correct, no PII leak).
+- [ ] A tool the member is **not** authorized for (e.g. an admin dashboard) is correctly **denied** (fail-closed).
+- [ ] **Continuity:** member leaves the connector untouched and confirms it is **still connected after ≥24h**
+      (ideally 7 days) with **no relogin prompt**. (This is acceptance criterion #1 — observed over calendar time.)
+
+If any step fails, capture the error and check `mcp_usage_log` + the Worker logs; the
+[Troubleshooting table in the setup guide](MCP_SETUP_GUIDE.md#troubleshooting) covers the common cases.
+
+---
+
+## 5. Acceptance criteria status (#234)
+
+| # | Criterion | Status | Evidence / residual |
+|---|-----------|--------|---------------------|
+| 1 | Connector usable 7 days w/o manual relogin after one fresh reconnect | **Observational** | Enabling infra live + verified (auto-refresh, 30-day KV TTL, `offline_access`). Confirmed only by observing over 7 calendar days after the §3 reconnect. |
+| 2 | Prod OAuth metadata includes `offline_access` + `refresh_token` | **MET** | Both well-known endpoints, live (see §2). |
+| 3 | Docs stop telling users Claude.ai requires hourly relogin | **MET** | In-repo docs teach the correct refresh model (`MCP_SETUP_GUIDE.md` §69/§158/§164, README MCP section). No "hourly relogin" passage in any in-repo doc. |
+| 4 | `/docs/mcp` shows current runtime tool count (issue said "293") | **MET** | Live `/docs/mcp` renders the current manifest (308 `/mcp` + 4 `/semantic`); no "293" anywhere. |
+| 5 | Decision recorded (private vs org/team vs Directory) | **MET** | Option B recorded — #234 comment + decision doc. |
+| 6 | If pursuing official listing, create submission checklist | **N/A** (conditional) | Option C (Directory) not chosen. Stub kept in §8 in case it's revisited. |
+
+**4 MET · 1 observational (PM 7-day reconnect) · 1 N/A.** No platform/code criterion remains open.
+
+---
+
+## 6. Open items (PM-only)
+
+1. **Add the connector in Claude.ai org settings** (§3).
+2. **Run the member OAuth smoke** (§4) and record the result on #234.
+3. **Observe 7-day continuity** and confirm criterion #1 on #234, then close the issue.
+4. **Icon format:** only `favicon.svg` exists. If the org-connector UI requires a raster icon, export a **square
+   PNG** (≥512×512) and host it (e.g. `public/connector-icon.png` → `https://nucleoia.vitormr.dev/connector-icon.png`).
+   Optional for org-internal use.
+
+---
+
+## 7. Tracked follow-up — refresh-rotation hardening ([#580](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/580))
+
+Filed from this session's security-engineer review (see §2 gap). Scope for a **separate** Worker-deploy PR:
+
+- `mcp.ts` / `semantic.ts`: mirror `oauth/token.ts:81` — `const newRefresh = data.refresh_token || refreshToken;`
+  then always re-store to KV (never leave a rotated-stale token).
+- `oauth/token.ts:167-174`: the KV-store `try/catch` swallows base64 decode errors silently — a malformed
+  `access_token` means the session never gets server-side refresh despite a successful OAuth. Log it.
+- De-duplicate `decodeJwtPayload` + `tryAutoRefresh` (copy-pasted in `mcp.ts` and `semantic.ts`) into one shared
+  module (the `#280` follow-up already notes this).
+- Document the KV-TTL vs Supabase refresh-token-lifetime relationship (KV 30 d; keep ≤ the project's Supabase
+  refresh TTL).
+
+---
+
+## 8. Option C (Directory) — deferred checklist stub
+
+Only if the PM later revisits and chooses public submission to the Claude Connectors Directory:
+
+- [ ] Canonical docs URL (have: `/docs/mcp`)
+- [ ] Privacy page (have: `/privacy`) + **Terms of Service** page (missing — would need creating)
+- [ ] Support/contact channel linked from the connector
+- [ ] OAuth-flow evidence (have: §2) + MCP smoke evidence (have: §4)
+- [ ] Square PNG icon (see §6.4)
+- [ ] MFA-free review/demo account for Anthropic review
+- [ ] Stable connector name/description/allowed-origins (have: §1)
+
+---
+
+*Last verified live: 2026-06-07. Re-ground all numbers before relying on them (project grounding rule).*

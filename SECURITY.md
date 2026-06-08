@@ -18,7 +18,7 @@ We credit reporters in release notes unless anonymity is requested.
 In-scope:
 - `nucleoia.vitormr.dev` (production)
 - Supabase project `ldrfrvwhxsmgaabwmaik` (public API surfaces)
-- MCP server at `nucleoia.vitormr.dev/mcp` (OAuth 2.1, 76 tools)
+- MCP server at `nucleoia.vitormr.dev/mcp` (OAuth 2.1, 300+ tools)
 - Edge Functions at `ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/*`
 - GitHub repos `nucleo-ia-gp/wiki` and `nucleo-ia-gp/frameworks`
 
