@@ -103,16 +103,24 @@ GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
 
 ## 3. PM steps — add as an org/team connector (Claude.ai UI)
 
-> These run in the **Claude.ai organization settings** and cannot be done from the codebase. ~10 minutes.
+> These run in the **Claude.ai organization settings** (Owner / Primary Owner) and cannot be done from the
+> codebase. ~10 minutes. Official flow: support.claude.com → "Build custom connectors via remote MCP servers".
 
-1. **Claude.ai → Settings → Connectors (organization scope)** → *Add custom connector* / *Add MCP server*.
+1. **Claude.ai → Organization settings → Connectors** → **Add**.
 2. Paste the **Server URL**: `https://nucleoia.vitormr.dev/mcp`.
-3. Fill **Name** / **description** / **icon** / **docs URL** from §1. (DCR is automatic — no client_id/secret to paste.)
+3. Fill **Name** / **description** / **icon** / **docs URL** from §1. **Leave "Advanced settings" (OAuth Client
+   ID / Secret) blank** — the server self-registers via DCR; no client_id/secret to paste.
 4. Save. Claude.ai performs OAuth discovery against `/.well-known/oauth-*` and registers via `/oauth/register`.
 5. **Authorize once** as the admin: the browser opens `/oauth/authorize` → log in with a Núcleo account → approve
    consent. This is the "one fresh reconnect" that captures the updated `offline_access` metadata.
 6. Confirm the connector shows **Connected** and tools load (ask Claude e.g. *"what are my upcoming Núcleo events?"*).
-7. **Scope it** to the org/team members who should have access per Claude.ai's connector-sharing controls.
+7. Members then **individually connect/enable** the connector (their own OAuth) per Claude.ai's connector-sharing
+   controls — so each member only reaches data their own role permits.
+
+> **Infra note — Claude connects from Anthropic's cloud, not your device.** Across every client (claude.ai,
+> Desktop, Cowork, mobile), Claude reaches the MCP server from Anthropic's IP ranges over the public internet.
+> Ours **already works** for per-user claude.ai today (same Cloudflare path), so no change is expected. If a future
+> block appears, the WAF skip rule lives in `docs/infra/CLOUDFLARE_MCP_RULES.md` (allowlist Anthropic's IP ranges).
 
 ---
 
@@ -151,7 +159,7 @@ If any step fails, capture the error and check `mcp_usage_log` + the Worker logs
 
 ## 6. Open items (PM-only)
 
-1. **Add the connector in Claude.ai org settings** (§3).
+1. **Add the connector in Claude.ai org settings** (§3) — can be agent-assisted via **Claude for Chrome** (see §9 for a paste-ready runbook prompt).
 2. **Run the member OAuth smoke** (§4) and record the result on #234.
 3. **Observe 7-day continuity** and confirm criterion #1 on #234, then close the issue.
 4. **Icon format:** only `favicon.svg` exists. If the org-connector UI requires a raster icon, export a **square
@@ -186,6 +194,50 @@ Only if the PM later revisits and chooses public submission to the Claude Connec
 - [ ] Square PNG icon (see §6.4)
 - [ ] MFA-free review/demo account for Anthropic review
 - [ ] Stable connector name/description/allowed-origins (have: §1)
+
+---
+
+## 9. Runbook executável por agente (Claude for Chrome)
+
+The §3 steps are pure in-browser navigation of the Claude.ai admin UI — a good fit for **Claude for Chrome**
+(the browser extension that reads/clicks/navigates the active tab; available on all paid plans). **Claude Cowork**
+(desktop agent for local files/apps) can also drive the computer, but Chrome is the direct fit for this web flow.
+
+**How to run it:** open **claude.ai logged in as an Owner**, then paste the self-contained prompt below into Claude
+for Chrome. Keep **"Ask before acting"** ON and do the **Save click + the OAuth login/consent yourself** (the agent
+should pause there). The prompt embeds the data, so the agent does **not** need to read this file.
+
+```text
+Você vai me ajudar a registrar um connector MCP customizado no nível da ORGANIZAÇÃO no Claude.ai.
+Use "Ask before acting" e PARE para minha aprovação antes de qualquer Save/confirmar.
+
+Dados do connector:
+- Server URL: https://nucleoia.vitormr.dev/mcp
+- Nome: Núcleo IA
+- Descrição: Consulte e gerencie o AI & PM Research Hub (iniciativas, tribos, boards, eventos,
+  governança, gamificação) em linguagem natural.
+- Auth: OAuth 2.1 com Dynamic Client Registration — NÃO preencha Client ID/Secret em
+  Advanced settings (deixe em branco; o servidor se registra sozinho).
+
+Passos:
+1. Vá em Organization settings → Connectors (sou Owner).
+2. Clique em Add (custom connector / remote MCP server).
+3. Cole a Server URL acima. Preencha Nome + Descrição se houver campos. Deixe Advanced/OAuth em branco.
+4. Salve. Em seguida o fluxo OAuth abre um redirect para nucleoia.vitormr.dev —
+   PARE e me deixe fazer o login + aprovar o consentimento.
+5. Depois que eu aprovar, confirme que o connector aparece como "Connected" e que as tools carregam
+   (faça um teste do tipo "quais são meus próximos eventos do Núcleo?").
+6. Me diga o estado final e qualquer coisa que precise de mim (ex.: pedido pra liberar IPs da Anthropic,
+   ou se algum host de redirect for rejeitado).
+```
+
+**Caveats:**
+- You're using Claude *inside* Anthropic's own settings — usually fine, but the extension may guard sensitive
+  account pages. That's why the **final Save + OAuth consent stay with you** (manual), not the agent.
+- For the **member smoke** (§4), a member can paste an analogous prompt scoped to "connect + run `get_my_profile`"
+  — but the OAuth login must be the member's own.
+- If you'd rather have the agent "read the file": open the GitHub blob of this doc (logged into GitHub) and tell it
+  to follow §3 — but the self-contained prompt above is more reliable (no repo access needed).
 
 ---
 
