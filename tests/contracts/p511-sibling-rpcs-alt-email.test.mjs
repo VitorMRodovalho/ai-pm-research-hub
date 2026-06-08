@@ -111,7 +111,10 @@ test('#511: latest migration declaring each RPC keeps the alternate-email UNION'
     const decls = migrations.filter((m) => re.test(m.content));
     assert.ok(decls.length >= 1, `at least one declaration of ${fn} exists`);
     const latest = decls[decls.length - 1]; // readdir sorted ascending → last = highest version
-    assert.strictEqual(latest.name, FIX_FILE, `latest declarer of ${fn} should be ${FIX_FILE}, got ${latest.name}`);
+    // Do NOT assert latest.name === FIX_FILE: a later migration may legitimately re-declare an RPC
+    // (e.g. #568's 20260805000130 re-declared export_my_data to add consent_records + fix i.title).
+    // The invariant is that WHOEVER declares it last keeps the alternate-email UNION (checked below),
+    // not that #511 is forever the last toucher.
     const latestCode = stripComments(latest.content);
     assert.match(latestCode, /FROM public\.member_emails me\s+WHERE me\.member_id = v(?:_caller\.id|_member_id)/,
       `a later migration must not revert ${fn} to primary-email-only matching`);
