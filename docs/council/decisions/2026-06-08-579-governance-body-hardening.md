@@ -17,7 +17,7 @@ Head of the PM-agreed hardening/follow-up sequence (from the #580 handoff). Grou
 ## Build
 - **`governance-html.mjs`**: replaced the non-greedy `listItemsToMd` (couldn't balance nested lists) with a balanced, recursive converter (`findListClose` / `splitTopLevelLi` / `splitItemContent` / `renderList` / `replaceTopLevelLists`). Nested lists indent CommonMark-correct (parent marker width per level). Rendered blocks stashed into NUL-delimited tokens so the whitespace-collapsing pass can't flatten indentation. Multi-`<p>` items → marker line + indented continuation lines; bare text either side of a nested list keeps word spacing. `sanitizeGovernanceHtml` strips HTML comments (prompt-injection channel) — **each removal looped to a fixpoint** (reveal-safe).
 - **migration `20260805000133`**: `REVOKE EXECUTE … FROM anon` (+ PUBLIC) on the reader RPC. Root cause: the defining migration revoked PUBLIC but Supabase `ALTER DEFAULT PRIVILEGES` grants `anon` directly → residual.
-- **test (`459-…`)**: `toolBlock()` bounds by next generic `mcp.tool(` + success-path tail sentinel; 35 → 45 tests.
+- **test (`459-…`)**: `toolBlock()` bounds by next generic `mcp.tool(` + success-path tail sentinel; 35 → 44 tests.
 
 ## Council-on-draft (pre-apply) — Workflow `wf_bb67c6fd-6d4`
 4 reviewers (code-reviewer, senior-software-engineer, security-engineer, ai-engineer): **4/4 GO_W_FIXES, 0 NO_GO, 0 blocker.** Folded: multi-`<p>` merge (MEDIUM), text-both-sides no-space join, HTML-comment strip, toolBlock tail-sentinel, migration NOTIFY note. Documented-not-changed (degenerate/impossible-in-TipTap): empty-`<li>` bare marker, unbalanced-list graceful degradation, greedy unquoted-handler over-strip.
