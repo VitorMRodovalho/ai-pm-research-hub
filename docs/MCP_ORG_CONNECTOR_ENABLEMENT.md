@@ -9,13 +9,28 @@
 > **PM/admin actions inside the Claude.ai organization UI** plus one **member OAuth smoke**. Keep #234 open until
 > both are complete + verified.
 
+## ⚠️ STATUS UPDATE (2026-06-07) — Option B requires Team/Enterprise; adopted **member self-add**
+
+Live finding (verified in the PM's Claude.ai via Claude for Chrome): the account is an **individual plan (Pro/Max)**.
+`https://claude.ai/admin-settings/connectors` **redirects to personal settings** — there is **no organization admin
+connectors area**. Per the Claude Help Center, org-level connectors are a **Team/Enterprise** feature enabled by an
+**Owner/Primary Owner**; on Free/Pro/Max only the **personal** connector (*Customize → Connectors*) exists.
+
+**Revised effective decision (PL/CTO + PM, aligned):** the true "Option B" (centralized admin connector) is **not
+viable without a Team/Enterprise upgrade**, and an upgrade is **not worth it just for this**. **Adopted path = member
+self-add of the personal custom connector** (§3b) — same server URL, OAuth per member, RLS scopes each user to their
+own data, so the outcome is ~equivalent to an org connector at zero plan cost. The PM's own personal connector
+**already works** (308 tools loaded) → Workstream A is proven end-to-end. The org-admin content in §1/§3 below remains
+valid as the **Team/Enterprise playbook** if the org ever upgrades.
+
 ## TL;DR
 
 | | |
 |---|---|
-| **What's left** | (a) PM adds the server in Claude.ai **org connector settings**; (b) one non-admin member does an end-to-end OAuth smoke; (c) observe 7-day continuity. |
-| **What's done (platform side)** | OAuth 2.1 DCR + PKCE, server-side auto-refresh (KV, 30-day TTL), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. |
-| **Risk** | Low. No code change required for Option B. The connector already works as a per-user custom connector today. |
+| **Current path (individual plan)** | Distribute the **member self-add** instruction (§3b): each member adds `https://nucleoia.vitormr.dev/mcp` in *Customize → Connectors*. RLS scopes each user. |
+| **Team/Enterprise playbook** (if upgraded) | PM adds the server in **Organization settings → Connectors** (§1/§3); members enable individually. |
+| **What's done (platform side)** | OAuth 2.1 DCR + PKCE, server-side auto-refresh (KV, 30-day TTL), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. **Personal connector verified working live (308 tools).** |
+| **Risk** | Low. No code change. The connector already works as a per-user custom connector today. |
 
 ---
 
@@ -101,12 +116,16 @@ GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
 
 ---
 
-## 3. PM steps — add as an org/team connector (Claude.ai UI)
+## 3. Team/Enterprise playbook — add as an org connector (Claude.ai admin UI)
 
-> These run in the **Claude.ai organization settings** (Owner / Primary Owner) and cannot be done from the
-> codebase. ~10 minutes. Official flow: support.claude.com → "Build custom connectors via remote MCP servers".
+> **⚠️ Requires a Team or Enterprise plan.** On individual plans (Free/Pro/Max) this area does **not** exist —
+> `https://claude.ai/admin-settings/connectors` redirects to personal settings (verified 2026-06-07). If you are on
+> an individual plan, **skip to §3b (member self-add)**. The steps below apply only once the org is on Team/Enterprise.
+>
+> These run in the **Claude.ai organization settings** (Owner / Primary Owner), at
+> `https://claude.ai/admin-settings/connectors`, and cannot be done from the codebase. ~10 minutes.
 
-1. **Claude.ai → Organization settings → Connectors** → **Add**.
+1. **Claude.ai → Organization settings → Connectors** (`https://claude.ai/admin-settings/connectors`) → **Add**.
 2. Paste the **Server URL**: `https://nucleoia.vitormr.dev/mcp`.
 3. Fill **Name** / **description** / **icon** / **docs URL** from §1. **Leave "Advanced settings" (OAuth Client
    ID / Secret) blank** — the server self-registers via DCR; no client_id/secret to paste.
@@ -121,6 +140,29 @@ GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
 > Desktop, Cowork, mobile), Claude reaches the MCP server from Anthropic's IP ranges over the public internet.
 > Ours **already works** for per-user claude.ai today (same Cloudflare path), so no change is expected. If a future
 > block appears, the WAF skip rule lives in `docs/infra/CLOUDFLARE_MCP_RULES.md` (allowlist Anthropic's IP ranges).
+
+---
+
+## 3b. Member self-add — the ADOPTED path (individual plans)
+
+Since the org is on an individual plan, there is no centralized admin connector. The equivalent outcome is reached by
+having **each member add the personal custom connector** once. Same security model as an org connector — the OAuth
+login is per member and RLS scopes each user to their own data; the org-admin step just centralizes the "add", which
+we don't have.
+
+**Works for every member**, including Free-plan accounts (Free is limited to **one** custom connector, which this can
+be). Distribute this short instruction (e.g. in a chapter announcement or the wiki):
+
+> **Conecte o Claude ao Núcleo IA (1x):** No Claude.ai → **Customize → Connectors** → **Add custom connector** →
+> cole `https://nucleoia.vitormr.dev/mcp` → **Save**. Uma janela abre → faça login com a sua conta do Núcleo e
+> aprove o acesso. Pronto: pergunte ao Claude, ex. *"quais são meus próximos eventos do Núcleo?"*. Você só vê os
+> seus próprios dados. (Não preencha "Advanced settings"/OAuth — deixe em branco.)
+
+EN: *Claude.ai → Customize → Connectors → Add custom connector → paste `https://nucleoia.vitormr.dev/mcp` → Save →
+log in with your Núcleo account + approve. Leave Advanced/OAuth blank.*
+
+No "smoke" beyond this is needed — the PM's own personal connector already proves the flow (308 tools, OAuth + refresh
+working). §4 below stays as the formal checklist if you want one member to confirm RLS scoping explicitly.
 
 ---
 
@@ -146,11 +188,11 @@ If any step fails, capture the error and check `mcp_usage_log` + the Worker logs
 
 | # | Criterion | Status | Evidence / residual |
 |---|-----------|--------|---------------------|
-| 1 | Connector usable 7 days w/o manual relogin after one fresh reconnect | **Observational** | Enabling infra live + verified (auto-refresh, 30-day KV TTL, `offline_access`). Confirmed only by observing over 7 calendar days after the §3 reconnect. |
+| 1 | Connector usable 7 days w/o manual relogin after one fresh reconnect | **Observational** | Enabling infra live + verified; the PM's **personal connector is connected and working (308 tools)**. Confirmed fully by observing 7 calendar days with no relogin. |
 | 2 | Prod OAuth metadata includes `offline_access` + `refresh_token` | **MET** | Both well-known endpoints, live (see §2). |
 | 3 | Docs stop telling users Claude.ai requires hourly relogin | **MET** | In-repo docs teach the correct refresh model (`MCP_SETUP_GUIDE.md` "Security Model" + "Troubleshooting" sections; README MCP section: "auto-refresh keeps sessions alive for up to 30 days"). No "hourly relogin" passage in any in-repo doc. |
 | 4 | `/docs/mcp` shows current runtime tool count (issue said "293") | **MET** | Live `/docs/mcp` renders the current manifest (308 `/mcp` + 4 `/semantic` as of 2026-06-07 — query `/health` for today's value); no "293" anywhere. |
-| 5 | Decision recorded (private vs org/team vs Directory) | **MET** | Option B recorded — #234 comment + decision doc. |
+| 5 | Decision recorded (private vs org/team vs Directory) | **MET** | Option B recorded → **revised 2026-06-07** to member self-add (§3b) after the individual-plan finding. #234 comment + decision doc addendum. |
 | 6 | If pursuing official listing, create submission checklist | **N/A** (conditional) | Option C (Directory) not chosen. Stub kept in §8 in case it's revisited. |
 
 **4 MET · 1 observational (PM 7-day reconnect) · 1 N/A.** No platform/code criterion remains open.
@@ -159,7 +201,7 @@ If any step fails, capture the error and check `mcp_usage_log` + the Worker logs
 
 ## 6. Open items (PM-only)
 
-1. **Add the connector in Claude.ai org settings** (§3) — can be agent-assisted via **Claude for Chrome** (see §9 for a paste-ready runbook prompt).
+1. **Distribute the member self-add instruction** (§3b) to the chapters/members (chapter announcement or wiki). *(Org-settings add in §3 only applies if you upgrade to Team/Enterprise — agent-assistable via Claude for Chrome, §9.)*
 2. **Run the member OAuth smoke** (§4) and record the result on #234.
 3. **Observe 7-day continuity** and confirm criterion #1 on #234, then close the issue.
 4. **Icon format:** only `favicon.svg` exists. If the org-connector UI requires a raster icon, export a **square
