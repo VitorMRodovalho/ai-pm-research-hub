@@ -59,8 +59,27 @@ chosen). No platform/code criterion remains open.
 - Refresh-rotation hardening (own Worker-deploy PR) — filed this session as **#580**.
 - `/mcp`→`/mcp/full` rename (#280) stays blocked on gate G19.
 
+## Addendum (2026-06-07, later same day) — Option B not viable on individual plan → member self-add adopted
+
+While executing the §3 enablement via **Claude for Chrome** in the PM's live Claude.ai, we found the account is an
+**individual plan (Pro/Max)**: `https://claude.ai/admin-settings/connectors` **redirects to personal settings** —
+there is **no organization admin connectors area**. Per the Claude Help Center, org-level connectors are a
+**Team/Enterprise** feature (enabled by an Owner/Primary Owner). The PM's **personal** connector to the same server
+URL was already **connected and working (308 tools)** — Workstream A proven end-to-end.
+
+**Recommendation (PL/CTO) + PM, aligned:** do **not** upgrade to Team/Enterprise just for connector distribution.
+The practical equivalent is **member self-add of the personal custom connector** (`https://nucleoia.vitormr.dev/mcp`
+in *Customize → Connectors*) — per-member OAuth + RLS scoping make it ~equivalent to an org connector at zero plan
+cost; works even for Free members (1-custom-connector limit). True Option B (centralized admin) becomes a
+**deferred Team/Enterprise playbook** (enablement doc §1/§3), revisited only if the org upgrades for other reasons.
+
+**Effective decision:** distribute the §3b member self-add instruction. #234 acceptance is satisfied in substance
+(connector works per-member; OAuth metadata + refresh + docs + count all MET); the only open item is observing
+7-day continuity on the already-connected personal connector.
+
 ## Refs
 
-- Enablement package: `docs/MCP_ORG_CONNECTOR_ENABLEMENT.md`
+- Enablement package: `docs/MCP_ORG_CONNECTOR_ENABLEMENT.md` (see STATUS UPDATE block + §3b)
+- Plan-tier source: support.claude.com — "Use connectors to extend Claude's capabilities" (org connectors = Team/Enterprise)
 - Working agreement: PM decision-process working agreement (2026-06-07; session memory)
 - Prior MCP decision: `docs/council/decisions/2026-06-07-mcp-wave2-get-operational-status.md`
