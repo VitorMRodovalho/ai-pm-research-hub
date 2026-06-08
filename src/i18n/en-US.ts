@@ -5736,6 +5736,7 @@ const enUS: Record<string, string> = {
   'comp.gamification.cyclesUnit': 'cycles',
   'comp.gamification.lastActivity': 'Last activity',
   'comp.gamification.noActivity': 'No activity',
+  'comp.gamification.xpByPillar': 'XP by pillar',
   'comp.gamification.trailBreakdown': 'PMI AI Trail',
   'comp.gamification.statusCompleted': 'Completed',
   'comp.gamification.statusInProgress': 'In progress',
