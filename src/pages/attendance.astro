@@ -1728,12 +1728,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       });
       if (error) throw error;
       if (data?.success) {
-        // p169 quick win: when type=iniciativa, link initiative_id (create_event RPC só aceita p_tribe_id)
+        // p169 quick win: when type=iniciativa, link initiative_id (create_event RPC só aceita p_tribe_id).
+        // #566: route via the tribe-scope-gated SECDEF link_event_to_initiative instead of a direct
+        // events.update(initiative_id), which let an author move an event cross-tribe.
         if (initiativeIdNew && data.event_id) {
-          const { error: linkErr } = await sb.from('events')
-            .update({ initiative_id: initiativeIdNew, audience_level: 'initiative' })
-            .eq('id', data.event_id);
-          if (linkErr) console.warn('initiative link failed:', linkErr);
+          const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
+            p_event_id: data.event_id, p_initiative_id: initiativeIdNew });
+          if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
         }
         // W140: assign tags
         if (tagIds.length) {
@@ -1863,11 +1864,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (data?.success) {
         // #494: link the initiative to every event in the series (parity with the single-event p169
         // UPDATE). audience_level='initiative' is already written by the RPC via p_audience_level.
+        // #566: route each event through link_event_to_initiative (tribe-scope gated) instead of a
+        // bulk direct events.update(initiative_id).
         if (initiativeId && data.event_ids?.length) {
-          const { error: linkErr } = await sb.from('events')
-            .update({ initiative_id: initiativeId })
-            .in('id', data.event_ids);
-          if (linkErr) console.warn('initiative link failed:', linkErr);
+          for (const eid of data.event_ids) {
+            const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
+              p_event_id: eid, p_initiative_id: initiativeId });
+            if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
+          }
         }
         // W140 + #500: write the audience rule for EVERY created event (not only tagged ones) so
         // recurring all/leadership/curators/tribe series gate self-checkin (register_own_presence)
@@ -2099,17 +2103,26 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (notes !== undefined) updateFields.notes = notes;
         if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
+        // #566: resolve the target initiative but route it through the tribe-scope-gated
+        // link_event_to_initiative RPC (below) instead of writing initiative_id via the direct update,
+        // which let an author move an event cross-tribe.
+        let linkInitiativeId: string | null | undefined = undefined;
         if (tribeId !== null) {
-          // ADR-0015 Phase 3e: events.tribe_id dropped; write only initiative_id.
+          // ADR-0015 Phase 3e: events.tribe_id dropped; the initiative carries the tribe.
           const { data: initRow } = await sb.from('initiatives')
             .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
-          updateFields.initiative_id = initRow?.id || null;
+          linkInitiativeId = initRow?.id || null;
         }
         if (initiativeIdFromSelect !== null) {
-          updateFields.initiative_id = initiativeIdFromSelect;
+          linkInitiativeId = initiativeIdFromSelect;
         }
         const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
         if (rowUpdateError) throw rowUpdateError;
+        if (linkInitiativeId !== undefined) {
+          const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
+            p_event_id: id, p_initiative_id: linkInitiativeId });
+          if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
+        }
         // #564: future-sibling timezone propagation now runs through update_future_events_in_group
         // (p_timezone) above — SECDEF bypasses RLS, so no silent partial-update on drifted siblings.
         await assignEventTagsAndAudience(id, tagIds, audience);
@@ -2134,17 +2147,25 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           if (notes !== undefined) updateFields.notes = notes;
           if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
           if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
+          // #566: route the target initiative through the tribe-scope-gated link_event_to_initiative
+          // RPC (below) instead of writing initiative_id via the direct update.
+          let linkInitiativeId: string | null | undefined = undefined;
           if (tribeId !== null) {
-            // ADR-0015 Phase 3e: events.tribe_id dropped; write only initiative_id.
+            // ADR-0015 Phase 3e: events.tribe_id dropped; the initiative carries the tribe.
             const { data: initRow } = await sb.from('initiatives')
               .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
-            updateFields.initiative_id = initRow?.id || null;
+            linkInitiativeId = initRow?.id || null;
           }
           if (initiativeIdFromSelect !== null) {
-            updateFields.initiative_id = initiativeIdFromSelect;
+            linkInitiativeId = initiativeIdFromSelect;
           }
           const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
           if (rowUpdateError) throw rowUpdateError;
+          if (linkInitiativeId !== undefined) {
+            const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
+              p_event_id: id, p_initiative_id: linkInitiativeId });
+            if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
+          }
           await assignEventTagsAndAudience(id, tagIds, audience);
           closeModal('modal-edit-event');
           toast(I18N.msgEventUpdated, 'success');
