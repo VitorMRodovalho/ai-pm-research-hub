@@ -55,8 +55,8 @@ Trust is **subdomain-aware** (`host === root` OR `host` ends with `.root`). Root
 `src/lib/oauth-security.ts`:
 
 `claude.ai` · `chatgpt.com` · `openai.com` · `perplexity.ai` · `cursor.com` · `manus.im` · `vitormr.dev`
-(each covers all `*.root` subdomains, e.g. `app.claude.ai`, `claude.com` redirect hosts are matched through
-`claude.ai`/its subdomains) — plus custom schemes `cursor://`, `vscode://`, `vscode-insiders://`, and
+(each root also covers all its `*.root` subdomains, e.g. `app.claude.ai` — but **not** a different apex like
+`claude.com`) — plus custom schemes `cursor://`, `vscode://`, `vscode-insiders://`, `code-oss://`, and
 `localhost`/`127.0.0.1` for local dev.
 
 > If Claude.ai's org-connector OAuth callback ever uses a host **not** under one of these roots (watch for a
@@ -140,8 +140,8 @@ If any step fails, capture the error and check `mcp_usage_log` + the Worker logs
 |---|-----------|--------|---------------------|
 | 1 | Connector usable 7 days w/o manual relogin after one fresh reconnect | **Observational** | Enabling infra live + verified (auto-refresh, 30-day KV TTL, `offline_access`). Confirmed only by observing over 7 calendar days after the §3 reconnect. |
 | 2 | Prod OAuth metadata includes `offline_access` + `refresh_token` | **MET** | Both well-known endpoints, live (see §2). |
-| 3 | Docs stop telling users Claude.ai requires hourly relogin | **MET** | In-repo docs teach the correct refresh model (`MCP_SETUP_GUIDE.md` §69/§158/§164, README MCP section). No "hourly relogin" passage in any in-repo doc. |
-| 4 | `/docs/mcp` shows current runtime tool count (issue said "293") | **MET** | Live `/docs/mcp` renders the current manifest (308 `/mcp` + 4 `/semantic`); no "293" anywhere. |
+| 3 | Docs stop telling users Claude.ai requires hourly relogin | **MET** | In-repo docs teach the correct refresh model (`MCP_SETUP_GUIDE.md` "Security Model" + "Troubleshooting" sections; README MCP section: "auto-refresh keeps sessions alive for up to 30 days"). No "hourly relogin" passage in any in-repo doc. |
+| 4 | `/docs/mcp` shows current runtime tool count (issue said "293") | **MET** | Live `/docs/mcp` renders the current manifest (308 `/mcp` + 4 `/semantic` as of 2026-06-07 — query `/health` for today's value); no "293" anywhere. |
 | 5 | Decision recorded (private vs org/team vs Directory) | **MET** | Option B recorded — #234 comment + decision doc. |
 | 6 | If pursuing official listing, create submission checklist | **N/A** (conditional) | Option C (Directory) not chosen. Stub kept in §8 in case it's revisited. |
 

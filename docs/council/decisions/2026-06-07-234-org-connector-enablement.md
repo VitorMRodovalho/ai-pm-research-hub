@@ -62,5 +62,5 @@ chosen). No platform/code criterion remains open.
 ## Refs
 
 - Enablement package: `docs/MCP_ORG_CONNECTOR_ENABLEMENT.md`
-- Working agreement: `memory/working_agreement_decision_process_2026_06_07.md`
+- Working agreement: PM decision-process working agreement (2026-06-07; session memory)
 - Prior MCP decision: `docs/council/decisions/2026-06-07-mcp-wave2-get-operational-status.md`
