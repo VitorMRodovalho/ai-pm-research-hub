@@ -6,6 +6,8 @@ import {
   GENERAL_LIMIT_PER_MIN,
   DESTRUCTIVE_LIMIT_PER_MIN,
 } from '../lib/mcp-rate-limit';
+// #580 — shared server-side refresh helpers (single source for both proxies + token.ts)
+import { decodeJwtPayload, isExpiringSoon, tryAutoRefresh } from '../lib/mcp-refresh';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
@@ -15,7 +17,6 @@ async function kvLog(_endpoint: string, _data: any) {
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp';
 const BASE = 'https://nucleoia.vitormr.dev';
-const SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -23,48 +24,6 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Expose-Headers': 'Mcp-Session-Id',
 };
-
-// Decode JWT payload without verification (safe for reading sub/exp from our own tokens)
-function decodeJwtPayload(token: string): { sub?: string; exp?: number } | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    return JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-  } catch { return null; }
-}
-
-// Try to refresh an expired token using the stored refresh_token in KV.
-// On failure (stale/revoked token), DELETE the KV entry to prevent the stale
-// token from being retried. Next /mcp call will return 401 and force re-auth.
-async function tryAutoRefresh(sub: string, kv: any): Promise<string | null> {
-  const refreshToken = await kv.get(`mcp_refresh:${sub}`);
-  if (!refreshToken) return null;
-
-  const ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-
-  if (!res.ok) {
-    // Refresh failed — purge stale KV entry to prevent retry loop
-    await kv.delete(`mcp_refresh:${sub}`);
-    return null;
-  }
-  const data = await res.json();
-  if (!data.access_token) {
-    await kv.delete(`mcp_refresh:${sub}`);
-    return null;
-  }
-
-  // Update KV with new refresh_token
-  if (data.refresh_token) {
-    await kv.put(`mcp_refresh:${sub}`, data.refresh_token, { expirationTtl: 2592000 }); // 30 days
-  }
-
-  return data.access_token;
-}
 
 export const ALL: APIRoute = async ({ request }) => {
   const reqBody = request.method === 'POST' ? await request.clone().text() : null;
@@ -101,18 +60,18 @@ export const ALL: APIRoute = async ({ request }) => {
   const kv = (env as any).SESSION;
   const payload = decodeJwtPayload(activeToken);
 
-  if (kv && payload?.sub && payload?.exp) {
-    const now = Math.floor(Date.now() / 1000);
-    // Refresh if expired or will expire within 5 minutes
-    if (payload.exp - 300 < now) {
-      await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp, now });
-      const newToken = await tryAutoRefresh(payload.sub, kv);
-      if (newToken) {
-        activeToken = newToken;
-        await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
-      } else {
-        await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
-      }
+  // Refresh if expired or will expire within 5 minutes
+  if (kv && payload?.sub && payload?.exp && isExpiringSoon(payload.exp)) {
+    await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp });
+    const newToken = await tryAutoRefresh(payload.sub, kv, {
+      anonKey: import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '',
+      supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL || undefined,
+    });
+    if (newToken) {
+      activeToken = newToken;
+      await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
+    } else {
+      await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
     }
   }
 

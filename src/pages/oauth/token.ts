@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { isAllowedRedirectUri } from '../../lib/oauth-security';
+// #580 — single source for JWT decode + the KV refresh-token TTL (shared with the proxies).
+import { decodeJwtPayload, MCP_REFRESH_TTL_SECONDS } from '../../lib/mcp-refresh';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled (free tier 1k writes/day protection).
@@ -77,14 +79,24 @@ export const POST: APIRoute = async ({ request }) => {
         }
         await kvLog("token-refresh-ok", { newTokenLen: data.access_token.length });
 
-        // Update stored refresh_token for server-side auto-refresh
+        // Update stored refresh_token for server-side auto-refresh.
+        // #580 LOW — log (not swallow) decode/KV-store failures: a malformed
+        // access_token would otherwise silently leave the session without
+        // server-side auto-refresh. Kept fail-safe: the client still gets its 200.
+        // The `|| refresh_token` fallback re-stores the CLIENT-supplied token on a
+        // partial 200. Safe: the client must present a valid Supabase refresh_token
+        // to get a 200 at all, and the write only touches its own mcp_refresh:{sub}.
         const newRefresh = data.refresh_token || refresh_token;
         try {
-          const payload = JSON.parse(atob(data.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-          if (payload.sub) {
-            await kv.put(`mcp_refresh:${payload.sub}`, newRefresh, { expirationTtl: 2592000 }); // 30 days
+          const refreshPayload = decodeJwtPayload(data.access_token);
+          if (refreshPayload?.sub) {
+            await kv.put(`mcp_refresh:${refreshPayload.sub}`, newRefresh, { expirationTtl: MCP_REFRESH_TTL_SECONDS });
+          } else {
+            await kvLog("token-refresh-store-skip", { reason: "jwt-decode-no-sub", tokenLen: data.access_token?.length });
           }
-        } catch {}
+        } catch (e: any) {
+          await kvLog("token-refresh-store-error", { error: e?.message });
+        }
 
         return new Response(JSON.stringify({
           access_token: data.access_token,
@@ -163,15 +175,20 @@ export const POST: APIRoute = async ({ request }) => {
     // Return the Supabase access_token + refresh_token
     await kvLog("token-success", { tokenLen: stored.access_token?.length, hasRefresh: !!stored.refresh_token });
 
-    // Store refresh_token in KV keyed by user_id for server-side auto-refresh
+    // Store refresh_token in KV keyed by user_id for server-side auto-refresh.
+    // #580 LOW — log (not swallow) decode/KV-store failures (see refresh grant above).
     if (stored.refresh_token) {
       try {
-        const payload = JSON.parse(atob(stored.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        if (payload.sub) {
-          await kv.put(`mcp_refresh:${payload.sub}`, stored.refresh_token, { expirationTtl: 2592000 }); // 30 days
-          await kvLog("token-refresh-stored", { sub: payload.sub });
+        const codePayload = decodeJwtPayload(stored.access_token);
+        if (codePayload?.sub) {
+          await kv.put(`mcp_refresh:${codePayload.sub}`, stored.refresh_token, { expirationTtl: MCP_REFRESH_TTL_SECONDS });
+          await kvLog("token-refresh-stored", { sub: codePayload.sub });
+        } else {
+          await kvLog("token-refresh-store-skip", { reason: "jwt-decode-no-sub", tokenLen: stored.access_token?.length });
         }
-      } catch {}
+      } catch (e: any) {
+        await kvLog("token-refresh-store-error", { error: e?.message });
+      }
     }
 
     const tokenResponse: Record<string, any> = {
