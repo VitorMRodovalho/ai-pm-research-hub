@@ -70,8 +70,12 @@ test('#483: migration is registered (timestamp greater than prior head)', () => 
   const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
   const idx = files.indexOf(FIX_FILE);
   assert.ok(idx >= 0, 'fix migration present in migrations dir');
-  // sanity: this is among the latest few migrations
-  assert.ok(idx >= files.length - 12, 'fix migration is recent (sort order)');
+  // sanity: the migration lives in the active 20260805* synthetic series (greater than prior head).
+  // NOTE: a position-window heuristic (`idx >= files.length - N`) is inherently brittle — it fails
+  // every time enough newer migrations accumulate after this one (tripped by #567's 000129). A
+  // timestamp-range check is stable regardless of how many later migrations land.
+  const ts = Number(FIX_FILE.slice(0, 14));
+  assert.ok(ts >= 20260805000117 && ts < 20260806000000, 'fix migration timestamp is in the active synthetic series');
 });
 
 // ── (B) DB-gated invariant: no terminal-status member carries current_cycle_active=true ──
