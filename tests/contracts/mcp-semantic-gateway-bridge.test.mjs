@@ -226,11 +226,18 @@ test('worker proxy preserves OAuth 401 + WWW-Authenticate gate', () => {
   assert.match(PROXY, /resource_metadata="\$\{BASE\}\/\.well-known\/oauth-protected-resource"/, 'expected resource_metadata pointer to OAuth metadata endpoint');
 });
 
-test('worker proxy preserves auto-refresh (decodeJwtPayload + tryAutoRefresh)', () => {
+test('worker proxy preserves auto-refresh (delegated to shared lib/mcp-refresh post-#580)', () => {
   const PROXY = readFileSync(PROXY_PATH, 'utf8');
-  assert.match(PROXY, /decodeJwtPayload/, 'expected decodeJwtPayload helper');
-  assert.match(PROXY, /tryAutoRefresh/, 'expected tryAutoRefresh helper');
-  assert.match(PROXY, /mcp_refresh:/, 'expected mcp_refresh KV key prefix');
+  // Post-#580 the auto-refresh helpers (decodeJwtPayload + tryAutoRefresh + the KV key
+  // prefix) live in src/lib/mcp-refresh.ts — a single source shared by both proxies so the
+  // "always re-store the rotated refresh token" fix can't diverge. semantic.ts imports +
+  // calls them rather than inlining the logic.
+  assert.match(PROXY, /import\s*\{[^}]*\btryAutoRefresh\b[^}]*\}\s*from\s*['"]\.\.\/\.\.\/lib\/mcp-refresh['"]/, 'expected tryAutoRefresh import from shared ../../lib/mcp-refresh');
+  assert.match(PROXY, /decodeJwtPayload\(/, 'expected decodeJwtPayload call');
+  assert.match(PROXY, /tryAutoRefresh\(/, 'expected tryAutoRefresh call');
+  // The mcp_refresh: KV key prefix invariant now lives in the shared module.
+  const REFRESH_LIB = readFileSync(resolve(process.cwd(), 'src/lib/mcp-refresh.ts'), 'utf8');
+  assert.match(REFRESH_LIB, /mcp_refresh:/, 'expected mcp_refresh KV key prefix in shared lib/mcp-refresh');
 });
 
 test('worker proxy preserves rate limiting (ADR-0018 W2)', () => {
