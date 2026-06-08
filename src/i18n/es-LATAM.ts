@@ -5726,6 +5726,8 @@ const esLATAM: Record<string, string> = {
   'comp.gamification.attendanceRateCol': 'Asist. %',
   'comp.gamification.expand': 'Ver detalles del miembro',
   'comp.gamification.collapse': 'Ocultar detalles',
+  'comp.gamification.showBreakdown': 'Mostrar desglose de puntos',
+  'comp.gamification.hideBreakdown': 'Ocultar desglose de puntos',
   'comp.gamification.coachingTitle': 'Coaching del miembro',
   'comp.gamification.coachingSignals': 'Señales de coaching',
   'comp.gamification.attendanceRateLabel': 'Tasa de asistencia (ciclo)',
