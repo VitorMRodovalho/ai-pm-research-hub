@@ -194,8 +194,8 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close);
   // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3); then 304 → 303 via #191
   // (removed the broken advance_card_curation tool); then 303 → 306 via #188 (+3 curator-native tools);
-  // then 306 → 307 via #415 (+1 get_recurrence_stockout).
-  assert.match(m[0], /tools:\s*307/, '/health should report 307 tools on /mcp (306 → 307 via #415 get_recurrence_stockout)');
+  // then 306 → 307 via #415 (+1 get_recurrence_stockout); then 307 → 308 via #459 (+1 get_governance_document_body).
+  assert.match(m[0], /tools:\s*308/, '/health should report 308 tools on /mcp (307 → 308 via #459 get_governance_document_body)');
 });
 
 // ─── 7. /mcp regression-safety guarantee ──────────────────────────────────────
