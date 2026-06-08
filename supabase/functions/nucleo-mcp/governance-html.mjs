@@ -65,27 +65,32 @@ export function stripTags(html) {
 // is stored unsanitized (no repo-wide sanitizer) — strip script/style/handlers/javascript: URLs.
 export function sanitizeGovernanceHtml(html) {
   if (!html) return '';
-  // Strip HTML comments first: an admin could embed "<!-- hidden instruction -->" that is
-  // invisible in the rendered view but reaches the MCP/LLM consumer as a prompt-injection
-  // channel via content_html (#579 hardening). Loop to a fixpoint because removing one
-  // comment can concatenate the surrounding chars into a NEW "<!--" (e.g. "<!<!-- -->-- -->"
-  // → "<!-- -->") — a single pass is incomplete sanitization. The (?:-->|$) arm also drops
-  // an UNTERMINATED opener (HTML spec: an unclosed comment runs to EOF; TipTap escapes any
-  // literal "<!--" as &lt;!-- so a raw opener is always a real comment). [\s\S]*? is
-  // non-greedy and each iteration removes ≥1 opener → bounded, no ReDoS.
+  // Apply EVERY removal in a loop to a fixpoint: stripping one construct can concatenate
+  // the surrounding chars into a fresh one — "<scr<script></script>ipt>" → "<script>",
+  // "<!<!-- -->-- -->" → "<!-- -->", or a revealed "on…=" handler. A single pass is
+  // incomplete sanitization (CodeQL js/incomplete-multi-character-sanitization). Every pass
+  // only removes or neutralizes (the href/src scheme-strip rewrites to "#" and is then a
+  // no-op), so the string is non-increasing and the loop converges in passes bounded by the
+  // nesting depth of the reveal. The comment (?:-->|$) arm also drops an UNTERMINATED opener
+  // (HTML spec: an unclosed comment runs to EOF; TipTap escapes any literal "<!--" as
+  // &lt;!-- so a raw opener is always a real comment). All [\s\S]*? are non-greedy → no ReDoS.
   let s = String(html);
   let prev;
-  do { prev = s; s = s.replace(/<!--[\s\S]*?(?:-->|$)/g, ''); } while (s !== prev);
-  return s
-    .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*\/?>/gi, '')
-    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
-    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
-    // Neutralize script-y URL schemes in href/src. external http(s) links + TipTap-authored
-    // <img src> (incl. data: images) are trusted-author content and intentionally preserved;
-    // broader data:/SSRF hardening for downstream HTML renderers is tracked as a #459 follow-up.
-    .replace(/(href|src)\s*=\s*("|')\s*(javascript|vbscript):[^"']*\2/gi, '$1=$2#$2');
+  do {
+    prev = s;
+    s = s
+      .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+      .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+      .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*\/?>/gi, '')
+      .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
+      .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
+      .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+      // Neutralize script-y URL schemes in href/src. external http(s) links + TipTap-authored
+      // <img src> (incl. data: images) are trusted-author content and intentionally preserved;
+      // broader data:/SSRF hardening for downstream HTML renderers is tracked as a #459 follow-up.
+      .replace(/(href|src)\s*=\s*("|')\s*(javascript|vbscript):[^"']*\2/gi, '$1=$2#$2');
+  } while (s !== prev);
+  return s;
 }
 
 // --- HTML → Markdown (targeted for TipTap StarterKit output) ---
