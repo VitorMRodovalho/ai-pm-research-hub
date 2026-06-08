@@ -65,11 +65,18 @@ export function stripTags(html) {
 // is stored unsanitized (no repo-wide sanitizer) — strip script/style/handlers/javascript: URLs.
 export function sanitizeGovernanceHtml(html) {
   if (!html) return '';
-  return String(html)
-    // Strip HTML comments first: an admin could embed "<!-- hidden instruction -->" that is
-    // invisible in the rendered view but reaches the MCP/LLM consumer as a prompt-injection
-    // channel via content_html (#579 hardening). [\s\S]*? is non-greedy → no ReDoS.
-    .replace(/<!--[\s\S]*?-->/g, '')
+  // Strip HTML comments first: an admin could embed "<!-- hidden instruction -->" that is
+  // invisible in the rendered view but reaches the MCP/LLM consumer as a prompt-injection
+  // channel via content_html (#579 hardening). Loop to a fixpoint because removing one
+  // comment can concatenate the surrounding chars into a NEW "<!--" (e.g. "<!<!-- -->-- -->"
+  // → "<!-- -->") — a single pass is incomplete sanitization. The (?:-->|$) arm also drops
+  // an UNTERMINATED opener (HTML spec: an unclosed comment runs to EOF; TipTap escapes any
+  // literal "<!--" as &lt;!-- so a raw opener is always a real comment). [\s\S]*? is
+  // non-greedy and each iteration removes ≥1 opener → bounded, no ReDoS.
+  let s = String(html);
+  let prev;
+  do { prev = s; s = s.replace(/<!--[\s\S]*?(?:-->|$)/g, ''); } while (s !== prev);
+  return s
     .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
     .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*\/?>/gi, '')
     .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')

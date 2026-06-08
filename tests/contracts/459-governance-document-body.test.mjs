@@ -245,6 +245,17 @@ test('#579 sanitize: strips HTML comments (prompt-injection channel)', () => {
   assert.doesNotMatch(htmlToMarkdown('<p>a</p><!-- secret -->'), /secret|<!--/);
 });
 
+test('#579 sanitize: comment removal is complete — reveal + unterminated leave no <!--', () => {
+  // CodeQL js/incomplete-multi-character-sanitization (HIGH): a single replace pass is
+  // incomplete because removing one comment can concatenate surrounding chars into a NEW
+  // "<!--", and an unterminated opener would survive. The loop-to-fixpoint + (?:-->|$) arm
+  // must leave NO "<!--" in any of these.
+  assert.doesNotMatch(sanitizeGovernanceHtml('<!<!-- -->-- -->'), /<!--/, 'concat-reveal must be cleared');
+  assert.doesNotMatch(sanitizeGovernanceHtml('<p>x</p><!-- unterminated'), /<!--/, 'unterminated opener must be cleared');
+  assert.doesNotMatch(sanitizeGovernanceHtml('<!--a--><!--b-->'), /<!--/, 'multiple comments cleared');
+  assert.equal(sanitizeGovernanceHtml('<p>3 <!-- n --> 4</p>'), '<p>3  4</p>', 'legit markup preserved');
+});
+
 test('#459 caveat: active → null, non-active → ratification warning', () => {
   assert.equal(ratificationCaveat('active'), null);
   assert.match(ratificationCaveat('under_review'), /ratifica/i);
