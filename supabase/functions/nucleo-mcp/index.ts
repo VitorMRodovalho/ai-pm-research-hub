@@ -1,5 +1,10 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 307 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// MCP server v2.80.0 — /mcp 308 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// #459 (2026-06-07): governance clause-body read — +1 tool (get_governance_document_body, wraps the
+//   canonical get_governance_document_reader RPC + EF-side Markdown/section-anchor enrichment via
+//   ./governance-html.mjs; legal guard-rails: public/active_members channel ceiling, ratification
+//   caveat, no curation comments, reinforced response_summary logging, no-legal-advice disclaimer).
+//   307 -> 308. Count-only (no version bump). Tests + /health updated to 308; matrix/manifest regenerated.
 // /health count correction (backlog "/health 301→304"): /mcp tools 301 → 304 to match the runtime
 //   tools/list (304 live 2026-06-05); +3 net since #332 from the #411 selection-cutoff MCP exposure.
 //   Count-only — no serverInfo version bump (stays 2.79.0). Contract tests pin the count.
@@ -165,6 +170,13 @@ import { McpServer } from "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { z } from "npm:zod@4.3.6";
+import {
+  htmlToMarkdown,
+  extractSectionAnchors,
+  sanitizeGovernanceHtml,
+  ratificationCaveat,
+  MCP_GOVERNANCE_VISIBLE_CLASSES,
+} from "./governance-html.mjs";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -217,10 +229,10 @@ async function resolveInitiativeId(sb: ReturnType<typeof createClient>, tribeId:
   return data?.id || null;
 }
 
-async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number, resultKind?: "preview" | "execute") {
+async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number, resultKind?: "preview" | "execute", responseSummary?: unknown) {
   try {
     const execMs = startTime ? Date.now() - startTime : null;
-    await sb.rpc("log_mcp_usage", { p_auth_user_id: null, p_member_id: memberId, p_tool_name: toolName, p_success: success, p_error_message: errorMsg || null, p_execution_ms: execMs, p_result_kind: resultKind || "execute" });
+    await sb.rpc("log_mcp_usage", { p_auth_user_id: null, p_member_id: memberId, p_tool_name: toolName, p_success: success, p_error_message: errorMsg || null, p_execution_ms: execMs, p_result_kind: resultKind || "execute", p_response_summary: responseSummary ?? null });
   } catch (_) { /* never break tool execution */ }
 }
 
@@ -6146,6 +6158,81 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // get_governance_document_body — #459: read the full normative body (clauses) of the
+  // current published version. Wraps the canonical reader get_governance_document_reader
+  // (same visibility authority as the member-facing /governance/document/[id] route) and
+  // enriches with server-rendered Markdown + section anchors. Legal guard-rails (#459
+  // legal-counsel review 2026-06-07): MCP-channel visibility ceiling (public/active_members
+  // only), ratification caveat, no curation comments (the reader never returns them),
+  // reinforced response_summary logging, no-legal-advice disclaimer in the description.
+  // Tool name ↔ RPC name divergence (intentional; see .claude/rules/mcp.md alias map):
+  //   tool get_governance_document_body → RPC get_governance_document_reader.
+  mcp.tool("get_governance_document_body", "Read the full normative body (clauses) of a governance document — the current published version — as sanitized HTML AND server-rendered Markdown, plus section_anchors for clause citation (e.g. 'Cláusula 12', 'Art. 1'). Use to ground summaries, minutes, e-mails or derived instruments in the actual text. Mirrors the same visibility authority as the platform's governance reader. Content is for informational and drafting-assistance purposes only and does NOT constitute legal advice; documents in 'under_review' status are subject to change.", {
+    document_id: z.string().describe("UUID of the governance_documents row")
+  }, async (params: { document_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_governance_document_body", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.document_id)) { await logUsage(sb, member.id, "get_governance_document_body", false, "Invalid document_id", start); return err("document_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_governance_document_reader", { p_document_id: params.document_id });
+    if (error) { await logUsage(sb, member.id, "get_governance_document_body", false, error.message, start); return err(error.message); }
+    const doc = (data && (data as Record<string, unknown>).document) as Record<string, unknown> | null;
+    const ver = (data && (data as Record<string, unknown>).current_version) as Record<string, unknown> | null;
+    // Not found OR not visible to the caller — mirror the reader's NULL (no existence oracle).
+    if (!doc) {
+      await logUsage(sb, member.id, "get_governance_document_body", true, undefined, start, "execute", { document_id: params.document_id, available: false, reason: "not_found_or_not_accessible" });
+      return ok({ ok: true, available: false, reason: "not_found_or_not_accessible", document: null });
+    }
+    // Legal guard-rail #2: MCP/LLM channel visibility ceiling (tighter than web authority).
+    // Restricted classes return document:NULL — do NOT fingerprint a restricted doc via this channel
+    // (the caller may be web-authorized, but the MCP channel is contained to public/active_members).
+    const visClass = String(doc.visibility_class ?? "");
+    if (!MCP_GOVERNANCE_VISIBLE_CLASSES.includes(visClass)) {
+      await logUsage(sb, member.id, "get_governance_document_body", true, undefined, start, "execute", { document_id: doc.id, visibility_class: visClass, available: false, reason: "restricted_for_mcp_channel" });
+      return ok({ ok: true, available: false, reason: "restricted_for_mcp_channel", note: "This document's visibility class is not served via the MCP channel; read it in the platform UI.", document: null });
+    }
+    const status = String(doc.status ?? "");
+    // No current version, or its body is empty.
+    if (!ver || !ver.content_html) {
+      await logUsage(sb, member.id, "get_governance_document_body", true, undefined, start, "execute", { document_id: doc.id, available: false, reason: "no_published_version" });
+      return ok({ ok: true, available: false, reason: "no_published_version", document: { id: doc.id, title: doc.title, doc_type: doc.doc_type, status, visibility_class: visClass } });
+    }
+    // Forward-defense: the MCP channel serves only LOCKED (finalized) current versions. The wrapped RPC
+    // releases unlocked-draft bodies to admins/assigned-curators (review context); this independent EF
+    // gate keeps the channel fail-closed on drafts regardless of how the ceiling list evolves later.
+    if (!ver.locked_at) {
+      await logUsage(sb, member.id, "get_governance_document_body", true, undefined, start, "execute", { document_id: doc.id, available: false, reason: "draft_not_locked" });
+      return ok({ ok: true, available: false, reason: "draft_not_locked", document: { id: doc.id, title: doc.title, doc_type: doc.doc_type, status, visibility_class: visClass } });
+    }
+    const rawHtml = String(ver.content_html);
+    const cleanHtml = sanitizeGovernanceHtml(rawHtml);
+    const payload = {
+      ok: true,
+      available: true,
+      document: {
+        id: doc.id,
+        title: doc.title,
+        doc_type: doc.doc_type,
+        status,
+        visibility_class: visClass,
+        version_id: ver.version_id ?? null,
+        version_number: ver.version_number ?? null,
+        version_label: ver.version_label ?? null,
+        locked_at: ver.locked_at ?? null,
+        ratification_status: status,
+        caveat: ratificationCaveat(status),
+      },
+      // content_markdown + anchors derive from the SANITIZED html (htmlToMarkdown also sanitizes
+      // internally — passing cleanHtml makes the sanitize-first contract explicit, not implicit).
+      content_html: cleanHtml,
+      content_markdown: htmlToMarkdown(cleanHtml),
+      content_html_length: cleanHtml.length,
+      section_anchors: extractSectionAnchors(cleanHtml),
+    };
+    await logUsage(sb, member.id, "get_governance_document_body", true, undefined, start, "execute", { document_id: doc.id, version_id: ver.version_id, ratification_status: status, available: true });
+    return ok(payload);
+  });
+
   // propose_new_version — create a new draft version of a governance document
   mcp.tool("propose_new_version", "Create a new DRAFT version of a governance document. version_number auto-incremented. Requires manage_member authority. Returns version_id + version_number + version_label. Does NOT start approval chain — use lock_document_version after content is final.", {
     document_id: z.string().describe("UUID of governance_documents row"),
@@ -7601,7 +7688,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 307 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 308 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",
