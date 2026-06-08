@@ -30,9 +30,9 @@ test('#191: the broken advance_card_curation MCP tool is removed', () => {
     'a removal-trace comment documents why');
 });
 
-test('#191 + #188 + #415: /health declares the corrected /mcp tool count (307)', () => {
-  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*307\s*\}/,
-    '/health must report 307 (306 after #188 curator-native tools, +1 via #415 get_recurrence_stockout)');
+test('#191 + #188 + #415 + #459: /health declares the corrected /mcp tool count (308)', () => {
+  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*308\s*\}/,
+    '/health must report 308 (307 after #415 get_recurrence_stockout, +1 via #459 get_governance_document_body)');
 });
 
 test('#191: the matrix no longer lists advance_card_curation', () => {
