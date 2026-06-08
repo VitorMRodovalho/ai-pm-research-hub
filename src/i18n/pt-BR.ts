@@ -5742,6 +5742,7 @@ const ptBR: Record<string, string> = {
   'comp.gamification.cyclesUnit': 'ciclos',
   'comp.gamification.lastActivity': 'Última atividade',
   'comp.gamification.noActivity': 'Sem atividade',
+  'comp.gamification.xpByPillar': 'XP por pilar',
   'comp.gamification.trailBreakdown': 'Trilha PMI AI',
   'comp.gamification.statusCompleted': 'Concluído',
   'comp.gamification.statusInProgress': 'Em progresso',

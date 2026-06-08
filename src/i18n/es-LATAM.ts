@@ -5737,6 +5737,7 @@ const esLATAM: Record<string, string> = {
   'comp.gamification.cyclesUnit': 'ciclos',
   'comp.gamification.lastActivity': 'Última actividad',
   'comp.gamification.noActivity': 'Sin actividad',
+  'comp.gamification.xpByPillar': 'XP por pilar',
   'comp.gamification.trailBreakdown': 'Ruta PMI AI',
   'comp.gamification.statusCompleted': 'Completado',
   'comp.gamification.statusInProgress': 'En progreso',
