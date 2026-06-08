@@ -78,7 +78,20 @@ type SortKey = 'total_points' | 'cycle_points' | 'attendance_points' | 'attendan
 const CHART_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#EF4444', '#0EA5E9'];
 
 // Columns spanned by the drill-down panel row (keep in sync with the header/body).
-const TABLE_COLS = 16;
+// #577: progressive disclosure — the table renders in two widths. COMPACT (default)
+// shows only the high-signal columns; FULL adds the 7 raw-pillar point columns when
+// the "show points breakdown" toggle is on. colSpan must follow the active width.
+const TABLE_COLS_FULL = 16;
+const TABLE_COLS_COMPACT = 9;
+
+// #577: the sort keys that only exist as columns when the breakdown is shown.
+// Collapsing the breakdown while sorted by one of these would leave the table
+// sorted by an invisible column with no aria-sort indicator — so we reset the
+// sort to total_points on collapse (see toggleBreakdown). FULL = COMPACT + these.
+const BREAKDOWN_SORT_KEYS: SortKey[] = [
+  'attendance_points', 'cert_points', 'badge_points',
+  'learning_points', 'producao_points', 'curadoria_points', 'champions_points',
+];
 
 export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGamificationTabProps) {
   const t = usePageI18n();
@@ -88,6 +101,13 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
   const [sortKey, setSortKey] = useState<SortKey>('total_points');
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // #577: progressive disclosure — the 7 raw-pillar point columns are hidden by
+  // default so the summary scans on high-signal columns (XP, cycle, streak, presence%,
+  // CPMAI, trail). Leaders who curate by a specific pillar reveal them inline via the
+  // toggle. Default collapsed to keep the median (mobile) scan clean; in-memory by
+  // design — no persistence (stateless component, default-scannable). Revisit if
+  // analytics show power users consistently re-expand on landing (follow-up issue).
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -189,6 +209,23 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
 
   const toggleExpand = (id: string) => setExpandedId(prev => (prev === id ? null : id));
 
+  // #577: active table width — drives every colSpan below. Keep in sync with the
+  // count of always-on columns (COMPACT) + the 7 gated point columns (FULL).
+  const visibleCols = showBreakdown ? TABLE_COLS_FULL : TABLE_COLS_COMPACT;
+
+  // #577: toggle the breakdown. When collapsing while sorted by a now-hidden pillar
+  // column, reset the sort to total_points so the table never sits in a sort order
+  // whose column (and aria-sort indicator) is no longer visible.
+  const toggleBreakdown = () => {
+    setShowBreakdown(prev => {
+      if (prev && BREAKDOWN_SORT_KEYS.includes(sortKey)) {
+        setSortKey('total_points');
+        setSortAsc(false);
+      }
+      return !prev;
+    });
+  };
+
   // p124 phase 5: derive 2-letter lang code to pull localized tribe_name from
   // tribe_name_i18n jsonb (added in phase 1). Falls back to canonical PT name.
   const _langCode: 'pt' | 'en' | 'es' = (() => {
@@ -263,11 +300,26 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
 
       {/* Members Table */}
       <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-        <h3 className="text-sm font-bold text-navy mb-3">
-          {t('comp.gamification.membersTable', 'Membros')}
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 id="gamif-members-table-label" className="text-sm font-bold text-navy">
+            {t('comp.gamification.membersTable', 'Membros')}
+          </h3>
+          <button
+            type="button"
+            onClick={toggleBreakdown}
+            aria-pressed={showBreakdown}
+            aria-controls="gamif-members-table"
+            className="inline-flex items-center gap-1.5 text-[.72rem] font-semibold rounded-md border border-[var(--border-default)] px-2.5 py-1 text-[var(--text-secondary)] hover:text-navy hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-[#00799E] forced-colors:focus:outline forced-colors:focus:outline-2 whitespace-nowrap"
+          >
+            {/* columns/expand icon — a pre-attentive cue that hidden columns exist (#577) */}
+            <span aria-hidden="true">{showBreakdown ? '⊟' : '⊞'}</span>
+            {showBreakdown
+              ? t('comp.gamification.hideBreakdown', 'Ocultar detalhamento de pontos')
+              : `${t('comp.gamification.showBreakdown', 'Mostrar detalhamento de pontos')} (+${BREAKDOWN_SORT_KEYS.length})`}
+          </button>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-[.75rem]">
+          <table id="gamif-members-table" aria-labelledby="gamif-members-table-label" className="w-full text-[.75rem]">
             <thead>
               <tr className="bg-[var(--surface-section-cool)]">
                 <Th label="#" />
@@ -275,14 +327,20 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                 <Th label={t('comp.gamification.totalXp', 'XP Total')} sortKey="total_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 <Th label={t('comp.gamification.cycleXp', 'Ciclo XP')} sortKey="cycle_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 <Th label={t('comp.gamification.streakCol', 'Seq.')} sortKey="current_streak" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.attendanceCol', 'Presenca')} sortKey="attendance_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                {showBreakdown && (
+                  <Th label={t('comp.gamification.attendanceCol', 'Presenca')} sortKey="attendance_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                )}
                 <Th label={t('comp.gamification.attendanceRateCol', 'Pres. %')} sortKey="attendance_rate" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.certsCol', 'Certs')} sortKey="cert_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.badgesCol', 'Badges')} sortKey="badge_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.learningCol', 'Aprendizado')} sortKey="learning_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.producaoCol', 'Producao')} sortKey="producao_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.curadoriaCol', 'Curadoria')} sortKey="curadoria_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
-                <Th label={t('comp.gamification.championsCol', 'Champions')} sortKey="champions_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                {showBreakdown && (
+                  <>
+                    <Th label={t('comp.gamification.certsCol', 'Certs')} sortKey="cert_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                    <Th label={t('comp.gamification.badgesCol', 'Badges')} sortKey="badge_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                    <Th label={t('comp.gamification.learningCol', 'Aprendizado')} sortKey="learning_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                    <Th label={t('comp.gamification.producaoCol', 'Producao')} sortKey="producao_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                    <Th label={t('comp.gamification.curadoriaCol', 'Curadoria')} sortKey="curadoria_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                    <Th label={t('comp.gamification.championsCol', 'Champions')} sortKey="champions_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                  </>
+                )}
                 <Th label="CPMAI" />
                 <Th label={t('comp.gamification.trail', 'Trilha')} />
                 <Th label="" className="sticky right-0 z-20 bg-[var(--surface-section-cool)]" />
@@ -313,7 +371,9 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                           <span className="text-[var(--text-muted)]">0</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-center">{m.attendance_points}</td>
+                      {showBreakdown && (
+                        <td className="px-3 py-2.5 text-center">{m.attendance_points}</td>
+                      )}
                       <td className="px-3 py-2.5 text-center">
                         {m.attendance_rate != null ? (
                           <AttendanceRatePill rate={m.attendance_rate} />
@@ -321,12 +381,16 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                           <span className="text-[var(--text-muted)]">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-center">{m.cert_points}</td>
-                      <td className="px-3 py-2.5 text-center">{m.badge_points}</td>
-                      <td className="px-3 py-2.5 text-center">{m.learning_points}</td>
-                      <td className="px-3 py-2.5 text-center">{m.producao_points}</td>
-                      <td className="px-3 py-2.5 text-center">{m.curadoria_points}</td>
-                      <td className="px-3 py-2.5 text-center">{m.champions_points}</td>
+                      {showBreakdown && (
+                        <>
+                          <td className="px-3 py-2.5 text-center">{m.cert_points}</td>
+                          <td className="px-3 py-2.5 text-center">{m.badge_points}</td>
+                          <td className="px-3 py-2.5 text-center">{m.learning_points}</td>
+                          <td className="px-3 py-2.5 text-center">{m.producao_points}</td>
+                          <td className="px-3 py-2.5 text-center">{m.curadoria_points}</td>
+                          <td className="px-3 py-2.5 text-center">{m.champions_points}</td>
+                        </>
+                      )}
                       <td className="px-3 py-2.5 text-center">
                         {m.has_cpmai ? (
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">&#x2705;</span>
@@ -354,7 +418,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                     </tr>
                     {isOpen && (
                       <tr className="border-t border-[var(--border-subtle)]">
-                        <td colSpan={TABLE_COLS} className="p-0">
+                        <td colSpan={visibleCols} className="p-0">
                           <MemberDrillDown member={m} t={t} />
                         </td>
                       </tr>
@@ -364,7 +428,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
               })}
               {sortedMembers.length === 0 && (
                 <tr>
-                  <td colSpan={TABLE_COLS} className="px-3 py-6 text-center text-[var(--text-muted)]">
+                  <td colSpan={visibleCols} className="px-3 py-6 text-center text-[var(--text-muted)]">
                     {t('comp.gamification.noMembers', 'Nenhum membro encontrado')}
                   </td>
                 </tr>
@@ -497,7 +561,7 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
       className="bg-[var(--surface-section-cool)] border-l-2 border-[#00799E] px-5 py-4 space-y-5 focus:outline-none"
     >
       <div className="text-sm font-bold text-navy">
-        {t('comp.gamification.coachingTitle', 'Cockpit de coaching')} &middot; {member.name}
+        {t('comp.gamification.coachingTitle', 'Coaching do membro')} &middot; {member.name}
       </div>
 
       {/* Coaching signals */}
