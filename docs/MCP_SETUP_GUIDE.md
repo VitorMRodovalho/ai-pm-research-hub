@@ -2,32 +2,33 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes two surfaces: `/mcp` (299 implementation tools for verified clients) and `/mcp/semantic` (a smaller, bridge-first semantic gateway for strict MCP clients). Both surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes two surfaces: `/mcp` (the full implementation-tool catalog for verified clients) and `/mcp/semantic` (a smaller, bridge-first semantic gateway for strict MCP clients). Both surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ## Endpoints
 
 | Endpoint | Tools | Purpose | Recommended clients |
 |----------|-------|---------|---------------------|
-| `https://nucleoia.vitormr.dev/mcp` | 299 | Full internal capability registry. Stable for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
-| `https://nucleoia.vitormr.dev/mcp/semantic` | 3 (wave-1) | **Bridge-first semantic gateway (p222 #280 alpha).** Compact, review-ready public contract over the internal registry. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
+| `https://nucleoia.vitormr.dev/mcp` | Full catalog | Full internal capability registry. Stable for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
+| `https://nucleoia.vitormr.dev/mcp/semantic` | 4 | **Bridge-first semantic gateway (p222 #280 alpha).** Compact, review-ready public contract over the internal registry. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
 
 Both endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients should still default to `/mcp`.
 
-Wave-1 semantic tools (read-only):
-- `get_my_context` — compact self-scope context (profile, current cycle, gamification, upcoming events, certificates).
-- `search_nucleo_knowledge` — bounded multi-source search across hub resources + wiki + knowledge_assets.
-- `get_board_or_initiative_context` — initiative/board/tribe one-shot summary.
+Semantic tools (read-only):
+- `get_my_context` — compact self-scope context (profile, current cycle, gamification, upcoming events, certificates). *(wave-1)*
+- `search_nucleo_knowledge` — bounded multi-source search across hub resources + wiki + knowledge_assets. *(wave-1)*
+- `get_board_or_initiative_context` — initiative/board/tribe one-shot summary. *(wave-1)*
+- `get_operational_status` — composite operational summary (admin/GP only, `manage_platform`-gated, PII-clean). *(wave-2, v0.2.0)*
 
 ## Compatibility
 
 | Client | Status | Recommended endpoint | Notes |
 |--------|--------|----------------------|-------|
-| Claude.ai | ✅ Verified | `/mcp` (full 299) | Web and desktop. Streamable HTTP SSE. |
-| Claude Code | ✅ Verified | `/mcp` (full 299) | Terminal — see token workaround below. |
-| ChatGPT | ✅ Verified (beta) | `/mcp` (full 299) | Settings → Apps → Connectors → Advanced → New App. Apps SDK submission should target `/mcp/semantic`. |
-| Perplexity | ⚠️ Use `/mcp/semantic` | **`/mcp/semantic`** | Transport: **Streamable HTTP** (not SSE). Auth: OAuth 2.0. Perplexity rejected the 299-tool full catalog (see GH #277 / #280). |
-| Cursor / VS Code | ✅ Verified | `/mcp` (full 299) | Settings → MCP → Add. OAuth flow. |
-| Manus AI | ✅ Verified | `/mcp` (full 299) | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
+| Claude.ai | ✅ Verified | `/mcp` (full catalog) | Web and desktop. Streamable HTTP SSE. |
+| Claude Code | ✅ Verified | `/mcp` (full catalog) | Terminal — see token workaround below. |
+| ChatGPT | ✅ Verified (beta) | `/mcp` (full catalog) | Settings → Apps → Connectors → Advanced → New App. Apps SDK submission should target `/mcp/semantic`. |
+| Perplexity | ⚠️ Use `/mcp/semantic` | **`/mcp/semantic`** | Transport: **Streamable HTTP** (not SSE). Auth: OAuth 2.0. Perplexity rejected the full tool catalog (see GH #277 / #280). |
+| Cursor / VS Code | ✅ Verified | `/mcp` (full catalog) | Settings → MCP → Add. OAuth flow. |
+| Manus AI | ✅ Verified | `/mcp` (full catalog) | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
 | xAI / Grok | 🟡 Custom MCP | `/mcp/semantic` | BYO remote MCP via API; catalog submission not yet documented publicly. |
 | OpenAI Apps SDK review | 🟡 For submission | `/mcp/semantic` | Apps SDK review expects bounded tools + review-account; use semantic surface. |
 | Anthropic Connectors Directory review | 🟡 For submission | `/mcp/semantic` | Directory pre-submission checklist favors short bounded tool catalogs. |
@@ -89,7 +90,7 @@ Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth 
 
 ## Representative Tools
 
-The live source of truth is the MCP `tools/list` response. The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 306 tools.
+The live source of truth is the MCP `tools/list` response (or the `/health` endpoint for a per-surface count). The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 300+ tools — never pin the exact number, query it live.
 
 For the **complete machine-generated contract matrix** (tool → domain → RPC dependencies → tables → canV4 gate → external fetches → service_role usage), see:
 
