@@ -60,10 +60,16 @@ test('#567 static: per-command policies exist with the right command scoping', (
 });
 
 test('#567 static: INSERT/UPDATE keep initiative-write; DELETE is admin-only', () => {
-  // INSERT + UPDATE (USING+CHECK) reference rls_can_for_initiative('write', initiative_id) -> >= 3 occurrences
+  // The arm appears in 4 policy predicates: SELECT(_manage_read) + INSERT CHECK + UPDATE USING + UPDATE CHECK.
   assert.ok(
-    (body.match(/rls_can_for_initiative\('write', initiative_id\)/g) || []).length >= 3,
-    'INSERT WITH CHECK + UPDATE USING + UPDATE CHECK all keep the initiative-write arm');
+    (body.match(/rls_can_for_initiative\('write', initiative_id\)/g) || []).length >= 4,
+    '_manage_read SELECT + INSERT WITH CHECK + UPDATE USING + UPDATE CHECK all keep the initiative-write arm');
+  // scoped: the INSERT policy specifically must keep the arm — a silent drop here is the new-artifact
+  // write-path regression that the >= 4 count alone would not localize.
+  const insBlock = body.slice(body.indexOf('meeting_artifacts_insert ON'));
+  const insPredicate = insBlock.slice(0, insBlock.indexOf(');') + 2);
+  assert.match(insPredicate, /rls_can_for_initiative\('write', initiative_id\)/,
+    'INSERT WITH CHECK must keep the initiative-write arm');
   // The DELETE policy block must NOT contain rls_can_for_initiative (admins only)
   const delBlock = body.slice(body.indexOf('meeting_artifacts_delete'));
   const delPredicate = delBlock.slice(0, delBlock.indexOf(');') + 2);

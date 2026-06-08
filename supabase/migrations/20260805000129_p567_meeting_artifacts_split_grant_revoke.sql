@@ -29,7 +29,7 @@
 --   DROP POLICY meeting_artifacts_manage_read/_insert/_update/_delete; recreate
 --     CREATE POLICY meeting_artifacts_manage ON public.meeting_artifacts FOR ALL TO public
 --       USING (rls_is_superadmin() OR rls_can('manage_member') OR rls_can_for_initiative('write', initiative_id));
---   GRANT INSERT,UPDATE,DELETE,REFERENCES,TRIGGER,TRUNCATE ON public.meeting_artifacts TO anon;
+--   GRANT INSERT,UPDATE,DELETE,REFERENCES,TRIGGER,TRUNCATE ON public.meeting_artifacts TO anon; -- (anon had no SELECT pre-migration; grounded live)
 --   GRANT TRUNCATE,REFERENCES,TRIGGER ON public.meeting_artifacts TO authenticated;
 --   GRANT ALL ON public.onboarding_tokens TO anon, authenticated;
 --   GRANT ALL ON public.pmi_video_screenings TO anon, authenticated;
