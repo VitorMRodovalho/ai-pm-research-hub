@@ -65,16 +65,29 @@ export function stripTags(html) {
 // is stored unsanitized (no repo-wide sanitizer) — strip script/style/handlers/javascript: URLs.
 export function sanitizeGovernanceHtml(html) {
   if (!html) return '';
-  return String(html)
-    .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*\/?>/gi, '')
-    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
-    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
-    // Neutralize script-y URL schemes in href/src. external http(s) links + TipTap-authored
-    // <img src> (incl. data: images) are trusted-author content and intentionally preserved;
-    // broader data:/SSRF hardening for downstream HTML renderers is tracked as a #459 follow-up.
-    .replace(/(href|src)\s*=\s*("|')\s*(javascript|vbscript):[^"']*\2/gi, '$1=$2#$2');
+  // Each removal runs to a fixpoint in its OWN do-while: stripping one construct can
+  // concatenate the surrounding chars into a fresh one — "<scr<script></script>ipt>" →
+  // "<script>", "<!<!-- -->-- -->" → "<!-- -->", or a revealed "on…=" handler. A single
+  // pass is incomplete sanitization (CodeQL js/incomplete-multi-character-sanitization;
+  // the per-replace loop is the form the query recognises as complete). Every pass only
+  // removes or neutralizes, so each loop converges. All [\s\S]*? are non-greedy → no ReDoS.
+  let s = String(html);
+  let prev;
+  // HTML comments — admin-authored "<!-- hidden -->" is a prompt-injection channel reaching
+  // the MCP/LLM consumer via content_html (#579). (?:-->|$) also drops an UNTERMINATED opener
+  // (HTML spec: an unclosed comment runs to EOF; TipTap escapes a literal "<!--" as &lt;!--
+  // so a raw opener is always a real comment).
+  do { prev = s; s = s.replace(/<!--[\s\S]*?(?:-->|$)/g, ''); } while (s !== prev);
+  // script/style/embed blocks, then their void/unclosed forms
+  do { prev = s; s = s.replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, ''); } while (s !== prev);
+  do { prev = s; s = s.replace(/<(script|style|iframe|object|embed|noscript)\b[^>]*\/?>/gi, ''); } while (s !== prev);
+  // inline event handlers (double-quoted, single-quoted, or unquoted value)
+  do { prev = s; s = s.replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ''); } while (s !== prev);
+  // Neutralize script-y URL schemes in href/src. external http(s) links + TipTap-authored
+  // <img src> (incl. data: images) are trusted-author content and intentionally preserved;
+  // broader data:/SSRF hardening for downstream HTML renderers is tracked as a #459 follow-up.
+  do { prev = s; s = s.replace(/(href|src)\s*=\s*("|')\s*(javascript|vbscript):[^"']*\2/gi, '$1=$2#$2'); } while (s !== prev);
+  return s;
 }
 
 // --- HTML → Markdown (targeted for TipTap StarterKit output) ---
@@ -116,18 +129,139 @@ function inlineToMd(s) {
   return out.replace(/[ \t]+/g, ' ').replace(/[ \t]+\n/g, '\n').trim();
 }
 
-function listItemsToMd(listHtml, ordered) {
-  const items = [];
-  const re = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+// --- Lists: balanced + recursive (handles nested <ul>/<ol>) ---
+// A non-greedy regex cannot balance nested lists — the inner </ul>/</li> closes the
+// match early, garbling parent+child text (~half of production governance bodies nest
+// lists). So extraction tracks open/close depth. Nested lists indent by the parent
+// marker width (CommonMark-correct: "- " → 2 spaces, "1. " → 3 spaces), and the rendered
+// block is stashed into a NUL token so the trailing whitespace-collapsing inlineToMd pass
+// can't flatten the leading indentation (same protection pattern as code blocks).
+
+// Find the matching close of a list opened at `openStart` (index of '<' of <ul|<ol>),
+// counting nested ul/ol depth. Returns {tag, innerStart, innerEnd, end} or null if unbalanced.
+function findListClose(s, openStart) {
+  const open = /^<(ul|ol)\b[^>]*>/i.exec(s.slice(openStart));
+  if (!open) return null;
+  const tag = open[1].toLowerCase();
+  const innerStart = openStart + open[0].length;
+  const re = /<(\/?)(?:ul|ol)\b[^>]*>/gi;
+  re.lastIndex = innerStart;
+  let depth = 1;
   let m;
-  let i = 1;
-  while ((m = re.exec(listHtml)) !== null) {
-    // unwrap a single wrapping <p> inside <li> (TipTap nests <li><p>text</p></li>)
-    const inner = m[1].replace(/^\s*<p\b[^>]*>([\s\S]*?)<\/p>\s*$/i, '$1');
-    const text = inlineToMd(inner);
-    if (text) { items.push(`${ordered ? `${i}.` : '-'} ${text}`); i++; }
+  while ((m = re.exec(s)) !== null) {
+    if (m[1] === '/') {
+      depth -= 1;
+      if (depth === 0) return { tag, innerStart, innerEnd: m.index, end: re.lastIndex };
+    } else {
+      depth += 1;
+    }
   }
-  return items.join('\n');
+  return null;
+}
+
+// Split a list's inner HTML into its TOP-LEVEL <li> inner-HTML strings (nested <li>
+// skipped), counting <li> depth so a nested item's </li> can't close the parent early.
+function splitTopLevelLi(inner) {
+  const items = [];
+  const openRe = /<li\b[^>]*>/gi;
+  let m;
+  while ((m = openRe.exec(inner)) !== null) {
+    const liStart = m.index + m[0].length;
+    const re = /<(\/?)li\b[^>]*>/gi;
+    re.lastIndex = liStart;
+    let depth = 1;
+    let liEnd = inner.length;
+    let after = inner.length;
+    let mm;
+    while ((mm = re.exec(inner)) !== null) {
+      if (mm[1] === '/') {
+        depth -= 1;
+        if (depth === 0) { liEnd = mm.index; after = re.lastIndex; break; }
+      } else {
+        depth += 1;
+      }
+    }
+    items.push(inner.slice(liStart, liEnd));
+    openRe.lastIndex = after;
+  }
+  return items;
+}
+
+// Separate an <li>'s own inline content from the nested child lists directly inside it.
+function splitItemContent(liInner) {
+  const selfParts = [];
+  const children = [];
+  let cursor = 0;
+  const openRe = /<(?:ul|ol)\b[^>]*>/gi;
+  let m;
+  while ((m = openRe.exec(liInner)) !== null) {
+    const close = findListClose(liInner, m.index);
+    if (!close) break;
+    selfParts.push(liInner.slice(cursor, m.index));
+    children.push({ inner: liInner.slice(close.innerStart, close.innerEnd), ordered: close.tag === 'ol' });
+    cursor = close.end;
+    openRe.lastIndex = close.end;
+  }
+  selfParts.push(liInner.slice(cursor));
+  // Join with a space so bare text on either side of a nested child list keeps its word
+  // spacing (e.g. "<li>intro<ul>…</ul>trailing</li>" → "intro trailing", not "introtrailing").
+  return { selfHtml: selfParts.join(' '), children };
+}
+
+// Recursively render a list's inner HTML to indented Markdown.
+function renderList(inner, ordered, indentPrefix) {
+  const lines = [];
+  let i = 1;
+  for (const liInner of splitTopLevelLi(inner)) {
+    const { selfHtml, children } = splitItemContent(liInner);
+    // Split the item's own content (nested child lists already removed) on <p> boundaries:
+    // TipTap wraps li text in <p>, and a hard-Enter inside an item yields multiple <p>.
+    // Rendering each segment separately keeps paragraphs from silently merging into one
+    // run-on line (the first segment sits on the marker line; extras become indented
+    // continuation lines). Entities stay ENCODED here (decoded once at the end).
+    const segments = selfHtml
+      .split(/<\/p>\s*<p\b[^>]*>/i)
+      .map((seg) => inlineToMd(seg.replace(/<\/?p\b[^>]*>/gi, '')))
+      .filter((seg) => seg !== '');
+    if (segments.length === 0 && children.length === 0) continue;
+    const marker = ordered ? `${i}.` : '-';
+    const childIndent = indentPrefix + ' '.repeat(marker.length + 1);
+    // NOTE: an empty-text item that has only a nested child (impossible in TipTap
+    // StarterKit — the schema forbids a bare list as a li's sole content) renders a bare
+    // marker; the trailing space can't survive the final whitespace cleanup.
+    lines.push(`${indentPrefix}${marker} ${segments[0] || ''}`.replace(/\s+$/, ''));
+    for (const seg of segments.slice(1)) lines.push(`${childIndent}${seg}`);
+    i += 1;
+    for (const child of children) {
+      const childMd = renderList(child.inner, child.ordered, childIndent);
+      if (childMd) lines.push(childMd);
+    }
+  }
+  return lines.join('\n');
+}
+
+// Replace every TOP-LEVEL <ul>/<ol> in `s` with a stashed, rendered Markdown block
+// (nested lists handled recursively inside renderList). Jumping past each balanced block
+// means nested lists are never matched at the top level. Each block is pushed to
+// `listBlocks` and replaced with a NUL token, restored after the inlineToMd pass.
+function replaceTopLevelLists(s, listBlocks) {
+  let out = '';
+  let cursor = 0;
+  const re = /<(?:ul|ol)\b[^>]*>/gi;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const close = findListClose(s, m.index);
+    if (!close) continue;
+    out += s.slice(cursor, m.index);
+    const md = renderList(s.slice(close.innerStart, close.innerEnd), close.tag === 'ol', '');
+    const token = `\u0000LIST${listBlocks.length}\u0000`;
+    listBlocks.push(md);
+    out += `\n\n${token}\n\n`;
+    cursor = close.end;
+    re.lastIndex = close.end;
+  }
+  out += s.slice(cursor);
+  return out;
 }
 
 export function htmlToMarkdown(html) {
@@ -144,9 +278,12 @@ export function htmlToMarkdown(html) {
   s = s.replace(/<pre\b[^>]*>\s*<code\b[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi, (m, c) => stashCode(c));
   s = s.replace(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi, (m, c) => stashCode(c));
 
-  // Lists (before paragraphs; TipTap wraps li content in <p>).
-  s = s.replace(/<ol\b[^>]*>([\s\S]*?)<\/ol>/gi, (m, c) => `\n\n${listItemsToMd(c, true)}\n\n`);
-  s = s.replace(/<ul\b[^>]*>([\s\S]*?)<\/ul>/gi, (m, c) => `\n\n${listItemsToMd(c, false)}\n\n`);
+  // Lists — balanced + recursive so nested <ul>/<ol> indent instead of flattening
+  // (before paragraphs; TipTap wraps li content in <p>). Each rendered block is stashed
+  // into a NUL token (like code blocks) so the straggler inlineToMd pass below can't
+  // collapse its leading indentation.
+  const listBlocks = [];
+  s = replaceTopLevelLists(s, listBlocks);
 
   // Headings.
   s = s.replace(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (m, lvl, c) => {
@@ -173,6 +310,11 @@ export function htmlToMarkdown(html) {
   // Generic block closers → newline; then a final inline pass for any stragglers.
   s = s.replace(/<\/(div|section|article|header|footer|tr|td|th)>/gi, '\n');
   s = inlineToMd(s);
+
+  // Restore list blocks BEFORE decoding entities (list-item text was rendered by
+  // inlineToMd with entities still ENCODED) and AFTER the straggler inlineToMd pass
+  // (so the whitespace collapse can't flatten the nested-list indentation).
+  listBlocks.forEach((lb, idx) => { s = s.replaceAll(`\u0000LIST${idx}\u0000`, lb); });
 
   // Decode entities ONCE, now that all tag-stripping is done (so a decoded "<c>" is
   // never re-eaten as a tag). Code-block tokens carry no entities and are unaffected.
