@@ -5725,6 +5725,8 @@ const enUS: Record<string, string> = {
   'comp.gamification.attendanceRateCol': 'Att. %',
   'comp.gamification.expand': 'View member details',
   'comp.gamification.collapse': 'Hide details',
+  'comp.gamification.showBreakdown': 'Show points breakdown',
+  'comp.gamification.hideBreakdown': 'Hide points breakdown',
   'comp.gamification.coachingTitle': 'Member coaching',
   'comp.gamification.coachingSignals': 'Coaching signals',
   'comp.gamification.attendanceRateLabel': 'Attendance rate (cycle)',

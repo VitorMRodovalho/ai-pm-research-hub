@@ -5731,6 +5731,8 @@ const ptBR: Record<string, string> = {
   'comp.gamification.attendanceRateCol': 'Pres. %',
   'comp.gamification.expand': 'Ver detalhes do membro',
   'comp.gamification.collapse': 'Ocultar detalhes',
+  'comp.gamification.showBreakdown': 'Mostrar detalhamento de pontos',
+  'comp.gamification.hideBreakdown': 'Ocultar detalhamento de pontos',
   'comp.gamification.coachingTitle': 'Coaching do membro',
   'comp.gamification.coachingSignals': 'Sinais de coaching',
   'comp.gamification.attendanceRateLabel': 'Taxa de presença (ciclo)',
