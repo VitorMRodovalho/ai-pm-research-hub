@@ -41,7 +41,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v_member_id uuid;
@@ -80,7 +80,7 @@ CREATE OR REPLACE FUNCTION public.admin_list_member_consents(p_member_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v_caller_id uuid;

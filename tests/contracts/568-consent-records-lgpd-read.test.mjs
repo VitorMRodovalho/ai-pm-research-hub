@@ -69,6 +69,12 @@ test('#568 static: admin_list_member_consents is view_pii-gated with an org fenc
   assert.doesNotMatch(body, /p_member_id <> v_caller_id/, 'self-read must NOT be excluded from the audit log');
   assert.match(body, /INSERT INTO public\.pii_access_log[\s\S]*?'admin_list_member_consents'[\s\S]*?now\(\)/);
   assert.match(body, /REVOKE EXECUTE ON FUNCTION public\.admin_list_member_consents\(uuid\) FROM PUBLIC, anon;/);
+  // the admin (view_pii) audit path MUST expose the capture-evidence hashes (inverse of the subject view)
+  const admProjBlock = body.slice(
+    body.indexOf('CREATE OR REPLACE FUNCTION public.admin_list_member_consents'),
+    body.indexOf('REVOKE EXECUTE ON FUNCTION public.admin_list_member_consents'));
+  assert.match(admProjBlock, /email_hash[\s\S]*?ip_hash[\s\S]*?user_agent_hash/,
+    'admin audit path exposes the capture-evidence hashes');
 });
 
 // ── STATIC: export_my_data adds consent + fixes the i.name→i.title regression ────────────
