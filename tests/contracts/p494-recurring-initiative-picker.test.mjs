@@ -52,14 +52,15 @@ test('#494 static: createRecurring handles the initiative scope (type + validate
   assert.match(attRaw, /rec-initiative-select/, 'createRecurring reads the chosen initiative');
 });
 
-test('#494 static: the series links initiative_id via a post-create UPDATE over event_ids (p169 parity)', () => {
-  // mirror of the single-event pattern, but batched across the whole series via .in('id', event_ids)
+test('#494 static: the series links initiative_id via link_event_to_initiative over event_ids (#566 tribe-scope gated)', () => {
+  // #566: replaced the bulk direct .update({initiative_id}).in('id', event_ids) with a per-event
+  // link_event_to_initiative RPC loop (tribe-scope gated; closes the cross-tribe author move).
   assert.match(
     attRaw,
-    /\.update\(\{\s*initiative_id:\s*initiativeId\s*\}\)\s*\n?\s*\.in\('id',\s*data\.event_ids\)/,
-    'createRecurring batch-UPDATEs initiative_id over the returned event_ids',
+    /for \(const eid of data\.event_ids\)[\s\S]*?sb\.rpc\('link_event_to_initiative',\s*\{[\s\S]*?p_event_id:\s*eid,\s*p_initiative_id:\s*initiativeId/,
+    'createRecurring loops link_event_to_initiative over the returned event_ids',
   );
-  // audience flows to the RPC so audience_level='initiative' is written server-side
+  // audience flows to the create RPC so audience_level='initiative' is written server-side
   assert.match(attRaw, /p_audience_level:\s*audience/, 'recurring call forwards the audience as audience_level');
 });
 
@@ -88,5 +89,7 @@ test('#494 review-fix: openRecurringModal resets the scope selects so a stale se
 test('#494 guard: the single-event p169 initiative path is NOT regressed', () => {
   // the single-event create still links its one event — parity source of truth must stay intact
   assert.match(attRaw, /type === 'iniciativa'\s*\?\s*\(document\.getElementById\('ev-initiative-select'\)/, 'single-event still reads ev-initiative-select');
-  assert.match(attRaw, /audience_level:\s*'initiative'/, "single-event still sets audience_level='initiative'");
+  // #566: the single-event link now routes through link_event_to_initiative (which sets
+  // audience_level='initiative' server-side) instead of a direct events.update({audience_level}).
+  assert.match(attRaw, /sb\.rpc\('link_event_to_initiative',\s*\{[\s\S]*?p_event_id:\s*data\.event_id,\s*p_initiative_id:\s*initiativeIdNew/, 'single-event links via the tribe-scope-gated RPC');
 });
