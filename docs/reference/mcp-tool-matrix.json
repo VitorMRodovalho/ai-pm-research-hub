@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-06-07T16:04:57.889Z",
+  "generated_at": "2026-06-08T00:54:52.372Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 311,
-  "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
+  "total": 312,
+  "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 21,
     "events": 15,
@@ -14,7 +14,7 @@
     "partners": 11,
     "selection": 26,
     "health": 17,
-    "governance": 22,
+    "governance": 23,
     "admin": 1
   },
   "tools": [
@@ -3707,6 +3707,19 @@
       "return_shape_hint": "data"
     },
     {
+      "name": "get_governance_document_body",
+      "description": "Read the full normative body (clauses) of a governance document — the current published version — as sanitized HTML AND server-rendered Markdown, plus section_anchors for clause citation (e.g. 'Cláusula 12', 'Art. 1'). Use to ground summaries, minutes, e-mails or derived instruments in the actual text. Mirrors the same visibility authority as the platform's governance reader. Content is for informational and drafting-assistance purposes only and does NOT constitute legal advice; documents in 'under_review' status are subject to change.",
+      "domain": "governance",
+      "rpcs": [
+        "get_governance_document_reader"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "{ ok: true, available: false, reason: \"not_found_or_not_accessible\", document: null }"
+    },
+    {
       "name": "propose_new_version",
       "description": "Create a new DRAFT version of a governance document. version_number auto-incremented. Requires manage_member authority. Returns version_id + version_number + version_label. Does NOT start approval chain — use lock_document_version after content is final.",
       "domain": "governance",
@@ -4249,8 +4262,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent"
     },
     {
       "name": "search_nucleo_knowledge",
@@ -4265,8 +4277,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: "
     },
     {
       "name": "get_board_or_initiative_context",
@@ -4283,8 +4294,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations"
     },
     {
       "name": "get_operational_status",
@@ -4304,8 +4314,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:"
     }
   ]
 }

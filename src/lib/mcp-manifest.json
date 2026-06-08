@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-07T15:55:07.804Z",
+  "generated_at": "2026-06-08T00:54:52.417Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 311,
+  "total": 312,
   "by_domain": {
     "personal": 21,
     "tribe": 95,
     "board": 67,
     "events": 15,
-    "governance": 22,
+    "governance": 23,
     "comms": 12,
     "partners": 11,
     "gamification": 12,
@@ -17,7 +17,7 @@
     "health": 17
   },
   "by_permission": {
-    "read": 204,
+    "read": 205,
     "write": 98,
     "admin": 9
   },
@@ -340,7 +340,7 @@
     },
     {
       "name": "get_operational_status",
-      "description": "Returns a compact operational-health summary for the chapter (admin): active alerts by severity (incl. recurrence stockout from #415), the recurring-series resupply list, event-attendance health, and cron/sync health signals. Summary-first, read-only. PII-clean — aggregate counts + short messages only; member-specific alert details are redacted. Requires manage_platform. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "description": "Returns a compact operational-health summary for the chapter (admin): active alerts by severity (incl. recurrence stockout from #415), the recurring-series resupply list, event-attendance health, and cron/sync health signals. Summary-first, read-only. PII-clean — aggregate counts + short messages only; member-specific alert details are redacted. Requires manage_platform; the stockout list and attendance health additionally need manage_event / analytics permissions and are omitted (with a warning) if the caller lacks them. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -1440,6 +1440,13 @@
     {
       "name": "get_governance_docs",
       "description": "Returns governance documents: manual, agreements, volunteer terms.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_governance_document_body",
+      "description": "Read the full normative body (clauses) of a governance document — the current published version — as sanitized HTML AND server-rendered Markdown, plus section_anchors for clause citation (e.g. 'Cláusula 12', 'Art. 1'). Use to ground summaries, minutes, e-mails or derived instruments in the actual text. Mirrors the same visibility authority as the platform's governance reader. Content is for informational and drafting-assistance purposes only and does NOT constitute legal advice; documents in 'under_review' status are subject to change.",
       "domain": "governance",
       "permission": "read",
       "is_sensitive": false
