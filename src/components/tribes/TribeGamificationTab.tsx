@@ -217,13 +217,26 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
   // column, reset the sort to total_points so the table never sits in a sort order
   // whose column (and aria-sort indicator) is no longer visible.
   const toggleBreakdown = () => {
-    setShowBreakdown(prev => {
-      if (prev && BREAKDOWN_SORT_KEYS.includes(sortKey)) {
-        setSortKey('total_points');
-        setSortAsc(false);
-      }
-      return !prev;
-    });
+    const next = !showBreakdown;
+    // #591b enabler: instrument the toggle so a future session can measure the
+    // expand-on-landing cohort — the gate for persisting the breakdown across
+    // mounts (#591 follow-up). Best-effort, never blocks the UI. No persistence
+    // is shipped here: as of this change there were 0 toggle interactions in the
+    // trailing 30d (the toggle is new), so there is no cohort to gate on yet.
+    try {
+      (window as any).posthog?.capture?.('gamification_breakdown_toggled', {
+        expanded: next,
+        // council (gp-leader): carry tribe/initiative so a future session can
+        // segment the expand-on-landing cohort by surface before deciding persistence.
+        tribe_id: tribeId ?? null,
+        initiative_id: initiativeId ?? null,
+      });
+    } catch { /* analytics is best-effort */ }
+    if (!next && BREAKDOWN_SORT_KEYS.includes(sortKey)) {
+      setSortKey('total_points');
+      setSortAsc(false);
+    }
+    setShowBreakdown(next);
   };
 
   // p124 phase 5: derive 2-letter lang code to pull localized tribe_name from
@@ -309,7 +322,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
             onClick={toggleBreakdown}
             aria-pressed={showBreakdown}
             aria-controls="gamif-members-table"
-            className="inline-flex items-center gap-1.5 text-[.72rem] font-semibold rounded-md border border-[var(--border-default)] px-2.5 py-1 text-[var(--text-secondary)] hover:text-navy hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-[#00799E] forced-colors:focus:outline forced-colors:focus:outline-2 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 text-[.72rem] font-semibold rounded-md border border-[var(--border-default)] px-2.5 py-1 text-[var(--text-secondary)] hover:text-navy hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-[#00799E] forced-colors:focus:outline forced-colors:focus:outline-2 forced-colors:focus:outline-offset-2 whitespace-nowrap"
           >
             {/* columns/expand icon — a pre-attentive cue that hidden columns exist (#577) */}
             <span aria-hidden="true">{showBreakdown ? '⊟' : '⊞'}</span>
@@ -406,11 +419,18 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                           type="button"
                           onClick={() => toggleExpand(m.id)}
                           aria-expanded={isOpen}
-                          aria-controls={`gamif-detail-${m.id}`}
+                          // #592 a11y: the drill-down panel (gamif-detail-*) is only in the
+                          // DOM while open, so aria-controls must point at it only then —
+                          // a dangling aria-controls makes some screen readers announce a
+                          // control for a target that does not exist.
+                          aria-controls={isOpen ? `gamif-detail-${m.id}` : undefined}
                           aria-label={isOpen
                             ? t('comp.gamification.collapse', 'Ocultar detalhes')
                             : t('comp.gamification.expand', 'Ver detalhes do membro')}
-                          className="rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-navy focus:outline-none focus:ring-2 focus:ring-[#00799E]"
+                          // #592 a11y: forced-colors fallback ring (Windows High Contrast
+                          // strips box-shadow, so focus:ring is invisible there) — mirrors
+                          // the #577 breakdown toggle button.
+                          className="rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-navy focus:outline-none focus:ring-2 focus:ring-[#00799E] forced-colors:focus:outline forced-colors:focus:outline-2 forced-colors:focus:outline-offset-2"
                         >
                           {isOpen ? <span>&#x25B4;</span> : <span>&#x25BE;</span>}
                         </button>
@@ -622,12 +642,42 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
         </div>
       </div>
 
+      {/* XP by pillar (#591a) — surfaces all 7 raw-pillar point values so the
+          summary-table column collapse (#577) is lossless: every pillar's XP
+          stays reachable even with the breakdown columns hidden. Sits after the
+          coaching/trail narrative (council fold: keep behavioural + learning
+          adjacent). Champions lives HERE — its canonical XP-source home — and is
+          no longer duplicated under Recognition (council: 4/5 reviewers flagged
+          the dup). Reuses the pie-chart pillar labels (no new label keys). The
+          Fragment carries the React key because the plain-function StatCard does
+          not forward one (a bare key={…} on it is a TS2322). */}
+      <div>
+        <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
+          {t('comp.gamification.xpByPillar', 'XP por pilar')}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {([
+            ['comp.gamification.attendance', 'Presenca', member.attendance_points],
+            ['comp.gamification.certs', 'Certificacoes', member.cert_points],
+            ['comp.gamification.badges', 'Badges', member.badge_points],
+            ['comp.gamification.learning', 'Aprendizado', member.learning_points],
+            ['comp.gamification.producao', 'Producao', member.producao_points],
+            ['comp.gamification.curadoria', 'Curadoria', member.curadoria_points],
+            ['comp.gamification.champions', 'Champions', member.champions_points],
+          ] as const).map(([labelKey, fallback, value]) => (
+            <Fragment key={labelKey}>
+              <StatCard label={t(labelKey, fallback)} value={String(value ?? 0)} />
+            </Fragment>
+          ))}
+        </div>
+      </div>
+
       {/* Recognition */}
       <div>
         <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
           {t('comp.gamification.recognition', 'Reconhecimento')}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <StatCard
             label={t('comp.gamification.credlyBadges', 'Badges Credly')}
             value={String(member.credly_badge_count)}
@@ -637,13 +687,6 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
             value={member.has_cpmai
               ? t('comp.gamification.cpmaiYes', 'Certificado')
               : t('comp.gamification.cpmaiNo', 'Nao certificado')}
-          />
-          <StatCard
-            label={t('comp.gamification.championsCol', 'Champions')}
-            value={member.champions_points > 0
-              ? String(member.champions_points)
-              : t('comp.gamification.noChampionsYet', 'Sem champions ainda')}
-            hint={member.champions_points > 0 ? undefined : t('comp.gamification.championsHint', 'Concedido pela lideranca')}
           />
         </div>
       </div>
@@ -700,7 +743,10 @@ function Th({
       aria-sort={ariaSort}
       tabIndex={sortKey ? 0 : undefined}
       className={`text-center px-3 py-2.5 font-bold text-[var(--text-secondary)] whitespace-nowrap ${
-        sortKey ? 'cursor-pointer select-none hover:text-navy focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#00799E]' : ''
+        // #592 a11y: sortable headers are keyboard-focusable (tabIndex 0); add the same
+        // forced-colors fallback ring as the buttons so the focus indicator survives
+        // Windows High Contrast (which drops box-shadow → focus:ring vanishes).
+        sortKey ? 'cursor-pointer select-none hover:text-navy focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#00799E] forced-colors:focus:outline forced-colors:focus:outline-2 forced-colors:focus:outline-offset-2' : ''
       } ${className || ''}`}
       onClick={() => sortKey && onSort?.(sortKey)}
       onKeyDown={(e) => {
