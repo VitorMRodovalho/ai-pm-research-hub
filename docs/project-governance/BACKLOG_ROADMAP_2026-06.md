@@ -89,9 +89,9 @@ recorded for traceability; the rest are **OPEN** and owned as noted.
 
 | # | Decision gate | Owner | Blocks | Needed by |
 |---|---|---|---|---|
-| **G1** | Selection notification routing policy: which `selection_*` types are transactional (candidate-facing) vs digest vs admin; do candidate-facing emails bypass `suppress_all`? | PM | #260, #348, #411 | Wave 1 |
-| **G2** | Dual-interviewer intent — is Vitor+Fabricio per researcher event intentional or accidental? Determines booking-URL routing schema (per-evaluator pool vs committee link) | PM + GP | #347 step 2, #357, #411 | Wave 1 |
-| **G3** | `selection_cutoff_approved` trigger + auto-dispatch policy (above-target only; 50/day cutoff cap, 20/day rescue) | PM + Foundation | #260, #348, #411 | Wave 1 |
+| **G1** | Selection notification routing policy: which `selection_*` types are transactional (candidate-facing) vs digest vs admin; do candidate-facing emails bypass `suppress_all`? | PM | #260, #348, #411 | ✅ **Shipped + live-verified** 2026-06-08 (#260/#411/#292 closed; operational `suppress_all` bypass live; ADR-0022 parity guarded by `adr-0022-delivery-mode.test.mjs`) — ratified in decision pass 2026-06-08 |
+| **G2** | Dual-interviewer intent — is Vitor+Fabricio per researcher event intentional or accidental? Determines booking-URL routing schema (per-evaluator pool vs committee link) | PM + GP | #347 step 2, #357, #411 | ✅ **Intent ratified** 2026-06-08 (#357 committee reseed live, both evaluators `can_interview=true`); per-evaluator booking-URL routing carried as **build** under #347→#348, **not a gate** |
+| **G3** | `selection_cutoff_approved` trigger + auto-dispatch policy (above-target only; 50/day cutoff cap, 20/day rescue) | PM + Foundation | #260, #348, #411 | ✅ **Shipped + live-verified** 2026-06-08 (#411 closed; crons `selection-cutoff-pending-daily` + `…rescue-daily` last_status=succeeded 2026-06-08) — ratified in decision pass 2026-06-08 |
 | **G4** | VEP re-import status freeze (do not rebind advanced apps to `submitted`) | Foundation | #472 B2 | **Shipped** (corr-2, worker `ed843957`) — confirm & close |
 | **G5** | Calendar↔`selection_interviews` reconciliation (sync nucleoia@pmigo + evaluator calendars) | Foundation + Integration | #472 B1 | Wave 0/1 (corr-1 webhook mirror pending) |
 | **G6** | ADR-0100 canonical metric definitions + participant-only member axis (`status='active' AND role<>'observer' AND kind<>'observer'`) | PM | #419, #420, #424, #425 | **Ratified** 2026-05-28 / 05-31 / 06-01 |
@@ -100,14 +100,14 @@ recorded for traceability; the rest are **OPEN** and owned as noted.
 | **G9** | Attendance combined-% visibility — restrict per-member %, or keep visible to all authenticated members? | PM + Privacy | #421, #425 | Wave 2 |
 | **G10** | Governance documents **decision matrix** (7 axes: doc_type, visibility_class, status, acknowledgement mode, template/signed relationship, version-dependency graph, corpus backfill) + Frontiers Editorial Guide type/gate/visibility | PM | #310, #312, #314, #311, #403, #315 | Wave 1 (chokepoint) |
 | **G11** | Evidence-bundle source: function/period from V4 engagements/history (not `operational_role` cache); bilingual at template level | PM + Eng | #308, #311 | Wave 1/2 |
-| **G12** | ANPD Art. 48 §1 pre-disclosure; Art. 18 §IV notification template; DPO appointment stance; Adendo Privacidade Principal | PM → Angeline (external) | #334, #332 | Start clock Wave 1; lands Wave 5 |
+| **G12** | ANPD Art. 48 §1 pre-disclosure; Art. 18 §IV notification template; DPO appointment stance; Adendo Privacidade Principal | PM → Angeline (external) | #334, #332 | 🟡 **Clock-start approved 2026-06-08** (decision pass). **Execution = QA/QC the team's first-layer revision (`Downloads/nucleo-juridico-revisado/`) vs Parecer 01/2026 BEFORE devolver a Angeline/Aaron** (PM directive 2026-06-08); external clock begins on validated send (timestamp → #334); lands Wave 5 |
 | **G13** | Drive permission revocation: human approval gate (no auto-revocation), mirrors `admin_reactivate_member` | Security / DPO | #209 | Wave 1 |
 | **G14** | Invariant U sequencing: C2 #332 before C3 #333, or C3 first with 1-row allowlist | PM | #333 | Wave 4 |
-| **G15** | Role model: is `operational_role` single-valued (lateral designations) or should curator + ponto focal coexist? | Product / PM | #245, #161, #192 | Wave 1 |
+| **G15** | Role model: is `operational_role` single-valued (lateral designations) or should curator + ponto focal coexist? | Product / PM | #245, #161, #192 | ✅ **RESOLVED = Option A** 2026-06-08 (single-valued `operational_role` + lateral `designations[]`; curador+ponto-focal coexist as designations — Roberto Macêdo live; #245/#161/#192 closed; see `docs/reference/V4_AUTHORITY_MODEL.md` + ADR-0007) |
 | **G16** | Assignee model canonical: keep `assignee_id` (sync picker) or migrate to `board_item_assignments` junction | Product | #440 | Triage |
 | **G17** | Test infra: adopt explicit try/finally cleanup vs rely on `Prefer: tx=rollback` for SECDEF rows | QA / CI | #231 | Wave 1 |
 | **G18** | AI strategy: Gemini 3.5 Flash go/no-go (tri-model with Gemini 2.5 Flash + Sonnet 4.6) | PM | #204, #206, #207 | Wave 1 |
-| **G19** | Connector strategy: private/custom vs official store listings (Claude/OpenAI/Perplexity/xAI) | PM + DevOps | #234, #280, #283 | Wave 1 |
+| **G19** | Connector strategy: private/custom vs official store listings (Claude/OpenAI/Perplexity/xAI) | PM + DevOps | #234, #280, #283 | ✅ **RESOLVED = Option C** 2026-06-08 (private/custom + member self-add canonical; official listing deferred behind explicit trigger; `SPEC_280A` = pre-built checklist; unblocks #280 `mcp`→`mcp/full` rename) |
 | **G20** | YouTube ingestion: validate actual member use of `knowledge_search_text` before building | PM | #207 | Wave 2 |
 | **G21** | Meet-transcripts privacy gate UX (file-by-file process/skip/private; LGPD logic for candidate mentions) | GP + PM | #208 | Wave 1 |
 | **G22** | ✅ RESOLVED (2026-06-07, #195): canonical = RPC `get_weekly_member_digest` + EF `send-weekly-member-digest` (cron jobid 26); `send-notification-digest` EF deprecated + removed (undeployed, no cron, 0 callers) | PM | #195 | Wave 1 |
@@ -380,9 +380,9 @@ Pulled forward from B → A waves: #161, #166, #181, #188, #190, #191, #192  (7)
 ## 7. Recommended first moves (next session)
 
 1. **Answer the Wave-0/Wave-1 decision gates that fan out the most:** G25 (#226 CI strategy), G26 (#374 bypass review),
-   G10 (#315 governance matrix), G1/G2/G3 (selection comms + dual-interviewer + auto-dispatch), G7 (#419 XP reorder approval).
+   G10 (#315 governance matrix), G7 (#419 XP reorder approval). _(✅ ratified 2026-06-08 in decision pass: G1/G2/G3 shipped, G15=Option A, G19=Option C; G12 Angeline clock-start approved — execution QA/QC-first, send pending.)_
 2. **Ship the ready Wave-0 bugs** (#227, #217, #248, #249) — no decisions needed, immediate trust wins.
 3. **Open a triage pass on the 47** (Appendix B) — at minimum confirm the 7 ⏫ blockers and the calendar/attendance
    reconciliation overlaps before duplicating work in cluster E.
-4. **Start the #334 legal-ops clock** even though it lands in Wave 5 — external latency dominates.
+4. **#334 legal-ops clock — START APPROVED 2026-06-08** (decision pass). Execution: **QA/QC the team's first-layer governance revision (`Downloads/nucleo-juridico-revisado/`) against Parecer 01/2026 BEFORE devolver a Angeline/Aaron** (PM directive). #569-574 triaged — self-contained eng (#569/#571/#572-A·B·C/#573-plumbing/#574-A) runs in parallel; only legal-text/authority slices wait on G12.
 ```
