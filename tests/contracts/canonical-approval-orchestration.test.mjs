@@ -82,6 +82,22 @@ test('approve_selection_application upserts member via lower(email) lookup', () 
     'must INSERT new member with organization_id from application');
 });
 
+test('approve_selection_application uses selection_cycles.close_date, not nonexistent end_date', () => {
+  const body = findFunctionBody('approve_selection_application');
+  assert.ok(/SELECT\s+sc\.close_date,\s*sc\.contracting_chapter[\s\S]+?FROM public\.selection_cycles sc/.test(body),
+    'must read selection_cycles.close_date and contracting_chapter');
+  assert.ok(!/sc\.end_date/.test(body),
+    'must not reference nonexistent selection_cycles.end_date');
+});
+
+test('approve_selection_application has safe member.chapter fallback for null imported chapters', () => {
+  const body = findFunctionBody('approve_selection_application');
+  assert.ok(/v_member_chapter\s*:=\s*COALESCE\([\s\S]+?NULLIF\(trim\(v_app\.chapter\), ''\)[\s\S]+?NULLIF\(trim\(v_cycle_contracting_chapter\), ''\)[\s\S]+?'Nao informado'/.test(body),
+    'must derive v_member_chapter from application chapter, cycle contracting_chapter, then fallback');
+  assert.ok(/v_app\.applicant_name,\s*v_app\.email,\s*v_app\.pmi_id,\s*v_member_chapter/.test(body),
+    'member INSERT must use v_member_chapter instead of raw nullable v_app.chapter');
+});
+
 // ─── 5. Person upsert + members.person_id link ───
 test('approve_selection_application upserts persons with consent_status=pending + links members.person_id', () => {
   const body = findFunctionBody('approve_selection_application');
