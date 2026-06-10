@@ -83,9 +83,12 @@ test('M6 behavioural: trail = the ranking cohort/total (home == ranking, modulo 
   const { data: ranking, error: e2 } = await sb.rpc('get_public_trail_ranking');
   assert.ifError(e2);
   const rankingAvg = ranking.reduce((s, r) => s + Number(r.pct), 0) / ranking.length;
-  // home is an integer ROUND of the same per-member partial-avg over the same cohort
-  assert.equal(Number(home), Math.round(rankingAvg),
-    `home trail (${home}) == ROUND(ranking avg ${rankingAvg.toFixed(2)})`);
+  // home is an integer ROUND of the same per-member partial-avg over the same cohort.
+  // Both round the SAME metric independently (home = ROUND of the SQL avg; rankingAvg = JS mean of the
+  // ranking's 2dp per-member pcts), so at a .5 boundary the two roundings can legitimately split by 1 —
+  // this is the "modulo display rounding" this test's own contract promises. A divergence of >1 is a real bug.
+  assert.ok(Math.abs(Number(home) - Math.round(rankingAvg)) <= 1,
+    `home trail (${home}) within ±1 of ROUND(ranking avg ${rankingAvg.toFixed(2)}) — display-rounding tolerance`);
 });
 
 test('M6 behavioural: cpmai goal count partitions by cert year (goal != wall)', { skip: dbGated ? false : skipMsg }, async () => {
