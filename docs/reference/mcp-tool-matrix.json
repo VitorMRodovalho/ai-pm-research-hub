@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-10T15:22:05.598Z",
+  "generated_at": "2026-06-10T18:38:56.028Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 313,
   "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
@@ -2777,7 +2777,7 @@
     },
     {
       "name": "get_ots_pipeline_health",
-      "description": "Returns the OpenTimestamps PI-exclusion pipeline health snapshot (#569/ADR-0101): pi_exclusion declarations/assets counts by status, retry-exhausted assets (stamp_attempts >= 5 — these silently fall OUT of the stamping claim and need intervention), claim-eligible backlog, oldest unstamped/pending ages, and the 3 cron jobs (ots-stamp-daily 02:10 UTC, ots-upgrade-daily 02:40 UTC, ots-retention-monthly) with last_run/failed_runs. Health signal: green (work draining, jobs fresh), yellow (newly scheduled / nothing to do / pending un-anchored >7d), red (exhausted work, failed runs, or backlog with stale daily jobs). Eficacia probatoria plena (doc7 Cl.4.1) = 'confirmed', not 'pending'. Authority: view_internal_analytics. NOTE: pg_cron 'succeeded' does not imply the EF call returned 200 (#618) — cross-check net._http_response (TTL ~6h) when investigating.",
+      "description": "Returns the OpenTimestamps PI-exclusion pipeline health snapshot (#569/ADR-0101): pi_exclusion declarations/assets counts by status, retry-exhausted assets (stamp_attempts >= 5 — these silently fall OUT of the stamping claim and need intervention), claim-eligible backlog, oldest unstamped/pending ages, and the 3 cron jobs (ots-stamp-daily 02:10 UTC, ots-upgrade-daily 02:40 UTC, ots-retention-monthly) with last_run/failed_runs. Health signal: green (work draining, jobs fresh), yellow (newly scheduled / nothing to do / pending un-anchored >7d), red (exhausted work, failed runs, or backlog with stale daily jobs). Eficácia probatória plena (doc7 Cl.4.1) = 'confirmed', not 'pending'. Authority: view_internal_analytics. NOTE: pg_cron 'succeeded' does not imply the EF call returned 200 (#618) — cross-check net._http_response (TTL ~6h) when investigating.",
       "domain": "health",
       "rpcs": [
         "get_ots_pipeline_health"
@@ -2889,7 +2889,7 @@
     },
     {
       "name": "get_initiative_gamification",
-      "description": "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.",
+      "description": "Returns the gamification ranking for a standalone initiative (workgroup, study_group, committee, etc.) by initiative UUID. Caller must be an active participant of the initiative (any role) or hold the view_internal_analytics capability — otherwise returns {error: 'Unauthorized'} (#600 fail-closed gate). Tribe-backed initiatives delegate to get_tribe_gamification (own gate). Use list_initiatives to find UUIDs; for tribes prefer get_tribe_gamification with the tribe_id.",
       "domain": "gamification",
       "rpcs": [
         "get_initiative_gamification"
