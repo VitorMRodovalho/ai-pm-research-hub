@@ -35,7 +35,11 @@ jobs:
           FILENAME="backup_${TIMESTAMP}.sql.gz"
 
           echo "Starting backup at $(date -u)"
-          pg_dump "$DATABASE_URL" \
+          # #618 (2nd leg): /usr/bin/pg_dump is Ubuntu's pg_wrapper, which resolves to the
+          # LOCAL cluster's version — the runner image ships a PostgreSQL 16 service, so the
+          # wrapper kept picking pg_dump 16 even with client-17 installed. Call the versioned
+          # binary explicitly.
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
             --format=plain \
             --no-owner \
             --no-privileges \
