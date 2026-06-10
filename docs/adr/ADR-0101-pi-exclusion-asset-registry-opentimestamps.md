@@ -31,7 +31,7 @@ Architecture:
 - **0. Spike — DONE** (2026-06-09): the `opentimestamps@0.4.9` lib is `likely_breaks` under Deno EF; decision = **HAND_ROLL** a zero-dep fetch+`.ots` engine (`_shared/ots.ts`), verified **byte-exact** vs 5 canonical vectors + a live stamp. See `docs/specs/SPEC_569_S0_OTS_DENO_SPIKE.md`.
 - **1. DB** — tables + RLS + member-facing RPCs + internal `_ots_*` pipeline RPCs (**this ADR**).
 - **2. EF stamp — DONE** (2026-06-09): `ots-stamp` EF wires `ots.ts` to `_ots_claim_unstamped_assets`/`_ots_mark_stamped`; deployed + smoked in prod (full data path incl. the bytea-over-PostgREST seam verified byte-exact).
-- **3. pg_cron upgrade pass + health tool.** EF core `ots-upgrade` (list_pending → upgrade → block-height→UTC → mark_confirmed) is **deployed**; remaining = the pg_cron schedule migration + `get_ots_pipeline_health` tool.
+- **3. pg_cron upgrade pass + health tool — DONE** (2026-06-10, migration `20260805000136`): 3 cron jobs (stamp 02:10 / upgrade 02:40 UTC non-overlapping + retention monthly), claim turned into an UPDATE-based **lease** (`claimed_at`, 10-min window, FOR UPDATE SKIP LOCKED — see note under Open items), registry retention pass (revoked + window, 1y safety floor, default 5y), `get_ots_pipeline_health` RPC + MCP tool. Cron auth via dedicated `vault.ots_cron_secret` ⇄ EF env `OTS_CRON_SECRET` (fail-closed gate widening on both EFs — the vault `service_role_key` copy was proven stale vs the EF-injected key, 403 live; see #618).
 - **4. `export_anexo_i` + MCP tools; wire to doc7.**
 - **5. (opt.)** git pre-commit hook (repo script, out-of-platform).
 
@@ -60,6 +60,6 @@ Architecture:
 
 ## Open items (gate the later slices, not this migration)
 - ~~OTS-lib-in-Deno feasibility (Slice 0 spike)~~ **RESOLVED** → HAND_ROLL engine, verified (Slice 0/2 done).
-- `_ots_claim_unstamped_assets` row-locking (FOR UPDATE SKIP LOCKED) — Slice 3; until then the pipeline MUST be single-consumer (the `ots-stamp`/`ots-upgrade` EFs must not run concurrently — the Slice 3 cron schedules them non-overlapping).
-- Cron auth: the EFs gate on exact `SUPABASE_SERVICE_ROLE_KEY` string-match (repo convention); the pg_net cron call must use the EF's current injected key.
+- ~~`_ots_claim_unstamped_assets` row-locking (FOR UPDATE SKIP LOCKED) — Slice 3~~ **RESOLVED** (2026-06-10, mig `20260805000136`) — implemented as an UPDATE-based **lease** (`claimed_at` + 10-min window + SKIP LOCKED), not the bare row lock this item described: over PostgREST each RPC call is its own transaction, so a SELECT-only lock would release before the EF processed anything and two invocations seconds apart would still double-claim. The lease survives across transactions; cron non-overlap is now defense-in-depth instead of a correctness requirement.
+- ~~Cron auth: the EFs gate on exact `SUPABASE_SERVICE_ROLE_KEY` string-match (repo convention); the pg_net cron call must use the EF's current injected key.~~ **RESOLVED** (2026-06-10) — the vault `service_role_key` copy does NOT match the EF-injected key (403 proven live; #618). Instead of chasing the injected key, the cron authenticates with a dedicated low-scope secret (`vault.ots_cron_secret` ⇄ EF env `OTS_CRON_SECRET`; both EF gates widened fail-closed: `service-role OR cron-secret`). Survives future service-key rotations; precedent: `x-sync-secret` (job 21).
 - doc7 upload (workstream 2) before the Anexo I export is wired to a real governance_document.

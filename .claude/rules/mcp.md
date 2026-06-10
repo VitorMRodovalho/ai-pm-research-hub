@@ -4,7 +4,7 @@
 
 Two surfaces shipped post-p222 #280 (Semantic MCP Gateway bridge):
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~300 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`) — bridge-first public semantic gateway (wave-1: 3 tools), stable
+- `/semantic` (server: `nucleo-ia-semantic`) — bridge-first public semantic gateway (wave-1: 3 tools; wave-2: +get_operational_status, SPEC-280.C), stable
   envelope `{ok,data,summary,warnings,next_actions,audit}`.
 
 **The exact tool count changes every session — never recite it from memory or pin it here.** Get the live count:
@@ -23,10 +23,10 @@ Both shave the SDK 1.29.0 `execution.taskSupport` field via post-process strip (
 - Transport: `@modelcontextprotocol/sdk@1.29.0` `WebStandardStreamableHTTPServerTransport` (native).
 - Tool params: Zod schemas (`z.string()`, `z.number()`, …) — NOT plain JSON Schema objects.
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT. All tools log to `mcp_usage_log`.
-- Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`.
+- Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`, `get_ots_pipeline_health`.
 
 **Audit-script note:** `scripts/audit-mcp-tool-matrix.mjs` hardcodes the /mcp endpoint and treats all `mcp.tool(`
-calls as a flat list (total = /mcp + 3 /semantic). It flags the 3 semantic tools as "static-only" — expected
+calls as a flat list (total = /mcp + 4 /semantic). It flags the 4 semantic tools as "static-only" — expected
 post-bridge, NOT drift; a surface-aware audit is on the #280 follow-up backlog.
 
 ## MCP tool name ↔ RPC name divergences (alias map)
