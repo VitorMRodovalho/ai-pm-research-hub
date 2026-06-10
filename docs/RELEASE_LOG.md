@@ -1,5 +1,25 @@
 # Release Log
 
+## 2026-06-08 - p603 hotfix: selection approval RPC
+
+### Scope
+Corrige HTTP 400 em /admin/selection ao aprovar candidatos via admin_update_application. A wrapper estava fail-closed porque approve_selection_application referenciava selection_cycles.end_date (coluna inexistente; schema live usa close_date) e algumas candidaturas importadas tinham chapter=NULL, quebrando members.chapter NOT NULL na criacao de membro.
+
+### Delivered
+- Migration 20260805000134_fix_selection_approval_rpc_end_date_chapter.sql recria approve_selection_application usando selection_cycles.close_date e fallback de capitulo: application chapter -> cycle contracting_chapter -> Nao informado.
+- Contract test canonical-approval-orchestration.test.mjs trava a regressao contra sc.end_date e exige o fallback v_member_chapter.
+- Issue #603 aberta com diagnostico e evidencia do dry-run.
+
+### Validation
+- Dry-run transacional live com ROLLBACK: 19/19 candidatos em final_eval retornaram ok=true, sem SQLSTATE.
+- check_schema_invariants(): 0 violacoes live.
+- pg_proc live: has_close_date=true, has_end_date=false, has_chapter_fallback=true, body_md5 2c65fa8bdd8bc0972abea32a4d4e43b5.
+- node --test tests/contracts/canonical-approval-orchestration.test.mjs: 16/16 pass.
+
+### Rollback
+Restaurar o corpo anterior de approve_selection_application(uuid,jsonb) a partir de 20260805000019_p234_322_volunteer_term_gap_b_classification_and_guards.sql. Usar apenas para bisect emergencial, pois o rollback reintroduz o bloqueio de aprovacao.
+
+
 ## 2026-05-23 — main hotfix: volunteer compliance SSR guard
 
 ### Scope
