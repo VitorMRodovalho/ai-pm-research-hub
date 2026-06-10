@@ -4143,6 +4143,8 @@ const ptBR: Record<string, string> = {
   'comp.memberList.membersDeactivated': 'membro(s) desativado(s)',
   'comp.memberList.total': 'Total',
   'comp.memberList.active': 'Ativos',
+  'comp.memberList.preOnboarding': 'Pré-onboarding',
+  'comp.memberList.preOnboardingHint': 'Aprovado — aguardando termo de voluntariado/onboarding',
   'comp.memberList.inactive': 'Inativos',
   'comp.memberList.noTribe': 'Sem tribo',
   'comp.memberList.noLogin': 'Sem login',
