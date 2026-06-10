@@ -4871,8 +4871,10 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: get_initiative_gamification (any authenticated — non-tribe initiatives ranking)
-  mcp.tool("get_initiative_gamification", "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.", {
+  // TOOL: get_initiative_gamification (initiative-scoped since #600: caller must hold an active
+  // engagement on the initiative OR view_internal_analytics; tribe-backed ids delegate to
+  // get_tribe_gamification, which runs its own gate)
+  mcp.tool("get_initiative_gamification", "Returns the gamification ranking for a standalone initiative (workgroup, study_group, committee, etc.) by initiative UUID. Caller must be an active participant of the initiative (any role) or hold the view_internal_analytics capability — otherwise returns {error: 'Unauthorized'} (#600 fail-closed gate). Tribe-backed initiatives delegate to get_tribe_gamification (own gate). Use list_initiatives to find UUIDs; for tribes prefer get_tribe_gamification with the tribe_id.", {
     initiative_id: z.string().describe("Initiative UUID")
   }, async (params: { initiative_id: string }) => {
     const start = Date.now();
