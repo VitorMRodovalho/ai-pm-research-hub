@@ -46,6 +46,14 @@
 | **B8** | No bulk operations — 1-modal-at-a-time forces SQL workaround for any N>3 | HIGH operational | product, ux, data | Persona GP-leader P2 + Vassouras T-11d |
 | **B9** | External `auth_id=NULL` person cannot reach `/initiative/[id]` (middleware blocks). `view_initiative_dashboard` capability is phantom. | HIGH UX | ux, security | Persona External-partner-liaison G0.2 |
 
+> **✅ STATUS UPDATE (2026-06-10, merge deste corpus em main):** **B5 está RESOLVIDO.**
+> A remediação correu como track próprio pós-síntese: #221/#222 (consent
+> `consent_voice_biometric_at` + gate no dispatch RPC + drop do trigger p207) shippados e
+> live em prod; ciclo retroativo Art. 18 §IV executado (notificação + deleção); e o
+> re-check defense-in-depth no nível do EF (`analyze-application-video`) landou via PR
+> #610 (merged + deployado 2026-06-10). A seção abaixo é preservada como registro
+> histórico do achado do council — **não descreve mais o estado vivo da plataforma.**
+
 ### What B5 (Whisper) means in practice
 
 `analyze_application_video` EF (p197d) is currently transcribing voice for candidate evaluations. LGPD Art. 11 §I treats voice as dado sensível biométrico. Art. 11 §II hypotheses are taxative — "finalidade educacional" / "legítimo interesse" NOT included. Only basis available: consent explicit + destacado per Art. 11 §I + Art. 8 §§1-6. **No such consent capture exists today** for the candidate or speaker flow.
@@ -237,7 +245,7 @@ To move Draft → Proposed → Accepted, the following amendments required:
 6. **Update References**: add ADR-0078 (magic-link pattern reuse), ADR-0060 (G7 welcome email — context for BUG-212.A), Lei 9.610/98 (IP), CC Art. 20
 
 ADR-0094 should NOT be ratified until:
-- B5 (Whisper retroactive Art. 11) has its own remediation issue filed + first migration applied (block new transcriptions)
+- ~~B5 (Whisper retroactive Art. 11) has its own remediation issue filed + first migration applied (block new transcriptions)~~ ✅ **DONE (2026-06-10)** — #221/#222 + p207 migrations live; EF re-check via PR #610; ciclo Art. 18 §IV executado
 - Universidade Vassouras MOU signed OR alternative individual-consent path implemented
 - Council findings #2 (this doc) reviewed by PM
 - B7 P3 internal-member-path resolved at spec level
