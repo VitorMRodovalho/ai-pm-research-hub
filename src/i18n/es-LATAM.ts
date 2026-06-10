@@ -4139,6 +4139,8 @@ const esLATAM: Record<string, string> = {
   'comp.memberList.membersDeactivated': 'miembro(s) desactivado(s)',
   'comp.memberList.total': 'Total',
   'comp.memberList.active': 'Activos',
+  'comp.memberList.preOnboarding': 'Pre-onboarding',
+  'comp.memberList.preOnboardingHint': 'Aprobado — pendiente del término de voluntariado/onboarding',
   'comp.memberList.inactive': 'Inactivos',
   'comp.memberList.noTribe': 'Sin tribu',
   'comp.memberList.noLogin': 'Sin login',

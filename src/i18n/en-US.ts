@@ -4138,6 +4138,8 @@ const enUS: Record<string, string> = {
   'comp.memberList.membersDeactivated': 'member(s) deactivated',
   'comp.memberList.total': 'Total',
   'comp.memberList.active': 'Active',
+  'comp.memberList.preOnboarding': 'Pre-onboarding',
+  'comp.memberList.preOnboardingHint': 'Approved — awaiting volunteer term/onboarding',
   'comp.memberList.inactive': 'Inactive',
   'comp.memberList.noTribe': 'No tribe',
   'comp.memberList.noLogin': 'No login',
