@@ -14,13 +14,23 @@ jobs:
     steps:
       - name: Install PostgreSQL client
         run: |
+          # #618: the server is Postgres 17 (Supabase platform upgrade) and pg_dump's major
+          # version must be >= the server's — pg_dump 16 aborts with "server version mismatch".
+          # Ubuntu 24.04 runners top out at postgresql-client-16 in the default apt, so add
+          # the official PGDG repo for client 17.
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -sS -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-16
+          sudo apt-get install -y -qq postgresql-client-17
 
       - name: Create backup
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          # #618: without pipefail a pg_dump failure is masked by gzip's exit 0 — only the
+          # downstream size check caught it, with a misleading "too small" message. Fail loud.
+          set -o pipefail
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           FILENAME="backup_${TIMESTAMP}.sql.gz"
 
