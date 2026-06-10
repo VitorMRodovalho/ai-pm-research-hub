@@ -219,11 +219,14 @@ async function processVideosBackground(
   try {
     const { data: app, error: appErr } = await sb
       .from("selection_applications")
-      .select("id, applicant_name, cycle_id, organization_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at")
+      .select("id, applicant_name, cycle_id, organization_id, consent_ai_analysis_at, consent_ai_analysis_revoked_at, consent_voice_biometric_at, consent_voice_biometric_revoked_at")
       .eq("id", application_id).single();
     if (appErr || !app) { console.error("app_not_found:", appErr?.message); return; }
     if (!app.consent_ai_analysis_at || app.consent_ai_analysis_revoked_at) {
       console.log("consent_pending_or_revoked, skipping:", application_id); return;
+    }
+    if (!app.consent_voice_biometric_at || app.consent_voice_biometric_revoked_at) {
+      console.log("voice_biometric_consent_pending_or_revoked, skipping:", application_id); return;
     }
 
     const videoQuery = sb.from("pmi_video_screenings")
