@@ -93,6 +93,11 @@ const EF_CONTRACTS = [
     imports: [],
     deprecated: true,
   },
+  {
+    name: 'analyze-application-video',
+    tables: ['selection_applications', 'pmi_video_screenings', 'ai_processing_log', 'selection_evaluation_ai_suggestions'],
+    imports: [],
+  },
 ];
 
 for (const ef of EF_CONTRACTS) {
