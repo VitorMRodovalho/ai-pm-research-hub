@@ -97,3 +97,13 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - **Tier 3 (strategic)**: `/council-review [topic]` em milestones — output em `docs/council/`
 
 Todos são **consultivos** (não modificam código). PM/main loop decide ação. Decision log em `docs/council/decisions/`.
+
+## Portfolio PMO (knowledge loop)
+
+- This repo lives under Vitor's portfolio PMO at `~/projects` (the parent
+  `CLAUDE.md` there governs PMO mode; machine-global skills at
+  `~/.claude/skills/`, SSOT = `AI-PMO-Framework/skills/`).
+- It carries a standing `[LL]` lessons-learned-intake issue; at the end of
+  meaningful work sessions, log reusable lessons there (what worked, what
+  should change in the framework/skills/kits) so the PMO can harvest them
+  (`pmo-sync.sh harvest`).
