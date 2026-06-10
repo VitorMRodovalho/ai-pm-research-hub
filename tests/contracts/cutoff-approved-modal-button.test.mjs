@@ -199,10 +199,14 @@ describe('p271 #411 Wave 1a — cutoff-approved modal button', () => {
 
   describe('frontend forward-defense — no idempotency violations', () => {
     it('button render branch does NOT execute when cutoffSentAt is truthy (else-if guard)', () => {
-      // Capture the cutoff render block (between the dual-track mirror block and the live-start CTA).
+      // Capture the cutoff render block — anchor-to-anchor (header comment → live-start CTA)
+      // instead of a fixed 1200-char window, which broke when #602 added provenance comments
+      // and the badge bridge const inside the block (same brittleness class as the
+      // mcp-semantic-gateway-bridge:233 sediment — fix-forward, intent preserved).
       const startIdx = PAGE.indexOf('Wave 1a F1 — cutoff-approved invite');
       assert.ok(startIdx > -1, 'cutoff render block header comment must exist (provenance)');
-      const blockSlice = PAGE.slice(startIdx, startIdx + 1200);
+      const endIdx = PAGE.indexOf('id="start-live-interview-btn"', startIdx);
+      const blockSlice = PAGE.slice(startIdx, endIdx > -1 ? endIdx : startIdx + 2400);
       assert.match(
         blockSlice,
         /if \(cutoffSentAt\) \{[\s\S]+?\} else if \(cutoffEligibleStatus\) \{/,
