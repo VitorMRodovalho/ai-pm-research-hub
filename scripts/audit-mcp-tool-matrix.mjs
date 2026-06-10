@@ -26,6 +26,7 @@ const RUNTIME_URL = "https://nucleoia.vitormr.dev/mcp";
 
 const DOMAIN_RULES = [
   [/^(get_my_|set_my_)/, "personal"],
+  [/exclusion|anexo_i|ots_pipeline/, "governance"],
   [/governance|manual_section|ratification|^sign_|chain|certificate|version|signature/, "governance"],
   [/partner/, "partners"],
   [/comms|campaign|broadcast|webinar|newsletter/, "comms"],
