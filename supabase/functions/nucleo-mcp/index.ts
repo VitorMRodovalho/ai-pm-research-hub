@@ -2219,7 +2219,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     query: z.string().optional().describe("Search by name (partial match)"),
     tribe_id: z.number().optional().describe("Filter by tribe (1-8)"),
     tier: z.string().optional().describe("Filter by tier: tier1|tier2|tier3"),
-    status: z.string().optional().describe("active|inactive|all. Default: active")
+    status: z.string().optional().describe("active|inactive|observer|alumni|pre_onboarding|all. Default: active. pre_onboarding = active members whose only engagements still await the volunteer term (#625 C0 cohort).")
   }, async (params: { query?: string; tribe_id?: number; tier?: string; status?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
