@@ -4635,6 +4635,19 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_ots_pipeline_health — #569 Slice 3 (ADR-0101). OTS stamping pipeline observability,
+  // get_lgpd_cron_health mould. RPC gates on view_internal_analytics; aggregates only (no PII).
+  mcp.tool("get_ots_pipeline_health", "Returns the OpenTimestamps PI-exclusion pipeline health snapshot (#569/ADR-0101): pi_exclusion declarations/assets counts by status, retry-exhausted assets (stamp_attempts >= 5 — these silently fall OUT of the stamping claim and need intervention), claim-eligible backlog, oldest unstamped/pending ages, and the 3 cron jobs (ots-stamp-daily 02:10 UTC, ots-upgrade-daily 02:40 UTC, ots-retention-monthly) with last_run/failed_runs. Health signal: green (work draining, jobs fresh), yellow (newly scheduled / nothing to do / pending un-anchored >7d), red (exhausted work, failed runs, or backlog with stale daily jobs). Eficácia probatória plena (doc7 Cl.4.1) = 'confirmed', not 'pending'. Authority: view_internal_analytics. NOTE: pg_cron 'succeeded' does not imply the EF call returned 200 (#618) — cross-check net._http_response (TTL ~6h) when investigating.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_ots_pipeline_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_ots_pipeline_health");
+    if (error) { await logUsage(sb, member.id, "get_ots_pipeline_health", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_ots_pipeline_health", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_ots_pipeline_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: lgpd_record_retroactive_notification (p239b #332 W3 — anchors retroactive Art. 18 §IV dispatch in pii_access_log)
   // RPC body already gates on can_by_member('manage_member'); JS layer adds defense-in-depth canV4 check
   // (convention match with analyze_application_video p199-a). Audit-row insert only — no confirm gate (ADR-0018 scope is destructive mutations).

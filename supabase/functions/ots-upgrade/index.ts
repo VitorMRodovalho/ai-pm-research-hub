@@ -2,9 +2,13 @@
 //
 // For each `pending` asset, asks the calendars to upgrade the proof; once Bitcoin-anchored, resolves the
 // block height -> UTC (the OTS attestation carries only the height) and marks the asset `confirmed`.
-// Eficácia probatória = `confirmed`, not `pending`. Single-consumer (ADR-0101). Deploy --no-verify-jwt;
-// invoke from pg_cron -> pg_net with the service-role key as Bearer (Slice 3 cron migration is separate).
+// Eficácia probatória = `confirmed`, not `pending`. Single-consumer discipline via cron non-overlap
+// (02:40 vs 02:10 UTC — Slice 3 mig 20260805000136). Deploy --no-verify-jwt; invoked from
+// pg_cron -> pg_net with the DEDICATED vault secret ots_cron_secret as Bearer (NOT the vault
+// service_role_key — stale vs the EF-injected key; #618).
 
+import { timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { upgrade, bytesToHex } from "../_shared/ots.ts";
@@ -25,6 +29,12 @@ function extractError(err: unknown): string {
 }
 function toByteaHex(b: Uint8Array): string { return "\\x" + bytesToHex(b); }
 function b64ToBytes(b64: string): Uint8Array { return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); }
+
+// Constant-time token comparison (council security MEDIUM — see ots-stamp/index.ts).
+function tokenMatches(token: string, secret: string): boolean {
+  if (secret.length === 0 || token.length !== secret.length) return false;
+  return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+}
 
 // Bitcoin block height -> attested UTC. The proof is the legal anchor; this UTC is a convenience field
 // derived from a public explorer (blockstream, mempool fallback). Untrusted-but-non-probative.
@@ -55,10 +65,14 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  // #569 Slice 3: dedicated cron secret (see ots-stamp/index.ts for rationale + #618).
+  // FAIL-CLOSED: empty/unset cron secret never matches.
+  const cronSecret = Deno.env.get("OTS_CRON_SECRET") ?? "";
 
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return jsonResponse({ success: false, error: "Unauthorized" }, 401);
-  if (token !== serviceRoleKey) return jsonResponse({ success: false, error: "Forbidden: service-role only" }, 403);
+  const authorized = tokenMatches(token, serviceRoleKey) || tokenMatches(token, cronSecret);
+  if (!authorized) return jsonResponse({ success: false, error: "Forbidden: service-role or cron-secret only" }, 403);
 
   let limit = DEFAULT_LIMIT;
   try {

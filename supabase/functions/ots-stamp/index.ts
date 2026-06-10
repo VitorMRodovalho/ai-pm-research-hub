@@ -2,11 +2,17 @@
 //
 // Claims a batch of `unstamped` PI-exclusion assets, submits each digest to the OpenTimestamps
 // calendars via the zero-dep engine (`../_shared/ots.ts`), and persists the `pending` `.ots` proof.
-// Digest-only: only the SHA-256 leaves the Núcleo. Single-consumer until `_ots_claim_unstamped_assets`
-// gains FOR UPDATE SKIP LOCKED (ADR-0101 open item) — do NOT run two invocations concurrently.
+// Digest-only: only the SHA-256 leaves the Núcleo. Single-consumer discipline: the claim is an
+// UPDATE-based lease (claimed_at, 10-min window, FOR UPDATE SKIP LOCKED — Slice 3 mig
+// 20260805000136); the cron non-overlap (02:10 vs 02:40 UTC) is defense-in-depth, not a
+// correctness requirement.
 //
-// Invoke (later) from pg_cron -> pg_net with the service-role key as Bearer. Deploy with --no-verify-jwt.
+// Invoked from pg_cron -> pg_net with the DEDICATED vault secret ots_cron_secret as Bearer
+// (NOT the vault service_role_key — that copy is stale vs the EF-injected key; 403 proven
+// live 2026-06-10, #618). Deploy with --no-verify-jwt.
 
+import { timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { stamp, hexToBytes, bytesToHex, describe } from "../_shared/ots.ts";
@@ -32,16 +38,31 @@ function extractError(err: unknown): string {
 // bytea over PostgREST: a JSON string in Postgres `\x<hex>` input format casts to bytea byte-exact.
 function toByteaHex(b: Uint8Array): string { return "\\x" + bytesToHex(b); }
 
+// Constant-time token comparison (council security MEDIUM): plain `===` short-circuits on the
+// first differing byte — a timing oracle on a no-verify-jwt endpoint. Length check first is
+// fine (length is not secret here; both secrets have fixed, public lengths).
+function tokenMatches(token: string, secret: string): boolean {
+  if (secret.length === 0 || token.length !== secret.length) return false;
+  return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  // #569 Slice 3: dedicated cron secret. The pg_cron caller can't know the EF-injected
+  // SUPABASE_SERVICE_ROLE_KEY (vault copy proven stale/divergent — 403'd live 2026-06-10, #618),
+  // so the cron authenticates with OTS_CRON_SECRET (vault `ots_cron_secret` ⇄ EF env, low-scope:
+  // only triggers idempotent pipeline passes). Service-role key still accepted for manual ops.
+  // Gate is FAIL-CLOSED: empty/unset cron secret never matches (contrast: backup-to-r2 bug, #618).
+  const cronSecret = Deno.env.get("OTS_CRON_SECRET") ?? "";
 
-  // service-role only: this drives the internal `_ots_*` RPCs (REVOKEd from anon/authenticated).
+  // service-role or cron-secret only: this drives the internal `_ots_*` RPCs (REVOKEd from anon/authenticated).
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return jsonResponse({ success: false, error: "Unauthorized" }, 401);
-  if (token !== serviceRoleKey) return jsonResponse({ success: false, error: "Forbidden: service-role only" }, 403);
+  const authorized = tokenMatches(token, serviceRoleKey) || tokenMatches(token, cronSecret);
+  if (!authorized) return jsonResponse({ success: false, error: "Forbidden: service-role or cron-secret only" }, 403);
 
   let limit = DEFAULT_LIMIT;
   try {
