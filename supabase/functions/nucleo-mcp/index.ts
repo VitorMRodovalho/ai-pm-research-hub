@@ -4648,6 +4648,110 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ─── PI-exclusion declaration tools (#569 Slice 4a — ADR-0101; doc7 Declaração de Exclusão de PI) ───
+  // Member SELF-SERVICE family: the RPCs self-gate on declarant ownership (auth.uid() → members);
+  // export_anexo_i additionally allows org-fenced view_pii fiscalization (logged to pii_access_log).
+  // Digest-only registry: the work NEVER leaves the Núcleo — only its SHA-256 + the .ots proof.
+
+  mcp.tool("list_my_exclusion_declarations", "Lists the caller's PI-exclusion declarations (doc7 — Declaração de Exclusão de PI e Autoria Independente) with per-declaration asset counts. Statuses: draft/active (accepting assets) | revoked (terminal). #569/ADR-0101.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_my_exclusion_declarations", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_my_exclusion_declarations");
+    if (error) { await logUsage(sb, member.id, "list_my_exclusion_declarations", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_my_exclusion_declarations", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_exclusion_declaration", "Returns one of the caller's PI-exclusion declarations with its full Anexo I asset list (sha256, OTS status per asset: unstamped → pending → confirmed; eficácia probatória plena = ALL confirmed, doc7 Cl.4.1). Declarant-only read. #569/ADR-0101.", {
+    declaration_id: z.string().describe("Declaration UUID (from list_my_exclusion_declarations)")
+  }, async (params: { declaration_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_exclusion_declaration", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_exclusion_declaration", { p_declaration_id: params.declaration_id });
+    if (error) { await logUsage(sb, member.id, "get_exclusion_declaration", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_exclusion_declaration", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("create_exclusion_declaration", "Creates a new PI-exclusion declaration (doc7 instance) for the caller. Returns the declaration UUID — then add Anexo I rows with register_exclusion_asset. Lifecycle is audited (admin_audit_log). #569/ADR-0101.", {
+    title: z.string().optional().describe("Declaration title (e.g. 'Tese de doutorado — obras pré-existentes'). Optional.")
+  }, async (params: { title?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_exclusion_declaration", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("create_exclusion_declaration", { p_title: params.title ?? null });
+    if (error) { await logUsage(sb, member.id, "create_exclusion_declaration", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "create_exclusion_declaration", true, undefined, start);
+    return ok({ declaration_id: data });
+  });
+
+  mcp.tool("register_exclusion_asset", "Adds an Anexo I row (a pre-existing work) to one of the caller's draft/active PI-exclusion declarations. DIGEST-ONLY: pass the SHA-256 of the work — the file itself never leaves the Núcleo (compute locally, e.g. `sha256sum file`). The asset enters the OTS pipeline as 'unstamped'; the daily cron stamps it (pending) and later anchors it on Bitcoin (confirmed). #569/ADR-0101.", {
+    declaration_id: z.string().describe("Target declaration UUID (must be draft/active and owned by the caller)"),
+    title: z.string().describe("Work title (Anexo I 'titulo')"),
+    sha256: z.string().regex(/^[0-9a-fA-F]{64}$/, "sha256 must be 64 hex characters").describe("SHA-256 hex digest of the work (64 hex chars; compute locally, e.g. `sha256sum file`)"),
+    nature: z.string().optional().describe("Nature of the work (e.g. 'tese', 'artigo', 'software'). Optional."),
+    author_label: z.string().optional().describe("Author/chapter label as it should appear in Anexo I. Optional."),
+    work_created_on: z.string().optional().describe("Work creation date (YYYY-MM-DD). Optional."),
+    source_ref: z.string().optional().describe("Path/URL reference of the work. Optional."),
+    reinforcement: z.string().optional().describe("Optional reinforcement note (ata notarial / ICP-Brasil / INPI — manual, out of platform scope).")
+  }, async (params: { declaration_id: string; title: string; sha256: string; nature?: string; author_label?: string; work_created_on?: string; source_ref?: string; reinforcement?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "register_exclusion_asset", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("register_exclusion_asset", {
+      p_declaration_id: params.declaration_id,
+      p_title: params.title,
+      p_sha256: params.sha256,
+      p_nature: params.nature ?? null,
+      p_author_label: params.author_label ?? null,
+      p_work_created_on: params.work_created_on ?? null,
+      p_source_ref: params.source_ref ?? null,
+      p_reinforcement: params.reinforcement ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "register_exclusion_asset", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "register_exclusion_asset", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("revoke_exclusion_declaration", "Revokes one of the caller's PI-exclusion declarations (TERMINAL — cannot be undone; register_exclusion_asset rejects revoked declarations). Assets and .ots proofs are KEPT through the retention window (eliminated 5y post-revocation by ots-retention-monthly — LGPD Art. 7º IX, exceção ao Art. 18 VI) and the revocation is audited. Declarant-only — a view_pii admin can fetch the PREVIEW (the read is logged to pii_access_log) but the confirm step is denied. #569/ADR-0101.", {
+    declaration_id: z.string().describe("Declaration UUID to revoke (must be owned by the caller)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with the declaration's current status + asset count (ADR-0018 W1 cross-MCP injection mitigation).")
+  }, async (params: { declaration_id: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "revoke_exclusion_declaration", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.confirm) {
+      const { data: preview, error: pErr } = await sb.rpc("get_exclusion_declaration", { p_declaration_id: params.declaration_id });
+      if (pErr) { await logUsage(sb, member.id, "revoke_exclusion_declaration", false, pErr.message, start); return err(pErr.message); }
+      await logUsage(sb, member.id, "revoke_exclusion_declaration", true, undefined, start, "preview");
+      return ok({
+        action: "revoke_exclusion_declaration",
+        preview: true,
+        warning: "REVOGAÇÃO É TERMINAL. A declaração deixa de aceitar assets; provas .ots são mantidas pelo período de retenção (5 anos, LGPD Art. 7º IX) e a revogação é auditada.",
+        target: preview,
+        next_call: { declaration_id: params.declaration_id, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("revoke_exclusion_declaration", { p_declaration_id: params.declaration_id });
+    if (error) { await logUsage(sb, member.id, "revoke_exclusion_declaration", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "revoke_exclusion_declaration", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("export_anexo_i", "Exports the filled Anexo I of a PI-exclusion declaration (doc7): per-asset rows (titulo, natureza, sha256, OTS status, Bitcoin anchor block+UTC when confirmed) + the all_confirmed flag (eficácia probatória plena requires ALL assets confirmed — 'pending' is NOT yet anchored, doc7 Cl.4.1) + the digest-only legal notice. Art. 18 II LGPD: this is the portability path for the PROOF ARTIFACTS — complements export_my_data's pi_exclusion section (metadata only). Declarant self-service; admins with view_pii read org-fenced (access logged to pii_access_log, LGPD Art. 37). #569/ADR-0101 Slice 4.", {
+    declaration_id: z.string().describe("Declaration UUID (from list_my_exclusion_declarations or get_exclusion_declaration)")
+  }, async (params: { declaration_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "export_anexo_i", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("export_anexo_i", { p_declaration_id: params.declaration_id });
+    if (error) { await logUsage(sb, member.id, "export_anexo_i", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "export_anexo_i", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: lgpd_record_retroactive_notification (p239b #332 W3 — anchors retroactive Art. 18 §IV dispatch in pii_access_log)
   // RPC body already gates on can_by_member('manage_member'); JS layer adds defense-in-depth canV4 check
   // (convention match with analyze_application_video p199-a). Audit-row insert only — no confirm gate (ADR-0018 scope is destructive mutations).
