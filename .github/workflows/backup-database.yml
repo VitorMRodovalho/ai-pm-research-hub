@@ -84,6 +84,29 @@ jobs:
           retention-days: 60
           compression-level: 0  # Already gzipped
 
+      - name: Offsite copy to Cloudflare R2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 + aws-cli >= 2.23 checksum compatibility (Cloudflare-documented workaround)
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_BUCKET: nucleoia-db-backups
+        run: |
+          # #618 Option C (PM 2026-06-10): the SAME pg_dump goes OFFSITE — code and backups
+          # must not share the GitHub provider basket. The retired backup-to-r2 EF tried this
+          # with a 28-table JSON dump (not restore-grade); this step ships the real dump.
+          # Gated on secrets presence so the workflow stays green until they are configured.
+          if [ -z "$R2_ACCOUNT_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "::warning::R2 secrets not configured — offsite upload SKIPPED (setup steps in #618)"
+            exit 0
+          fi
+          aws s3 cp "$BACKUP_FILE" "s3://${R2_BUCKET}/${BACKUP_FILE}" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          echo "✅ Offsite copy uploaded: r2://${R2_BUCKET}/${BACKUP_FILE}"
+
       - name: Cleanup old artifacts (keep 8)
         uses: actions/github-script@v7
         with:
