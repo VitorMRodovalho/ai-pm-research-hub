@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-06-10T18:38:56.028Z",
+  "generated_at": "2026-06-10T19:07:24.176Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 313,
+  "total": 319,
   "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
   "by_domain": {
     "personal": 21,
@@ -13,8 +13,8 @@
     "knowledge": 12,
     "partners": 11,
     "selection": 26,
-    "health": 18,
-    "governance": 23,
+    "health": 17,
+    "governance": 30,
     "admin": 1
   },
   "tools": [
@@ -2778,9 +2778,88 @@
     {
       "name": "get_ots_pipeline_health",
       "description": "Returns the OpenTimestamps PI-exclusion pipeline health snapshot (#569/ADR-0101): pi_exclusion declarations/assets counts by status, retry-exhausted assets (stamp_attempts >= 5 — these silently fall OUT of the stamping claim and need intervention), claim-eligible backlog, oldest unstamped/pending ages, and the 3 cron jobs (ots-stamp-daily 02:10 UTC, ots-upgrade-daily 02:40 UTC, ots-retention-monthly) with last_run/failed_runs. Health signal: green (work draining, jobs fresh), yellow (newly scheduled / nothing to do / pending un-anchored >7d), red (exhausted work, failed runs, or backlog with stale daily jobs). Eficácia probatória plena (doc7 Cl.4.1) = 'confirmed', not 'pending'. Authority: view_internal_analytics. NOTE: pg_cron 'succeeded' does not imply the EF call returned 200 (#618) — cross-check net._http_response (TTL ~6h) when investigating.",
-      "domain": "health",
+      "domain": "governance",
       "rpcs": [
         "get_ots_pipeline_health"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "list_my_exclusion_declarations",
+      "description": "Lists the caller's PI-exclusion declarations (doc7 — Declaração de Exclusão de PI e Autoria Independente) with per-declaration asset counts. Statuses: draft/active (accepting assets) | revoked (terminal). #569/ADR-0101.",
+      "domain": "governance",
+      "rpcs": [
+        "list_my_exclusion_declarations"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "get_exclusion_declaration",
+      "description": "Returns one of the caller's PI-exclusion declarations with its full Anexo I asset list (sha256, OTS status per asset: unstamped → pending → confirmed; eficácia probatória plena = ALL confirmed, doc7 Cl.4.1). Declarant-only read. #569/ADR-0101.",
+      "domain": "governance",
+      "rpcs": [
+        "get_exclusion_declaration"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "create_exclusion_declaration",
+      "description": "Creates a new PI-exclusion declaration (doc7 instance) for the caller. Returns the declaration UUID — then add Anexo I rows with register_exclusion_asset. Lifecycle is audited (admin_audit_log). #569/ADR-0101.",
+      "domain": "governance",
+      "rpcs": [
+        "create_exclusion_declaration"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "{ declaration_id: data }"
+    },
+    {
+      "name": "register_exclusion_asset",
+      "description": "Adds an Anexo I row (a pre-existing work) to one of the caller's draft/active PI-exclusion declarations. DIGEST-ONLY: pass the SHA-256 of the work — the file itself never leaves the Núcleo (compute locally, e.g. `sha256sum file`). The asset enters the OTS pipeline as 'unstamped'; the daily cron stamps it (pending) and later anchors it on Bitcoin (confirmed). #569/ADR-0101.",
+      "domain": "governance",
+      "rpcs": [
+        "register_exclusion_asset"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "revoke_exclusion_declaration",
+      "description": "Revokes one of the caller's PI-exclusion declarations (TERMINAL — cannot be undone; register_exclusion_asset rejects revoked declarations). Assets and .ots proofs are KEPT through the retention window (eliminated 5y post-revocation by ots-retention-monthly — LGPD Art. 7º IX, exceção ao Art. 18 VI) and the revocation is audited. Declarant-only — a view_pii admin can fetch the PREVIEW (the read is logged to pii_access_log) but the confirm step is denied. #569/ADR-0101.",
+      "domain": "governance",
+      "rpcs": [
+        "get_exclusion_declaration",
+        "revoke_exclusion_declaration"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "{ action: \"revoke_exclusion_declaration\", preview: true, warning: \"REVOGAÇÃO É TERMINAL. A"
+    },
+    {
+      "name": "export_anexo_i",
+      "description": "Exports the filled Anexo I of a PI-exclusion declaration (doc7): per-asset rows (titulo, natureza, sha256, OTS status, Bitcoin anchor block+UTC when confirmed) + the all_confirmed flag (eficácia probatória plena requires ALL assets confirmed — 'pending' is NOT yet anchored, doc7 Cl.4.1) + the digest-only legal notice. Art. 18 II LGPD: this is the portability path for the PROOF ARTIFACTS — complements export_my_data's pi_exclusion section (metadata only). Declarant self-service; admins with view_pii read org-fenced (access logged to pii_access_log, LGPD Art. 37). #569/ADR-0101 Slice 4.",
+      "domain": "governance",
+      "rpcs": [
+        "export_anexo_i"
       ],
       "tables": [],
       "canV4_actions": [],
