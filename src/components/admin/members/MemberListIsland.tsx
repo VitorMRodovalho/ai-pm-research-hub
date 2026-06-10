@@ -15,6 +15,8 @@ interface MemberRow {
   is_superadmin: boolean;
   is_active: boolean;
   member_status: string;
+  /* #625 C0: derived — active member whose ONLY active engagements still await the volunteer term. */
+  is_pre_onboarding: boolean;
   tribe_id: number | null;
   tribe_name: string | null;
   chapter: string;
@@ -186,11 +188,13 @@ export default function MemberListIsland() {
     })();
   }, [members, getSb]);
   const total = allMembers.length || members.length;
-  const active = allMembers.filter(m => m.member_status === 'active').length;
+  // #625 C0: 'Ativos' = operating actives only; the cycle-N pre-onboarding cohort counts apart.
+  const active = allMembers.filter(m => m.member_status === 'active' && !m.is_pre_onboarding).length;
+  const preOnboarding = allMembers.filter(m => m.is_pre_onboarding).length;
   const observers = allMembers.filter(m => m.member_status === 'observer').length;
   const alumni = allMembers.filter(m => m.member_status === 'alumni').length;
   const noAuth = allMembers.filter(m => !m.auth_id).length;
-  const noTribe = allMembers.filter(m => !m.tribe_id && m.member_status === 'active').length;
+  const noTribe = allMembers.filter(m => !m.tribe_id && m.member_status === 'active' && !m.is_pre_onboarding).length;
 
   // History modal state
   const [historyMemberId, setHistoryMemberId] = useState<string | null>(null);
@@ -303,9 +307,13 @@ export default function MemberListIsland() {
     });
   };
 
+  // #625 C0 (council HIGH): selection must operate on the PARTITIONED view — selecting against
+  // the raw array would silently enqueue hidden pre-onboarding rows into bulk operations.
+  const visibleMembers = statusFilter === 'active' ? members.filter(m => !m.is_pre_onboarding) : members;
+
   const toggleSelectAll = () => {
-    if (selectedIds.size === members.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(members.map(m => m.id)));
+    if (selectedIds.size === visibleMembers.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(visibleMembers.map(m => m.id)));
   };
 
   const handleBulkAllocate = async () => {
@@ -351,10 +359,11 @@ export default function MemberListIsland() {
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Stat cards */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 mb-6">
         {[
           { label: t('comp.memberList.total', 'Total'), value: total, icon: <Users size={16} /> },
           { label: t('comp.memberList.active', 'Ativos'), value: active, color: 'text-emerald-500' },
+          { label: t('comp.memberList.preOnboarding', 'Pré-onboarding'), value: preOnboarding, color: 'text-orange-500' },
           { label: 'Observers', value: observers, color: 'text-blue-500' },
           { label: 'Alumni', value: alumni, color: 'text-slate-500' },
           { label: t('comp.memberList.noTribe', 'Sem tribo'), value: noTribe, color: 'text-amber-500' },
@@ -397,6 +406,7 @@ export default function MemberListIsland() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
           <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
+          <option value="pre_onboarding">{t('comp.memberList.preOnboarding', 'Pré-onboarding')}</option>
           <option value="observer">Observer</option>
           <option value="alumni">Alumni</option>
           <option value="inactive">{t('comp.memberList.inactive', 'Inativos')}</option>
@@ -433,7 +443,7 @@ export default function MemberListIsland() {
             <thead>
               <tr className="bg-[var(--surface-section-cool)] text-[var(--text-muted)] text-[.7rem] uppercase tracking-wider">
                 <th className="px-3 py-2 text-left w-10">
-                  <input type="checkbox" checked={selectedIds.size === members.length && members.length > 0} onChange={toggleSelectAll} className="accent-teal-500" />
+                  <input type="checkbox" checked={selectedIds.size === visibleMembers.length && visibleMembers.length > 0} onChange={toggleSelectAll} className="accent-teal-500" />
                 </th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thMember', 'Membro')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thRoleDesig', 'Papel / Designações')}</th>
@@ -445,7 +455,7 @@ export default function MemberListIsland() {
               </tr>
             </thead>
             <tbody>
-              {(designationFilter ? members.filter(m => (m.designations || []).includes(designationFilter)) : members).map(m => (
+              {(designationFilter ? visibleMembers.filter(m => (m.designations || []).includes(designationFilter)) : visibleMembers).map(m => (
                 <tr key={m.id} className="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors">
                   <td className="px-3 py-2">
                     <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} className="accent-teal-500" />
@@ -485,7 +495,9 @@ export default function MemberListIsland() {
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)] text-[.8rem]">{m.chapter || '—'}</td>
                   <td className="px-3 py-2 text-center">
-                    {m.member_status === 'active' && '🟢'}
+                    {m.member_status === 'active' && (m.is_pre_onboarding
+                      ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold" title={t('comp.memberList.preOnboardingHint', 'Aprovado — aguardando termo de voluntariado/onboarding')}>⏳ {t('comp.memberList.preOnboarding', 'Pré-onboarding')}</span>
+                      : '🟢')}
                     {m.member_status === 'observer' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">👁 Observer</span>}
                     {m.member_status === 'alumni' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">🎓 Alumni</span>}
                     {m.member_status === 'inactive' && '🔴'}
