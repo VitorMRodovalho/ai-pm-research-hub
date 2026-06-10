@@ -15,6 +15,29 @@ Este documento cobre:
 
 ## 1. Supabase — Banco de dados
 
+### 1.0 Arquitetura de backup (atualizada 2026-06-10, #618 — Option C)
+
+**Um motor, três locais.** O dump é sempre o `pg_dump` 17 real (via session pooler, IPv4):
+
+| # | Camada | Cadência | Retenção | Onde |
+|---|--------|----------|----------|------|
+| 1 | Backup diário da plataforma Supabase | diário (~04:14 UTC) | 7 dias (Pro) | Supabase (verificar: Management API `GET /v1/projects/{ref}/database/backups`) |
+| 2 | `pg_dump` semanal — workflow `backup-database.yml` | domingos 23:00 UTC + `workflow_dispatch` | 8 cópias / 60 dias | GitHub Actions artifacts (`db-backup-*`) |
+| 3 | **Offsite**: o MESMO dump → Cloudflare R2 | mesmo run do item 2 | lifecycle do bucket | bucket `nucleoia-db-backups` (ENAM) |
+
+> **Histórico (#618):** até 2026-06-10 as camadas 2 e 3 estavam AMBAS quebradas em silêncio —
+> a 2 por senha sem percent-encoding no secret (+ client PG16 vs servidor PG17 + pg_wrapper
+> resolvendo pro cluster local do runner), a 3 porque o EF `backup-to-r2` (aposentado) não
+> tinha R2 creds, tinha gate quebrado-aberto e o dump era um JSON de 28 tabelas stale — não
+> restore-grade. O cron `backup-to-r2-weekly` (job 12) foi desagendado (mig
+> `20260805000141`). O secret `SUPABASE_DB_URL` usa o formato **session pooler**
+> (`postgres.{ref}@aws-1-sa-east-1.pooler.supabase.com:5432`) com senha só-alfanumérica.
+> Lição: `pg_cron 'succeeded'` ≠ EF/HTTP 200 — cruzar com `net._http_response` (TTL ~6h).
+
+Secrets do workflow: `SUPABASE_DB_URL` (obrigatório) + `R2_ACCOUNT_ID` /
+`R2_BACKUP_ACCESS_KEY_ID` / `R2_BACKUP_SECRET_ACCESS_KEY` (offsite; o passo R2 é skip-com-warning
+enquanto ausentes). Restaurar do artefato/R2: `gunzip -c backup_*.sql.gz | psql "$DATABASE_URL"`.
+
 ### 1.1 Backups automáticos
 
 - Supabase faz **backup diário** de todos os projetos.
