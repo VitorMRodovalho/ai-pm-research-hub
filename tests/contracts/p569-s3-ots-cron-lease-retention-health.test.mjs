@@ -30,6 +30,8 @@ const MIG_PATH = 'supabase/migrations/20260805000136_p569_s3_ots_cron_lease_rete
 const MIG = readFileSync(MIG_PATH, 'utf8');
 const MIG137_PATH = 'supabase/migrations/20260805000137_p569_s3b_claim_index_acl_retention_audit.sql';
 const MIG137 = readFileSync(MIG137_PATH, 'utf8');
+const MIG140_PATH = 'supabase/migrations/20260805000140_p569_s4_council_folds_revoked_at.sql';
+const MIG140 = readFileSync(MIG140_PATH, 'utf8');
 const EF_STAMP = readFileSync('supabase/functions/ots-stamp/index.ts', 'utf8');
 const EF_UPGRADE = readFileSync('supabase/functions/ots-upgrade/index.ts', 'utf8');
 const MCP_INDEX = readFileSync('supabase/functions/nucleo-mcp/index.ts', 'utf8');
@@ -48,8 +50,9 @@ function fnBody(src, name) {
   return m ? m[1] : '';
 }
 const CLAIM_BODY = fnBody(MIG, '_ots_claim_unstamped_assets');
-// Retention was re-captured in 137 (council folds: audit trail + forward-guard) — latest capture wins.
-const RETENTION_BODY = fnBody(MIG137, '_ots_retention_pass');
+// Retention was re-captured in 137 (audit trail) and again in 140 (revoked_at anchor) —
+// the LATEST capture is what must match the live body.
+const RETENTION_BODY = fnBody(MIG140, '_ots_retention_pass');
 const HEALTH_BODY = fnBody(MIG, 'get_ots_pipeline_health');
 
 describe('p569-s3 — migration presence + header', () => {
@@ -109,7 +112,7 @@ describe('p569-s3 — 2. retention pass', () => {
   it("purges ONLY revoked declarations past the window (both DELETE legs gate on status = 'revoked')", () => {
     const revokedGates = RETENTION_BODY.match(/d\.status = 'revoked'/g) || [];
     assert.ok(revokedGates.length >= 2, `both DELETE legs gate on revoked (found ${revokedGates.length})`);
-    const windowGates = RETENTION_BODY.match(/d\.updated_at < now\(\) - p_retention/g) || [];
+    const windowGates = RETENTION_BODY.match(/COALESCE\(d\.revoked_at, d\.updated_at\) < now\(\) - p_retention/g) || [];
     assert.ok(windowGates.length >= 2, `both DELETE legs apply the window (found ${windowGates.length})`);
   });
 
