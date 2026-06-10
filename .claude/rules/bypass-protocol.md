@@ -69,9 +69,38 @@ gh pr list --state merged --search "merged:>$(date -d '7 days ago' +%Y-%m-%d)" -
 done
 ```
 
+## Dependabot PRs (política #611 — Option A, ratificada PM 2026-06-10)
+
+**Fato estrutural:** GitHub **não injeta repo secrets** em workflow runs disparados pelo
+Dependabot. O sentinel do `validate` (`SUPABASE_URL` + `SERVICE_ROLE_KEY` obrigatórios)
+falha portanto em **todo** PR do Dependabot, para sempre — não é flake, não é regressão,
+não debugar (descoberta 2026-06-10, PRs #598/#255; ver #611).
+
+**Política (Option A — supersede-as-policy):**
+
+1. **NUNCA mergear um PR do Dependabot** (nem com `--admin` — um Dependabot vermelho
+   não satisfaz nenhum critério de bypass legítimo acima: o red É causado pela natureza
+   do run, e mergear pularia TODOS os contract tests DB-aware).
+2. Cada onda de **security alerts** é resolvida por **PR local de higiene** (autoria
+   humana/assistida) onde o CI roda completo com secrets — padrão do PR #609.
+3. PRs do Dependabot existentes são **fechados como superseded** com referência a #611
+   (feito 2026-06-10 para #149–#153).
+4. `dependabot.yml` opera com `open-pull-requests-limit: 0` (alerts-only): o feed de
+   alertas continua dirigindo o trabalho, sem acumular PRs vermelhos imergeáveis.
+
+**Por que não carve-out no sentinel (Option B, rejeitada):** um skip condicionado a
+`github.actor == 'dependabot[bot]'` criaria um segundo significado de "CI verde" — o
+audit semanal de bypass raciocina sobre conclusões do `validate`, e um verde-sem-DB-gates
+contaminaria essa superfície, além de exigir guarda contra actor spoofing. Option C
+(`pull_request_target` com secrets) é o foot-gun canônico de Actions — auto-rejeitada.
+
+**Reconsiderar** apenas se a cadência de alertas crescer a ponto de o supersede local
+virar imposto semanal (histórico: ~1 onda/mês).
+
 ## Cross-ref
 
 - WATCH-207.D (P162 log #95): origin of bypass erosion concern
 - WATCH-209.C (P162 log #99): direct push counting addition
 - p209 close handoff: 16 bypass events documented + Option C decision
+- #611: Dependabot supersede-as-policy (seção acima, 2026-06-10)
 - CLAUDE.md: references this file in operational rules

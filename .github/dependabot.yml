@@ -1,5 +1,15 @@
 # Dependabot — atualização de dependências
 # Ver: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# POLÍTICA #611 (Option A — supersede-as-policy, PM 2026-06-10):
+# GitHub NÃO injeta repo secrets em runs disparados pelo Dependabot, então o
+# sentinel do CI (`SUPABASE_URL` + `SERVICE_ROLE_KEY` obrigatórios no validate)
+# falha em TODO PR do Dependabot, para sempre. Em vez de carve-out no sentinel
+# (criaria um segundo significado de "CI verde" — ver .claude/rules/bypass-protocol.md
+# §Dependabot), version updates ficam DESLIGADOS (open-pull-requests-limit: 0):
+# o feed de SECURITY ALERTS continua ativo e cada onda de alertas é resolvida
+# por PR local de higiene (ex.: #609), onde o CI roda completo com secrets.
+# Nunca mergear/--admin um PR do Dependabot — supersede local é o caminho canônico.
 
 version: 2
 updates:
@@ -8,7 +18,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
     commit-message:
