@@ -4041,7 +4041,84 @@ const SEL_I18N = {
         </details>`;
       }
 
-      if (!interviews?.length) {
+      // #602 fix (2026-06-10): gate the "start/record interview" paths on "no ACTIONABLE
+      // interview" instead of "zero interview rows". A candidate whose interviews are ALL
+      // terminal (cancelled/noshow/rescheduled) was trapped: length > 0 skipped this branch,
+      // and the else-branch picked the terminal row as "active" — no scoring, no re-start path.
+      // NOTE: the selection_interviews.status CHECK also allows 'pending' (schema default) —
+      // intentionally NOT listed here, so it routes to the actionable branch. No write RPC
+      // creates 'pending' rows today (schedule_interview always inserts 'scheduled'), so this
+      // is a dead path in practice; revisit if a 'pending'-writing flow ever ships.
+      const TERMINAL_INTERVIEW_STATUSES = ['cancelled', 'noshow', 'rescheduled'];
+      const hasActionableInterview = interviews.some((i: any) => !TERMINAL_INTERVIEW_STATUSES.includes(i.status));
+
+      // #602: history timeline builder shared by both branches below (terminal-only candidates
+      // keep their cancelled/noshow history visible while the start-CTA paths are re-offered).
+      // Per-row action buttons only render for 'scheduled' rows, so the all-terminal branch
+      // never emits them (their wiring lives in the actionable branch only).
+      const interviewStatusBadgeColor = (s: string) => ({
+        scheduled: 'bg-blue-100 text-blue-700',
+        completed: 'bg-emerald-100 text-emerald-700',
+        noshow: 'bg-orange-100 text-orange-700',
+        cancelled: 'bg-gray-200 text-gray-600',
+        rescheduled: 'bg-amber-100 text-amber-700',
+      } as Record<string, string>)[s] || 'bg-gray-100 text-gray-700';
+      const buildInterviewHistoryHtml = (rows: any[], activeInterviewId: string | null) => {
+        const nowMs = Date.now();
+        // p152 W4: full history timeline (was: interviews[0] only — causou PM marcar future
+        // row pensando ser de hoje). Sort by scheduled_at DESC: futuras + recentes em cima.
+        const byDate = [...rows].sort((a: any, b: any) => {
+          const da = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+          const db = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+          return db - da;
+        });
+        let h = '<details open class="bg-[var(--surface-base)] rounded-xl mb-3 border border-[var(--border-subtle)]"><summary class="px-3 py-2 text-[12px] font-bold text-navy cursor-pointer select-none"><span aria-hidden="true">📋</span> Histórico de entrevistas</summary><div class="px-3 pb-3 space-y-2">';
+        for (const intv of byDate) {
+          const label = STATUS_LABELS[`interview_${intv.status}`] || intv.status;
+          const dt = intv.scheduled_at
+            ? new Date(intv.scheduled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }) + ' SP'
+            : '—';
+          const isActive = activeInterviewId !== null && intv.id === activeInterviewId;
+          const isFuture = intv.scheduled_at && new Date(intv.scheduled_at).getTime() > nowMs;
+          const isPast = intv.scheduled_at && new Date(intv.scheduled_at).getTime() < nowMs - 60 * 60 * 1000; // >1h ago
+          const isTodayLocal = (() => {
+            if (!intv.scheduled_at) return false;
+            const d = new Date(intv.scheduled_at);
+            const today = new Date();
+            return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+          })();
+          const tag = isTodayLocal ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">HOJE</span>'
+            : isFuture ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">FUTURO</span>'
+            : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">PASSADO</span>';
+          const actions = intv.status === 'scheduled'
+            ? `<div class="flex gap-1.5">
+                ${isPast || isTodayLocal ? `<button class="interview-status-btn px-2 py-1 bg-orange-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="noshow">No-Show</button>` : ''}
+                <button class="interview-status-btn px-2 py-1 bg-gray-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="cancelled" title="Cancelar — sem reagendamento. Use 'Pedir Reagendamento' abaixo para enviar email ao candidato.">Cancelar</button>
+                <button class="interview-status-btn px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="rescheduled" title="Marcar como remarcada (candidato reagendou em outro slot — sem email)">Remarcar</button>
+                ${(isPast || isTodayLocal) ? `<button class="interview-status-btn px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="completed" title="Marcar como concluída (entrevista aconteceu)">Concluir</button>` : ''}
+              </div>`
+            : '';
+          const notesPreview = intv.notes
+            ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic line-clamp-2">${esc(String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced')).slice(-2).join(' · '))}</div>`
+            : '';
+          h += `<div class="${isActive ? 'border-2 border-navy bg-navy/5' : 'border border-[var(--border-subtle)]'} rounded-lg p-2.5 flex flex-col gap-1.5">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-2">
+                ${tag}
+                <span class="text-[12px] font-bold text-[var(--text-primary)]">${esc(dt)}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${interviewStatusBadgeColor(intv.status)}">${esc(label)}</span>
+                ${isActive ? '<span class="text-[9px] font-bold text-navy bg-navy/10 px-1.5 py-0.5 rounded">ATIVA p/ scoring</span>' : ''}
+              </div>
+              ${actions}
+            </div>
+            ${notesPreview}
+          </div>`;
+        }
+        h += '</div></details>';
+        return h;
+      };
+
+      if (!hasActionableInterview) {
         // p158 hotfix#2 (2026-05-14): dual_track candidates whose interview was conducted only
         // on the sibling app — offer 1-click mirror (copies 4 role-agnostic criteria; skips
         // role-specific theme/leader_extra). Always shown when conditions met, even when
@@ -4054,23 +4131,24 @@ const SEL_I18N = {
             <button id="mirror-sibling-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackMirrorBtn}</button>
           </div>`;
         }
-        // p271 #411 Wave 1a F1 — cutoff-approved invite: badge OR dispatch button when no interview row exists yet.
-        // Gate per SPEC: status IN ('screening','interview_pending') AND cutoff_approved_email_sent_at IS NULL
-        // (this branch already enforces empty interviews list). Idempotency delegated to RPC's already_sent
-        // short-circuit; UI does not re-call without explicit override (deferred from Wave 1a per PM).
-        const cutoffSentAt = row.cutoff_approved_email_sent_at;
-        const cutoffEligibleStatus = ['screening', 'interview_pending'].includes(row.status);
-        if (cutoffSentAt) {
-          const when = new Date(cutoffSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
-          html += `<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-4 text-[12px] text-emerald-800 font-semibold" data-testid="cutoff-invite-sent-badge">${T.modal.cutoffInviteSent} ${esc(when)} SP</div>`;
-        } else if (cutoffEligibleStatus) {
-          html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
-            <button id="cutoff-invite-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.cutoffInviteBtn}</button>
-          </div>`;
+        // #602 (council UX HIGH): terminal history renders FIRST — context before the decision
+        // point. The admin sees WHY there is no active interview (who cancelled, when, notes)
+        // before choosing between re-dispatching the cutoff invite and starting a live evaluation.
+        // No row is "active" for scoring here (null active id). Zero-rows case renders nothing.
+        if (interviews.length) {
+          html += buildInterviewHistoryHtml(interviews, null);
         }
-        // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row mas o app
-        // está em status que permite entrevista (interview_pending+). Cria row com now+30min
-        // e re-renderiza para exibir o scoring form.
+        // #602 (council gp-leader): status 'interview_scheduled' with only terminal rows is a
+        // known semantic tension — recompute_application_status counts 'rescheduled' as
+        // sched_active (#472 corr-5 family). Ground the admin instead of leaving the
+        // status-badge ↔ "no active interview" dissonance unexplained.
+        if (interviews.length && row.status === 'interview_scheduled') {
+          html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4 text-[12px] text-blue-800">Status <strong>Entrevista Agendada</strong>, mas todas as entrevistas existentes foram encerradas (canceladas/remarcadas/no-show). Crie um novo agendamento ou inicie a avaliação ao vivo abaixo.</div>`;
+        }
+        // p109 Onda 4 Fase 1 fix: live-scoring CTA quando não há interview row ACIONÁVEL mas o
+        // app está em status que permite entrevista (interview_pending+). Cria row com now+30min
+        // e re-renderiza para exibir o scoring form. (Computed before the cutoff block so the
+        // sent-badge can point at the right next step.)
         const canStartLive = ['interview_pending', 'interview_scheduled', 'interview_done'].includes(row.status)
           || formData?.application?.status === 'interview_pending';
         // #472 corr.3 — offline path: a PRE-INTERVIEW candidate with no interview
@@ -4080,10 +4158,42 @@ const SEL_I18N = {
         // evaluation can't be regressed by creating a new 'scheduled' row.
         const OFFLINE_ELIGIBLE = ['screening', 'submitted', 'objective_eval', 'objective_cutoff'];
         const canRecordOffline = !canStartLive && OFFLINE_ELIGIBLE.includes(row.status);
+        // p271 #411 Wave 1a F1 — cutoff-approved invite: badge OR dispatch button when no actionable interview exists.
+        // Gate per SPEC: status IN ('screening','interview_pending') AND cutoff_approved_email_sent_at IS NULL.
+        // 'interview_scheduled' is intentionally excluded — that candidate was already invited and booked once;
+        // recovery for that status is the live-start path below (#602).
+        // #602 widened this branch from "zero rows" to "no ACTIONABLE row" — terminal-only candidates land here
+        // too (cancel + re-dispatch is exactly their recovery path). Idempotency delegated to RPC's already_sent
+        // short-circuit; UI does not re-call without explicit override (deferred from Wave 1a per PM).
+        const cutoffSentAt = row.cutoff_approved_email_sent_at;
+        const cutoffEligibleStatus = ['screening', 'interview_pending'].includes(row.status);
+        if (cutoffSentAt) {
+          const when = new Date(cutoffSentAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
+          // #602 (council UX): bridge the informational badge to the actionable next step so a
+          // green "sent" signal isn't read as "nothing more to do".
+          const bridge = canStartLive
+            ? ' <span class="font-normal">Aguardando o candidato agendar — se a entrevista ocorreu ou vai ocorrer sem agendamento formal, use “▶ Iniciar avaliação ao vivo” abaixo.</span>'
+            : '';
+          html += `<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-4 text-[12px] text-emerald-800 font-semibold" data-testid="cutoff-invite-sent-badge">${T.modal.cutoffInviteSent} ${esc(when)} SP${bridge}</div>`;
+        } else if (cutoffEligibleStatus) {
+          html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+            <button id="cutoff-invite-btn" data-app-id="${esc(row.id)}" data-app-name="${esc(row.applicant_name || '')}" class="px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.cutoffInviteBtn}</button>
+          </div>`;
+        }
         if (canStartLive) {
+          // #602 (council UX HIGH): heading must not contradict the visible terminal history.
+          const liveHeading = interviews.length
+            ? 'Nenhuma entrevista ativa — as anteriores foram encerradas'
+            : 'Sem entrevista agendada';
+          // #602 (council UX): when the cutoff invite is still available above, make the
+          // sequencing explicit — re-inviting the candidate usually precedes a live start.
+          const sequencingHint = cutoffEligibleStatus && !cutoffSentAt
+            ? '<p class="text-[12px] text-amber-700 mb-3">Atenção: se o candidato ainda não recebeu o convite de agendamento, prefira enviá-lo (botão acima) antes de iniciar a avaliação ao vivo.</p>'
+            : '';
           html += `<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
-            <p class="text-sm text-amber-800 font-semibold mb-2">Sem entrevista agendada</p>
+            <p class="text-sm text-amber-800 font-semibold mb-2">${liveHeading}</p>
             <p class="text-[12px] text-amber-700 mb-3">Para pontuar a entrevista (objetiva ou live), crie o registro abaixo. Cria com horário atual + 30min como duração — você pode ajustar depois.</p>
+            ${sequencingHint}
             <button id="start-live-interview-btn" data-app-id="${esc(row.id)}" class="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">▶ Iniciar avaliação ao vivo</button>
           </div>`;
         } else if (canRecordOffline) {
@@ -4098,8 +4208,13 @@ const SEL_I18N = {
             </div>
           </div>`;
         } else if (!isDualTrack) {
-          html += '<p class="text-sm text-[var(--text-muted)] mt-4">Nenhuma entrevista agendada ainda.</p>';
+          // #602: same contextual-copy rule as the live heading — don't claim "ainda" over history.
+          html += `<p class="text-sm text-[var(--text-muted)] mt-4">${interviews.length ? 'Nenhuma entrevista ativa.' : 'Nenhuma entrevista agendada ainda.'}</p>`;
         }
+        // INVARIANT (#602): the interview-status-btn wiring further below is unreachable here
+        // (this branch returns). buildInterviewHistoryHtml only emits action buttons for
+        // 'scheduled' rows, and hasActionableInterview=false guarantees none exist — so no
+        // unwired buttons can be rendered by the history call above.
         scoringDiv.innerHTML = html;
         wireUpInterviewBriefing(scoringDiv, row.id);
 
@@ -4122,6 +4237,9 @@ const SEL_I18N = {
 
         // Wire up live start button (creates interview row + reloads tab)
         scoringDiv.querySelector('#start-live-interview-btn')?.addEventListener('click', async (ev) => {
+          // #602 (council gp-leader): with prior terminal rows, one accidental click would
+          // create yet another interview row — confirm first. Zero-rows path stays frictionless.
+          if (interviews.length && !confirm(`Candidato tem ${interviews.length} entrevista(s) anterior(es) encerrada(s). Criar nova entrevista ao vivo?`)) return;
           const btn = ev.currentTarget as HTMLButtonElement;
           btn.disabled = true; btn.textContent = '⏳ Criando…';
           try {
@@ -4199,8 +4317,8 @@ const SEL_I18N = {
         return;
       }
 
-      // p152 W4: full history timeline (was: interviews[0] only — causou PM marcar future row pensando ser de hoje).
-      // Sort by scheduled_at DESC: futuras + recentes em cima.
+      // #602: history rendering moved to buildInterviewHistoryHtml (shared with the
+      // no-actionable branch above); this sort is kept for the active-interview pick fallback.
       const interviewsByDate = [...interviews].sort((a: any, b: any) => {
         const da = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
         const db = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
@@ -4220,15 +4338,7 @@ const SEL_I18N = {
         || interviews.find((i: any) => i.status === 'completed')
         || interviewsByDate[0];
 
-      // Stats banner
-      const statusBadgeColor = (s: string) => ({
-        scheduled: 'bg-blue-100 text-blue-700',
-        completed: 'bg-emerald-100 text-emerald-700',
-        noshow: 'bg-orange-100 text-orange-700',
-        cancelled: 'bg-gray-200 text-gray-600',
-        rescheduled: 'bg-amber-100 text-amber-700',
-      } as Record<string, string>)[s] || 'bg-gray-100 text-gray-700';
-
+      // Stats banner (badge colors live in interviewStatusBadgeColor, shared via #602 helper)
       html += `<div class="grid grid-cols-4 gap-2 mb-3 mt-4 text-[11px]">
         <div class="bg-[var(--surface-base)] rounded-lg p-2 text-center"><div class="font-bold text-navy text-sm">${interviews.length}</div><div class="text-[var(--text-muted)]">Total</div></div>
         <div class="bg-blue-50 rounded-lg p-2 text-center"><div class="font-bold text-blue-700 text-sm">${scheduledCount}</div><div class="text-blue-700">Agendadas</div></div>
@@ -4247,49 +4357,8 @@ const SEL_I18N = {
         </div>`;
       }
 
-      html += '<details open class="bg-[var(--surface-base)] rounded-xl mb-3 border border-[var(--border-subtle)]"><summary class="px-3 py-2 text-[12px] font-bold text-navy cursor-pointer select-none">📋 Histórico de entrevistas</summary><div class="px-3 pb-3 space-y-2">';
-      for (const intv of interviewsByDate) {
-        const label = STATUS_LABELS[`interview_${intv.status}`] || intv.status;
-        const dt = intv.scheduled_at
-          ? new Date(intv.scheduled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }) + ' SP'
-          : '—';
-        const isActive = intv.id === interview.id;
-        const isFuture = intv.scheduled_at && new Date(intv.scheduled_at).getTime() > nowMs;
-        const isPast = intv.scheduled_at && new Date(intv.scheduled_at).getTime() < nowMs - 60 * 60 * 1000; // >1h ago
-        const isTodayLocal = (() => {
-          if (!intv.scheduled_at) return false;
-          const d = new Date(intv.scheduled_at);
-          const today = new Date();
-          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
-        })();
-        const tag = isTodayLocal ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">HOJE</span>'
-          : isFuture ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">FUTURO</span>'
-          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">PASSADO</span>';
-        const actions = intv.status === 'scheduled'
-          ? `<div class="flex gap-1.5">
-              ${isPast || isTodayLocal ? `<button class="interview-status-btn px-2 py-1 bg-orange-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="noshow">No-Show</button>` : ''}
-              <button class="interview-status-btn px-2 py-1 bg-gray-500 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="cancelled" title="Cancelar — sem reagendamento. Use 'Pedir Reagendamento' abaixo para enviar email ao candidato.">Cancelar</button>
-              <button class="interview-status-btn px-2 py-1 bg-amber-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="rescheduled" title="Marcar como remarcada (candidato reagendou em outro slot — sem email)">Remarcar</button>
-              ${intv.status === 'scheduled' && (isPast || isTodayLocal) ? `<button class="interview-status-btn px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="completed" title="Marcar como concluída (entrevista aconteceu)">Concluir</button>` : ''}
-            </div>`
-          : '';
-        const notesPreview = intv.notes
-          ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic line-clamp-2">${esc(String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced')).slice(-2).join(' · '))}</div>`
-          : '';
-        html += `<div class="${isActive ? 'border-2 border-navy bg-navy/5' : 'border border-[var(--border-subtle)]'} rounded-lg p-2.5 flex flex-col gap-1.5">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <div class="flex items-center gap-2">
-              ${tag}
-              <span class="text-[12px] font-bold text-[var(--text-primary)]">${esc(dt)}</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadgeColor(intv.status)}">${esc(label)}</span>
-              ${isActive ? '<span class="text-[9px] font-bold text-navy bg-navy/10 px-1.5 py-0.5 rounded">ATIVA p/ scoring</span>' : ''}
-            </div>
-            ${actions}
-          </div>
-          ${notesPreview}
-        </div>`;
-      }
-      html += '</div></details>';
+      // #602: shared builder (same markup as before — actions render only for 'scheduled' rows).
+      html += buildInterviewHistoryHtml(interviews, interview.id);
 
       // p152 W4: Auto-collapse static "Agendar Entrevista" section when há scheduled active
       // (PM complaint: form sempre aparece mesmo com entrevista existente). Toggle reveal via button.
