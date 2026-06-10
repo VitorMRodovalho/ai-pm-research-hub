@@ -28,10 +28,10 @@ Architecture:
 **Eficácia = `confirmed`, não `pending`** (closes the QA gap on doc7 Cl.4.1): a freshly-created `.ots` is `pending` (not yet Bitcoin-anchored) and does not yet attest a date. `export_anexo_i` surfaces per-asset status + an `all_confirmed` flag so the Declaração's efficacy is reported honestly.
 
 ## Slices (1 PR each)
-- **0. Spike** — validate `opentimestamps` JS in a Deno EF (stamp → upgrade → verify a test digest). De-risks the approach before Slice 2.
+- **0. Spike — DONE** (2026-06-09): the `opentimestamps@0.4.9` lib is `likely_breaks` under Deno EF; decision = **HAND_ROLL** a zero-dep fetch+`.ots` engine (`_shared/ots.ts`), verified **byte-exact** vs 5 canonical vectors + a live stamp. See `docs/specs/SPEC_569_S0_OTS_DENO_SPIKE.md`.
 - **1. DB** — tables + RLS + member-facing RPCs + internal `_ots_*` pipeline RPCs (**this ADR**).
-- **2. EF stamp + verify.**
-- **3. pg_cron upgrade pass + health tool.**
+- **2. EF stamp — DONE** (2026-06-09): `ots-stamp` EF wires `ots.ts` to `_ots_claim_unstamped_assets`/`_ots_mark_stamped`; deployed + smoked in prod (full data path incl. the bytea-over-PostgREST seam verified byte-exact).
+- **3. pg_cron upgrade pass + health tool.** EF core `ots-upgrade` (list_pending → upgrade → block-height→UTC → mark_confirmed) is **deployed**; remaining = the pg_cron schedule migration + `get_ots_pipeline_health` tool.
 - **4. `export_anexo_i` + MCP tools; wire to doc7.**
 - **5. (opt.)** git pre-commit hook (repo script, out-of-platform).
 
@@ -59,6 +59,7 @@ Architecture:
 - Retention/elimination of `error`/`revoked` rows + `.ots` bytea (doc1 2.5.6) — with the Slice 3 cron.
 
 ## Open items (gate the later slices, not this migration)
-- OTS-lib-in-Deno feasibility (Slice 0 spike) before committing the EF.
-- `_ots_claim_unstamped_assets` row-locking (FOR UPDATE SKIP LOCKED) — Slice 2/3; until then the pipeline MUST be single-consumer.
+- ~~OTS-lib-in-Deno feasibility (Slice 0 spike)~~ **RESOLVED** → HAND_ROLL engine, verified (Slice 0/2 done).
+- `_ots_claim_unstamped_assets` row-locking (FOR UPDATE SKIP LOCKED) — Slice 3; until then the pipeline MUST be single-consumer (the `ots-stamp`/`ots-upgrade` EFs must not run concurrently — the Slice 3 cron schedules them non-overlapping).
+- Cron auth: the EFs gate on exact `SUPABASE_SERVICE_ROLE_KEY` string-match (repo convention); the pg_net cron call must use the EF's current injected key.
 - doc7 upload (workstream 2) before the Anexo I export is wired to a real governance_document.
