@@ -181,21 +181,33 @@ describe('p262 #312-W4c — list_governance_library default-status exclusion (GA
       assert.ok(data.some(d => d.id === FRONTIERS_DOC_ID), 'Frontiers (draft) must appear when explicit draft filter applied');
     });
 
-    it('corpus split: 13 docs in 4-status default include set, 3 in 4-status exclude set', { skip: !sb }, async () => {
-      const { data: visible } = await sb
+    it('corpus split: visible/hidden status sets PARTITION the corpus (drift-tolerant)', { skip: !sb }, async () => {
+      // Drift-tolerant (was hardcoded 13/3; #632 2026-06-11 added 3 new draft
+      // instruments → hidden grew to 6). The invariant that matters is the
+      // PARTITION: the two 4-status arrays together cover all 8 allowed statuses
+      // with no overlap, so visible + hidden must equal the full corpus, and a
+      // known draft (Frontiers) must land in the hidden set — not the absolute
+      // corpus size, which legitimately grows as instruments are added.
+      const VISIBLE = ['active', 'approved', 'under_review', 'superseded'];
+      const HIDDEN = ['draft', 'pending_proposer_consent', 'withdrawn', 'revoked'];
+      const { count: totalCount } = await sb
         .from('governance_documents')
-        .select('id', { count: 'exact', head: true })
-        .in('status', ['active', 'approved', 'under_review', 'superseded']);
+        .select('*', { count: 'exact', head: true });
       const { count: visibleCount } = await sb
         .from('governance_documents')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['active', 'approved', 'under_review', 'superseded']);
+        .in('status', VISIBLE);
       const { count: hiddenCount } = await sb
         .from('governance_documents')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['draft', 'pending_proposer_consent', 'withdrawn', 'revoked']);
-      assert.equal(visibleCount, 13, `expected 13 visible default but got ${visibleCount}`);
-      assert.equal(hiddenCount, 3, `expected 3 hidden default but got ${hiddenCount}`);
+        .in('status', HIDDEN);
+      assert.equal(visibleCount + hiddenCount, totalCount,
+        `partition incomplete: ${visibleCount} visible + ${hiddenCount} hidden != ${totalCount} total (a status outside both 4-status arrays exists)`);
+      assert.ok(visibleCount > 0 && hiddenCount > 0, 'both sets non-empty');
+      const { data: frontiers } = await sb
+        .from('governance_documents').select('status').eq('id', FRONTIERS_DOC_ID).maybeSingle();
+      if (frontiers) assert.ok(HIDDEN.includes(frontiers.status),
+        `Frontiers (id ${FRONTIERS_DOC_ID}) status=${frontiers.status} must be in the hidden set`);
     });
   });
 });
