@@ -11,7 +11,11 @@ import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/render
 
 // #632 — diagramação institucional (logo capítulo sede) + domínio do capítulo
 // nos artefatos documentais. Ver ChainPDFDocument.tsx para o racional.
-const CHAPTER_LOGO_SRC = '/assets/logos/pmigo-logo-color.png';
+// fetch(src) client-side: resolver contra o origin real (council #635).
+const CHAPTER_LOGO_PATH = '/assets/logos/pmigo-logo-color.png';
+const CHAPTER_LOGO_SRC = typeof window !== 'undefined'
+  ? new URL(CHAPTER_LOGO_PATH, window.location.href).href
+  : CHAPTER_LOGO_PATH;
 const INSTITUTIONAL_HOST = 'nucleoia.pmigo.org.br';
 
 const styles = StyleSheet.create({

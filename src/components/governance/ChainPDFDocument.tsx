@@ -28,7 +28,13 @@ import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/
 // #632 — diagramação institucional: logo do capítulo sede (PMI-GO) nos
 // instrumentos exportados. Compliance Policy Manual §8.3: logo do CAPÍTULO,
 // nunca o masterbrand PMI. Kit oficial: _pmo/assets/pmi/brand/.
-const CHAPTER_LOGO_SRC = '/assets/logos/pmigo-logo-color.png';
+// react-pdf faz fetch(src) no render client-side; resolver contra o origin
+// real do browser (council #635: padrão URL-absoluta, sem pin de host —
+// funciona em dev/preview/prod; componente só renderiza em island browser).
+const CHAPTER_LOGO_PATH = '/assets/logos/pmigo-logo-color.png';
+const CHAPTER_LOGO_SRC = typeof window !== 'undefined'
+  ? new URL(CHAPTER_LOGO_PATH, window.location.href).href
+  : CHAPTER_LOGO_PATH;
 // Domínio institucional nos DOCUMENTOS (decisão PM 2026-06-11, #632 item 3):
 // endereço do capítulo sede, não o domínio canônico da plataforma.
 const INSTITUTIONAL_HOST = 'nucleoia.pmigo.org.br';
