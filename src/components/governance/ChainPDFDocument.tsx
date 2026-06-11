@@ -23,7 +23,21 @@
  *   - ul/ol/details/summary: containers stripped (li survives, summary loses
  *     heading-like styling) — deferred for follow-up.
  */
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
+
+// #632 — diagramação institucional: logo do capítulo sede (PMI-GO) nos
+// instrumentos exportados. Compliance Policy Manual §8.3: logo do CAPÍTULO,
+// nunca o masterbrand PMI. Kit oficial: _pmo/assets/pmi/brand/.
+// react-pdf faz fetch(src) no render client-side; resolver contra o origin
+// real do browser (council #635: padrão URL-absoluta, sem pin de host —
+// funciona em dev/preview/prod; componente só renderiza em island browser).
+const CHAPTER_LOGO_PATH = '/assets/logos/pmigo-logo-color.png';
+const CHAPTER_LOGO_SRC = typeof window !== 'undefined'
+  ? new URL(CHAPTER_LOGO_PATH, window.location.href).href
+  : CHAPTER_LOGO_PATH;
+// Domínio institucional nos DOCUMENTOS (decisão PM 2026-06-11, #632 item 3):
+// endereço do capítulo sede, não o domínio canônico da plataforma.
+const INSTITUTIONAL_HOST = 'nucleoia.pmigo.org.br';
 
 // Disable react-pdf default hyphenation (hyphen library) — em docs jurídicos
 // PT-BR queremos palavras inteiras: "Propriedade Intelectual" não "Pro-priedade".
@@ -48,7 +62,10 @@ const styles = StyleSheet.create({
     color: '#92400e',
     textAlign: 'center',
   },
-  headerBar: { borderBottom: '2px solid #003B5C', paddingBottom: 8, marginBottom: 16 },
+  headerBar: { borderBottom: '2px solid #003B5C', paddingBottom: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  // 1896×882 source → mantém proporção ~2.15:1 (h32 → w~69)
+  headerLogo: { width: 69, height: 32, marginRight: 10 },
+  headerText: { flexDirection: 'column', flexGrow: 1 },
   orgName: { fontSize: 11, fontWeight: 'bold', color: '#003B5C' },
   orgTag: { fontSize: 9, color: '#6c757d', marginTop: 2 },
   docTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 6, color: '#003B5C' },
@@ -486,7 +503,7 @@ export default function ChainPDFDocument({
       title={`${data.document.title} ${data.version.label}${isDraft ? ' (DRAFT)' : ''}`}
       author={data.submitter.name}
       subject={`Cadeia de ratificação ${data.chain_id}${isDraft ? ' — rascunho para revisão' : ''}`}
-      creator="Núcleo IA & GP — plataforma nucleoia.vitormr.dev"
+      creator={`Núcleo IA & GP — ${INSTITUTIONAL_HOST}`}
     >
       {/* PAGE 1 — Header + metadata */}
       <Page size="A4" style={styles.page}>
@@ -498,8 +515,11 @@ export default function ChainPDFDocument({
           </View>
         )}
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos</Text>
-          <Text style={styles.orgTag}>PMI Brasil–Goiás Chapter · nucleoia.vitormr.dev</Text>
+          <Image style={styles.headerLogo} src={CHAPTER_LOGO_SRC} />
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos</Text>
+            <Text style={styles.orgTag}>PMI Brasil–Goiás Chapter · {INSTITUTIONAL_HOST}</Text>
+          </View>
         </View>
 
         <Text style={styles.docTitle}>{data.document.title}</Text>
@@ -555,8 +575,10 @@ export default function ChainPDFDocument({
           </View>
         )}
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>{data.document.title} — {data.version.label}</Text>
-          <Text style={styles.orgTag}>Conteúdo lacrado</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>{data.document.title} — {data.version.label}</Text>
+            <Text style={styles.orgTag}>Conteúdo lacrado</Text>
+          </View>
         </View>
 
         {nodes.length === 0 ? (
@@ -570,8 +592,10 @@ export default function ChainPDFDocument({
       {!isDraft && (
         <Page size="A4" style={styles.page}>
           <View style={styles.headerBar}>
-            <Text style={styles.orgName}>Assinaturas e evidências</Text>
-            <Text style={styles.orgTag}>Cadeia {data.chain_id}</Text>
+            <View style={styles.headerText}>
+              <Text style={styles.orgName}>Assinaturas e evidências</Text>
+              <Text style={styles.orgTag}>Cadeia {data.chain_id}</Text>
+            </View>
           </View>
 
           {data.gates.map((gate) => (
@@ -628,7 +652,7 @@ export default function ChainPDFDocument({
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Gerado em {fmtDate(data.generated_at)} pela plataforma nucleoia.vitormr.dev
+              Gerado em {fmtDate(data.generated_at)} pela plataforma do Núcleo ({INSTITUTIONAL_HOST})
             </Text>
             <Text style={styles.footerText}>
               Este documento é uma representação digital da cadeia de ratificação. A versão autoritativa permanece na base de dados Supabase com hashes SHA-256 individuais por assinatura.
@@ -648,8 +672,10 @@ export default function ChainPDFDocument({
             </Text>
           </View>
           <View style={styles.headerBar}>
-            <Text style={styles.orgName}>Identificação do rascunho</Text>
-            <Text style={styles.orgTag}>Para audit trail offline</Text>
+            <View style={styles.headerText}>
+              <Text style={styles.orgName}>Identificação do rascunho</Text>
+              <Text style={styles.orgTag}>Para audit trail offline</Text>
+            </View>
           </View>
           <Text style={styles.paragraph}>
             Este rascunho refere-se à versão lacrada <Text style={{ fontWeight: 'bold' }}>{data.version.label}</Text> do
@@ -657,7 +683,7 @@ export default function ChainPDFDocument({
           </Text>
           <Text style={styles.paragraph}>
             Para validar a integridade do conteúdo após a leitura offline, comparar este texto com a
-            versão lacrada disponível em <Text style={{ fontFamily: 'Courier', fontSize: 9 }}>nucleoia.vitormr.dev/admin/governance/documents/{data.chain_id}</Text>.
+            versão lacrada disponível em <Text style={{ fontFamily: 'Courier', fontSize: 9 }}>{INSTITUTIONAL_HOST}/admin/governance/documents/{data.chain_id}</Text>.
             Os hashes oficiais de assinatura, evidência de notificação e timestamps de cada gate serão
             incluídos no PDF oficial gerado após o fechamento da cadeia.
           </Text>
