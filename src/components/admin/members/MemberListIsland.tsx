@@ -443,6 +443,53 @@ export default function MemberListIsland() {
     await fetchMembers();
   };
 
+  // #625 F1b: ateste de acesso (confidencialidade/finalidade) — gate just-in-time + re-aceite anual.
+  const [attestation, setAttestation] = useState<any>(null);
+  const [showAttest, setShowAttest] = useState(false);
+  const [attestChecked, setAttestChecked] = useState(false);
+  const [attesting, setAttesting] = useState(false);
+  const [pendingAttest, setPendingAttest] = useState<(() => void) | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const boot = () => {
+      const sb = getSb();
+      if (!sb) { if (!cancelled) setTimeout(boot, 400); return; }
+      sb.rpc('get_my_affiliation_attestation').then(({ data }: any) => { if (!cancelled && data) setAttestation(data); }).catch(() => {});
+    };
+    boot();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Gate de escrita: se o agente (filiacao_director) ainda não atestou, abre o modal antes da ação.
+  // manager/PM tem needs_attestation=false (servidor) → passa direto. Backstop server-side via trigger.
+  const requireAttest = (action: () => void) => {
+    if (attestation?.needs_attestation) {
+      setPendingAttest(() => action);
+      setAttestChecked(false);
+      setShowAttest(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleAttest = async () => {
+    const sb = getSb(); if (!sb) return;
+    setAttesting(true);
+    const { data, error } = await sb.rpc('attest_affiliation_access', { p_signed_user_agent: navigator.userAgent });
+    setAttesting(false);
+    if (error || !data?.ok) {
+      (window as any).toast?.(error?.message || t('comp.memberList.operationError', 'Erro na operação'), 'error');
+      return;
+    }
+    const { data: att } = await sb.rpc('get_my_affiliation_attestation');
+    if (att) setAttestation(att);
+    setShowAttest(false);
+    const act = pendingAttest;
+    setPendingAttest(null);
+    act?.();
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Stat cards */}
@@ -512,7 +559,7 @@ export default function MemberListIsland() {
             <button onClick={() => setShowBulkStatus(true)} className="px-3 py-1.5 text-[13px] bg-amber-500 text-white rounded-lg border-0 cursor-pointer hover:bg-amber-600">
               {t('comp.memberList.changeStatus', 'Mudar Status')}
             </button>
-            <button onClick={handleBulkVerifyVep} disabled={bulkVerifying} className="px-3 py-1.5 text-[13px] bg-indigo-600 text-white rounded-lg border-0 cursor-pointer hover:bg-indigo-700 disabled:opacity-50">
+            <button onClick={() => requireAttest(handleBulkVerifyVep)} disabled={bulkVerifying} className="px-3 py-1.5 text-[13px] bg-indigo-600 text-white rounded-lg border-0 cursor-pointer hover:bg-indigo-700 disabled:opacity-50">
               {bulkVerifying ? t('comp.memberList.verifying', 'Verificando...') : t('comp.memberList.bulkVerifyVep', 'Verificar filiação (VEP)')}
             </button>
             <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer">
@@ -587,7 +634,7 @@ export default function MemberListIsland() {
                   <td className="px-3 py-2 text-[var(--text-secondary)] text-[.8rem]">{m.chapter || '—'}</td>
                   <td className="px-3 py-2 text-center">
                     {(() => { const f = affiliationFarol(m, t); return (
-                      <button onClick={() => openVerify(m)} title={`${f.label} — ${t('comp.memberList.verifyAffiliation', 'Verificar filiação')}`}
+                      <button onClick={() => requireAttest(() => openVerify(m))} title={`${f.label} — ${t('comp.memberList.verifyAffiliation', 'Verificar filiação')}`}
                         className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border-0 cursor-pointer ${f.cls}`}>
                         {f.emoji}
                       </button>
@@ -931,6 +978,32 @@ export default function MemberListIsland() {
               <button onClick={handleVerify} disabled={verifySaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
                 {verifySaving ? t('comp.memberList.verifying', 'Verificando...') : t('comp.memberList.verifySubmit', 'Registrar verificação')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* #625 F1b — Affiliation access attestation (confidentiality/purpose) gate */}
+      {showAttest && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4" onClick={() => setShowAttest(false)}>
+          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--border-default)] flex-shrink-0">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">🔒 {t('comp.memberList.attestTitle', 'Acesso à verificação de filiação — dados pessoais de terceiros')}</h3>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1">
+              <p className="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">{t('comp.memberList.attestBody', '')}</p>
+            </div>
+            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex-shrink-0 space-y-3">
+              <label className="flex items-start gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
+                <input type="checkbox" checked={attestChecked} onChange={e => setAttestChecked(e.target.checked)} className="accent-teal-500 mt-0.5" />
+                <span>{t('comp.memberList.attestCheckbox', 'Declaro estar ciente e de acordo.')}</span>
+              </label>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowAttest(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
+                <button onClick={handleAttest} disabled={!attestChecked || attesting} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
+                  {attesting ? t('comp.memberList.attesting', 'Registrando...') : t('comp.memberList.attestConfirm', 'Confirmar e acessar')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
