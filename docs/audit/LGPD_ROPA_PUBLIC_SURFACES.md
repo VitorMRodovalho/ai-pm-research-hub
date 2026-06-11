@@ -9,11 +9,14 @@
 > grant após Track R Phase R3 (p59) + 1 função PII (`get_gp_whatsapp`)
 > com inline LGPD comment. Total: **25 superfícies**.
 >
-> **Atualizado**: 2026-04-26 (p59)
+> **Atualizado**: 2026-06-11 (header DPO corrigido; corpo: 2026-04-26, p59)
 > **Próxima revisão**: trimestral (cadência sponsor touchpoint)
 > **Sponsor**: PMI-GO (Ivan Lourenço, Presidente)
-> **Encarregado de Dados (DPO)**: Vitor Maia Rodovalho
-> (vitor.rodovalho@outlook.com — contato listado em `/privacy`)
+> **Encarregado de Dados (DPO)**: Ivan Lourenço Costa (titular) ·
+> Angeline Altair Silva Prado (substituta) — dpo@pmigo.org.br
+> (conforme `/privacy` S1/S13 — header corrigido em 2026-06-11 para
+> refletir o DPO formalmente designado na política de privacidade;
+> ver histórico no SPEC-625 §6.2)
 
 ---
 
