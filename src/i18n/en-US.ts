@@ -4,6 +4,7 @@ const enUS: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
   'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, PMI Brazil chapters, 7 thematic tribes. Open-source trilingual platform.',
+  'meta.ogImageAlt': 'Núcleo IA & GP — AI & PM Study and Research Hub, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'About — AI & Project Management Research Hub',
   'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
   'meetings.meta.title': 'Meeting Minutes — AI & PM Research Hub',
