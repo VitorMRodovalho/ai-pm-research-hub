@@ -1647,7 +1647,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
     (document.getElementById('ev-type') as HTMLSelectElement).value = 'geral';
     (document.getElementById('ev-nature') as HTMLSelectElement).value = 'avulsa';
-    (document.getElementById('ev-visibility') as HTMLSelectElement).value = 'public';
+    (document.getElementById('ev-visibility') as HTMLSelectElement).value = 'all';
     (document.getElementById('ev-agenda-text') as HTMLTextAreaElement).value = '';
     (document.getElementById('ev-agenda-url') as HTMLInputElement).value = '';
     (document.getElementById('ev-external-attendees') as HTMLInputElement).value = '';
@@ -1676,11 +1676,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (['lideranca', '1on1'].includes(typeSelect.value)) {
         visEl.value = 'leadership';
       } else if (typeSelect.value === 'geral' || typeSelect.value === 'kickoff' || typeSelect.value === 'iniciativa') {
-        visEl.value = 'public';
+        visEl.value = 'all'; // DB vocab (events_visibility_check) — 'public' never existed
       }
     };
-    // For leaders: lock type to 'tribo' and lock tribe to own tribe
-    if (MEMBER?.role === 'leader' && MEMBER?.tribe_id) {
+    // For leaders: lock type to 'tribo' and lock tribe to own tribe.
+    // Was dead code: checked MEMBER.role === 'leader', but the member object carries
+    // operational_role with V4 vocab 'tribe_leader' — so the lock never engaged and a
+    // leader could pick the wrong type/tribe in the UI (server still blocks, but with a
+    // confusing error). PM-reported UX gap 2026-06-11.
+    if (MEMBER?.operational_role === 'tribe_leader' && MEMBER?.tribe_id) {
       typeSelect.value = 'tribo';
       typeSelect.disabled = true;
       tribeWrapper.classList.remove('hidden');
@@ -1705,7 +1709,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const tribeId = type === 'tribo' ? parseInt((document.getElementById('ev-tribe-select') as HTMLSelectElement).value) : null;
     const initiativeIdNew = type === 'iniciativa' ? (document.getElementById('ev-initiative-select') as HTMLSelectElement).value || null : null;
     const nature = (document.getElementById('ev-nature') as HTMLSelectElement).value;
-    const visibility = (document.getElementById('ev-visibility') as HTMLSelectElement)?.value || 'public';
+    const visibility = (document.getElementById('ev-visibility') as HTMLSelectElement)?.value || 'all';
     const agendaText = (document.getElementById('ev-agenda-text') as HTMLTextAreaElement)?.value?.trim() || null;
     const agendaUrl = (document.getElementById('ev-agenda-url') as HTMLInputElement)?.value?.trim() || null;
     const externalAttendees = (document.getElementById('ev-external-attendees') as HTMLInputElement)?.value?.trim() || null;
@@ -1981,7 +1985,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
     (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
-    (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value = ev.visibility || 'public';
+    // ev.visibility vocab = 'all'|'leadership'|'gp_only' (events_visibility_check). The old '|| public'
+    // fallback never matched any <option>, so the select silently snapped to the first option and the
+    // group-edit RPC got an invalid value → 400 events_visibility_check (PM-hit 2026-06-11).
+    (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value = ev.visibility || 'all';
     (document.getElementById('edit-ev-recording-url') as HTMLInputElement).value = ev.recording_url || '';
     (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value = ev.external_attendees || '';
     // audience_level values now match DB constraint directly (all, leadership, tribe, curators)

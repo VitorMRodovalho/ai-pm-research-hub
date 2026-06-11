@@ -112,7 +112,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.visibility', lang)}</label>
             <select id="edit-ev-visibility"
                     class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-              <option value="public">Público</option>
+              {/* value must match events_visibility_check: 'all'|'leadership'|'gp_only' — 'public' never existed in the DB vocab (caused 400 on group edits) */}
+              <option value="all">Público</option>
               <option value="leadership">Liderança</option>
               <option value="gp_only">GP only</option>
             </select>

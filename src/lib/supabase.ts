@@ -56,6 +56,8 @@ export interface Member {
   phone?: string;
   role: MemberRole;
   roles?: MemberRole[];
+  /** V4 cache column (sync_operational_role_cache) — present at runtime via get_member_by_auth; e.g. 'tribe_leader'. */
+  operational_role?: string;
   chapter?: string;
   tribe_id?: number;
   current_cycle_active: boolean;
