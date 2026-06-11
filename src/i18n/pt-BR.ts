@@ -635,7 +635,7 @@ const ptBR: Record<string, string> = {
   'schedule.label': 'Agenda',
   'schedule.title': 'Agenda da Semana',
   'schedule.generalMeeting': 'Reunião Geral',
-  'schedule.generalSchedule': 'Toda quinta-feira · 19:30 BRT',
+  'schedule.generalSchedule': 'Quinzenalmente às quintas · 19:00–20:30 BRT',
   'schedule.loginHint': 'Faça login para ver o link da reunião',
   'schedule.tribeMeetings': 'Reuniões de Tribo',
   'schedule.yourTribe': 'sua tribo',

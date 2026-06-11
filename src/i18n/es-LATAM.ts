@@ -635,7 +635,7 @@ const esLATAM: Record<string, string> = {
   'schedule.label': 'Agenda',
   'schedule.title': 'Agenda de la Semana',
   'schedule.generalMeeting': 'Reunión General',
-  'schedule.generalSchedule': 'Todos los jueves · 19:30 BRT',
+  'schedule.generalSchedule': 'Quincenal, los jueves · 19:00–20:30 BRT',
   'schedule.loginHint': 'Inicie sesión para ver el enlace de la reunión',
   'schedule.tribeMeetings': 'Reuniones de Tribu',
   'schedule.yourTribe': 'tu tribu',
