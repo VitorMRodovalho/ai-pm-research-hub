@@ -47,6 +47,13 @@ function fnBody(name, src = MIG140) {
 // All 3 bodies were re-captured in 140 (council folds: FOR UPDATE, revoked_at, legal-basis
 // retention note, eficacia_plena, dead-var drop) — the LATEST capture must match live.
 const EXPORT_BODY = fnBody('export_my_data');
+// #625 F1: export_my_data foi re-capturado em ...148 (adicionou a seção 'affiliation_verifications').
+// O check de md5 do corpo VIVO deve comparar contra a captura CANÔNICA mais recente (...148);
+// as assertions estruturais (pi_exclusion) seguem válidas tanto em 140 quanto em 148.
+const MIG148_PATH = 'supabase/migrations/20260805000148_625_affiliation_verification_loop_f1_f3.sql';
+const EXPORT_BODY_LATEST = existsSync(MIG148_PATH)
+  ? (fnBody('export_my_data', readFileSync(MIG148_PATH, 'utf8')) || EXPORT_BODY)
+  : EXPORT_BODY;
 const CREATE_BODY = fnBody('create_exclusion_declaration');
 const REVOKE_BODY = fnBody('revoke_exclusion_declaration');
 
@@ -196,7 +203,7 @@ describe('p569-s4 — DB-gated (skip without env)', () => {
     const { createHash } = await import('node:crypto');
     const localMd5 = (b) => createHash('md5').update(b.replace(/\s+/g, ' ')).digest('hex');
     const expected = {
-      export_my_data: localMd5(EXPORT_BODY),
+      export_my_data: localMd5(EXPORT_BODY_LATEST),
       create_exclusion_declaration: localMd5(CREATE_BODY),
       revoke_exclusion_declaration: localMd5(REVOKE_BODY),
     };
