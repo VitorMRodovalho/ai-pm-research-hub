@@ -4,6 +4,7 @@ const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
   'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, 7 tribos temáticas. Plataforma open-source trilingue.',
+  'meta.ogImageAlt': 'Núcleo IA & GP — Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gestão de Projetos, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
   'about.meta.description': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
   'meetings.meta.title': 'Atas de Reunião — Núcleo IA & GP',
