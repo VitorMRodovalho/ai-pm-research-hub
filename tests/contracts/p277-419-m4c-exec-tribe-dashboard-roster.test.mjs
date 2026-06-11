@@ -118,7 +118,8 @@ test('M4-C DB: tribe-8 canonical roster == 5 (participants-only, mig 088); the v
 test('M4-C DB: only tribe 8 changed — other tribes stable (drift-tolerant)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   // canonical roster per tribe is what members.total now reads; assert the stable baselines hold
-  const expect = { 1: 4, 6: 6 };
+  // tribe-6 6→5: offboarding legítimo de membro em 2026-06-11 (alumni, ROI & Portfólio)
+  const expect = { 1: 4, 6: 5 };
   for (const [tid, n] of Object.entries(expect)) {
     const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: Number(tid) });
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
