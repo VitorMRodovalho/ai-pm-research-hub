@@ -83,5 +83,6 @@ test('M4-A behavioural: helper count == COUNT(DISTINCT person) over the view, pe
   const { data: rows } = await sb.from('v_initiative_roster').select('person_id').eq('initiative_id', initId);
   const distinct = new Set(rows.map((r) => r.person_id)).size;
   assert.equal(Number(count), distinct, 'helper == distinct person over the view');
-  assert.equal(Number(count), 6, 'tribe-6 canonical roster = 6');
+  // 6→5 em 2026-06-11: offboarding legítimo (alumni, ROI & Portfólio)
+  assert.equal(Number(count), 5, 'tribe-6 canonical roster = 5');
 });
