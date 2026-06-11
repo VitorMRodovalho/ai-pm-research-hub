@@ -7,11 +7,18 @@
  *   - Não inclui content_html (é complementar ao PDF oficial)
  *   - Inclui hashes completos, sections_verified detalhadas, actor trail
  */
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+
+// #632 — diagramação institucional (logo capítulo sede) + domínio do capítulo
+// nos artefatos documentais. Ver ChainPDFDocument.tsx para o racional.
+const CHAPTER_LOGO_SRC = '/assets/logos/pmigo-logo-color.png';
+const INSTITUTIONAL_HOST = 'nucleoia.pmigo.org.br';
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a' },
-  headerBar: { borderBottom: '2px solid #7c2d12', paddingBottom: 8, marginBottom: 16 },
+  headerBar: { borderBottom: '2px solid #7c2d12', paddingBottom: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  headerLogo: { width: 69, height: 32, marginRight: 10 },
+  headerText: { flexDirection: 'column', flexGrow: 1 },
   orgName: { fontSize: 11, fontWeight: 'bold', color: '#7c2d12' },
   orgTag: { fontSize: 9, color: '#6c757d', marginTop: 2 },
   reportTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 16, marginBottom: 4, color: '#7c2d12' },
@@ -145,13 +152,16 @@ export default function ChainAuditReportPDF({ data }: { data: AuditReportData })
       title={`Relatório de Auditoria — ${data.document.title} ${data.version.label}`}
       author={data.generated_by.name}
       subject={`Auditoria Conselho Fiscal PMI-GO — cadeia ${data.chain_id}`}
-      creator="Núcleo IA & GP — plataforma nucleoia.vitormr.dev"
+      creator={`Núcleo IA & GP — ${INSTITUTIONAL_HOST}`}
     >
       {/* PAGE 1 — Cover + Executive Summary */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos</Text>
-          <Text style={styles.orgTag}>PMI Brasil–Goiás Chapter · Relatório de Auditoria para Conselho Fiscal</Text>
+          <Image style={styles.headerLogo} src={CHAPTER_LOGO_SRC} />
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos</Text>
+            <Text style={styles.orgTag}>PMI Brasil–Goiás Chapter · Relatório de Auditoria para Conselho Fiscal</Text>
+          </View>
         </View>
 
         <Text style={styles.reportTitle}>Relatório de Auditoria — Cadeia de Ratificação</Text>
@@ -230,8 +240,10 @@ export default function ChainAuditReportPDF({ data }: { data: AuditReportData })
       {/* PAGE 2+ — Timeline */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>Timeline Cronológica</Text>
-          <Text style={styles.orgTag}>Cadeia {data.chain_id}</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>Timeline Cronológica</Text>
+            <Text style={styles.orgTag}>Cadeia {data.chain_id}</Text>
+          </View>
         </View>
 
         {data.timeline.length === 0 ? (
@@ -269,8 +281,10 @@ export default function ChainAuditReportPDF({ data }: { data: AuditReportData })
       {/* PAGE 3+ — Signoffs detalhados */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>Signoffs — Detalhamento Individual</Text>
-          <Text style={styles.orgTag}>Evidence trail completo</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>Signoffs — Detalhamento Individual</Text>
+            <Text style={styles.orgTag}>Evidence trail completo</Text>
+          </View>
         </View>
 
         {data.signoffs.length === 0 ? (
@@ -347,8 +361,10 @@ export default function ChainAuditReportPDF({ data }: { data: AuditReportData })
       {/* PAGE N — admin_audit_log */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
-          <Text style={styles.orgName}>Log de Auditoria Administrativa</Text>
-          <Text style={styles.orgTag}>admin_audit_log correlacionado</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.orgName}>Log de Auditoria Administrativa</Text>
+            <Text style={styles.orgTag}>admin_audit_log correlacionado</Text>
+          </View>
         </View>
 
         {data.audit_log_entries.length === 0 ? (
@@ -374,7 +390,7 @@ export default function ChainAuditReportPDF({ data }: { data: AuditReportData })
             Relatório gerado em {fmtDate(data.generated_at)} por {data.generated_by.name}
           </Text>
           <Text style={styles.footerText}>
-            Plataforma: nucleoia.vitormr.dev · Auditoria: Conselho Fiscal PMI Brasil–Goiás Chapter
+            Plataforma: {INSTITUTIONAL_HOST} · Auditoria: Conselho Fiscal PMI Brasil–Goiás Chapter
           </Text>
           <Text style={{ fontSize: 7, fontFamily: 'Courier', color: '#495057', marginTop: 4 }}>
             chain_id: {data.chain_id}
