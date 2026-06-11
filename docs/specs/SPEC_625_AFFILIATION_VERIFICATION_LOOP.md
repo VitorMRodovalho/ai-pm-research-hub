@@ -5,6 +5,16 @@
 4 acordos de cooperação assinados + Policy Manual ed. julho/2025 + instrumentos ratificados do repo).
 Legal-counsel no v3: GO_W_FIXES, todos foldados (âncora Art. 5º VII; parte da cláusula-modelo = PMI-GO
 via plataforma; co-controle = Guia ANPD 2021, não Art. 42 §1º; pendência Art. 48 em §6.2.5 iv).
+**F1 SHIPPED (2026-06-11, migration `20260805000148`):** loop de verificação + radar F3 (dry-run)
+implementados; council-reviewed (3× GO_W_FIXES + verbatim-diff GO, todos os folds aplicados).
+**Reconciliações vs o texto abaixo:** (a) designation = **`filiacao_director`** (segue a convenção
+`*_director` dos diretores existentes; supersede `diretoria_filiacao` do §2.7/§4.2 — decisão PM no kickoff);
+(b) anonimização (§4.1) é **FK-safe**: `member_id` mantido (linha de members anonimizada in-place),
+`verified_by_member_id`→NULL, `verification_obs`→NULL, `source_ref`→hash (NÃO "UUID neutro" — violaria
+FK RESTRICT); (c) periodicidade (§9.4) = **AMBAS** (radar contínuo D-30/D-7 + sinal de verificação obsoleta
+>11 meses no mesmo cron); (d) **Welma provisionada** (designation + audit). **Pré-req institucional
+remanescente antes do go-live operacional:** LIA Art. 7º IX documentada no RoPA + Confidentiality & Records
+Compliance Agreement (por força do cargo PMI). **F2/F2.1 NÃO implementados** (gated).
 **Origem:** Auditoria da jornada de pré-onboarding ciclo 4 (2026-06-10) + decisões PM 2026-06-10/11.
 **Refs:** #625 (camadas 1-2), ADR-0004 (`organization_id`), ADR-0007 (`can()`), ADR-0012 (cache columns),
 ADR-0042 (chapter dashboards), ADR-0076 (PMI data/LIA/opt-out), GC-162 (RLS/LGPD), #573 (EEE/UK), #571 (re-aceite).
