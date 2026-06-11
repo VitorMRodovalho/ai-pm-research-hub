@@ -635,7 +635,7 @@ const enUS: Record<string, string> = {
   'schedule.label': 'Schedule',
   'schedule.title': 'Weekly Schedule',
   'schedule.generalMeeting': 'General Meeting',
-  'schedule.generalSchedule': 'Every Thursday · 7:30 PM BRT',
+  'schedule.generalSchedule': 'Biweekly on Thursdays · 7:00–8:30 PM BRT',
   'schedule.loginHint': 'Log in to see the meeting link',
   'schedule.tribeMeetings': 'Tribe Meetings',
   'schedule.yourTribe': 'your tribe',

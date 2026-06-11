@@ -7,7 +7,8 @@
 >
 > **Escopo**: 24 tabelas/views + 1 função preservadas com anon SELECT
 > grant após Track R Phase R3 (p59) + 1 função PII (`get_gp_whatsapp`)
-> com inline LGPD comment. Total: **25 superfícies**.
+> com inline LGPD comment + 1 função de agenda sem PII
+> (`get_next_general_meeting`, 2026-06-11). Total: **26 superfícies**.
 >
 > **Atualizado**: 2026-06-11 (header DPO corrigido; corpo: 2026-04-26, p59)
 > **Próxima revisão**: trimestral (cadência sponsor touchpoint)
@@ -332,6 +333,24 @@ Dashboards e catálogos públicos de saída institucional.
   no Art. 18 cycle (LGPD subject rights). Mitigation: no termo de
   GP role, incluir cláusula explícita de consent para exposição
   pública de WhatsApp + cadência de revisão.
+
+---
+
+## G. Public Agenda Function (1)
+
+### G.1 `get_next_general_meeting()` (function, not table)
+
+| Campo ROPA | Valor |
+|---|---|
+| **Categoria de dado** | Nenhum dado pessoal (agenda institucional: data, hora de início, duração da próxima Reunião Geral) |
+| **Base legal** | N/A — não há tratamento de dado pessoal (LGPD Art. 5º, I não alcançado) |
+| **Finalidade** | Linha "Reunião Geral" data-driven na homepage (substitui string i18n hardcoded que dessincronizava da cadência real) |
+| **Filtro** | SECURITY DEFINER; `type='geral' AND initiative_id IS NULL AND status<>'cancelled' AND date>=CURRENT_DATE LIMIT 1`; retorna SÓ `{date, time_start, duration_minutes}` |
+| **Titulares** | N/A |
+| **Destinatários** | Público geral via homepage |
+| **Retenção** | N/A (leitura derivada de `events` — ver A.3) |
+| **Caller** | `WeeklyScheduleSection.astro` |
+| **Migration** | `20260805000143` (2026-06-11). Nota: anon já lia `events` direto (A.3, policy `type IN ('geral','webinar')`); esta função é superfície *mais estreita* que o read direto. |
 
 ---
 

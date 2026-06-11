@@ -59,11 +59,49 @@ const { lang = 'pt-BR' } = Astro.props;
     const i18nYourTribe = document.getElementById('schedule-i18n-yourTribe')?.textContent || 'sua tribo';
     const i18nNoMeetings = document.getElementById('schedule-i18n-noMeetings')?.textContent || 'Nenhuma reunião agendada.';
 
+    // Data-driven general-meeting line (public RPC, anon OK): renders the actual next
+    // occurrence from the events table instead of a hardcoded cadence string. The i18n
+    // text stays as SSR fallback if the RPC fails. events.date is a calendar date
+    // (midnight UTC) — render it as-is (timeZone UTC), never shift to BRT.
+    function formatGeneralMeeting(gm: any): string | null {
+      if (!gm?.date || !gm?.time_start) return null;
+      const LOCALES: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es' };
+      const day = new Intl.DateTimeFormat(LOCALES[_locale] || 'pt-BR', {
+        weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC',
+      }).format(new Date(`${gm.date}T12:00:00Z`));
+      const start = String(gm.time_start).slice(0, 5);
+      let range = start;
+      const dur = Number(gm.duration_minutes);
+      if (Number.isFinite(dur) && dur > 0) {
+        const [h, m] = start.split(':').map(Number);
+        const endMin = h * 60 + m + dur;
+        const end = `${String(Math.floor(endMin / 60) % 24).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+        range = `${start}–${end}`;
+      }
+      return `${day} · ${range} BRT`;
+    }
+
+    // One-shot (public + deterministic data — no need to re-fetch on nav:member re-fires).
+    let gmLoaded = false;
+    function loadGeneralMeeting() {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) { setTimeout(loadGeneralMeeting, 300); return; }
+      if (gmLoaded) return;
+      gmLoaded = true;
+      sb.rpc('get_next_general_meeting').then(({ data: gm }: any) => {
+        const formatted = formatGeneralMeeting(gm);
+        const el = document.getElementById('schedule-general-date');
+        if (formatted && el) el.textContent = formatted;
+      }).catch(() => {});
+    }
+    loadGeneralMeeting();
+
     async function loadSchedule() {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(loadSchedule, 300); return; }
 
       try {
+
         const { data: slots } = await sb
           .from('tribe_meeting_slots')
           .select('tribe_id, day_of_week, time_start, time_end')
