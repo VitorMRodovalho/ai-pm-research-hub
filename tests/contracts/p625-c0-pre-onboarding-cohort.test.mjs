@@ -41,6 +41,17 @@ const sb = SUPABASE_URL && SUPABASE_SRK
 
 const FN_BODY = (MIG.match(/AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?? '';
 
+// #625 F1: admin_list_members foi re-definido na migration ...148 (adicionou as chaves do farol de
+// filiação + LATERAL aff, preservando a lógica da coorte). O check de md5 do corpo VIVO deve comparar
+// contra a captura CANÔNICA mais recente (...148), não contra a do C0 (...142). Os anchors estruturais
+// (is_pre_onboarding / pre.flag / view_internal_analytics) seguem válidos nas duas. Fallback p/ FN_BODY
+// quando ...148 ainda não existe no checkout.
+const MIG_148_PATH = 'supabase/migrations/20260805000148_625_affiliation_verification_loop_f1_f3.sql';
+const FN_BODY_LATEST = existsSync(MIG_148_PATH)
+  ? ((readFileSync(MIG_148_PATH, 'utf8')
+       .match(/CREATE OR REPLACE FUNCTION public\.admin_list_members[\s\S]*?AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?? FN_BODY)
+  : FN_BODY;
+
 describe('p625-c0 — migration + RPC rule', () => {
   it('migration exists with #625 + ADR-0100 anchors + NOTIFY', () => {
     assert.ok(existsSync(MIG_PATH));
@@ -107,7 +118,7 @@ describe('p625-c0 — i18n parity (3 dictionaries)', () => {
 describe('p625-c0 — DB-gated (skip without env)', () => {
   it('live body matches the migration capture (Phase-C md5)', { skip: !sb }, async () => {
     const { createHash } = await import('node:crypto');
-    const localMd5 = createHash('md5').update(FN_BODY.replace(/\s+/g, ' ')).digest('hex');
+    const localMd5 = createHash('md5').update(FN_BODY_LATEST.replace(/\s+/g, ' ')).digest('hex');
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) { console.warn(`[p625-c0] helper unavailable: ${error.message}`); return; }
     const fn = (data ?? []).find((f) => f.proname === 'admin_list_members');
