@@ -51,6 +51,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase', permission: 'admin.access' },
       { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
+      { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
     ],
