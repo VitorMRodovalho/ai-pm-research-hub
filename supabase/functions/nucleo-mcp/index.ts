@@ -2259,7 +2259,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 50.1: get_pending_ratifications — All authenticated members (RPC scopes by caller eligibility)
-  mcp.tool("get_pending_ratifications", "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.", {}, async () => {
+  mcp.tool("get_pending_ratifications", "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | cert_director_go | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_pending_ratifications", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -5618,7 +5618,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // Gate: RPC internal (validates gate_kind role eligibility + UE consent when required)
   mcp.tool("sign_ratification_gate", "Sign a gate on an IP ratification or cooperation agreement approval chain (ADR-0016). signoff_type can be 'approval' or 'rejection'. Optional sections_verified jsonb and comment. UE consent flag required for external_signer gates.", {
     chain_id: z.string().describe("UUID of approval_chains row"),
-    gate_kind: z.string().describe("Gate kind (e.g. 'curator', 'leader_awareness', 'submitter_acceptance', 'chapter_witness', 'president_go', 'member_ratification')"),
+    gate_kind: z.string().describe("Gate kind (e.g. 'curator', 'leader_awareness', 'submitter_acceptance', 'chapter_witness', 'president_go', 'cert_director_go', 'member_ratification')"),
     signoff_type: z.string().optional().describe("'approval' (default) or 'rejection'"),
     sections_verified: z.string().optional().describe("JSON string listing which sections the signer verified"),
     comment_body: z.string().optional().describe("Optional comment posted alongside the signoff"),
@@ -6410,7 +6410,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   mcp.tool("lock_document_version", "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.", {
     version_id: z.string().describe("UUID of document_versions row to lock"),
     gates: z.array(z.object({
-      kind: z.string().describe("gate kind: curator | leader_awareness | submitter_acceptance | chapter_witness | president_go | president_others | member_ratification | external_signer"),
+      kind: z.string().describe("gate kind: curator | leader_awareness | submitter_acceptance | chapter_witness | president_go | president_others | cert_director_go | member_ratification | external_signer"),
       order: z.number().describe("Gate order in chain (1-indexed)"),
       threshold: z.union([z.string(), z.number()]).describe("'all' or integer N (minimum signatures required)")
     })).describe("Ordered gate sequence for this approval chain")

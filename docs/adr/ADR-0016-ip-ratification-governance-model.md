@@ -501,3 +501,46 @@ Speedup ~5× para tipical case. Ganho aumenta linearmente com número de active 
 - PM ratification: `docs/council/decisions/2026-04-27-p70-pm-ratifications.md` §E.3 (Opção C)
 - ADR-0007 (V4 authority — `can_by_member('manage_platform')` gate em rebuild RPC)
 - ADR-0011 V4 auth invariant compliance: cache RPC adapter STABLE SECDEF; rebuild RPC SECDEF gated
+
+---
+
+## Amendment 4 — 2026-06-12 — gate_kind `cert_director_go` (Diretoria de Certificação PMI-GO)
+
+**Contexto:** o TAP "Grupo de Estudos CPMAI Prep Course · Ciclo 4" (doc `d7447a94`, `project_charter`, R01 `8f57a321`) recircula através de uma cadeia formal onde a **Diretoria de Certificação da sede (PMI-GO)** valida o charter entre o Líder da Iniciativa e o Presidente. Nenhum `gate_kind` existente modelava essa autoridade (a diretora de certificação não tem `manage_member`, `sign_chain_leader` nem `curate_content`). Aditiva ao modelo base (D1 gates-as-data, D3 can()/_can_sign_gate layering) sem contradizê-lo. Council Tier 2 (security-engineer + accountability-advisor + senior-software-engineer + legal-counsel) revisou: GO_WITH_FIXES convergente, `wf_52119163-8b1`.
+
+### D4.1 — Novo gate_kind `cert_director_go` em `_can_sign_gate`
+
+Predicado:
+```sql
+WHEN 'cert_director_go' THEN
+  v_member.chapter = 'PMI-GO'
+  AND 'certificacao_director' = ANY(v_member.designations)
+  AND (v_doc_type IS NULL OR v_doc_type = 'project_charter')
+```
+- `is_active` herdado do header da função (fail-closed, não bypassável).
+- **`chapter_board` e `legal_signer` intencionalmente OMITIDOS** (decisão 3-de-4 lentes, chair concordou). Diferente de `president_go` (que exige `chapter_board` + `legal_signer` por ser assinatura jurídica que vincula a pessoa jurídica), `cert_director_go` é **validação programática interna de alinhamento de área**, sem efeito jurídico externo. Argumento decisivo: exigir `legal_signer` forçaria conceder `legal_signer` à diretora → escalonamento transitivo (legal_signer destrava `president_go` em cooperation_agreements, fora do mandato dela). `certificacao_director` é designação de diretoria (não tag genérica) → marcador de autoridade suficiente por si só.
+- **doc_type scoping** (`project_charter`) como defesa-em-profundidade: a designação só habilita o gate em charters, não em policy/cooperation_agreement. O ramo `v_doc_type IS NULL` preserva o modo preview (`p_chain_id IS NULL`).
+
+### D4.2 — `_validate_gates_shape` allowlist
+
+`cert_director_go` adicionado ao allowlist do CHECK `approval_chains_gates_shape`. Allowlist completa pós-mudança (11 kinds):
+`curator, leader, leader_awareness, submitter_acceptance, chapter_witness, president_go, president_others, volunteers_in_role_active, member_ratification, external_signer, cert_director_go`.
+**Obrigatório atomicamente** com D4.1 — sem isso, qualquer chain carregando o gate falha o CHECK.
+
+### D4.3 — Roteamento de CTA + notificação
+
+- `_ip_ratify_cta_link`: `cert_director_go` roteia para a página member-facing `/governance/documents/X` (não `/admin/`), junto de `curator/leader_awareness/chapter_witness/president_go/president_others`. A diretora assina via `ReviewChainIsland` em `externalReviewMode` (mesmo caminho do `president_go`), pois tem `participate_in_governance_review` mas não `manage_member`.
+- `_enqueue_gate_notifications`: branch de label/role/verb para `cert_director_go` (rótulo "Validação da Diretoria de Certificação (PMI-GO)") nos eventos `chain_opened` e `gate_advanced`.
+- Frontend: `cert_director_go` adicionado aos `GATE_LABELS`/`SIGN_LABELS` de `ReviewChainIsland`, `ChainAuditReportPDF`, `DocumentVersionEditor`, `documents.astro` (3 locais), `my-pending.astro`. Rótulo usa "validar" (ato interno de governança), nunca "certificar"/"endossar" (cautela de marca — legal-counsel).
+
+### D4.4 — Cadeia SEQUENCIAL (decisão do PM 2026-06-12)
+
+A cadeia de recirculação do R01 é **sequencial** (ordens distintas): `submitter_acceptance`(o1) → `leader`(o2) → `cert_director_go`(o3) → `president_go`(o4, final). Decisão do PM após o re-grounding revelar que o paralelismo real (Líder ∥ Certificação na mesma `order`) exigiria corrigir o bug de same-order `prevOK` em 3 frontends (`activeEligibleGates`/`GovernancePipelineBar`/`documents.astro`) + o `LIMIT 1` do `_enqueue_gate_notifications gate_advanced`. **O bug de same-order é registrado como follow-up separado** (PR focado de correção de paralelismo). Para a cadeia sequencial, a lógica existente está correta (uma gate por order) e nenhuma mudança de `prevOK` é necessária.
+
+### D4.5 — Escopo e Fase B
+
+- O gate é **inerte** até uma chain carregá-lo. `cert_director_go` **NÃO** entra em `resolve_default_gates('project_charter')` por ora (hand-built-chain-only; reavaliar quando um 2º TAP precisar).
+- **Fase B (recirculação, gated/outward-facing, sessão posterior):** UPDATE `approval_chains.gates` da chain `897aeddf` (2→4 gates, audit-logado) → `recirculate_governance_doc` dry-run → não-dry-run (supersede + lacra R01 + e-mail). Precondições: RACI do R01 alinhada (Diretoria de Área de `C`→`A` na linha "Aprovação do TAP"), Welma briefada sobre o escopo da assinatura.
+
+### Migration aplicada
+- `20260805000152_adr0016_amendment_4_cert_director_go` — `_validate_gates_shape` + `_can_sign_gate` + `_ip_ratify_cta_link` + `_enqueue_gate_notifications`. Smoke verificado (Welma+project_charter=true; Welma+policy=false [scoping]; não-cert=false; CTA member-facing; file==live para as 4 funções).
