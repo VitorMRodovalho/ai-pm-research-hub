@@ -4,31 +4,38 @@ Deck executivo (~15 slides, 1 ideia por slide) para board do PMI / presidentes d
 parceiros de vertical. Construído com a skill `branded-deck-build`: clona o template PMI oficial
 e injeta conteúdo por nome de shape, preservando a marca byte a byte.
 
-## Edições / languages
+## Arquitetura (engine compartilhado + conteúdo por idioma)
 
-Duas edições, mesmo template e engine. O **nome do Núcleo é bilíngue**: "Núcleo IA & GP"
-é preservado como marca em ambas; a edição EN glosa na capa como "AI & PM Study and Research Hub".
+Três arquivos, responsabilidade separada. Adicionar um idioma = **só um dict** novo em
+`deck_content.py` + uma linha em `EDITIONS` no `build.py`. Nada de duplicar engine ou layout.
 
-| Edição | Script | Saída | Diagrama |
-|--------|--------|-------|----------|
-| PT-BR | `build_nucleo_deck.py` | `Nucleo_IA_GP_Pitch_Executivo.pptx` | `assets/hub_spoke.png` |
-| EN-US | `build_nucleo_deck_en.py` | `Nucleo_IA_GP_Pitch_Executive_EN.pptx` | `assets/hub_spoke_en.png` |
+| Arquivo | Responsabilidade |
+|---------|------------------|
+| `deck_engine.py` | Engine genérico (classe `Deck`): clone/inject por shape, caixas/tabelas/imagem/seta, guards, render. Agnóstico de conteúdo e idioma. |
+| `deck_content.py` | Só as **strings**, por idioma (`CONTENT["pt"]`, `CONTENT["en"]`, ...). Cores e posições não ficam aqui. |
+| `build.py` | O **layout** dos 15 slides (uma vez só) + orquestra as edições. |
+| `gen_assets.py` | Gera os diagramas hub-and-spoke (um por idioma). |
+
+O **nome do Núcleo é bilíngue**: "Núcleo IA & GP" é preservado como marca em todas as edições
+(capa, centro do diagrama, corpo); a edição EN glosa na capa como "AI & PM Study and Research Hub".
+
+| Edição | Saída | Diagrama |
+|--------|-------|----------|
+| PT-BR | `Nucleo_IA_GP_Pitch_Executivo.pptx` | `assets/hub_spoke.png` |
+| EN-US | `Nucleo_IA_GP_Pitch_Executive_EN.pptx` | `assets/hub_spoke_en.png` |
 
 ## Como reconstruir
 
 ```bash
-~/.venvs/pmo/bin/python gen_assets.py            # gera os diagramas hub-and-spoke (PT + EN)
-~/.venvs/pmo/bin/python build_nucleo_deck.py     # deck PT-BR (pptx -> PDF -> preview/, num run só)
-~/.venvs/pmo/bin/python build_nucleo_deck_en.py  # deck EN-US (-> preview_en/)
+~/.venvs/pmo/bin/python gen_assets.py     # diagramas hub-and-spoke (PT + EN)
+~/.venvs/pmo/bin/python build.py          # todas as edições (pt, en)
+~/.venvs/pmo/bin/python build.py en       # só uma edição
 ```
 
-Saídas: o `.pptx` (nativamente editável no PowerPoint) + `.pdf` + `preview*/slide-*.png` por edição.
+Saídas por edição: o `.pptx` (nativamente editável no PowerPoint) + `.pdf` + `preview*/slide-*.png`.
 
-> Dívida conhecida: o engine (clone/inject/guards/render) está duplicado entre os dois scripts.
-> Extrair um engine compartilhado e deixar só as specs por idioma é melhoria rastreada em [LL] #588.
-
-O deck é uma função de `(template, specs)`: toda edição vai no `build_nucleo_deck.py`, nunca no
-`.pptx` de saída (senão a reprodutibilidade quebra). Guards no build falham se houver em-dash,
+O deck é uma função de `(template, content)`: toda edição vai em `deck_content.py`/`build.py`, nunca
+no `.pptx` de saída (senão a reprodutibilidade quebra). Guards falham o build se houver em-dash,
 overflow de canvas, boilerplate sobrevivente ou linha divisória cruzando conteúdo.
 
 ## Fonte do conteúdo (sem pesquisa nova — é transposição)
