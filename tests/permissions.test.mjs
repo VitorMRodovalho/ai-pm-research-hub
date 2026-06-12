@@ -19,8 +19,8 @@ describe('permissions types', () => {
     assert.equal(Object.keys(TIER_PERMISSIONS).length, 11);
   });
 
-  it('all 9 designations defined', () => {
-    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 9);
+  it('all 10 designations defined', () => {
+    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 10);
   });
 
   it('tier labels cover all tiers', () => {
@@ -44,6 +44,19 @@ describe('hasPermission (real mode)', () => {
     assert.ok(hasPermission(member, 'admin.access'));
     assert.ok(hasPermission(member, 'system.global_config'));
     assert.ok(hasPermission(member, 'board.delete_item'));
+  });
+
+  it('#670 chapter_liaison designation = ponto focal visibility (chapter/program analytics, NOT admin.access)', () => {
+    const focal = { operational_role: 'researcher', designations: ['chapter_liaison'] };
+    // grants the program/chapter VISIBILITY the focal point needs...
+    assert.ok(hasPermission(focal, 'admin.analytics.chapter'), 'ponto focal must see Meu Capítulo');
+    assert.ok(hasPermission(focal, 'admin.analytics'), 'ponto focal sees program analytics');
+    assert.ok(hasPermission(focal, 'admin.governance.view'), 'governance read');
+    // ...but the designation does NOT grant admin shell-entry (least-privilege; server
+    // __nucleoCanForAdminEntry gates the shell, so a designation w/o the backing engagement
+    // does not get a broken shell/nav).
+    assert.ok(!hasPermission(focal, 'admin.access'), 'designation must NOT grant admin.access');
+    assert.ok(!hasPermission(focal, 'admin.members.manage'), 'no member management');
   });
 
   it('manager has admin.access', () => {
