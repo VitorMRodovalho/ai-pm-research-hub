@@ -4,16 +4,28 @@ Deck executivo (~15 slides, 1 ideia por slide) para board do PMI / presidentes d
 parceiros de vertical. Construído com a skill `branded-deck-build`: clona o template PMI oficial
 e injeta conteúdo por nome de shape, preservando a marca byte a byte.
 
+## Edições / languages
+
+Duas edições, mesmo template e engine. O **nome do Núcleo é bilíngue**: "Núcleo IA & GP"
+é preservado como marca em ambas; a edição EN glosa na capa como "AI & PM Study and Research Hub".
+
+| Edição | Script | Saída | Diagrama |
+|--------|--------|-------|----------|
+| PT-BR | `build_nucleo_deck.py` | `Nucleo_IA_GP_Pitch_Executivo.pptx` | `assets/hub_spoke.png` |
+| EN-US | `build_nucleo_deck_en.py` | `Nucleo_IA_GP_Pitch_Executive_EN.pptx` | `assets/hub_spoke_en.png` |
+
 ## Como reconstruir
 
 ```bash
-~/.venvs/pmo/bin/python gen_assets.py        # gera o diagrama hub-and-spoke (assets/hub_spoke.png)
-~/.venvs/pmo/bin/python build_nucleo_deck.py # pptx -> PDF -> preview PNGs num run só (QA não envelhece)
+~/.venvs/pmo/bin/python gen_assets.py            # gera os diagramas hub-and-spoke (PT + EN)
+~/.venvs/pmo/bin/python build_nucleo_deck.py     # deck PT-BR (pptx -> PDF -> preview/, num run só)
+~/.venvs/pmo/bin/python build_nucleo_deck_en.py  # deck EN-US (-> preview_en/)
 ```
 
-Saídas:
-- `Nucleo_IA_GP_Pitch_Executivo.pptx` — nativamente editável no PowerPoint
-- `Nucleo_IA_GP_Pitch_Executivo.pdf` + `preview/slide-*.png` + `preview/contact_sheet.png` (QA visual)
+Saídas: o `.pptx` (nativamente editável no PowerPoint) + `.pdf` + `preview*/slide-*.png` por edição.
+
+> Dívida conhecida: o engine (clone/inject/guards/render) está duplicado entre os dois scripts.
+> Extrair um engine compartilhado e deixar só as specs por idioma é melhoria rastreada em [LL] #588.
 
 O deck é uma função de `(template, specs)`: toda edição vai no `build_nucleo_deck.py`, nunca no
 `.pptx` de saída (senão a reprodutibilidade quebra). Guards no build falham se houver em-dash,

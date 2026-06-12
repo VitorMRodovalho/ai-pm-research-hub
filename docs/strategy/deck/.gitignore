@@ -2,5 +2,5 @@
 # *.pptx covers BOTH the 18MB PMI brand template (build/) and the rendered deck (skill guardrail).
 *.pptx
 *.pdf
-preview/
+preview*/
 out/
