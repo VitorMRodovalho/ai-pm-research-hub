@@ -1,0 +1,6 @@
+# Generated / heavy artifacts — reproducible from the scripts, not versioned.
+# *.pptx covers BOTH the 18MB PMI brand template (build/) and the rendered deck (skill guardrail).
+*.pptx
+*.pdf
+preview/
+out/
