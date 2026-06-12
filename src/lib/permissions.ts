@@ -39,7 +39,8 @@ export type Designation =
   | 'founder'
   | 'alumni'
   | 'chapter_board'
-  | 'filiacao_director';
+  | 'filiacao_director'
+  | 'chapter_liaison';
 
 export type Permission =
   // ── Admin panel ──
@@ -248,6 +249,17 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   filiacao_director: [
     'admin.access', 'admin.filiacao',
   ],
+  // Ponto Focal do Capítulo (#670) — função-anchored. O presidente do capítulo intitula o ponto
+  // focal do programa; ele PRECISA de visibilidade (programa + seu capítulo). Concede só a
+  // VISIBILIDADE (sem `admin.access`): a entrada no shell admin segue a autoridade server
+  // (`__nucleoCanForAdminEntry`, via engagement chapter_board/liaison → view_chapter_dashboards),
+  // então um portador da designation SEM o engagement (ex.: ponto focal ainda não onboardado no
+  // server) não ganha um shell/nav quebrado — só vê os itens quando tem a autoridade real.
+  chapter_liaison: [
+    'admin.analytics', 'admin.analytics.chapter',
+    'admin.governance.view',
+    'data.view_analytics',
+  ],
 };
 
 // ==========================================
@@ -278,6 +290,7 @@ export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; e
   alumni:         { pt: 'Alumni',               en: 'Alumni',           es: 'Alumni' },
   chapter_board:  { pt: 'Diretoria do Capítulo', en: 'Chapter Board',   es: 'Directiva del Capítulo' },
   filiacao_director: { pt: 'Diretoria de Filiação', en: 'Affiliation Director', es: 'Dirección de Afiliación' },
+  chapter_liaison: { pt: 'Ponto Focal do Capítulo', en: 'Chapter Focal Point', es: 'Punto Focal del Capítulo' },
 };
 
 // Tier color categories for simulation banner
