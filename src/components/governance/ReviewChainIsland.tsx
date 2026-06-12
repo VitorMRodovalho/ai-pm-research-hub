@@ -411,15 +411,21 @@ export default function ReviewChainIsland({ chainId, externalReviewMode = false 
       )}
       <header className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">{detail.document_title}</h2>
-            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-              Versão <strong>{detail.version_label}</strong> · Lacrada {fmtDT(detail.locked_at)}
-              {' · '}
-              Submetida por <strong>{detail.submitter?.name || '—'}</strong>
-              {' em '}{fmtDT(detail.opened_at)}
-              {detail.days_open != null && ' · aberta há ' + Math.floor(detail.days_open) + ' dia(s)'}
-            </p>
+          <div className="flex items-start gap-3">
+            {/* #668 — identidade institucional: logo do capítulo sede (PMI-GO) no reader on-screen,
+                espelhando o termo de voluntário (volunteer-agreement.astro) e o PDF exportado
+                (ChainPDFDocument, #632). Mantém o capítulo como referência do projeto na tela. */}
+            <img src="/assets/logos/pmigo.png" alt="PMI Goiás" className="h-10 w-auto flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">{detail.document_title}</h2>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                Versão <strong>{detail.version_label}</strong> · Lacrada {fmtDT(detail.locked_at)}
+                {' · '}
+                Submetida por <strong>{detail.submitter?.name || '—'}</strong>
+                {' em '}{fmtDT(detail.opened_at)}
+                {detail.days_open != null && ' · aberta há ' + Math.floor(detail.days_open) + ' dia(s)'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* p220 BUG-219.A Phase 3: external reviewers stay on /governance/* routes (no admin chrome).
