@@ -137,6 +137,7 @@ const GATE_LABELS: Record<string, string> = {
   chapter_witness: 'Testemunho de capítulo',
   president_go: 'Presidência PMI-GO',
   president_others: 'Presidências outros capítulos',
+  cert_director_go: 'Diretoria de Certificação PMI-GO',
   volunteers_in_role_active: 'Ratificação voluntários em função',
   member_ratification: 'Ratificação membros',
   external_signer: 'Signatário externo',
