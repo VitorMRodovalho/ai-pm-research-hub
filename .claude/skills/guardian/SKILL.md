@@ -1,6 +1,6 @@
 ---
 name: guardian
-description: Invoca o Platform Guardian (pós-V4) para auditar invariantes estruturais da plataforma, detectar drift entre docs e código, verificar cobertura ADR de mudanças recentes, e propor novos itens de backlog. Use no início/fim de sessão que toque SQL/RPC/MCP ou como smoke check periódico. Para referência histórica do refactor V4 (concluído 2026-04-13), veja `.claude/agents/refactor-guardian.md`.
+description: Invoca o Platform Guardian (pós-V4) para auditar invariantes estruturais da plataforma, detectar drift entre docs e código, verificar cobertura ADR de mudanças recentes, e propor novos itens de backlog. Use no início/fim de sessão que toque SQL/RPC/MCP ou como smoke check periódico. Para referência histórica do refactor V4 (concluído 2026-04-13), veja `docs/refactor/refactor-guardian-AGENT-ARCHIVED.md`.
 user_invocable: true
 ---
 
@@ -25,4 +25,4 @@ The guardian NEVER edits files — it only reads, greps, and proposes diffs. It 
 
 ## Legacy / historical
 
-For the V4 refactor in-progress period (2026-04-11 → 2026-04-13), the predecessor was `.claude/agents/refactor-guardian.md`. That agent covered specific phase-gating invariants for ADRs 0004-0009 during the 7-phase refactor. Kept as historical reference. Do NOT invoke refactor-guardian for new work — use platform-guardian.
+For the V4 refactor in-progress period (2026-04-11 → 2026-04-13), the predecessor was `docs/refactor/refactor-guardian-AGENT-ARCHIVED.md` (archived out of the active agent registry 2026-06-11). That agent covered specific phase-gating invariants for ADRs 0004-0009 during the 7-phase refactor. Kept as historical reference. Do NOT invoke refactor-guardian for new work — use platform-guardian.
