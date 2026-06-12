@@ -171,3 +171,36 @@ Para trabalho paralelo de múltiplos agentes/modelos (Claude Code, Cursor, Codex
 5. **Deploy** — commit + push + tag + verificar produção.
 
 Detalhes em `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`.
+
+## Shared brain & cross-tool sessions (Codex / non-Claude agents)
+
+This repo lives under Vitor's portfolio PMO. Claude Code auto-loads `CLAUDE.md`
++ its memory namespace; you (Codex/Cursor/Gemini) do not, so:
+
+1. **Read for context, don't rewrite the brain.** Read `CLAUDE.md`, the docs map
+   above, and (read-only) the Claude memory namespace at
+   `~/.claude/projects/-home-vitormrodovalho-projects-ai-pm-research-hub/`.
+   **Never create or edit files under that `memory/` namespace** — it is curated
+   by Claude in a strict format; writing it in another shape causes recall drift.
+   Brain curation stays with Claude.
+
+2. **Hand work back via `_handoff/`, not memory.** Copy `_handoff/TEMPLATE.md` to
+   `_handoff/codex-<YYYY-MM-DD>.md`, fill it in, and **commit it**. Tuesday's
+   Claude session reconciles it into memory + the `[LL]` issue. Do NOT post `[LL]`
+   GitHub issues/comments yourself — the harvest loop depends on exact format;
+   just record lessons in the handoff file.
+
+3. **Grounding rule still applies (CLAUDE.md).** Any count/%/metric you state must
+   come from a live tool result THIS session. Never recite numbers from memory or
+   a prior handoff.
+
+4. **Commit attribution:** trailer (LAST line of body) =
+   `Assisted-By: Codex (OpenAI) <noreply@openai.com>`. **NEVER `Co-Authored-By:`**
+   (pollutes the authorship/IP chain). Human is sole author of record. No
+   `🤖 Generated with…` footers unless asked.
+
+5. **Governance is unchanged:** branch + PR, the 5-phase sprint closure, the gates
+   in `SPRINT_IMPLEMENTATION_PRACTICES.md`, and the `--admin`/bypass protocol
+   (`.claude/rules/bypass-protocol.md`) bind you too. Never force-push, never
+   `--no-verify`, never merge a Dependabot PR (#611 policy). Work within your p201
+   lane only.
