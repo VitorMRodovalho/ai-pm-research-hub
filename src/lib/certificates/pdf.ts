@@ -4,6 +4,7 @@
  */
 
 export interface CertificateData {
+  id?: string; // #648: cert id — fallback key for the frozen-PDF lookup when verification_code is absent
   member_name: string;
   type: string;
   title?: string;
@@ -30,6 +31,7 @@ export interface CertificateData {
   counter_signed_at?: string;
   counter_signed_by_name?: string;
   template_content?: any; // full template from governance_documents
+  template_version?: string; // #648: version label of the PINNED template, for the footer
   chapter_cnpj?: string;
   chapter_name?: string;
 }
@@ -222,6 +224,17 @@ function formatPeriod(start: string | undefined, end: string | undefined): strin
  */
 export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const c = certData.template_content || {};
+  // #648 — fail LOUD instead of silently rendering blank clauses. A signed term must
+  // never re-render without its agreed text. hydrateCertData resolves `c` from the
+  // immutable per-cert clause snapshot (or the pinned template version); if it is
+  // missing/empty the document cannot be faithfully reconstructed, so we refuse rather
+  // than emit a blank legal instrument (the download path serves the frozen PDF first).
+  if (!c || typeof c !== 'object' || Array.isArray(c) || !(c as any).clause1) {
+    throw new Error(
+      `volunteer_agreement_template_unavailable: missing clause snapshot for cert ` +
+      `${certData.verification_code || '(unknown)'} — refusing to render a blank signed term (#648)`
+    );
+  }
   const SUB_KEYS: Record<string, string[]> = {
     clause1: ['clause1a', 'clause1b', 'clause1c'],
     clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
@@ -391,7 +404,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ${signatureBlock}
 
     <div style="text-align:center;margin-top:28px;font-size:9px;color:#999">
-      <div>Código: ${certData.verification_code || '—'} · Template: R3-C3</div>
+      <div>Código: ${certData.verification_code || '—'} · Template: ${certData.template_version || 'R3-C3'}</div>
       <div style="margin-top:2px">Iniciativa colaborativa entre capítulos PMI Brasil</div>
     </div>
   </div>
@@ -463,7 +476,7 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
       if (certData.verification_code) {
         const { data: fullCert } = await sb
           .from('certificates')
-          .select('content_snapshot, signature_hash, issued_at, counter_signed_at, counter_signed_by, member_id, source')
+          .select('content_snapshot, signature_hash, issued_at, counter_signed_at, counter_signed_by, member_id, source, template_id')
           .eq('verification_code', certData.verification_code)
           .maybeSingle();
         if (fullCert) {
@@ -493,20 +506,32 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
               if (cs?.name) certData.counter_signed_by_name = cs.name;
             } catch {}
           }
-        }
-      }
 
-      // Fetch active template
-      const { data: tpl } = await sb
-        .from('governance_documents')
-        .select('content, version, title')
-        .eq('doc_type', 'volunteer_term_template')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (tpl) {
-        certData.template_content = typeof tpl.content === 'string' ? JSON.parse(tpl.content) : tpl.content;
+          // #648 — IMMUTABILITY: resolve the clause body as PINNED at signing, NEVER the
+          // live `status='active'` template (which is null while the term is on HOLD →
+          // blank clauses, and would retroactively rewrite signed terms after any
+          // revision). Order of precedence:
+          //   (1) the clause snapshot stored on the cert at signing (content_snapshot.clauses);
+          //   (2) the exact template version pinned on the cert (template_id), regardless
+          //       of its current lifecycle status.
+          // If neither resolves, template_content stays undefined and
+          // buildVolunteerAgreementHTML throws rather than emit a blank instrument.
+          certData.template_version = certData.template_version || snap.template_version;
+          const snapClauses = snap.clauses;
+          if (snapClauses && typeof snapClauses === 'object' && !Array.isArray(snapClauses) && snapClauses.clause1) {
+            certData.template_content = snapClauses;
+          } else if (fullCert.template_id) {
+            const { data: tpl } = await sb
+              .from('governance_documents')
+              .select('content, version, title')
+              .eq('id', fullCert.template_id)
+              .maybeSingle();
+            if (tpl?.content) {
+              certData.template_content = typeof tpl.content === 'string' ? JSON.parse(tpl.content) : tpl.content;
+              certData.template_version = certData.template_version || tpl.version;
+            }
+          }
+        }
       }
     } catch (e) {
       console.warn('[pdf] failed to hydrate volunteer_agreement data:', e);
@@ -556,6 +581,27 @@ function buildPrintDocument(title: string, innerHtml: string): string {
  * instead of "about:blank".
  */
 export async function downloadCertificatePDF(certData: CertificateData, sb?: any): Promise<void> {
+  // #648 Camada 3 — for a SIGNED volunteer agreement, serve the FROZEN immutable PDF
+  // (rendered at signing time into the private 'certificates' bucket) instead of
+  // rebuilding it live. This is the byte-exact legal artifact; the rebuild below is the
+  // immutable fallback (now resolves clauses from the per-cert snapshot, never the live
+  // 'active' template). Falls through to rebuild if no frozen PDF / storage denies.
+  if (sb && certData.type === 'volunteer_agreement' && (certData.verification_code || (certData as any).id)) {
+    try {
+      let q = sb.from('certificates').select('pdf_url');
+      q = certData.verification_code
+        ? q.eq('verification_code', certData.verification_code)
+        : q.eq('id', (certData as any).id);
+      const { data: row } = await q.maybeSingle();
+      if (row?.pdf_url) {
+        const { data: signed } = await sb.storage.from('certificates').createSignedUrl(row.pdf_url, 300);
+        if (signed?.signedUrl) { window.open(signed.signedUrl, '_blank'); return; }
+      }
+    } catch (e) {
+      console.warn('[pdf] frozen volunteer-agreement serve failed; falling back to rebuild', e);
+    }
+  }
+
   if (sb) await hydrateCertData(certData, sb);
 
   const html = buildCertificateHTML(certData);
@@ -590,7 +636,13 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
     ? await Promise.all(certDataList.map(c => hydrateCertData({ ...c }, sb)))
     : certDataList;
 
-  const allHtml = hydrated.map(buildCertificateHTML).join('');
+  // #648 — buildCertificateHTML now throws for a volunteer agreement whose clause
+  // snapshot is unavailable (rather than emitting a blank instrument). In a bulk run,
+  // skip such a cert instead of failing the whole batch.
+  const allHtml = hydrated.map(cd => {
+    try { return buildCertificateHTML(cd); }
+    catch (e) { console.warn('[pdf] skipping cert in bulk render', (cd as any)?.verification_code, e); return ''; }
+  }).join('');
   const title = `Certificados em lote (${hydrated.length})`;
   const fullDoc = buildPrintDocument(title, allHtml);
 

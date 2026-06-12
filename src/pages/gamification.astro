@@ -1697,6 +1697,14 @@ const SCORING_I18N = {
 
   // ── CERTIFICATE PDF (print-based, portrait A4) ──
   (window as any).downloadCertificatePDF = async function(certData: any) {
+    // #648 — volunteer agreements are LEGAL INSTRUMENTS, not generic certificates. This
+    // inline renderer has no volunteer_agreement template (it would emit a generic cert).
+    // Route to /certificates, which serves the frozen immutable PDF / snapshot-based render.
+    if (certData?.type === 'volunteer_agreement') {
+      const lp = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+      window.location.href = `${lp}/certificates`;
+      return;
+    }
     // Fetch issuer signature if issued_by is available
     if (certData.issued_by && !certData.signature_url) {
       try {
