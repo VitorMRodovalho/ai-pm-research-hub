@@ -196,7 +196,18 @@ export const POST: APIRoute = async ({ params, request }) => {
     );
   }
 
-  const innerHtml = buildCertificateHTML(certData);
+  // #648 — buildVolunteerAgreementHTML throws when the clause snapshot is unavailable
+  // (it refuses to freeze a BLANK legal instrument). Surface as a structured 422 instead
+  // of an unhandled 500; the cert keeps pdf_url NULL and stays recoverable via backfill.
+  let innerHtml: string;
+  try {
+    innerHtml = buildCertificateHTML(certData);
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({ error: 'build_failed', detail: e?.message ?? String(e), cert_id: cert.id }),
+      { status: 422, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
   const title = `${cert.verification_code} — ${certData.member_name}`;
   const fullDoc = buildPrintDocument(title, innerHtml, certData.language ?? 'pt-BR');
 
