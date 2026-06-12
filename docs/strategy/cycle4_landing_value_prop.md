@@ -4,7 +4,7 @@
 - Data: 2026-06-12
 - Autor: Vitor (PM) + Claude (PMO)
 - Escopo: Refresh da página de entrada (`nucleoia.vitormr.dev`) na virada para o **Ciclo 4** (jul/2026)
-- Relacionado: `verticals_x_quadrants_model.md`, ADR-0102 (vertical como `initiative_kind`), issue #661
+- Relacionado: `verticals_x_quadrants_model.md`, ADR-0103 (vertical como `initiative_kind`), issue #661
 
 > **Este é um brief de estratégia, não a copy final nem o design final.** O time executa. Duas regras valem como contrato: (1) **nada hardcoded** — indicadores saem de dados ao vivo; (2) **evoluir a informação, preservar o sistema visual** — sem rebrand na virada de ciclo.
 
@@ -46,7 +46,7 @@ Benefício duplo: a página é **honesta** *e* **se atualiza sozinha** a cada ci
 Declarar uma vertical futura sem parecer vaporware:
 - A vertical aparece com **status explícito** ("Vertical ESG — *em formação para o Ciclo 4*"). Não finge atividade.
 - CTA **"Seja protagonista"** (não "seja membro") → recruta **fundadores**, cria coorte fundadora. Mais atraente para gente boa.
-- Sem hardcode: a vertical é uma `initiative` com `status = 'forming'` (ADR-0102/ADR-0009); a página **lê o status** e renderiza o CTA. Interesse entra como `capture_visitor_lead` (com `target_vertical`) → vira `application` quando a vertical abre.
+- Sem hardcode: a vertical é uma `initiative` com `status = 'forming'` (ADR-0103/ADR-0009); a página **lê o status** e renderiza o CTA. Interesse entra como `capture_visitor_lead` (com `target_vertical`) → vira `application` quando a vertical abre.
 
 Resultado: momentum visível ("venha fundar") sem mentir sobre o estado atual.
 
