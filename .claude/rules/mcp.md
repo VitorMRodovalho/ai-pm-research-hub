@@ -1,3 +1,11 @@
+---
+description: MCP server rules (nucleo-mcp) — pre-deploy checks (duplicate names, Zod 3→4, contract matrix drift), tool-count grounding, MCP↔RPC alias map, OAuth/Streamable-HTTP transport, auto-refresh
+paths:
+  - "supabase/functions/nucleo-mcp/**"
+  - "src/pages/mcp.ts"
+  - "scripts/audit-mcp-tool-matrix.mjs"
+---
+
 # MCP Server Rules (nucleo-mcp — /mcp full catalog + /semantic bridge)
 
 ## Current State (do NOT pin counts here)

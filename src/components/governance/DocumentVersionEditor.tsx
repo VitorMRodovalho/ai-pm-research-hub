@@ -40,6 +40,7 @@ const GATE_LABELS: Record<string, string> = {
   submitter_acceptance: 'Aceite do GP',
   president_go: 'Presid. PMI-GO',
   president_others: 'Presid. outros capitulos',
+  cert_director_go: 'Cert. PMI-GO',
   chapter_witness: 'Testemunhas dos capitulos',
   volunteers_in_role_active: 'Ratificacao voluntarios em funcao',
   member_ratification: 'Ratificacao dos membros',
