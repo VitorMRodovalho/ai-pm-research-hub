@@ -251,7 +251,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   // Header with PMI-GO logo (same reference as the example PDF)
   const headerBlock = `
     <div style="margin-bottom:20px">
-      <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" crossorigin="anonymous" />
+      <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
     </div>
     <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
       TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
@@ -363,7 +363,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const annexBlock = `
     <div class="cert-page" style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
       <div style="margin-bottom:20px">
-        <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" crossorigin="anonymous" />
+        <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" />
       </div>
       <h2 style="font-weight:bold;color:#000;font-size:16px;margin:24px 0 14px">ANEXO - LEI DO SERVIÇO VOLUNTÁRIO</h2>
       <p style="font-size:11px;color:#333;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>
@@ -435,7 +435,7 @@ export function buildCertificateHTML(certData: CertificateData): string {
     ? `<div style="margin:24px auto;max-width:420px;text-align:left"><div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">${tpl.contributions}</div><div style="font-size:12px;color:#666;line-height:1.6">${certData.description.replace(/\n/g, '<br>')}</div></div>`
     : '';
   const sigImg = certData.signature_url
-    ? `<img src="${certData.signature_url}" style="max-width:180px;max-height:60px;margin-bottom:4px" crossorigin="anonymous">`
+    ? `<img src="${certData.signature_url}" style="max-width:180px;max-height:60px;margin-bottom:4px">`
     : '';
 
   return `<div class="cert-page" style="width:595px;min-height:842px;padding:48px 40px;border:3px double #1a365d;position:relative;background:#fff;box-sizing:border-box;page-break-after:always">
