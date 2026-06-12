@@ -3,7 +3,7 @@
 - Status: **Proposta / Draft** (kit interno; cada pitch refinar com o parceiro antes de externalizar)
 - Data: 2026-06-12
 - Autor: Vitor (PM) + Claude (PMO)
-- Relacionado: `verticals_x_quadrants_model.md`, `cycle4_landing_value_prop.md`, ADR-0102, issue #661
+- Relacionado: `verticals_x_quadrants_model.md`, `cycle4_landing_value_prop.md`, ADR-0103, issue #661
 
 > **Por que um pitch por vertical.** A vertical é o eixo de público/distribuição. O pitch ser audience-native (fala a credencial, a dor e a linguagem da comunidade) é a "doca" funcionando. Mas pitches separados **não podem virar marcas soltas** — isso recriaria os silos. Por isso: **espinha comum fixa + módulo que varia**. Mesmo padrão costura + doca.
 
