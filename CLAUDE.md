@@ -87,7 +87,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
 - **Bypass protocol (--admin / direct push)**: `.claude/rules/bypass-protocol.md` (post-p209 governance — Option C Híbrido + weekly cron audit at `.github/workflows/bypass-audit-weekly.yml`)
-- V4 refactor invariants (historical): `.claude/rules/refactor-in-progress.md`
+- V4 refactor invariants (historical, archived): `docs/refactor/refactor-in-progress-RULES-ARCHIVED.md`
 
 ## Council (multi-agent review structure)
 **Active since 2026-04-18.** 12 specialized sub-agents em `.claude/agents/` (product-leader, ux-leader, c-level-advisor, stakeholder-persona, senior-software-engineer, ai-engineer, data-architect, security-engineer, startup-advisor, vc-angel-lens, legal-counsel, accountability-advisor) operando em 3 tiers:
@@ -97,6 +97,12 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - **Tier 3 (strategic)**: `/council-review [topic]` em milestones — output em `docs/council/`
 
 Todos são **consultivos** (não modificam código). PM/main loop decide ação. Decision log em `docs/council/decisions/`.
+
+### Routing discipline (MANDATORY — context-hygiene 2026-06-11)
+- **1 agente por subação.** Escolha o agente cujo domínio casa com a tarefa; não convoque mais de um "por garantia".
+- **NUNCA convocar o conselho inteiro por default.** Convocação múltipla (>1 agente) ou `/council-review` exige **justificativa explícita** (milestone, decisão estratégica de alto impacto, ou conflito de domínio real) — declare-a antes de invocar.
+- Tier 1 (`platform-guardian`/`code-reviewer`) e o agente de domínio (Tier 2) cobrem ~95% dos casos. Tier 3 é exceção, não rotina.
+- Agentes são lazy-loaded (custo ~0 em contexto fixo); o custo é **por spawn** — cada invocação extra é um context window inteiro. Trate convocação como gasto, não como hábito.
 
 ## Portfolio PMO (knowledge loop)
 
