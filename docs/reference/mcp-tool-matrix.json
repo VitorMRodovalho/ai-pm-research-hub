@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-10T19:07:24.176Z",
+  "generated_at": "2026-06-12T02:06:02.338Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 319,
   "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
@@ -1152,7 +1152,7 @@
     },
     {
       "name": "get_pending_ratifications",
-      "description": "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.",
+      "description": "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | cert_director_go | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.",
       "domain": "governance",
       "rpcs": [
         "get_pending_ratifications"
