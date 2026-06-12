@@ -1,4 +1,4 @@
-# ADR-0102 — Vertical (PMI credential community) as an `initiative_kind`
+# ADR-0103 — Vertical (PMI credential community) as an `initiative_kind`
 
 - **Status:** Proposed (draft / skeleton — 2026-06-12)
 - **Issue:** #661 ([Discussão] Modelo Verticais × Quadrantes × Tribos)
