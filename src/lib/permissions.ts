@@ -38,7 +38,8 @@ export type Designation =
   | 'ambassador'
   | 'founder'
   | 'alumni'
-  | 'chapter_board';
+  | 'chapter_board'
+  | 'filiacao_director';
 
 export type Permission =
   // ── Admin panel ──
@@ -58,6 +59,7 @@ export type Permission =
   | 'admin.partners'
   | 'admin.simulation'
   | 'admin.gamification'
+  | 'admin.filiacao'           // Diretoria de Filiação panel (#659) — narrow, function-anchored
   // ── Boards ──
   | 'board.view_own_tribe'
   | 'board.view_all'
@@ -113,7 +115,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'admin.blog', 'admin.publications', 'admin.curation',
     'admin.governance.view',
     'admin.sustainability', 'admin.portfolio', 'admin.partners',
-    'admin.simulation', 'admin.gamification',
+    'admin.simulation', 'admin.gamification', 'admin.filiacao',
     'board.view_all', 'board.view_global', 'board.create_item',
     'board.edit_tribe_items', 'board.delete_item',
     'board.manage_checklist', 'board.create_mirror',
@@ -209,7 +211,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
     'admin.sustainability', 'admin.portfolio', 'admin.simulation',
-    'admin.governance.view', 'admin.gamification',
+    'admin.governance.view', 'admin.gamification', 'admin.filiacao',
     'board.view_all', 'board.view_global',
     'data.view_members', 'data.view_analytics',
     'champion.award', 'champion.award_general',
@@ -236,6 +238,15 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.access', 'admin.analytics', 'admin.analytics.chapter',
     'admin.governance.view',
     'data.view_analytics',
+  ],
+  // Diretoria de Filiação (office) — #659. Function-anchored: access follows this designation,
+  // never a named individual. `admin.filiacao` unlocks ONLY the affiliation panel nav+page.
+  // `admin.access` is the admin-shell entry ticket so the office can reach /admin and navigate;
+  // NB it also renders the generic admin.access nav items (Members/Initiatives/Tribes/Certificates/
+  // Webinars/Knowledge/Tags/Partnerships) — but those pages carry their OWN server gates and the
+  // office holds no member.manage/analytics permission. Server RPCs are the real boundary.
+  filiacao_director: [
+    'admin.access', 'admin.filiacao',
   ],
 };
 
@@ -266,6 +277,7 @@ export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; e
   founder:        { pt: 'Fundador',             en: 'Founder',          es: 'Fundador' },
   alumni:         { pt: 'Alumni',               en: 'Alumni',           es: 'Alumni' },
   chapter_board:  { pt: 'Diretoria do Capítulo', en: 'Chapter Board',   es: 'Directiva del Capítulo' },
+  filiacao_director: { pt: 'Diretoria de Filiação', en: 'Affiliation Director', es: 'Dirección de Afiliación' },
 };
 
 // Tier color categories for simulation banner
