@@ -1,9 +1,9 @@
 # ADR-0102 — Governance review participation: read + comment from draft through signing (involved parties + Tier 2+)
 
-- **Status:** Proposed (draft for council review — 2026-06-12)
+- **Status:** Proposed — council-reviewed **CONDITIONAL GO** 2026-06-12 (security-engineer + legal-counsel); condições incorporadas (ver §Condições do council). Ratificação por advogado licenciado pendente **antes da implementação** (não do merge desta decisão).
 - **Issue:** relates to #646 (draft preview no frontend — reader serves só current/locked), #625 (cohort/onboarding journey), #648/#653 (volunteer-term leak incident — the hardening this ADR must not undo)
 - **Origin:** PM decision 2026-06-12 (Vitor): *"quem está envolvido nos documentos participa de comentário desde o draft, assim como Tier 2 pra cima — é um envolvimento deles, mesmo que não tenham necessidade de comentar ou de estar na rodada de assinatura, mas têm acesso, visibilidade e forma de opinar ativamente ainda em momento de idealização ou já em documento lacrado em fase de assinatura."*
-- **Refs:** ADR-0041 (`participate_in_governance_review` é a action V4 do comentário), ADR-0007 (`can()`/`can_by_member()` source-of-truth de autoridade), ADR-0011 (V4 auth), ADR-0012 (schema consolidation/invariants), GC-162 (RLS/LGPD). Trio do fluxo: `get_pending_ratifications` / `_can_sign_gate` / `sign_ip_ratification`.
+- **Refs:** ADR-0041 (`participate_in_governance_review` é a action V4 do comentário), ADR-0007 (`can()`/`can_by_member()` source-of-truth de autoridade), ADR-0011 (V4 auth), ADR-0012 (schema consolidation/invariants), GC-162 (RLS/LGPD), **ADR-0092** (V4 document-permissions sweep — predecessor/paralelo das policies RLS de `document_versions`), **ADR-0076** (modelo voluntário 3D + base legal Fase B), ADR-0068 (curadoria/redraft + Track B-Periódico), ADR-0014 (retenção). Trio do fluxo: `get_pending_ratifications` / `_can_sign_gate` / `sign_ip_ratification`.
 
 ## Context
 
@@ -27,6 +27,8 @@ Introduzir um regime de **participação de revisão de governança** que dá **
 
 > ### Invariante GR-1 — Visibilidade/comentário ≠ acionabilidade
 > Ver o documento e comentar nele é aberto ao **público de revisão escopado**. O **CTA de assinar permanece gated** por `_can_sign_gate` + a lógica sequencial de `get_pending_ratifications` (read-path) **e** pelo write-path (#654, a fechar). Um revisor que não é signatário do gate vê o doc + comentários mas **nunca** vê "Revisar e assinar" nem gera uma `pending_ratification`. O leak confundiu as duas superfícies; este design as mantém ortogonais.
+>
+> **GR-1 é invariante de CONTRATO DE PAYLOAD** (council security C3): o reader **nunca** retorna `approval_chain_id` (como anchor de sign-CTA) nem `eligible_gates`. Adicionar tais campos ao payload do reader exige um novo ADR — não é extensão automática deste.
 
 ### Predicado de escopo (público de revisão de um doc)
 
@@ -74,6 +76,26 @@ A abertura vale **só** para `visibility_class ∈ ('public','active_members')`.
 
 - **security-engineer review** do predicado de escopo e das policies (domínio LGPD/RLS sobre doc de governança — superfície de incidente recente).
 - Contract tests: (a) guest/visitor/pré-onboarding **não** leem draft; (b) `legal_scoped`/`admin_only` **não** abrem; (c) revisor não-signatário **não** vê sign-CTA nem gera `pending_ratification` (GR-1); (d) `v_initiative_roster` (não `tribe_selections`) é a fonte de "envolvido".
+
+## Condições do council (incorporadas — review consultivo 2026-06-12)
+
+Revisão consultiva **security-engineer + legal-counsel** → **CONDITIONAL GO**. As condições abaixo são **parte normativa** deste ADR (não sugestões).
+
+### Segurança (RLS / least-privilege)
+- **C1 — gate DB primário, não Tier.** "Tier 2+" é abstração de UI-layer (`getAccessTier`, `src/lib/admin/constants.ts`) e **não** é gate de banco. O predicado RLS/SECDEF usa SEMPRE `members.is_active = true AND members.member_status = 'active'` como porta primária; o corte de tier é refinamento por cima. Sem isso, um guest com designation `sponsor` resolve `observer` e vaza. A exclusão de visitor/guest/pré-onboarding vem do gate `is_active`/`member_status`, **não** do Tier.
+- **C2 — #654 é pré-requisito de IMPLEMENTAÇÃO.** Merge desta decisão = OK; **a implementação RLS/RPC fica bloqueada até #654** (write-path order enforcement em `sign_ip_ratification`/`_can_sign_gate`) fechar. Ampliar a audiência de leitura de ~15→~72 sem fechar o write-path multiplica ~5× a surface de assinatura fora de ordem.
+- **C3 — GR-1 como contrato de payload** (ver box GR-1): reader nunca expõe anchors de sign-CTA.
+- Antes de qualquer `INSERT INTO engagement_kind_permissions` para o novo público: rodar o procedimento de 4 etapas de `docs/reference/V4_AUTHORITY_MODEL.md` (anti-pattern "seed expansion como atalho").
+
+### LGPD / PI (base legal + minimização + auditoria)
+- **C-2 base legal** (LGPD Art. 37 — documentação): **Art. 7, V** (execução de atividade voluntária formalizada via Termo) para envolvidos em `v_initiative_roster`; **Art. 7, IX** (legítimo interesse institucional de supervisão) para Tier 2+. **Consentimento (Art. 7, I) NÃO** é a base — revogabilidade (Art. 8 §5) quebraria o processo de revisão mid-ciclo.
+- **C-1 minimização** (Art. 6, III): a plataforma controla acesso por `visibility_class`, **não** varre conteúdo. A adequação do corpo do draft é responsabilidade do **autor/curador** ao classificar a visibilidade. Drafts com dado pessoal identificável de terceiros não-membros → `legal_scoped` ou anonimizar **antes** de `active_members`.
+- **C-3 elegibilidade por Termo vigente** (Lei 9.610/98 — coautoria): acesso de revisão a draft com potencial de conteúdo autoral original só para membros com **Termo de Voluntário vigente** (`engagement` ativo com `agreement_certificate_id` não-nulo) ou cargo institucional formalizado. Roster sem Termo vigente não recebe até regularizar — consome a invariante do ADR-0076.
+- **C-4 auditoria + retenção** (Art. 46 / Art. 15): todo **ato de leitura** de doc `{draft, under_review}` com `visibility_class=active_members` gera entrada em `admin_audit_log` (`member_id`, `document_id`, `document_version_id`, `action='read'`, `timestamp`, `document_status_at_access`) — comentários já têm trail via `document_comments`; o gap é a **leitura**. Definir retenção de comentários em drafts descontinuados (ADR-0014).
+
+### Sequenciamento / ratificação
+- **ADR-0092** (V4 document-permissions sweep) é predecessor/paralelo: reusa as mesmas policies RLS de `document_versions` → sequenciar para não conflitar.
+- **Ratificação por advogado licenciado** recomendada antes da **implementação** (não do merge): §base legal + elegibilidade por Termo + interação com Track B-Periódico (ADR-0068).
 
 ## Consequences
 
