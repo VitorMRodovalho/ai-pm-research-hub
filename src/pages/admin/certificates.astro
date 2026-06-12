@@ -40,6 +40,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   function certToData(c: any): CertificateData {
     return {
+      id: c.id, // #648: enables the frozen-PDF id-fallback in downloadCertificatePDF
       member_name: c.member_name || '',
       type: c.type || 'volunteer_agreement',
       title: c.title || '',
