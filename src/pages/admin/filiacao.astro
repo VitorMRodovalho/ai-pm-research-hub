@@ -1,0 +1,50 @@
+---
+/**
+ * /admin/filiacao — Pasta Diretoria de Filiação (#659, epic #660 step 2).
+ * Function-anchored panel: visible/usable by the OFFICE of the Diretoria de Filiação
+ * (designation `filiacao_director`) + manage_member/superadmin. Server RPCs are the real boundary.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AffiliationQueueIsland from '../../components/admin/AffiliationQueueIsland';
+import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18nBundle = buildPageI18n(['comp.affiliationQueue', 'comp.common'], lang);
+---
+
+<AdminLayout
+  title={t('admin.breadcrumb.affiliation', lang)}
+  breadcrumbs={[
+    { label: t('admin.breadcrumb.people', lang) },
+    { label: t('admin.breadcrumb.affiliation', lang) },
+  ]}
+>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <div class="max-w-[1200px] mx-auto px-4 pb-12">
+    <AffiliationQueueIsland client:load />
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const check = () => {
+      const member = window.navGetMember?.();
+      if (!member) { setTimeout(check, 300); return; }
+      // UX gate only — the server RPCs are the real boundary (filiacao_director OR manage_member).
+      // Mirror the `admin.filiacao` audience EXACTLY (office + GP + deputy + superadmin). Do NOT use
+      // the broad __nucleoCanForAdminEntry, which would admit view_internal_analytics holders the
+      // tightened RPC now denies (security review L-1 / M-1, #659).
+      const isAllowed =
+        member.is_superadmin ||
+        member.operational_role === 'manager' ||
+        (member.designations || []).some(function (d) { return d === 'deputy_manager' || d === 'filiacao_director'; });
+      if (!isAllowed) {
+        document.querySelector('.max-w-\\[1200px\\]').innerHTML =
+          '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
+      }
+    };
+    check();
+  });
+</script>
