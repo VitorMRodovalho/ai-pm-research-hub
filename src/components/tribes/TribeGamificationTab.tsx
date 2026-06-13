@@ -580,15 +580,15 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
       tabIndex={-1}
       className="bg-[var(--surface-section-cool)] border-l-2 border-[#00799E] px-5 py-4 space-y-5 focus:outline-none"
     >
-      <div className="text-sm font-bold text-navy">
+      <h4 className="text-sm font-bold text-navy m-0">
         {t('comp.gamification.coachingTitle', 'Coaching do membro')} &middot; {member.name}
-      </div>
+      </h4>
 
       {/* Coaching signals */}
       <div>
-        <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
+        <h4 className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] m-0 mb-2">
           {t('comp.gamification.coachingSignals', 'Sinais de coaching')}
-        </div>
+        </h4>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard
             label={t('comp.gamification.attendanceRateLabel', 'Taxa de presenca (ciclo)')}
@@ -615,9 +615,9 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
 
       {/* Trail breakdown */}
       <div>
-        <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
+        <h4 className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] m-0 mb-2">
           {t('comp.gamification.trailBreakdown', 'Trilha PMI AI')} &middot; {member.trail_progress}/{courses.length || TOTAL_COURSES}
-        </div>
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           {courses.map((c) => {
             const meta = statusMeta[c.status] || statusMeta.missing;
@@ -652,9 +652,9 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
           Fragment carries the React key because the plain-function StatCard does
           not forward one (a bare key={…} on it is a TS2322). */}
       <div>
-        <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
+        <h4 className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] m-0 mb-2">
           {t('comp.gamification.xpByPillar', 'XP por pilar')}
-        </div>
+        </h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {([
             ['comp.gamification.attendance', 'Presenca', member.attendance_points],
@@ -674,9 +674,9 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
 
       {/* Recognition */}
       <div>
-        <div className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
+        <h4 className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] m-0 mb-2">
           {t('comp.gamification.recognition', 'Reconhecimento')}
-        </div>
+        </h4>
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             label={t('comp.gamification.credlyBadges', 'Badges Credly')}
