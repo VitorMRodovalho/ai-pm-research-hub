@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # Build the COOPERATION pitch deck: Núcleo IA & GP × Grupo ALUN (interlocutor: Cristiano Kruel).
-#   ~/.venvs/pmo/bin/python build_kruel.py
+#   ~/.venvs/pmo/bin/python gen_assets_kruel.py && ~/.venvs/pmo/bin/python build_kruel.py
 # Reuses deck_engine.py (branded clone/inject/guards/render) untouched. Content: deck_content_kruel.py.
-# Photos: assets/people/{vitor,fabricio}.jpg (auto-placeholder if missing). 11 slides, PT-BR.
+# Photos: assets/people/{vitor,fabricio}.jpg. Covers (drop-in): assets/covers/{mckinsey,pmi_pulse,
+# ansi_ai_standard,pmbok}.(png|jpg) -> placeholder box if missing. Diagram: assets/strategy_flow.png.
+# 11 slides, PT-BR.
 from pathlib import Path
+from PIL import Image
 from deck_engine import Deck, PURPLE, TEAL, BLUE, GREEN, RED, ORANGE, LILAC, DARK, GRAY
 from deck_content_kruel import CONTENT
 
@@ -11,21 +14,58 @@ BASE = Path("/home/vitormrodovalho/projects/ai-pm-research-hub/docs/strategy/dec
 TEMPLATE = BASE / "build/pmi_template.pptx"
 LOGO = "/home/vitormrodovalho/projects/_pmo/assets/pmi/brand/pmigo-logo-white.png"
 PEOPLE = BASE / "assets/people"
-HUB = BASE / "assets/hub_spoke.png"   # only stored on the Deck; this deck never calls add_image without a path
+COVERS = BASE / "assets/covers"
+DIAGRAM = BASE / "assets/strategy_flow.png"
+HUB = BASE / "assets/hub_spoke.png"   # only stored on the Deck; never used without an explicit path here
 OUT = BASE / "Nucleo_IA_GP_Pitch_ALUN_Kruel.pptx"
 PREVIEW = BASE / "preview_kruel"
 
 
-def two_col(d, s, top, h1, l1, h2, l2, c2=ORANGE, bh=3.5):
-    d.add_box(s, 0.62, top, 5.95, bh, h1, l1, hcolor=PURPLE)
+def two_col(d, s, top, h1, l1, h2, l2, c1=PURPLE, c2=ORANGE, bh=3.5):
+    d.add_box(s, 0.62, top, 5.95, bh, h1, l1, hcolor=c1)
     d.add_box(s, 6.95, top, 5.75, bh, h2, l2, hcolor=c2)
 
 
-def caption(d, s, top, text, color=PURPLE):
-    d.add_box(s, 0.62, top, 12.1, 0.95, "", [text], hcolor=color, fs=13, body=color)
+def caption(d, s, top, text, color=PURPLE, w=12.1):
+    d.add_box(s, 0.62, top, w, 0.95, "", [text], hcolor=color, fs=13, body=color)
+
+
+def place_fit(d, s, left, top, boxw, boxh, path):
+    """Fit an image inside (boxw x boxh) preserving aspect, centered. For unknown-size drop-ins."""
+    with Image.open(path) as im:
+        iw, ih = im.size
+    ar = iw / ih
+    if boxw / boxh > ar:
+        h = boxh; w = h * ar
+    else:
+        w = boxw; h = w / ar
+    pic = s.shapes.add_picture(path, d.IN(left + (boxw - w) / 2), d.IN(top + (boxh - h) / 2),
+                               width=d.IN(w), height=d.IN(h))
+    d._track(s, pic)
+    return pic
+
+
+def cover_slot(d, s, left, top, w, h, slot, label):
+    """A drop-in cover image (png/jpg) with a label below; placeholder box if the file is absent."""
+    found = None
+    for ext in (".png", ".jpg", ".jpeg"):
+        p = COVERS / f"{slot}{ext}"
+        if p.exists():
+            found = p; break
+    if found:
+        place_fit(d, s, left, top, w, h, str(found))
+    else:
+        d.add_box(s, left, top, w, h, "[ Capa ]", [], hcolor=GRAY, hfs=12, body=GRAY)
+    d.add_box(s, left, top + h + 0.04, w, 0.4, "", [label], fs=9, body=GRAY)
 
 
 def compose(d, C):
+    # warn on titles likely to wrap (template title is ~1 line up to ~44 chars)
+    for k, v in C.items():
+        t = v.get("title", "") if isinstance(v, dict) else ""
+        if len(t) > 44:
+            print(f"  WARN: title may wrap ({len(t)} chars): {t!r}")
+
     # 1 cover
     cov = C["cover"]
     d.cover(cov["title"], cov["sub"], cov["attr"], cov["note"])
@@ -37,25 +77,31 @@ def compose(d, C):
         caption(d, s, top + 3.7, f["caption"])
     d.content(f["eyebrow"], f["title"], b_fit, f["note"])
 
-    # 3 the problem
+    # 3 the problem (Vitor's strategy-flow diagram + drop-in source covers)
     p = C["problem"]
     def b_prob(s, top):
-        two_col(d, s, top, p["h1"], p["l1"], p["h2"], p["l2"], bh=3.5)
-        caption(d, s, top + 3.7, p["caption"])
+        d.add_image(s, top + 0.15, 7.2, left=0.4, path=str(DIAGRAM))
+        d.add_box(s, 0.5, top + 2.45, 7.1, 2.0, "", [p["caption"]], hcolor=PURPLE, fs=12.5, body=DARK)
+        cv = p["covers"]
+        cover_slot(d, s, 8.1, top + 0.2, 4.2, 1.85, cv[0]["slot"], cv[0]["label"])
+        cover_slot(d, s, 8.1, top + 2.55, 4.2, 1.85, cv[1]["slot"], cv[1]["label"])
     d.content(p["eyebrow"], p["title"], b_prob, p["note"])
 
-    # 4 who we are
+    # 4 who we are + proof band (LIM LATAM, SESTEC, Carlos Novello)
     w = C["who"]
     def b_who(s, top):
-        two_col(d, s, top, w["h1"], w["l1"], w["h2"], w["l2"], c2=TEAL, bh=3.5)
-        caption(d, s, top + 3.7, w["caption"])
+        two_col(d, s, top, w["h1"], w["l1"], w["h2"], w["l2"], c2=TEAL, bh=3.3)
+        d.add_box(s, 0.62, top + 3.5, 12.1, 1.15, w["proof_h"], w["proof"], hcolor=ORANGE, hfs=14, fs=11.5)
     d.content(w["eyebrow"], w["title"], b_who, w["note"])
 
-    # 5 ANSI authority (killer)
+    # 5 ANSI authority (table + drop-in standard covers)
     a = C["ansi"]
     def b_ansi(s, top):
-        d.add_table(s, [a["head"]] + a["rows"], top, widths=[2.2, 6.3], fs=12)
-        d.add_box(s, 0.62, top + 2.85, 12.1, 1.0, a["caption"], [], hcolor=PURPLE, hfs=15)
+        d.add_table(s, [a["head"]] + a["rows"], top + 0.1, left=0.62, width=7.0, widths=[2.0, 5.0], fs=11)
+        d.add_box(s, 0.62, top + 3.5, 7.0, 1.0, a["caption"], [], hcolor=PURPLE, hfs=14)
+        cv = a["covers"]
+        cover_slot(d, s, 8.0, top + 0.1, 4.3, 1.7, cv[0]["slot"], cv[0]["label"])
+        cover_slot(d, s, 8.0, top + 2.35, 4.3, 1.7, cv[1]["slot"], cv[1]["label"])
     d.content(a["eyebrow"], a["title"], b_ansi, a["note"])
 
     # 6 the gap
@@ -95,7 +141,7 @@ def compose(d, C):
         d.add_box(s, 9.1, y, 3.6, h, h3, l3, hcolor=PURPLE)
     d.content(pa["eyebrow"], pa["title"], b_path, pa["note"])
 
-    # 10 project managers (photos requested by Vitor)
+    # 10 project managers (photos + LinkedIn + Credly)
     mg = C["managers"]
     def b_mgr(s, top):
         pw = 2.4
@@ -109,7 +155,7 @@ def compose(d, C):
             d.add_box(s, left - 0.4, top + 2.6, pw + 0.8, 1.3,
                       person["name"],
                       [person["role"], person["sub"],
-                       f'LinkedIn: {person["linkedin"]}  ·  {person["credly"]}'],
+                       f'in/{person["linkedin"].split("/in/")[-1]}  ·  {person["credly"]}'],
                       hcolor=PURPLE, hfs=14, fs=11)
         d.add_box(s, 0.62, top + 4.0, 12.1, 0.75, "", [mg["link"], mg["mentor"]],
                   hcolor=TEAL, fs=12, body=DARK)

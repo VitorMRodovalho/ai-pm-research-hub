@@ -7,3 +7,8 @@ out/
 
 # Personal photos (member headshots) — never commit to a PUBLIC repo (skill guardrail).
 assets/people/
+
+# Third-party report/standard covers — not versioned (copyright).
+assets/covers/*.png
+assets/covers/*.jpg
+assets/covers/*.jpeg
