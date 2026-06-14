@@ -646,7 +646,7 @@ const PUB_I18N = {
 
     if (error) { (window as any).toast?.(error.message, 'error'); return; }
     (window as any).toast?.(T.created, 'success');
-    try { if ((window as any).posthog) (window as any).posthog.capture('publication_submitted', { target_type: targetType || '' }); } catch {}
+    try { (window as any).__nucleoTrack?.('publication_submitted', { target_type: targetType || '' }); } catch {}
     document.getElementById('modal-new-sub')?.classList.add('hidden');
     await loadSubmissions();
     await loadPipelineSummary();

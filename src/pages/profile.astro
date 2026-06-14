@@ -504,7 +504,7 @@ const PROFILE_I18N = {
     try {
       const { data: histData } = await sb.rpc('get_my_attendance_history', { p_limit: 20 });
       attendanceHistory = Array.isArray(histData) ? histData : [];
-      if (attendanceHistory.length > 0) { try { if ((window as any).posthog) (window as any).posthog.capture('attendance_history_viewed', { events: attendanceHistory.length, attended: attendanceHistory.filter((r: any) => r.present).length }); } catch(e) {} }
+      if (attendanceHistory.length > 0) { try { (window as any).__nucleoTrack?.('attendance_history_viewed', { events: attendanceHistory.length, attended: attendanceHistory.filter((r: any) => r.present).length }); } catch(e) {} }
     } catch (_) { attendanceHistory = []; }
 
     // Load My Week data
@@ -1844,7 +1844,7 @@ const PROFILE_I18N = {
     }
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
-      try { if ((window as any).posthog) (window as any).posthog.capture('profile_updated', { fields_changed: Object.keys(fields) }); } catch {}
+      try { (window as any).__nucleoTrack?.('profile_updated', { fields_changed_count: Object.keys(fields).length }); } catch {}
       (window as any).toast?.(PROFILE_I18N.dataSaved, 'success');
       const { data: updated } = await sb.rpc('get_member_by_auth');
       if (updated) { currentMember = updated; renderProfile(updated); }
@@ -2226,7 +2226,7 @@ const PROFILE_I18N = {
         const total = data.total_badges || 0;
         const trailDetected = data.pmi_trail_count || 0;
         const trailSynced = data.pmi_trail_synced || 0;
-        try { if ((window as any).posthog) (window as any).posthog.capture('credly_verified', { badges_found: total, has_cpmai: !!data.has_cpmai }); } catch {}
+        try { (window as any).__nucleoTrack?.('credly_verified', { badges_found: total, has_cpmai: !!data.has_cpmai }); } catch {}
         const msg = data.has_cpmai
           ? PROFILE_I18N.credlyCpmaiMsg.replace('{matched}', matched).replace('{total}', total).replace('{trailDetected}', trailDetected).replace('{trailSynced}', trailSynced)
           : matched > 0

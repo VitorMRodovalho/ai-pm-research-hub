@@ -820,7 +820,7 @@ const WK = {
         document.getElementById('wk-observer-banner')?.classList.remove('hidden');
       }
       $content?.classList.remove('hidden');
-      try { if ((window as any).posthog) (window as any).posthog.capture('workspace_visited', { tribe_id: member?.tribe_id || null }); } catch {}
+      try { (window as any).__nucleoTrack?.('workspace_visited', { tribe_id: member?.tribe_id || null }); } catch {}
       } // end loadWorkspaceData
 
       // ── Start loading ──

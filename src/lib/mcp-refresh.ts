@@ -49,6 +49,37 @@ export interface AutoRefreshConfig {
   fetchImpl?: typeof fetch;
 }
 
+export interface SupabaseAuthConfig {
+  url: string;
+  anonKey: string;
+}
+
+export function resolveSupabaseAuthConfig(
+  runtimeEnv?: Record<string, unknown> | null,
+  buildEnv?: Record<string, unknown> | null,
+): SupabaseAuthConfig {
+  const pick = (...values: unknown[]) => {
+    for (const value of values) {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return '';
+  };
+
+  return {
+    url: pick(
+      runtimeEnv?.SUPABASE_URL,
+      runtimeEnv?.PUBLIC_SUPABASE_URL,
+      buildEnv?.PUBLIC_SUPABASE_URL,
+      DEFAULT_SUPABASE_URL,
+    ),
+    anonKey: pick(
+      runtimeEnv?.SUPABASE_ANON_KEY,
+      runtimeEnv?.PUBLIC_SUPABASE_ANON_KEY,
+      buildEnv?.PUBLIC_SUPABASE_ANON_KEY,
+    ),
+  };
+}
+
 /**
  * Decode a JWT payload WITHOUT verifying the signature. Safe only for reading
  * `sub` / `exp` from our own Supabase-issued tokens — NEVER trust this for

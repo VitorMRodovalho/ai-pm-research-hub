@@ -85,6 +85,10 @@ const ROUTE_ALLOWED_DESIGNATIONS: Partial<Record<AdminRouteKey, readonly string[
   admin_comms: ['comms_leader', 'comms_member'],
 };
 
+const ROUTE_ALLOWED_OPERATIONAL_ROLES: Partial<Record<AdminRouteKey, readonly string[]>> = {
+  admin_analytics: ['chapter_liaison'],
+};
+
 export { MAX_SLOTS } from '../../data/tribes';
 export const ELIGIBLE_ROLES = ['researcher', 'facilitator', 'communicator'];
 
@@ -172,7 +176,9 @@ export function canAccessAdminRoute(member: any, route: AdminRouteKey): boolean 
   if (!member) return false;
   const tier = resolveTierFromMember(member);
   if (hasMinimumTier(tier, ROUTE_MIN_TIER[route])) return true;
-  return hasAnyDesignation(member, ROUTE_ALLOWED_DESIGNATIONS[route]);
+  const opRole = String(member.operational_role || '');
+  const hasAllowedOperationalRole = (ROUTE_ALLOWED_OPERATIONAL_ROLES[route] || []).includes(opRole);
+  return hasAnyDesignation(member, ROUTE_ALLOWED_DESIGNATIONS[route]) || hasAllowedOperationalRole;
 }
 
 export function canReadInternalAnalytics(member: any): boolean {

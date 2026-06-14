@@ -143,12 +143,11 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   ],
 
   chapter_liaison: [
-    'admin.access', 'admin.analytics', 'admin.analytics.chapter',
-    'admin.portfolio', 'admin.partners',
+    'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio', 'admin.partners', 'admin.sustainability',
     'admin.governance.view',
     'data.view_analytics',
-    'event.view_all', 'gamification.view_ranking',
-    'content.view_publications', 'content.curate',
+    'content.view_publications',
     'workspace.access',
   ],
 
@@ -251,12 +250,11 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   ],
   // Ponto Focal do Capítulo (#670) — função-anchored. O presidente do capítulo intitula o ponto
   // focal do programa; ele PRECISA de visibilidade (programa + seu capítulo). Concede só a
-  // VISIBILIDADE (sem `admin.access`): a entrada no shell admin segue a autoridade server
-  // (`__nucleoCanForAdminEntry`, via engagement chapter_board/liaison → view_chapter_dashboards),
-  // então um portador da designation SEM o engagement (ex.: ponto focal ainda não onboardado no
-  // server) não ganha um shell/nav quebrado — só vê os itens quando tem a autoridade real.
+  // VISIBILIDADE (sem `admin.access`): o middleware libera apenas rotas de leitura explicitamente
+  // allowlisted para chapter_liaison, nunca o shell admin inteiro.
   chapter_liaison: [
     'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio', 'admin.partners', 'admin.sustainability',
     'admin.governance.view',
     'data.view_analytics',
   ],

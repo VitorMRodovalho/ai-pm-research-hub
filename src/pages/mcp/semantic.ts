@@ -13,7 +13,12 @@ import {
   DESTRUCTIVE_LIMIT_PER_MIN,
 } from '../../lib/mcp-rate-limit';
 // #580 — shared server-side refresh helpers (single source for both proxies + token.ts)
-import { decodeJwtPayload, isExpiringSoon, tryAutoRefresh } from '../../lib/mcp-refresh';
+import {
+  decodeJwtPayload,
+  isExpiringSoon,
+  resolveSupabaseAuthConfig,
+  tryAutoRefresh,
+} from '../../lib/mcp-refresh';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
@@ -64,9 +69,10 @@ export const ALL: APIRoute = async ({ request }) => {
 
   if (kv && payload?.sub && payload?.exp && isExpiringSoon(payload.exp)) {
     await kvLog("mcp-semantic-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp });
+    const supabaseAuth = resolveSupabaseAuthConfig(env as any, import.meta.env);
     const newToken = await tryAutoRefresh(payload.sub, kv, {
-      anonKey: import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '',
-      supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL || undefined,
+      anonKey: supabaseAuth.anonKey,
+      supabaseUrl: supabaseAuth.url,
     });
     if (newToken) {
       activeToken = newToken;

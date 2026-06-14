@@ -119,6 +119,16 @@ test('577 static: per-row drill-down a11y is untouched (regression lock)', () =>
   assert.match(tsx, /MemberDrillDown/, 'drill-down component still wired');
 });
 
+test('577 static: MemberDrillDown section headers use semantic h4 elements', () => {
+  const drill = tsx.slice(tsx.indexOf('function MemberDrillDown'));
+  assert.match(drill, /<h4 className="text-sm font-bold text-navy m-0">/,
+    'drill-down title is a semantic heading');
+  for (const key of ['coachingSignals', 'trailBreakdown', 'xpByPillar', 'recognition']) {
+    assert.ok(drill.includes(`<h4 className="text-[.72rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] m-0 mb-2">\n          {t('comp.gamification.${key}'`),
+      `${key} section header is a semantic h4`);
+  }
+});
+
 test('577 static: i18n 3-dict parity for the toggle + gated-column keys', () => {
   // the 2 new toggle keys + the 7 pillar column-header keys that the toggle reveals
   // (the latter pre-date #577 but are now load-bearing for the breakdown view).
