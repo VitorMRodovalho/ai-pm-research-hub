@@ -152,8 +152,9 @@ def compose(d, C):
     # 5 who we are (people & culture first) + proof band (4 distinct lines)
     w = C["who"]
     def b_who(s, top):
-        two_col(d, s, top, w["h1"], w["l1"], w["h2"], w["l2"], c1=A1, c2=A2, bh=2.8)
-        d.add_box(s, 0.62, top + 2.95, 12.1, 1.75, w["proof_h"], w["proof"], hcolor=A3, hfs=14, fs=11)
+        d.add_box(s, 0.62, top, 12.1, 0.7, "", [w["lead"]], hcolor=A1, fs=12.5)
+        two_col(d, s, top + 0.8, w["h1"], w["l1"], w["h2"], w["l2"], c1=A1, c2=A2, bh=2.4)
+        d.add_box(s, 0.62, top + 3.35, 12.1, 1.5, w["proof_h"], w["proof"], hcolor=A3, hfs=14, fs=10.5)
     d.content(w["eyebrow"], w["title"], b_who, w["note"])
 
     # 6 the PMI (dedicated institution slide)
