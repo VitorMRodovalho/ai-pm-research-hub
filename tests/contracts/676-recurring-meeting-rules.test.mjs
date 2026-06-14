@@ -64,11 +64,15 @@ test('#676 static: drift report + reconcile_all + backfill present', () => {
 test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence', { skip: sb ? false : 'Supabase env required' }, async () => {
   const { data: rules, error } = await sb
     .from('recurring_meeting_rules')
-    .select('scope_type, tribe_id, day_of_week, frequency, status, initiative_id');
+    .select('scope_type, tribe_id, day_of_week, frequency, status, initiative_id, title');
   assert.ifError(error);
 
-  const tribeRules = (rules ?? []).filter((r) => r.scope_type === 'tribe');
-  const commsRules = (rules ?? []).filter((r) => r.scope_type === 'initiative');
+  // Exclude synthetic rules created by sibling tests (titled 'TEST …') — the suite runs
+  // test files in parallel against the same DB, so the backfilled-rule count must ignore
+  // any in-flight test fixtures to stay deterministic.
+  const real = (rules ?? []).filter((r) => !String(r.title || '').startsWith('TEST'));
+  const tribeRules = real.filter((r) => r.scope_type === 'tribe');
+  const commsRules = real.filter((r) => r.scope_type === 'initiative');
   assert.equal(tribeRules.length, 7, 'seven tribe rules');
   assert.equal(commsRules.length, 2, 'two comms/initiative rules');
 
