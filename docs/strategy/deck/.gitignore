@@ -12,3 +12,8 @@ assets/people/
 assets/covers/*.png
 assets/covers/*.jpg
 assets/covers/*.jpeg
+
+# Round-1 feedback asset inbox (third-party screenshots/covers for triage) — not versioned.
+assets/inbox_r1/
+# Processed cert badges (white-bg -> transparent), derived from inbox_r1 — not versioned.
+assets/certs_proc/
