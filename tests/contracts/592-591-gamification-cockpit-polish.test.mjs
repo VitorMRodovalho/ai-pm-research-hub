@@ -125,7 +125,7 @@ test('591a static: champions_points has a single home in the drill-down (council
 
 // ── #591b enabler (instrumentation only — persistence deferred) ───────────────────────
 test('591b enabler: breakdown toggle is instrumented (best-effort, not persisted)', () => {
-  assert.match(tsx, /posthog\?\.capture\?\.\('gamification_breakdown_toggled', \{/,
+  assert.match(tsx, /__nucleoTrack\?\.\('gamification_breakdown_toggled', \{/,
     'toggle captures gamification_breakdown_toggled');
   assert.match(tsx, /expanded: next/, 'capture carries the expanded flag');
   // council (gp-leader) fold: tribe/initiative context for future cohort segmentation

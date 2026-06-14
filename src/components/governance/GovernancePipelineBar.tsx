@@ -26,16 +26,31 @@ function normalizeThreshold(t: number | string | 'all'): { isAll: boolean; isInf
   return { isAll: false, isInformational: false, num: Number(s) };
 }
 
-function classifyGate(g: Gate, prevSatisfied: boolean): GateState {
+function isGateSatisfied(g: Gate): boolean {
+  const t = normalizeThreshold(g.threshold);
+  const signed = Number(g.signed_count) || 0;
+  const pending = g.eligible_pending || [];
+  if (t.isInformational) return false;
+  if (t.isAll) return signed > 0 && pending.length === 0;
+  return signed >= t.num;
+}
+
+function priorMandatoryOrdersSatisfied(gates: Gate[], order: number): boolean {
+  return gates
+    .filter(g => g.order < order && !normalizeThreshold(g.threshold).isInformational)
+    .every(isGateSatisfied);
+}
+
+function classifyGate(g: Gate, priorOrdersSatisfied: boolean): GateState {
   const t = normalizeThreshold(g.threshold);
   const signed = Number(g.signed_count) || 0;
   if (t.isInformational) {
     if (signed > 0) return 'ackDone';
-    return prevSatisfied ? 'ackPending' : 'locked';
+    return priorOrdersSatisfied ? 'ackPending' : 'locked';
   }
-  const satisfied = !t.isAll && signed >= t.num;
+  const satisfied = isGateSatisfied(g);
   if (satisfied) return 'satisfied';
-  if (prevSatisfied) return 'active';
+  if (priorOrdersSatisfied) return 'active';
   return 'locked';
 }
 
@@ -70,19 +85,10 @@ function tipLabel(g: Gate, state: GateState, label: string): string {
 export default function GovernancePipelineBar({ gates, gateLabels, compact = false, onClickGate }: Props) {
   const enriched = useMemo(() => {
     const sorted = [...gates].sort((a, b) => a.order - b.order);
-    const states: GateState[] = [];
-    let prevOK = true;
-    for (const g of sorted) {
-      const s = classifyGate(g, prevOK);
-      states.push(s);
-      const t = normalizeThreshold(g.threshold);
-      if (t.isInformational) {
-        // informational não muda prevOK — não bloqueia e não destrava
-      } else {
-        prevOK = s === 'satisfied';
-      }
-    }
-    return sorted.map((g, i) => ({ ...g, state: states[i] }));
+    return sorted.map(g => ({
+      ...g,
+      state: classifyGate(g, priorMandatoryOrdersSatisfied(sorted, g.order)),
+    }));
   }, [gates]);
 
   return (

@@ -184,6 +184,41 @@ test('publications requires leader tier OR curator/comms designation/communicato
   assert.equal(researcher.enabled, false, 'plain researcher cannot access publications');
 });
 
+test('#670 chapter_liaison operational_role gets only declared read admin nav routes', () => {
+  const focal = { tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'chapter_liaison' };
+  const allowed = new Set([
+    'admin-analytics',
+    'admin-portfolio',
+    'admin-cycle-report',
+    'admin-exec-report',
+    'admin-partnerships',
+    'admin-chapter-report',
+    'admin-sustainability',
+    'admin-tribe-dashboard',
+  ]);
+  const denied = new Set([
+    'admin-selection',
+    'admin-settings',
+    'admin-cross-tribes',
+    'admin-comms',
+    'admin-comms-ops',
+    'admin-campaigns',
+    'admin-blog',
+  ]);
+
+  for (const key of allowed) {
+    const item = parseNavItem(key);
+    const result = getItemAccessibility(item, focal.tier, focal.designations, focal.isLoggedIn, focal.operationalRole);
+    assert.equal(result.enabled, true, `${key} should allow chapter_liaison operational_role`);
+  }
+
+  for (const key of denied) {
+    const item = parseNavItem(key);
+    const result = getItemAccessibility(item, focal.tier, focal.designations, focal.isLoggedIn, focal.operationalRole);
+    assert.equal(result.enabled, false, `${key} should deny chapter_liaison operational_role`);
+  }
+});
+
 // ─── Superadmin can access everything ───
 
 test('superadmin can access all authenticated routes', () => {

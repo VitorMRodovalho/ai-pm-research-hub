@@ -638,7 +638,7 @@ const CAMPAIGNS_I18N = {
                     ? _interp(T.toastDeliveredWithErrors, { delivered: efData.delivered, total: efData.total, errors: efData.errors })
                     : _interp(T.toastDeliveredOk, { n: efData.delivered });
                   (window as any).toast?.(msg, efData.errors > 0 ? 'error' : 'success');
-                  try { if ((window as any).posthog) (window as any).posthog.capture('campaign_sent', { delivered: efData.delivered || 0 }); } catch {}
+                  try { (window as any).__nucleoTrack?.('campaign_sent', { delivered: efData.delivered || 0 }); } catch {}
                 }
               } catch (e: any) {
                 (window as any).toast?.(T.toastCampaignCreatedDelivering, 'info');
