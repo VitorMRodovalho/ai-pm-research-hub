@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy,
+  Library, SearchCheck, Tag, FileCheck, Trophy, CalendarClock,
 } from 'lucide-react';
 import { hasPermission as checkPermission } from '../../lib/permissions';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy,
+  Library, SearchCheck, Tag, FileCheck, Trophy, CalendarClock,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -87,6 +87,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/campaigns', label: { 'pt-BR': 'Campanhas', 'en-US': 'Campaigns', 'es-LATAM': 'Campañas' }, icon: 'Mail', permission: 'admin.campaigns' },
       { href: '/admin/sustainability', label: { 'pt-BR': 'Sustentabilidade', 'en-US': 'Sustainability', 'es-LATAM': 'Sostenibilidad' }, icon: 'Leaf', permission: 'admin.sustainability' },
       { href: '/admin/pilots', label: { 'pt-BR': 'Pilotos', 'en-US': 'Pilots', 'es-LATAM': 'Pilotos' }, icon: 'Rocket', permission: 'admin.portfolio' },
+      { href: '/admin/agenda-recorrente', label: { 'pt-BR': 'Agenda Recorrente', 'en-US': 'Recurring Agenda', 'es-LATAM': 'Agenda Recurrente' }, icon: 'CalendarClock', permission: 'system.global_config' },
       { href: '/admin/organization', label: { 'pt-BR': 'Organização', 'en-US': 'Organization', 'es-LATAM': 'Organización' }, icon: 'Building', permission: 'system.global_config' },
       { href: '/admin/settings', label: { 'pt-BR': 'Configurações', 'en-US': 'Settings', 'es-LATAM': 'Configuraciones' }, icon: 'Settings', permission: 'system.global_config' },
       { href: '/admin/audit-log', label: { 'pt-BR': 'Registro de Auditoria', 'en-US': 'Audit Log', 'es-LATAM': 'Registro de Auditoría' }, icon: 'ClipboardList', permission: 'system.global_config' },
