@@ -53,12 +53,12 @@ test('#676 slice2 static: nav entry registered in operations section', () => {
   assert.match(nav, /CalendarClock,?\s*\n?\s*\} from 'lucide-react'/, 'icon imported from lucide');
 });
 
-test('#676 slice2 static: island is read-only and calls the admin-list RPC', () => {
+test('#676 slice2 static: island reads the admin-list RPC (uses React className)', () => {
   const isl = read(ISLAND);
   assert.match(isl, /rpc\('get_recurring_meeting_admin_list'\)/, 'reads the admin-list RPC');
-  // no mutating RPCs in this read-only slice
-  assert.ok(!/rpc\('reconcile_|rpc\('upsert|rpc\('update_|rpc\('delete_/.test(isl), 'no mutations in read-only island');
   assert.ok(!/\bclass=/.test(isl), 'uses className (React), not class');
+  // NOTE: write RPCs (update/create/reconcile) were added in Slice 3 — see
+  // 676-recurring-agenda-write-path.test.mjs. The island is no longer read-only.
 });
 
 test('#676 slice2 static: i18n parity across all 3 dictionaries', () => {
