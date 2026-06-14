@@ -355,7 +355,7 @@ const CHR_I18N = {
   function applyGate(m: any) {
     const desigs: string[] = m?.designations || [];
     isGP = hasPermission(m, 'admin.access');
-    const hasAccess = isGP || desigs.includes('sponsor') || desigs.includes('chapter_liaison');
+    const hasAccess = isGP || m?.operational_role === 'chapter_liaison' || desigs.includes('sponsor') || desigs.includes('chapter_liaison');
     if (hasAccess) {
       showPanel();
       populateChapterSelect();
@@ -368,7 +368,7 @@ const CHR_I18N = {
   boot();
 
   document.getElementById('chr-export-btn')?.addEventListener('click', () => {
-    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'chapter' }); } catch {}
+    try { (window as any).__nucleoTrack?.('report_exported', { report_type: 'chapter' }); } catch {}
     window.print();
   });
 </script>

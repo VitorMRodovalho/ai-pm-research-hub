@@ -224,7 +224,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
     // is shipped here: as of this change there were 0 toggle interactions in the
     // trailing 30d (the toggle is new), so there is no cohort to gate on yet.
     try {
-      (window as any).posthog?.capture?.('gamification_breakdown_toggled', {
+      (window as any).__nucleoTrack?.('gamification_breakdown_toggled', {
         expanded: next,
         // council (gp-leader): carry tribe/initiative so a future session can
         // segment the expand-on-landing cohort by surface before deciding persistence.

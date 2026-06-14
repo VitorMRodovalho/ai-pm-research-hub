@@ -206,6 +206,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgCheckedIn: t('attendance.msg.checkedIn', lang),
   msgCheckInError: t('attendance.msg.checkInError', lang),
   msgFillTitleDate: t('attendance.msg.fillTitleDate', lang),
+  msgSelectEventType: t('attendance.msg.selectEventType', lang),
+  msgSelectTribe: t('attendance.msg.selectTribe', lang),
+  msgSelectInitiative: t('attendance.msg.selectInitiative', lang),
   msgEventCreated: t('attendance.msg.eventCreated', lang),
   msgEventCreateError: t('attendance.msg.eventCreateError', lang),
   msgFillTemplateDate: t('attendance.msg.fillTemplateDate', lang),
@@ -314,6 +317,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgCheckedIn: 'Presença registrada! ✅',
     msgCheckInError: 'Erro ao registrar presença',
     msgFillTitleDate: 'Preencha título e data',
+    msgSelectEventType: 'Selecione o tipo do evento',
+    msgSelectTribe: 'Selecione a tribo do evento',
+    msgSelectInitiative: 'Selecione a iniciativa do evento',
     msgEventCreated: 'Evento criado ✅',
     msgEventCreateError: 'Erro ao criar evento',
     msgFillTemplateDate: 'Preencha template e data de início',
@@ -1645,7 +1651,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     (document.getElementById('ev-timezone') as HTMLInputElement).value = ''; // #485: empty = BRT default
     (document.getElementById('ev-duration') as HTMLInputElement).value = '90';
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
-    (document.getElementById('ev-type') as HTMLSelectElement).value = 'geral';
+    (document.getElementById('ev-type') as HTMLSelectElement).value = '';
     (document.getElementById('ev-nature') as HTMLSelectElement).value = 'avulsa';
     (document.getElementById('ev-visibility') as HTMLSelectElement).value = 'all';
     (document.getElementById('ev-agenda-text') as HTMLTextAreaElement).value = '';
@@ -1679,6 +1685,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         visEl.value = 'all'; // DB vocab (events_visibility_check) — 'public' never existed
       }
     };
+    // #633: admins/managers must make an explicit event-type choice. The old
+    // default 'geral' produced mistyped tribe meetings. Tribe leaders remain
+    // pre-locked to their own tribe because the server gate is scoped that way.
+    typeSelect.value = '';
+
     // For leaders: lock type to 'tribo' and lock tribe to own tribe.
     // Was dead code: checked MEMBER.role === 'leader', but the member object carries
     // operational_role with V4 vocab 'tribe_leader' — so the lock never engaged and a
@@ -1715,6 +1726,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const externalAttendees = (document.getElementById('ev-external-attendees') as HTMLInputElement)?.value?.trim() || null;
     const tagIds = getSelectedTagIds('ev-selected-tags');
     if (!title || !date) return toast(I18N.msgFillTitleDate, 'error');
+    if (!type) return toast(I18N.msgSelectEventType, 'error');
+    if (type === 'tribo' && !tribeId) return toast(I18N.msgSelectTribe, 'error');
+    if (type === 'iniciativa' && !initiativeIdNew) return toast(I18N.msgSelectInitiative, 'error');
 
     try {
       const { data, error } = await sb.rpc('create_event', {

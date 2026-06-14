@@ -117,6 +117,7 @@ const i18n = {
   sbUnavailable: t('governance.docs.sbUnavailable', lang),
   empty: t('governance.docs.empty', lang),
   draftsContinueBtn: t('governance.docs.draftsContinueBtn', lang),
+  draftsPreviewBtn: t('governance.docs.draftsPreviewBtn', lang),
   draftsUpdated: t('governance.docs.draftsUpdated', lang),
   minePendingsCountLabel: t('governance.docs.minePendingsCountLabel', lang),
   gateLabel: t('governance.docs.gateLabel', lang),
@@ -295,28 +296,44 @@ const i18n = {
       });
     }
 
+    function gateThreshold(g) {
+      var s = String(g && g.threshold);
+      if (s === 'all') return { isAll: true, isInformational: false, num: 0 };
+      if (s === '0') return { isAll: false, isInformational: true, num: 0 };
+      return { isAll: false, isInformational: false, num: Number(s) };
+    }
+
+    function gateSatisfied(g) {
+      var t = gateThreshold(g);
+      var signedCount = Number(g && g.signed_count) || 0;
+      var pending = Array.isArray(g && g.eligible_pending) ? g.eligible_pending : [];
+      if (t.isInformational) return false;
+      if (t.isAll) return signedCount > 0 && pending.length === 0;
+      return signedCount >= t.num;
+    }
+
+    function priorMandatoryOrdersSatisfied(gates, order) {
+      return gates
+        .filter(function(g) {
+          return (Number(g.order) || 0) < order && !gateThreshold(g).isInformational;
+        })
+        .every(gateSatisfied);
+    }
+
     function pipelineHtml(detail) {
       var labels = JSON.parse(GATE_LABELS_JSON);
       var gates = Array.isArray(detail.gates) ? detail.gates.slice().sort(function(a,b){return a.order - b.order;}) : [];
-      var prevOK = true;
       var html = '<ol class="flex items-stretch gap-0 text-[11px] overflow-x-auto">';
       gates.forEach(function(g, idx) {
         // threshold chega como text ("0","1","all"). Normalize defensively.
-        var tStr = String(g.threshold);
-        var isAll = tStr === 'all';
-        var isInformational = tStr === '0';
-        var tNum = isAll || isInformational ? 0 : Number(tStr);
+        var t = gateThreshold(g);
         var signedCount = Number(g.signed_count) || 0;
         var eligibleCount = Array.isArray(g.eligible_pending) ? g.eligible_pending.length + signedCount : signedCount;
-        var eligiblePending = Array.isArray(g.eligible_pending) ? g.eligible_pending.length : 0;
-        var satisfied = !isInformational && (
-          isAll
-            ? signedCount > 0 && eligiblePending === 0
-            : signedCount >= tNum
-        );
-        var state = isInformational
-          ? (signedCount > 0 ? 'ackDone' : prevOK ? 'ackPending' : 'locked')
-          : satisfied ? 'done' : prevOK ? 'active' : 'locked';
+        var satisfied = gateSatisfied(g);
+        var priorOK = priorMandatoryOrdersSatisfied(gates, Number(g.order) || 0);
+        var state = t.isInformational
+          ? (signedCount > 0 ? 'ackDone' : priorOK ? 'ackPending' : 'locked')
+          : satisfied ? 'done' : priorOK ? 'active' : 'locked';
         var dotCls = state === 'done' ? 'bg-emerald-500 border-emerald-500 text-white'
                    : state === 'ackDone' ? 'bg-blue-500 border-blue-500 text-white'
                    : state === 'active' ? 'bg-amber-500 border-amber-500 text-white animate-pulse ring-2 ring-amber-200'
@@ -327,16 +344,16 @@ const i18n = {
                      : state === 'active' ? 'text-amber-700 font-semibold'
                      : state === 'ackPending' ? 'text-blue-700'
                      : 'text-gray-400';
-        var icon = state === 'done' ? '✓' : state === 'ackDone' ? 'ℹ✓' : state === 'ackPending' || state === 'locked' && isInformational ? 'ℹ' : String(g.order);
+        var icon = state === 'done' ? '✓' : state === 'ackDone' ? 'ℹ✓' : state === 'ackPending' || state === 'locked' && t.isInformational ? 'ℹ' : String(g.order);
         var count;
-        if (isInformational) {
+        if (t.isInformational) {
           count = signedCount + ' / ' + eligibleCount + ' ' + I18N.awarenessSuffix;
-        } else if (isAll) {
+        } else if (t.isAll) {
           count = signedCount + ' / ' + eligibleCount + ' ' + I18N.eligibleSuffix;
         } else {
-          count = signedCount + ' / ' + tNum + (eligibleCount !== tNum ? ' ' + I18N.eligibleParen.replace('{n}', eligibleCount) : '');
+          count = signedCount + ' / ' + t.num + (eligibleCount !== t.num ? ' ' + I18N.eligibleParen.replace('{n}', eligibleCount) : '');
         }
-        var tip = state === 'active' ? I18N.tipActive.replace('{n}', tNum)
+        var tip = state === 'active' ? I18N.tipActive.replace('{n}', t.num)
                 : state === 'locked' ? I18N.tipLocked
                 : state === 'ackDone' ? I18N.tipAckDone
                 : state === 'ackPending' ? I18N.tipAckPending
@@ -352,12 +369,6 @@ const i18n = {
           html += '<span class="h-0.5 w-6 ' + (state === 'done' || state === 'ackDone' ? 'bg-emerald-400' : 'bg-gray-200') + '"></span>';
         }
         html += '</li>';
-
-        if (isInformational) {
-          // Não muda prevOK (informational não bloqueia, mas também não destrava)
-        } else {
-          prevOK = satisfied;
-        }
       });
       html += '</ol>';
       return html;
@@ -366,30 +377,41 @@ const i18n = {
     function ballInCourt(detail) {
       var labels = JSON.parse(GATE_LABELS_JSON);
       var gates = Array.isArray(detail.gates) ? detail.gates.slice().sort(function(a,b){return a.order - b.order;}) : [];
-      var prevOK = true;
+      var targetOrder = null;
       for (var i = 0; i < gates.length; i++) {
         var g = gates[i];
-        var tStr = String(g.threshold);
-        var isInformational = tStr === '0';
-        if (isInformational) continue;  // ciência não bloqueia, não conta como ball-in-court
-        var isAll = tStr === 'all';
-        var tNum = isAll ? 0 : Number(tStr);
-        var pending = Array.isArray(g.eligible_pending) ? g.eligible_pending : [];
-        var satisfied = isAll
-          ? Number(g.signed_count) > 0 && pending.length === 0
-          : Number(g.signed_count) >= tNum;
-        if (!satisfied && prevOK) {
-          var names = pending.slice(0, 3).map(function(p){return p.name;}).join(', ');
-          var extra = pending.length > 3 ? ' (+' + (pending.length - 3) + ')' : '';
-          return {
-            gate: labels[g.kind] || g.kind,
-            names: names + extra,
-            count: pending.length,
-          };
+        if (gateThreshold(g).isInformational) continue;  // ciência não bloqueia, não conta como ball-in-court
+        var order = Number(g.order) || 0;
+        if (!gateSatisfied(g) && priorMandatoryOrdersSatisfied(gates, order)) {
+          targetOrder = order;
+          break;
         }
-        prevOK = satisfied;
       }
-      return null;
+      if (targetOrder == null) return null;
+
+      var pendingGates = gates.filter(function(g) {
+        return (Number(g.order) || 0) === targetOrder &&
+          !gateThreshold(g).isInformational &&
+          !gateSatisfied(g);
+      });
+      var seen = {};
+      var people = [];
+      pendingGates.forEach(function(g) {
+        (Array.isArray(g.eligible_pending) ? g.eligible_pending : []).forEach(function(p) {
+          var id = p.id || p.name;
+          if (!seen[id]) {
+            seen[id] = true;
+            people.push(p);
+          }
+        });
+      });
+      var names = people.slice(0, 3).map(function(p){return p.name;}).join(', ');
+      var extra = people.length > 3 ? ' (+' + (people.length - 3) + ')' : '';
+      return {
+        gate: pendingGates.map(function(g){ return labels[g.kind] || g.kind; }).join(', '),
+        names: names + extra,
+        count: people.length,
+      };
     }
 
     function daysLabel(days) {
@@ -431,29 +453,22 @@ const i18n = {
     }
 
     // p130: detecta os gate_kinds onde o usuário corrente está em eligible_pending.
-    // Espelha a lógica de activeEligibleGates() em ReviewChainIsland.tsx (mesma
-    // semântica de prevOK propagation + isAll satisfied check do commit 1f2bc40).
+    // Espelha activeEligibleGates() em ReviewChainIsland.tsx: gates com a mesma
+    // ordem destravam juntos depois que ordens obrigatórias menores satisfazem.
     function activeEligibleGatesFor(detail, memberId) {
       if (!memberId) return [];
       var gates = (detail.gates || []).slice().sort(function(a,b){return a.order - b.order;});
       var out = [];
-      var prevOK = true;
       for (var i = 0; i < gates.length; i++) {
         var g = gates[i];
-        var tStr = String(g.threshold);
-        var isAll = tStr === 'all';
-        var isInformational = tStr === '0';
-        var tNum = isAll || isInformational ? 0 : Number(tStr);
-        var satisfied = isInformational ? false
-          : isAll ? (Number(g.signed_count) > 0 && (g.eligible_pending || []).length === 0)
-          : Number(g.signed_count) >= tNum;
+        var t = gateThreshold(g);
+        var priorOK = priorMandatoryOrdersSatisfied(gates, Number(g.order) || 0);
         var inEligible = (g.eligible_pending || []).some(function(p){ return p.id === memberId; });
-        if (isInformational) {
-          if (prevOK && inEligible) out.push(g.kind);
+        if (t.isInformational) {
+          if (priorOK && inEligible) out.push(g.kind);
           continue;
         }
-        if (prevOK && !satisfied && inEligible) out.push(g.kind);
-        prevOK = satisfied;
+        if (priorOK && !gateSatisfied(g) && inEligible) out.push(g.kind);
       }
       return out;
     }
@@ -567,7 +582,10 @@ const i18n = {
               '<strong class="text-[13px] text-[var(--text-primary)]">' + esc(r.document_title) + '</strong>' +
               '<span class="text-[10px] text-[var(--text-muted)] ml-2">' + esc(r.version_label || '') + ' · ' + I18N.draftsUpdated + ' ' + fmtRelDate(r.updated_at) + '</span>' +
             '</div>' +
-            '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">' + I18N.draftsContinueBtn + '</a>' +
+            '<div class="flex items-center gap-2 flex-shrink-0">' +
+              '<a href="' + (window.__LANG_PREFIX || '') + '/governance/document/' + esc(r.document_id) + '?version=' + esc(r.version_id) + '" class="rounded bg-white border border-amber-500 text-amber-800 text-[11px] font-bold px-3 py-1 no-underline hover:bg-amber-50">' + I18N.draftsPreviewBtn + '</a>' +
+              '<a href="' + (window.__LANG_PREFIX || '') + '/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">' + I18N.draftsContinueBtn + '</a>' +
+            '</div>' +
           '</li>'
         );
       }).join('');

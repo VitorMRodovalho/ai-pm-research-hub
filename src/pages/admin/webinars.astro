@@ -600,7 +600,7 @@ const WEBINARS_I18N = {
   }
 
   function openModal(w?: any) {
-    if (w) { try { if ((window as any).posthog) (window as any).posthog.capture('webinar_viewed', { webinar_id: w.id, webinar_title: w.title, status: w.status, chapter: w.chapter_code }); } catch {} }
+    if (w) { try { (window as any).__nucleoTrack?.('webinar_viewed', { webinar_id: w.id, status: w.status, chapter: w.chapter_code }); } catch {} }
     const modal = document.getElementById('webinar-modal')!;
     const titleEl = document.getElementById('modal-title')!;
     const idEl = document.getElementById('modal-id') as HTMLInputElement;

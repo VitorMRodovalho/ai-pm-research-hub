@@ -176,7 +176,7 @@ const pageTitle = postTitle ? `${postTitle} | Núcleo IA & GP` : t('blog.title',
         observer.observe(sentinel);
       }
       if (scrolledPast && (Date.now() - startTime) / 1000 >= 30) {
-        try { if (window.posthog) window.posthog.capture('blog_post_read', { post_slug: postSlug, reading_time_seconds: Math.round((Date.now() - startTime) / 1000) }); } catch {}
+        try { window.__nucleoTrack?.('blog_post_read', { post_slug: postSlug, reading_time_seconds: Math.round((Date.now() - startTime) / 1000) }); } catch {}
         fired = true; clearInterval(check); observer.disconnect();
       }
     }, 5000);

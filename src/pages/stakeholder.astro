@@ -51,6 +51,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
       const allowed = m.is_superadmin === true
         || ['manager', 'deputy_manager'].includes(m.operational_role || '')
+        || m.operational_role === 'chapter_liaison'
         || (m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison', 'chapter_board'].includes(d));
 
       const loading = document.getElementById('stakeholder-loading');

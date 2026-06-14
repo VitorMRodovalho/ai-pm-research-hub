@@ -40,6 +40,7 @@ const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
       var role = String(member.operational_role || '');
       if (role === 'manager' || role === 'deputy_manager') return true;
       if (role === 'tribe_leader') return true;
+      if (role === 'chapter_liaison') return true;
       var desigs = member.designations || [];
       if (desigs.indexOf('sponsor') >= 0 || desigs.indexOf('chapter_liaison') >= 0) return true;
       return false;

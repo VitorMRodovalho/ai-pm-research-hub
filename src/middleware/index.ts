@@ -8,7 +8,16 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || "https://ldrfrvwhxsmgaabwmaik.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw";
 
-const ADMIN_ROLES = new Set(["manager", "deputy_manager", "stakeholder", "tribe_leader", "curator", "sponsor", "chapter_liaison"]);
+const ADMIN_ROLES = new Set(["manager", "deputy_manager", "stakeholder", "tribe_leader", "curator", "sponsor"]);
+const CHAPTER_LIAISON_ADMIN_PATHS = new Set([
+  "/admin/analytics",
+  "/admin/chapter-report",
+  "/admin/cycle-report",
+  "/admin/partnerships",
+  "/admin/portfolio",
+  "/admin/report",
+  "/admin/sustainability",
+]);
 
 // Strip locale prefix to get the canonical path
 function stripLocale(path: string): string {
@@ -29,6 +38,16 @@ function isProtectedRoute(canonicalPath: string): boolean {
 // Routes that require admin-level access
 function isAdminRoute(canonicalPath: string): boolean {
   return canonicalPath.startsWith("/admin");
+}
+
+function hasChapterLiaisonAdminAccess(member: any, canonicalPath: string): boolean {
+  const designations = Array.isArray(member?.designations) ? member.designations : [];
+  const isChapterLiaison =
+    member?.operational_role === "chapter_liaison" ||
+    designations.includes("chapter_liaison");
+
+  if (!isChapterLiaison) return false;
+  return CHAPTER_LIAISON_ADMIN_PATHS.has(canonicalPath) || canonicalPath.startsWith("/admin/tribe/");
 }
 
 // CSP policy — _headers doesn't work on Workers, so we set it here
@@ -104,7 +123,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       const hasAdminAccess =
         member.is_superadmin === true ||
-        ADMIN_ROLES.has(member.operational_role);
+        ADMIN_ROLES.has(member.operational_role) ||
+        hasChapterLiaisonAdminAccess(member, canonicalPath);
 
       if (!hasAdminAccess) {
         return context.redirect(`${localePrefix}/workspace?unauthorized=true`);
