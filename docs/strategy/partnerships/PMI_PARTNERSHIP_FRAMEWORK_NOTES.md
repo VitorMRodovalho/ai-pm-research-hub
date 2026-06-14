@@ -48,4 +48,39 @@ O próprio deck do framework usa **conteúdo CLARO (creme #F7F4EF)** com caixas 
 DIVISORES de seção em escuro (navy/roxo/laranja). → reverter o pitch p/ claro é brand-accurate.
 
 ## Cert legend (do PMI-CP.html)
-PMI-CP = **PMI Construction Professional** (foco construção). Off-theme para um pitch de IA → avaliar dropar/trocar.
+PMI-CP = **PMI Construction Professional** (foco construção). No pitch ALUN entra no ROADMAP de carreira (não
+como herói), junto de CSPP (sustentabilidade/ESG, com GPM); o herói/fronteira é o PMI-CPMAI (IA).
+
+## PMI:Next (Apêndice A "in a Page" + PMINext Overview)
+Lançado jan/2024. PURPOSE: "We maximize project success to elevate our world." WHO: current and aspiring
+project professionals. **WHERE We Play (3 arenas)**: (1) Community Generated Knowledge Platforms & Resources;
+(2) **Career-Long Learning & Development**; (3) Most Trusted "Gold Standard" Professional Certifications.
+HOW: Focus on the Profession (Leading Authority, **PMIxAI**, Employers' Advocacy, Membership Value, Awareness) ·
+Activation Model (Innovate 70/20/10 · Expand Globally · **Amplify across the PMI flywheel**) · Internal Capability.
+CULTURE: Make it Easy · Aim Higher · Be Welcoming · Embrace Curiosity · Together We Can.
+2024: ~740k membros; PMIxAI = 4 cursos de IA (+350k inscritos) + AI Practice Guide + plataforma PMI Infinity;
+new PMI-ACP com learning ecosystem; aquisições Cognilytica, PMO Global Alliance; integrações PMWB, Agile Alliance.
+
+## PMI MORE (Delivering M.O.R.E., 2025 CTA do CEO Pierre Le Manh)
+Operacionaliza "Maximize Project Success": sucesso de projeto deixou de ser tripla-restrição (escopo/prazo/custo)
+para **VALOR PERCEBIDO pelo stakeholder**. M.O.R.E. = **M**anage Perceptions · **O**wn Project Success beyond PM
+success · **R**elentlessly Reassess parameters · **E**xpand Perspective. "Not about doing more work, but work that
+delivers MORE success." Chave p/ parceria: **"Community is our Superpower... tapping into the PMI flywheel"** +
+"Career-Long Learning" como recurso. → valida a tese da parceria, o flywheel e o roadmap de certs.
+
+## 6 avaliações reais (Apêndice B) - padrões
+- Agile Trends (BRASIL), Content Distribution, 25, **SIM** ("same audience as PMI"). ~= nossa Frente 1.
+- Red Learning (ATP, UAE), Academic, **SIM**. ~= ALUN (perfil ATP).
+- OTEAcademy (Grécia, maior org de treinamento), Co-Branding, 27, **SIM**.
+- PwC Austria, Corporate Sponsorship+Research, 25, SIM. · Red Cross, Social Impact, 24, SIM.
+- Smith & Wolfe, Research, 23, **NÃO** (único reprovado): destaca **certificações CONCORRENTES** (conflito) →
+  o deal-breaker documentado. Por isso o pitch reforça "complementar, não concorrente".
+Padrão: vencedores têm Strategic Alignment=5, Partner Reach=5, baixo Financial/Capacity investment=5; o ponto
+fraco recorrente é o critério 4 (conversão/receita) → nosso funil ALUN→membro/cert PMI é o diferencial.
+
+## Como isso entrou no pitch R4 (2026-06-14)
+A) "complementar, não concorrente" (slide 4) - neutraliza o único motivo de veto. B) sinergia nomeia as 3 arenas
+do PMI:Next. C) slide PMI eleva PMIxAI com prova (4 cursos/+350k/Practice Guide/Infinity). D) "Entrar no flywheel
+do PMI" (termo do M.O.R.E.). E) funil ALUN→membro/cert reforçado (frente 2 + sinergia). M.O.R.E. no slide "por que
+agora" (a falha dos pilotos de IA = gap de valor percebido). Certs = roadmap de carreira (arena #2), CPMAI herói.
+Precedente (Agile Trends/Red Learning/OTEAcademy) fica nas presenter notes, não em slide.

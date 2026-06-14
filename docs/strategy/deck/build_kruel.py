@@ -171,16 +171,17 @@ def compose(d, C):
         cv = a["covers"][0]
         cover_slot(d, s, 8.2, top + 0.05, 4.3, 2.2, cv["slot"], cv["label"], framed=True)
         d.add_box(s, 0.62, top + 2.55, 12.1, 0.5, "", [a["caption"]], hcolor=A2, fs=11.5)
-        n = len(a["certs"]); cw = 12.1 / n
+        n = len(a["certs"]); cw = 12.1 / n; bw = 1.05
         for i, c in enumerate(a["certs"]):
-            cx = 0.62 + i * cw + (cw - 1.2) / 2
+            cx = 0.62 + i * cw + (cw - bw) / 2
             proc = CERTS_PROC / (Path(c["file"]).stem + ".png")
             img = proc if proc.exists() else (BASE / "assets/inbox_r1" / c["file"])
             if img.exists():
-                place_fit(d, s, cx, top + 2.95, 1.2, 1.05, str(img))
+                place_fit(d, s, cx, top + 3.0, bw, 1.0, str(img))
             else:
-                d.add_box(s, cx, top + 2.95, 1.2, 1.05, "[ " + c["label"] + " ]", [], hcolor=GRAY, hfs=10, body=GRAY)
-            d.add_box(s, 0.62 + i * cw + 0.1, top + 4.1, cw - 0.2, 0.75, c["label"], [c["desc"]], hcolor=A1, hfs=11, fs=9.5)
+                d.add_box(s, cx, top + 3.0, bw, 1.0, "[ " + c["label"] + " ]", [], hcolor=GRAY, hfs=10, body=GRAY)
+            hc = A3 if c.get("hero") else A1
+            d.add_box(s, 0.62 + i * cw + 0.05, top + 4.05, cw - 0.1, 0.75, c["label"], [c["desc"]], hcolor=hc, hfs=10.5, fs=9)
     d.content(a["eyebrow"], a["title"], b_ansi, a["note"])
 
     # 8 why now (market problem, de-denigrated)

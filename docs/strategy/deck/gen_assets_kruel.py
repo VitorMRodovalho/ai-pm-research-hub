@@ -70,7 +70,7 @@ def prep_certs():
     so they float cleanly on any slide bg. Flood-fills from the 4 corners with the corner's own color."""
     src = BASE / "assets/inbox_r1"
     out = BASE / "assets/certs_proc"; out.mkdir(exist_ok=True)
-    for f in ("PMI-CPMAI.png", "PMI-PMOCP.png", "PMP.jpeg", "PMI-ACP.png"):
+    for f in ("PMI-CPMAI.png", "PMI-PMOCP.png", "PMP.jpeg", "PMI-ACP.png", "PMI-CP.png", "PMI CSPP.jpeg"):
         p = src / f
         if not p.exists():
             continue
