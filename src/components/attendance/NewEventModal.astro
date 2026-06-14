@@ -36,6 +36,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audienceType', lang)} *</label>
           <select id="ev-type" required
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+            <option value="">{t('attendance.modal.selectEventType', lang)}</option>
             <option value="geral">Geral</option>
             <option value="tribo">Tribo</option>
             <option value="iniciativa">Iniciativa</option>

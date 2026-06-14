@@ -249,5 +249,7 @@ test('token.ts logs (does not swallow) refresh-store failures', () => {
   assert.equal(/catch\s*\{\s*\}/.test(src), false, 'no empty catch {} may remain around the refresh store');
   assert.ok(src.includes('token-refresh-store-error'), 'must log KV-store failures');
   assert.ok(src.includes('token-refresh-store-skip'), 'must log jwt-decode-no-sub skips');
-  assert.match(src, /import \{ decodeJwtPayload, MCP_REFRESH_TTL_SECONDS \} from/);
+  assert.match(src, /decodeJwtPayload/);
+  assert.match(src, /MCP_REFRESH_TTL_SECONDS/);
+  assert.match(src, /resolveSupabaseAuthConfig/);
 });

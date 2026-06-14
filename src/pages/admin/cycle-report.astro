@@ -610,7 +610,7 @@ const CR_I18N = {
     if (printDate) printDate.textContent = dateStr;
     if (printCode) printCode.textContent = code;
 
-    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'cycle', code }); } catch {}
+    try { (window as any).__nucleoTrack?.('report_exported', { report_type: 'cycle', report_code_length: String(code || '').length }); } catch {}
     window.print();
   });
 

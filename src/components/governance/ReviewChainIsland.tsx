@@ -117,37 +117,45 @@ function fmtDT(d: string | null | undefined): string {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function normalizeGateThreshold(g: Gate): { isAll: boolean; isInformational: boolean; num: number } {
+  const s = String(g.threshold);
+  if (s === 'all') return { isAll: true, isInformational: false, num: 0 };
+  if (s === '0') return { isAll: false, isInformational: true, num: 0 };
+  return { isAll: false, isInformational: false, num: Number(s) };
+}
+
+function isGateSatisfied(g: Gate): boolean {
+  const t = normalizeGateThreshold(g);
+  const signed = Number(g.signed_count) || 0;
+  const pending = g.eligible_pending || [];
+  if (t.isInformational) return false;
+  if (t.isAll) return signed > 0 && pending.length === 0;
+  return signed >= t.num;
+}
+
+function priorMandatoryOrdersSatisfied(gates: Gate[], order: number): boolean {
+  return gates
+    .filter(g => g.order < order && !normalizeGateThreshold(g).isInformational)
+    .every(isGateSatisfied);
+}
+
 function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[] {
   const gates = [...detail.gates].sort((a, b) => a.order - b.order);
   const eligible: string[] = [];
-  let prevOK = true;
   for (const g of gates) {
-    // threshold comes from RPC as text ("0", "1", "all"). Normalize defensively.
-    const tStr = String(g.threshold);
-    const isAll = tStr === 'all';
-    const isInformational = tStr === '0';
-    const tNum = isAll || isInformational ? 0 : Number(tStr);
-    // p130 fix: align satisfied calc with documents.astro pipelineHtml/ballInCourt (commit 1f2bc40).
-    // Old: `satisfied = !isAll && !isInformational && g.signed_count >= tNum` collapsed all isAll
-    // gates to false, blocking downstream gate eligibility detection even after the curator gate
-    // was fully satisfied. Surface: post-curator-complete chains hid leader_awareness/etc buttons.
-    const satisfied = isInformational
-      ? false
-      : isAll
-        ? g.signed_count > 0 && (g.eligible_pending || []).length === 0
-        : g.signed_count >= tNum;
-    if (isInformational) {
-      // Informational gate (threshold=0) só fica elegível depois que gate anterior
-      // obrigatório foi satisfeito (respeita prevOK). Não muda prevOK — não bloqueia próximo.
-      if (prevOK && (g.eligible_pending || []).some(p => p.id === memberId)) {
+    const t = normalizeGateThreshold(g);
+    const priorOK = priorMandatoryOrdersSatisfied(gates, g.order);
+    const inEligible = (g.eligible_pending || []).some(p => p.id === memberId);
+    if (t.isInformational) {
+      // Informational gates only wait for lower mandatory orders; they never block peers or later orders.
+      if (priorOK && inEligible) {
         eligible.push(g.kind);
       }
       continue;
     }
-    if (prevOK && !satisfied && (g.eligible_pending || []).some(p => p.id === memberId)) {
+    if (priorOK && !isGateSatisfied(g) && inEligible) {
       eligible.push(g.kind);
     }
-    prevOK = satisfied;
   }
   return eligible;
 }

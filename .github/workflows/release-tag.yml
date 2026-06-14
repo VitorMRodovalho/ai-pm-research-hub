@@ -45,6 +45,10 @@ jobs:
           fi
           echo "✅ CI passed on main"
 
+      - name: Generate release provenance manifest
+        run: |
+          node scripts/register-release-provenance.mjs prepare "${{ inputs.version }}"
+
       - name: Create and push tag
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,3 +60,26 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "v${VERSION}" -m "$MSG"
           git push origin "v${VERSION}"
+
+      - name: Publish GitHub Release with provenance assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          gh release create "v${VERSION}" \
+            release-provenance/*.tar.gz \
+            release-provenance/MANIFEST.sha256 \
+            release-provenance/release-provenance.json \
+            --title "v${VERSION}" \
+            --notes "Release v${VERSION}. Provenance assets include MANIFEST.sha256 and release-provenance.json."
+
+      - name: Register provenance manifest in OTS-backed registry
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RELEASE_PROVENANCE_DECLARATION_ID: ${{ secrets.RELEASE_PROVENANCE_DECLARATION_ID }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # Calls register_release_provenance_asset; the existing OTS cron anchors the asset later.
+          node scripts/register-release-provenance.mjs register "${{ inputs.version }}"

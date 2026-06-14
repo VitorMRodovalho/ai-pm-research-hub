@@ -25,6 +25,7 @@ import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const { id } = Astro.params;
+const previewVersionId = Astro.url.searchParams.get('version') || '';
 
 const I18N = {
   pageTitle: t('admin.governance.charters.pageTitle', lang, 'Project Charter'),
@@ -32,6 +33,11 @@ const I18N = {
   errorPrefix: t('admin.governance.charters.errorPrefix', lang, 'Erro:'),
   empty: t('admin.governance.charters.empty', lang, 'Documento não encontrado.'),
   backToList: t('common.back', lang, '← Voltar'),
+  draftPreviewTitle: t('governance.document.draftPreviewTitle', lang, 'DRAFT — em revisão jurídica'),
+  draftPreviewBody: t('governance.document.draftPreviewBody', lang, 'Esta prévia não é a versão vigente e ainda não foi lacrada para ratificação.'),
+  printPdfBtn: t('governance.document.printPdfBtn', lang, 'Imprimir / PDF'),
+  copyLinkBtn: t('governance.document.copyLinkBtn', lang, 'Copiar link'),
+  copiedLink: t('governance.document.copiedLink', lang, 'Link copiado'),
 };
 ---
 
@@ -50,6 +56,23 @@ const I18N = {
     <div id="doc-empty" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-center text-amber-800 text-sm">
       {I18N.empty}
     </div>
+    <section id="doc-draft-preview-banner" class="hidden mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <p class="text-[12px] font-extrabold uppercase tracking-wide">{I18N.draftPreviewTitle}</p>
+          <p class="text-[12px] mt-1">{I18N.draftPreviewBody}</p>
+          <p id="doc-draft-preview-meta" class="text-[11px] mt-1 text-amber-800 font-mono"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="doc-print-pdf" type="button" class="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-[11px] font-bold text-amber-950 hover:bg-amber-100">
+            {I18N.printPdfBtn}
+          </button>
+          <button id="doc-copy-link" type="button" class="rounded-lg bg-amber-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-amber-800">
+            {I18N.copyLinkBtn}
+          </button>
+        </div>
+      </div>
+    </section>
     <article id="doc-content" class="hidden rounded-2xl border border-[var(--border-default)] bg-white shadow-sm overflow-hidden">
       <div id="doc-html-mount" class="tap-iso-content"></div>
     </article>
@@ -64,7 +87,7 @@ const I18N = {
     .tap-iso-content body { all: revert; }
   </style>
 
-  <script define:vars={{ DOC_ID: id, I18N }} is:inline>
+  <script define:vars={{ DOC_ID: id, PREVIEW_VERSION_ID: previewVersionId, I18N }} is:inline>
     function showError(msg) {
       var el = document.getElementById('doc-error');
       el.classList.remove('hidden');
@@ -89,17 +112,41 @@ const I18N = {
     async function loadDoc() {
       var sb = await waitForSb();
       if (!sb) { showError('Supabase client unavailable.'); return; }
-      // p263 #380 W4d: single round-trip via SECDEF reader.
-      // Server-side gate enforces visibility_class + status default-exclusion
-      // + version locked_at — privacy-preserving null-envelope for not-found,
-      // visibility-blocked, status-blocked, and unlocked-for-member cases.
-      var rpcRes = await sb.rpc('get_governance_document_reader', { p_document_id: DOC_ID });
+      var isDraftPreview = !!PREVIEW_VERSION_ID;
+      // Default path stays on the p263/p264 SECDEF current reader. #646 adds a
+      // separate SECDEF path for an explicit unlocked draft version preview.
+      var rpcRes = isDraftPreview
+        ? await sb.rpc('get_governance_document_draft_preview', {
+            p_document_id: DOC_ID,
+            p_version_id: PREVIEW_VERSION_ID
+          })
+        : await sb.rpc('get_governance_document_reader', { p_document_id: DOC_ID });
       if (rpcRes.error) { showError(rpcRes.error.message || 'fetch failed'); return; }
       var payload = rpcRes.data || {};
       var doc = payload.document;
-      var ver = payload.current_version;
+      var ver = isDraftPreview ? payload.draft_version : payload.current_version;
       if (!doc) { showEmpty(); return; }
       if (!ver || !ver.content_html) { showEmpty(); return; }
+
+      if (isDraftPreview && payload.preview && payload.preview.is_draft) {
+        var banner = document.getElementById('doc-draft-preview-banner');
+        var meta = document.getElementById('doc-draft-preview-meta');
+        var versionText = ver.version_label || ('v' + ver.version_number);
+        meta.textContent = doc.title + ' · ' + versionText + ' · ' + PREVIEW_VERSION_ID;
+        banner.classList.remove('hidden');
+
+        var printBtn = document.getElementById('doc-print-pdf');
+        var copyBtn = document.getElementById('doc-copy-link');
+        if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
+        if (copyBtn) copyBtn.addEventListener('click', async function() {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            copyBtn.textContent = I18N.copiedLink;
+          } catch (e) {
+            copyBtn.textContent = window.location.href;
+          }
+        });
+      }
 
       // Mount HTML — TAP brings its own inline <style>, so we extract body+styles
       var html = ver.content_html;

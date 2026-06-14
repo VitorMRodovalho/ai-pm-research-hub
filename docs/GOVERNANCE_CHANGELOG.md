@@ -10,6 +10,30 @@ Referência normativa: Manual de Governança e Operações R2 (DocuSign B2AFB185
 
 ## Decisões Implementadas
 
+### GC-148 — Hardening MCP, Camada 0, Retencao Publica, Eventos Sem Default Ambiguo, Registry PI Gated, Stamping de Release, Licenciamento Dual, Dados Federados, Analytics Sem PII, Assinatura Governada, Preview de Draft e Ponto Focal Estreito
+**Data:** 2026-06-13 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Separar a coorte pre-onboarding dos indicadores operacionais e restringir superficies sensiveis por padrao:
+- `member_is_pre_onboarding(person_id, member_status)` passa a ser a regra canonica reutilizada por `admin_list_members`.
+- `get_public_platform_stats.retention_rate` passa a medir a coorte operacional, excluindo pre-onboarding da base publica.
+- Agenda semanal das tribos confirmadas passa a ser reconciliada contra `events` com eventos `type='tribo'` vinculados a `initiative_id`, mantendo `tribe_meeting_slots` alinhado apenas como slot manual/visual.
+- A ocorrencia de 2026-06-15 da Tribo 5 passa a ser restaurada como `scheduled` para preservar a cadencia confirmada de segunda-feira ate julho.
+- Alinhamento Comunicacao passa a ter recorrencias operacionais como iniciativa/workgroup `Hub de Comunicacao`: terca semanal e quinta quinzenal, ambas 19:30-20:30 BRT, ate 2026-07-31; a quinta quinzenal fica ancorada na reuniao realizada em 2026-06-11.
+- A criacao manual de eventos por admin/gerente deixa de defaultar `type='geral'`; o tipo passa a ser escolha explicita e os tipos escopados (`tribo`, `iniciativa`) exigem escopo antes do RPC. `tribe_leader` permanece pre-travado na propria tribo.
+- A primeira carga real do registry de exclusao de PI permanece em HOLD ate doc7/G12/decisao PM, mas passa a ter runbook operacional para carga digest-only, hash local, monitoramento OTS, export Anexo I e revogacao.
+- Releases semanticos passam a gerar tarball, `MANIFEST.sha256` e metadata de proveniencia; o digest do manifest passa a ser registrado no registry OTS-backed por RPC service-role-only, ficando elegivel ao cron de ancoragem Bitcoin existente.
+- O repo passa a carregar explicitamente o split de licenciamento do Anexo Tecnico: codigo-fonte sob MIT e documentacao/materiais nao-codigo sob CC BY-SA 4.0, com exclusoes para marcas, dados pessoais, credenciais e materiais restritos/terceiros.
+- O Manual R3 passa a ter esqueleto de anexo de protecao de dados federada para cobrir os 4 acordos bilaterais PMI-GO ↔ PMI-CE/DF/MG/RS que eram silentes sobre LGPD; compartilhamento nominal com capitulos parceiros permanece gated como F2.1/G12.
+- Eventos PostHog customizados passam por sanitizacao central e `identify` pseudonimo (`member:<uuid>`), sem nome/email.
+- Instrumentos legais com merge-fields `{{...}}` deixam de poder ser ratificados com placeholders crus: a visualizacao de assinatura preenche campos conhecidos e bloqueia a ratificacao se ainda houver campo juridico pendente.
+- Drafts juridicos de governanca passam a ter preview frontend explicito antes do lock via RPC SECDEF separada, com banner de DRAFT e gate especifico para admin/reviewer/curador, mantendo `legal_scoped` restrito a admin ou signatario atual.
+- `chapter_liaison` tem acesso admin narrow/read-only por allowlist, sem `admin.access` amplo.
+- O refresh OAuth/MCP do conector Claude passa a resolver a URL Supabase pelo runtime `env` do Worker, com URLs publicadas em `wrangler.toml`, antes de cair para `import.meta.env`; o anon key deve vir de binding runtime/build env (`SUPABASE_ANON_KEY` ou `PUBLIC_SUPABASE_ANON_KEY`) e nao e versionado no repo. Isso evita dependencia exclusiva do build-time env em rotas SSR de `/mcp`, `/mcp/semantic` e `/oauth/token`.
+
+**Justificativa:** A Camada 0 representa pessoas em fase pre-operacional; conta-las como pesquisadores operando distorce ativos, retencao e gates. Analytics e acesso de ponto focal tambem precisavam seguir minimizacao LGPD e menor privilegio. O conector MCP e um canal operacional continuo; refresh de OAuth nao pode depender de env build-time em Worker SSR, pois a falha degrada para relogin na expiracao do access token.
+
+**Impacto técnico:** Migrations `20260613150200`, `20260613150634`, `20260613151535`, `20260613152719`, `20260613162000`, `20260805000160`, `20260805000161`, `20260805000162` e `20260805000163`; workflow `.github/workflows/release-tag.yml`; `wrangler.toml`; script `register-release-provenance`; arquivos de licenca `LICENSE` e `LICENSE-docs`; docs legais `638_PI_EXCLUSION_REGISTRY_LOAD_RUNBOOK`, `641_MANUAL_R3_DATA_PROTECTION_ANNEX_DRAFT` e `642_DPA_SUBPROCESSOR_INVENTORY`; helpers `mcp-refresh`, `sanitizeAnalyticsProperties` e `governance/mergeFields`; contrato `633-events-smart-defaults`; contratos `234-mcp-refresh-runtime-env`, `630-tribe-agenda-reconciliation`, `638-pi-exclusion-registry-load-runbook`, `639-release-provenance-stamping`, `640-repository-dual-license`, `641-manual-r3-data-annex`, `642-posthog-pii-subprocessors`, `645-governance-merge-fields`, `646-governance-draft-preview`, `670-chapter-liaison-narrow-permissions` e extensao de `homepage-stats-pre-onboarding`.
+
 ### GC-001 — Modelo de Papéis 3-Eixos
 **Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 

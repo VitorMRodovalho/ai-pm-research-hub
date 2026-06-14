@@ -2,7 +2,11 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { isAllowedRedirectUri } from '../../lib/oauth-security';
 // #580 — single source for JWT decode + the KV refresh-token TTL (shared with the proxies).
-import { decodeJwtPayload, MCP_REFRESH_TTL_SECONDS } from '../../lib/mcp-refresh';
+import {
+  decodeJwtPayload,
+  MCP_REFRESH_TTL_SECONDS,
+  resolveSupabaseAuthConfig,
+} from '../../lib/mcp-refresh';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled (free tier 1k writes/day protection).
@@ -47,8 +51,9 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-    const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseAuth = resolveSupabaseAuthConfig(env as any, import.meta.env);
+    const SUPABASE_URL = supabaseAuth.url;
+    const SUPABASE_ANON_KEY = supabaseAuth.anonKey;
 
     // ── grant_type=refresh_token ──
     if (grant_type === 'refresh_token') {

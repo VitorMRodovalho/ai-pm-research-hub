@@ -1,5 +1,54 @@
 # Release Log
 
+## 2026-06-13 - Queue hardening: #234/#625/#630/#633/#638/#639/#640/#641/#642/#645/#646/#670
+
+### Scope
+Fecha a rodada de hardening da fila: estabilizacao do refresh OAuth/MCP do conector Claude, separacao da coorte pre-onboarding, taxa publica de retencao sobre coorte operacional, smart defaults de eventos para evitar novas reunioes de tribo tipadas como `geral`, runbook gated para a primeira carga do registry de exclusao de PI, stamping de releases com MANIFEST.sha256 + registry OTS-backed, licenciamento dual repo/anexo tecnico, anexo R3 de protecao de dados federada para acordos bilaterais, analytics PostHog sem PII direta, inventario de sub-operadores para DPA, bloqueio de assinatura com merge-fields pendentes, preview seguro de draft juridico antes do lock, e `chapter_liaison` com acesso admin estreito/read-only.
+
+### Delivered
+- Migration `20260805000160_625_c1b_admin_list_members_pre_onboarding_helper.sql` consolida `admin_list_members` no helper canonico `member_is_pre_onboarding`.
+- Migration `20260805000161_630_public_retention_excludes_pre_onboarding.sql` recria `get_public_platform_stats()` para excluir pre-onboarding da coorte de `retention_rate`; live: `active_members=47`, `retention_rate=68.1`.
+- Migrations `20260613150200_630_reconcile_tribe_weekly_events_july.sql` e `20260613150634_630_reconcile_t4_weekly_events_july.sql` reconciliam agenda semanal das tribos 1, 2, 4, 5, 6, 7 e 8 ate 2026-07-31, com slots manuais alinhados, links atualizados e eventos `type='tribo'` vinculados a `initiative_id`.
+- Migration `20260613151535_630_seed_comms_alignment_recurring_events_july.sql` cria as recorrencias da iniciativa/workgroup `Hub de Comunicacao`: terca semanal 19:30-20:30 e quinta quinzenal 19:30-20:30 ate 2026-07-31, `type='comms'`, `audience_level='initiative'`, link Meet confirmado.
+- Migration `20260613152719_630_correct_comms_biweekly_parity_june11_anchor.sql` corrige a paridade da quinta quinzenal de Comunicacao com ancora operacional em 2026-06-11; proximas ocorrencias futuras: 2026-06-25, 2026-07-09 e 2026-07-23.
+- Migration `20260613162000_630_restore_t5_june15_weekly_event.sql` reativa a ocorrencia semanal de 2026-06-15 da Tribo 5, que estava `cancelled`, restaurando 7 segundas ativas ate 2026-07-31.
+- `NewEventModal.astro` e `/attendance` deixam de defaultar novos eventos admin/gerente como `geral`: a criacao passa a exigir escolha explicita de tipo, mantendo `tribe_leader` travado em `tribo` + propria tribo e bloqueando `create_event` quando `tribo`/`iniciativa` nao tem escopo selecionado. A reclassificacao dos candidatos historicos de #633 segue dependente de decisao PM evento-a-evento.
+- `docs/legal/638_PI_EXCLUSION_REGISTRY_LOAD_RUNBOOK.md` prepara a primeira carga real do registry de exclusao de PI como HOLD operacional: estado live 0 declarations / 0 assets, hard stop antes de doc7/G12/decisao PM, digest-only, hash local, OTS pending vs confirmed, export Anexo I e rollback por revogacao.
+- `scripts/register-release-provenance.mjs`, `.github/workflows/release-tag.yml` e migration `20260805000163_639_release_provenance_registry_rpc.sql` passam a gerar tarball de release, `MANIFEST.sha256`, `release-provenance.json`, publicar esses artefatos no GitHub Release e registrar o digest do manifest como asset no registry OTS-backed via RPC service-role-only.
+- `LICENSE`, `LICENSE-docs` e a secao License do `README.md` alinham o repo ao Anexo Tecnico: codigo sob MIT e documentacao/materiais nao-codigo sob CC BY-SA 4.0, sem cobrir marcas, dados pessoais, credenciais ou materiais restritos/terceiros.
+- `docs/legal/641_MANUAL_R3_DATA_PROTECTION_ANNEX_DRAFT.md` prepara o esqueleto do anexo de protecao de dados federada para Manual R3, cobrindo os 4 acordos bilaterais assinados que nao tinham clausulas LGPD, mantendo F2.1 nominal como gated/G12.
+- Analytics customizados passam por `__nucleoTrack`/`sanitizeAnalyticsProperties`; PostHog `identify` usa `member:<uuid>` e nao envia nome/email.
+- `docs/legal/642_DPA_SUBPROCESSOR_INVENTORY.md` adiciona o inventario de fornecedores/sub-operadores antes do DPA.
+- `src/lib/governance/mergeFields.ts` e `/governance/ip-agreement` passam a renderizar merge-fields conhecidos em instrumentos legais (`cooperation_agreement`, `accession_term`, `data_processing_agreement`) e bloquear ratificacao quando restar placeholder obrigatorio sem valor.
+- Migration `20260805000162_646_governance_document_draft_preview.sql` adiciona `get_governance_document_draft_preview(document_id, version_id)` para preview SECDEF de versao desbloqueada, sem expor anexos/source columns; `/governance/document/[id]?version=...` mostra banner de DRAFT, link copiavel e impressao/PDF via navegador.
+- `chapter_liaison` deixa de herdar `admin.access` amplo e passa a ter allowlist de superficies read-only.
+- `src/lib/mcp-refresh.ts`, `/mcp`, `/mcp/semantic`, `/oauth/token` e `wrangler.toml` passam a resolver a URL Supabase pelo runtime `env` do Worker antes do build-time `import.meta.env`; o anon key deve vir de binding runtime/build env (`SUPABASE_ANON_KEY` ou `PUBLIC_SUPABASE_ANON_KEY`) e nao e versionado no repo, evitando que o auto-refresh do conector MCP degrade silenciosamente para a expiracao de access token (~1h) quando o deploy injeta env SSR corretamente.
+
+### Validation
+- `npm test` — 3932 pass, 0 fail.
+- `npm run build` — pass; warnings conhecidos de CSS token `var(--text-primary/secondary/muted)` e chunk size.
+- `npm run smoke:routes` — pass.
+- `node --experimental-strip-types --test tests/contracts/645-governance-merge-fields.test.mjs` — 5/5 pass.
+- `node --test tests/contracts/646-governance-draft-preview.test.mjs` — 8/8 pass.
+- `node --test tests/contracts/641-manual-r3-data-annex.test.mjs` — 7/7 pass.
+- `node --test tests/contracts/638-pi-exclusion-registry-load-runbook.test.mjs` — 7/7 pass.
+- `node --test tests/contracts/639-release-provenance-stamping.test.mjs` — 5/5 pass.
+- `node --test tests/contracts/640-repository-dual-license.test.mjs` — 4/4 pass.
+- `node --test tests/contracts/630-tribe-agenda-reconciliation.test.mjs` — 6/6 pass apos restaurar a ocorrencia T5 de 2026-06-15.
+- `node --test tests/contracts/633-events-smart-defaults.test.mjs` — 4/4 pass.
+- `node --test tests/contracts/580-mcp-refresh-hardening.test.mjs tests/contracts/234-mcp-refresh-runtime-env.test.mjs tests/contracts/oauth-redirect-uri-allowlist.test.mjs tests/contracts/mcp-tools-list-execution-strip.test.mjs tests/contracts/mcp-semantic-gateway-bridge.test.mjs` — 69/69 pass.
+- `npm run test:contracts` — 3558 pass, 0 fail.
+- `node --test tests/contracts/homepage-stats-pre-onboarding.test.mjs` — 8/8 pass apos aplicar a migration 161.
+- `node --test tests/contracts/630-tribe-agenda-reconciliation.test.mjs tests/contracts/homepage-stats-pre-onboarding.test.mjs` — 14/14 pass.
+- Migration 161 aplicada via `supabase db query --linked --file ...` e marcada como aplicada com `supabase migration repair --status applied 20260805000161` porque `supabase db push` segue bloqueado por historico remoto legado ausente localmente.
+- Migrations de agenda `20260613150200`, `20260613150634`, `20260613151535` e `20260613152719` aplicadas via `supabase db query --linked --file ...` e marcadas como aplicadas com `supabase migration repair`.
+- Migration `20260613162000` aplicada via `supabase db query --linked --file ...` e marcada como aplicada com `supabase migration repair --status applied 20260613162000`.
+- Migration `20260805000162` aplicada via `supabase db query --linked --file ...`, marcada como aplicada com `supabase migration repair --status applied 20260805000162`, e checada live em `pg_proc` com assinatura `p_document_id uuid, p_version_id uuid`. O timestamp acidental `20260613155643` foi marcado como revertido no historico remoto para preservar a ordem local das migrations.
+- Migration `20260805000163` aplicada via `supabase db query --linked --file ...`, marcada como aplicada com `supabase migration repair --status applied 20260805000163`, e checada live em `pg_proc` com assinatura `p_declaration_id uuid, p_version text, p_commit_sha text, p_manifest_sha256 text, p_archive_sha256 text, p_source_ref text DEFAULT NULL::text`, `prosecdef=true`.
+
+### Rollback
+Restaurar `get_public_platform_stats()` a partir de `20260805000143_homepage_stats_pre_onboarding_and_next_general_meeting.sql` se for necessario bisectar o KPI publico de retencao. Para #234, reverter o uso de `resolveSupabaseAuthConfig` nos proxies/token endpoint e remover as URLs Supabase de `wrangler.toml`; isso reabre o risco de refresh MCP depender de build-time env e cair para relogin por volta de 1h. Para #639, remover as etapas de release provenance de `.github/workflows/release-tag.yml`, remover `scripts/register-release-provenance.mjs` e dropar `register_release_provenance_asset(uuid,text,text,text,text,text)`. Para analytics, reverter `src/lib/analytics.ts`/`BaseLayout.astro` e os callsites `__nucleoTrack`; isso reabre o risco de PII no PostHog e deve ser usado apenas em emergencia. Para #646, dropar `get_governance_document_draft_preview(uuid, uuid)` e remover o branch `?version=` da rota de documento.
+
 ## 2026-06-08 - p603 hotfix: selection approval RPC
 
 ### Scope

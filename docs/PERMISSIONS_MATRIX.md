@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-06-04 (#196: refresh — curadoria V4 (`curate_content` / `participate_in_governance_review`), distinção entre *discoverability* de nav e autoridade real de backend; contagens MCP/EF/cron des-fixadas → fontes runtime). Anterior: 2026-03-15 (W85: Comms Dashboard Cockpit — RPC get_comms_dashboard_metrics).
+> Última atualização: 2026-06-13 (#670: `chapter_liaison` sem `admin.access` amplo; middleware SSR libera apenas rotas admin de leitura explicitamente allowlisted para ponto focal). Anterior: 2026-06-04 (#196: refresh — curadoria V4 (`curate_content` / `participate_in_governance_review`), distinção entre *discoverability* de nav e autoridade real de backend; contagens MCP/EF/cron des-fixadas → fontes runtime).
 
 ---
 
@@ -40,7 +40,7 @@ sem subir de tier.
 | `co_gp`          | Eleva tier para `admin` (rank 4)               |
 | `sponsor`        | Eleva tier para `observer` (rank 2)            |
 | `curator`        | Eleva tier para `observer` (rank 2). **Autoridade de curadoria (V4)** vem das capabilities `curate_content` (curar conteúdo) + `participate_in_governance_review` (revisão de governança), **derivadas da designação — não do tier**. A nav `/admin/curatorship` é *descobrível* para observer+, mas a curadoria/escrita real exige `curate_content` via `can_by_member()` (ADR-0011; ver #245). |
-| `chapter_liaison`| Eleva tier para `observer` (rank 2)            |
+| `chapter_liaison`| Eleva tier para `observer` (rank 2) para leitura de programa/capítulo; **não** concede `admin.access` amplo. SSR permite só analytics, relatórios, portfolio, parcerias, sustentabilidade e dashboard de tribo allowlisted. |
 | `chapter_board`  | Eleva tier para `observer` (rank 2); read-only dashboards, KPIs agregados. Requer email institucional (`@pmiXX.org.br`). Sem detractor status no attendance grid. |
 | `ambassador`     | Sem elevação de tier; listado no Staff          |
 | `founder`        | Sem elevação de tier; listado no Staff          |
@@ -63,7 +63,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Attendance                 |    —    |  V/A   |    V     |  V/A   |  V/A  |    V/A     | Member: check-in próprio; gestão de eventos/roster via leader+ |
 | Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; tribos inativas ficam reservadas ao Superadmin; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
-| Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
+| Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     | `chapter_liaison` não recebe shell amplo; usa rotas de leitura específicas |
 | Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`, `chapter_board`: V read-only |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Admin Comms Ops `/admin/comms-ops` (W85 Cockpit) | — | — | — | — | V | V | `comms_leader`, `comms_member`: V — Dashboard com Recharts (boards communication, status, formato) |
@@ -224,24 +224,24 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 
 ### Frontend (`navigation.config.ts`)
 
-| `key`            | `minTier`  | `allowedDesignations`            | Coerente? |
-|------------------|------------|----------------------------------|-----------|
-| `attendance`     | `member`   | —                                | ✅         |
-| `my-tribe`       | `member`   | —                                | ✅         |
-| `profile`        | `member`   | —                                | ✅         |
-| `admin`          | `observer` | —                                | ✅         |
-| `admin-analytics`   | `admin`    | `['sponsor', 'chapter_liaison', 'curator']` | ✅ (read-only analytics audience) |
-| `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| ✅ (lgpdSensitive) |
-| `admin-comms-ops`  | `admin`    | `['comms_leader', 'comms_member']`| ✅ (ops dashboard, lgpdSensitive) |
-| `admin-portfolio`  | `admin`    | `['sponsor','chapter_liaison','curator']` | ✅ (executive read surface) |
-| `admin-governance-v2` | `admin` | `['curator','co_gp']` | ✅ (restore/lifecycle governance) |
-| `admin-curatorship`| `observer` | —                                | ✅         |
-| `admin-selection`  | `admin`    | —                                | ✅ (lgpdSensitive) |
-| `admin-settings`   | `superadmin` | —                             | ✅ (S-RM5)         |
-| `help`             | `member`   | —                                | ✅         |
-| `onboarding`     | `member`   | —                                | ✅ (drawer) |
-| `webinars`        | `leader`   | `['comms_leader','comms_member','curator','co_gp']` | ✅ (workspace operacional fora de admin-only) |
-| `publications`    | `leader`   | `['curator','co_gp','comms_leader','comms_member']` | ✅ (quadro global de submissões) |
+| `key`            | `minTier`  | `allowedDesignations`            | `allowedOperationalRoles` | Coerente? |
+|------------------|------------|----------------------------------|---------------------------|-----------|
+| `attendance`     | `member`   | —                                | —                         | ✅         |
+| `my-tribe`       | `member`   | —                                | —                         | ✅         |
+| `profile`        | `member`   | —                                | —                         | ✅         |
+| `admin`          | `observer` | —                                | —                         | ✅         |
+| `admin-analytics`   | `admin`    | `['sponsor', 'chapter_liaison', 'curator']` | `['chapter_liaison']` | ✅ (read-only analytics audience; SSR allowlisted) |
+| `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| —                         | ✅ (lgpdSensitive) |
+| `admin-comms-ops`  | `admin`    | `['comms_leader', 'comms_member']`| —                         | ✅ (ops dashboard, lgpdSensitive) |
+| `admin-portfolio`  | `admin`    | `['sponsor','chapter_liaison','curator']` | `['chapter_liaison']` | ✅ (executive read surface; SSR allowlisted) |
+| `admin-governance-v2` | `admin` | `['curator','co_gp']` | — | ✅ (restore/lifecycle governance) |
+| `admin-curatorship`| `observer` | —                                | —                         | ✅         |
+| `admin-selection`  | `admin`    | —                                | —                         | ✅ (lgpdSensitive; denied to `chapter_liaison`) |
+| `admin-settings`   | `superadmin` | —                             | —                         | ✅ (S-RM5)         |
+| `help`             | `member`   | —                                | —                         | ✅         |
+| `onboarding`     | `member`   | —                                | —                         | ✅ (drawer) |
+| `webinars`        | `leader`   | `['comms_leader','comms_member','curator','co_gp']` | `['facilitator','guest']` | ✅ (workspace operacional fora de admin-only) |
+| `publications`    | `leader`   | `['curator','co_gp','comms_leader','comms_member']` | `['communicator']` | ✅ (quadro global de submissões) |
 
 ### Backend (V4 RLS policies)
 

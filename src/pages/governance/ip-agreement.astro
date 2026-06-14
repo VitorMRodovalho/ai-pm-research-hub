@@ -57,6 +57,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   <script>
     import { getSupabase } from '../../lib/supabase';
     import { t } from '../../i18n/utils';
+    import {
+      buildGovernanceMergeValues,
+      renderGovernanceMergeFields,
+      shouldRenderGovernanceMergeFields,
+    } from '../../lib/governance/mergeFields';
     import type { Lang } from '../../i18n/utils';
 
     type Chain = {
@@ -75,6 +80,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     type Signoff = { id: string; gate_kind: string; signer_id: string; signoff_type: string; signed_at: string };
     type PriorSignature = { signed_version_id: string; signed_at: string; signed_version_label: string | null };
+    type MergeRender = { unresolved: string[]; applied: string[] };
 
     const UE_TITLES = new Set([
       'Termo de Compromisso de Voluntário — Núcleo de IA & GP',
@@ -182,6 +188,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       contentHtml: string,
       signoffs: Signoff[],
       prior: PriorSignature | null,
+      merge: MergeRender,
       isEU: boolean,
       preselectedGate: string | null,
       lang: Lang
@@ -201,6 +208,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <input id="ipagr-ue-consent" type="checkbox" class="mt-0.5 w-4 h-4 accent-navy" />
             <span class="text-[12px] font-semibold text-indigo-950">${esc(t('ipagr.ue.consentLabel', lang))}</span>
           </label>
+        </div>` : '';
+      const mergeAlert = merge.unresolved.length ? `
+        <div class="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 mb-4 text-sm text-red-900">
+          <h3 class="font-bold mb-1">${esc(t('ipagr.mergeFields.blockedTitle', lang))}</h3>
+          <p class="text-[12px] leading-relaxed">${esc(t('ipagr.mergeFields.blockedBody', lang))}</p>
+          <div class="mt-2 flex flex-wrap gap-1">
+            ${merge.unresolved.map(f => `<code class="rounded bg-white border border-red-200 px-1.5 py-0.5 text-[11px]">${esc(f)}</code>`).join('')}
+          </div>
+        </div>` : merge.applied.length ? `
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 mb-4 text-[12px] text-emerald-900">
+          ${esc(t('ipagr.mergeFields.rendered', lang).replace('{n}', String(merge.applied.length)))}
         </div>` : '';
 
       const signButtons = eligible.length ? eligible.map(g => {
@@ -225,6 +243,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             ${statusBadge(chain.status, lang)}
           </div>
           ${priorBanner}
+          ${mergeAlert}
           <div class="mt-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] text-[var(--text-secondary)]">${esc(t('ipagr.scrollHint', lang))}</span>
@@ -422,14 +441,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       function updateSignButtons() {
         const buttons = detail!.querySelectorAll<HTMLButtonElement>('.ipagr-sign-btn');
         const ueChk = document.getElementById('ipagr-ue-consent') as HTMLInputElement | null;
+        const mergeBlocked = detail!.querySelectorAll('.governance-merge-missing').length > 0;
         const ueOK = !ueChk || ueChk.checked;
         const hint = document.getElementById('ipagr-sign-hint');
         buttons.forEach(b => {
-          const ok = scrollComplete && ueOK;
+          const ok = scrollComplete && ueOK && !mergeBlocked;
           b.disabled = !ok;
         });
         if (hint) {
-          if (!scrollComplete) hint.textContent = t('ipagr.sign.locked', lang);
+          if (mergeBlocked) hint.textContent = t('ipagr.mergeFields.locked', lang);
+          else if (!scrollComplete) hint.textContent = t('ipagr.sign.locked', lang);
           else if (!ueOK) hint.textContent = t('ipagr.sign.ueLocked', lang);
           else hint.textContent = '';
         }
@@ -439,7 +460,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         const chain = chains.find(c => c.chain_id === selectedId)!;
         detail!.innerHTML = '<div class="text-center py-12 text-[var(--text-muted)] text-sm">' + t('ipagr.loading', lang) + '</div>';
         const data = await loadChainData(sb, chain, member.id);
-        detail!.innerHTML = renderDetail(chain, data.contentHtml, data.signoffs, data.prior, isEU, preselectedGate, lang);
+        const mergeValues = buildGovernanceMergeValues({ member, chain });
+        const merge = shouldRenderGovernanceMergeFields(chain.doc_type)
+          ? renderGovernanceMergeFields(data.contentHtml, mergeValues)
+          : { html: data.contentHtml, unresolved: [], applied: [] };
+        detail!.innerHTML = renderDetail(chain, merge.html, data.signoffs, data.prior, merge, isEU, preselectedGate, lang);
 
         scrollComplete = false;
         getSections = mountScrollTracking(lang, () => {

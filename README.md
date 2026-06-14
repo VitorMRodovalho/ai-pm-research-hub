@@ -6,7 +6,7 @@
 *A Joint Initiative of the PMI Brazilian Chapters*
 
 [![License: MIT](https://img.shields.io/badge/Code-MIT-blue.svg)](LICENSE)
-[![License: CC BY-SA 4.0](https://img.shields.io/badge/Docs-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/Docs-CC%20BY--SA%204.0-lightgrey.svg)](LICENSE-docs)
 [![Astro](https://img.shields.io/badge/Astro-6-BC52EE?logo=astro&logoColor=white)](https://astro.build)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
@@ -265,8 +265,15 @@ npm test
 
 ## License
 
-Code is licensed under [MIT](LICENSE).
-Documentation is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+This repository uses a split license aligned with the Technical Annex governance model:
+
+- **Source code** is licensed under the [MIT License](LICENSE) (`SPDX-License-Identifier: MIT`).
+- **Documentation and other non-code written materials** are licensed under
+  [Creative Commons Attribution-ShareAlike 4.0 International](LICENSE-docs)
+  (`SPDX-License-Identifier: CC-BY-SA-4.0`), unless a file or section states otherwise.
+- Third-party trademarks, logos, credentials, personal data, private operational records,
+  and materials explicitly marked with a different license or access restriction are not
+  covered by these repository-level license grants.
 
 PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of the Project Management Institute, Inc.
 This initiative is a collaborative project of independent PMI chapters and is not directly affiliated with or endorsed by PMI Global.

@@ -47,16 +47,35 @@ describe('hasPermission (real mode)', () => {
   });
 
   it('#670 chapter_liaison designation = ponto focal visibility (chapter/program analytics, NOT admin.access)', () => {
-    const focal = { operational_role: 'researcher', designations: ['chapter_liaison'] };
+    const focal = { operational_role: 'candidate', designations: ['chapter_liaison'] };
     // grants the program/chapter VISIBILITY the focal point needs...
     assert.ok(hasPermission(focal, 'admin.analytics.chapter'), 'ponto focal must see Meu Capítulo');
     assert.ok(hasPermission(focal, 'admin.analytics'), 'ponto focal sees program analytics');
+    assert.ok(hasPermission(focal, 'admin.portfolio'), 'ponto focal sees program portfolio');
+    assert.ok(hasPermission(focal, 'admin.partners'), 'ponto focal sees partnerships read surface');
+    assert.ok(hasPermission(focal, 'admin.sustainability'), 'ponto focal sees sustainability read surface');
     assert.ok(hasPermission(focal, 'admin.governance.view'), 'governance read');
-    // ...but the designation does NOT grant admin shell-entry (least-privilege; server
-    // __nucleoCanForAdminEntry gates the shell, so a designation w/o the backing engagement
-    // does not get a broken shell/nav).
+    // ...but the designation does NOT grant broad admin shell-entry.
     assert.ok(!hasPermission(focal, 'admin.access'), 'designation must NOT grant admin.access');
     assert.ok(!hasPermission(focal, 'admin.members.manage'), 'no member management');
+    assert.ok(!hasPermission(focal, 'content.curate'), 'no curation write');
+    assert.ok(!hasPermission(focal, 'event.view_all'), 'no global event read');
+    assert.ok(!hasPermission(focal, 'gamification.view_ranking'), 'no global ranking read');
+  });
+
+  it('#670 chapter_liaison operational_role is narrow read-only, not admin shell', () => {
+    const focal = { operational_role: 'chapter_liaison', designations: [] };
+    assert.ok(hasPermission(focal, 'admin.analytics.chapter'), 'operational role sees Meu Capítulo');
+    assert.ok(hasPermission(focal, 'admin.analytics'), 'operational role sees program analytics');
+    assert.ok(hasPermission(focal, 'admin.portfolio'), 'operational role sees program portfolio');
+    assert.ok(hasPermission(focal, 'admin.partners'), 'operational role sees partnerships read surface');
+    assert.ok(hasPermission(focal, 'admin.sustainability'), 'operational role sees sustainability read surface');
+    assert.ok(hasPermission(focal, 'admin.governance.view'), 'operational role has governance read');
+    assert.ok(!hasPermission(focal, 'admin.access'), 'operational role must NOT grant admin.access');
+    assert.ok(!hasPermission(focal, 'admin.members.manage'), 'no member management');
+    assert.ok(!hasPermission(focal, 'content.curate'), 'no curation write');
+    assert.ok(!hasPermission(focal, 'event.view_all'), 'no global event read');
+    assert.ok(!hasPermission(focal, 'gamification.view_ranking'), 'no global ranking read');
   });
 
   it('manager has admin.access', () => {
