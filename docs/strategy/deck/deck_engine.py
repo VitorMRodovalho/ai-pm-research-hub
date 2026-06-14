@@ -10,6 +10,7 @@ from pathlib import Path
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 
 # Official PMI palette (shared by every language edition)
 PURPLE=RGBColor(0x46,0x1D,0xA3); PURPLE_DK=RGBColor(0x36,0x17,0x7B); LILAC=RGBColor(0xA9,0x8E,0xEC)
@@ -18,8 +19,10 @@ ORANGE=RGBColor(0xE0,0x61,0x1F); GREEN=RGBColor(0x3E,0x8E,0x5A); TAN=RGBColor(0x
 LIGHT=RGBColor(0xF6,0xF4,0xEF); DARK=RGBColor(0x24,0x20,0x16); WHITE=RGBColor(0xFF,0xFF,0xFF)
 GRAY=RGBColor(0x60,0x60,0x60)
 FONT = "Aptos"
-COVER, CONTENT = 10, 17
-BOILER = ("TextBox 9", "Group 10")   # s17 body placeholder + footer how-to, removed on every content slide
+COVER, CONTENT, CONTENT_DARK = 10, 17, 18
+BOILER = ("TextBox 9", "Group 10")          # light s17 body placeholder + footer how-to, removed per content slide
+BOILER_DARK = ("TextBox 10", "Group 11")    # dark s18 equivalents (native PMI dark layout)
+DARKBG = RGBColor(0x20, 0x0F, 0x3B)          # PMI dark brand background, as used by the template's own dark slides
 
 
 def _iter(shapes):
@@ -32,7 +35,7 @@ class Deck:
     """One branded deck. SPECS (layout + content) drive it from the outside via the
     add_* / cover / content primitives; this class never hard-codes a slide."""
 
-    def __init__(self, template, out, preview, hub, logo):
+    def __init__(self, template, out, preview, hub, logo, dark=False):
         self.prs = Presentation(str(template))
         self._src = list(self.prs.slides._sldIdLst)
         self.slides = self.prs.slides
@@ -41,6 +44,8 @@ class Deck:
         self.K = (self.prs.slide_width / 914400) / 13.333
         self.CT = 2.75 / self.K           # content top (design space) = below the template divider
         self._injected = []               # (slide, l, t, w, h) bboxes for the overlap guard
+        self.dark = dark                  # dark theme: clone the template's native dark content layout
+        self.body_default = LIGHT if dark else DARK
 
     # geometry helpers (design space 13.33 x 7.5 -> template EMU)
     def IN(self, v): return Inches(v * self.K)
@@ -65,6 +70,15 @@ class Deck:
                     if a.startswith('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'):
                         if node.get(a) in rid_map: node.set(a, rid_map[node.get(a)])
             spTree.append(el)
+        # copy the slide-level background override (dark slides set <p:bg> at slide scope;
+        # add_slide() only inherits the layout bg, so the dark fill is lost without this)
+        src_cSld = src._element.find(qn('p:cSld'))
+        dst_cSld = dst._element.find(qn('p:cSld'))
+        src_bg = src_cSld.find(qn('p:bg')) if src_cSld is not None else None
+        if src_bg is not None and dst_cSld is not None:
+            old = dst_cSld.find(qn('p:bg'))
+            if old is not None: dst_cSld.remove(old)
+            dst_cSld.insert(0, copy.deepcopy(src_bg))
         return dst
 
     def named(self, slide, name): return [s for s in _iter(slide.shapes) if s.name == name]
@@ -107,7 +121,8 @@ class Deck:
 
     def _track(self, slide, sp): self._injected.append((slide, sp.left, sp.top, sp.width, sp.height))
 
-    def add_box(self, slide, left, top, w, h, header, lines, hcolor=PURPLE, fs=13, hfs=15, body=DARK):
+    def add_box(self, slide, left, top, w, h, header, lines, hcolor=PURPLE, fs=13, hfs=15, body=None):
+        if body is None: body = self.body_default
         tb = slide.shapes.add_textbox(self.IN(left), self.IN(top), self.IN(w), self.IN(h))
         tf = tb.text_frame; tf.word_wrap = True
         first = True
@@ -175,12 +190,17 @@ class Deck:
         return s
 
     def content(self, eyebrow, title, builder, note=""):
-        s = self.clone(CONTENT)
-        tb = self.named(s, "TextBox 14")
+        if self.dark:
+            s = self.clone(CONTENT_DARK)
+            title_name, eb_name, boiler = "TextBox 15", "TextBox 14", BOILER_DARK
+        else:
+            s = self.clone(CONTENT)
+            title_name, eb_name, boiler = "TextBox 14", "TextBox 13", BOILER
+        tb = self.named(s, title_name)
         if tb: self.inject_keep(tb[0], title)
-        eb = self.named(s, "TextBox 13")
+        eb = self.named(s, eb_name)
         if eb: self.inject_keep(eb[0], eyebrow)
-        self.delete(s, *BOILER)
+        self.delete(s, *boiler)
         self.fix_year(s)
         builder(s, self.CT)
         if note: self.notes(s, note)
@@ -210,7 +230,7 @@ class Deck:
                 if sp.left is None: continue
                 if sp.left + sp.width > sw + 9525 or sp.top + sp.height > sh_ + 9525:
                     fail(f"slide {i}: shape {sp.name!r} overflows the canvas")
-                if sp.name in BOILER: fail(f"slide {i}: boilerplate {sp.name!r} survived the wipe")
+                if sp.name in (BOILER + BOILER_DARK): fail(f"slide {i}: boilerplate {sp.name!r} survived the wipe")
             dividers = [sp for sp in sl.shapes
                         if not sp.has_text_frame and sp.height < 18288 and sp.width > Inches(8)]
             for d in dividers:
@@ -219,10 +239,39 @@ class Deck:
                     if t < d.top < t + h and not (l + w < d.left or d.left + d.width < l):
                         fail(f"slide {i}: divider {d.name!r} crosses injected content")
 
+    def _number_pages(self):
+        """Replace the template page-number placeholder (literal '‹#›' or a slidenum field, which
+        LibreOffice renders as '#') with a static run carrying the real number. Cover gets blank."""
+        for i, sl in enumerate(self.prs.slides, 1):
+            num = "" if i == 1 else str(i)
+            for sh in _iter(sl.shapes):
+                if not sh.has_text_frame: continue
+                tf = sh.text_frame
+                if tf.text.strip() not in ('‹#›', '#'): continue
+                p0 = tf.paragraphs[0]
+                size = name = None
+                src_rpr = None
+                r_el = p0._p.find(qn('a:r'))
+                if r_el is not None: src_rpr = r_el.find(qn('a:rPr'))
+                if src_rpr is None:
+                    fld = p0._p.find(qn('a:fld'))
+                    if fld is not None: src_rpr = fld.find(qn('a:rPr'))
+                if src_rpr is not None:
+                    if src_rpr.get('sz'): size = Pt(int(src_rpr.get('sz')) / 100)
+                    latin = src_rpr.find(qn('a:latin'))
+                    if latin is not None: name = latin.get('typeface')
+                tf.clear()
+                r = tf.paragraphs[0].add_run(); r.text = num
+                if size: r.font.size = size
+                if name: r.font.name = name
+                # the template's own number color matches the dark bg (invisible) -> force theme color
+                r.font.color.rgb = LIGHT if self.dark else DARK
+
     def finalize(self):
         """Delete template example slides, run guards, save, then render PDF + preview PNGs
         from the FINAL artifact in the same run (previews can never go stale)."""
         for sldId in self._src: self.prs.slides._sldIdLst.remove(sldId)
+        self._number_pages()
         self._assert_guards()
         self.prs.save(str(self.out))
         n_slides = len(self.prs.slides._sldIdLst)
