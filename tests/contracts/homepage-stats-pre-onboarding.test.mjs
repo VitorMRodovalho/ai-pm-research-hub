@@ -24,7 +24,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
 const MIG = 'supabase/migrations/20260805000143_homepage_stats_pre_onboarding_and_next_general_meeting.sql';
+const MIG_630 = 'supabase/migrations/20260805000161_630_public_retention_excludes_pre_onboarding.sql';
 const body = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+const retentionBody = existsSync(MIG_630) ? readFileSync(MIG_630, 'utf8') : '';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -70,6 +72,19 @@ test('mig 143 static: WeeklyScheduleSection consumes the RPC and keeps the i18n 
   }
 });
 
+test('mig 161 static: public retention_rate excludes pre-onboarding from the retention cohort', () => {
+  assert.ok(existsSync(MIG_630), 'migration 161 exists');
+  assert.match(retentionBody, /CREATE OR REPLACE FUNCTION public\.get_public_platform_stats\(\)/);
+  const retentionBlock = retentionBody.slice(retentionBody.indexOf("'retention_rate'"));
+  assert.match(
+    retentionBlock,
+    /WHERE m\.member_status IN \('active','alumni','observer'\)\s+AND NOT public\.member_is_pre_onboarding\(m\.person_id, m\.member_status\)/,
+    'retention cohort must exclude pre-onboarding via canonical helper',
+  );
+  assert.match(retentionBody, /GRANT EXECUTE ON FUNCTION public\.get_public_platform_stats\(\) TO anon, authenticated, service_role;/);
+  assert.match(retentionBody, /Zero PII public surface/);
+});
+
 // ── DB-GATED ──────────────────────────────────────────────────────────────────────
 const svc = () => createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -90,6 +105,54 @@ test('behavioural: active_members + pre_onboarding cohort == total in-cycle acti
   const inCycle = part.filter((m) => m.is_active && m.current_cycle_active);
   assert.ok(Number(plat.active_members) <= inCycle.length,
     'public stat is a subset of in-cycle actives (pre-onboarding excluded)');
+});
+
+test('behavioural: public retention_rate recomputes from operating cohort only', { skip: svcGated ? false : skipMsg }, async () => {
+  const sb = svc();
+  const { data: plat, error: e1 } = await sb.rpc('get_public_platform_stats');
+  assert.ifError(e1);
+
+  const { data: rows, error: e2 } = await sb
+    .from('members')
+    .select('person_id, member_status, is_active, current_cycle_active');
+  assert.ifError(e2);
+
+  const { data: engs, error: e3 } = await sb
+    .from('engagements')
+    .select('person_id, kind, agreement_certificate_id')
+    .eq('status', 'active');
+  assert.ifError(e3);
+  const { data: kinds, error: e4 } = await sb
+    .from('engagement_kinds')
+    .select('slug, requires_agreement');
+  assert.ifError(e4);
+
+  const reqMap = new Map((kinds ?? []).map((kind) => [kind.slug, kind.requires_agreement === true]));
+  const byPerson = new Map();
+  for (const engagement of engs ?? []) {
+    if (!byPerson.has(engagement.person_id)) byPerson.set(engagement.person_id, []);
+    byPerson.get(engagement.person_id).push(engagement);
+  }
+  const isPreOnboarding = (member) => {
+    if (member.member_status !== 'active') return false;
+    const list = byPerson.get(member.person_id) ?? [];
+    return list.length > 0
+      && !list.some((engagement) => !reqMap.get(engagement.kind) || engagement.agreement_certificate_id !== null);
+  };
+
+  const cohort = (rows ?? []).filter((m) =>
+    ['active', 'alumni', 'observer'].includes(m.member_status)
+    && !isPreOnboarding(m)
+    && (m.is_active || m.member_status === 'alumni')
+  );
+  const numerator = cohort.filter((m) => m.current_cycle_active).length;
+  const expected = cohort.length === 0 ? 0 : Math.round((numerator / cohort.length) * 1000) / 10;
+  const actual = Number(plat.retention_rate);
+  // Full `npm test` runs many DB-aware contracts concurrently. Some tests can read live data
+  // between the RPC call and the client-side recompute below, so keep this behavioural check
+  // tight but not exact; the static migration test above locks the SQL predicate itself.
+  assert.ok(Math.abs(actual - expected) <= 0.6,
+    `retention_rate must use the operating cohort denominator, excluding pre-onboarding (actual=${actual}, expected=${expected})`);
 });
 
 test('behavioural: get_next_general_meeting returns only {date,time_start,duration_minutes}, date >= today', { skip: svcGated ? false : skipMsg }, async () => {

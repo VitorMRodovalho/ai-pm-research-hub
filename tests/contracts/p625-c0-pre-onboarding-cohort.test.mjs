@@ -41,14 +41,15 @@ const sb = SUPABASE_URL && SUPABASE_SRK
 
 const FN_BODY = (MIG.match(/AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?? '';
 
-// #625 F1: admin_list_members foi re-definido na migration ...148 (adicionou as chaves do farol de
-// filiação + LATERAL aff, preservando a lógica da coorte). O check de md5 do corpo VIVO deve comparar
-// contra a captura CANÔNICA mais recente (...148), não contra a do C0 (...142). Os anchors estruturais
-// (is_pre_onboarding / pre.flag / view_internal_analytics) seguem válidos nas duas. Fallback p/ FN_BODY
-// quando ...148 ainda não existe no checkout.
+// #625 F1/C1-b: admin_list_members foi re-definido em ...148 (farol de filiação)
+// e em ...160 (DRY da regra pre-onboarding via helper canônico). O check de md5
+// do corpo VIVO deve comparar contra a captura CANÔNICA mais recente, não contra
+// a do C0 (...142). Fallback progressivo para checkouts parciais.
 const MIG_148_PATH = 'supabase/migrations/20260805000148_625_affiliation_verification_loop_f1_f3.sql';
-const FN_BODY_LATEST = existsSync(MIG_148_PATH)
-  ? ((readFileSync(MIG_148_PATH, 'utf8')
+const MIG_160_PATH = 'supabase/migrations/20260805000160_625_c1b_admin_list_members_pre_onboarding_helper.sql';
+const LATEST_CAPTURE_PATH = existsSync(MIG_160_PATH) ? MIG_160_PATH : MIG_148_PATH;
+const FN_BODY_LATEST = existsSync(LATEST_CAPTURE_PATH)
+  ? ((readFileSync(LATEST_CAPTURE_PATH, 'utf8')
        .match(/CREATE OR REPLACE FUNCTION public\.admin_list_members[\s\S]*?AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?? FN_BODY)
   : FN_BODY;
 
@@ -82,6 +83,26 @@ describe('p625-c0 — migration + RPC rule', () => {
     assert.match(FN_BODY, /can_by_member\(v_caller_id, 'view_internal_analytics'\)/);
     assert.match(MIG, /REVOKE ALL ON FUNCTION public\.admin_list_members\(text, text, integer, text\) FROM PUBLIC, anon;/);
     assert.match(MIG, /GRANT EXECUTE ON FUNCTION public\.admin_list_members\(text, text, integer, text\) TO authenticated;/);
+  });
+});
+
+describe('p625-c1-b — admin_list_members delegates cohort rule to helper', () => {
+  it('latest capture calls member_is_pre_onboarding for field + filter', () => {
+    assert.match(FN_BODY_LATEST, /'is_pre_onboarding', public\.member_is_pre_onboarding\(m\.person_id, m\.member_status\)/);
+    assert.match(FN_BODY_LATEST, /p_status = 'pre_onboarding' AND public\.member_is_pre_onboarding\(m\.person_id, m\.member_status\)/);
+  });
+
+  it('latest capture no longer carries the inline operational-engagement rule', () => {
+    assert.doesNotMatch(FN_BODY_LATEST, /COALESCE\(pre\.flag, false\)/);
+    assert.doesNotMatch(FN_BODY_LATEST, /JOIN public\.engagement_kinds ek ON ek\.slug = e\.kind/);
+  });
+
+  it('migration 160 preserves grants + PostgREST reload', () => {
+    assert.ok(existsSync(MIG_160_PATH));
+    const mig160 = readFileSync(MIG_160_PATH, 'utf8');
+    assert.match(mig160, /REVOKE ALL ON FUNCTION public\.admin_list_members\(text, text, integer, text\) FROM PUBLIC, anon;/);
+    assert.match(mig160, /GRANT EXECUTE ON FUNCTION public\.admin_list_members\(text, text, integer, text\) TO authenticated;/);
+    assert.match(mig160, /NOTIFY pgrst, 'reload schema';/);
   });
 });
 
@@ -133,6 +154,14 @@ describe('p625-c0 — DB-gated (skip without env)', () => {
     const rows = (data ?? []).filter((r) => r.name === 'p625_c0_admin_list_members_pre_onboarding');
     assert.equal(rows.length, 1);
     assert.equal(rows[0].version, '20260805000142');
+  });
+
+  it('migration 20260805000160 registered once (C1-b helper consolidation)', { skip: !sb }, async () => {
+    const { data, error } = await sb.rpc('_audit_list_schema_migrations');
+    if (error) { console.warn(`[p625-c0] helper unavailable: ${error.message}`); return; }
+    const rows = (data ?? []).filter((r) => r.name === '625_c1b_admin_list_members_pre_onboarding_helper');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].version, '20260805000160');
   });
 
   it('cohort arithmetic holds live: pre_onboarding + operating = total actives', { skip: !sb }, async () => {
