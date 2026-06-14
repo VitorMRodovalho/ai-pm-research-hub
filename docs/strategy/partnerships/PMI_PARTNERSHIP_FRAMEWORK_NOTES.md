@@ -1,5 +1,10 @@
 # Notas — PMI Chapter Partnerships Framework (oficial, ago/2024)
 
+> **Casa canônica (conhecimento promovido, 2026-06-14):** método reutilizável → repo público
+> `nucleo-ia-gp/frameworks` em `partnerships/pmi-chapter-partnership-playbook.md`; deal ALUN → wiki privado
+> `nucleo-ia-gp/wiki` em `partnerships/alun-kruel-cooperation.md`. Ambos sincronizam pro `wiki_pages` FTS
+> (busque via `search_wiki_pages`). Este arquivo é a CÓPIA DE TRABALHO; o canônico é o wiki/frameworks.
+
 Fonte: `PMI_Chapter_Partnerships_Framework.pdf` + Evaluation Matrix + Due Diligence (templates oficiais
 do PMI, fornecidos pelo Vitor 2026-06-13). Capturado para a lane de parcerias e para o pitch ALUN/Kruel.
 Ler junto de `partnership_value_exchange_canvas.md`.
