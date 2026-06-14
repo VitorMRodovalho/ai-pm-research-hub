@@ -23,7 +23,7 @@ test('#670 middleware allowlists only chapter_liaison read admin routes', () => 
     '/admin/report',
     '/admin/sustainability',
   ]) {
-    assert.match(middleware, new RegExp(path.replace(/\//g, '\\/')), `missing chapter_liaison route allowlist entry: ${path}`);
+    assert.ok(middleware.includes(path), `missing chapter_liaison route allowlist entry: ${path}`);
   }
 
   for (const denied of [
