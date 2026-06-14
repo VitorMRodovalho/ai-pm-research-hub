@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Deck curto (pré-leitura async) Núcleo IA & GP -> PMI-LATAM, para Natália Tavares
-# (Regional Head of Community, LATAM). Tema CLARO (brand PMI). 7 slides, PT-BR.
+# (Regional Head of Community, LATAM). Tema CLARO (brand PMI). 8 slides, PT-BR.
 #   ~/.venvs/pmo/bin/python build_latam.py
 # Reusa deck_engine.py + helpers/acervo do build_kruel (covers ANSI, badges, fotos).
 # Ângulo: o Núcleo é um motor dos KPIs que ela lidera (engajamento, retenção,
@@ -20,6 +20,7 @@ LOGO = "/home/vitormrodovalho/projects/_pmo/assets/pmi/brand/pmigo-logo-white.pn
 OUT = BASE / "Nucleo_IA_GP_PMI_LATAM_Natalia.pptx"
 PREVIEW = BASE / "preview_latam"
 HUB = BASE / "assets/hub_spoke.png"
+CPMAI_GAP = BASE / "assets/cpmai_gap.png"   # infográfico oportunidade PMI-CPMAI (gen_assets_latam.py)
 
 C = {
     "cover": {
@@ -46,9 +47,9 @@ C = {
                "Upskilling, networking e oportunidades na comunidade PMI.",
                "Produção aplicada: artigos, pilotos e conteúdo para os capítulos."],
         "proof_h": "Onde estamos · Ciclo 3 (2026/1) · dados da plataforma",
-        "proof": ["47 pesquisadores ativos · 7 tribos · 8 iniciativas · 324 eventos realizados.",
-                  "5 capítulos PMI com pesquisadores (GO, CE, MG, RS, DF) e 15 capítulos engajados.",
-                  "68% de taxa de retenção dos pesquisadores."],
+        "proof": ["47 pesquisadores ativos · 7 tribos (modelo de 4 quadrantes) · 8 iniciativas · 324 eventos.",
+                  "Ciclo 3 fecha com 5 capítulos com pesquisadores; o Ciclo 4 (1º/jul) integraliza os 15 capítulos brasileiros.",
+                  "Plataforma digital própria, governança madura (R2 · LGPD · PI) e acordos de cooperação federados."],
     },
     "growth": {
         "eyebrow": "Tração e reconhecimento",
@@ -57,26 +58,31 @@ C = {
         "l1": ["O Ciclo 4 começa em 1º de julho de 2026.",
                "25 pesquisadores aprovados em pré-onboarding, com nova onda de seleção a caminho.",
                "Projeção de aproximadamente 90 pesquisadores conectados no hub."],
-        "h2": "Reconhecimento que conta",
+        "h2": "Reconhecimento e entregas",
         "l2": ["Finalista do Prêmio Carlos Novello (Voluntário do Ano), PMI LATAM Excellence Awards 2025.",
-               "Sessão aceita no LIM LATAM 2026.",
-               "4 artigos publicados no ProjectManagement.com e 1 piloto de IA em curso."],
-        "caption": "Metas 2026: chegar a 8 capítulos PMI, avançar a trilha PMI AI e as certificações CPMAI, e firmar parcerias acadêmicas e de pesquisa.",
+               "Sessão aceita no LIM LATAM 2026 (Lima): From Five Chapters to One Platform.",
+               "Newsletter Frontiers AI PM, Grupo de Estudos PMI-CPMAI e frameworks entregues pelas tribos."],
+        "caption": "Metas 2026: 8 capítulos PMI (alcançado: o Ciclo 4 integraliza os 15 brasileiros), avançar a trilha PMI xAI e a certificação PMI-CPMAI, e firmar parcerias acadêmicas e de pesquisa.",
     },
     "value": {
         "eyebrow": "Por que ao PMI-LATAM",
         "title": "Um motor dos seus KPIs regionais",
         "boxes": [
-            ("Engajamento e retenção", ["68% de retenção; voluntários ativos por critério.",
-                                        "Comunidade viva em 5 capítulos, 15 engajados."], A1),
+            ("Engajamento e comunidade", ["Voluntários ativos, selecionados por critério.",
+                                          "Viva em 5 capítulos; 15 no Ciclo 4."], A1),
             ("Vitalidade de capítulos", ["Energiza capítulos e gera protagonismo local.",
                                          "Modelo replicável na LATAM, inclusive hispano."], A2),
-            ("Valor pro membro e eventos", ["324 eventos, artigos no PM.com, webinars.",
-                                            "Conteúdo e upskilling que aumentam a adoção."], A3),
+            ("Valor pro membro e eventos", ["324 eventos, newsletter, webinars e conteúdo.",
+                                            "Upskilling que aumenta a adoção do PMI."], A3),
             ("Inovação e IA · PMI:Next", ["IA aplicada à gestão: a fronteira do PMI.",
                                           "Alinhado ao standard ANSI de IA e ao PMI-CPMAI."], A1),
         ],
-        "caption": "Exatamente o que a comunidade LATAM precisa medir e crescer: engajamento, retenção, vitalidade de capítulos e inovação.",
+        "caption": "Exatamente o que a comunidade LATAM precisa medir e crescer: engajamento, vitalidade de capítulos, valor pro membro e inovação.",
+    },
+    "cpmai": {
+        "eyebrow": "A oportunidade",
+        "title": "A onda PMI-CPMAI no Brasil",
+        "caption": "O Brasil é #10 mundial em PMP (16.167) e só #19 em PMI-CPMAI (27). O Núcleo lidera a Comunidade PMI-CPMAI Brasil para fechar esse gap, em planejamento com a Diretoria de Filiação.",
     },
     "ansi": {
         "eyebrow": "A fronteira",
@@ -182,6 +188,13 @@ def compose(d):
             hc = A3 if c.get("hero") else A1
             d.add_box(s, 0.62 + i * cw + 0.05, top + 4.05, cw - 0.1, 0.75, c["label"], [c["desc"]], hcolor=hc, hfs=10.5, fs=9)
     d.content(a["eyebrow"], a["title"], b_ansi, "")
+
+    cp = C["cpmai"]
+    def b_cpmai(s, top):
+        top += 0.55
+        d.add_image(s, top, 11.4, path=str(CPMAI_GAP))   # aspect 12.5:3.4 -> h ~3.10 at w 11.4
+        caption(d, s, top + 3.3, cp["caption"])
+    d.content(cp["eyebrow"], cp["title"], b_cpmai, "")
 
     mg = C["managers"]
     def b_mgr(s, top):
