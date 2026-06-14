@@ -57,6 +57,9 @@ scripts/bulk_knowledge_ingestion/upload_manifest_curated.json
 # Audit raw reports (inflated, see filtered summary)
 docs/audit/archive/
 
+# Local dry-runs of release provenance artifacts; GitHub Release assets are generated in CI.
+release-provenance/
+
 # Wrangler local state
 .wrangler/
 
