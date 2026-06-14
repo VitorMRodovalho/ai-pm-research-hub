@@ -61,10 +61,9 @@
 
 **A virada do argumento:** o parceiro **ensina/usa** IA e gestão de projetos. O **PMI escreve o padrão americano (ANSI)** de ambos. Cooperar com o Núcleo é cooperar com a fonte do padrão.
 
-**O standard que abre qualquer porta de IA hoje (publicado este mês):**
-- **The Standard for Artificial Intelligence in Portfolio, Program, and Project Management** — publicado em **9/jun/2026**. O PMI o posiciona como **"o primeiro e único standard de IA aprovado pela ANSI para a profissão de projetos"** / primeiro padrão global de IA no trabalho de projetos. Estrutura: **8 princípios + 5 domínios de desempenho**, ciclo de vida de implementação de IA com tailoring, e considerações éticas/legais (viés, transparência, privacidade) com supervisão humana. Materiais do PMI citam alinhamento ao **EU AI Act** e à **ISO/IEC 42001**.
-  - Fonte: `pmi.org/about/press-media/2026/pmi-publishes-worlds-first-global-standard-for-ai-in-project-work` · `pmi.org/standards/artificial-intelligence`
-  - ⚠️ **Código numérico ANSI/PMI ainda UNCONFIRMED** (não apareceu em fonte primária); confirmar antes de citar um código. Detalhes de escopo (EU AI Act/ISO 42001, ~295p) são press-sourced.
+**O standard que abre qualquer porta de IA hoje (recém-lançado):**
+- **The Standard for Artificial Intelligence in Portfolio, Program, and Project Management** — **ANSI/PMI 26-007-2026**. Posicionado como **"o primeiro e único standard de IA aprovado pela ANSI para a profissão de projetos"**. Estrutura: **8 princípios + 5 domínios de desempenho**, ciclo de vida de implementação de IA com tailoring, e considerações éticas/legais com supervisão humana. Alinhado ao **EU AI Act** e à **ISO/IEC 42001**.
+  - **Código CONFIRMADO** (2026-06-13) lendo o selo da capa oficial alta-res (o `25-001` que circulou antes estava ERRADO). Fonte: `pmi.org/standards/artificial-intelligence`.
 
 **Os standards ANSI de gestão de projetos (a base):**
 
