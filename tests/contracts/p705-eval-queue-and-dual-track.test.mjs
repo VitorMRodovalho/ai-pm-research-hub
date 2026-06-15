@@ -62,9 +62,14 @@ test('#705 invariant: 0 orphan clean dual-track pairs (1 leader + 1 researcher, 
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb
     .from('selection_applications')
-    .select('email, cycle_id, role_applied, linked_application_id')
+    .select('email, cycle_id, role_applied, linked_application_id, applicant_name')
     .is('linked_application_id', null)
     .not('email', 'is', null)
+    // Exclude synthetic fixtures from OTHER DB-aware tests running in parallel
+    // (e.g. p693's dual-track pair, whose teardown nulls linked_application_id
+    // before deleting → a transient orphan window this global scan would catch).
+    // Sediment: live exact-count tests must filter parallel fixtures.
+    .not('email', 'ilike', '%example.%')
     .in('role_applied', ['leader', 'researcher']);
   assert.ok(!error, `query failed: ${error?.message}`);
 
