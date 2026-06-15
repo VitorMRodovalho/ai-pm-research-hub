@@ -197,6 +197,50 @@ Originally Features (G2+G3+G4) eram deferidas para sessão dedicada. PM (Vitor) 
 - **Frontend admin** `/admin/members?filter=inactive_candidates` view. Defer para Onda 4.
 - **i18n**: notifications types novos (`re_engagement_invitation`, `re_engagement_accepted`, `re_engagement_declined`, `arm9_inactivity_alert`) need translations em pt-BR/en-US/es-LATAM se UI for expor.
 
+## Amendment 2 — Canonical alumni×inactive rule confirmed + UI surfaced (#625 C1, 2026-06-15)
+
+`/admin/members` rendered the two terminal states as bare, unexplained chips (`🎓 Alumni`,
+`🔴`), so the operational distinction was invisible to whoever offboards. #625 Camada 1
+audited the live classification and surfaced the rule in the UI (no schema change).
+
+### Canonical rule (as-built, re-confirmed)
+
+The alumni-vs-inactive choice is **explicit and human**, made at offboard time via
+`admin_offboard_member(p_new_status)`. It is **NOT** derived from the exit reason. The
+reason category and its `preserves_return_eligibility` / `is_volunteer_fault` flags are
+**advisory context** recorded alongside the decision, not the gate.
+
+The **enforced behavioural consequence** is what makes the two states materially different:
+
+- `alumni` unlocks `stage_alumni_for_re_engagement` — that RPC **hard-gates** on
+  `member_status = 'alumni'` (returns `Member is not alumni` otherwise). Alumni flow back to
+  `active` only through `re_engagement_pipeline` (Amendment 1 § Post-G2 tightening).
+- `inactive` is **outside** the re-engagement pipeline. It returns to `active` via the
+  direct `admin_reactivate_member` path (the sabbatical case preserved at Foundation).
+
+### Audit snapshot (live, prod `ldrfrvwhxsmgaabwmaik`, 2026-06-15)
+
+- `member_status`: active 73 · alumni 21 · inactive 6 (99 members).
+- All 27 terminal members (21 alumni + 6 inactive) have a `member_offboarding_records` row
+  **and** `members.offboarded_at` set — **0 orphans**.
+- Reason distribution: alumni = `end_of_cycle` 13 / `other` 8; inactive = `other` 4 /
+  `personal_agenda` 1 / `end_of_cycle` 1.
+- **All 27 reasons have `preserves_return_eligibility=true` and `is_volunteer_fault=false`**
+  — nobody is currently offboarded under a dishonorable reason (`policy_violation`). So the
+  6 `inactive` members are honorable-by-reason but were deliberately **not** staged for
+  re-engagement; this is a consistent application of the explicit-choice rule, not drift.
+
+### UI delivered
+
+- `membershipBadge()` helper in `MemberListIsland.tsx` renders every terminal state as a
+  labeled chip with a tooltip carrying the semantics (alumni → re-invitable; inactive →
+  outside pipeline). Pre-onboarding keeps its own inline chip.
+- Progressive-disclosure legend (`<details>`) above the table stating the distinction.
+- Side effect (cosmetic): `active` members now render a labeled `🟢 Ativo` chip with a
+  tooltip instead of a bare `🟢`; the offboard modal's inactive button switched `⛔`→`⏸` to
+  match the badge. No semantic change.
+- i18n keys `comp.memberList.status*` + `legendLabel` in all 3 dictionaries.
+
 ## References
 
 - Migration: `supabase/migrations/20260516840000_arm9_foundation_g5g6_transition_validation_invariant_n.sql`
