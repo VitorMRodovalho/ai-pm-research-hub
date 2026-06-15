@@ -25,6 +25,7 @@ const esLATAM: Record<string, string> = {
   'nav.artifacts': 'Artefactos',
   'nav.attendance': 'Asistencia',
   'nav.gamification': '🏆 Gamificación',
+  'nav.reunioesGerais': '⭐ Reuniones Generales',
   'hero.cycleActive': 'Ciclo 3 en Curso',
   'hero.cycleTribes': 'tribus activas',
   'hero.cycleMembers': 'investigadores',
