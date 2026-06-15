@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Scans all migrations for INSERT INTO public.gamification_rules statements and
 // asserts that the `pillar` column is referenced in each. The DB enforces
-// NOT NULL + CHECK (pillar in 6 valid values) at the schema level, but a
+// NOT NULL + CHECK (pillar in 7 valid values) at the schema level, but a
 // future INSERT statement that forgets pillar would either:
 //   (a) fail loudly (good) or
 //   (b) silently succeed via DEFAULT/trigger fallback (bad, masks intent).
@@ -74,18 +74,22 @@ test('gamification_rules — every post-2026-04-15 INSERT includes pillar column
       `Found ${violations.length} INSERT INTO gamification_rules without pillar column ` +
       `(post-${PILLAR_COLUMN_INTRO_VERSION}):\n${lines}\n\n` +
       `Fix: add 'pillar' to the column list and provide a valid value ` +
-      `(presenca, trilha, certificacoes, producao, curadoria, champions).`
+      `(presenca, trilha, certificacoes, producao, curadoria, champions, protagonismo).`
     );
   }
 });
 
 test('gamification_rules — pillar CHECK constraint values match catalog', () => {
-  // Sanity: the catalog of allowed pillars matches what we expect (6 values).
-  // If a future migration adds a 7th pillar, both the CHECK constraint AND
+  // Sanity: the catalog of allowed pillars matches what we expect (7 values).
+  // If a future migration adds an 8th pillar, both the CHECK constraint AND
   // this test should be updated together — forcing the author to think
   // through downstream impact (get_gamification_leaderboard, gamification panels, etc).
+  // #700 slice 3 (2026-06-15): added `protagonismo` for the Agenda Viva block credit.
+  // Points are carried correctly in every TOTAL (unfiltered SUM) and surface as their own
+  // pillar group in get_member_xp_pillars_v2; the dedicated leaderboard/tribe per-pillar
+  // display bucket (p165/p167) + the admin/gamification pillar list are frontend follow-up (#701).
   const VALID_PILLARS = new Set([
-    'presenca', 'trilha', 'certificacoes', 'producao', 'curadoria', 'champions'
+    'presenca', 'trilha', 'certificacoes', 'producao', 'curadoria', 'champions', 'protagonismo'
   ]);
 
   // Find latest constraint definition in migrations
