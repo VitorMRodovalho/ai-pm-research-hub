@@ -68,6 +68,13 @@ function kindLabel(e: EngagementRow, locale: Locale): string {
   return e.kind_display_name;
 }
 
+/* #625 C2 — chronological sort key for a cycle_code ('cycle_1'..'cycle_N'); a non-numbered
+   code like 'pilot' (the 2024 pilot, oldest) sorts before all numbered cycles. */
+function cycleOrder(code: string): number {
+  const m = code.match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : -1;
+}
+
 // NOTE: OPROLE_LABELS and DESIG_LABELS are module-scope constants with Portuguese strings;
 // i18n for these labels is deferred (would require refactoring to per-render lookup).
 const OPROLE_LABELS: Record<string, string> = {
@@ -295,10 +302,12 @@ export default function MemberListIsland() {
 
   // #625 C2: cycle options derived from the full cohort (union of members' cycles[]) —
   // data-driven, no extra RPC. value = cycle_code (what the RPC's p_cycle expects).
+  // Chronological numeric sort (not lexicographic — else cycle_10 < cycle_2); non-numbered
+  // codes like 'pilot' sort first as the oldest.
   const cycleOptions = [...new Map((allMembers.length ? allMembers : members)
     .flatMap(m => m.cycles || [])
     .map(c => [c.cycle_code, c.cycle_label]))
-    .entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    .entries()].sort((a, b) => cycleOrder(a[0]) - cycleOrder(b[0]));
 
   // Open edit modal
   const openEdit = (m: MemberRow) => {
