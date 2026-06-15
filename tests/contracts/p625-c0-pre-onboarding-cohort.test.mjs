@@ -47,7 +47,14 @@ const FN_BODY = (MIG.match(/AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?
 // a do C0 (...142). Fallback progressivo para checkouts parciais.
 const MIG_148_PATH = 'supabase/migrations/20260805000148_625_affiliation_verification_loop_f1_f3.sql';
 const MIG_160_PATH = 'supabase/migrations/20260805000160_625_c1b_admin_list_members_pre_onboarding_helper.sql';
-const LATEST_CAPTURE_PATH = existsSync(MIG_160_PATH) ? MIG_160_PATH : MIG_148_PATH;
+// #625 C2 (mig 181): admin_list_members redefinido V4-native (filtros iniciativa/ciclo +
+// engagements[]/cycles[]/term_status). A regra pre-onboarding CONTINUA via helper; o RPC
+// volta a ter um JOIN engagement_kinds, mas para labels do catálogo + term_status, NÃO para
+// a regra de coorte inline. A captura canônica mais recente passa a ser a 181.
+const MIG_181_PATH = 'supabase/migrations/20260805000181_p625_c2_admin_list_members_v4.sql';
+const LATEST_CAPTURE_PATH = existsSync(MIG_181_PATH)
+  ? MIG_181_PATH
+  : existsSync(MIG_160_PATH) ? MIG_160_PATH : MIG_148_PATH;
 const FN_BODY_LATEST = existsSync(LATEST_CAPTURE_PATH)
   ? ((readFileSync(LATEST_CAPTURE_PATH, 'utf8')
        .match(/CREATE OR REPLACE FUNCTION public\.admin_list_members[\s\S]*?AS \$function\$([\s\S]*?)\$function\$;/) || [])[1] ?? FN_BODY)
@@ -92,9 +99,14 @@ describe('p625-c1-b — admin_list_members delegates cohort rule to helper', () 
     assert.match(FN_BODY_LATEST, /p_status = 'pre_onboarding' AND public\.member_is_pre_onboarding\(m\.person_id, m\.member_status\)/);
   });
 
-  it('latest capture no longer carries the inline operational-engagement rule', () => {
+  it('latest capture no longer carries the inline pre-onboarding cohort rule', () => {
+    // The cohort rule (operational = kind w/o agreement OR agreement satisfied) must live in
+    // the helper, never copied inline. C2 reintroduced a JOIN engagement_kinds for catalog
+    // labels + the term_status farol — that join is fine; what must NOT reappear is the
+    // operational-engagement *rule* itself (the helper owns it).
     assert.doesNotMatch(FN_BODY_LATEST, /COALESCE\(pre\.flag, false\)/);
-    assert.doesNotMatch(FN_BODY_LATEST, /JOIN public\.engagement_kinds ek ON ek\.slug = e\.kind/);
+    assert.doesNotMatch(FN_BODY_LATEST, /ek\.requires_agreement IS NOT TRUE OR e\.agreement_certificate_id IS NOT NULL/,
+      'pre-onboarding cohort rule must stay in member_is_pre_onboarding, not inline');
   });
 
   it('migration 160 preserves grants + PostgREST reload', () => {
