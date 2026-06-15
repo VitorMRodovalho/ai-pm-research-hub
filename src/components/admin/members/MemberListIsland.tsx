@@ -3,6 +3,8 @@ import { Search, Edit2, Users, UserX, ShieldOff, Loader2, X } from 'lucide-react
 import { trackEvent } from '../../../lib/analytics';
 import { usePageI18n } from '../../../i18n/usePageI18n';
 import { loadChapters, type Chapter } from '../../../lib/chapters';
+import { loadInitiatives, type Initiative } from '../../../lib/initiatives';
+import { getEffectiveLocale } from '../../../i18n/utils';
 
 /* ────── Types ────── */
 interface MemberRow {
@@ -35,6 +37,35 @@ interface MemberRow {
   affiliation_active: boolean | null;
   affiliation_expires_on: string | null;
   affiliation_method: string | null;
+  /* #625 C2: V4-native — active engagements with catalog vocabulary (PT display_name + i18n). */
+  engagements: EngagementRow[];
+  /* #625 C2: distinct cycles the member participated in (member_cycle_history). */
+  cycles: CycleRow[];
+  /* #625 C2 (D2=B1): volunteer-term farol — 'green' | 'amber'. 🔴 vencido deferred to #571. */
+  term_status: string;
+}
+
+interface EngagementRow {
+  kind: string;
+  role: string | null;
+  initiative_id: string | null;
+  initiative_title: string | null;
+  kind_display_name: string;
+  kind_display_i18n: { en?: string; es?: string } | null;
+}
+interface CycleRow {
+  cycle_code: string;
+  cycle_label: string;
+}
+
+type Locale = 'pt-BR' | 'en-US' | 'es-LATAM';
+
+/* #625 C2 (D1=C) — locale-aware label for an engagement kind. display_name is the
+   PT-BR canonical/fallback; display_i18n carries {en,es} from the catalog (config). */
+function kindLabel(e: EngagementRow, locale: Locale): string {
+  if (locale === 'en-US') return e.kind_display_i18n?.en || e.kind_display_name;
+  if (locale === 'es-LATAM') return e.kind_display_i18n?.es || e.kind_display_name;
+  return e.kind_display_name;
 }
 
 // NOTE: OPROLE_LABELS and DESIG_LABELS are module-scope constants with Portuguese strings;
@@ -94,6 +125,16 @@ function affiliationFarol(m: MemberRow, t: (key: string, fallback?: string) => s
   return { emoji: '🟢', label: t('comp.memberList.affVerified', 'Filiação PMI verificada'), cls: 'bg-emerald-50 text-emerald-700' };
 }
 
+/* #625 C2 (D2=B1) — volunteer-term farol. amber = member has an active engagement that
+   requires the term and still has no agreement certificate; green = none pending.
+   🔴 'vencido' is NOT rendered here (no term-validity anchor today → deferred to #571). */
+function termFarol(status: string, t: (key: string, fallback?: string) => string): { emoji: string; label: string; cls: string } {
+  if (status === 'amber') {
+    return { emoji: '🟡', label: t('comp.memberList.termAmber', 'Termo de voluntariado pendente'), cls: 'bg-amber-50 text-amber-700' };
+  }
+  return { emoji: '🟢', label: t('comp.memberList.termGreen', 'Termo de voluntariado em dia'), cls: 'bg-emerald-50 text-emerald-700' };
+}
+
 /* p153 GAP-152.3 — VEP status raw badge inline next to member name/email.
    Color-coded chip with tooltip carrying full status label + last sync date.
    Renders nothing when vep_status_raw is null (pre-Phase-B-import era members). */
@@ -128,6 +169,13 @@ export default function MemberListIsland() {
   const [tribeFilter, setTribeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [designationFilter, setDesignationFilter] = useState('');
+  // #625 C2: V4-native filters (initiative/chapter/cycle) passed straight to the RPC.
+  const [initiativeFilter, setInitiativeFilter] = useState('');
+  const [chapterFilter, setChapterFilter] = useState('');
+  const [cycleFilter, setCycleFilter] = useState('');
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  // Resolved once: PT-BR canonical, en/es from the catalog (D1=C). Cheap; reads localStorage/URL.
+  const [locale] = useState<Locale>(() => getEffectiveLocale() as Locale);
   const [editMember, setEditMember] = useState<MemberRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -166,10 +214,13 @@ export default function MemberListIsland() {
       p_tier: tierFilter || null,
       p_tribe_id: tribeFilter ? parseInt(tribeFilter) : null,
       p_status: statusFilter,
+      p_initiative_id: initiativeFilter || null,
+      p_chapter: chapterFilter || null,
+      p_cycle: cycleFilter || null,
     });
     if (!error && data) setMembers(data);
     setLoading(false);
-  }, [search, tierFilter, tribeFilter, statusFilter, getSb]);
+  }, [search, tierFilter, tribeFilter, statusFilter, initiativeFilter, chapterFilter, cycleFilter, getSb]);
 
   // p190 BUG-190.B sweep: ref pattern + cleanup to avoid listener accumulation.
   const fetchMembersRef = useRef(fetchMembers);
@@ -185,6 +236,7 @@ export default function MemberListIsland() {
     const handler = () => fetchMembersRef.current();
     window.addEventListener('nav:member', handler);
     loadChapters().then(setChapters);
+    loadInitiatives().then(setInitiatives);
     return () => {
       cancelled = true;
       window.removeEventListener('nav:member', handler);
@@ -195,12 +247,12 @@ export default function MemberListIsland() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchMembers();
-      if (search || tierFilter || tribeFilter || statusFilter) {
-        trackEvent('member_searched', { search_term_length: search.length, filter_count: [tierFilter, tribeFilter, statusFilter].filter(Boolean).length });
+      if (search || tierFilter || tribeFilter || statusFilter || initiativeFilter || chapterFilter || cycleFilter) {
+        trackEvent('member_searched', { search_term_length: search.length, filter_count: [tierFilter, tribeFilter, statusFilter, initiativeFilter, chapterFilter, cycleFilter].filter(Boolean).length });
       }
     }, search ? 400 : 0);
     return () => clearTimeout(timer);
-  }, [search, tierFilter, tribeFilter, statusFilter]);
+  }, [search, tierFilter, tribeFilter, statusFilter, initiativeFilter, chapterFilter, cycleFilter]);
 
   // Stats (always fetch 'all' for accurate counts)
   const [allMembers, setAllMembers] = useState<MemberRow[]>([]);
@@ -240,6 +292,13 @@ export default function MemberListIsland() {
   // Unique tribes for filter
   const tribes = [...new Map(members.filter(m => m.tribe_id).map(m => [m.tribe_id, m.tribe_name])).entries()]
     .sort((a, b) => (a[0] || 0) - (b[0] || 0));
+
+  // #625 C2: cycle options derived from the full cohort (union of members' cycles[]) —
+  // data-driven, no extra RPC. value = cycle_code (what the RPC's p_cycle expects).
+  const cycleOptions = [...new Map((allMembers.length ? allMembers : members)
+    .flatMap(m => m.cycles || [])
+    .map(c => [c.cycle_code, c.cycle_label]))
+    .entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
   // Open edit modal
   const openEdit = (m: MemberRow) => {
@@ -537,6 +596,22 @@ export default function MemberListIsland() {
           <option value="">Todas designações</option>
           {ALL_DESIGS.map(d => <option key={d} value={d}>{DESIG_LABELS[d] || d}</option>)}
         </select>
+        {/* #625 C2: V4-native filters — Iniciativa / Capítulo / Ciclo */}
+        <select value={initiativeFilter} onChange={e => setInitiativeFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allInitiatives', 'Todas as iniciativas')}</option>
+          {initiatives.map(i => <option key={i.id} value={i.id}>{i.title}</option>)}
+        </select>
+        <select value={chapterFilter} onChange={e => setChapterFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allChapters', 'Todos os capítulos')}</option>
+          {chapters.map(c => <option key={c.display_code} value={c.display_code}>{c.display_code}</option>)}
+        </select>
+        <select value={cycleFilter} onChange={e => setCycleFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allCycles', 'Todos os ciclos')}</option>
+          {cycleOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+        </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
           <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
@@ -587,6 +662,7 @@ export default function MemberListIsland() {
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thTribe', 'Tribo')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thChapter', 'Capítulo')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.memberList.thAffiliation', 'Filiação')}</th>
+                <th className="px-3 py-2 text-center">{t('comp.memberList.thTerm', 'Termo')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.memberList.thStatus', 'Status')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thLastSeen', 'Último acesso')}</th>
                 <th className="px-3 py-2 text-center w-16">{t('comp.memberList.thActions', 'Ações')}</th>
@@ -610,6 +686,17 @@ export default function MemberListIsland() {
                           <VepStatusBadge status={m.vep_status_raw} lastSeenAt={m.vep_last_seen_at} t={t} />
                         </div>
                         <div className="text-[.7rem] text-[var(--text-muted)] truncate">{m.email}</div>
+                        {/* #625 C2: cycle tags (member_cycle_history) */}
+                        {(m.cycles?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {m.cycles.map(c => (
+                              <span key={c.cycle_code} title={c.cycle_label}
+                                className="text-[.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 whitespace-nowrap">
+                                {c.cycle_code.startsWith('cycle_') ? `C${c.cycle_code.slice(6)}` : c.cycle_code}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -626,6 +713,13 @@ export default function MemberListIsland() {
                         </span>
                       ))}
                       {m.is_superadmin && <span className="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500">🔧 SA</span>}
+                      {/* #625 C2: V4-native engagement categories (deduped by kind, locale-aware catalog label). */}
+                      {[...new Map((m.engagements || []).map(e => [e.kind, e])).values()].map(e => (
+                        <span key={e.kind} title={e.initiative_title || kindLabel(e, locale)}
+                          className="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600">
+                          {kindLabel(e, locale)}
+                        </span>
+                      ))}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">
@@ -638,6 +732,11 @@ export default function MemberListIsland() {
                         className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border-0 cursor-pointer ${f.cls}`}>
                         {f.emoji}
                       </button>
+                    ); })()}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {(() => { const f = termFarol(m.term_status, t); return (
+                      <span title={f.label} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${f.cls}`}>{f.emoji}</span>
                     ); })()}
                   </td>
                   <td className="px-3 py-2 text-center">
