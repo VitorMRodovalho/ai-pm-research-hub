@@ -66,6 +66,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/onboarding',   minTier: 'member',  requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' },
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
+  // #701 Agenda Viva — public General Meetings agenda (anon-OK; reservation gated in-page).
+  { key: 'reunioes-gerais', labelKey: 'nav.reunioesGerais', href: '/reunioes-gerais', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'presentations', labelKey: 'nav.presentations', href: '/presentations', minTier: 'member', requiresAuth: true, section: 'main', group: 'tools', navSlot: 'none' },
 
   // ─── Authenticated pages ───
