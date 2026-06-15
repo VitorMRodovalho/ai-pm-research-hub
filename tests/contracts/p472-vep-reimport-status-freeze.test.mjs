@@ -115,9 +115,13 @@ test('#472 — same-cycle update uses resolveReimportStatus, NOT bare payload.st
   const block = sameCycleUpdateBlock(readDb());
   const statusLine = block.split('\n').find((l) => /^\s*status\s*:/.test(l));
   assert.ok(statusLine, 'same-cycle update must still declare a `status:` key (update-coverage test)');
+  // #693 — the call now threads a third arg (payload.vep_status_raw) so a HARD
+  // terminal VEP decision can override the mid-pipeline freeze. The first two
+  // args MUST stay (existing.status, payload.status); the third is required so
+  // the terminal-honoring path is wired.
   assert.ok(
-    /resolveReimportStatus\(\s*existing\.status\s*,\s*payload\.status\s*\)/.test(statusLine),
-    `status must be set via resolveReimportStatus(existing.status, payload.status) — got: "${statusLine.trim()}"`
+    /resolveReimportStatus\(\s*existing\.status\s*,\s*payload\.status\s*,\s*payload\.vep_status_raw\s*\)/.test(statusLine),
+    `status must be set via resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw) — got: "${statusLine.trim()}"`
   );
   // Forward defense: the exact pre-fix clobber must not reappear in db.ts CODE
   // (comments documenting the anti-pattern are stripped first).
@@ -177,4 +181,68 @@ test('#472 — worker terminal set matches the heal-cron migration terminal-safe
       `worker:    ${JSON.stringify(w)}\nmigration: ${JSON.stringify(m)}`
   );
   assert.ok(w.length >= 7, `terminal set too short (${w.length}) — regex likely broken`);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #693 defect 1 — HARD terminal VEP status must override the #472 mid-pipeline
+// freeze. resolveReimportStatus gained a third arg (vepStatusRaw); a hard
+// terminal raw status (OfferNotExtended/Withdrawn/Expired/OfferExpired/Declined/
+// Removed) propagates a terminal `incoming` even mid-pipeline, WITHOUT weakening
+// the blind-'Submitted' freeze (the #472 core invariant).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** db.ts `const VEP_HARD_TERMINAL_STATUSES = new Set([ ... ]);` → array. */
+function workerVepHardTerminals(src) {
+  const m = src.match(/const\s+VEP_HARD_TERMINAL_STATUSES\s*=\s*new Set\(\[([\s\S]*?)\]\)/);
+  assert.ok(m, 'db.ts must declare const VEP_HARD_TERMINAL_STATUSES = new Set([ ... ])');
+  return quotedStrings(m[1]);
+}
+
+test('#693 — db.ts declares VEP_HARD_TERMINAL_STATUSES with the VEP terminal decisions', () => {
+  const got = [...workerVepHardTerminals(readDb())].sort();
+  // lowercase, since the match is case-insensitive (vepStatusRaw.toLowerCase())
+  const expected = ['declined', 'expired', 'offerexpired', 'offernotextended', 'removed', 'withdrawn'].sort();
+  assert.deepEqual(got, expected, `VEP_HARD_TERMINAL_STATUSES drift — got ${JSON.stringify(got)}`);
+});
+
+test('#693 — resolveReimportStatus takes vepStatusRaw and honors hard-terminal mid-pipeline', () => {
+  const src = readDb();
+  // signature gained the third param
+  assert.ok(
+    /export function resolveReimportStatus\(\s*existing[^)]*incoming\s*:\s*string\s*,\s*vepStatusRaw\?\s*:\s*string\s*\|\s*null/.test(src),
+    'resolveReimportStatus must accept a third `vepStatusRaw?: string | null` parameter'
+  );
+  // the hard-terminal override branch: guarded by BOTH the raw set AND a terminal incoming
+  assert.ok(
+    /VEP_HARD_TERMINAL_STATUSES\.has\(vepStatusRaw\.toLowerCase\(\)\)\s*&&\s*\n?\s*SELECTION_TERMINAL_STATUSES\.has\(incoming\)/.test(src),
+    'hard-terminal override must require vepStatusRaw ∈ VEP_HARD_TERMINAL_STATUSES AND a terminal incoming'
+  );
+  // REGRESSION GUARD: the #472 blind-Submitted freeze must still be present —
+  // the VEP-soft-exit rule (accept only from 'submitted' intake) is untouched.
+  assert.ok(
+    /inRank === -1\) return existing === 'submitted' \? incoming : existing/.test(src),
+    "resolveReimportStatus must keep the #472 soft-exit freeze (VEP exit only from 'submitted')"
+  );
+});
+
+test('#693 — heal migration reconcile_vep_terminal_status exists + is symmetric-safe', () => {
+  const path = join(REPO_ROOT, 'supabase/migrations/20260805000171_693_reconcile_vep_terminal_status.sql');
+  const src = readFileSync(path, 'utf8');
+  assert.ok(
+    /CREATE OR REPLACE FUNCTION public\.reconcile_vep_terminal_status\(/.test(src),
+    'migration must define reconcile_vep_terminal_status'
+  );
+  // heals only ACTIVE rows — never re-decides a platform-terminal one (mirrors the
+  // recompute-cron `cur NOT IN` guard so the two never fight).
+  assert.ok(
+    /status\s+NOT\s+IN\s*\([\s\S]*?'rejected'[\s\S]*?'withdrawn'[\s\S]*?\)/i.test(src),
+    'reconcile must restrict to non-terminal (active) rows via status NOT IN (...terminal...)'
+  );
+  // matches the same hard-terminal VEP set as the worker
+  for (const s of ['offernotextended', 'withdrawn', 'expired', 'offerexpired', 'declined', 'removed']) {
+    assert.ok(src.toLowerCase().includes(`'${s}'`), `migration hard-terminal set missing '${s}'`);
+  }
+  // manage_platform gate + dry-run support
+  assert.ok(/can_by_member\(v_caller_id, 'manage_platform'\)/.test(src), 'reconcile must gate on manage_platform');
+  assert.ok(/p_dry_run\s+boolean\s+DEFAULT\s+false/.test(src), 'reconcile must support dry-run');
 });
