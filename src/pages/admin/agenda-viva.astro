@@ -1,0 +1,53 @@
+---
+/**
+ * /admin/agenda-viva — #701 Slice 2 (coordination).
+ * Reorder / confirm / no-show / cancel the Agenda Viva blocks of the next General
+ * Meetings. UX gate mirrors manage_event; the server RPCs (reorder_event_blocks,
+ * confirm_agenda_block / confirm_event_blocks, revoke_agenda_block_xp,
+ * cancel_agenda_block — all gated manage_event) are the real boundary.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminAgendaVivaPanel from '../../components/admin/AdminAgendaVivaPanel';
+import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18nBundle = buildPageI18n(['comp.agendaViva', 'comp.common'], lang);
+---
+
+<AdminLayout
+  title={t('admin.breadcrumb.agendaViva', lang)}
+  breadcrumbs={[
+    { label: t('admin.breadcrumb.operations', lang) },
+    { label: t('admin.breadcrumb.agendaViva', lang) },
+  ]}
+>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <div class="max-w-[1000px] mx-auto px-4 pb-12">
+    <AdminAgendaVivaPanel client:load lang={lang} />
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    // UX gate only — the RPCs (manage_event) are the real boundary. Allow anyone
+    // holding manage_event at any scope (org or initiative) per V4 capabilities.
+    const check = () => {
+      const caps = window.__nucleoCapabilities;
+      if (!caps) { setTimeout(check, 300); return; }
+      const has = (arr) => Array.isArray(arr) && arr.includes('manage_event');
+      const isAllowed =
+        caps.is_superadmin ||
+        has(caps.org_actions) ||
+        Object.values(caps.initiative_actions || {}).some(has) ||
+        Object.values(caps.tribe_actions || {}).some(has);
+      if (!isAllowed) {
+        const host = document.querySelector('.max-w-\\[1000px\\]');
+        if (host) host.innerHTML =
+          '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
+      }
+    };
+    check();
+  });
+</script>

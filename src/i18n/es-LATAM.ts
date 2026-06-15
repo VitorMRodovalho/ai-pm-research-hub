@@ -3403,6 +3403,7 @@ const esLATAM: Record<string, string> = {
   'admin.webinars.roleShortComms': 'Comms',
   'admin.webinars.roleShortGuest': 'Invit.',
   'nav.adminWebinars': 'Webinars',
+  'nav.adminAgendaViva': 'Agenda Viva',
 
   // ── Cross-Tribe + Impact ──
   'nav.adminCrossTribes': 'Comparativo de Tribus',
@@ -5541,6 +5542,7 @@ const esLATAM: Record<string, string> = {
   'admin.breadcrumb.vepReconciliation': 'Reconciliación VEP',
   'admin.breadcrumb.affiliation': 'Afiliación',
   'admin.breadcrumb.recurringAgenda': 'Agenda Recurrente',
+  'admin.breadcrumb.agendaViva': 'Agenda Viva',
   'admin.breadcrumb.blog': 'Blog',
   'admin.breadcrumb.detail': 'Detalle',
   'admin.breadcrumb.inactiveCandidates': 'Candidatos a Inactivo',
