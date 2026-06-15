@@ -3408,6 +3408,7 @@ const ptBR: Record<string, string> = {
   'admin.webinars.roleShortComms': 'Comms',
   'admin.webinars.roleShortGuest': 'Guest',
   'nav.adminWebinars': 'Webinars',
+  'nav.adminAgendaViva': 'Agenda Viva',
 
   // ── Cross-Tribe + Impact ──
   'nav.adminCrossTribes': 'Comparativo de Tribos',
@@ -5546,6 +5547,7 @@ const ptBR: Record<string, string> = {
   'admin.breadcrumb.vepReconciliation': 'Reconciliação VEP',
   'admin.breadcrumb.affiliation': 'Filiação',
   'admin.breadcrumb.recurringAgenda': 'Agenda Recorrente',
+  'admin.breadcrumb.agendaViva': 'Agenda Viva',
   'admin.breadcrumb.blog': 'Blog',
   'admin.breadcrumb.detail': 'Detalhe',
   'admin.breadcrumb.inactiveCandidates': 'Candidatos a Inativo',
