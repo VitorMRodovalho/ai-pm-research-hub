@@ -78,8 +78,14 @@ export default function AgendaVivaPublic({ lang = 'pt-BR' }: { lang?: Lang }) {
   useEffect(() => {
     load();
     const onMember = () => load();
+    // `agenda:changed` is dispatched by the reservation/admin islands after a
+    // successful mutation so this read-only timeline refreshes in lockstep.
     window.addEventListener('nav:member', onMember);
-    return () => window.removeEventListener('nav:member', onMember);
+    window.addEventListener('agenda:changed', onMember);
+    return () => {
+      window.removeEventListener('nav:member', onMember);
+      window.removeEventListener('agenda:changed', onMember);
+    };
   }, [load]);
 
   const formatLabel = (slug: string): string =>
