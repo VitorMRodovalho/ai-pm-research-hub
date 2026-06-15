@@ -3,6 +3,7 @@ import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="agenda">
@@ -30,6 +31,12 @@ const { lang = 'pt-BR' } = Astro.props;
         <span id="schedule-general-login-hint" class="text-xs text-[var(--text-muted)] italic">
           {t('schedule.loginHint', lang)}
         </span>
+      </div>
+      <div class="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+        <a href={`${langPrefix}/reunioes-gerais`}
+          class="inline-flex items-center gap-1.5 text-[.85rem] font-bold text-orange no-underline hover:underline">
+          ⭐ {t('comp.agendaViva.homeCta', lang)} →
+        </a>
       </div>
     </div>
 
