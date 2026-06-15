@@ -142,6 +142,25 @@ function termFarol(status: string, t: (key: string, fallback?: string) => string
   return { emoji: '🟢', label: t('comp.memberList.termGreen', 'Termo de voluntariado em dia'), cls: 'bg-emerald-50 text-emerald-700' };
 }
 
+/* #625 C1 — membership-status badge with a tooltip carrying the alumni×inactive semantics.
+   alumni vs inactive is an EXPLICIT human choice at offboard (admin_offboard_member's
+   p_new_status), NOT derived from the exit reason. The enforced behavioural distinction:
+   `alumni` unlocks stage_alumni_for_re_engagement (hard gate member_status='alumni'),
+   `inactive` does not (it is reactivated directly — the sabbatical path). See ADR-0071 and
+   docs/reference/V4_AUTHORITY_MODEL.md. Pre-onboarding stays handled inline (own chip). */
+function membershipBadge(status: string, t: (key: string, fallback?: string) => string): { emoji: string; label: string; hint: string; cls: string } {
+  switch (status) {
+    case 'observer':
+      return { emoji: '👁', label: t('comp.memberList.statusObserver', 'Observer'), hint: t('comp.memberList.statusObserverHint', 'Sem engagement ativo; mantém acesso de leitura (sabático curto/transição)'), cls: 'bg-blue-100 text-blue-700' };
+    case 'alumni':
+      return { emoji: '🎓', label: t('comp.memberList.statusAlumni', 'Alumni'), hint: t('comp.memberList.statusAlumniHint', 'Saída amigável — elegível a re-convite via pipeline de re-engajamento'), cls: 'bg-gray-100 text-gray-600' };
+    case 'inactive':
+      return { emoji: '⏸', label: t('comp.memberList.statusInactive', 'Inativo'), hint: t('comp.memberList.statusInactiveHint', 'Saída administrativa — fora do pipeline de re-engajamento (reativável diretamente)'), cls: 'bg-rose-50 text-rose-700' };
+    default:
+      return { emoji: '🟢', label: t('comp.memberList.statusActive', 'Ativo'), hint: t('comp.memberList.statusActiveHint', 'Voluntário em ciclo corrente, com engagement ativo'), cls: 'bg-emerald-50 text-emerald-700' };
+  }
+}
+
 /* p153 GAP-152.3 — VEP status raw badge inline next to member name/email.
    Color-coded chip with tooltip carrying full status label + last sync date.
    Renders nothing when vep_status_raw is null (pre-Phase-B-import era members). */
@@ -632,6 +651,16 @@ export default function MemberListIsland() {
         </select>
       </div>
 
+      {/* #625 C1 — alumni×inactive legend (progressive disclosure; the distinction is invisible
+          in the bare status chips otherwise). Mirrors the enforced rule documented in ADR-0071. */}
+      <details className="mb-4 text-xs text-[var(--text-muted)]">
+        <summary className="cursor-pointer select-none font-semibold w-fit">{t('comp.memberList.legendLabel', 'O que distingue Alumni de Inativo?')}</summary>
+        <div className="mt-2 flex flex-col gap-1 pl-1">
+          <span><span className="font-semibold text-gray-600">🎓 {t('comp.memberList.statusAlumni', 'Alumni')}</span> — {t('comp.memberList.statusAlumniHint', 'Saída amigável — elegível a re-convite via pipeline de re-engajamento')}</span>
+          <span><span className="font-semibold text-rose-700">⏸ {t('comp.memberList.statusInactive', 'Inativo')}</span> — {t('comp.memberList.statusInactiveHint', 'Saída administrativa — fora do pipeline de re-engajamento (reativável diretamente)')}</span>
+        </div>
+      </details>
+
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-10 mb-3 px-4 py-2.5 bg-teal-600/10 border border-teal-500/30 rounded-lg text-sm font-semibold flex items-center gap-2 flex-wrap">
@@ -749,13 +778,13 @@ export default function MemberListIsland() {
                     ); })()}
                   </td>
                   <td className="px-3 py-2 text-center">
-                    {m.member_status === 'active' && (m.is_pre_onboarding
-                      ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold" title={t('comp.memberList.preOnboardingHint', 'Aprovado — aguardando termo de voluntariado/onboarding')}>⏳ {t('comp.memberList.preOnboarding', 'Pré-onboarding')}</span>
-                      : '🟢')}
-                    {m.member_status === 'observer' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">👁 Observer</span>}
-                    {m.member_status === 'alumni' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">🎓 Alumni</span>}
-                    {m.member_status === 'inactive' && '🔴'}
-                    {!m.member_status && (m.is_active ? '🟢' : '🔴')}
+                    {m.member_status === 'active' && m.is_pre_onboarding ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold" title={t('comp.memberList.preOnboardingHint', 'Aprovado — aguardando termo de voluntariado/onboarding')}>⏳ {t('comp.memberList.preOnboarding', 'Pré-onboarding')}</span>
+                    ) : m.member_status ? (
+                      (() => { const b = membershipBadge(m.member_status, t); return (
+                        <span title={b.hint} className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${b.cls}`}>{b.emoji} {b.label}</span>
+                      ); })()
+                    ) : (m.is_active ? '🟢' : '🔴')}
                   </td>
                   <td className="px-3 py-2 text-[var(--text-muted)] text-[.8rem]">{m.last_seen_at ? timeAgo(m.last_seen_at) : '—'}</td>
                   <td className="px-3 py-2 text-center whitespace-nowrap">
@@ -994,7 +1023,7 @@ export default function MemberListIsland() {
                   {(['observer', 'alumni', 'inactive'] as const).map(s => (
                     <button key={s} onClick={() => setOffboardStatus(s)}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${offboardStatus === s ? 'bg-amber-100 border-amber-400 text-amber-800' : 'border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)]'}`}>
-                      {s === 'observer' ? '👁 Observer' : s === 'alumni' ? '🎓 Alumni' : '⛔ Inativo'}
+                      {s === 'observer' ? '👁 Observer' : s === 'alumni' ? '🎓 Alumni' : '⏸ Inativo'}
                     </button>
                   ))}
                 </div>
