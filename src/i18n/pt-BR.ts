@@ -25,6 +25,7 @@ const ptBR: Record<string, string> = {
   'nav.artifacts': 'Artefatos',
   'nav.attendance': 'Presença',
   'nav.gamification': '🏆 Gamificação',
+  'nav.reunioesGerais': '⭐ Reuniões Gerais',
   'hero.cycleActive': 'Ciclo 3 em Andamento',
   'hero.cycleTribes': 'tribos ativas',
   'hero.cycleMembers': 'pesquisadores',

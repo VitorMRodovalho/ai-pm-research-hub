@@ -25,6 +25,7 @@ const enUS: Record<string, string> = {
   'nav.artifacts': 'Artifacts',
   'nav.attendance': 'Attendance',
   'nav.gamification': '🏆 Gamification',
+  'nav.reunioesGerais': '⭐ General Meetings',
   'hero.cycleActive': 'Cycle 3 In Progress',
   'hero.cycleTribes': 'active tribes',
   'hero.cycleMembers': 'researchers',
