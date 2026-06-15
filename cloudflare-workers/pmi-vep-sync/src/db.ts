@@ -299,6 +299,28 @@ const SELECTION_TERMINAL_STATUSES = new Set([
 ]);
 
 /**
+ * VEP raw statuses (`vep_status_raw`, written verbatim from the extract script's
+ * `app.status`) that represent a HARD, per-application terminal decision: the
+ * recruiter declined to extend an offer, the volunteer withdrew, or the
+ * application/offer expired or was removed. These all surface via the extract
+ * script's `rejected` bucket → `mapBucketAndStatusToNucleo` already maps them to
+ * a terminal platform status ('rejected' / 'withdrawn').
+ *
+ * #693 defect 1 — distinct from the blind 'Submitted' bucket: VEP emits
+ * 'Submitted' for EVERY in-flight app (it cannot see the platform pipeline), and
+ * the #472 freeze deliberately ignores that so a re-sync never knocks an advanced
+ * candidate back. But a HARD terminal decision is authoritative and must pull the
+ * candidate OUT of the active funnel even mid-pipeline — otherwise a VEP-declined
+ * application lingers at e.g. 'screening' and the candidate surfaces under the
+ * wrong, dead application (live case: Ana Sofia leader app OfferNotExtended stuck
+ * at 'screening'). Matched case-insensitively. Kept in sync with the DB-side
+ * heal `reconcile_vep_terminal_status` (migration 20260805000171).
+ */
+const VEP_HARD_TERMINAL_STATUSES = new Set([
+  'offernotextended', 'declined', 'withdrawn', 'expired', 'offerexpired', 'removed',
+]);
+
+/**
  * Decide the selection_applications.status to persist on a SAME-CYCLE VEP
  * re-import (#472 correction #2, B2 root cause).
  *
@@ -311,20 +333,42 @@ const SELECTION_TERMINAL_STATUSES = new Set([
  *
  * Rule — forward-only + terminal-safe (symmetric with the heal-cron):
  *   • existing terminal  → freeze (never re-open a decided app via re-import).
- *   • incoming is a VEP exit (not on the in-flight ladder) → accept only from the
- *     pristine 'submitted' intake; otherwise freeze (a PMI opportunity expiry must
- *     not reject a candidate already mid-pipeline — the platform owns exits past
- *     intake).
+ *   • incoming is a HARD terminal VEP decision (vep_status_raw ∈
+ *     VEP_HARD_TERMINAL_STATUSES → mapper emits a terminal status) → propagate
+ *     even mid-pipeline (#693 defect 1: an explicit recruiter/volunteer terminal
+ *     decision is authoritative; it must remove the candidate from the active funnel).
+ *   • incoming is a VEP soft exit (not on the in-flight ladder, NOT a hard
+ *     terminal) → accept only from the pristine 'submitted' intake; otherwise
+ *     freeze (a PMI opportunity-posting expiry / blind bucket must not reject a
+ *     candidate already mid-pipeline — the platform owns exits past intake).
  *   • both in-flight → forward-only: write incoming only if it ranks strictly
  *     ahead of existing, else freeze. (VEP can't emit a forward in-flight stage,
  *     so in practice every advanced app is frozen — exactly the B2 fix.)
  */
 export function resolveReimportStatus(
   existing: string | null | undefined,
-  incoming: string
+  incoming: string,
+  vepStatusRaw?: string | null
 ): string {
   if (!existing) return incoming;                                  // defensive (status is NOT NULL on update)
-  if (SELECTION_TERMINAL_STATUSES.has(existing)) return existing;  // terminal-safe
+  if (SELECTION_TERMINAL_STATUSES.has(existing)) return existing;  // terminal-safe (platform decision stands)
+
+  // #693 defect 1 — a HARD terminal VEP decision (recruiter declined / volunteer
+  // withdrew / application or offer expired) overrides the #472 mid-pipeline
+  // freeze. The freeze exists because VEP is blind to the internal pipeline for
+  // IN-FLIGHT apps (every one carries vep_status_raw='Submitted'); it must NOT
+  // also swallow an explicit terminal decision. Guarded twice: (a) the raw VEP
+  // status must be in the hard-terminal set, and (b) the mapper must have already
+  // resolved `incoming` to a terminal platform status — so a mis-typed or
+  // unexpected raw value can never silently terminalize an in-flight candidate.
+  if (
+    vepStatusRaw &&
+    VEP_HARD_TERMINAL_STATUSES.has(vepStatusRaw.toLowerCase()) &&
+    SELECTION_TERMINAL_STATUSES.has(incoming)
+  ) {
+    return incoming;
+  }
+
   const exRank = SELECTION_STATUS_LADDER.indexOf(existing);
   if (exRank === -1) return existing;                              // unknown/non-domain existing → freeze
   const inRank = SELECTION_STATUS_LADDER.indexOf(incoming);
@@ -434,6 +478,10 @@ export async function upsertSelectionApplication(
 
     if (existing.cycle_id !== payload.cycle_id) {
       // p153 hotfix7 — cross-cycle PARTIAL refresh. See function-level comment.
+      // #693 note: cross-cycle refresh updates vep_status_raw but deliberately
+      // does NOT touch `status` (decision history of a prior cycle is preserved).
+      // A hard-terminal VEP decision arriving cross-cycle is therefore healed by
+      // reconcile_vep_terminal_status (migration 20260805000171), not here.
       const { error } = await db
         .from('selection_applications')
         .update(commonRefresh)
@@ -475,7 +523,10 @@ export async function upsertSelectionApplication(
         // pre-fix `status: payload.status` erased scored candidates from the final
         // ranking. Symmetric with recompute_application_status (mig 20260805000090)
         // so the worker and the daily heal-cron never fight.
-        status: resolveReimportStatus(existing.status, payload.status),
+        // #693 defect 1 — pass vep_status_raw so a HARD terminal VEP decision
+        // (OfferNotExtended/Withdrawn/Expired/OfferExpired) terminalizes an
+        // in-flight candidate instead of being frozen by the #472 mid-pipeline rule.
+        status: resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw),
         imported_at: payload.imported_at,
       })
       .eq('id', existing.id);
