@@ -32,9 +32,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta' },
+  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de' },
+  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of' },
+  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de' },
 };
 
 export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
@@ -86,6 +86,9 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
 
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const member = (window as any).navGetMember?.();
+  // A3 #740 — linear stepper: communicate the sequence, not just a %% bar.
+  const firstIncomplete = steps.findIndex((s) => s.status !== 'completed');
+  const currentStep = firstIncomplete === -1 ? steps.length : firstIncomplete + 1;
 
   return (
     <div className="rounded-2xl border-2 border-teal/30 bg-[var(--surface-card)] p-5 mb-6 shadow-sm">
@@ -93,7 +96,11 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-base font-extrabold text-navy">{l.title}</h2>
-          <span className="text-xs text-[var(--text-muted)]">{completed}/{total} {l.progress}</span>
+          <span className="text-xs text-[var(--text-muted)]">
+            <span className="font-semibold text-teal">{l.step} {currentStep} {l.of} {steps.length}</span>
+            <span className="mx-1.5">·</span>
+            {completed}/{total} {l.progress}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setExpanded(!expanded)}
@@ -113,8 +120,11 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
       {/* Steps */}
       {expanded && (
         <div className="space-y-2">
-          {steps.map((s) => (
+          {steps.map((s, i) => (
             <div key={s.step_id} className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border ${s.status === 'completed' ? 'border-emerald-200 bg-emerald-50/50' : 'border-[var(--border-subtle)] bg-[var(--surface-base)]'}`}>
+              <span className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${s.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-teal/15 text-teal'}`}>
+                {s.status === 'completed' ? '✓' : i + 1}
+              </span>
               <span className="text-base flex-shrink-0 mt-0.5">{s.icon}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
