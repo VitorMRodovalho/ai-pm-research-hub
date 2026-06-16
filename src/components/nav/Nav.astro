@@ -287,7 +287,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 
 <script>
   import { getSupabase, ROLE_COLORS, setSupabaseRuntimeConfig } from '../../lib/supabase';
-  import { getMemberRole } from '../../lib/routing';
+  import { getMemberRole, isRegisteredMember } from '../../lib/routing';
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
@@ -630,7 +630,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   }
 
   function renderAuth() {
-    if (!_member || getMemberRole(_member) === 'guest') {
+    if (!isRegisteredMember(_member)) {
       if (_user) { renderGuestWithSession(); } else { renderLoggedOut(); }
       return;
     }
@@ -1177,7 +1177,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       _member = data;
       renderAuth();
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
-      if (!_member || getMemberRole(_member) === 'guest') {
+      if (!isRegisteredMember(_member)) {
         window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
       }
     }
@@ -1201,7 +1201,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
           _member = data;
           renderAuth();
           window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
-          if (!_member || getMemberRole(_member) === 'guest') {
+          if (!isRegisteredMember(_member)) {
             window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
           }
         }
