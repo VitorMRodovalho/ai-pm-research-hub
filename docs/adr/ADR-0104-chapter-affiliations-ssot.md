@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker shipped; 3b FE pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice shipped; 3b-ii derivation/repoint pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -244,3 +244,43 @@ must be one of the member's affiliations), `members.chapter` becomes derived
 (drop the hardcoded fallback), and the deferred invariant
 `U_active_person_has_primary_chapter_affiliation` (the provisional-primary logic above already
 reduces how many actives could be primary-less).
+
+## Amendment — Wave 3b-i (member-facing entry-chapter choice) shipped (2026-06-16, mig `20260805000194`)
+
+The member can now **choose their entry chapter** on `/perfil`. Additive; no behavior
+change to existing reads (`members.chapter` stays the legacy/compat value — its derivation
+is 3b-ii).
+
+- **`set_my_entry_chapter(p_chapter_code)`** (SECDEF, authenticated, self-scoped via
+  `auth.uid()` → `members`). **PM decision (2026-06-16): restricted to a chapter the member
+  is already affiliated with** (`member_chapter_affiliations`) — you enter via a chapter you
+  belong to, never an arbitrary one. Validates BR + active; raises on non-BR / unknown /
+  not-affiliated. **Preserves the affiliation's existing `source`** (a verified `pmi_vep`
+  fact is not relabelled `self_declared`) and promotes it to the one primary through
+  `upsert_chapter_affiliation(..., is_primary=true)` — keeping the FACT primary aligned with
+  the governance choice (and the deferred invariant `U_active_person_has_primary`). Stores
+  the bare code on `members.entry_chapter_code`. Behaviour validated live (rolled-back probe):
+  demote-then-promote, source preservation, restriction + unknown raise, anon denied,
+  authenticated allowed.
+- **`get_my_chapter_affiliations()`** (SECDEF, authenticated, self-scoped) lists the caller's
+  BR affiliations joined to `chapter_registry`, flagging `is_primary` and `is_entry`, for the
+  choice card.
+- **`/perfil`** gains an entry-chapter card (`entryChapterHtml`): lists the member's BR
+  affiliations with a "set as entry" action per row, badges the current entry chapter, and
+  the identity headline now prefers `entry_chapter_code` (falls back to `members.chapter`).
+  RPC writes re-fetch affiliations + member and re-render.
+- **C5 (privacy farol) — first version**: when the member has **no** BR affiliations (the
+  observable symptom of a hidden PMI profile / "Hide my chapter(s)"), the card shows a
+  guidance farol (uncheck the option + ping management to re-sync). Precise
+  `community_profile_private` detection (the flag lives on `selection_applications`, reachable
+  only via the drift-captured `get_my_application_status`) is a follow-up — not folded in here
+  to keep 3b-i off that drift-sensitive surface.
+- **`lib/chapters.ts`** fallback refreshed from the stale 5 (p83) to the **13 BR registry
+  chapters** (grounded live). The RPC `get_active_chapters` remains the source of truth; the
+  fallback only covers the RPC-unavailable case.
+
+**Still deferred to Wave 3b-ii:** `members.chapter` becomes derived
+(`COALESCE(entry_chapter "PMI-prefixed", primary affiliation)`), `get_chapter_*` + admin
+read-site repoint, the `U_active_person_has_primary_chapter_affiliation` invariant in
+`check_schema_invariants()`, alumni/inactive handling (backfill was active-only), and the
+precise `community_profile_private` C5 detection.

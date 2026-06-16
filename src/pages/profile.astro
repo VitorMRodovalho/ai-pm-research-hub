@@ -89,6 +89,17 @@ const PROFILE_I18N = {
   linkedinLabel: t('profile.linkedinLabel', lang),
   credlyLabel: t('profile.credlyLabel', lang),
   credlyHint: t('profile.credlyHint', lang),
+  entryChapterTitle: t('profile.entryChapter.title', lang),
+  entryChapterDesc: t('profile.entryChapter.desc', lang),
+  entryChapterCurrentLabel: t('profile.entryChapter.currentLabel', lang),
+  entryChapterNone: t('profile.entryChapter.none', lang),
+  entryChapterAffiliationsLabel: t('profile.entryChapter.affiliationsLabel', lang),
+  entryChapterSetBtn: t('profile.entryChapter.setBtn', lang),
+  entryChapterBadge: t('profile.entryChapter.badge', lang),
+  entryChapterBrOnlyNote: t('profile.entryChapter.brOnlyNote', lang),
+  entryChapterEmptyGuide: t('profile.entryChapter.emptyGuide', lang),
+  entryChapterSaved: t('profile.entryChapter.saved', lang),
+  entryChapterErrorPrefix: t('profile.entryChapter.errorPrefix', lang),
   verifyCredly: t('profile.verifyCredly', lang),
   saveChanges: t('profile.saveChanges', lang),
   pmiIdPlaceholder: t('profile.pmiIdPlaceholder', lang),
@@ -314,6 +325,7 @@ const PROFILE_I18N = {
   let currentXpScope = 'cycle';
   let _xpScopeInitialized = false;
   let attendanceHoursData = null;
+  let chapterAffiliations = [];  // Wave 3b-i — caller's BR chapter affiliations (FACT)
   let currentCycleCode = '';
   let currentCycleLabel = '';
   let cycleMeta = {};
@@ -387,6 +399,8 @@ const PROFILE_I18N = {
     // parallel with the heavy dashboard loads below (not awaited), so the banner
     // CTA resolves fast and deterministically rather than last.
     refreshVolunteerAgreementCTA(sb);
+    // Wave 3b-i — load the member's BR chapter affiliations for the entry-chapter card.
+    await loadChapterAffiliations(sb);
     // Load cycle history
     try {
       const { data: hist } = await sb.from('member_cycle_history')
@@ -1327,6 +1341,60 @@ const PROFILE_I18N = {
       </div>`;
   }
 
+  // Wave 3b-i / ADR-0104 — the member's current entry chapter. Derived from the
+  // freshly-loaded affiliations (is_entry, computed server-side from
+  // members.entry_chapter_code) so it is correct on first load and after a write —
+  // get_member_by_auth does NOT carry entry_chapter_code (explicit column list).
+  function currentEntryCode(m: any): string | null {
+    const fromAffil = (Array.isArray(chapterAffiliations) ? chapterAffiliations : []).find((a: any) => a.is_entry)?.chapter_code;
+    return fromAffil || m?.entry_chapter_code || null;
+  }
+
+  // Wave 3b-i / ADR-0104 — entry-chapter choice card. Lists the member's BR
+  // affiliations (FACT) and lets them pick ONE as their entry chapter (governance).
+  function entryChapterHtml(m: any): string {
+    const entryCode = currentEntryCode(m);
+    const affils = Array.isArray(chapterAffiliations) ? chapterAffiliations : [];
+    const head = `
+      <h2 class="text-sm font-bold text-navy mb-1">${PROFILE_I18N.entryChapterTitle}</h2>
+      <p class="text-[.75rem] text-[var(--text-muted)] mb-3">${PROFILE_I18N.entryChapterDesc}</p>
+      ${entryCode
+        ? `<div class="flex items-center gap-2 mb-3 text-[.8rem]"><span class="text-[var(--text-secondary)]">${PROFILE_I18N.entryChapterCurrentLabel}</span><span class="font-bold text-teal bg-teal/10 px-2 py-0.5 rounded">PMI-${escapeHtmlSafe(entryCode)}</span></div>`
+        : `<div class="mb-3 text-[.78rem] text-amber-700">${PROFILE_I18N.entryChapterNone}</div>`}`;
+
+    // C5 — no BR affiliations found (the observable symptom of a hidden PMI profile).
+    if (affils.length === 0) {
+      return `
+        <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+          ${head}
+          <div class="mt-1 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[.75rem] text-amber-800">
+            ${PROFILE_I18N.entryChapterEmptyGuide}
+          </div>
+        </div>`;
+    }
+
+    const rows = affils.map((a: any) => {
+      const code = escapeHtmlSafe(a.chapter_code);
+      const where = escapeHtmlSafe(a.state || a.legal_name || '');
+      const isEntry = a.is_entry === true || a.chapter_code === entryCode;
+      return `
+        <div class="flex items-center gap-2 py-2 px-3 bg-[var(--surface-base)] rounded-lg mb-2">
+          <span class="text-sm flex-1"><strong>PMI-${code}</strong>${where ? ` <span class="text-[var(--text-muted)]">· ${where}</span>` : ''}</span>
+          ${isEntry
+            ? `<span class="text-[.65rem] font-bold text-teal uppercase bg-teal/10 px-2 py-0.5 rounded">${PROFILE_I18N.entryChapterBadge}</span>`
+            : `<button type="button" data-action="set-entry-chapter" data-chapter-code="${code}" class="text-[.7rem] font-semibold text-teal hover:text-white hover:bg-teal cursor-pointer bg-transparent border border-teal px-2.5 py-1 rounded transition-all">${PROFILE_I18N.entryChapterSetBtn}</button>`}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        ${head}
+        <div class="text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">${PROFILE_I18N.entryChapterAffiliationsLabel}</div>
+        ${rows}
+        <p class="mt-1 text-[.68rem] text-[var(--text-muted)]">${PROFILE_I18N.entryChapterBrOnlyNote}</p>
+      </div>`;
+  }
+
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
@@ -1354,7 +1422,7 @@ const PROFILE_I18N = {
           }
           <div class="flex-1 min-w-0">
             <div class="font-extrabold text-lg text-navy">${safeName}</div>
-            <div class="text-sm text-[var(--text-secondary)]">${m.chapter || '—'}</div>
+            <div class="text-sm text-[var(--text-secondary)]">${currentEntryCode(m) ? 'PMI-' + escapeHtmlSafe(currentEntryCode(m)) : escapeHtmlSafe(m.chapter || '—')}</div>
             <div class="mt-1 flex flex-wrap gap-1">${roleBadgesHtml(m)}</div>
           </div>
           <div class="text-center flex-shrink-0 hidden sm:block">
@@ -1382,6 +1450,9 @@ const PROFILE_I18N = {
           </div>
         </div>
       </div>
+
+      <!-- Entry chapter choice (Wave 3b-i / ADR-0104) -->
+      ${entryChapterHtml(m)}
 
       <!-- My Week -->
       ${myWeekHtml(m)}
@@ -1799,6 +1870,37 @@ const PROFILE_I18N = {
     (window as any).toast?.('Assinatura removida', 'success');
   });
 
+  // ── Entry chapter (Wave 3b-i / ADR-0104) ──
+  // The member's BR chapter affiliations are the FACT (member_chapter_affiliations,
+  // fed by the worker + legacy backfill). The member picks ONE of them as their
+  // entry chapter (governance) via set_my_entry_chapter, which promotes it to primary.
+  async function loadChapterAffiliations(sb: any) {
+    try {
+      const { data } = await sb.rpc('get_my_chapter_affiliations');
+      chapterAffiliations = Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn('Profile: failed to load chapter affiliations:', e);
+      chapterAffiliations = [];
+    }
+  }
+
+  async function setEntryChapter(code: string) {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember || !code) return;
+    const { data, error } = await sb.rpc('set_my_entry_chapter', { p_chapter_code: code });
+    if (error || !data?.success) {
+      (window as any).toast?.(PROFILE_I18N.entryChapterErrorPrefix + (error?.message || data?.error || PROFILE_I18N.unknownError), 'error');
+      return;
+    }
+    (window as any).toast?.(PROFILE_I18N.entryChapterSaved, 'success');
+    try { (window as any).__nucleoTrack?.('entry_chapter_set', { chapter_code: code }); } catch {}
+    await loadChapterAffiliations(sb);
+    const { data: updated } = await sb.rpc('get_member_by_auth');
+    // get_member_by_auth omits entry_chapter_code (explicit column list); carry the
+    // freshly-chosen value so the headline/banner reflect it without a reload.
+    if (updated) { updated.entry_chapter_code = data.entry_chapter_code; currentMember = updated; renderProfile(updated); }
+  }
+
   // ── Save profile ──
   async function saveSelf() {
     const sb = (window as any).navGetSb?.();
@@ -2028,6 +2130,11 @@ const PROFILE_I18N = {
         case 'remove-secondary-email': {
           const idx = parseInt(target.getAttribute('data-email-idx') || '0', 10);
           removeSecondaryEmail(idx);
+          break;
+        }
+        case 'set-entry-chapter': {
+          const code = target.getAttribute('data-chapter-code');
+          if (code) setEntryChapter(code);
           break;
         }
         case 'verify-credly':
