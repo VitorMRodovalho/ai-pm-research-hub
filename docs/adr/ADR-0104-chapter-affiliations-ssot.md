@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice + 3b-ii members.chapter derivation/invariant U shipped; 3c B8 signature cycle pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice + 3b-ii members.chapter derivation/invariant U + 3c-i agreement reject/reissue lifecycle (DB) shipped; 3c-ii admin panel + member screens pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) · 20260805000195_w3b_ii_members_chapter_derivation.sql (3b-ii members.chapter derived + invariant U) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) · 20260805000195_w3b_ii_members_chapter_derivation.sql (3b-ii members.chapter derived + invariant U) · 20260805000196_w3c_i_agreement_reject_reissue_lifecycle.sql (3c-i agreement reject/reissue + status domain + counter_sign hash bugfix) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -337,3 +337,54 @@ affiliation/entry; and the precise `community_profile_private` C5 detection (liv
 `get_my_application_status` surface). **Next: Wave 3c (B8)** — the in-platform signature cycle
 (`rejected`/`superseded` states, reject/reissue, `counter_sign` → `countersigned`, `check_my_tcv_readiness`
 ignoring rejected/superseded, admin panel + member screens + archival at engagement).
+
+## Amendment — Wave 3c-i (B8 agreement reject/reissue lifecycle, DB) shipped (2026-06-16, mig `20260805000196`)
+
+The Termo de Voluntariado gains the two genuinely-new terminal states + the board/admin actions that
+produce them. **PM decisions (2026-06-16, AskUserQuestion):** (1) rejection applies BOTH pre- AND
+post-counter-signature; (2) `superseded` arises ONLY on reissue — ending an engagement does NOT touch the
+term (it is historical evidence of the signed period); (3) DB-first slice (this PR), admin panel + member
+screens are 3c-ii.
+
+- **State machine (volunteer_agreement):** `issued` (valid; counter-signed iff `counter_signed_by IS NOT
+  NULL`) · `rejected` (board/admin invalidated, pre- or post-counter-sign; member must re-sign) ·
+  `superseded` (replaced by a reissue request) · plus `draft`/`revoked` kept for compatibility. A domain
+  CHECK (`certificates_status_check`) constrains the column (previously unconstrained text).
+- **`countersigned` is a DERIVED sub-state, NOT a status value (low blast radius).** The literal plan item
+  "counter_sign → countersigned" is realized as the existing derived flag (`counter_signed_by IS NOT NULL`,
+  surfaced as `has_counter_signature` to the FE), keeping a fully-executed term at status=`issued`. Flipping
+  to a `countersigned` status would ripple through `verify_certificate`, `check_my_tcv_readiness`, the
+  `sign_volunteer_agreement` already-signed guard, and `_trg_auto_link_volunteer_engagement_to_cycle_cert`
+  (all key on `status='issued'` = "valid/signed") with no behavioral gain. Because those all key on
+  `'issued'`, a rejected/superseded term automatically reads as "not signed / not valid" — re-signing is
+  allowed (the guard finds no `'issued'` term) and produces a fresh `'issued'` certificate, with NO change
+  to readiness/verify/sign/auto-link. An explicit `countersigned` status for admin filtering is a cheap
+  follow-up if wanted.
+- **`reject_certificate(p_certificate_id, p_reason)`** (SECDEF, authenticated). Authority mirrors
+  `counter_sign_certificate`: `manage_member` OR PMI-GO `chapter_board` of the same contracting chapter.
+  Rejects a valid (`issued`) term whether or not already counter-signed → `status='rejected'`, records the
+  invalidation in `revoked_at`/`revoked_by`/`revoked_reason`, **unlinks the engagement**
+  (`agreement_certificate_id = NULL`) so the volunteer reads as needing to re-sign, audits, and notifies the
+  member (`volunteer_agreement_rejected`).
+- **`reissue_agreement(p_member_id, p_reason)`** (SECDEF, authenticated, `manage_member` only). Admin
+  correction: marks the member's current valid cycle term → `status='superseded'`, unlinks the engagement,
+  audits, notifies (`volunteer_agreement_reissued`). The member's next `sign_volunteer_agreement` creates a
+  fresh `issued` term.
+- **`counter_sign_certificate`** gains a precondition (only an `issued` term is counter-signable; rejected/
+  superseded/revoked/draft → `not_signable`). **Bugfix surfaced + fixed in-slice:** the prior body called
+  `public.sha256(public.convert_to(...))` under `SET search_path TO ''` — both live in `pg_catalog`, not
+  `public`, so EVERY counter-sign raised `function public.convert_to does not exist`. The 33 counter-signed
+  certs in prod came from bulk paths (only 1 counter_sign audit event existed). Now unqualified
+  (`sha256(convert_to(...))`), resolving via `pg_catalog`. Validated live (rolled-back probe): counter-sign
+  now produces a 64-hex signature.
+- **`get_my_certificates`** hides `superseded` (replaced) alongside `revoked`; `rejected` stays visible so
+  the member knows to re-sign. **`_delivery_mode_for`** registers the two new actionable types as
+  `transactional_immediate` (ADR-0022).
+- **Validated live (rolled-back probes, prod untouched):** reject (issued→rejected, revoked_by=caller,
+  engagement unlinked); counter-sign of a rejected term blocked (`not_signable`); counter-sign of an issued
+  term succeeds (hash 64 hex — bugfix confirmed); reissue (issued→superseded); the CHECK rejects an invalid
+  status.
+
+**Deferred to Wave 3c-ii (FE):** admin reject/reissue panel + member screens (rejected→re-sign banner),
+`verify_certificate` reporting `rejected`/`superseded` distinctly, `get_all_certificates` summary counts for
+the new states, and i18n.
