@@ -430,6 +430,9 @@ export interface IngestSummary {
   phase_b_processed?: number;                // applications with Phase B data
   phase_b_skipped_private?: number;          // Decision 5 — profilePrivate=true
   service_history_inserted?: number;
+  // Wave 3a-iii (#740 / ADR-0104) — BR affiliations written to member_chapter_affiliations
+  // from pmi_memberships via upsert_chapter_affiliation (resolved persons only).
+  chapter_affiliations_upserted?: number;
 
   // p195 Opção B+: resume binary mirror to Supabase Storage
   resumes_synced?: number;                   // PDFs downloaded from Azure + uploaded to bucket

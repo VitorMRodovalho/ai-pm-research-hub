@@ -46,7 +46,8 @@ import {
   upsertSelectionApplication,
   findPersonIdByEmail,
   insertServiceHistory,
-  setEngagementEndDateSource
+  setEngagementEndDateSource,
+  upsertChapterAffiliations
 } from './db';
 import { issueOnboardingToken } from './onboarding-token';
 import { dispatchWelcome } from './welcome';
@@ -250,6 +251,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     phase_b_processed: 0,
     phase_b_skipped_private: 0,
     service_history_inserted: 0,
+    chapter_affiliations_upserted: 0,
     // p195 Opção B+: resume binary mirror to Supabase Storage
     resumes_synced: 0,
     resumes_skipped_no_url: 0,
@@ -492,6 +494,23 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
             // #441 (A1 retire): pmi_chapter_memberships UPSERT removed — the table was never
             // created (whole p125-E1 series unapplied), so this was dead code calling a
             // non-existent relation. service_history + engagement fallbacks below stay live.
+            // Wave 3a-iii (#740 / ADR-0104): the canonical multi-chapter write that #441's
+            // dead code never delivered now lands here — populate member_chapter_affiliations
+            // (the durable N:N FACT table) from the reliable pmi_memberships snapshot via the
+            // one-primary RPC. BR-only; is_primary owned by the RPC (worker asserts facts).
+            if (mapped.pmi_memberships && Array.isArray(mapped.pmi_memberships) && mapped.pmi_memberships.length > 0) {
+              try {
+                const n = await upsertChapterAffiliations(db, personId, mapped.pmi_memberships);
+                summary.chapter_affiliations_upserted =
+                  (summary.chapter_affiliations_upserted ?? 0) + n;
+              } catch (e: any) {
+                summary.errors.push({
+                  scope: 'chapter_affiliations',
+                  ref: String(app.applicationId),
+                  error: e.message
+                });
+              }
+            }
             // Decision 8 — engagement end_date_source 'pmi_vep' fallback
             // Only set if VEP serviceEndDateUTC present AND source not already 'agreement'
             if (app.serviceEndDateUTC) {

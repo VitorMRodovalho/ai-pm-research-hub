@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Env, CronRunMetrics } from './types';
+import { parseBrChapterCode } from './mapper';
 
 export function createDbClient(env: Env): SupabaseClient {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -603,6 +604,56 @@ export async function findPersonIdByEmail(
     .maybeSingle();
 
   return (bySecondary?.person_id as string) ?? null;
+}
+
+/**
+ * Wave 3a-iii (#740 / ADR-0104) — populate member_chapter_affiliations from the
+ * reliable pmi_memberships snapshot for a resolved person.
+ *
+ * For each BR ("<State>, Brazil Chapter") membership we resolve the chapter_registry
+ * code and call the SECURITY DEFINER RPC upsert_chapter_affiliation with
+ * is_primary=false: the worker asserts which chapters a person belongs to (FACT), it
+ * never decides the headline. The RPC owns the one-primary invariant (it preserves the
+ * legacy backfill / the future entry_chapter choice, and only promotes a provisional
+ * primary when the person has none). Non-BR entries ("PMI Global", "Washington, DC
+ * Chapter", "Angola Chapter") are skipped — chapter_registry is BR-only.
+ *
+ * Idempotent (ON CONFLICT upsert in the RPC). Tolerates both the runtime shape (an
+ * array of plain name strings, as actually stored in selection_applications.pmi_memberships)
+ * and the declared { chapterName } object shape. Returns the count of affiliations upserted.
+ */
+export async function upsertChapterAffiliations(
+  db: SupabaseClient,
+  personId: string,
+  memberships: unknown
+): Promise<number> {
+  if (!Array.isArray(memberships) || memberships.length === 0) return 0;
+
+  const codes = new Set<string>();
+  for (const m of memberships) {
+    const name =
+      typeof m === 'string'
+        ? m
+        : (m && typeof m === 'object' ? ((m as any).chapterName ?? null) : null);
+    const code = parseBrChapterCode(name);
+    if (code) codes.add(code);
+  }
+  if (codes.size === 0) return 0;
+
+  let upserted = 0;
+  for (const code of codes) {
+    const { error } = await db.rpc('upsert_chapter_affiliation', {
+      p_person_id: personId,
+      p_chapter_code: code,
+      p_source: 'pmi_vep',
+      p_is_primary: false
+    });
+    if (error) {
+      throw new Error(`upsertChapterAffiliations(${code}): ${error.message}`);
+    }
+    upserted++;
+  }
+  return upserted;
 }
 
 /**
