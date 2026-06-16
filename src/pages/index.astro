@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import OnboardingCockpitNudge from '../components/onboarding/OnboardingCockpitNudge';
 import HomepageHero from '../components/sections/HomepageHero.astro';
 import NucleoSection from '../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../lib/schedule';
@@ -25,6 +26,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 ---
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
+  <OnboardingCockpitNudge client:load lang={lang} />
   <HomepageHero lang={lang} />
   <NucleoSection lang={lang} />
   <ChaptersSection lang={lang} />
