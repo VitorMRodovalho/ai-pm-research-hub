@@ -199,6 +199,9 @@ const SEL_I18N = {
     phaseBSummaryTitle: t('admin.selection.modal.phaseBSummaryTitle', lang),
     phaseBMemberStatus: t('admin.selection.modal.phaseBMemberStatus', lang),
     phaseBChapterCanonical: t('admin.selection.modal.phaseBChapterCanonical', lang),
+    chapterAffiliationsTitle: t('admin.selection.modal.chapterAffiliationsTitle', lang),
+    chapterNonBrLabel: t('admin.selection.modal.chapterNonBrLabel', lang),
+    chapterFormDeclaredLabel: t('admin.selection.modal.chapterFormDeclaredLabel', lang),
     phaseBHistoryCount: t('admin.selection.modal.phaseBHistoryCount', lang),
     phaseBMemberSince: t('admin.selection.modal.phaseBMemberSince', lang),
     phaseBMemberUntil: t('admin.selection.modal.phaseBMemberUntil', lang),
@@ -742,6 +745,9 @@ const SEL_I18N = {
       phaseBSummaryTitle: 'Resumo Phase B (canonical PMI)',
       phaseBMemberStatus: 'Status membro',
       phaseBChapterCanonical: 'Capítulo canonical',
+      chapterAffiliationsTitle: 'Filiações PMI (snapshot)',
+      chapterNonBrLabel: 'Fora do Brasil (não elegível para entrada)',
+      chapterFormDeclaredLabel: 'Declarado no form (não verificado)',
       phaseBHistoryCount: 'Service history',
       phaseBMemberSince: 'Membro desde',
       phaseBMemberUntil: 'Até',
@@ -1157,6 +1163,7 @@ const SEL_I18N = {
       'Rio de Janeiro, Brazil Chapter': 'PMI-RJ',
       'Bahia, Brazil Chapter': 'PMI-BA',
       'Pernambuco, Brazil Chapter': 'PMI-PE',
+      'Sergipe, Brazil Chapter': 'PMI-SE',
       'Espírito Santo, Brazil Chapter': 'PMI-ES',
       'Paraná, Brazil Chapter': 'PMI-PR',
       'Santa Catarina, Brazil Chapter': 'PMI-SC',
@@ -1168,6 +1175,31 @@ const SEL_I18N = {
       'Rio Grande do Norte, Brazil Chapter': 'PMI-RN',
     };
     return map[raw] || raw;
+  }
+
+  /* Wave 3a-0 #740 — partition a member's PMI affiliation snapshot (pmi_memberships)
+     into BR (mapped to PMI-XX; BR detected robustly by the ", Brazil Chapter" suffix
+     even when the name→code map lacks an entry) and non-BR (Angola/Portugal/etc.).
+     Shared by the list row and the applicant modal — single source for the parse.
+     KNOWN-INCONSISTENCY: a BR chapter absent from mapPmiChapterToCode falls back to
+     the stripped state name (not a PMI-XX code), so comparing it against the form's
+     PMI-XX value can false-positive a divergence. Every chapter in live data is
+     mapped; entry_chapter_code (Wave 3a) supersedes this heuristic for the headline. */
+  function parsePmiMembershipsBr(rawMemberships: any): { br: string[]; nonBr: string[] } {
+    const br: string[] = [];
+    const nonBr: string[] = [];
+    for (const raw of Array.isArray(rawMemberships) ? rawMemberships : []) {
+      const name = typeof raw === 'string' ? raw.trim() : '';
+      if (!name || name === 'PMI Global') continue;
+      const code = mapPmiChapterToCode(name);
+      if (code.startsWith('PMI-') || name.endsWith(', Brazil Chapter')) {
+        const label = code.startsWith('PMI-') ? code : name.replace(/,\s*Brazil Chapter$/, '').trim();
+        if (!br.includes(label)) br.push(label);
+      } else if (!nonBr.includes(name)) {
+        nonBr.push(name);
+      }
+    }
+    return { br, nonBr };
   }
 
   /* p109 Onda 4 Fase 1.2 — "Minha avaliação" badge na lista (FP-4).
@@ -1649,30 +1681,40 @@ const SEL_I18N = {
       }
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
-      // p150 PM feedback — chapter canonical from PMI Member History (vs form-declared).
-      // canonicalRaw: e.g. "Ceará, Brazil Chapter". Mapped to "PMI-CE" via PMI_CHAPTER_CODE_MAP.
-      // If both present and differ, show canonical primary + form in tooltip (⚠ discrepancy).
-      // If only form present, fallback to form (free-text, unverified).
+      // Wave 3a-0 #740 — chapter SSOT. The old display preferred `chapter_canonical`,
+      // the FIRST non-"PMI Global" token of the free-text service_history_chapters
+      // string — an arbitrary, order-dependent guess that is wrong for multi-chapter
+      // members (e.g. a Pernambuco member whose history happens to list Goiás first
+      // showed as PMI-GO). We now derive the display from `pmi_memberships`, the
+      // reliable multi-chapter snapshot, and NEVER endorse the form-declared value as
+      // "canonical". Headline = the form-declared chapter when it is one of the real
+      // affiliations, else the first BR affiliation; the full BR list rides in the
+      // tooltip. Non-BR affiliations (Angola/Portugal) are surfaced but flagged (I7).
+      // (entry_chapter — the member's explicit governance choice — lands in Wave 3a/3b
+      // and will become the headline once it exists.)
       const pmiCanonical = r.pmi_canonical || {};
-      const chapterCanonicalRaw: string | null = pmiCanonical.chapter_canonical || null;
-      const chapterCanonicalCode = chapterCanonicalRaw ? mapPmiChapterToCode(chapterCanonicalRaw) : null;
       const formChapter: string | null = r.chapter || null;
-      const chapterDisplay = chapterCanonicalCode || chapterCanonicalRaw || formChapter || '—';
-      const chapterDivergent = chapterCanonicalCode && formChapter && chapterCanonicalCode !== formChapter;
-      const chapterTooltip = chapterDivergent
-        ? `Canonical PMI: ${chapterCanonicalRaw}. Declarou no form: ${formChapter}.`
-        : chapterCanonicalRaw
-        ? `Canonical PMI: ${chapterCanonicalRaw}`
-        : formChapter
-        ? `Declarou (free text, não verificado): ${formChapter}`
-        : 'Sem capítulo identificado';
-      const chapterSourceBadge = chapterCanonicalRaw
-        ? '<span class="text-[8px] font-bold ml-1 text-emerald-600" title="Fonte PMI Member History">✓</span>'
+      const { br: brAffiliations, nonBr: nonBrAffiliations } = parsePmiMembershipsBr(pmiCanonical.pmi_memberships);
+      // Headline = the form-declared chapter when it is one of the real affiliations
+      // (PMI snapshot order has no stability guarantee), else the first BR affiliation.
+      const headline = (formChapter && brAffiliations.includes(formChapter))
+        ? formChapter
+        : (brAffiliations[0] || formChapter || '—');
+      const extraBrCount = brAffiliations.filter((c) => c !== headline).length;
+      const chapterDisplay = headline + (extraBrCount > 0 ? ` +${extraBrCount}` : '');
+      const chapterDivergent = !!(formChapter && brAffiliations.length && !brAffiliations.includes(formChapter));
+      const tipParts: string[] = [];
+      if (brAffiliations.length) tipParts.push(`${T.modal.chapterAffiliationsTitle}: ${brAffiliations.join(' · ')}`);
+      if (formChapter && (!brAffiliations.length || chapterDivergent)) tipParts.push(`${T.modal.chapterFormDeclaredLabel}: ${formChapter}`);
+      if (nonBrAffiliations.length) tipParts.push(`${T.modal.chapterNonBrLabel}: ${nonBrAffiliations.join(' · ')}`);
+      const chapterTooltip = tipParts.join(' — ') || '—';
+      const chapterSourceBadge = brAffiliations.length
+        ? '<span class="text-[8px] font-bold ml-1 text-emerald-600" title="Fonte: snapshot de filiações PMI (pmi_memberships)">✓</span>'
         : formChapter
         ? '<span class="text-[8px] font-bold ml-1 text-amber-500" title="Apenas form do candidato (não verificado PMI)">~</span>'
         : '';
       const chapterDivergentBadge = chapterDivergent
-        ? `<span class="text-[8px] font-bold ml-0.5 text-amber-600" title="Form declarou: ${esc(formChapter ?? '')}">⚠</span>`
+        ? `<span class="text-[8px] font-bold ml-0.5 text-amber-600" title="${esc(T.modal.chapterFormDeclaredLabel)}: ${esc(formChapter ?? '')}">⚠</span>`
         : '';
       // p152 W4 P1: interview column — show next scheduled date/time (SP-tz) + HOJE badge if today
       const intvNextIso: string | null = r.meta?.interview_next_at || null;
@@ -1760,15 +1802,18 @@ const SEL_I18N = {
       ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${T.modal.returningBadge}</span>`
       : '';
 
-    // p152 W2.5: chapter discrepancy alert (form chapter vs canonical PMI service_history)
+    // Wave 3a-0 #740: chapter discrepancy alert now compares the form-declared chapter
+    // against the member's REAL affiliations (pmi_memberships snapshot, BR-mapped),
+    // not the arbitrary first-token chapter_canonical guess.
     const pmiC = row.pmi_canonical || {};
-    const chapterCanonical = pmiC.chapter_canonical || null;
-    const chapterMismatch = chapterCanonical
-      && row.chapter
-      && String(chapterCanonical).trim().toLowerCase() !== String(row.chapter).trim().toLowerCase();
+    const { br: modalBrAffiliations, nonBr: modalNonBrAffiliations } = parsePmiMembershipsBr(pmiC.pmi_memberships);
+    const modalAffiliationsStr = modalBrAffiliations.join(' · ');
+    const chapterMismatch = row.chapter
+      && modalBrAffiliations.length
+      && !modalBrAffiliations.includes(row.chapter);
     const chapterDiscrepancyAlert = chapterMismatch
       ? `<div class="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800">
-           <strong>⚠ ${T.modal.chapterDiscrepancyTitle}:</strong> ${T.modal.chapterDiscrepancyForm} <strong>${esc(row.chapter)}</strong> · ${T.modal.chapterDiscrepancyCanonical} <strong>${esc(chapterCanonical)}</strong>
+           <strong>⚠ ${T.modal.chapterDiscrepancyTitle}:</strong> ${T.modal.chapterDiscrepancyForm} <strong>${esc(row.chapter)}</strong> · ${T.modal.chapterAffiliationsTitle}: <strong>${esc(modalAffiliationsStr)}</strong>
          </div>`
       : '';
 
@@ -1779,7 +1824,8 @@ const SEL_I18N = {
            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
              ${pmiC.pmi_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">PMI ID</span><br><strong>${esc(pmiC.pmi_id)}</strong></div>` : ''}
              ${pmiC.member_status ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberStatus}</span><br><strong>${esc(pmiC.member_status)}</strong></div>` : ''}
-             ${chapterCanonical ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBChapterCanonical}</span><br><strong>${esc(chapterCanonical)}</strong></div>` : ''}
+             ${modalBrAffiliations.length ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.chapterAffiliationsTitle}</span><br><strong>${esc(modalAffiliationsStr)}</strong></div>` : ''}
+             ${modalNonBrAffiliations.length ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.chapterNonBrLabel}</span><br><strong>${esc(modalNonBrAffiliations.join(' · '))}</strong></div>` : ''}
              ${pmiC.service_history_count != null ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBHistoryCount}</span><br><strong>${pmiC.service_history_count}</strong></div>` : ''}
              ${pmiC.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberSince}</span><br><strong>${esc(pmiC.member_since)}</strong></div>` : ''}
              ${pmiC.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberUntil}</span><br><strong>${esc(pmiC.member_until)}</strong></div>` : ''}
