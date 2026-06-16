@@ -483,8 +483,9 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 23 | get_my_credly_status | — | Badges Credly e CPMAI |
 | 24 | get_my_assigned_cards | — | Cards atribuídos a você (cross-board) |
 | 25 | get_my_selection_result | — | Status e scores da sua candidatura |
-| 26 | get_person | person_id? | Perfil V4 (PII só p/ próprio ou view_pii) |
+| 26 | get_person | person_id? | Perfil V4 (headshot/LinkedIn/Credly; PII sensível só p/ próprio ou view_pii) |
 | 27 | get_active_engagements | person_id? | Engagements ativos (ADR-0006) |
+| 27b | get_member_comms_card | query? / person_id? | Card de comms/divulgação (headshot, LinkedIn, credenciais, papéis) — gate manage_event/manage_member |
 
 ### Tier 1 — Todos os membros (mais 10 leitura contextuais)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -2628,7 +2629,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== V4 PERSON + ENGAGEMENT TOOLS (69-70) =====
 
   // TOOL 69: get_person — V4 person profile (ADR-0006)
-  mcp.tool("get_person", "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own profile.") }, async (params: { person_id?: string }) => {
+  mcp.tool("get_person", "Returns the V4 person profile: name, headshot (photo_url), LinkedIn (linkedin_url), location, Credly URL + badges, consent status. Sensitive PII (email, phone, address, birth date, pmi_id) only visible for own record or with view_pii permission. For a ready-to-use comms/divulgação card (parsed credentials + roles + clearance) prefer get_member_comms_card.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own profile.") }, async (params: { person_id?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_person", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2658,6 +2659,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_active_engagements", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "get_active_engagements", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "get_active_engagements", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 70b: get_member_comms_card — comms/divulgação card (#697)
+  mcp.tool("get_member_comms_card", "Returns a member's COMMS/divulgação card for banners, social posts, and decks: headshot (photo URL), display name, LinkedIn URL, credentials (PMP, PMI-CPMAI, etc.), Credly URL, and active roles/initiatives (for credits). Look up by name (`query`) or `person_id` — if a name matches more than one person it returns a disambiguation list (`ambiguous: true, matches: [...]`). Does NOT return email/phone/address. Includes `comms_clearance` (true when the member signed the volunteer term whose Cláusula 11 authorizes image use; false + `clearance_reason` otherwise — the controller decides usage, the route does not block). Gate: manage_event OR manage_member (comms/event leaders + admin/GP).", { query: z.string().optional().describe("Search by name (partial match). Use this when you have a name but not the person UUID."), person_id: z.string().optional().describe("Person UUID. Use when known (e.g. from a previous disambiguation list).") }, async (params: { query?: string; person_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_member_comms_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.person_id && !isUUID(params.person_id)) { await logUsage(sb, member.id, "get_member_comms_card", false, "Invalid person_id", start); return err("person_id must be a UUID"); }
+    if (!params.person_id && !params.query) { await logUsage(sb, member.id, "get_member_comms_card", false, "Missing args", start); return err("Provide query (name) or person_id"); }
+    const { data, error } = await sb.rpc("get_member_comms_card", { p_query: params.query || null, p_person_id: params.person_id || null });
+    if (error) { await logUsage(sb, member.id, "get_member_comms_card", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_member_comms_card", false, data.error, start); return err(data.error); }
+    // LGPD Art. 37: record which person was consulted + the clearance returned (audit of comms-use access).
+    await logUsage(sb, member.id, "get_member_comms_card", true, undefined, start, "execute", { person_id: data?.person_id, comms_clearance: data?.comms_clearance, ambiguous: data?.ambiguous });
     return ok(data);
   });
 
