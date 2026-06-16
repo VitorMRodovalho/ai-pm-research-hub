@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice + 3b-ii members.chapter derivation/invariant U + 3c-i agreement reject/reissue lifecycle (DB) shipped; 3c-ii admin panel + member screens pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice + 3b-ii members.chapter derivation/invariant U + 3c-i agreement reject/reissue lifecycle (DB) + 3c-ii agreement lifecycle FE shipped) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
 | Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) · 20260805000195_w3b_ii_members_chapter_derivation.sql (3b-ii members.chapter derived + invariant U) · 20260805000196_w3c_i_agreement_reject_reissue_lifecycle.sql (3c-i agreement reject/reissue + status domain + counter_sign hash bugfix) |
@@ -388,3 +388,27 @@ screens are 3c-ii.
 **Deferred to Wave 3c-ii (FE):** admin reject/reissue panel + member screens (rejected→re-sign banner),
 `verify_certificate` reporting `rejected`/`superseded` distinctly, `get_all_certificates` summary counts for
 the new states, and i18n.
+
+### Amendment — Wave 3c-ii (FE of B8, mig `20260805000197`)
+
+Surfaces the 3c-i lifecycle to the frontends; pure read-surface + copy changes (no new state machine).
+
+- **`verify_certificate`** now returns `rejected`/`superseded` booleans (distinct from `revoked`); rejection
+  reuses `revoked_at`/`revoked_reason`. `verify/[code].astro` renders three distinct invalid states.
+- **`get_all_certificates`** summary counts `rejected`/`superseded`; the row payload adds `counter_signed_at`
+  (fixes a latent admin "all signed" badge that always read awaiting-director).
+- **`get_my_certificates`** exposes `revoked_reason`/`revoked_at` (member's own rejection reason) for the
+  re-sign banners. `superseded`/`revoked` stay hidden; `rejected` stays visible.
+- **`get_volunteer_agreement_status`** adds per-member `agreement_cert_id` + `agreement_status` (latest
+  `issued`|`rejected` cert this cycle) and makes `signed`/`summary`/`by_chapter` count ONLY `status='issued'`
+  → a rejected member drops back to pending (correct). Drives Reject/Reissue in `VolunteerAgreementPanel`
+  (Reject on issued for board+manager; Reissue manager-only).
+- **`reject_certificate`** (legal R2): a counter-signed (fully-executed) term rescinded post-countersign now
+  gets formal **distrato** notification copy, distinct from the routine "please re-sign". The in-app
+  notification already emails via the `send-notification-emails` cron (transactional_immediate) — no new EF.
+- **Member surfaces:** `volunteer-agreement.astro` no longer short-circuits to "already signed" on a rejected
+  term (only `issued`/null blocks re-sign) and shows a rejection banner with the reason; `certificates.astro`
+  shows a rejected badge + reason + re-sign link; `profile.astro` swaps the volunteer banner copy to
+  "returned → re-sign" when a rejected term exists.
+- Reissue (`superseded`) is not banner-surfaced member-side (the cert is hidden); the reissue notification +
+  the fresh sign form carry the signal. i18n added to all 3 dicts.

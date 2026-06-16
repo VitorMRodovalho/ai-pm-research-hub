@@ -4905,6 +4905,21 @@ const esLATAM: Record<string, string> = {
   'verify.revokedReason': 'Motivo',
   'verify.searchPlaceholder': 'Insertar código de verificación...',
   'verify.search': 'Verificar',
+  // W3c-ii (B8) — agreement lifecycle states surfaced to members + verifiers
+  'verify.rejected': 'Este documento fue rechazado y devuelto para volver a firmarse.',
+  'verify.rejectedAt': 'Rechazado el',
+  'verify.superseded': 'Este documento fue reemplazado por una reemisión.',
+  'verify.supersededHint': 'Se emitió una versión más reciente de este término. Consulte el documento actual del voluntario.',
+  'certificates.status.rejected': 'Rechazado',
+  'certificates.rejectedReason': 'Motivo del rechazo',
+  'certificates.rejectedResign': 'Revisar y volver a firmar el término',
+  'volunteer.rejected.title': 'Tu término fue devuelto para volver a firmar',
+  'volunteer.rejected.description': 'Un responsable revisó tu Acuerdo de Voluntariado y lo devolvió. Por favor revisa tus datos y firma nuevamente abajo.',
+  'volunteer.rejected.reasonLabel': 'Motivo',
+  'volunteer.rejected.goToSign': 'Ir a la firma',
+  'profile.volunteerBanner.rejectedTitle': 'Acuerdo de Voluntariado devuelto',
+  'profile.volunteerBanner.rejectedDescription': 'Tu acuerdo de este año fue devuelto y debe volver a firmarse. Revisa tus datos y firma nuevamente.',
+  'profile.volunteerBanner.rejectedAction': 'Volver a firmar',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Gobernanza — Change Requests',

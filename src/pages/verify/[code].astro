@@ -79,6 +79,35 @@ const { code } = Astro.params;
       </div>`;
     }
 
+    // W3c-ii (B8): a rejected term was returned by a director/admin (the volunteer must re-sign).
+    // Rejection reuses revoked_at/revoked_reason on the DB side (3c-i).
+    if (data.rejected) {
+      return `<div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
+        <div class="text-center mb-4"><div class="text-3xl mb-2">\u21A9\uFE0F</div>
+          <p class="font-bold text-orange-800 dark:text-orange-300 text-lg">${t('verify.rejected', lang)}</p></div>
+        <div class="divide-y divide-[var(--border-subtle)]">
+          ${row(t('verify.type', lang), esc(data.title))}
+          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
+          ${data.revoked_at ? row(t('verify.rejectedAt', lang), `<span class="text-orange-600 dark:text-orange-400">${fmtDate(data.revoked_at, lang)}</span>`) : ''}
+        </div>
+      </div>`;
+    }
+    // Note: the rejection REASON (admin-authored governance rationale) is deliberately NOT shown on
+    // this anonymous verification surface (LGPD minimization). The member sees it on /certificates.
+
+    // W3c-ii (B8): a superseded term was replaced by a reissued one (no longer the current document).
+    if (data.superseded) {
+      return `<div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+        <div class="text-center mb-4"><div class="text-3xl mb-2">\u267B\uFE0F</div>
+          <p class="font-bold text-slate-700 dark:text-slate-300 text-lg">${t('verify.superseded', lang)}</p></div>
+        <div class="divide-y divide-[var(--border-subtle)]">
+          ${row(t('verify.type', lang), esc(data.title))}
+          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-3 text-center">${t('verify.supersededHint', lang)}</p>
+      </div>`;
+    }
+
     const rows = [
       row(t('verify.type', lang), esc(data.type || data.title)),
       row(t('verify.issuedTo', lang), `<span class="font-bold">${esc(data.member_name)}</span>`),
