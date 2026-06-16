@@ -548,7 +548,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         .eq('is_active', true)
         .order('day_of_week'),
       sb.from('tribes')
-        .select('id, name, name_i18n, notes, whatsapp_url, is_active')
+        .select('id, name, name_i18n, notes, is_active')
     ]);
 
     // Group slots by tribe
@@ -560,12 +560,10 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
     // Notes map
     const notesMap = {};
-    const waMap = {};
     const activeMap = {};
     const nameMap = {};
     (tribes || []).forEach((t) => {
       if (t.notes) notesMap[t.id] = t.notes;
-      if (t.whatsapp_url) waMap[t.id] = t.whatsapp_url;
       if (typeof t.is_active === 'boolean') activeMap[t.id] = t.is_active;
       const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       if (t.name) nameMap[t.id] = t.name_i18n?.[_sl] || t.name;
@@ -604,12 +602,10 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         scheduleHtml = '<span class="text-[var(--text-muted)] italic">A definir</span>';
       }
 
-      // Add WhatsApp link if available
-      const waLink = waMap[tid]
-        ? ` <a href="${waMap[tid]}" target="_blank" rel="noopener" class="text-emerald-600 no-underline text-[.75rem] ml-1" data-stop-propagation>💬 WhatsApp</a>`
-        : '';
-
-      el.innerHTML = `<strong>📅 Encontros:</strong> ${scheduleHtml}${waLink}`;
+      // WhatsApp group link is intentionally NOT exposed on the public homepage.
+      // It is served only to active, term-signed tribe members via the gated
+      // get_tribe_group_link RPC on the tribe page (governance: WS-A).
+      el.innerHTML = `<strong>📅 Encontros:</strong> ${scheduleHtml}`;
     }
   }
 
