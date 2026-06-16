@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice shipped; 3b-ii derivation/repoint pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker + 3b-i entry-chapter choice + 3b-ii members.chapter derivation/invariant U shipped; 3c B8 signature cycle pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) · 20260805000194_w3b_i_set_my_entry_chapter.sql (3b-i entry-chapter choice) · 20260805000195_w3b_ii_members_chapter_derivation.sql (3b-ii members.chapter derived + invariant U) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -284,3 +284,56 @@ is 3b-ii).
 read-site repoint, the `U_active_person_has_primary_chapter_affiliation` invariant in
 `check_schema_invariants()`, alumni/inactive handling (backfill was active-only), and the
 precise `community_profile_private` C5 detection.
+
+## Amendment — Wave 3b-ii (members.chapter derived + invariant U) shipped (2026-06-16, mig `20260805000195`)
+
+`members.chapter` becomes the **compat/derived value** promised by this ADR. It is now
+**maintained by triggers** from the two canonical sources — no per-read-site repoint needed:
+`COALESCE('PMI-' || entry_chapter_code, 'PMI-' || primary affiliation code, legacy chapter)`.
+
+- **Why no `get_chapter_*` repoint.** Because `members.chapter` is now kept in sync with the
+  canonical sources, every existing read-site (`get_chapter_dashboard`/`needs`/`kpis`,
+  `admin_list_members(p_chapter)`, `exec_chapter_webinar_metrics`, `/admin/chapter*.astro`,
+  the leaderboards) keeps filtering `WHERE m.chapter = p_chapter` and now automatically sees
+  the member's real entry/primary chapter. The entry-chapter choice (3b-i) and the worker (3a-iii)
+  propagate straight into those filters. Repoint-as-code was the alternative to a maintained
+  column; the maintained column is the lower-risk path and is what "compat/derived value" means.
+- **Event-specific triggers (NOT a blanket BEFORE override) — admin edit preserved.** Two admin
+  write-paths (`admin_update_member`, `admin_update_member_audited`) set `chapter = COALESCE(p_chapter, chapter)`.
+  A blanket `BEFORE UPDATE` recompute would silently override those edits whenever the member has a
+  primary affiliation. Instead:
+  - **T1** `derive_member_chapter_before()` — `BEFORE UPDATE OF entry_chapter_code ON members`: sets
+    `NEW.chapter` from the COALESCE. Fires only when `entry_chapter_code` is in the SET list, so a
+    chapter-only admin edit does **not** trigger it (the edit passes through).
+  - **T2** `recompute_member_chapter_from_affiliation()` — `AFTER INSERT OR DELETE OR UPDATE OF is_primary
+    ON member_chapter_affiliations`: recomputes the affected person's `members.chapter`, guarded by
+    `IS DISTINCT FROM` so it only writes (and cascades the other member triggers) when the derived value
+    actually changes. The UPDATE it issues sets `chapter`+`updated_at` only (never `entry_chapter_code`),
+    so T1 does not fire — no recursion, no double-compute.
+  - **Consequence (documented trade-off):** a direct admin free-text edit of `chapter` on a member who
+    has a primary affiliation can drift from that primary until the next entry-choice / affiliation
+    change re-derives it. Post-SSOT the canonical way to change a member's chapter is the entry-choice or
+    the affiliation, not the free-text column. Routing admin chapter edits through the affiliation is a
+    follow-up, not folded here.
+- **Backfill is a NO-OP.** The 3a backfill seeded affiliations *from* `members.chapter`, so
+  `'PMI-' || primary_code` already equals the current `members.chapter` for all 72 active registry
+  members. The one-time guarded recompute changed **0 rows** (verified live). Validated live (rolled-back
+  probe, prod untouched): primary change → chapter follows; entry choice → chapter follows (entry wins);
+  admin chapter-only edit → passes through unchanged.
+- **Alumni/inactive decision (resolves the 3a contract).** The legacy `members.chapter` stays
+  authoritative for non-active members: they have no affiliations and no entry choice, so the COALESCE
+  falls through to the existing value. No affiliation backfill for them; the worker fills any that re-sync.
+- **Invariant `U_active_person_has_primary_chapter_affiliation`** added to `check_schema_invariants()`
+  (CREATE OR REPLACE, signature unchanged): every **active, registry-chaptered** member's `person_id`
+  must have **exactly one** `is_primary=true` affiliation, else the COALESCE derivation breaks silently.
+  Non-registry chapters (`Outro`/`Externo`, e.g. the one `Outro` active member) are excluded — they are
+  legitimately unaffiliated and fall through to legacy. The partial unique index enforces *at most one*;
+  this enforces *exactly one*. Verified live: **0 violations** (total `check_schema_invariants()` = 0).
+
+**Still deferred (small follow-ups, not blockers):** adding `entry_chapter_code` to the
+`get_member_by_auth` SELECT (the FE already derives the entry chapter from `get_my_chapter_affiliations().is_entry`
+and `members.chapter` is now correct, so this is cosmetic); routing admin chapter edits through the
+affiliation/entry; and the precise `community_profile_private` C5 detection (lives on the drift-sensitive
+`get_my_application_status` surface). **Next: Wave 3c (B8)** — the in-platform signature cycle
+(`rejected`/`superseded` states, reject/reissue, `counter_sign` → `countersigned`, `check_my_tcv_readiness`
+ignoring rejected/superseded, admin panel + member screens + archival at engagement).

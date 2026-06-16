@@ -73,13 +73,13 @@ test('R extension: sanity DO asserts R=0 post-apply', () => {
 });
 
 // ── DB-gated ───────────────────────────────────────────────────────────────────
-test('DB: check_schema_invariants reports R=0 and 26 invariants, 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: check_schema_invariants reports R=0 and 27 invariants, 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
   assert.ok(Array.isArray(data), 'returns rows');
-  // 23 through p277; #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25; #483 (mig 119) added B2_current_cycle_active_terminal_status → 26.
-  assert.strictEqual(data.length, 26, `expected 26 invariants, got ${data.length}`);
+  // 23 through p277; #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25; #483 (mig 119) added B2_current_cycle_active_terminal_status → 26; #740 Wave 3b-ii (mig 195) added U_active_person_has_primary_chapter_affiliation → 27.
+  assert.strictEqual(data.length, 27, `expected 27 invariants, got ${data.length}`);
   const r = data.find(x => x.invariant_name === 'R_approved_application_has_member');
   assert.ok(r, 'R present');
   assert.strictEqual(r.violation_count, 0, 'R must have 0 violations (alternate-email match honored)');
