@@ -1,0 +1,8 @@
+---
+// Locale wrapper for the claim-confirm page. Preserve the email token across the redirect.
+const token = Astro.url.searchParams.get('token');
+const q = new URLSearchParams();
+if (token) q.set('token', token);
+q.set('lang', 'es-LATAM');
+return Astro.redirect('/claim?' + q.toString());
+---

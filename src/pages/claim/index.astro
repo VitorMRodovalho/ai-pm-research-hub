@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const CLAIM_I18N = {
+  confirmTitle: t('claim.confirmTitle', lang),
+  confirmLoading: t('claim.confirmLoading', lang),
+  confirmSuccess: t('claim.confirmSuccess', lang),
+  confirmExpired: t('claim.confirmExpired', lang),
+  confirmInvalid: t('claim.confirmInvalid', lang),
+  confirmAlreadyUsed: t('claim.confirmAlreadyUsed', lang),
+  confirmAlreadyClaimed: t('claim.confirmAlreadyClaimed', lang),
+  error: t('claim.error', lang),
+  goProfile: t('claim.goProfile', lang),
+  back: t('claim.back', lang),
+};
+---
+<BaseLayout title={CLAIM_I18N.confirmTitle} activePage="profile" lang={lang}>
+  <Toast />
+  <div class="max-w-xl mx-auto py-12 px-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-8 shadow-sm">
+      <h1 class="text-xl font-semibold text-[var(--text-primary)] mb-6">{CLAIM_I18N.confirmTitle}</h1>
+      <div id="claim-confirm-status" class="text-[var(--text-secondary)]">
+        <span class="inline-block animate-pulse">⏳ {CLAIM_I18N.confirmLoading}</span>
+      </div>
+      <div id="claim-confirm-actions" class="mt-8 hidden">
+        <a href={`${langPrefix}/profile`} class="inline-block px-4 py-2 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold no-underline hover:opacity-90">
+          {CLAIM_I18N.goProfile}
+        </a>
+      </div>
+      <div class="mt-6">
+        <a href={`${langPrefix}/`} class="text-sm text-[var(--brand-primary)] hover:underline">← {CLAIM_I18N.back}</a>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ CLAIM_I18N }}>
+    window.__CLAIM_CONFIRM_I18N = CLAIM_I18N;
+  </script>
+
+  <script>
+    const I18N = ((window as any).__CLAIM_CONFIRM_I18N || {}) as Record<string, string>;
+
+    function setStatus(html: string, kind: 'success' | 'error' | 'info' = 'info') {
+      const el = document.getElementById('claim-confirm-status');
+      if (!el) return;
+      el.style.color = kind === 'success' ? 'var(--success-text, #15803d)'
+        : kind === 'error' ? 'var(--danger-text, #b91c1c)'
+        : 'var(--text-secondary)';
+      el.innerHTML = html;
+    }
+
+    async function getSb(): Promise<any> {
+      let sb = (window as any).navGetSb?.();
+      if (sb) return sb;
+      return await new Promise((resolve) => {
+        let tries = 0;
+        const id = setInterval(() => {
+          sb = (window as any).navGetSb?.();
+          tries++;
+          if (sb || tries > 50) { clearInterval(id); resolve(sb); }
+        }, 100);
+      });
+    }
+
+    async function run() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token')?.trim();
+      if (!token) { setStatus(`❌ ${I18N['confirmInvalid']}`, 'error'); return; }
+
+      // Token IS the credential — confirm works without a session (the link was
+      // delivered only to the member's inbox). anon-capable RPC.
+      const sb = await getSb();
+      if (!sb) { setStatus(`❌ ${I18N['error']}`, 'error'); return; }
+
+      const { data, error } = await sb.rpc('confirm_account_claim', { p_token: token });
+      if (error) { setStatus(`❌ ${I18N['error']}`, 'error'); return; }
+
+      if (data?.success) {
+        setStatus(`✓ ${I18N['confirmSuccess']}`, 'success');
+        document.getElementById('claim-confirm-actions')?.classList.remove('hidden');
+        return;
+      }
+      const reason = (data?.reason || '').toString();
+      const code = reason === 'expired' ? 'confirmExpired'
+        : reason === 'already_used' ? 'confirmAlreadyUsed'
+        : reason === 'already_claimed' ? 'confirmAlreadyClaimed'
+        : 'confirmInvalid';
+      setStatus(`❌ ${I18N[code]}`, 'error');
+    }
+
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run);
+  </script>
+</BaseLayout>

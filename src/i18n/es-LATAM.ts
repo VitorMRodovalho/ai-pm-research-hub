@@ -3999,6 +3999,30 @@ const esLATAM: Record<string, string> = {
   'guest.limitedAccess': 'Tienes acceso limitado. Regístrate como miembro para participar.',
   'guest.navNotFound': 'Cuenta no registrada',
 
+  // ── WS-B: self-service account claim (login email ≠ VEP email) ──
+  'claim.cta': 'Vincular mi cuenta',
+  'claim.startTitle': 'Vincular tu cuenta',
+  'claim.startIntro': 'Si fuiste aprobado(a) pero la plataforma muestra "Cuenta no registrada", probablemente iniciaste sesión con un correo distinto al que usaste en la postulación (VEP). Ingresa el correo de la postulación o tu PMI ID — enviaremos un enlace de verificación al correo registrado de tu cuenta para vincularla.',
+  'claim.identifierLabel': 'Correo de la postulación (VEP) o tu PMI ID',
+  'claim.identifierPlaceholder': 'tu@ejemplo.com o 1234567',
+  'claim.submit': 'Enviar verificación',
+  'claim.sending': 'Enviando...',
+  'claim.alreadyLinked': 'Tu cuenta ya está vinculada. Actualiza la página o inicia sesión de nuevo.',
+  'claim.rateLimited': 'Demasiados intentos. Inténtalo de nuevo en aproximadamente 1 hora.',
+  'claim.invalidIdentifier': 'Ingresa el correo de la postulación o tu PMI ID.',
+  'claim.notAuthenticated': 'Inicia sesión primero y luego vuelve para vincular tu cuenta.',
+  'claim.error': 'Algo salió mal. Inténtalo de nuevo en unos momentos.',
+  'claim.fallbackAdmin': '¿No recibiste el correo o ya no tienes acceso a él? Contacta al gestor: nucleoia@pmigo.org.br',
+  'claim.back': 'Volver al inicio',
+  'claim.confirmTitle': 'Vincular cuenta',
+  'claim.confirmLoading': 'Confirmando el vínculo...',
+  'claim.confirmSuccess': '¡Cuenta vinculada con éxito! Ahora puedes acceder a tu perfil y a la jornada.',
+  'claim.confirmExpired': 'Este enlace expiró. Solicita uno nuevo en "Vincular mi cuenta".',
+  'claim.confirmInvalid': 'Enlace inválido o incompleto.',
+  'claim.confirmAlreadyUsed': 'Este enlace ya fue utilizado.',
+  'claim.confirmAlreadyClaimed': 'Esta cuenta ya fue vinculada a otro acceso. Si no fuiste tú, contacta al gestor.',
+  'claim.goProfile': 'Ir a mi perfil',
+
   // ── Component labels (B9 i18n extraction) ──
 
   // Tribe Dashboard
