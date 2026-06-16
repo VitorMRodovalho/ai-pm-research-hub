@@ -98,9 +98,11 @@ export function getContractingCount(chapters: Chapter[]): number {
  * Fallback list — used when RPC is unavailable (e.g., build-time SSG without
  * Supabase reachable, network failure, or first render before script ran).
  *
- * Mirrors the 5 chapters seeded in chapter_registry as of p83 (CE/DF/GO/MG/RS).
- * Will need updating if/when Ivan Lourenço (PMI-GO Pres) confirms expansion to 15
- * and the new chapters are seeded into the registry.
+ * Mirrors the 13 BR chapters seeded in chapter_registry as of Wave 3a (#740 /
+ * ADR-0104) — grounded against the live registry 2026-06-16. GO is the only
+ * contracting chapter. The RPC (get_active_chapters) is the source of truth;
+ * this list only covers the RPC-unavailable case, so logos beyond the original
+ * five are left null (the RPC returns the real logo_url).
  */
 function getFallbackChapters(): Chapter[] {
   return [
@@ -109,5 +111,13 @@ function getFallbackChapters(): Chapter[] {
     { chapter_code: 'DF', display_code: 'PMI-DF', legal_name: 'Seção Distrito Federal — Brasil do Project Management Institute',              state: 'Distrito Federal',  country: 'BR', logo_url: '/assets/logos/pmidf.png', is_contracting: false, display_order: 3 },
     { chapter_code: 'MG', display_code: 'PMI-MG', legal_name: 'Project Management Institute Brazil Minas Gerais Chapter',                     state: 'Minas Gerais',      country: 'BR', logo_url: '/assets/logos/pmimg.png', is_contracting: false, display_order: 4 },
     { chapter_code: 'RS', display_code: 'PMI-RS', legal_name: 'Seção Rio Grande do Sul — Brasil do Project Management Institute',             state: 'Rio Grande do Sul', country: 'BR', logo_url: '/assets/logos/pmirs.png', is_contracting: false, display_order: 5 },
+    { chapter_code: 'PE', display_code: 'PMI-PE', legal_name: 'PMI Pernambuco, Brazil Chapter',                                               state: 'Pernambuco',        country: 'BR', logo_url: null,                     is_contracting: false, display_order: 6 },
+    { chapter_code: 'PR', display_code: 'PMI-PR', legal_name: 'PMI Paraná, Brazil Chapter',                                                   state: 'Paraná',            country: 'BR', logo_url: null,                     is_contracting: false, display_order: 7 },
+    { chapter_code: 'RJ', display_code: 'PMI-RJ', legal_name: 'PMI Rio de Janeiro, Brazil Chapter',                                           state: 'Rio de Janeiro',    country: 'BR', logo_url: null,                     is_contracting: false, display_order: 8 },
+    { chapter_code: 'SP', display_code: 'PMI-SP', legal_name: 'PMI São Paulo, Brazil Chapter',                                                state: 'São Paulo',         country: 'BR', logo_url: null,                     is_contracting: false, display_order: 9 },
+    { chapter_code: 'BA', display_code: 'PMI-BA', legal_name: 'PMI Bahia, Brazil Chapter',                                                    state: 'Bahia',             country: 'BR', logo_url: null,                     is_contracting: false, display_order: 10 },
+    { chapter_code: 'ES', display_code: 'PMI-ES', legal_name: 'PMI Espírito Santo, Brazil Chapter',                                           state: 'Espírito Santo',    country: 'BR', logo_url: null,                     is_contracting: false, display_order: 11 },
+    { chapter_code: 'SC', display_code: 'PMI-SC', legal_name: 'PMI Santa Catarina, Brazil Chapter',                                           state: 'Santa Catarina',    country: 'BR', logo_url: null,                     is_contracting: false, display_order: 12 },
+    { chapter_code: 'SE', display_code: 'PMI-SE', legal_name: 'PMI Sergipe, Brazil Chapter',                                                  state: 'Sergipe',           country: 'BR', logo_url: null,                     is_contracting: false, display_order: 13 },
   ];
 }
