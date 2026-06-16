@@ -4004,6 +4004,30 @@ const ptBR: Record<string, string> = {
   'guest.limitedAccess': 'Você tem acesso limitado. Cadastre-se como membro para participar.',
   'guest.navNotFound': 'Conta não cadastrada',
 
+  // ── WS-B: self-service account claim (login email ≠ VEP email) ──
+  'claim.cta': 'Vincular minha conta',
+  'claim.startTitle': 'Vincular sua conta',
+  'claim.startIntro': 'Se você foi aprovado(a) mas a plataforma mostra "Conta não cadastrada", provavelmente entrou com um e-mail diferente do que usou na candidatura (VEP). Informe o e-mail da candidatura ou seu PMI ID — enviaremos um link de verificação ao e-mail cadastrado da sua conta para vinculá-la.',
+  'claim.identifierLabel': 'E-mail da candidatura (VEP) ou seu PMI ID',
+  'claim.identifierPlaceholder': 'voce@exemplo.com ou 1234567',
+  'claim.submit': 'Enviar verificação',
+  'claim.sending': 'Enviando...',
+  'claim.alreadyLinked': 'Sua conta já está vinculada. Atualize a página ou faça login novamente.',
+  'claim.rateLimited': 'Muitas tentativas. Tente novamente em cerca de 1 hora.',
+  'claim.invalidIdentifier': 'Informe o e-mail da candidatura ou seu PMI ID.',
+  'claim.notAuthenticated': 'Faça login primeiro e depois volte para vincular sua conta.',
+  'claim.error': 'Algo deu errado. Tente novamente em instantes.',
+  'claim.fallbackAdmin': 'Não recebeu o e-mail ou não tem mais acesso a ele? Fale com o gestor: nucleoia@pmigo.org.br',
+  'claim.back': 'Voltar ao início',
+  'claim.confirmTitle': 'Vincular conta',
+  'claim.confirmLoading': 'Confirmando o vínculo...',
+  'claim.confirmSuccess': 'Conta vinculada com sucesso! Agora você já pode acessar seu perfil e a jornada.',
+  'claim.confirmExpired': 'Este link expirou. Solicite um novo na opção "Vincular minha conta".',
+  'claim.confirmInvalid': 'Link inválido ou incompleto.',
+  'claim.confirmAlreadyUsed': 'Este link já foi utilizado.',
+  'claim.confirmAlreadyClaimed': 'Esta conta já foi vinculada a outro acesso. Se não foi você, fale com o gestor.',
+  'claim.goProfile': 'Acessar meu perfil',
+
   // ── Component labels (B9 i18n extraction) ──
 
   // Tribe Dashboard
