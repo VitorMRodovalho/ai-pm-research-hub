@@ -77,6 +77,12 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // clears designations on terminal status (so a designation-derived value would wipe an alumni founder).
   // Seeded once from cycles @> {pilot-2024} + founder designation; thereafter set by hand. No derivation source.
   ['members.is_founder', 'Durable curated founder/2024-pilot honor flag for the public Fundadores wall (#482-followup); admin-set, no derivation source'],
+  // Member-chosen chapter of entry — single GOVERNANCE value (Wave 3a #740, ADR-0104).
+  // FK chapter_registry; BR-only enforced by set_my_entry_chapter RPC (Wave 3b). NULL until
+  // the member chooses. Deliberately NOT a cache: it is a member CHOICE, not derived from
+  // members.chapter or member_chapter_affiliations (those record affiliation FACT, not the
+  // governance choice). members.chapter stays the legacy/compat value until repointed.
+  ['members.entry_chapter_code', 'Member-chosen chapter of entry (Wave 3a #740, ADR-0104); governance choice, not derived'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.
