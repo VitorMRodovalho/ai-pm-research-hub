@@ -293,7 +293,8 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(tribe.includes('tribeData.is_active === false'), true);
   // GC-082: admin_list_tribes, create-tribe, toggle-tribe-active were in admin/index.astro monolith (now redirect)
   // Verify they exist in the migration RPCs instead
-  assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active") && nav.includes('workstream_type'), true);
+  // WS-A governance: whatsapp_url removed from the anon-key tribes select (served only via gated RPC).
+  assert.equal(nav.includes("select('id, name, quadrant, quadrant_name, is_active") && nav.includes('workstream_type'), true);
   assert.equal(tribe.includes('id="tribe-context-switch"'), true);
   assert.equal(workspace.includes("sb.from('tribes').select('id, name, name_i18n, is_active').order('id')"), true);
   // ADR-0012 Part 4 (2026-04-23): artifacts.astro virou redirect 301 → /publications.
@@ -301,7 +302,8 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(artifacts.includes("Astro.redirect") && artifacts.includes("/publications"), true);
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
-  assert.equal(tribesSection.includes(".select('id, name, name_i18n, notes, whatsapp_url, is_active')"), true);
+  // WS-A governance: whatsapp_url removed from the anon-key tribes select (served only via gated RPC).
+  assert.equal(tribesSection.includes(".select('id, name, name_i18n, notes, is_active')"), true);
   assert.equal(tribesSection.includes("if (card && activeMap[tid] === false)"), true);
   assert.equal(tribesSection.includes("if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);"), true);
   assert.equal(catalog.includes('export function getTribeColor'), true);
