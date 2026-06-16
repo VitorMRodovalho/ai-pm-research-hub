@@ -3999,6 +3999,30 @@ const enUS: Record<string, string> = {
   'guest.limitedAccess': 'You have limited access. Register as a member to participate.',
   'guest.navNotFound': 'Account not registered',
 
+  // ── WS-B: self-service account claim (login email ≠ VEP email) ──
+  'claim.cta': 'Link my account',
+  'claim.startTitle': 'Link your account',
+  'claim.startIntro': 'If you were approved but the platform shows "Account not registered", you likely signed in with an email different from the one you applied with (VEP). Enter your application email or your PMI ID — we will send a verification link to your account\'s registered email to link it.',
+  'claim.identifierLabel': 'Application email (VEP) or your PMI ID',
+  'claim.identifierPlaceholder': 'you@example.com or 1234567',
+  'claim.submit': 'Send verification',
+  'claim.sending': 'Sending...',
+  'claim.alreadyLinked': 'Your account is already linked. Refresh the page or sign in again.',
+  'claim.rateLimited': 'Too many attempts. Please try again in about 1 hour.',
+  'claim.invalidIdentifier': 'Enter your application email or your PMI ID.',
+  'claim.notAuthenticated': 'Sign in first, then come back to link your account.',
+  'claim.error': 'Something went wrong. Please try again shortly.',
+  'claim.fallbackAdmin': 'Didn\'t get the email, or no longer have access to it? Contact the manager: nucleoia@pmigo.org.br',
+  'claim.back': 'Back to home',
+  'claim.confirmTitle': 'Link account',
+  'claim.confirmLoading': 'Confirming the link...',
+  'claim.confirmSuccess': 'Account linked successfully! You can now access your profile and the journey.',
+  'claim.confirmExpired': 'This link has expired. Request a new one via "Link my account".',
+  'claim.confirmInvalid': 'Invalid or incomplete link.',
+  'claim.confirmAlreadyUsed': 'This link has already been used.',
+  'claim.confirmAlreadyClaimed': 'This account has already been linked to another login. If this wasn\'t you, contact the manager.',
+  'claim.goProfile': 'Go to my profile',
+
   // ── Component labels (B9 i18n extraction) ──
 
   // Tribe Dashboard

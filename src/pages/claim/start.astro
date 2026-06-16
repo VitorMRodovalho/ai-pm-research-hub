@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const CLAIM_I18N = {
+  startTitle: t('claim.startTitle', lang),
+  startIntro: t('claim.startIntro', lang),
+  identifierLabel: t('claim.identifierLabel', lang),
+  identifierPlaceholder: t('claim.identifierPlaceholder', lang),
+  submit: t('claim.submit', lang),
+  sending: t('claim.sending', lang),
+  alreadyLinked: t('claim.alreadyLinked', lang),
+  rateLimited: t('claim.rateLimited', lang),
+  invalidIdentifier: t('claim.invalidIdentifier', lang),
+  notAuthenticated: t('claim.notAuthenticated', lang),
+  error: t('claim.error', lang),
+  fallbackAdmin: t('claim.fallbackAdmin', lang),
+  back: t('claim.back', lang),
+};
+---
+<BaseLayout title={CLAIM_I18N.startTitle} activePage="profile" lang={lang}>
+  <Toast />
+  <div class="max-w-xl mx-auto py-12 px-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-8 shadow-sm">
+      <h1 class="text-xl font-semibold text-[var(--text-primary)] mb-3">{CLAIM_I18N.startTitle}</h1>
+      <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{CLAIM_I18N.startIntro}</p>
+
+      <form id="claim-form" class="space-y-4">
+        <label class="block">
+          <span class="block text-sm font-medium text-[var(--text-primary)] mb-1">{CLAIM_I18N.identifierLabel}</span>
+          <input id="claim-identifier" type="text" required autocomplete="email"
+            placeholder={CLAIM_I18N.identifierPlaceholder}
+            class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-input,#fff)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]" />
+        </label>
+        <button id="claim-submit" type="submit"
+          class="w-full px-4 py-2.5 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50">
+          {CLAIM_I18N.submit}
+        </button>
+      </form>
+
+      <div id="claim-status" class="mt-5 text-sm text-[var(--text-secondary)] hidden"></div>
+
+      <p class="text-xs text-[var(--text-muted)] mt-6 leading-relaxed">{CLAIM_I18N.fallbackAdmin}</p>
+
+      <div class="mt-6">
+        <a href={`${langPrefix}/`} class="text-sm text-[var(--brand-primary)] hover:underline">← {CLAIM_I18N.back}</a>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ CLAIM_I18N }}>
+    window.__CLAIM_I18N = CLAIM_I18N;
+  </script>
+
+  <script>
+    const I18N = ((window as any).__CLAIM_I18N || {}) as Record<string, string>;
+
+    function setStatus(html: string, kind: 'success' | 'error' | 'info' = 'info') {
+      const el = document.getElementById('claim-status');
+      if (!el) return;
+      el.classList.remove('hidden');
+      el.style.color = kind === 'success' ? 'var(--success-text, #15803d)'
+        : kind === 'error' ? 'var(--danger-text, #b91c1c)'
+        : 'var(--text-secondary)';
+      el.innerHTML = html;
+    }
+
+    async function getSb(): Promise<any> {
+      let sb = (window as any).navGetSb?.();
+      if (sb) return sb;
+      return await new Promise((resolve) => {
+        let tries = 0;
+        const id = setInterval(() => {
+          sb = (window as any).navGetSb?.();
+          tries++;
+          if (sb || tries > 50) { clearInterval(id); resolve(sb); }
+        }, 100);
+      });
+    }
+
+    const form = document.getElementById('claim-form') as HTMLFormElement | null;
+    const btn = document.getElementById('claim-submit') as HTMLButtonElement | null;
+    const input = document.getElementById('claim-identifier') as HTMLInputElement | null;
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const identifier = (input?.value || '').trim();
+      if (!identifier) { setStatus(`❌ ${I18N['invalidIdentifier']}`, 'error'); return; }
+      if (btn) { btn.disabled = true; btn.textContent = I18N['sending']; }
+
+      const sb = await getSb();
+      const { data: { session } = { session: null } } = sb ? await sb.auth.getSession() : { data: { session: null } } as any;
+      if (!sb || !session) {
+        setStatus(`⚠️ ${I18N['notAuthenticated']}`, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = I18N['submit']; }
+        return;
+      }
+
+      const { data, error } = await sb.rpc('request_account_claim', { p_identifier: identifier });
+      if (btn) { btn.disabled = false; btn.textContent = I18N['submit']; }
+
+      if (error) { setStatus(`❌ ${I18N['error']}`, 'error'); return; }
+      if (data?.success) {
+        setStatus(`✓ ${data.message || ''}`, 'success');
+        if (form) form.style.display = 'none';
+        return;
+      }
+      const reason = (data?.reason || '').toString();
+      const code = reason === 'already_linked' ? 'alreadyLinked'
+        : reason === 'rate_limited' ? 'rateLimited'
+        : reason === 'not_authenticated' ? 'notAuthenticated'
+        : reason === 'invalid_identifier' ? 'invalidIdentifier'
+        : 'error';
+      setStatus(`❌ ${I18N[code]}`, 'error');
+    });
+  </script>
+</BaseLayout>
