@@ -7,13 +7,14 @@ import { existsSync, readFileSync } from 'node:fs';
 // column must not be in their `.from('tribes').select(...)` — neither by name nor via
 // `select('*')`. The link is served only via the gated get_tribe_group_link RPC (A1).
 //
-// Scope: the genuinely public surfaces (PR-A0). The tribe page (tribe/[id].astro) is
-// rewired to the gated RPC in PR-A1 and locked there.
+// Scope: the public surfaces (PR-A0) plus the tribe page (PR-A1), which was rewired
+// from select('*') to explicit columns and serves the group link via the gated RPC.
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
 const ANON_SURFACES = [
   'src/components/sections/TribesSection.astro',
   'src/components/nav/Nav.astro',
+  'src/pages/tribe/[id].astro',
 ];
 
 // Match `.from('tribes')` followed (within a small window) by `.select('...')`.
