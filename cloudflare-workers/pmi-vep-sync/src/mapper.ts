@@ -115,7 +115,11 @@ function parseChapterFromMembership(ms: string): string | null {
     'Santa Catarina': 'PMI-SC',
     'Bahia': 'PMI-BA',
     'Espírito Santo': 'PMI-ES',
-    'Espirito Santo': 'PMI-ES'
+    'Espirito Santo': 'PMI-ES',
+    // Wave 3a-iii: Sergipe is in chapter_registry (PMI-SE) and appears in live
+    // pmi_memberships ("Sergipe, Brazil Chapter") but was missing here, so the FE
+    // map (3a-0) had it while the worker did not. Added for registry parity.
+    'Sergipe': 'PMI-SE'
   };
 
   for (const [state, chapter] of Object.entries(STATE_TO_CHAPTER)) {
@@ -123,6 +127,27 @@ function parseChapterFromMembership(ms: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Wave 3a-iii (#740 / ADR-0104) — map a SINGLE PMI membership name (e.g.
+ * "Minas Gerais, Brazil Chapter") to a bare chapter_registry code ("MG").
+ *
+ * Returns null for anything that is not an eligible BR chapter:
+ *   - non-BR ("PMI Global", "Washington, DC Chapter", "Angola Chapter") — the FACT
+ *     table's FK targets chapter_registry, which only holds BR chapters; entry is
+ *     BR-only (ADR-0104). Non-BR affiliations are intentionally not tracked here.
+ *   - BR states absent from STATE_TO_CHAPTER (and therefore from chapter_registry).
+ *
+ * The ", Brazil Chapter" suffix gate keeps a stray "<state>" substring inside a
+ * non-BR name (theoretical) from matching. parseChapterFromMembership yields
+ * "PMI-XX"; we strip the prefix to the registry code the RPC expects.
+ */
+export function parseBrChapterCode(name: string | null | undefined): string | null {
+  if (!name) return null;
+  if (!/,\s*Brazil Chapter\s*$/.test(name)) return null;
+  const pmiCode = parseChapterFromMembership(name); // "PMI-MG" | null
+  return pmiCode ? pmiCode.replace(/^PMI-/, '') : null;
 }
 
 /**
