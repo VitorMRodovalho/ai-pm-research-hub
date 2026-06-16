@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation shipped; C3 + worker + 3b FE pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 shipped; worker + 3b FE pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -161,3 +161,38 @@ own PR (3a-ii, legal-sensitive); the FE entry-chapter choice + `get_chapter_*` r
   Supabase DB, `information_schema.role_table_grants` may still *list* anon/authenticated
   grants (default-privilege artifacts) even though the effective privilege check denies
   access — trust the `SET ROLE` probe, not the catalog view.
+
+## Amendment — Wave 3a-ii (C3) shipped (2026-06-16, mig `20260805000191`)
+
+`sign_volunteer_agreement` now makes the contracting party + signatory **explicit**,
+removing the dependency on the `'GO'` vs `'PMI-GO'` format accident. Reviewed by
+**legal-counsel** (parecer 2026-06-16); only future certificates are affected (existing
+`content_snapshot` + `signature_hash` are immutable — never retroactively rewritten).
+
+- **R1 — contracting party = always the contracting chapter.** The brittle first lookup
+  (`chapter_registry.chapter_code = v_member.chapter`, which never matched) is removed;
+  the contracting party (`chapter_cnpj` / `chapter_name`) is selected directly
+  `WHERE is_contracting_chapter = true` (PMI-GO). Emergency hardcoded fallback kept but
+  flagged.
+- **R2 — issuer = contracting-chapter board (Opção A).** `issued_by` is now a board
+  member of the contracting chapter (`chapter = 'PMI-' || contracting_code`), falling back
+  to a manager — so the entity that contracts and the representative who signs are the same
+  (CC/2002 arts. 115-120). Opção B (member-chapter board as delegate) was rejected: no
+  delegation instrument exists in the cooperation agreements. `content_snapshot` gains
+  `contracting_chapter` (PMI-GO), `issuer_chapter`, `issuer_authority_basis`
+  (`contracting_chapter_board` | `manager_fallback`); the volunteer's chapter stays as
+  `member_chapter` (indicator).
+- **R3 — audit observability.** `admin_audit_log` records `chapter_cnpj_source`
+  (`chapter_registry` | `hardcoded_emergency_fallback`) + `contracting_chapter`.
+- **counter_sign_certificate — UNCHANGED.** It already gates a `chapter_board`
+  counter-signer by `content_snapshot->>'contracting_chapter'` (with a member-chapter
+  fallback). By now WRITING `contracting_chapter = PMI-GO` at signing, that gate correctly
+  requires a PMI-GO board member (or any `manage_member` holder). Verified live: contracting
+  party resolves to PMI-GO (CNPJ 06.065.645/0001-99); 6 PMI-GO board members exist for the
+  issuer.
+- **R4 — frontend confirmed.** `src/lib/certificates/pdf.ts` renders the term header from
+  `content_snapshot.chapter_name`/`chapter_cnpj` (the contracting party), not the member's
+  profile chapter — so the displayed and signed contracting party match. No FE change.
+- **Red flag (carry):** C3 MUST precede any normalization of the `members.chapter` format
+  (`'PMI-GO'` → `'GO'`); otherwise the removed lookup would have started matching and
+  silently changed behavior.
