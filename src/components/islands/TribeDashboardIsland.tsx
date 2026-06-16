@@ -41,6 +41,9 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('members');
   const [sortBy, setSortBy] = useState<'xp' | 'attendance' | 'name'>('xp');
+  // WS-A3: the tribe WhatsApp group link is no longer in the dashboard payload; it is
+  // fetched via the term-gated get_tribe_group_link RPC (active + term + in-tribe/admin).
+  const [waLink, setWaLink] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -68,6 +71,21 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
     };
     load();
   }, [tribeId, initiativeId]);
+
+  // Fetch the gated WhatsApp group link once the tribe id is known.
+  useEffect(() => {
+    const tid = data?.tribe?.id;
+    if (!tid) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    let cancelled = false;
+    sb.rpc('get_tribe_group_link', { p_tribe_id: tid })
+      .then(({ data: r }: any) => {
+        if (!cancelled && r?.success && r?.whatsapp_url) setWaLink(r.whatsapp_url);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [data]);
 
   if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.tribe.loading', 'Loading tribe dashboard...')}</div>;
   if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
@@ -110,8 +128,8 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
             </p>
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-[var(--text-secondary)]">
               {meetingLabel && <span>📅 {meetingLabel}</span>}
-              {tribe.whatsapp_url && (
-                <a href={tribe.whatsapp_url} target="_blank" rel="noopener"
+              {waLink && (
+                <a href={waLink} target="_blank" rel="noopener"
                    className="text-teal hover:underline">WhatsApp ↗</a>
               )}
               {tribe.drive_url && (

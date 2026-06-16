@@ -111,7 +111,9 @@ test('exec_tribe_dashboard returns tribe info', () => {
   assert.ok(/quadrant_name/i.test(body), 'Must include quadrant_name');
   assert.ok(/leader/i.test(body), 'Must include leader info');
   assert.ok(/meeting_slots/i.test(body), 'Must include meeting_slots');
-  assert.ok(/whatsapp_url/i.test(body), 'Must include whatsapp_url');
+  // WS-A3 governance: the WhatsApp group link is no longer returned here — it is served
+  // only by the term-gated get_tribe_group_link RPC. drive_url stays (gated by membership).
+  assert.ok(!/whatsapp_url/i.test(body), 'Must NOT include whatsapp_url (served via get_tribe_group_link)');
   assert.ok(/drive_url/i.test(body), 'Must include drive_url');
 });
 
