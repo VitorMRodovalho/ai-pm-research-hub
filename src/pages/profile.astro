@@ -43,7 +43,15 @@ const PROFILE_I18N = {
   fieldPmiId: t('profile.field.pmiId', lang),
   fieldLinkedin: t('profile.field.linkedin', lang),
   fieldPhone: t('profile.field.phone', lang),
+  fieldAddress: t('profile.field.address', lang),
+  fieldCity: t('profile.field.city', lang),
+  fieldState: t('profile.field.state', lang),
+  fieldCountry: t('profile.field.country', lang),
+  fieldBirthDate: t('profile.field.birthDate', lang),
   fieldCredlyUrl: t('profile.field.credlyUrl', lang),
+  vaSignAction: t('profile.volunteerBanner.action', lang),
+  vaMissingLabel: t('profile.volunteerBanner.missingLabel', lang),
+  vaFillAction: t('profile.volunteerBanner.fillAction', lang),
   fieldSecondaryEmail: t('profile.field.secondaryEmail', lang),
   fieldCycleLink: t('profile.field.cycleLink', lang),
   fieldTrailCourse: t('profile.field.trailCourse', lang),
@@ -200,7 +208,7 @@ const PROFILE_I18N = {
           <div class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
           <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5" id="va-banner-desc">{t('profile.volunteerBanner.description', lang)}</p>
           <div id="va-missing-fields" class="hidden mt-2 text-[11px] text-amber-800 dark:text-amber-300">
-            <span class="font-semibold">Campos obrigatórios pendentes: </span>
+            <span class="font-semibold">{t('profile.volunteerBanner.missingLabel', lang)}</span>
             <span id="va-missing-list"></span>
           </div>
         </div>
@@ -375,6 +383,10 @@ const PROFILE_I18N = {
 
   async function loadExtras(sb: any) {
     if (!currentMember?.id) return;
+    // B1: kick off the volunteer-agreement readiness check immediately, in
+    // parallel with the heavy dashboard loads below (not awaited), so the banner
+    // CTA resolves fast and deterministically rather than last.
+    refreshVolunteerAgreementCTA(sb);
     // Load cycle history
     try {
       const { data: hist } = await sb.from('member_cycle_history')
@@ -557,44 +569,62 @@ const PROFILE_I18N = {
       weekData = null;
     }
 
-    // Check TCV readiness: signed? if not, what's missing?
+  }
+
+  // B1 — Volunteer-agreement CTA. Resolve readiness and decide the button's
+  // text/destination BEFORE revealing the banner, so the user never sees (or
+  // clicks) a misleading "Sign" that lands on a missing-fields dead-end. Fired
+  // early in loadExtras, in parallel with the heavy dashboard loads — not buried
+  // behind them — so it resolves fast even on slow (3G) links.
+  async function refreshVolunteerAgreementCTA(sb: any) {
+    let readiness: any = null;
     try {
-      const { data: readiness } = await sb.rpc('check_my_tcv_readiness');
-      if (readiness && readiness.applicable && !readiness.signed) {
-        const banner = document.getElementById('va-banner');
-        if (banner) banner.classList.remove('hidden');
-        const missing = (readiness.missing_fields || []) as string[];
-        if (missing.length > 0) {
-          // Block action button + show missing fields list
+      const res = await sb.rpc('check_my_tcv_readiness');
+      readiness = res?.data || null;
+    } catch (_) { return; /* RPC failed → leave banner hidden */ }
+    if (!readiness || !readiness.applicable || readiness.signed) return;
+
+    const banner = document.getElementById('va-banner');
+    const btn = document.getElementById('va-action-btn') as HTMLAnchorElement | null;
+    const missingList = document.getElementById('va-missing-fields');
+    const missingSpan = document.getElementById('va-missing-list');
+    const missing = Array.isArray(readiness.missing_fields) ? (readiness.missing_fields as string[]) : [];
+    // Trust the RPC's explicit flag; fall back to the field list for older shapes.
+    const readyToSign = readiness.ready_to_sign === true || missing.length === 0;
+
+    if (btn) {
+      if (readyToSign) {
+        // Profile complete → straight to the in-platform signing flow.
+        btn.textContent = PROFILE_I18N.vaSignAction;
+        btn.href = `${(window as any).__LANG_PREFIX || ''}/volunteer-agreement`;
+        btn.onclick = null;
+        missingList?.classList.add('hidden');
+      } else {
+        // Fields missing → CTA points at the fields, never the sign dead-end.
+        btn.textContent = PROFILE_I18N.vaFillAction;
+        btn.href = '#personal-data';
+        btn.onclick = (e: MouseEvent) => {
+          e.preventDefault();
+          document.getElementById('self-address')?.focus();
+          document.getElementById('self-address')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        if (missingList && missingSpan) {
           const fieldLabels: Record<string, string> = {
-            pmi_id: 'PMI ID',
-            phone: 'Telefone',
-            address: 'Endereço',
-            city: 'Cidade',
-            state: 'Estado',
-            country: 'País',
-            birth_date: 'Data de Aniversário',
+            pmi_id: PROFILE_I18N.fieldPmiId,
+            phone: PROFILE_I18N.fieldPhone,
+            address: PROFILE_I18N.fieldAddress,
+            city: PROFILE_I18N.fieldCity,
+            state: PROFILE_I18N.fieldState,
+            country: PROFILE_I18N.fieldCountry,
+            birth_date: PROFILE_I18N.fieldBirthDate,
           };
-          const missingList = document.getElementById('va-missing-fields');
-          const missingSpan = document.getElementById('va-missing-list');
-          if (missingList && missingSpan) {
-            missingSpan.textContent = missing.map((k: string) => fieldLabels[k] || k).join(', ');
-            missingList.classList.remove('hidden');
-          }
-          // Convert action button to "scroll to fields"
-          const btn = document.getElementById('va-action-btn') as HTMLAnchorElement | null;
-          if (btn) {
-            btn.textContent = '✏️ Preencher';
-            btn.href = '#personal-data';
-            btn.onclick = (e: MouseEvent) => {
-              e.preventDefault();
-              document.getElementById('self-address')?.focus();
-              document.getElementById('self-address')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            };
-          }
+          missingSpan.textContent = missing.map((k: string) => fieldLabels[k] || k).join(', ');
+          missingList.classList.remove('hidden');
         }
       }
-    } catch (_) { /* silent */ }
+    }
+    // Reveal the banner only after the CTA is decided (deterministic, no flicker).
+    banner?.classList.remove('hidden');
   }
 
   function formatDatePt(value: string | null | undefined): string {
