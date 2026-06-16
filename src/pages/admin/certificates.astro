@@ -102,7 +102,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             chip_authoritative: 'autoritativo',
             chip_pending_authority: 'autoridade pendente',
             heading: 'Acordos pendentes',
-            subheading: 'Engagements ativos que exigem acordo mas não têm certificado. Apenas visibilidade — nenhuma ação automática.',
+            subheading: 'Priorizado por ação: quem já pode assinar e ainda não foi notificado aparece primeiro.',
+            badge_apto_now: '⚡ Apto — ação agora',
+            apto_now_count: 'aptos a assinar agora',
           },
           'en-US': {
             notify_member_to_sign_volunteer_term: 'Notify member to sign Volunteer Term',
@@ -115,7 +117,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             chip_authoritative: 'authoritative',
             chip_pending_authority: 'pending authority',
             heading: 'Pending agreements',
-            subheading: 'Active engagements that require an agreement but have no certificate. Visibility only — no action issued automatically.',
+            subheading: 'Prioritized by action: those who can already sign and have not been notified appear first.',
+            badge_apto_now: '⚡ Ready — act now',
+            apto_now_count: 'ready to sign now',
           },
           'es-LATAM': {
             notify_member_to_sign_volunteer_term: 'Notificar al miembro a firmar el Término de Voluntariado',
@@ -128,22 +132,45 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             chip_authoritative: 'autoritativo',
             chip_pending_authority: 'autoridad pendiente',
             heading: 'Acuerdos pendientes',
-            subheading: 'Engagements activos que requieren acuerdo pero no tienen certificado. Solo visibilidad — sin acción automática.',
+            subheading: 'Priorizado por acción: quienes ya pueden firmar y aún no fueron notificados aparecen primero.',
+            badge_apto_now: '⚡ Apto — acción ahora',
+            apto_now_count: 'aptos para firmar ahora',
           },
         };
         const paT = (key: string): string => PA_LABELS[lang]?.[key] || PA_LABELS['pt-BR'][key] || key;
         const total = pendingAgreements.total ?? pendingAgreements.pending.length;
+        // E1 (Wave 2): priorizar por AÇÃO, não conformidade. Quem já pode assinar
+        // (next_action=notify_member_to_sign_volunteer_term) e ainda NÃO foi
+        // notificado vai ao topo (rank 0); notificado mas apto = rank 1; demais
+        // ações (template/reativar/investigar) abaixo. Sort estável por nome.
+        const isAptoNow = (r: any): boolean =>
+          r.next_action === 'notify_member_to_sign_volunteer_term' && !r.has_agreement_notification;
+        const ACTION_RANK: Record<string, number> = {
+          notify_member_to_sign_volunteer_term: 1,
+          decide_template_for_kind_then_issue: 2,
+          reactivate_member_or_close_engagement: 3,
+          review_special_kind_engagement: 4,
+          investigate_missing_member: 5,
+        };
+        const paRank = (r: any): number => isAptoNow(r) ? 0 : (ACTION_RANK[r.next_action] ?? 9);
+        const sortedPending = [...pendingAgreements.pending].sort(
+          (a: any, b: any) => paRank(a) - paRank(b) || String(a.member_name || '').localeCompare(String(b.member_name || ''))
+        );
+        const aptoNowCount = sortedPending.filter(isAptoNow).length;
         pendingAgreementsEl.innerHTML = `
           <div class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl overflow-hidden">
             <div class="px-5 py-3 border-b border-rose-200 dark:border-rose-800">
-              <h3 class="text-sm font-bold text-rose-800 dark:text-rose-300">${esc(paT('heading'))} (${total})</h3>
+              <h3 class="text-sm font-bold text-rose-800 dark:text-rose-300">${esc(paT('heading'))} (${total})${aptoNowCount > 0 ? ` · <span class="text-emerald-700 dark:text-emerald-400">${aptoNowCount} ${esc(paT('apto_now_count'))}</span>` : ''}</h3>
               <div class="text-[11px] text-rose-700 dark:text-rose-400 mt-1">${esc(paT('subheading'))}</div>
             </div>
             <div class="divide-y divide-rose-100 dark:divide-rose-800/50">
-              ${pendingAgreements.pending.map((row: any) => `
-                <div class="px-5 py-3 flex items-start gap-3 flex-wrap">
+              ${sortedPending.map((row: any) => `
+                <div class="px-5 py-3 flex items-start gap-3 flex-wrap ${isAptoNow(row) ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : ''}">
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-medium text-[var(--text-primary)]">${esc(row.member_name || '—')}</div>
+                    <div class="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                      ${isAptoNow(row) ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold whitespace-nowrap">${esc(paT('badge_apto_now'))}</span>` : ''}
+                      <span>${esc(row.member_name || '—')}</span>
+                    </div>
                     <div class="text-xs text-[var(--text-muted)]">
                       <span class="font-semibold">${esc(row.kind)} / ${esc(row.role)}</span>
                       ${row.initiative_title ? ' · ' + esc(row.initiative_title) : ''}
