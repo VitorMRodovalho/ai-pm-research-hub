@@ -535,7 +535,7 @@ const SCORING_I18N = {
   window.__GAMIFICATION_I18N = typeof GAM_I18N !== 'undefined' ? GAM_I18N : {};
 </script>
 <script>
-  import { getMemberRole } from '../lib/routing';
+  import { isRegisteredMember } from '../lib/routing';
   import { aggregateCredlyByMember } from '../lib/gamification';
   import { buildTrailProgressByMember } from '../lib/trail-progress';
   import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
@@ -1410,7 +1410,7 @@ const SCORING_I18N = {
     await loadRuntimeTribes();
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && getMemberRole(e.detail) !== 'guest') {
+      if (isRegisteredMember(e.detail)) {
         MEMBER = e.detail;
         setupUI();
       }
@@ -1421,7 +1421,7 @@ const SCORING_I18N = {
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && getMemberRole(m) !== 'guest') {
+    if (isRegisteredMember(m)) {
       MEMBER = m;
       setupUI();
       return;
@@ -1430,7 +1430,7 @@ const SCORING_I18N = {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && getMemberRole(data) !== 'guest') {
+      if (isRegisteredMember(data)) {
         MEMBER = data;
         setupUI();
         return;

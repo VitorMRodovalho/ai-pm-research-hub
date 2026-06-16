@@ -276,7 +276,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   import { hasMinimumTier, resolveTierFromMember } from '../lib/admin/constants';
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
-  import { getMemberRole } from '../lib/routing';
+  import { isRegisteredMember } from '../lib/routing';
   import { buildWebinarCommsHref, getAttendanceEditAssistantCopy, getAttendanceHandoffCopy } from '../lib/webinars/context-aids';
   import { marked } from 'marked';
 
@@ -2605,7 +2605,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     // Listen for future auth changes
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && getMemberRole(e.detail) !== 'guest') {
+      if (isRegisteredMember(e.detail)) {
         MEMBER = e.detail;
         onMemberReady();
       } else if (!e.detail) {
@@ -2619,7 +2619,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     // 1) Check if nav already has a member loaded
     const m = (window as any).navGetMember?.();
-    if (m && getMemberRole(m) !== 'guest') {
+    if (isRegisteredMember(m)) {
       MEMBER = m;
       onMemberReady();
       return;
@@ -2629,7 +2629,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && getMemberRole(data) !== 'guest') {
+      if (isRegisteredMember(data)) {
         MEMBER = data;
         onMemberReady();
         return;
