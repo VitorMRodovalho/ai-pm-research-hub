@@ -44,10 +44,14 @@ const STEP_META: Record<string, { icon: string; pt: string; en: string; es: stri
   start_pmi_certs:  { icon: '🎓', pt: 'Inicie a trilha PMI',      en: 'Start the PMI trail',     es: 'Inicie la ruta PMI',       hint_pt: 'Complete ao menos 1 mini-certificação PMI gratuita', hint_en: 'Complete at least 1 free PMI mini-cert', hint_es: 'Complete al menos 1 mini-certificación PMI gratuita' },
 };
 
+// F1/J3 #740 — collective pre-onboarding WhatsApp help group (candidates + Núcleo +
+// diretorias de filiação/voluntariado). Single source of truth for the invite link.
+const PRE_ONBOARDING_WHATSAPP_URL = 'https://chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs';
+
 const L: Record<string, Record<string, string>> = {
-  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo' },
-  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking', step: 'Step' },
-  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración', step: 'Paso' },
+  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo', helpTitle: 'Dúvidas? Você não está sozinho', helpBody: 'Entre no grupo de WhatsApp do pré-onboarding — candidatos, o Núcleo e as diretorias de filiação e voluntariado tiram dúvidas por lá.', helpCta: 'Entrar no grupo de WhatsApp' },
+  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking', step: 'Step', helpTitle: 'Questions? You\'re not alone', helpBody: 'Join the pre-onboarding WhatsApp group — candidates, the Hub team, and the membership & volunteering boards answer questions there.', helpCta: 'Join the WhatsApp group' },
+  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración', step: 'Paso', helpTitle: '¿Dudas? No estás solo', helpBody: 'Únase al grupo de WhatsApp de pre-integración — candidatos, el equipo del Núcleo y las direcciones de afiliación y voluntariado responden dudas allí.', helpCta: 'Entrar al grupo de WhatsApp' },
 };
 
 function label(key: string, lang: string): string {
@@ -216,6 +220,22 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
           {lang.startsWith('en') ? 'All done! You\'re ready for onboarding.' : lang.startsWith('es') ? '¡Todo listo! Estás preparado para la integración.' : 'Tudo pronto! Você está preparado para o onboarding.'}
         </div>
       )}
+
+      {/* F1/J3 #740 — collective WhatsApp help group so a newcomer is never isolated */}
+      <div className="mt-4 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3.5 bg-emerald-50/50 dark:bg-emerald-900/15">
+        <h3 className="text-[12px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+          <span>💬</span> {l.helpTitle}
+        </h3>
+        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{l.helpBody}</p>
+        <a
+          href={PRE_ONBOARDING_WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-2.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold no-underline hover:bg-emerald-700 transition-colors"
+        >
+          {l.helpCta} →
+        </a>
+      </div>
     </div>
   );
 }

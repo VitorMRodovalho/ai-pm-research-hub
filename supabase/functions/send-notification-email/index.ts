@@ -65,6 +65,15 @@ const GOVERNANCE_TYPES = new Set([
   'ip_ratification_awaiting_members',
 ])
 
+// F6 #740 — approval / VEP-acceptance emails must PREPARE the candidate: tell them
+// which email to log in with (avoids the "Conta não cadastrada" confusion when the
+// OAuth email differs from the VEP email — see WS-B #735) and give a direct link to
+// the onboarding workspace. Block rendered for these candidate-facing approval types.
+const ONBOARDING_PREP_TYPES = new Set([
+  'selection_approved',
+  'selection_cutoff_approved',
+])
+
 // ADR-0022 W2: rich rendering for weekly_member_digest. Body is JSON text from
 // get_weekly_member_digest RPC with 7 sections. Renders responsive HTML with
 // collapsible-style headers (no <details> — Gmail strips it; uses bordered
@@ -392,7 +401,7 @@ function isAtaSummaryNeeded(countGroups: number, countEvents: number): boolean {
   return countGroups >= 3 || countEvents > countGroups
 }
 
-function buildHtml(notification: any): string {
+function buildHtml(notification: any, recipientEmail?: string): string {
   if (notification.type === WEEKLY_MEMBER_DIGEST_TYPE) {
     return buildWeeklyMemberDigestHtml(notification)
   }
@@ -401,7 +410,8 @@ function buildHtml(notification: any): string {
   }
   const isGovernance = GOVERNANCE_TYPES.has(notification.type)
   const isDigest = DIGEST_TYPES.has(notification.type)
-  const ctaLabel = isDigest ? 'Abrir meu workspace' : isGovernance ? 'Revisar e assinar' : 'Ver na plataforma'
+  const isOnboardingPrep = ONBOARDING_PREP_TYPES.has(notification.type)
+  const ctaLabel = isDigest ? 'Abrir meu workspace' : isGovernance ? 'Revisar e assinar' : isOnboardingPrep ? 'Ir para meu espaço' : 'Ver na plataforma'
   const deadlineBlock = isGovernance
     ? `<div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px 14px; margin: 0 0 16px 0; border-radius: 4px;">
          <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
@@ -418,6 +428,25 @@ function buildHtml(notification: any): string {
        </p>`
     : ''
 
+  // F6 #740 — "como entrar" block for approval emails: which email to log in with +
+  // direct workspace link. Defends against the OAuth-email != VEP-email confusion.
+  const prepBlock = isOnboardingPrep
+    ? `<div style="background: #e8f4f8; border-left: 4px solid #003B5C; padding: 12px 16px; margin: 0 0 16px 0; border-radius: 4px;">
+         <p style="color: #003B5C; font-size: 13px; margin: 0 0 6px 0; font-weight: 600;">Como acessar a plataforma</p>
+         ${recipientEmail ? `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0 0 6px 0;">Entre em <a href="https://nucleoia.vitormr.dev/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.vitormr.dev</a> usando este e-mail: <strong style="color: #003B5C;">${escapeHtml(recipientEmail)}</strong>.</p>
+         <p style="color: #6c757d; font-size: 12px; line-height: 1.5; margin: 0;">Se você normalmente entra com Google, LinkedIn ou Microsoft em outro e-mail, use a opção <strong>"Vincular minha conta"</strong> na plataforma para conectar seu login a este cadastro.</p>` : `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0;">Entre em <a href="https://nucleoia.vitormr.dev/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.vitormr.dev</a> e siga seu checklist de onboarding.</p>`}
+       </div>`
+    : ''
+
+  // For approval emails without an explicit link, default the CTA to the workspace.
+  // Guard the leading slash so a future RPC that omits it can't yield a malformed URL.
+  const safeLink = notification.link
+    ? (notification.link.startsWith('/') ? notification.link : `/${notification.link}`)
+    : null
+  const ctaHref = safeLink
+    ? `https://nucleoia.vitormr.dev${safeLink}`
+    : isOnboardingPrep ? 'https://nucleoia.vitormr.dev/workspace' : ''
+
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #003B5C; padding: 20px; text-align: center;">
@@ -426,8 +455,9 @@ function buildHtml(notification: any): string {
       <div style="padding: 24px; background: #f8f9fa; border: 1px solid #e9ecef;">
         <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 12px 0;">${escapeHtml(notification.title)}</h2>
         ${bodyHtml}
+        ${prepBlock}
         ${deadlineBlock}
-        ${notification.link ? `<a href="https://nucleoia.vitormr.dev${notification.link}" style="display: inline-block; background: #003B5C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">${ctaLabel}</a>` : ''}
+        ${ctaHref ? `<a href="${ctaHref}" style="display: inline-block; background: #003B5C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">${ctaLabel}</a>` : ''}
         ${optOutBlock}
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
@@ -529,7 +559,7 @@ Deno.serve(async (req) => {
             from: `Nucleo IA e GP <${from}>`,
             to: [member.email],
             subject,
-            html: buildHtml(notif),
+            html: buildHtml(notif, member.email),
           }),
         })
 
