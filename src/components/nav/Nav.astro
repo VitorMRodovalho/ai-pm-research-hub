@@ -107,6 +107,7 @@ const jsI18n = JSON.stringify({
   volunteerAgreement: t('nav.volunteer', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
+  claimCta: t('claim.cta', lang),
   drawerMeuEspaco: t('nav.drawerSection.meuEspaco', lang),
   drawerMinhaTribo: t('nav.drawerSection.minhaTribo', lang),
   drawerProducao: t('nav.drawerSection.producao', lang),
@@ -702,9 +703,18 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   function renderGuestWithSession() {
     const el = document.getElementById('nav-auth');
     if (!el) return;
+    // WS-B: a guest-with-session likely logged in with an email different from the one
+    // they applied with (VEP). Offer the self-service account-claim flow instead of a
+    // dead end. Pass the active locale via ?lang so /claim/start renders translated.
+    const langCode = document.documentElement.lang === 'en' ? 'en-US'
+      : document.documentElement.lang === 'es' ? 'es-LATAM' : 'pt-BR';
     el.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="text-amber-400 text-[.73rem] font-semibold hidden sm:inline">${i18n.guestNotFound || 'Conta não cadastrada'}</span>
+        <a href="/claim/start?lang=${langCode}"
+          class="px-2.5 py-1 rounded-lg bg-amber-400/90 text-navy text-[.7rem] font-bold hover:bg-amber-300 transition-all no-underline cursor-pointer">
+          ${i18n.claimCta || 'Vincular minha conta'}
+        </a>
         <button data-action="logout"
           class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-[.7rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
           ${i18n.logout || '↩ Sair'}
