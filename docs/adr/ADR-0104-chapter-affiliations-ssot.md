@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 shipped; worker + 3b FE pending) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation + 3a-ii C3 + 3a-iii worker shipped; 3b FE pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) · 20260805000191_w3a_c3_explicit_contracting_chapter_signatory.sql (3a-ii C3) · 20260805000193_w3a_iii_upsert_chapter_affiliation_rpc.sql (3a-iii worker write path) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -196,3 +196,51 @@ removing the dependency on the `'GO'` vs `'PMI-GO'` format accident. Reviewed by
 - **Red flag (carry):** C3 MUST precede any normalization of the `members.chapter` format
   (`'PMI-GO'` → `'GO'`); otherwise the removed lookup would have started matching and
   silently changed behavior.
+
+## Amendment — Wave 3a-iii (worker write path) shipped (2026-06-16, mig `20260805000193`)
+
+The deferred multi-chapter population now lands: the `pmi-vep-sync` worker writes
+`member_chapter_affiliations` from the reliable `pmi_memberships` snapshot, through a
+single-home upsert RPC. Additive — no behavior change to existing reads.
+
+- **`upsert_chapter_affiliation(p_person_id, p_chapter_code, p_source, p_is_primary)`**
+  (SECURITY DEFINER) is the **single home for the one-primary invariant**, resolving the
+  council Tier-1 contract. Behaviour validated live (rolled-back probe at apply time):
+  - `p_is_primary=true` → demotes any *other* primary first, then forces this one primary
+    (the partial unique index forbids two primaries; used by Wave 3b / admin for an
+    explicit choice).
+  - `p_is_primary=false` (the worker's call) → asserts the FACT only and **never demotes
+    an existing primary** (preserves the legacy backfill + the future `entry_chapter_code`
+    choice). If the person has **no** primary at all, the row becomes a *provisional* FACT
+    primary so the table is never left primary-less — a placeholder, not a headline claim
+    (the displayed chapter is `entry_chapter_code`, Wave 3b). The worker deliberately does
+    **not** assert a primary: ADR-0104 rejects array-order-based primary selection.
+  - `source` is validated against the table CHECK; an invalid value raises.
+  - **EXECUTE is granted to `service_role` only** (the worker) and revoked from
+    `anon`/`authenticated` — the function can rewrite any person's affiliation, so exposing
+    it to authenticated callers would be a privilege-escalation surface (mirrors the
+    locked-table RPC pattern, ADR-0095). Verified live: a `SET ROLE authenticated` call
+    returns `permission denied`.
+- **`updated_at` trigger** added (`set_updated_at_v4()`), before the worker starts issuing
+  UPDATEs — closes the contract item.
+- **`service_role` table grants** confirmed present (INSERT/UPDATE/SELECT/DELETE) — the
+  worker can write.
+- **Worker** (`pmi-vep-sync`): a new `parseBrChapterCode(name)` (mapper.ts) maps a single
+  `"<State>, Brazil Chapter"` membership to the bare registry code (BR-suffix-gated,
+  BR-only), reusing the existing state→`PMI-XX` map (with **Sergipe** added for registry
+  parity — it was in the 3a-0 FE map but missing from the worker). `upsertChapterAffiliations`
+  (db.ts) dedupes BR codes from the snapshot and calls the RPC with `is_primary=false`. The
+  call is wired into the resolved-`person_id` Phase B slot (where the retired #441
+  `pmi_chapter_memberships` UPSERT used to be); non-BR tokens (`PMI Global`, `Washington, DC
+  Chapter`, Angola) are skipped (chapter_registry is BR-only). Tolerates the **real runtime
+  shape** (an array of plain name strings, as actually stored) as well as the declared
+  `{ chapterName }` object shape. Idempotent; per-app failures are caught and logged
+  (`scope: 'chapter_affiliations'`), counted in the run summary
+  (`chapter_affiliations_upserted`).
+
+**Still deferred to Wave 3b:** the FE entry-chapter choice (`set_my_entry_chapter`, BR-only,
+must be one of the member's affiliations), `members.chapter` becomes derived
+(`COALESCE(entry_chapter, primary affiliation)`), `get_chapter_*` repoint, `lib/chapters.ts`
+(drop the hardcoded fallback), and the deferred invariant
+`U_active_person_has_primary_chapter_affiliation` (the provisional-primary logic above already
+reduces how many actives could be primary-less).
