@@ -9,6 +9,7 @@ Source-of-truth para padrões, taxonomias, catálogos e modelos. Mantenha cada d
 | [V4_AUTHORITY_MODEL.md](./V4_AUTHORITY_MODEL.md) | Authority derivation (`can()` / `can_by_member()`), 3 paths paralelos, anti-pattern "seed expansion como atalho" | ADR-0007, sediment p122e |
 | [SEMANTIC_TAXONOMY.md](./SEMANTIC_TAXONOMY.md) | Engagement kinds + roles + designations + status (V4 N:N). Champion vs Showcase delimitation. | ADR-0080, ADR-0084 |
 | [ENGAGEMENT_SEED_TEMPLATES.md](./ENGAGEMENT_SEED_TEMPLATES.md) | 12 templates canônicos (researcher, tribe_leader, co_leader, manager, etc) + `seed_member_engagement_by_role` RPC | p172 #5, ADR-0009 |
+| [PRE_ONBOARDING_GUEST_MODEL.md](./PRE_ONBOARDING_GUEST_MODEL.md) | `operational_role='guest'` == pré-onboarding; 3 SSOTs (`isRegisteredMember` FE / `member_is_pre_onboarding` SQL / `operational_role` cache); anti-pattern role-as-not-member | #740 D3, PR #739 |
 
 ## Patterns
 

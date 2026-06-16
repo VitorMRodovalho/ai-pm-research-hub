@@ -145,7 +145,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       </div>`;
   }
 
-  function renderSuccess(result: any, lang: Lang): string {
+  function renderSuccess(result: any, lang: Lang, extras?: { tribeLink?: string | null }): string {
+    const tribeLink = extras?.tribeLink || null;
     return `
       <div class="text-center py-8">
         <div class="text-4xl mb-3">\u2705</div>
@@ -155,8 +156,23 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <div class="flex justify-between"><span class="text-[var(--text-muted)]">${t('volunteer.success.hash', lang)}</span><code class="font-mono text-[10px] text-[var(--text-muted)]">${(result.signature_hash || '').slice(0, 16)}...</code></div>
           <div class="flex justify-between"><span class="text-[var(--text-muted)]">${t('volunteer.success.date', lang)}</span><span class="text-[var(--text-primary)]">${fmtDatetime(result.signed_at, lang)}</span></div>
         </div>
+
+        <!-- A4: next steps (replaces the dead-end) -->
+        <div class="mt-6 max-w-sm mx-auto text-left bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">${t('volunteer.success.nextTitle', lang)}</h3>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">${t('volunteer.success.nextIntro', lang)}</p>
+          <a href="${lp}/workspace" class="block w-full text-center px-4 py-3 rounded-lg bg-navy text-white text-sm font-bold no-underline hover:opacity-90 transition-opacity">
+            ${t('volunteer.success.workspaceCta', lang)} \u2192
+          </a>
+          <p class="text-[11px] text-[var(--text-muted)] mt-2 text-center">${t('volunteer.success.workspaceHint', lang)}</p>
+          ${tribeLink ? `
+          <a href="${encodeURI(tribeLink)}" target="_blank" rel="noopener noreferrer" class="block w-full text-center mt-3 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold no-underline hover:bg-emerald-700 transition-colors">
+            \uD83D\uDCAC ${t('volunteer.success.whatsappCta', lang)}
+          </a>` : ''}
+        </div>
+
         <p class="text-xs text-[var(--text-muted)] mt-4">${t('volunteer.success.pending', lang)}</p>
-        <a href="${lp}/verify/${encodeURIComponent(result.verification_code)}" class="inline-block mt-4 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-navy no-underline hover:bg-[var(--surface-hover)]">
+        <a href="${lp}/verify/${encodeURIComponent(result.verification_code)}" class="inline-block mt-2 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-navy no-underline hover:bg-[var(--surface-hover)]">
           \uD83D\uDD0D ${t('volunteer.success.verify', lang)}
         </a>
       </div>`;
@@ -300,7 +316,18 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           return;
         }
         if (data?.error) throw new Error(data.error);
-        app.innerHTML = renderSuccess(data, lang);
+        // A4: best-effort tribe WhatsApp link (term-gated RPC; returns success only
+        // once the member is no longer pre-onboarding + belongs to the tribe — most
+        // freshly-signed members have no tribe yet, so this simply stays hidden).
+        let tribeLink: string | null = null;
+        const tribeId = (member as any)?.tribe_id;
+        if (tribeId) {
+          try {
+            const { data: waRes } = await sb.rpc('get_tribe_group_link', { p_tribe_id: tribeId });
+            if (waRes?.success && waRes.whatsapp_url) tribeLink = waRes.whatsapp_url;
+          } catch { /* non-blocking */ }
+        }
+        app.innerHTML = renderSuccess(data, lang, { tribeLink });
         (window as any).toast?.(t('volunteer.success.title', lang), 'success');
       } catch (e) {
         console.error('Sign failed:', e);
