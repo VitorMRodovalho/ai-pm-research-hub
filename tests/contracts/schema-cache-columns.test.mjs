@@ -81,7 +81,8 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // FK chapter_registry; BR-only enforced by set_my_entry_chapter RPC (Wave 3b). NULL until
   // the member chooses. Deliberately NOT a cache: it is a member CHOICE, not derived from
   // members.chapter or member_chapter_affiliations (those record affiliation FACT, not the
-  // governance choice). members.chapter stays the legacy/compat value until repointed.
+  // governance choice). members.chapter is now the derived/compat value (Wave 3b-ii) maintained
+  // by triggers — registered in KNOWN_CACHE_COLUMNS below.
   ['members.entry_chapter_code', 'Member-chosen chapter of entry (Wave 3a #740, ADR-0104); governance choice, not derived'],
 ]);
 
@@ -175,6 +176,12 @@ test('ADR-0012: known cache columns are maintained by live triggers (reference m
       trigger: 'trg_validate_initiative_metadata',
       source: '20260413620000_v4_phase6_custom_fields_validation.sql',
       note: 'Config-driven metadata validation per kind (ADR-0009).',
+    },
+    {
+      key: 'members.chapter',
+      trigger: 'trg_z_derive_member_chapter',
+      source: '20260805000195_w3b_ii_members_chapter_derivation.sql',
+      note: 'Derived/compat value COALESCE(entry_chapter_code, primary affiliation, legacy) — Wave 3b-ii (ADR-0104). Maintained by TWO event-specific triggers: trg_z_derive_member_chapter (BEFORE UPDATE OF entry_chapter_code ON members) + trg_recompute_member_chapter_on_affiliation (AFTER on member_chapter_affiliations). Event-specific so the admin free-text edit path is preserved.',
     },
   ];
 
