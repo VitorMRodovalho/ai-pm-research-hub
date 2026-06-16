@@ -130,7 +130,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       </details>
 
       <!-- Sign section -->
-      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
+      <div id="va-sign-section" class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 scroll-mt-4">
         <label class="flex items-start gap-3 cursor-pointer mb-4">
           <input type="checkbox" id="va-agree" class="mt-1 w-4 h-4 accent-navy" />
           <span class="text-sm font-medium text-[var(--text-primary)]">${t('volunteer.checkbox', lang)}</span>
@@ -175,6 +175,24 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <a href="${lp}/verify/${encodeURIComponent(result.verification_code)}" class="inline-block mt-2 px-4 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-sm font-semibold text-navy no-underline hover:bg-[var(--surface-hover)]">
           \uD83D\uDD0D ${t('volunteer.success.verify', lang)}
         </a>
+      </div>`;
+  }
+
+  // W3c-ii (B8): a returned (rejected) term shows a banner above the form so the member knows why
+  // they must re-sign. Reuses the rejection reason surfaced by get_my_certificates (revoked_reason).
+  function renderRejectedBanner(reason: string | null, lang: Lang): string {
+    const reasonHtml = reason ? `<div class="mt-1 text-[13px] text-orange-800 dark:text-orange-300"><span class="font-semibold">${esc(t('volunteer.rejected.reasonLabel', lang))}:</span> ${esc(reason)}</div>` : '';
+    return `
+      <div class="rounded-xl border-2 border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700 p-4 mb-4">
+        <div class="flex items-start gap-2">
+          <span class="text-xl">↩️</span>
+          <div>
+            <div class="font-bold text-sm text-orange-800 dark:text-orange-300">${esc(t('volunteer.rejected.title', lang))}</div>
+            <p class="text-[13px] text-orange-700 dark:text-orange-400 mt-0.5">${esc(t('volunteer.rejected.description', lang))}</p>
+            ${reasonHtml}
+            <a href="#va-sign-section" class="inline-block mt-2 text-[13px] font-semibold text-orange-700 dark:text-orange-300 underline">${esc(t('volunteer.rejected.goToSign', lang))} ↓</a>
+          </div>
+        </div>
       </div>`;
   }
 
@@ -228,11 +246,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     // Check if already signed (include_volunteer_agreements=true → fetch TCVs)
     const { data: certs } = await sb.rpc('get_my_certificates', { p_include_volunteer_agreements: true });
     const currentYear = new Date().getFullYear();
-    const existing = (certs || []).find((c: any) => c.type === 'volunteer_agreement' && c.cycle === currentYear);
-    if (existing) {
+    // W3c-ii: only a VALID (issued) term blocks re-signing. A rejected term must NOT short-circuit
+    // to "already signed" — the member needs to re-sign. (superseded/revoked are already hidden by
+    // get_my_certificates.) status may be null on legacy rows → treat as issued/valid.
+    const vaCerts = (certs || []).filter((c: any) => c.type === 'volunteer_agreement' && c.cycle === currentYear);
+    const validCert = vaCerts.find((c: any) => c.status === 'issued' || c.status == null);
+    if (validCert) {
       app.innerHTML = renderAlreadySigned(lang);
       return;
     }
+    const rejectedCert = vaCerts.find((c: any) => c.status === 'rejected');
+    const rejectedBanner = rejectedCert ? renderRejectedBanner(rejectedCert.revoked_reason || null, lang) : '';
 
     // Pre-flight: check profile completeness before showing form
     const requiredFields: Record<string, string> = {
@@ -253,7 +277,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     }
     if (missing.length > 0) {
       const profileUrl = lang === 'pt-BR' ? '/profile' : lang === 'en-US' ? '/en/profile' : '/es/profile';
-      app.innerHTML = `
+      app.innerHTML = rejectedBanner + `
         <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-6 text-center">
           <div class="text-4xl mb-3">📋</div>
           <h2 class="text-lg font-bold text-amber-800 dark:text-amber-300 mb-2">Complete seu perfil antes de assinar</h2>
@@ -290,7 +314,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
     // Load member tribe name for display
     const memberData = { ...member, tribe_name: member.tribe_name || (window as any).__memberTribeName || '—' };
-    app.innerHTML = renderForm(memberData, lang, template);
+    app.innerHTML = rejectedBanner + renderForm(memberData, lang, template);
 
     // Checkbox enables button
     const checkbox = document.getElementById('va-agree') as HTMLInputElement;

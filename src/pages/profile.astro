@@ -52,6 +52,9 @@ const PROFILE_I18N = {
   vaSignAction: t('profile.volunteerBanner.action', lang),
   vaMissingLabel: t('profile.volunteerBanner.missingLabel', lang),
   vaFillAction: t('profile.volunteerBanner.fillAction', lang),
+  vaRejectedTitle: t('profile.volunteerBanner.rejectedTitle', lang),
+  vaRejectedDesc: t('profile.volunteerBanner.rejectedDescription', lang),
+  vaRejectedAction: t('profile.volunteerBanner.rejectedAction', lang),
   fieldSecondaryEmail: t('profile.field.secondaryEmail', lang),
   fieldCycleLink: t('profile.field.cycleLink', lang),
   fieldTrailCourse: t('profile.field.trailCourse', lang),
@@ -214,9 +217,9 @@ const PROFILE_I18N = {
     <!-- Volunteer Agreement Banner -->
     <div id="va-banner" class="hidden mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
       <div class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0">📋</span>
+        <span id="va-banner-icon" class="text-xl flex-shrink-0">📋</span>
         <div class="flex-1">
-          <div class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
+          <div id="va-banner-title" class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
           <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5" id="va-banner-desc">{t('profile.volunteerBanner.description', lang)}</p>
           <div id="va-missing-fields" class="hidden mt-2 text-[11px] text-amber-800 dark:text-amber-300">
             <span class="font-semibold">{t('profile.volunteerBanner.missingLabel', lang)}</span>
@@ -637,6 +640,25 @@ const PROFILE_I18N = {
         }
       }
     }
+    // W3c-ii (B8): if the member's term this cycle was REJECTED (returned by a director/admin), the
+    // banner is no longer a first-time "pending" prompt — swap the copy to "rejected → re-sign" so the
+    // member understands why the CTA reappeared. Only a cheap extra fetch when the banner is shown.
+    try {
+      const { data: myCerts } = await sb.rpc('get_my_certificates', { p_include_volunteer_agreements: true });
+      const currentYear = new Date().getFullYear();
+      const rejected = Array.isArray(myCerts) && myCerts.some((c: any) => c.type === 'volunteer_agreement' && c.cycle === currentYear && c.status === 'rejected');
+      if (rejected) {
+        const titleEl = document.getElementById('va-banner-title');
+        const descEl = document.getElementById('va-banner-desc');
+        const iconEl = document.getElementById('va-banner-icon');
+        if (titleEl) titleEl.textContent = PROFILE_I18N.vaRejectedTitle;
+        if (descEl) descEl.textContent = PROFILE_I18N.vaRejectedDesc;
+        if (iconEl) iconEl.textContent = '↩️';
+        // The CTA already points at the sign flow (readyToSign branch); relabel it for the returned case.
+        if (btn && readyToSign) btn.textContent = PROFILE_I18N.vaRejectedAction;
+      }
+    } catch (_) { /* non-blocking: leave the default pending copy */ }
+
     // Reveal the banner only after the CTA is decided (deterministic, no flicker).
     banner?.classList.remove('hidden');
   }
