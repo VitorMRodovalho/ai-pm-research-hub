@@ -4904,6 +4904,21 @@ const enUS: Record<string, string> = {
   'verify.revokedReason': 'Reason',
   'verify.searchPlaceholder': 'Enter verification code...',
   'verify.search': 'Verify',
+  // W3c-ii (B8) — agreement lifecycle states surfaced to members + verifiers
+  'verify.rejected': 'This document was rejected and returned for re-signing.',
+  'verify.rejectedAt': 'Rejected on',
+  'verify.superseded': 'This document was superseded by a reissue.',
+  'verify.supersededHint': 'A newer version of this agreement has been issued. Please refer to the volunteer\'s current document.',
+  'certificates.status.rejected': 'Rejected',
+  'certificates.rejectedReason': 'Rejection reason',
+  'certificates.rejectedResign': 'Review and re-sign the agreement',
+  'volunteer.rejected.title': 'Your agreement was returned for re-signing',
+  'volunteer.rejected.description': 'A coordinator reviewed your Volunteer Agreement and returned it. Please review your data and sign again below.',
+  'volunteer.rejected.reasonLabel': 'Reason',
+  'volunteer.rejected.goToSign': 'Go to signing',
+  'profile.volunteerBanner.rejectedTitle': 'Volunteer Agreement returned',
+  'profile.volunteerBanner.rejectedDescription': 'Your agreement for this year was returned and needs to be re-signed. Review your data and sign again.',
+  'profile.volunteerBanner.rejectedAction': 'Re-sign',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Governance — Change Requests',

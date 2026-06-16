@@ -21,6 +21,10 @@ interface MemberRow {
   // Contract period (from signed cert, source of truth)
   contract_start: string | null;
   contract_end: string | null;
+  // W3c-ii (B8): actionable agreement lifecycle. agreement_cert_id is the latest issued|rejected
+  // cert this cycle; agreement_status ∈ issued|rejected|null (superseded/revoked are excluded).
+  agreement_cert_id: string | null;
+  agreement_status: string | null;
 }
 
 interface TemplateData {
@@ -84,6 +88,18 @@ const L: Record<string, Record<string, string>> = {
     since: 'Desde',
     expires: 'Vence',
     cycle: 'Ciclo',
+    actions: 'Ações',
+    reject: 'Rejeitar',
+    reissue: 'Re-emitir',
+    rejectPrompt: 'Motivo da rejeição do termo (o voluntário será notificado para reassinar):',
+    rejectPromptCountersigned: 'Atenção: este termo já foi contra-assinado (ato bilateral). Rejeitá-lo equivale a um distrato formal. Motivo:',
+    reissuePrompt: 'Motivo da reemissão (o termo atual será substituído e o voluntário deverá reassinar):',
+    reasonRequired: 'Motivo é obrigatório.',
+    stateRejected: '↩️ Rejeitado — reassinar',
+    actionSuccess: 'Ação registada com sucesso.',
+    actionError: 'Erro ao executar a ação.',
+    rejectConfirmCountersigned: 'O termo de {name} já foi contra-assinado (ato bilateral). Rejeitá-lo é um distrato formal e não pode ser desfeito. Continuar?',
+    rejectedBadgeAria: 'Termo rejeitado — aguarda reassinatura do voluntário',
   },
   'en-US': {
     title: 'Volunteer Agreement',
@@ -117,6 +133,18 @@ const L: Record<string, Record<string, string>> = {
     since: 'Since',
     expires: 'Expires',
     cycle: 'Cycle',
+    actions: 'Actions',
+    reject: 'Reject',
+    reissue: 'Reissue',
+    rejectPrompt: 'Reason for rejecting the agreement (the volunteer will be asked to re-sign):',
+    rejectPromptCountersigned: 'Warning: this agreement was already counter-signed (bilateral act). Rejecting it amounts to a formal rescission. Reason:',
+    reissuePrompt: 'Reason for reissuing (the current agreement will be superseded and the volunteer must re-sign):',
+    reasonRequired: 'Reason is required.',
+    stateRejected: '↩️ Rejected — re-sign',
+    actionSuccess: 'Action recorded successfully.',
+    actionError: 'Error performing the action.',
+    rejectConfirmCountersigned: "{name}'s agreement was already counter-signed (bilateral act). Rejecting it is a formal rescission and cannot be undone. Continue?",
+    rejectedBadgeAria: 'Agreement rejected — awaiting the volunteer to re-sign',
   },
   'es-LATAM': {
     title: 'Acuerdo de Voluntariado',
@@ -150,6 +178,18 @@ const L: Record<string, Record<string, string>> = {
     since: 'Desde',
     expires: 'Vence',
     cycle: 'Ciclo',
+    actions: 'Acciones',
+    reject: 'Rechazar',
+    reissue: 'Reemitir',
+    rejectPrompt: 'Motivo del rechazo del término (el voluntario será notificado para volver a firmar):',
+    rejectPromptCountersigned: 'Atención: este término ya fue contra-firmado (acto bilateral). Rechazarlo equivale a una rescisión formal. Motivo:',
+    reissuePrompt: 'Motivo de la reemisión (el término actual será reemplazado y el voluntario deberá volver a firmar):',
+    reasonRequired: 'El motivo es obligatorio.',
+    stateRejected: '↩️ Rechazado — volver a firmar',
+    actionSuccess: 'Acción registrada con éxito.',
+    actionError: 'Error al ejecutar la acción.',
+    rejectConfirmCountersigned: 'El término de {name} ya fue contra-firmado (acto bilateral). Rechazarlo es una rescisión formal y no se puede deshacer. ¿Continuar?',
+    rejectedBadgeAria: 'Término rechazado — esperando que el voluntario vuelva a firmar',
   },
 };
 
@@ -189,6 +229,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [chapterFilter, setChapterFilter] = useState<string>('');
   const [search, setSearch] = useState('');
   const [notifying, setNotifying] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
@@ -258,6 +299,52 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
       (window as any).toast?.(t.notifyError, 'error');
     } finally {
       setNotifying(false);
+    }
+  };
+
+  // W3c-ii (B8): reject a member's issued agreement. Reason mandatory (RPC enforces, caps at 500).
+  // For a counter-signed (fully-executed) term the prompt warns it is a formal rescission (distrato).
+  const rejectAgreement = async (m: MemberRow) => {
+    if (!m.agreement_cert_id) return;
+    // A counter-signed term is a fully-executed bilateral act: gate it behind an explicit, member-named
+    // confirmation before the reason prompt (rejecting it is a formal distrato, not a routine return).
+    if (m.counter_signed && !window.confirm(t.rejectConfirmCountersigned.replace('{name}', m.name))) return;
+    const reason = window.prompt(m.counter_signed ? t.rejectPromptCountersigned : t.rejectPrompt);
+    if (reason === null) return;
+    if (!reason.trim()) { (window as any).toast?.(t.reasonRequired, 'error'); return; }
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    setActing(m.id);
+    try {
+      const { data, error } = await sb.rpc('reject_certificate', { p_certificate_id: m.agreement_cert_id, p_reason: reason.trim() });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      (window as any).toast?.(t.actionSuccess, 'success');
+      await load();
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setActing(null);
+    }
+  };
+
+  // W3c-ii (B8): reissue — supersede the current issued term and require the member to re-sign.
+  // manage_member only (RPC-gated); button is hidden for chapter_board (isManager === false).
+  const reissueAgreement = async (m: MemberRow) => {
+    const reason = window.prompt(t.reissuePrompt);
+    if (reason === null) return;
+    if (!reason.trim()) { (window as any).toast?.(t.reasonRequired, 'error'); return; }
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    setActing(m.id);
+    try {
+      const { data, error } = await sb.rpc('reissue_agreement', { p_member_id: m.id, p_reason: reason.trim() });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      (window as any).toast?.(t.actionSuccess, 'success');
+      await load();
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setActing(null);
     }
   };
 
@@ -535,6 +622,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                 <th className="text-left px-3 py-2 font-semibold">Período do Contrato</th>
                 <th className="text-center px-3 py-2 font-semibold" title="Voluntário assinou / Diretor contra-assinou">✍️ Voluntário / 👔 Diretor</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.signedAt}</th>
+                <th className="text-right px-3 py-2 font-semibold">{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -561,8 +649,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                     ) : '—'}
                   </td>
                   <td className="px-3 py-2 text-center whitespace-nowrap">
+                    {/* W3c-ii: a rejected term takes priority — the member must re-sign */}
+                    {m.agreement_status === 'rejected' && (
+                      <span role="status" aria-label={t.rejectedBadgeAria} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-100 text-orange-700" title={t.rejectedBadgeAria}>{t.stateRejected}</span>
+                    )}
                     {/* 2-wave signature badges */}
-                    {!m.signed && (
+                    {m.agreement_status !== 'rejected' && !m.signed && (
                       <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700" title="Voluntário não assinou">❌ Não assinado</span>
                     )}
                     {m.signed && !m.counter_signed && (
@@ -581,11 +673,37 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                     {m.counter_signed_at && <div className="text-emerald-600">👔 {fmtDate(m.counter_signed_at)}</div>}
                     {!m.signed_at && '—'}
                   </td>
+                  {/* W3c-ii: lifecycle actions. Reject available on an issued term (manager OR board);
+                      Reissue is manager-only (RPC-gated; hidden for chapter_board scoped view). */}
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    {m.agreement_status === 'issued' ? (
+                      <div className="inline-flex gap-1.5">
+                        <button
+                          onClick={() => rejectAgreement(m)}
+                          disabled={acting === m.id}
+                          className="px-2 py-0.5 rounded-md border border-orange-300 text-orange-700 text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-orange-50 disabled:opacity-50"
+                        >
+                          {t.reject}
+                        </button>
+                        {isManager && (
+                          <button
+                            onClick={() => reissueAgreement(m)}
+                            disabled={acting === m.id}
+                            className="px-2 py-0.5 rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                          >
+                            {t.reissue}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[var(--text-muted)]">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-[var(--text-muted)]">{t.noData}</td>
+                  <td colSpan={8} className="px-4 py-6 text-center text-[var(--text-muted)]">{t.noData}</td>
                 </tr>
               )}
             </tbody>

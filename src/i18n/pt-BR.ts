@@ -4910,6 +4910,21 @@ const ptBR: Record<string, string> = {
   'verify.revokedReason': 'Motivo',
   'verify.searchPlaceholder': 'Inserir código de verificação...',
   'verify.search': 'Verificar',
+  // W3c-ii (B8) — agreement lifecycle states surfaced to members + verifiers
+  'verify.rejected': 'Este documento foi rejeitado e devolvido para reassinatura.',
+  'verify.rejectedAt': 'Rejeitado em',
+  'verify.superseded': 'Este documento foi substituído por uma reemissão.',
+  'verify.supersededHint': 'Uma versão mais recente deste termo foi emitida. Consulte o documento atual do voluntário.',
+  'certificates.status.rejected': 'Rejeitado',
+  'certificates.rejectedReason': 'Motivo da rejeição',
+  'certificates.rejectedResign': 'Revisar e reassinar o termo',
+  'volunteer.rejected.title': 'Seu termo foi devolvido para reassinatura',
+  'volunteer.rejected.description': 'Um responsável revisou seu Termo de Voluntariado e o devolveu. Por favor revise seus dados e assine novamente abaixo.',
+  'volunteer.rejected.reasonLabel': 'Motivo',
+  'volunteer.rejected.goToSign': 'Ir para a assinatura',
+  'profile.volunteerBanner.rejectedTitle': 'Termo de Voluntariado devolvido',
+  'profile.volunteerBanner.rejectedDescription': 'Seu termo deste ano foi devolvido e precisa ser reassinado. Revise seus dados e assine novamente.',
+  'profile.volunteerBanner.rejectedAction': 'Reassinar',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Governança — Change Requests',

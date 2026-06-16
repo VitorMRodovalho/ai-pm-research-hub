@@ -65,9 +65,19 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
       container.innerHTML = data.map((c: any) => {
         const icon = TYPE_ICONS[c.type] || '\uD83D\uDCC3';
-        const statusBadge = c.has_counter_signature
+        // W3c-ii (B8): a rejected term shows a distinct badge + a re-sign note (reason from revoked_reason).
+        const isRejected = c.status === 'rejected';
+        const statusBadge = isRejected
+          ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">${t('certificates.status.rejected', lang)}</span>`
+          : c.has_counter_signature
           ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">${t('certificates.status.counterSigned', lang)}</span>`
           : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">${t('certificates.status.pending', lang)}</span>`;
+        const rejectedNote = isRejected
+          ? `<div class="mt-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 px-3 py-2 text-[11px] text-orange-800 dark:text-orange-300">
+              ${c.revoked_reason ? `<div><span class="font-semibold">${t('certificates.rejectedReason', lang)}:</span> ${esc(c.revoked_reason)}</div>` : ''}
+              <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/volunteer-agreement" class="inline-block mt-1 font-semibold text-orange-700 dark:text-orange-300 underline">${t('certificates.rejectedResign', lang)} \u2192</a>
+            </div>`
+          : '';
         const certPayload: CertificateData & { id?: string } = {
           id: c.id,
           member_name: '',
@@ -95,16 +105,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               </div>
             </div>
             <div class="shrink-0 flex flex-col gap-1.5">
-              <button type="button" data-action="download-cert" data-cert="${attrEsc(JSON.stringify(certPayload))}"
+              ${isRejected ? '' : `<button type="button" data-action="download-cert" data-cert="${attrEsc(JSON.stringify(certPayload))}"
                 class="px-3 py-1.5 rounded-lg bg-navy text-white text-[11px] font-semibold border-0 cursor-pointer hover:opacity-90 transition-opacity">
                 ${t('certificates.download', lang)}
-              </button>
+              </button>`}
               <a href="/verify/${encodeURIComponent(c.verification_code || '')}" target="_blank"
                 class="px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[11px] font-semibold text-navy no-underline hover:bg-navy hover:text-white transition-colors text-center">
                 ${t('certificates.verify', lang)}
               </a>
             </div>
           </div>
+          ${rejectedNote}
         </div>`;
       }).join('');
 
