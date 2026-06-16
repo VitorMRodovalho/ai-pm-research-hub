@@ -313,7 +313,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     try {
       const currentTribeId = Number(_member?.tribe_id || _member?.selected_tribe_id || 0);
       const [{ data: tribes, error: tribesError }, { data: members, error: membersError }] = await Promise.all([
-        sb.from('tribes').select('id, name, whatsapp_url, quadrant, quadrant_name, is_active, workstream_type').order('id'),
+        sb.from('tribes').select('id, name, quadrant, quadrant_name, is_active, workstream_type').order('id'),
         sb.from('public_members')
           .select('tribe_id, current_cycle_active, is_active')
           .eq('current_cycle_active', true)
