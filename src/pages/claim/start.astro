@@ -17,7 +17,10 @@ const CLAIM_I18N = {
   notAuthenticated: t('claim.notAuthenticated', lang),
   error: t('claim.error', lang),
   fallbackAdmin: t('claim.fallbackAdmin', lang),
-  back: t('claim.back', lang),
+  loggedInAs: t('claim.loggedInAs', lang),
+  loggedInHint: t('claim.loggedInHint', lang),
+  identifierHint: t('claim.identifierHint', lang),
+  backWorkspace: t('claim.backWorkspace', lang),
 };
 ---
 <BaseLayout title={CLAIM_I18N.startTitle} activePage="profile" lang={lang}>
@@ -25,7 +28,15 @@ const CLAIM_I18N = {
   <div class="max-w-xl mx-auto py-12 px-4">
     <div class="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-8 shadow-sm">
       <h1 class="text-xl font-semibold text-[var(--text-primary)] mb-3">{CLAIM_I18N.startTitle}</h1>
-      <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{CLAIM_I18N.startIntro}</p>
+      <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">{CLAIM_I18N.startIntro}</p>
+
+      {/* G2 #740 — show the OAuth email the user is currently signed in with so they
+          understand which account isn't recognized; populated client-side. */}
+      <div id="claim-loggedin" class="hidden mb-6 rounded-lg border border-[var(--border-default)] bg-[var(--surface-hover,#f1f5f9)] px-4 py-3">
+        <p class="text-xs text-[var(--text-muted)] mb-0.5">{CLAIM_I18N.loggedInAs}</p>
+        <p id="claim-loggedin-email" class="text-sm font-semibold text-[var(--text-primary)] break-all"></p>
+        <p class="text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">{CLAIM_I18N.loggedInHint}</p>
+      </div>
 
       <form id="claim-form" class="space-y-4">
         <label class="block">
@@ -33,6 +44,7 @@ const CLAIM_I18N = {
           <input id="claim-identifier" type="text" required autocomplete="email"
             placeholder={CLAIM_I18N.identifierPlaceholder}
             class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-input,#fff)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]" />
+          <span class="block text-xs text-[var(--text-muted)] mt-1.5 leading-relaxed">{CLAIM_I18N.identifierHint}</span>
         </label>
         <button id="claim-submit" type="submit"
           class="w-full px-4 py-2.5 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold hover:opacity-90 transition-all cursor-pointer disabled:opacity-50">
@@ -45,7 +57,7 @@ const CLAIM_I18N = {
       <p class="text-xs text-[var(--text-muted)] mt-6 leading-relaxed">{CLAIM_I18N.fallbackAdmin}</p>
 
       <div class="mt-6">
-        <a href={`${langPrefix}/`} class="text-sm text-[var(--brand-primary)] hover:underline">← {CLAIM_I18N.back}</a>
+        <a href={`${langPrefix}/workspace`} class="text-sm text-[var(--brand-primary)] hover:underline">← {CLAIM_I18N.backWorkspace}</a>
       </div>
     </div>
   </div>
@@ -83,6 +95,23 @@ const CLAIM_I18N = {
     const form = document.getElementById('claim-form') as HTMLFormElement | null;
     const btn = document.getElementById('claim-submit') as HTMLButtonElement | null;
     const input = document.getElementById('claim-identifier') as HTMLInputElement | null;
+
+    // G2 #740 — surface the email the user is currently logged in with, so they can
+    // see exactly which account is not yet registered before entering their VEP email.
+    (async () => {
+      const sb = await getSb();
+      if (!sb) return;
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        const email = session?.user?.email;
+        if (email) {
+          const box = document.getElementById('claim-loggedin');
+          const emailEl = document.getElementById('claim-loggedin-email');
+          if (emailEl) emailEl.textContent = email;
+          box?.classList.remove('hidden');
+        }
+      } catch { /* not logged in yet — block stays hidden */ }
+    })();
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
