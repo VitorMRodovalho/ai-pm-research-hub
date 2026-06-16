@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted (Wave 3a-0 lands the display + this direction; durable model lands in Wave 3a/3b) |
+| Status | Accepted (Wave 3a-0 display + 3a DB foundation shipped; C3 + worker + 3b FE pending) |
 | Date | 2026-06-16 |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (surface step; durable model migrations land in Wave 3a) |
+| Migrations | 20260805000189_w3a0_get_selection_dashboard_pmi_memberships.sql (3a-0 surface) · 20260805000190_w3a_member_chapter_affiliations_model.sql (3a DB foundation) |
 | Cross-ref | [ADR-0006](./ADR-0006-persons-engagements-identity.md) · [ADR-0009](./ADR-0009-initiative-types-as-config.md) · [ADR-0012](./ADR-0012-schema-consolidation-principles.md) |
 | Refs | Issue #740 (pre-onboarding journey) Wave 3 |
 
@@ -95,3 +95,69 @@ To stop the wrong display **now**, without waiting for the durable model:
   signatory (C3) land. Do not create a competing ADR.
 - `member_status`-style derivations and `get_chapter_*` read-sites are repointed to the
   canonical sources in Wave 3a (out of scope for 3a-0).
+
+## Amendment — Wave 3a (DB foundation) delivered (2026-06-16, mig `20260805000190`)
+
+The durable model's **schema + backfill** landed (additive, zero behavior change to
+existing reads):
+
+- **`public.member_chapter_affiliations`** created (N:N FACT): `(id, person_id FK
+  persons ON DELETE CASCADE, chapter_code FK chapter_registry, source CHECK
+  in (pmi_vep|admin_import|self_declared|legacy), is_primary, verified_at,
+  created_at, updated_at, UNIQUE(person_id, chapter_code))`. Keyed on `person_id`
+  (ADR-0006 identity primitive), not `member_id`. Partial unique index enforces one
+  primary per person. RLS: `rpc_only_deny_all` (USING false) + anon SELECT revoked —
+  reachable only by SECDEF RPCs + the worker (service_role), mirroring `member_emails`
+  (ADR-0095). The empty `z_archive.member_chapter_affiliations` predecessor (different
+  shape, 0 rows) was left untouched — no collision.
+- **`members.entry_chapter_code`** added: FK `chapter_registry` ON DELETE SET NULL,
+  nullable, **NULL for everyone initially** (no one has chosen). BR-only enforcement +
+  the choice UI land in Wave 3b's `set_my_entry_chapter`. `members.chapter` is **not yet
+  repointed** to a derived value — kept as the legacy/compat value to keep this step
+  additive.
+- **`chapter_registry`** seeded with 8 BR chapters present in live data (PE/PR/RJ/SP/BA/
+  ES/SC/SE → 13 BR total). GO remains the **only** `is_contracting_chapter`. legal_name/
+  CNPJ for non-contracting chapters are informational (only GO signs).
+- **Backfill**: 72 of 73 active members got a `source='legacy'`, `is_primary=true`
+  affiliation from `members.chapter` (stripped `PMI-`); the 1 `'Outro'` member was
+  skipped (not a registry chapter). Verified live: 0 missing affiliations, one primary
+  per person.
+
+**Deferred to follow-on PRs (still Wave 3):** the multi-chapter population from the
+reliable `pmi_memberships` snapshot is owned by the **pmi-vep-sync worker (3a-iii)**
+(it already maps `"<State>, Brazil Chapter" → PMI-XX`, so the SQL backfill does not
+duplicate that map); **C3** (`sign_volunteer_agreement` always PMI-GO signatory) is its
+own PR (3a-ii, legal-sensitive); the FE entry-chapter choice + `get_chapter_*` repoint +
+`members.chapter` becomes derived are **3b**.
+
+### Prerequisites / contracts for the follow-on PRs (council Tier 1, this PR)
+
+- **Worker one-primary upsert protocol (3a-iii) — MANDATORY.** The partial unique index
+  `member_chapter_affiliations_one_primary_idx` forbids two `is_primary=true` rows for
+  one `person_id`. A naive `INSERT ... ON CONFLICT (person_id, chapter_code) DO UPDATE
+  SET is_primary=true` therefore **fails** when the person already has a *different*
+  primary. The worker MUST do it in two steps inside one transaction:
+  1. `UPDATE member_chapter_affiliations SET is_primary=false WHERE person_id=$p AND is_primary AND chapter_code <> $new_primary;`
+  2. `INSERT ... ON CONFLICT (person_id, chapter_code) DO UPDATE SET is_primary=EXCLUDED.is_primary, source='pmi_vep', verified_at=now(), updated_at=now();`
+  Encapsulate in a SECDEF RPC `upsert_chapter_affiliation(p_person_id, p_chapter_code, p_source, p_is_primary)` so the invariant lives in one place.
+- **`updated_at` trigger (3a-iii).** No `_set_updated_at` trigger exists yet (the table
+  has no UPDATEs in 3a-i). Add it before the worker starts issuing UPDATEs, else
+  `updated_at` stays frozen at insert time.
+- **`service_role` table grants (3a-iii).** Confirm the worker's `service_role` can
+  INSERT/UPDATE (it bypasses RLS but still needs table privileges; default Supabase
+  `GRANT ALL ... TO service_role` usually covers this — audit before relying on it).
+- **Backfill scope = active members only (intentional).** Alumni/inactive members were
+  NOT backfilled (the FACT table seeds from active members; the worker fills the rest as
+  it syncs). Decide in 3b whether `members.chapter` derivation needs a primary
+  affiliation for non-active members, or whether the legacy `members.chapter` value
+  stays authoritative for them.
+- **Deferred invariant `U_active_person_has_primary_chapter_affiliation` (3b).** Add to
+  `check_schema_invariants()` when `members.chapter` becomes derived: every active
+  member's `person_id` must have exactly one `is_primary=true` affiliation, else the
+  COALESCE derivation breaks silently. The partial unique index enforces *at most one*;
+  this invariant would enforce *exactly one* for active members.
+- **RLS is the enforcement; table REVOKE is defense-in-depth.** Verified live: a
+  `SET ROLE authenticated; SELECT ...` returns `permission denied`. NB: on the hosted
+  Supabase DB, `information_schema.role_table_grants` may still *list* anon/authenticated
+  grants (default-privilege artifacts) even though the effective privilege check denies
+  access — trust the `SET ROLE` probe, not the catalog view.
