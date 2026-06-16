@@ -45,9 +45,9 @@ const STEP_META: Record<string, { icon: string; pt: string; en: string; es: stri
 };
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding' },
-  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking' },
-  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración' },
+  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo' },
+  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking', step: 'Step' },
+  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración', step: 'Paso' },
 };
 
 function label(key: string, lang: string): string {
@@ -116,6 +116,9 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const { total, completed, xp_earned, xp_total } = data.pre_onboarding;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const allDone = completed === total && total > 0;
+  // A3 #740 — linear stepper: communicate the sequence position.
+  const firstIncomplete = preSteps.findIndex((s) => s.status !== 'completed');
+  const currentStep = firstIncomplete === -1 ? preSteps.length : firstIncomplete + 1;
 
   return (
     <div className={`rounded-2xl border-2 ${allDone ? 'border-emerald-300 bg-emerald-50/30' : 'border-teal/30 bg-[var(--surface-card)]'} p-5 mb-6 shadow-sm`}>
@@ -124,7 +127,8 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
         <h2 className="text-base font-extrabold text-navy">{l.title}</h2>
         <span className="text-xs font-bold text-teal">{xp_earned}/{xp_total} {l.xp}</span>
       </div>
-      <p className="text-[11px] text-[var(--text-muted)] mb-3">{l.subtitle}</p>
+      <p className="text-[11px] text-[var(--text-muted)] mb-1">{l.subtitle}</p>
+      <p className="text-[11px] font-semibold text-teal mb-3">{l.step} {currentStep} {l.of} {preSteps.length}</p>
 
       {/* Progress bar */}
       <div className="flex items-center gap-3 mb-4">
@@ -138,11 +142,14 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
 
       {/* Steps */}
       <div className="space-y-2">
-        {preSteps.map((s) => {
+        {preSteps.map((s, i) => {
           const done = s.status === 'completed';
           const overdue = !done && s.sla_deadline && new Date(s.sla_deadline) < new Date();
           return (
             <div key={s.step_key} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${done ? 'border-emerald-200 bg-emerald-50/60' : overdue ? 'border-amber-300 bg-amber-50/40' : 'border-[var(--border-subtle)] bg-[var(--surface-base)]'}`}>
+              <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${done ? 'bg-emerald-500 text-white' : 'bg-teal/15 text-teal'}`}>
+                {done ? '✓' : i + 1}
+              </span>
               <span className="text-lg flex-shrink-0">{icon(s.step_key)}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
