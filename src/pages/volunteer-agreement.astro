@@ -207,6 +207,29 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       </div>`;
   }
 
+  // B4 (Wave 4): the volunteer term is under a governance "signature hold" whenever no
+  // template is active (the term is being revised \u2014 new IP/governance version + corrective
+  // addendum). In that state sign_volunteer_agreement returns template_not_found, so rather
+  // than letting the member fill a form that errors at submit, communicate the pause with
+  // dignity: it is not their fault, they will be notified, and an addendum is coming.
+  function renderPaused(lang: Lang): string {
+    return `
+      <div class="max-w-md mx-auto py-4">
+        <div class="rounded-2xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-900/20 dark:border-sky-700 p-6 text-center">
+          <div class="text-4xl mb-3"><span role="img" aria-label="${esc(t('volunteer.paused.iconLabel', lang))}">\u23f3</span></div>
+          <h2 class="text-lg font-bold text-sky-800 dark:text-sky-300 mb-2">${esc(t('volunteer.paused.title', lang))}</h2>
+          <p class="text-sm text-sky-700 dark:text-sky-400 leading-relaxed mb-3">${esc(t('volunteer.paused.description', lang))}</p>
+          <p class="text-[13px] text-sky-600 dark:text-sky-400 italic mb-5">${esc(t('volunteer.paused.addendumNote', lang))}</p>
+          <a href="${lp}/workspace" class="inline-block px-5 py-2.5 rounded-lg bg-navy text-white text-sm font-bold no-underline hover:opacity-90 transition-opacity">
+            ${esc(t('volunteer.paused.backCta', lang))} \u2192
+          </a>
+          <p class="text-[11px] text-[var(--text-muted)] mt-3">
+            <a href="${lp}/profile" class="underline hover:text-[var(--text-secondary)]">${esc(t('volunteer.paused.profileHint', lang))}</a>
+          </p>
+        </div>
+      </div>`;
+  }
+
   (async () => {
     const lang = ((window as any).__vaLang || 'pt-BR') as Lang;
     const app = document.getElementById('va-app');
@@ -258,6 +281,31 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const rejectedCert = vaCerts.find((c: any) => c.status === 'rejected');
     const rejectedBanner = rejectedCert ? renderRejectedBanner(rejectedCert.revoked_reason || null, lang) : '';
 
+    // B4: detect the governance "signature hold" by the ABSENCE of an active template row
+    // (not a parse failure of an existing one). No active template ⟺ sign_volunteer_agreement
+    // would return template_not_found → show the paused screen instead of an un-submittable form.
+    // This check runs BEFORE the profile-completeness gate: while signing is paused, telling the
+    // member to "complete your profile first" would be misleading guidance.
+    let activeTemplateRow: any = null;
+    let template: any = null;
+    try {
+      const { data: docs } = await sb.from('governance_documents')
+        .select('id, content')
+        .eq('doc_type', 'volunteer_term_template')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      activeTemplateRow = docs?.[0] || null;
+      if (activeTemplateRow?.content) {
+        try { template = JSON.parse(activeTemplateRow.content); } catch { template = null; }
+      }
+    } catch { /* network error → cannot confirm a signable term; treat as paused (safe degraded state) */ }
+
+    if (!activeTemplateRow) {
+      app.innerHTML = renderPaused(lang);
+      return;
+    }
+
     // Pre-flight: check profile completeness before showing form
     const requiredFields: Record<string, string> = {
       pmi_id: 'PMI ID',
@@ -298,20 +346,6 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       return;
     }
 
-    // Load template from governance_documents (admin-editable)
-    let template: any = null;
-    try {
-      const { data: docs } = await sb.from('governance_documents')
-        .select('content')
-        .eq('doc_type', 'volunteer_term_template')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (docs?.[0]?.content) {
-        try { template = JSON.parse(docs[0].content); } catch { template = null; }
-      }
-    } catch { /* fallback to i18n */ }
-
     // Load member tribe name for display
     const memberData = { ...member, tribe_name: member.tribe_name || (window as any).__memberTribeName || '—' };
     app.innerHTML = rejectedBanner + renderForm(memberData, lang, template);
@@ -339,6 +373,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           setTimeout(() => { window.location.href = profileUrl; }, 1500);
           return;
         }
+        // B4: the active template could be pulled (signature hold) between page-load and submit.
+        // Surface the same graceful paused screen instead of a cryptic generic error toast.
+        if (data?.error === 'template_not_found') { app.innerHTML = renderPaused(lang); return; }
         if (data?.error) throw new Error(data.error);
         // A4: best-effort tribe WhatsApp link (term-gated RPC; returns success only
         // once the member is no longer pre-onboarding + belongs to the tribe — most
