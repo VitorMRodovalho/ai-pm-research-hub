@@ -4931,6 +4931,27 @@ const ptBR: Record<string, string> = {
   'profile.volunteerBanner.rejectedTitle': 'Termo de Voluntariado devolvido',
   'profile.volunteerBanner.rejectedDescription': 'Seu termo deste ano foi devolvido e precisa ser reassinado. Revise seus dados e assine novamente.',
   'profile.volunteerBanner.rejectedAction': 'Reassinar',
+  // --- Wave 4 Slice 2 (B2/B3/B6) — affiliation farol + volunteer-agreement i18n ---
+  // B2: PMI affiliation status farol (member-side, /profile)
+  'profile.affiliation.title': 'Filiação PMI',
+  'profile.affiliation.expiresLabel': 'Vence em',
+  'profile.affiliation.verifiedOnLabel': 'Verificada em',
+  'profile.affiliation.unverifiedDesc': 'Sua filiação ao PMI ainda não foi verificada pela Diretoria de Filiação. Você será avisado assim que for confirmada.',
+  'profile.affiliation.inactiveDesc': 'Nossa última verificação indica que sua filiação ao PMI está inativa. O Termo de Voluntariado exige filiação ativa — renove em pmi.org.',
+  'profile.affiliation.expiredDesc': 'Sua filiação ao PMI venceu. Renove em pmi.org para manter seu Termo de Voluntariado vigente.',
+  'profile.affiliation.expiringDesc': 'Sua filiação ao PMI vence em breve. Renove em pmi.org para não perder a vigência.',
+  'profile.affiliation.verifiedDesc': 'Filiação ativa e verificada pela {verifiedBy}.',
+  'profile.affiliation.renewCta': 'Renovar no pmi.org',
+  // B3: rationale line on the /profile pending-term banner (mirrors the volunteer-agreement gate)
+  'profile.volunteerBanner.fieldsRationale': 'Esses dados são exigidos pela Lei nº 9.608/1998 e pela LGPD, e usados apenas no Termo de Voluntariado e na comunicação institucional.',
+  // B6: volunteer-agreement.astro login gate + missing-fields block (were hardcoded)
+  'volunteer.loginRequired': 'Login necessário',
+  'volunteer.loginButton': 'Entrar',
+  'volunteer.missing.title': 'Complete seu perfil antes de assinar',
+  'volunteer.missing.description': 'Para assinar o Termo de Voluntariado, você precisa completar os seguintes dados pessoais obrigatórios:',
+  'volunteer.missing.rationale': 'Esses dados são obrigatórios conforme a Lei nº 9.608/1998 e a LGPD. São usados apenas no Termo de Voluntariado e na comunicação institucional.',
+  'volunteer.missing.action': '✏️ Completar perfil agora',
+  'volunteer.missing.toastPrefix': 'Perfil incompleto: ',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Governança — Change Requests',

@@ -103,6 +103,21 @@ const PROFILE_I18N = {
   entryChapterEmptyGuide: t('profile.entryChapter.emptyGuide', lang),
   entryChapterSaved: t('profile.entryChapter.saved', lang),
   entryChapterErrorPrefix: t('profile.entryChapter.errorPrefix', lang),
+  // B2 (Wave 4) — PMI affiliation farol. Farol labels reuse the admin queue dictionary.
+  affTitle: t('profile.affiliation.title', lang),
+  affExpiresLabel: t('profile.affiliation.expiresLabel', lang),
+  affVerifiedOnLabel: t('profile.affiliation.verifiedOnLabel', lang),
+  affUnverifiedDesc: t('profile.affiliation.unverifiedDesc', lang),
+  affInactiveDesc: t('profile.affiliation.inactiveDesc', lang),
+  affExpiredDesc: t('profile.affiliation.expiredDesc', lang),
+  affExpiringDesc: t('profile.affiliation.expiringDesc', lang),
+  affVerifiedDesc: t('profile.affiliation.verifiedDesc', lang),
+  affRenewCta: t('profile.affiliation.renewCta', lang),
+  affUnverified: t('comp.affiliationQueue.affUnverified', lang),
+  affInactive: t('comp.affiliationQueue.affInactive', lang),
+  affExpired: t('comp.affiliationQueue.affExpired', lang),
+  affExpiring: t('comp.affiliationQueue.affExpiring', lang),
+  affVerified: t('comp.affiliationQueue.affVerified', lang),
   verifyCredly: t('profile.verifyCredly', lang),
   saveChanges: t('profile.saveChanges', lang),
   pmiIdPlaceholder: t('profile.pmiIdPlaceholder', lang),
@@ -224,6 +239,7 @@ const PROFILE_I18N = {
           <div id="va-missing-fields" class="hidden mt-2 text-[11px] text-amber-800 dark:text-amber-300">
             <span class="font-semibold">{t('profile.volunteerBanner.missingLabel', lang)}</span>
             <span id="va-missing-list"></span>
+            <p class="mt-1 italic text-amber-600 dark:text-amber-400">{t('profile.volunteerBanner.fieldsRationale', lang)}</p>
           </div>
         </div>
         <a id="va-action-btn" href={`${langPrefix}/volunteer-agreement`} class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
@@ -329,6 +345,7 @@ const PROFILE_I18N = {
   let _xpScopeInitialized = false;
   let attendanceHoursData = null;
   let chapterAffiliations = [];  // Wave 3b-i — caller's BR chapter affiliations (FACT)
+  let affiliationStatus = null;  // B2 (Wave 4) — caller's latest PMI affiliation verification (self-scoped)
   let currentCycleCode = '';
   let currentCycleLabel = '';
   let cycleMeta = {};
@@ -404,6 +421,9 @@ const PROFILE_I18N = {
     refreshVolunteerAgreementCTA(sb);
     // Wave 3b-i — load the member's BR chapter affiliations for the entry-chapter card.
     await loadChapterAffiliations(sb);
+    // B2 (Wave 4) — load the member's PMI affiliation status (farol). Non-blocking: a
+    // failure just leaves the farol card hidden (the card only renders when data exists).
+    await loadAffiliationStatus(sb);
     // Load cycle history
     try {
       const { data: hist } = await sb.from('member_cycle_history')
@@ -1417,6 +1437,73 @@ const PROFILE_I18N = {
       </div>`;
   }
 
+  // B2 (Wave 4) — PMI affiliation farol (member-side). Makes the otherwise-invisible
+  // membership verification status visible to the member, mirroring the admin queue farol
+  // (AffiliationQueueIsland). Informational only in this wave; the hard gate (B5) is deferred.
+  function affiliationFarolDate(value: string | null | undefined): string {
+    if (!value) return '';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '';
+    return dt.toLocaleDateString(PROFILE_I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function affiliationStatusHtml(m: any): string {
+    const status: any = affiliationStatus;
+    const latest: any = status?.latest || null;
+    // Only render when the member has a PMI affiliation context — otherwise the card is noise.
+    const hasContext = !!(latest || status?.pmi_id_verified || m?.pmi_id);
+    if (!status || !hasContext) return '';
+
+    // Farol state — byte-mirror of AffiliationQueueIsland.farol() so member + admin agree.
+    let emoji = '🟢', label = PROFILE_I18N.affVerified, cls = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300';
+    // Substitute raw; the whole `desc` string is escaped once at render (avoids double-encoding).
+    let desc = PROFILE_I18N.affVerifiedDesc.replace('{verifiedBy}', latest?.verified_by || 'Diretoria de Filiação');
+    let showRenew = false;
+    let dateRow = '';
+
+    if (!latest) {
+      emoji = '⚪'; label = PROFILE_I18N.affUnverified; cls = 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+      desc = PROFILE_I18N.affUnverifiedDesc;
+    } else if (latest.membership_active === false) {
+      emoji = '🔴'; label = PROFILE_I18N.affInactive; cls = 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300';
+      desc = PROFILE_I18N.affInactiveDesc; showRenew = true;
+    } else {
+      const exp = latest.membership_expires_on;
+      const days = exp ? Math.ceil((new Date(exp).getTime() - Date.now()) / 86400000) : null;
+      if (days !== null && days < 0) {
+        emoji = '🔴'; label = PROFILE_I18N.affExpired; cls = 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300';
+        desc = PROFILE_I18N.affExpiredDesc; showRenew = true;
+      } else if (days !== null && days <= 30) {
+        emoji = '🟡'; label = PROFILE_I18N.affExpiring; cls = 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300';
+        desc = PROFILE_I18N.affExpiringDesc; showRenew = true;
+      }
+      // else stays verified 🟢
+      const expFmt = affiliationFarolDate(exp);
+      if (expFmt) dateRow = `<div class="text-[.72rem] text-[var(--text-muted)] mt-2"><span class="font-semibold">${PROFILE_I18N.affExpiresLabel}:</span> ${escapeHtmlSafe(expFmt)}</div>`;
+    }
+
+    // For a verified term, also surface when it was verified (trust signal).
+    if (latest && emoji === '🟢') {
+      const verFmt = affiliationFarolDate(latest.created_at);
+      if (verFmt) dateRow += `<div class="text-[.72rem] text-[var(--text-muted)] mt-1"><span class="font-semibold">${PROFILE_I18N.affVerifiedOnLabel}:</span> ${escapeHtmlSafe(verFmt)}</div>`;
+    }
+
+    const renewHtml = showRenew
+      ? `<a href="https://www.pmi.org" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-opacity">${PROFILE_I18N.affRenewCta} →</a>`
+      : '';
+
+    return `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <h2 class="text-sm font-bold text-navy">${PROFILE_I18N.affTitle}</h2>
+          <span class="inline-flex items-center gap-1 text-[.72rem] font-semibold px-2.5 py-1 rounded-full ${cls}">${emoji} ${escapeHtmlSafe(label)}</span>
+        </div>
+        <p class="text-[.78rem] text-[var(--text-secondary)] leading-relaxed">${escapeHtmlSafe(desc)}</p>
+        ${dateRow}
+        ${renewHtml}
+      </div>`;
+  }
+
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
@@ -1475,6 +1562,9 @@ const PROFILE_I18N = {
 
       <!-- Entry chapter choice (Wave 3b-i / ADR-0104) -->
       ${entryChapterHtml(m)}
+
+      <!-- PMI affiliation farol (Wave 4 / B2) -->
+      ${affiliationStatusHtml(m)}
 
       <!-- My Week -->
       ${myWeekHtml(m)}
@@ -1903,6 +1993,21 @@ const PROFILE_I18N = {
     } catch (e) {
       console.warn('Profile: failed to load chapter affiliations:', e);
       chapterAffiliations = [];
+    }
+  }
+
+  // B2 (Wave 4) — load the member's own PMI affiliation status. get_member_affiliation_status
+  // is SECURITY DEFINER + self-scoped: passing the caller's own member id returns pmi_id_verified
+  // + the latest verification (membership_active / membership_expires_on / verified_by as a ROLE,
+  // never the agent name). LGPD: verification_obs is withheld for self (only via export_my_data).
+  async function loadAffiliationStatus(sb: any) {
+    if (!currentMember?.id) return;
+    try {
+      const { data } = await sb.rpc('get_member_affiliation_status', { p_member_id: currentMember.id });
+      affiliationStatus = data || null;
+    } catch (e) {
+      console.warn('Profile: failed to load affiliation status:', e);
+      affiliationStatus = null;
     }
   }
 
