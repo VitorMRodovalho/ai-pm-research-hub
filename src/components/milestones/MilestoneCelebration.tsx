@@ -17,7 +17,10 @@ interface Props {
 //    owns the just-signed beat. Folding it here would double-celebrate.
 //  - promotion (PR4) is owned here: it fires when operational_role is elevated to tribe_leader
 //    (no competing card), so the generic surface is its natural home.
-//  - profile_complete (PR5) plugs in later via MILESTONE_COPY + OWNED_KEYS.
+//  - profile_complete (PR5) is owned here: it fires when the member first saves their profile
+//    (members.profile_completed_at NULL -> NOT NULL), which can happen on any page, so the global
+//    surface is its natural home. Copy celebrates the completed profile — NO points mention (the
+//    "+50pts" award does not exist; SPEC §2 grounding).
 interface Copy {
   title: string;
   body: string;
@@ -42,11 +45,16 @@ const MILESTONE_COPY: Record<string, Record<string, Copy>> = {
     'en-US': { title: '🌟 You are a leader at the Hub now!', body: 'Stepping up is a vote of confidence from the community — and your path shows you are ready. We have got your back on this new journey.', cta: '🧭 Open my workspace', ctaHref: '/workspace', dismiss: 'Close' },
     'es-LATAM': { title: '🌟 ¡Ahora lideras en el Núcleo!', body: 'Dar el paso al frente es un voto de confianza de la comunidad — y tu trayectoria muestra que estás listo(a). Cuenta con nosotros en este nuevo camino.', cta: '🧭 Abrir mi espacio', ctaHref: '/workspace', dismiss: 'Cerrar' },
   },
+  profile_complete: {
+    'pt-BR': { title: '✨ Perfil completo!', body: 'Seu perfil está pronto — agora a comunidade conhece você melhor e as conexões certas ficam mais fáceis. Que bom ter você por inteiro aqui!', cta: '🧭 Abrir meu espaço', ctaHref: '/workspace', dismiss: 'Fechar' },
+    'en-US': { title: '✨ Profile complete!', body: 'Your profile is all set — now the community knows you better and the right connections come easier. So glad to have the whole you here!', cta: '🧭 Open my workspace', ctaHref: '/workspace', dismiss: 'Close' },
+    'es-LATAM': { title: '✨ ¡Perfil completo!', body: 'Tu perfil está listo — ahora la comunidad te conoce mejor y las conexiones correctas son más fáciles. ¡Qué bueno tenerte completo aquí!', cta: '🧭 Abrir mi espacio', ctaHref: '/workspace', dismiss: 'Cerrar' },
+  },
 };
 
 // Milestones this surface owns. Anything pending but not listed here is ignored (owned
 // elsewhere or deferred). Keep in sync with MILESTONE_COPY.
-const OWNED_KEYS = ['first_attendance', 'first_deliverable', 'promotion'];
+const OWNED_KEYS = ['first_attendance', 'first_deliverable', 'promotion', 'profile_complete'];
 
 function copyFor(key: string, lang: string): Copy | null {
   const m = MILESTONE_COPY[key];
