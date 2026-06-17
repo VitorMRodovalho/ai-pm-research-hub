@@ -41,14 +41,20 @@ const L: Record<string, Record<string, string>> = {
 // with a guided 3-beat roadmap (meet tribe → first meeting + attendance → first XP on the trail).
 // Inline trilingual to match this component's L idiom. No metrics (grounding rule).
 interface HBlock {
-  title: string; body: string;
+  title: string; body: string; bodyPre: string;
   beat1: string; beat2: string; beat3: string;
   attendanceCta: string;
 }
+// #766 PR2 — body is keyed on the volunteer_term step: future-oriented BEFORE signing
+// (bodyPre), past-oriented AFTER (body). The unconditional "Você assinou o termo" copy
+// was shown to members who had not yet signed (the card renders for every active
+// checklist). term_signed is now a tracked server-side milestone (member_milestones),
+// but its celebration surface is deferred (ux-leader DEFER-FE) — this is only the copy fix.
 const HBLOCK: Record<string, HBlock> = {
   'pt-BR': {
     title: '🎉 Bem-vindo(a) ao Núcleo! Seus primeiros dias',
     body: 'Você assinou o termo e já é parte do time. Aqui está o que fazer nos seus primeiros dias para começar com tudo:',
+    bodyPre: 'Aqui está o roteiro dos seus primeiros dias como membro do Núcleo — siga os passos abaixo para começar com tudo:',
     beat1: '🔬 Conheça sua tribo — apresente-se e veja a agenda das reuniões.',
     beat2: '📅 Participe da sua primeira reunião e registre sua presença — é o que mantém você ativo.',
     beat3: '🎓 Inicie a trilha PMI AI e conquiste seu primeiro XP.',
@@ -57,6 +63,7 @@ const HBLOCK: Record<string, HBlock> = {
   'en-US': {
     title: '🎉 Welcome to the Hub! Your first days',
     body: 'You signed the term and you\'re part of the team now. Here\'s what to do in your first days to hit the ground running:',
+    bodyPre: 'Here\'s your roadmap for your first days as a member of the Hub — follow the steps below to hit the ground running:',
     beat1: '🔬 Meet your stream — introduce yourself and check the meeting agenda.',
     beat2: '📅 Join your first meeting and register your attendance — it\'s what keeps you active.',
     beat3: '🎓 Start the PMI AI trail and earn your first XP.',
@@ -65,6 +72,7 @@ const HBLOCK: Record<string, HBlock> = {
   'es-LATAM': {
     title: '🎉 ¡Bienvenido(a) al Núcleo! Tus primeros días',
     body: 'Firmaste el acuerdo y ya eres parte del equipo. Esto es lo que debes hacer en tus primeros días para empezar con todo:',
+    bodyPre: 'Esta es la hoja de ruta para tus primeros días como miembro del Núcleo — sigue los pasos a continuación para empezar con todo:',
     beat1: '🔬 Conoce tu línea — preséntate y revisa la agenda de reuniones.',
     beat2: '📅 Participa en tu primera reunión y registra tu asistencia — es lo que te mantiene activo.',
     beat3: '🎓 Inicia la ruta PMI AI y consigue tu primer XP.',
@@ -198,6 +206,9 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
 
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const member = (window as any).navGetMember?.();
+  // #766 PR2 — past-oriented HBLOCK body only once the term is actually signed; otherwise
+  // future-oriented (the card renders for members who have not yet signed too).
+  const termSigned = steps.find((s) => s.step_id === 'volunteer_term')?.status === 'completed';
   // A3 #740 — linear stepper: communicate the sequence, not just a %% bar.
   const firstIncomplete = steps.findIndex((s) => s.status !== 'completed');
   const currentStep = firstIncomplete === -1 ? steps.length : firstIncomplete + 1;
@@ -207,7 +218,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
       {/* H1/H6 #740 — post-promotion "first days" welcome card: answers "now what?" with a guided 3-beat roadmap */}
       <div className="mb-4 rounded-xl border border-teal/30 bg-teal/5 dark:bg-teal/10 p-3.5">
         <h3 className="text-[12px] font-bold text-navy dark:text-teal-200">{h.title}</h3>
-        <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">{h.body}</p>
+        <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">{termSigned ? h.body : h.bodyPre}</p>
         <ul className="mt-2 space-y-1.5 text-[11px] text-[var(--text-secondary)] leading-relaxed list-none pl-0">
           <li>{h.beat1}</li>
           <li>{h.beat2}</li>
