@@ -38,6 +38,20 @@ const SETTINGS_I18N = {
   reasonPrompt: t('admin.settings.reasonPrompt', lang),
   reasonRequired: t('admin.settings.reasonRequired', lang),
   platformUpdated: t('admin.settings.platformUpdated', lang),
+  slaUnitHours: t('admin.settings.slaUnitHours', lang),
+  slaUnitDays: t('admin.settings.slaUnitDays', lang),
+  slaCurrentLabel: t('admin.settings.slaCurrentLabel', lang),
+  slaConfirm: t('admin.settings.slaConfirm', lang),
+  slaSaved: t('admin.settings.slaSaved', lang),
+  slaRangeError: t('admin.settings.slaRangeError', lang),
+  slaInterviewOverdueLabel: t('admin.settings.slaInterviewOverdueLabel', lang),
+  slaInterviewOverdueHelp: t('admin.settings.slaInterviewOverdueHelp', lang),
+  slaStuckScheduledLabel: t('admin.settings.slaStuckScheduledLabel', lang),
+  slaStuckScheduledHelp: t('admin.settings.slaStuckScheduledHelp', lang),
+  slaRescheduleInitialLabel: t('admin.settings.slaRescheduleInitialLabel', lang),
+  slaRescheduleInitialHelp: t('admin.settings.slaRescheduleInitialHelp', lang),
+  slaRescheduleRepeatLabel: t('admin.settings.slaRescheduleRepeatLabel', lang),
+  slaRescheduleRepeatHelp: t('admin.settings.slaRescheduleRepeatHelp', lang),
 };
 ---
 
@@ -90,6 +104,33 @@ const SETTINGS_I18N = {
         </div>
         <div id="platform-settings" class="p-5 space-y-3">
           <p class="text-[.7rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
+        </div>
+      </div>
+
+      <!-- ── J4 PR2 (#766): SLA Windows ── -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">{t('admin.settings.slaTitle', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.slaHint', lang)}</p>
+          <p class="text-[.62rem] text-amber-600 mt-1.5 flex items-start gap-1">
+            <span aria-hidden="true">&#x26A0;</span>
+            <span>{t('admin.settings.slaWarning', lang)}</span>
+          </p>
+        </div>
+        <div class="p-5">
+          <div id="sla-loading" class="text-[.7rem] text-[var(--text-muted)]">{t('common.loading', lang)}</div>
+          <div id="sla-error" class="hidden text-[.7rem] text-red-600"></div>
+          <div id="sla-content" class="hidden space-y-4">
+            <div>
+              <div class="text-[.6rem] font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-2">{t('admin.settings.slaGroupInterviews', lang)}</div>
+              <div id="sla-group-interviews" class="space-y-3"></div>
+            </div>
+            <hr class="border-[var(--border-subtle)]">
+            <div>
+              <div class="text-[.6rem] font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-2">{t('admin.settings.slaGroupReschedule', lang)}</div>
+              <div id="sla-group-reschedule" class="space-y-3"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -195,6 +236,19 @@ const SETTINGS_I18N = {
     reasonPrompt: 'Razão da alteração (obrigatório):',
     reasonRequired: 'Razão obrigatória.',
     platformUpdated: 'Configuração atualizada!',
+    slaUnitHours: 'Horas', slaUnitDays: 'Dias',
+    slaCurrentLabel: 'Configuração atual',
+    slaConfirm: 'Confirmar — afeta cron de produção',
+    slaSaved: 'Janela de SLA atualizada',
+    slaRangeError: 'Valor fora do intervalo permitido.',
+    slaInterviewOverdueLabel: 'Carência para alerta de entrevista atrasada',
+    slaInterviewOverdueHelp: 'Tempo após o início da janela agendada antes de o sistema sinalizar que a entrevista está atrasada. O entrevistador é notificado após esse período.',
+    slaStuckScheduledLabel: 'Carência para resgate de candidatura travada',
+    slaStuckScheduledHelp: 'Tempo após a data da entrevista antes de uma candidatura em "entrevista agendada" ser automaticamente resgatada para revisão. Evita candidaturas esquecidas.',
+    slaRescheduleInitialLabel: 'Aguardo antes do 1º lembrete de remarcação',
+    slaRescheduleInitialHelp: 'Dias após um pedido de remarcação antes do primeiro email de lembrete ser enviado ao candidato.',
+    slaRescheduleRepeatLabel: 'Intervalo entre lembretes de remarcação',
+    slaRescheduleRepeatHelp: 'Dias mínimos entre emails de lembrete subsequentes ao candidato que ainda não remarcou.',
   };
 
   let sb: any = null;
@@ -470,6 +524,166 @@ const SETTINGS_I18N = {
     }
   }
 
+  // ── J4 PR2 (#766): SLA Windows ──
+  const SLA_FIELDS: Array<{ key: string; group: string; labelKey: string; helpKey: string; minHours: number; maxHours: number }> = [
+    { key: 'interview_overdue_grace', group: 'interviews', labelKey: 'slaInterviewOverdueLabel', helpKey: 'slaInterviewOverdueHelp', minHours: 1, maxHours: 168 },
+    { key: 'stuck_scheduled_grace', group: 'interviews', labelKey: 'slaStuckScheduledLabel', helpKey: 'slaStuckScheduledHelp', minHours: 1, maxHours: 336 },
+    { key: 'reschedule_nudge_initial', group: 'reschedule', labelKey: 'slaRescheduleInitialLabel', helpKey: 'slaRescheduleInitialHelp', minHours: 24, maxHours: 720 },
+    { key: 'reschedule_nudge_repeat', group: 'reschedule', labelKey: 'slaRescheduleRepeatLabel', helpKey: 'slaRescheduleRepeatHelp', minHours: 24, maxHours: 720 },
+  ];
+
+  type SlaParsed = { value: number | null; unit: 'hours' | 'days'; ok: boolean; raw: string };
+
+  // PostgREST renders `interval` as "24:00:00" (hours) or "3 days". Parse both; fall back to raw.
+  function parseSlaInterval(raw: any): SlaParsed {
+    if (raw == null) return { value: null, unit: 'hours', ok: false, raw: '' };
+    const s = String(raw).trim();
+    const dayMatch = s.match(/^(\d+)\s+days?(?:\s+(\d+):(\d+):(\d+))?$/i);
+    if (dayMatch) {
+      const days = parseInt(dayMatch[1], 10);
+      const hh = dayMatch[2] ? parseInt(dayMatch[2], 10) : 0;
+      const mm = dayMatch[3] ? parseInt(dayMatch[3], 10) : 0;
+      if (hh === 0 && mm === 0) return { value: days, unit: 'days', ok: true, raw: s };
+      return { value: Math.round((days * 24 + hh + mm / 60) * 100) / 100, unit: 'hours', ok: true, raw: s };
+    }
+    const timeMatch = s.match(/^(\d+):(\d+):(\d+)$/);
+    if (timeMatch) {
+      const hh = parseInt(timeMatch[1], 10);
+      const mm = parseInt(timeMatch[2], 10);
+      return { value: Math.round((hh + mm / 60) * 100) / 100, unit: 'hours', ok: true, raw: s };
+    }
+    return { value: null, unit: 'hours', ok: false, raw: s };
+  }
+
+  function fmtSlaCurrent(p: SlaParsed): string {
+    if (!p.ok || p.value == null) return p.raw || '—';
+    const unitLabel = (p.unit === 'days' ? T.slaUnitDays : T.slaUnitHours).toLowerCase();
+    return `${p.value} ${unitLabel}`;
+  }
+
+  async function loadSlaWindows() {
+    if (!sb) return;
+    const loadingEl = document.getElementById('sla-loading');
+    const errorEl = document.getElementById('sla-error');
+    const contentEl = document.getElementById('sla-content');
+    if (!contentEl) return;
+    try {
+      const { data, error } = await sb.from('sla_policies').select('policy_key, value_interval');
+      if (error) throw error;
+      const byKey: Record<string, any> = {};
+      (data || []).forEach((r: any) => { byKey[r.policy_key] = r.value_interval; });
+
+      const groupEls: Record<string, HTMLElement | null> = {
+        interviews: document.getElementById('sla-group-interviews'),
+        reschedule: document.getElementById('sla-group-reschedule'),
+      };
+      // Clear any live confirm-timers before re-rendering rows (avoids stale timers on detached nodes)
+      Object.keys(slaConfirmTimers).forEach((k) => clearTimeout(slaConfirmTimers[k]));
+      Object.keys(slaConfirmTimers).forEach((k) => delete slaConfirmTimers[k]);
+      Object.keys(groupEls).forEach((g) => { const el = groupEls[g]; if (el) el.innerHTML = ''; });
+
+      SLA_FIELDS.forEach((f) => {
+        const container = groupEls[f.group];
+        if (!container) return;
+        const parsed = parseSlaInterval(byKey[f.key]);
+        const label = (T as any)[f.labelKey] || f.key;
+        const help = (T as any)[f.helpKey] || '';
+        const valId = `sla-val-${escapeHtml(f.key)}`;
+        const unitId = `sla-unit-${escapeHtml(f.key)}`;
+        const hoursSel = parsed.unit === 'hours' ? ' selected' : '';
+        const daysSel = parsed.unit === 'days' ? ' selected' : '';
+        const valAttr = parsed.value != null ? String(parsed.value) : '';
+        const row = document.createElement('div');
+        row.className = 'p-3 rounded-lg border border-[var(--border-subtle)]';
+        row.innerHTML = `
+          <label for="${valId}" class="text-[.78rem] font-semibold text-[var(--text-primary)] block">${escapeHtml(label)}</label>
+          <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">${escapeHtml(help)}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-[80px_110px_auto] gap-2 items-center mt-2">
+            <input type="number" id="${valId}" value="${escapeHtml(valAttr)}" min="1" step="1" data-sla-val="${escapeHtml(f.key)}"
+              class="w-full px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] text-center" />
+            <select id="${unitId}" data-sla-unit="${escapeHtml(f.key)}" aria-label="${escapeHtml(label)}"
+              class="w-full px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)]">
+              <option value="hours"${hoursSel}>${escapeHtml(T.slaUnitHours)}</option>
+              <option value="days"${daysSel}>${escapeHtml(T.slaUnitDays)}</option>
+            </select>
+            <button type="button" data-sla-save="${escapeHtml(f.key)}" data-min="${f.minHours}" data-max="${f.maxHours}"
+              class="px-3 py-1.5 text-[.65rem] font-semibold rounded-lg bg-navy text-white border-0 hover:opacity-90 cursor-pointer transition-colors">${escapeHtml(T.save)}</button>
+          </div>
+          <p class="text-[.6rem] text-[var(--text-muted)] mt-1">${escapeHtml(T.slaCurrentLabel)}: ${escapeHtml(fmtSlaCurrent(parsed))}</p>
+        `;
+        container.appendChild(row);
+      });
+
+      contentEl.querySelectorAll('[data-sla-save]').forEach((btn: Element) => {
+        btn.addEventListener('click', () => handleSlaSave(btn as HTMLButtonElement));
+      });
+
+      loadingEl?.classList.add('hidden');
+      errorEl?.classList.add('hidden');
+      contentEl.classList.remove('hidden');
+    } catch (e: any) {
+      console.error('Load SLA windows:', e);
+      loadingEl?.classList.add('hidden');
+      contentEl?.classList.add('hidden');
+      if (errorEl) {
+        errorEl.textContent = document.getElementById('ai18n-lod')?.textContent || 'Error loading.';
+        errorEl.classList.remove('hidden');
+      }
+    }
+  }
+
+  const slaConfirmTimers: Record<string, any> = {};
+  function resetSlaBtn(btn: HTMLButtonElement) {
+    const key = btn.dataset.slaSave!;
+    btn.dataset.confirming = '';
+    btn.textContent = T.save;
+    btn.setAttribute('aria-label', T.save);
+    btn.classList.remove('bg-red-600');
+    btn.classList.add('bg-navy');
+    if (slaConfirmTimers[key]) { clearTimeout(slaConfirmTimers[key]); delete slaConfirmTimers[key]; }
+  }
+
+  async function handleSlaSave(btn: HTMLButtonElement) {
+    if (!sb) return;
+    const key = btn.dataset.slaSave!;
+    const valInput = document.getElementById(`sla-val-${key}`) as HTMLInputElement | null;
+    const unitSel = document.getElementById(`sla-unit-${key}`) as HTMLSelectElement | null;
+    if (!valInput || !unitSel) return;
+    const num = parseFloat(valInput.value);
+    const unit = unitSel.value === 'days' ? 'days' : 'hours';
+    if (!Number.isFinite(num) || num <= 0) { (window as any).toast?.(T.slaRangeError, 'error'); resetSlaBtn(btn); return; }
+    // soft range guard (hours-equivalent) — RPC remains the source of truth
+    const hoursEq = unit === 'days' ? num * 24 : num;
+    const minH = parseFloat(btn.dataset.min || '0');
+    const maxH = parseFloat(btn.dataset.max || '0');
+    if ((minH && hoursEq < minH) || (maxH && hoursEq > maxH)) { (window as any).toast?.(T.slaRangeError, 'error'); resetSlaBtn(btn); return; }
+
+    // two-click inline confirm — production cron impact (no prompt())
+    if (btn.dataset.confirming !== '1') {
+      btn.dataset.confirming = '1';
+      btn.textContent = T.slaConfirm;
+      btn.setAttribute('aria-label', T.slaConfirm);
+      btn.classList.remove('bg-navy');
+      btn.classList.add('bg-red-600');
+      slaConfirmTimers[key] = setTimeout(() => resetSlaBtn(btn), 5000);
+      return;
+    }
+    resetSlaBtn(btn);
+
+    btn.disabled = true;
+    try {
+      const pValue = `${num} ${unit}`;
+      const { data: result, error } = await sb.rpc('update_sla_policy', { p_key: key, p_value: pValue });
+      if (error || result?.error) { (window as any).toast?.(result?.error || error?.message || T.errorPrefix, 'error'); return; }
+      (window as any).toast?.(T.slaSaved, 'success');
+      loadSlaWindows();
+    } catch (e: any) {
+      (window as any).toast?.(T.errorPrefix + ': ' + (e.message || 'unknown'), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   function showPanel() {
     document.getElementById('settings-loading')?.classList.add('hidden');
     document.getElementById('settings-denied')?.classList.add('hidden');
@@ -477,6 +691,7 @@ const SETTINGS_I18N = {
     loadConfig();
     loadCycles();
     loadPlatformSettings();
+    loadSlaWindows();
   }
 
   boot();
