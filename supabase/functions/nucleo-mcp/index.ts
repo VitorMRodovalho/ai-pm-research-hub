@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 308 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// MCP server v2.80.0 — /mcp 320 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
 // #459 (2026-06-07): governance clause-body read — +1 tool (get_governance_document_body, wraps the
 //   canonical get_governance_document_reader RPC + EF-side Markdown/section-anchor enrichment via
 //   ./governance-html.mjs; legal guard-rails: public/active_members channel ceiling, ratification
