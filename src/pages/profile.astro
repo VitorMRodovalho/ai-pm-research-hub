@@ -92,6 +92,11 @@ const PROFILE_I18N = {
   linkedinLabel: t('profile.linkedinLabel', lang),
   credlyLabel: t('profile.credlyLabel', lang),
   credlyHint: t('profile.credlyHint', lang),
+  credlyGuideToggle: t('profile.credlyGuide.toggle', lang),
+  credlyGuideStep1: t('profile.credlyGuide.step1', lang),
+  credlyGuideStep2: t('profile.credlyGuide.step2', lang),
+  credlyGuideStep3: t('profile.credlyGuide.step3', lang),
+  credlyGuideNote: t('profile.credlyGuide.note', lang),
   entryChapterTitle: t('profile.entryChapter.title', lang),
   entryChapterDesc: t('profile.entryChapter.desc', lang),
   entryChapterCurrentLabel: t('profile.entryChapter.currentLabel', lang),
@@ -1663,6 +1668,16 @@ const PROFILE_I18N = {
                 ${PROFILE_I18N.verifyCredly}
               </button>
             </div>
+            <!-- F2 #740 — inline "how to get my public Credly link" guide (3 steps) -->
+            <details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2">
+              <summary class="text-[.7rem] font-semibold text-teal cursor-pointer list-none">${PROFILE_I18N.credlyGuideToggle}</summary>
+              <ol class="mt-2 space-y-1.5 text-[.68rem] text-[var(--text-secondary)] leading-relaxed list-none pl-0">
+                <li>${PROFILE_I18N.credlyGuideStep1}</li>
+                <li>${PROFILE_I18N.credlyGuideStep2}</li>
+                <li>${PROFILE_I18N.credlyGuideStep3}</li>
+              </ol>
+              <p class="mt-2 text-[.64rem] text-[var(--text-muted)] italic">${PROFILE_I18N.credlyGuideNote}</p>
+            </details>
             ${m.cpmai_certified ? `
             <div class="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
               <span class="text-base">🎓</span>
