@@ -81,6 +81,7 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
     'X_blind_review_pareceres_session_product_match',
     'Y_chapter_pipeline_parity',
     'Z_webinar_status_domain',
+    'AA_volunteer_term_complete_when_cert_issued',
   ];
 
   for (const name of expected) {
