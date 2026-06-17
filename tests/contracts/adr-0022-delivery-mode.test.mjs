@@ -328,9 +328,14 @@ test('ADR-0022 Amendment D Leaf 2: _selection_interview_overdue_cron RPC declare
   assert.ok(/RETURNS\s+jsonb/i.test(wrapper),
     '_selection_interview_overdue_cron must RETURN jsonb (count + run_at envelope).');
 
-  // 24h grace window — prevents alerting interviews running late same-day
-  assert.ok(/scheduled_at\s*<\s*now\(\)\s*-\s*interval\s+'24\s*hours'/i.test(body),
-    'Cron must enforce 24-hour grace window.');
+  // 24h grace window — externalized to sla_policies (#766 J4) with a 24h parity
+  // fallback. The literal moved from the predicate to the fallback; same duration.
+  assert.ok(/scheduled_at\s*<\s*now\(\)\s*-\s*v_overdue_grace/i.test(body),
+    'Cron must compare scheduled_at against the configured overdue grace window.');
+  assert.ok(/sla_policies[\s\S]{0,160}'interview_overdue_grace'/i.test(body),
+    'Cron must read the overdue grace window from sla_policies (#766 J4).');
+  assert.ok(/v_overdue_grace\s*:=\s*interval\s+'24\s*hours'/i.test(body),
+    'Cron must fall back to the 24-hour grace window at parity (#766 J4).');
 
   // Status scope guard — only scheduled/rescheduled trigger alerts
   assert.ok(/status\s+IN\s*\(\s*'scheduled'\s*,\s*'rescheduled'\s*\)/i.test(body),
