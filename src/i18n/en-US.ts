@@ -4925,6 +4925,27 @@ const enUS: Record<string, string> = {
   'profile.volunteerBanner.rejectedTitle': 'Volunteer Agreement returned',
   'profile.volunteerBanner.rejectedDescription': 'Your agreement for this year was returned and needs to be re-signed. Review your data and sign again.',
   'profile.volunteerBanner.rejectedAction': 'Re-sign',
+  // --- Wave 4 Slice 2 (B2/B3/B6) — affiliation farol + volunteer-agreement i18n ---
+  // B2: PMI affiliation status farol (member-side, /profile)
+  'profile.affiliation.title': 'PMI Membership',
+  'profile.affiliation.expiresLabel': 'Expires on',
+  'profile.affiliation.verifiedOnLabel': 'Verified on',
+  'profile.affiliation.unverifiedDesc': 'Your PMI membership has not been verified by the Membership Office yet. You will be notified once it is confirmed.',
+  'profile.affiliation.inactiveDesc': 'Our latest check shows your PMI membership is inactive. The Volunteer Agreement requires an active membership — renew at pmi.org.',
+  'profile.affiliation.expiredDesc': 'Your PMI membership has expired. Renew at pmi.org to keep your Volunteer Agreement in effect.',
+  'profile.affiliation.expiringDesc': 'Your PMI membership expires soon. Renew at pmi.org so it stays valid.',
+  'profile.affiliation.verifiedDesc': 'Active membership, verified by {verifiedBy}.',
+  'profile.affiliation.renewCta': 'Renew at pmi.org',
+  // B3: rationale line on the /profile pending-term banner (mirrors the volunteer-agreement gate)
+  'profile.volunteerBanner.fieldsRationale': 'These details are required by Law No. 9,608/1998 and the LGPD, and are used only in the Volunteer Agreement and institutional communication.',
+  // B6: volunteer-agreement.astro login gate + missing-fields block (were hardcoded)
+  'volunteer.loginRequired': 'Login required',
+  'volunteer.loginButton': 'Log in',
+  'volunteer.missing.title': 'Complete your profile before signing',
+  'volunteer.missing.description': 'To sign the Volunteer Agreement, you need to complete the following required personal details:',
+  'volunteer.missing.rationale': 'These details are required by Law No. 9,608/1998 and the LGPD. They are used only in the Volunteer Agreement and institutional communication.',
+  'volunteer.missing.action': '✏️ Complete profile now',
+  'volunteer.missing.toastPrefix': 'Incomplete profile: ',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Governance — Change Requests',
