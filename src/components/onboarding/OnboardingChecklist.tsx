@@ -37,8 +37,49 @@ const L: Record<string, Record<string, string>> = {
   'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de' },
 };
 
+// H1/H4/H6 #740 — post-promotion "first days" journey: answers "I signed the term, now what?"
+// with a guided 3-beat roadmap (meet tribe → first meeting + attendance → first XP on the trail).
+// Inline trilingual to match this component's L idiom. No metrics (grounding rule).
+interface HBlock {
+  title: string; body: string;
+  beat1: string; beat2: string; beat3: string;
+  attendanceCta: string;
+}
+const HBLOCK: Record<string, HBlock> = {
+  'pt-BR': {
+    title: '🎉 Bem-vindo(a) ao Núcleo! Seus primeiros dias',
+    body: 'Você assinou o termo e já é parte do time. Aqui está o que fazer nos seus primeiros dias para começar com tudo:',
+    beat1: '🔬 Conheça sua tribo — apresente-se e veja a agenda das reuniões.',
+    beat2: '📅 Participe da sua primeira reunião e registre sua presença — é o que mantém você ativo.',
+    beat3: '🎓 Inicie a trilha PMI AI e conquiste seu primeiro XP.',
+    attendanceCta: '📅 Ver reuniões',
+  },
+  'en-US': {
+    title: '🎉 Welcome to the Hub! Your first days',
+    body: 'You signed the term and you\'re part of the team now. Here\'s what to do in your first days to hit the ground running:',
+    beat1: '🔬 Meet your stream — introduce yourself and check the meeting agenda.',
+    beat2: '📅 Join your first meeting and register your attendance — it\'s what keeps you active.',
+    beat3: '🎓 Start the PMI AI trail and earn your first XP.',
+    attendanceCta: '📅 View meetings',
+  },
+  'es-LATAM': {
+    title: '🎉 ¡Bienvenido(a) al Núcleo! Tus primeros días',
+    body: 'Firmaste el acuerdo y ya eres parte del equipo. Esto es lo que debes hacer en tus primeros días para empezar con todo:',
+    beat1: '🔬 Conoce tu línea — preséntate y revisa la agenda de reuniones.',
+    beat2: '📅 Participa en tu primera reunión y registra tu asistencia — es lo que te mantiene activo.',
+    beat3: '🎓 Inicia la ruta PMI AI y consigue tu primer XP.',
+    attendanceCta: '📅 Ver reuniones',
+  },
+};
+function hblock(lang: string): HBlock {
+  if (lang.startsWith('en')) return HBLOCK['en-US'];
+  if (lang.startsWith('es')) return HBLOCK['es-LATAM'];
+  return HBLOCK['pt-BR'];
+}
+
 export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
+  const h = hblock(lang);
   // p123 i18n nav: prefix preserves /en /es when navigating between sections
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [steps, setSteps] = useState<Step[]>([]);
@@ -92,6 +133,17 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
 
   return (
     <div className="rounded-2xl border-2 border-teal/30 bg-[var(--surface-card)] p-5 mb-6 shadow-sm">
+      {/* H1/H6 #740 — post-promotion "first days" welcome card: answers "now what?" with a guided 3-beat roadmap */}
+      <div className="mb-4 rounded-xl border border-teal/30 bg-teal/5 dark:bg-teal/10 p-3.5">
+        <h3 className="text-[12px] font-bold text-navy dark:text-teal-200">{h.title}</h3>
+        <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">{h.body}</p>
+        <ul className="mt-2 space-y-1.5 text-[11px] text-[var(--text-secondary)] leading-relaxed list-none pl-0">
+          <li>{h.beat1}</li>
+          <li>{h.beat2}</li>
+          <li>{h.beat3}</li>
+        </ul>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
@@ -164,7 +216,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                     )}
                     {s.step_id === 'first_meeting' && (
                       <a href={`${lp}/attendance`} className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-[10px] font-semibold no-underline hover:bg-green-200">
-                        📅 Ver reunioes
+                        {h.attendanceCta}
                       </a>
                     )}
                     {s.step_id === 'vep_acceptance' && (
