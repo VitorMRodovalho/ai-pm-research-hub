@@ -87,9 +87,14 @@ test('migration: invariants AC + AD present; AD keys on status=completed (not co
 });
 
 // ── Offline: FE surface ─────────────────────────────────────────────────────────
-test('FE: MilestoneCelebration owns only first_attendance + first_deliverable (not onboarding/term)', () => {
+test('FE: MilestoneCelebration owns first_attendance + first_deliverable (not onboarding/term)', () => {
   assert.ok(FE, 'component exists');
-  assert.match(FE, /OWNED_KEYS\s*=\s*\['first_attendance', 'first_deliverable'\]/);
+  // OWNED_KEYS grows as later PRs plug in (PR4 promotion, PR5 profile_complete); assert the two
+  // PR3 keys are present rather than pinning the exact array (which each later PR would rebump).
+  const owned = FE.match(/OWNED_KEYS\s*=\s*\[([^\]]*)\]/);
+  assert.ok(owned, 'OWNED_KEYS declared');
+  assert.ok(/'first_attendance'/.test(owned[1]) && /'first_deliverable'/.test(owned[1]),
+    'first_attendance + first_deliverable are owned by this surface');
   // onboarding_complete / term_signed must not be quoted milestone keys this surface handles
   // (they may still appear in explanatory comments — only the quoted-string forms matter).
   assert.ok(!/'onboarding_complete'/.test(FE), 'onboarding_complete stays owned by OnboardingChecklist');

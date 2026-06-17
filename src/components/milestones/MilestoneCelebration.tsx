@@ -15,7 +15,9 @@ interface Props {
 //  - onboarding_complete stays owned by OnboardingChecklist's own card (no double card).
 //  - term_signed stays deferred — the HBLOCK "first days" card on the checklist already
 //    owns the just-signed beat. Folding it here would double-celebrate.
-//  - promotion (PR4) / profile_complete (PR5) plug in later via MILESTONE_COPY + OWNED_KEYS.
+//  - promotion (PR4) is owned here: it fires when operational_role is elevated to tribe_leader
+//    (no competing card), so the generic surface is its natural home.
+//  - profile_complete (PR5) plugs in later via MILESTONE_COPY + OWNED_KEYS.
 interface Copy {
   title: string;
   body: string;
@@ -35,11 +37,16 @@ const MILESTONE_COPY: Record<string, Record<string, Copy>> = {
     'en-US': { title: '🚀 First deliverable complete!', body: 'A real output, from scratch. This is how the Hub builds — step by step, together.', cta: '🔬 See my stream', ctaHref: null, dismiss: 'Close' },
     'es-LATAM': { title: '🚀 ¡Primer entregable completado!', body: 'Un resultado real, desde cero. Así construye el Núcleo — paso a paso, juntos.', cta: '🔬 Ver mi línea', ctaHref: null, dismiss: 'Cerrar' },
   },
+  promotion: {
+    'pt-BR': { title: '🌟 Você é liderança no Núcleo!', body: 'Assumir a frente é um voto de confiança da comunidade — e a sua trajetória mostra que você está pronto(a). Conte com a gente nessa nova jornada.', cta: '🧭 Abrir meu espaço', ctaHref: '/workspace', dismiss: 'Fechar' },
+    'en-US': { title: '🌟 You are a leader at the Hub now!', body: 'Stepping up is a vote of confidence from the community — and your path shows you are ready. We have got your back on this new journey.', cta: '🧭 Open my workspace', ctaHref: '/workspace', dismiss: 'Close' },
+    'es-LATAM': { title: '🌟 ¡Ahora lideras en el Núcleo!', body: 'Dar el paso al frente es un voto de confianza de la comunidad — y tu trayectoria muestra que estás listo(a). Cuenta con nosotros en este nuevo camino.', cta: '🧭 Abrir mi espacio', ctaHref: '/workspace', dismiss: 'Cerrar' },
+  },
 };
 
 // Milestones this surface owns. Anything pending but not listed here is ignored (owned
 // elsewhere or deferred). Keep in sync with MILESTONE_COPY.
-const OWNED_KEYS = ['first_attendance', 'first_deliverable'];
+const OWNED_KEYS = ['first_attendance', 'first_deliverable', 'promotion'];
 
 function copyFor(key: string, lang: string): Copy | null {
   const m = MILESTONE_COPY[key];
