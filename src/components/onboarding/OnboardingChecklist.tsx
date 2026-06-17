@@ -77,6 +77,36 @@ function hblock(lang: string): HBlock {
   return HBLOCK['pt-BR'];
 }
 
+// J5 #740 — "Disney tone": celebrate the onboarding-complete milestone instead of the
+// checklist silently vanishing. Shown once (localStorage-gated) when all steps are done.
+interface Celebrate { title: string; body: string; cta: string; dismiss: string }
+const CELEBRATE: Record<string, Celebrate> = {
+  'pt-BR': {
+    title: '🎉 Onboarding concluído!',
+    body: 'Parabéns! Você completou todas as etapas e agora faz parte ativa do Núcleo. Bora construir IA aplicada a projetos com a gente!',
+    cta: '🚀 Explorar a plataforma',
+    dismiss: 'Fechar',
+  },
+  'en-US': {
+    title: '🎉 Onboarding complete!',
+    body: 'Congratulations! You\'ve finished every step and you\'re now an active member of the Hub. Let\'s build AI applied to projects together!',
+    cta: '🚀 Explore the platform',
+    dismiss: 'Close',
+  },
+  'es-LATAM': {
+    title: '🎉 ¡Integración completa!',
+    body: '¡Felicitaciones! Completaste todos los pasos y ya eres parte activa del Núcleo. ¡Vamos a construir IA aplicada a proyectos juntos!',
+    cta: '🚀 Explorar la plataforma',
+    dismiss: 'Cerrar',
+  },
+};
+function celebrate(lang: string): Celebrate {
+  if (lang.startsWith('en')) return CELEBRATE['en-US'];
+  if (lang.startsWith('es')) return CELEBRATE['es-LATAM'];
+  return CELEBRATE['pt-BR'];
+}
+const CELEBRATION_SEEN_KEY = 'nia_onboarding_celebrated';
+
 export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
   const h = hblock(lang);
@@ -88,7 +118,11 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const [allComplete, setAllComplete] = useState(false);
   const [expanded, setExpanded] = useState(true); // auto-expand for new members
   const [loading, setLoading] = useState(true);
-  const [dismissed, setDismissed] = useState(false);
+  // J5 #740 — seed `dismissed` from the once-seen flag so a member who already saw the
+  // onboarding-complete celebration short-circuits at the first guard (no render-branch read, no flash).
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(CELEBRATION_SEEN_KEY) === '1'; } catch { return false; }
+  });
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -122,8 +156,28 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
     (window as any).toast?.(l.done + '!', 'success');
   };
 
-  if (loading || allComplete || dismissed) return null;
+  if (loading || dismissed) return null;
   if (steps.length === 0) return null;
+
+  // J5 #740 — celebrate the onboarding-complete milestone once (instead of the checklist
+  // silently vanishing). Already-seen members were filtered by the `dismissed` guard above.
+  if (allComplete) {
+    const c = celebrate(lang);
+    const dismissCelebration = () => {
+      try { localStorage.setItem(CELEBRATION_SEEN_KEY, '1'); } catch { /* SSR/private mode */ }
+      setDismissed(true);
+    };
+    return (
+      <div className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-900/15 p-5 mb-6 shadow-sm text-center">
+        <h2 className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">{c.title}</h2>
+        <p className="text-[12px] text-emerald-800 dark:text-emerald-200 mt-1.5 leading-relaxed">{c.body}</p>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <a href={`${lp}/gamification`} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold no-underline hover:bg-emerald-700">{c.cta}</a>
+          <button onClick={dismissCelebration} className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-emerald-100/50">{c.dismiss}</button>
+        </div>
+      </div>
+    );
+  }
 
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const member = (window as any).navGetMember?.();
