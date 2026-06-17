@@ -74,6 +74,7 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
     'R_approved_application_has_member',
     'S_approved_member_has_person_id',
     'T_member_has_exactly_one_primary_email',
+    'U_active_person_has_primary_chapter_affiliation',
     'V_prime_pending_proposer_consent_no_open_chain',
     'V_status_chain_coherence',
     'W_content_product_source_integrity',
