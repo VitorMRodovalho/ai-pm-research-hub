@@ -4926,6 +4926,27 @@ const esLATAM: Record<string, string> = {
   'profile.volunteerBanner.rejectedTitle': 'Acuerdo de Voluntariado devuelto',
   'profile.volunteerBanner.rejectedDescription': 'Tu acuerdo de este año fue devuelto y debe volver a firmarse. Revisa tus datos y firma nuevamente.',
   'profile.volunteerBanner.rejectedAction': 'Volver a firmar',
+  // --- Wave 4 Slice 2 (B2/B3/B6) — affiliation farol + volunteer-agreement i18n ---
+  // B2: PMI affiliation status farol (member-side, /profile)
+  'profile.affiliation.title': 'Afiliación PMI',
+  'profile.affiliation.expiresLabel': 'Vence el',
+  'profile.affiliation.verifiedOnLabel': 'Verificada el',
+  'profile.affiliation.unverifiedDesc': 'Tu afiliación al PMI aún no fue verificada por la Dirección de Afiliación. Serás avisado en cuanto sea confirmada.',
+  'profile.affiliation.inactiveDesc': 'Nuestra última verificación indica que tu afiliación al PMI está inactiva. El Acuerdo de Voluntariado exige afiliación activa — renueva en pmi.org.',
+  'profile.affiliation.expiredDesc': 'Tu afiliación al PMI venció. Renueva en pmi.org para mantener tu Acuerdo de Voluntariado vigente.',
+  'profile.affiliation.expiringDesc': 'Tu afiliación al PMI vence pronto. Renueva en pmi.org para no perder la vigencia.',
+  'profile.affiliation.verifiedDesc': 'Afiliación activa y verificada por la {verifiedBy}.',
+  'profile.affiliation.renewCta': 'Renovar en pmi.org',
+  // B3: rationale line on the /profile pending-term banner (mirrors the volunteer-agreement gate)
+  'profile.volunteerBanner.fieldsRationale': 'Estos datos son exigidos por la Ley nº 9.608/1998 y la LGPD, y se usan solo en el Acuerdo de Voluntariado y en la comunicación institucional.',
+  // B6: volunteer-agreement.astro login gate + missing-fields block (were hardcoded)
+  'volunteer.loginRequired': 'Inicio de sesión requerido',
+  'volunteer.loginButton': 'Iniciar sesión',
+  'volunteer.missing.title': 'Completa tu perfil antes de firmar',
+  'volunteer.missing.description': 'Para firmar el Acuerdo de Voluntariado, debes completar los siguientes datos personales obligatorios:',
+  'volunteer.missing.rationale': 'Estos datos son obligatorios conforme a la Ley nº 9.608/1998 y la LGPD. Se usan solo en el Acuerdo de Voluntariado y en la comunicación institucional.',
+  'volunteer.missing.action': '✏️ Completar perfil ahora',
+  'volunteer.missing.toastPrefix': 'Perfil incompleto: ',
 
   // Governance Dashboard / Approvals
   'governance.dashboard.title': 'Gobernanza — Change Requests',

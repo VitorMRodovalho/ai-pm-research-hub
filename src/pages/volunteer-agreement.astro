@@ -262,7 +262,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       }
     }
     if (!member) {
-      app.innerHTML = `<div class="text-center py-12"><p class="text-[var(--text-muted)]">Login required</p><button class="mt-3 px-4 py-2 bg-navy text-white rounded-lg border-0 cursor-pointer text-sm font-semibold" onclick="document.dispatchEvent(new CustomEvent('open-auth'))">Login</button></div>`;
+      app.innerHTML = `<div class="text-center py-12"><p class="text-[var(--text-muted)]">${esc(t('volunteer.loginRequired', lang))}</p><button class="mt-3 px-4 py-2 bg-navy text-white rounded-lg border-0 cursor-pointer text-sm font-semibold" onclick="document.dispatchEvent(new CustomEvent('open-auth'))">${esc(t('volunteer.loginButton', lang))}</button></div>`;
       return;
     }
 
@@ -306,15 +306,16 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       return;
     }
 
-    // Pre-flight: check profile completeness before showing form
+    // Pre-flight: check profile completeness before showing form.
+    // Labels reuse the shared profile.field.* dictionary so the missing-fields list is localized.
     const requiredFields: Record<string, string> = {
-      pmi_id: 'PMI ID',
-      phone: 'Telefone',
-      address: 'Endereço',
-      city: 'Cidade',
-      state: 'Estado',
-      country: 'País',
-      birth_date: 'Data de Aniversário',
+      pmi_id: t('profile.field.pmiId', lang),
+      phone: t('profile.field.phone', lang),
+      address: t('profile.field.address', lang),
+      city: t('profile.field.city', lang),
+      state: t('profile.field.state', lang),
+      country: t('profile.field.country', lang),
+      birth_date: t('profile.field.birthDate', lang),
     };
     const missing: string[] = [];
     for (const [key, label] of Object.entries(requiredFields)) {
@@ -328,19 +329,18 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       app.innerHTML = rejectedBanner + `
         <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-6 text-center">
           <div class="text-4xl mb-3">📋</div>
-          <h2 class="text-lg font-bold text-amber-800 dark:text-amber-300 mb-2">Complete seu perfil antes de assinar</h2>
+          <h2 class="text-lg font-bold text-amber-800 dark:text-amber-300 mb-2">${esc(t('volunteer.missing.title', lang))}</h2>
           <p class="text-sm text-amber-700 dark:text-amber-400 mb-4">
-            Para assinar o Termo de Voluntariado, você precisa completar os seguintes dados pessoais obrigatórios:
+            ${esc(t('volunteer.missing.description', lang))}
           </p>
           <ul class="inline-block text-left text-sm text-amber-800 dark:text-amber-300 mb-4 space-y-1">
-            ${missing.map(f => `<li>• <b>${f}</b></li>`).join('')}
+            ${missing.map(f => `<li>• <b>${esc(f)}</b></li>`).join('')}
           </ul>
           <p class="text-xs text-amber-600 dark:text-amber-400 mb-4 italic">
-            Esses dados são obrigatórios conforme a Lei nº 9.608/1998 e a LGPD.<br/>
-            São usados apenas no Termo de Voluntariado e comunicação institucional.
+            ${esc(t('volunteer.missing.rationale', lang))}
           </p>
           <a href="${profileUrl}#personal-data" class="inline-block px-5 py-2.5 rounded-lg bg-amber-500 text-white text-sm font-bold no-underline hover:bg-amber-600 transition-colors">
-            ✏️ Completar perfil agora →
+            ${esc(t('volunteer.missing.action', lang))} →
           </a>
         </div>`;
       return;
@@ -368,7 +368,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         if (data?.error === 'already_signed') { app.innerHTML = renderAlreadySigned(lang); return; }
         if (data?.error === 'profile_incomplete') {
           const missing = Array.isArray(data.missing_fields) ? data.missing_fields : [];
-          (window as any).toast?.(`Perfil incompleto: ${missing.join(', ')}`, 'error');
+          (window as any).toast?.(`${t('volunteer.missing.toastPrefix', lang)}${missing.join(', ')}`, 'error');
           const profileUrl = lang === 'pt-BR' ? '/profile' : lang === 'en-US' ? '/en/profile' : '/es/profile';
           setTimeout(() => { window.location.href = profileUrl; }, 1500);
           return;
