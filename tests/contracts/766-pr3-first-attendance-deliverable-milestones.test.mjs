@@ -116,11 +116,13 @@ test('FE: island is mounted in BaseLayout', () => {
 });
 
 // ── DB-gated: live behaviour ────────────────────────────────────────────────────
-test('DB: check_schema_invariants reports 31 invariants, 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: check_schema_invariants reports at least 31 invariants (AC+AD live), 0 total violations', { skip: dbGated ? false : skipMsg }, async () => {
+  // >= 31 (not pinned): later PRs legitimately add invariants for other milestones (PR5 added AE
+  // for profile_complete → 32). The AC/AD presence is asserted explicitly in the next test.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  assert.equal(data.length, 31, `expected 31 invariants, got ${data.length}`);
+  assert.ok(data.length >= 31, `expected >= 31 invariants, got ${data.length}`);
   const total = data.reduce((s, r) => s + r.violation_count, 0);
   assert.equal(total, 0, 'no invariant may have violations');
 });

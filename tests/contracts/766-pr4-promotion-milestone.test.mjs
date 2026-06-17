@@ -83,7 +83,11 @@ test('migration: adds NO new invariant — count stays 31 (no immutable source f
 // ── Offline: FE surface ─────────────────────────────────────────────────────────
 test('FE: MilestoneCelebration owns promotion (alongside first_attendance + first_deliverable)', () => {
   assert.ok(FE, 'component exists');
-  assert.match(FE, /OWNED_KEYS\s*=\s*\['first_attendance', 'first_deliverable', 'promotion'\]/);
+  // Inclusion check (not exact-array) so PR5 (profile_complete) plugging in does not rebump this.
+  const owned = FE.match(/OWNED_KEYS\s*=\s*\[([^\]]*)\]/);
+  assert.ok(owned, 'OWNED_KEYS declared');
+  assert.ok(/'first_attendance'/.test(owned[1]) && /'first_deliverable'/.test(owned[1]) && /'promotion'/.test(owned[1]),
+    'first_attendance + first_deliverable + promotion are owned by this surface');
 });
 
 test('FE: promotion copy exists in all 3 locales, CTA to /workspace', () => {
@@ -101,14 +105,17 @@ test('FE: promotion copy has ZERO numbers (grounding — no fabricated points/co
 });
 
 // ── DB-gated: live behaviour ────────────────────────────────────────────────────
-test('DB: check_schema_invariants still reports 31 invariants, 0 violations (no AE added)', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: no promotion-specific invariant exists (mutable cache, no directional check), 0 violations', { skip: dbGated ? false : skipMsg }, async () => {
+  // PR4 deliberately added no invariant for promotion (operational_role is a mutable cache;
+  // demotion is routine). The absolute count is NOT pinned here — later PRs legitimately add
+  // invariants for OTHER milestones (PR5 added AE for profile_complete, whose source is monotonic).
+  // What must hold: no invariant is keyed on the promotion milestone.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  assert.equal(data.length, 31, `expected 31 invariants, got ${data.length}`);
   const total = data.reduce((s, r) => s + r.violation_count, 0);
   assert.equal(total, 0, 'no invariant may have violations');
-  assert.ok(!data.some((r) => /^AE_/.test(r.invariant_name)), 'no AE_ invariant should exist');
+  assert.ok(!data.some((r) => /promotion/i.test(r.invariant_name)), 'no promotion-specific invariant should exist');
 });
 
 test('DB: every current tribe_leader has a promotion milestone', { skip: dbGated ? false : skipMsg }, async () => {
