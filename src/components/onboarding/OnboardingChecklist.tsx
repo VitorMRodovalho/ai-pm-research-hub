@@ -32,9 +32,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de' },
+  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de' },
+  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of' },
+  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de' },
 };
 
 // H1/H4/H6 #740 — post-promotion "first days" journey: answers "I signed the term, now what?"
@@ -78,7 +78,7 @@ function hblock(lang: string): HBlock {
 }
 
 // J5 #740 — "Disney tone": celebrate the onboarding-complete milestone instead of the
-// checklist silently vanishing. Shown once (localStorage-gated) when all steps are done.
+// checklist silently vanishing. Shown once (server-side gated via member_milestones) when all steps are done.
 interface Celebrate { title: string; body: string; cta: string; dismiss: string }
 const CELEBRATE: Record<string, Celebrate> = {
   'pt-BR': {
@@ -105,7 +105,6 @@ function celebrate(lang: string): Celebrate {
   if (lang.startsWith('es')) return CELEBRATE['es-LATAM'];
   return CELEBRATE['pt-BR'];
 }
-const CELEBRATION_SEEN_KEY = 'nia_onboarding_celebrated';
 
 export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
@@ -118,24 +117,37 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const [allComplete, setAllComplete] = useState(false);
   const [expanded, setExpanded] = useState(true); // auto-expand for new members
   const [loading, setLoading] = useState(true);
-  // J5 #740 — seed `dismissed` from the once-seen flag so a member who already saw the
-  // onboarding-complete celebration short-circuits at the first guard (no render-branch read, no flash).
-  const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem(CELEBRATION_SEEN_KEY) === '1'; } catch { return false; }
-  });
+  // J5 #740 / #766 PR1 — the celebration "seen" state now persists SERVER-SIDE
+  // (member_milestones via get_my_milestones/acknowledge_milestone): cross-device +
+  // auditable, replacing the old localStorage flag `nia_onboarding_celebrated`.
+  // `celebrationPending` = onboarding_complete milestone exists and is unacknowledged.
+  // `sessionHidden` = transient ✕ on the working checklist (not persisted).
+  const [celebrationPending, setCelebrationPending] = useState(false);
+  const [sessionHidden, setSessionHidden] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
   const load = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.rpc('get_my_onboarding');
+    // #766 PR1 — fetch onboarding + the server-side celebration state in PARALLEL so
+    // `allComplete` and `celebrationPending` resolve together (no flicker window where
+    // allComplete=true but celebrationPending still false on slow networks; ux R1).
+    const [onb, ms] = await Promise.all([
+      sb.rpc('get_my_onboarding'),
+      sb.rpc('get_my_milestones'),
+    ]);
+    const data = onb?.data;
     if (data?.steps) {
       setSteps(data.steps);
       setTotal(data.total_steps || 0);
       setCompleted(data.completed_steps || 0);
       setAllComplete(data.all_complete || false);
     }
+    const pending = ms?.data?.pending;
+    setCelebrationPending(
+      Array.isArray(pending) && pending.some((p: any) => p.milestone_key === 'onboarding_complete')
+    );
     setLoading(false);
   }, [getSb]);
 
@@ -156,28 +168,33 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
     (window as any).toast?.(l.done + '!', 'success');
   };
 
-  if (loading || dismissed) return null;
+  if (loading) return null;
   if (steps.length === 0) return null;
 
-  // J5 #740 — celebrate the onboarding-complete milestone once (instead of the checklist
-  // silently vanishing). Already-seen members were filtered by the `dismissed` guard above.
+  // J5 #740 / #766 PR1 — celebrate the onboarding-complete milestone once. The "seen"
+  // state is server-side (member_milestones): show only while the milestone is pending
+  // (unacknowledged). Backfilled / already-seen members have it acknowledged and skip
+  // the card (cross-device, no localStorage). Dismiss persists via acknowledge_milestone.
   if (allComplete) {
+    if (!celebrationPending) return null;
     const c = celebrate(lang);
     const dismissCelebration = () => {
-      try { localStorage.setItem(CELEBRATION_SEEN_KEY, '1'); } catch { /* SSR/private mode */ }
-      setDismissed(true);
+      setCelebrationPending(false);
+      getSb()?.rpc('acknowledge_milestone', { p_milestone_key: 'onboarding_complete' });
     };
     return (
-      <div className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-900/15 p-5 mb-6 shadow-sm text-center">
+      <div role="status" className="rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-900/15 p-5 mb-6 shadow-sm text-center">
         <h2 className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">{c.title}</h2>
-        <p className="text-[12px] text-emerald-800 dark:text-emerald-200 mt-1.5 leading-relaxed">{c.body}</p>
+        <p className="text-xs text-emerald-800 dark:text-emerald-200 mt-1.5 leading-relaxed">{c.body}</p>
         <div className="mt-3 flex items-center justify-center gap-2">
-          <a href={`${lp}/gamification`} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold no-underline hover:bg-emerald-700">{c.cta}</a>
-          <button onClick={dismissCelebration} className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-emerald-100/50">{c.dismiss}</button>
+          <a href={`${lp}/gamification`} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[0.6875rem] font-bold no-underline hover:bg-emerald-700">{c.cta}</a>
+          <button onClick={dismissCelebration} className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-[0.6875rem] font-semibold bg-transparent cursor-pointer hover:bg-emerald-100/50">{c.dismiss}</button>
         </div>
       </div>
     );
   }
+
+  if (sessionHidden) return null;
 
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const member = (window as any).navGetMember?.();
@@ -213,7 +230,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
             className="text-[10px] text-teal font-semibold cursor-pointer bg-transparent border-0 hover:underline">
             {expanded ? l.collapse : l.expand}
           </button>
-          <button onClick={() => setDismissed(true)}
+          <button onClick={() => setSessionHidden(true)} aria-label={l.hide}
             className="text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer text-sm">✕</button>
         </div>
       </div>
