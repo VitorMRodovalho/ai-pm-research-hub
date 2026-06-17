@@ -6,6 +6,7 @@ import AuthModal from '../components/ui/AuthModal.astro';
 // TierViewerBar disabled — feature incomplete, never worked reliably
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
 import PrivacyGateModal from '../components/privacy/PrivacyGateModal';
+import MilestoneCelebration from '../components/milestones/MilestoneCelebration';
 import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
 
 interface Props {
@@ -268,6 +269,10 @@ const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lan
 
   <!-- Help Floating Button (authenticated users only, rendered client-side) -->
   <HelpFloatingButton client:load locale={lang} />
+
+  <!-- #766 PR3 — server-side milestone celebrations (first_attendance / first_deliverable).
+       Bottom-left so it clears the bottom-right HelpFloatingButton; below the privacy gate. -->
+  <MilestoneCelebration client:load lang={lang} />
 
   <!-- LGPD Privacy Gate (consent acceptance + annual revalidation) -->
   <PrivacyGateModal client:load lang={lang} />
