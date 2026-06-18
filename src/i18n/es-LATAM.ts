@@ -2327,6 +2327,8 @@ const esLATAM: Record<string, string> = {
   'admin.settings.saveBtn': 'Guardar configuración',
   'admin.settings.platformLimits': 'Límites de la Plataforma',
   'admin.settings.platformLimitsHint': 'Límites configurables. Los cambios requieren justificación y se registran en el log de auditoría.',
+  'admin.settings.outreachTitle': 'Script de divulgación del capítulo',
+  'admin.settings.outreachHint': 'Texto trilingüe que los directores de capítulo copian para difundir. Los cambios requieren justificación y se registran.',
   'admin.settings.cycleManagement': 'Gestión de Ciclos',
   'admin.settings.cycleAddBtn': 'Nuevo Ciclo',
   'admin.settings.cycleNewTitle': 'Nuevo Ciclo',

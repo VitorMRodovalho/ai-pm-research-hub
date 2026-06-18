@@ -134,6 +134,18 @@ const SETTINGS_I18N = {
         </div>
       </div>
 
+      <!-- ── #106 PR2: Chapter outreach script (GP-editable, trilingual) ── -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">{t('admin.settings.outreachTitle', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('admin.settings.outreachHint', lang)}</p>
+        </div>
+        <div class="p-5 space-y-3">
+          <div id="outreach-loading" class="text-[.7rem] text-[var(--text-muted)]">{t('common.loading', lang)}</div>
+          <div id="outreach-content" class="hidden space-y-3"></div>
+        </div>
+      </div>
+
       <!-- ── W111: Cycle Management ── -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
@@ -524,6 +536,43 @@ const SETTINGS_I18N = {
     }
   }
 
+  // ── #106 PR2: Chapter outreach script (trilingual, GP-editable via admin_update_setting) ──
+  async function loadOutreachScript() {
+    if (!sb) return;
+    const loading = document.getElementById('outreach-loading');
+    const content = document.getElementById('outreach-content');
+    if (!content) return;
+    try {
+      const { data } = await sb.rpc('get_chapter_outreach_script');
+      const script = (data && typeof data === 'object') ? data : {};
+      const langs: Array<[string, string]> = [['pt-BR', 'Português'], ['en-US', 'English'], ['es-LATAM', 'Español']];
+      content.innerHTML = langs.map(([code, label]) => `
+        <div>
+          <label class="text-[.7rem] font-semibold text-[var(--text-secondary)] block mb-1">${label}</label>
+          <textarea data-outreach-lang="${code}" rows="5" maxlength="2000" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] font-sans bg-[var(--surface-base)]">${escapeHtml(script[code] || '')}</textarea>
+        </div>`).join('') +
+        `<button id="outreach-save" class="px-3 py-1.5 text-[.7rem] font-semibold rounded-lg bg-navy text-white border-0 hover:opacity-90 cursor-pointer">${T.save}</button>`;
+      loading?.classList.add('hidden');
+      content.classList.remove('hidden');
+      document.getElementById('outreach-save')?.addEventListener('click', async () => {
+        const payload: Record<string, string> = {};
+        content.querySelectorAll('[data-outreach-lang]').forEach((el) => {
+          payload[(el as HTMLElement).dataset.outreachLang!] = (el as HTMLTextAreaElement).value;
+        });
+        const reason = prompt(T.reasonPrompt);
+        if (!reason || !reason.trim()) { (window as any).toast?.(T.reasonRequired, 'error'); return; }
+        const { data: res, error } = await sb.rpc('admin_update_setting', {
+          p_key: 'chapter_outreach_script', p_new_value: payload, p_reason: reason.trim(),
+        });
+        if (error || res?.error) { (window as any).toast?.(res?.error || error?.message || T.errorPrefix, 'error'); return; }
+        (window as any).toast?.(T.platformUpdated, 'success');
+      });
+    } catch (e: any) {
+      console.error('Load outreach script:', e);
+      if (loading) loading.textContent = T.loadError;
+    }
+  }
+
   // ── J4 PR2 (#766): SLA Windows ──
   const SLA_FIELDS: Array<{ key: string; group: string; labelKey: string; helpKey: string; minHours: number; maxHours: number }> = [
     { key: 'interview_overdue_grace', group: 'interviews', labelKey: 'slaInterviewOverdueLabel', helpKey: 'slaInterviewOverdueHelp', minHours: 1, maxHours: 168 },
@@ -691,6 +740,7 @@ const SETTINGS_I18N = {
     loadConfig();
     loadCycles();
     loadPlatformSettings();
+    loadOutreachScript();
     loadSlaWindows();
   }
 

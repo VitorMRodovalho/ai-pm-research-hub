@@ -2327,6 +2327,8 @@ const enUS: Record<string, string> = {
   'admin.settings.saveBtn': 'Save settings',
   'admin.settings.platformLimits': 'Platform Limits',
   'admin.settings.platformLimitsHint': 'Configurable limits. Changes require justification and are logged in the audit trail.',
+  'admin.settings.outreachTitle': 'Chapter outreach script',
+  'admin.settings.outreachHint': 'Trilingual copy that chapter directors copy to promote their chapter. Changes require justification and are logged.',
   'admin.settings.cycleManagement': 'Cycle Management',
   'admin.settings.cycleAddBtn': 'New Cycle',
   'admin.settings.cycleNewTitle': 'New Cycle',
