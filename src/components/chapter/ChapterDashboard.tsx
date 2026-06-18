@@ -31,6 +31,8 @@ const T: Record<string, Record<string, string>> = {
     mvTitle: 'Movimentações (30 dias)', mvEntries: 'Entradas', mvExits: 'Saídas',
     mvReturn: 'Quer voltar', mvEmpty: 'Sem movimentações nos últimos 30 dias.',
     byTribeTitle: 'Membros por Tribo', noTribe: 'Sem tribo',
+    scriptTitle: 'Script de divulgação', scriptHint: 'Copie e compartilhe para divulgar seu capítulo.',
+    scriptCopy: 'Copiar', scriptCopied: 'Copiado!',
   },
   'en-US': {
     subtitle: 'Executive view of your chapter contribution to the Hub.',
@@ -49,6 +51,8 @@ const T: Record<string, Record<string, string>> = {
     mvTitle: 'Movements (30 days)', mvEntries: 'Joined', mvExits: 'Left',
     mvReturn: 'Open to return', mvEmpty: 'No movements in the last 30 days.',
     byTribeTitle: 'Members by Tribe', noTribe: 'No tribe',
+    scriptTitle: 'Outreach script', scriptHint: 'Copy and share to promote your chapter.',
+    scriptCopy: 'Copy', scriptCopied: 'Copied!',
   },
   'es-LATAM': {
     subtitle: 'Vista ejecutiva de la contribución de su capítulo al Hub.',
@@ -67,6 +71,8 @@ const T: Record<string, Record<string, string>> = {
     mvTitle: 'Movimientos (30 días)', mvEntries: 'Entradas', mvExits: 'Salidas',
     mvReturn: 'Quiere volver', mvEmpty: 'Sin movimientos en los últimos 30 días.',
     byTribeTitle: 'Miembros por Tribu', noTribe: 'Sin tribu',
+    scriptTitle: 'Script de divulgación', scriptHint: 'Copia y comparte para difundir tu capítulo.',
+    scriptCopy: 'Copiar', scriptCopied: '¡Copiado!',
   },
 };
 
@@ -179,6 +185,27 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
       });
     }
   }, [data]);
+
+  // #106 PR2 Bloco 4: outreach script (read-only here; GP edits on /admin/settings). Global key
+  // via the narrow get_chapter_outreach_script reader (platform_settings is deny-all RLS).
+  const [script, setScript] = useState<Record<string, string> | null>(null);
+  const [scriptTab, setScriptTab] = useState<string>(lang);
+  const [copied, setCopied] = useState(false);
+  const fetchScript = useCallback(async () => {
+    const sb = getSb(); if (!sb) { setTimeout(fetchScript, 400); return; }
+    const { data } = await sb.rpc('get_chapter_outreach_script');
+    if (data && typeof data === 'object') setScript(data as Record<string, string>);
+  }, [getSb]);
+  useEffect(() => { fetchScript(); }, [fetchScript]);
+  const copyScript = useCallback(() => {
+    const text = script?.[scriptTab] || '';
+    if (!text || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      (window as any).__nucleoTrack?.('chapter_script_copied', { lang: scriptTab });
+    });
+  }, [script, scriptTab]);
 
   // #106 PR1 Bloco 5: CSV export of the already-loaded member list (FE-only, no extra RPC).
   const exportCsv = useCallback(() => {
@@ -305,6 +332,33 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
                 <span className="ml-1.5 font-bold text-teal">{cnt}</span>
               </span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* #106 PR2 Bloco 4: outreach script (read-only, copy-to-clipboard; GP edits in /admin/settings) */}
+      {script && (script[scriptTab] || script['pt-BR']) && (
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <h2 className="text-sm font-bold text-navy">{t.scriptTitle}</h2>
+            <div className="flex items-center gap-1 no-print" role="tablist">
+              {['pt-BR', 'en-US', 'es-LATAM'].map((l) => (
+                <button key={l} type="button" role="tab" aria-selected={scriptTab === l}
+                  onClick={() => setScriptTab(l)}
+                  className={`text-[10px] font-bold px-2 py-1 rounded cursor-pointer border ${scriptTab === l ? 'bg-teal text-white border-teal' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-subtle)]'}`}>
+                  {l.slice(0, 2).toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-[10px] text-[var(--text-muted)] mb-2">{t.scriptHint}</p>
+          <pre className="whitespace-pre-wrap break-words text-xs text-[var(--text-primary)] p-3 rounded-lg bg-[var(--surface-section-cool)] font-sans">{script[scriptTab] || script['pt-BR'] || ''}</pre>
+          <div className="mt-2 flex items-center gap-2 no-print">
+            <button type="button" onClick={copyScript}
+              className="min-h-[36px] px-3 rounded-lg border border-teal text-teal text-xs font-semibold cursor-pointer bg-transparent hover:bg-teal hover:text-white transition-all">
+              {copied ? t.scriptCopied : `⧉ ${t.scriptCopy}`}
+            </button>
+            <span aria-live="polite" className="sr-only">{copied ? t.scriptCopied : ''}</span>
           </div>
         </div>
       )}

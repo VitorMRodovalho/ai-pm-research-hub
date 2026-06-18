@@ -2332,6 +2332,8 @@ const ptBR: Record<string, string> = {
   'admin.settings.saveBtn': 'Salvar configurações',
   'admin.settings.platformLimits': 'Limites da Plataforma',
   'admin.settings.platformLimitsHint': 'Limites configuráveis. Alterações requerem justificativa e são registadas no log de auditoria.',
+  'admin.settings.outreachTitle': 'Script de divulgação do capítulo',
+  'admin.settings.outreachHint': 'Texto trilíngue que os diretores de capítulo copiam para divulgar. Alterações requerem justificativa e são registadas.',
   'admin.settings.cycleManagement': 'Gerenciamento de Ciclos',
   'admin.settings.cycleAddBtn': 'Novo Ciclo',
   'admin.settings.cycleNewTitle': 'Novo Ciclo',
