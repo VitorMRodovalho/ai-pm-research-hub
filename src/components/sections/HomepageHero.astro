@@ -85,7 +85,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
         <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.nextMeeting', lang)}</div>
         <div id="hero-general-date" class="text-lg font-bold text-[#05BFE0]">...</div>
-        <div id="hero-general-time" class="text-sm text-white/60 mt-0.5">19:30 BRT</div>
+        <div id="hero-general-time" class="text-sm text-white/60 mt-0.5">19:00 BRT</div>
         <a id="hero-general-link" href="#" target="_blank" rel="noopener"
           class="hidden mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#05BFE0] text-navy rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
           {t('hero.joinMeet', lang)} →
@@ -222,7 +222,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const ytEl = document.getElementById('hero-general-youtube') as HTMLAnchorElement;
 
       sb.from('events')
-        .select('id, title, date, meeting_link, recording_url, youtube_url, duration_minutes')
+        .select('id, title, date, time_start, meeting_link, recording_url, youtube_url, duration_minutes')
         .eq('type', 'geral')
         .gte('date', new Date(Date.now() - 14 * 86400000).toISOString().slice(0,10))
         .order('date', { ascending: true })
@@ -233,19 +233,20 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           var ev = (evts || []).find(function(e: any) {
             if (e.date > todayStr) return true;
             if (e.date === todayStr) {
-              var endMinutes = 19 * 60 + 30 + (e.duration_minutes || 60);
+              var stp = (e.time_start || '19:00:00').split(':');
+              var endMinutes = (+stp[0]) * 60 + (+stp[1]) + (e.duration_minutes || 60);
               var nowMinutes = now.getHours() * 60 + now.getMinutes();
               return nowMinutes < endMinutes;
             }
             return false;
           });
           if (ev && dateEl) {
-            const evDate = new Date(ev.date + 'T19:30:00');
+            const evDate = new Date(ev.date + 'T' + (ev.time_start || '19:00:00'));
             const isToday = ev.date === new Date().toISOString().slice(0,10);
             dateEl.textContent = isToday
               ? `${i18nToday} 🔴`
               : evDate.toLocaleDateString(_locale, { weekday: 'long', day: '2-digit', month: 'short' });
-            if (timeEl) timeEl.textContent = '19:30 BRT';
+            if (timeEl) timeEl.textContent = (ev.time_start ? ev.time_start.slice(0, 5) : '19:00') + ' BRT';
             if (ev.meeting_link && linkEl) {
               linkEl.href = ev.meeting_link;
               linkEl.classList.remove('hidden');
@@ -262,7 +263,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                 const recUrl = lastWithRecording.youtube_url || lastWithRecording.recording_url;
                 const recDate = new Date(lastWithRecording.date + 'T12:00:00');
                 const recLabel = recDate.toLocaleDateString(_locale, { day: '2-digit', month: 'short' });
-                if (timeEl) timeEl.innerHTML = `19:30 BRT · <a href="${recUrl}" target="_blank" rel="noopener" class="text-red-400 hover:text-red-300 no-underline font-semibold">🎥 ${recLabel}</a>`;
+                if (timeEl) timeEl.innerHTML = `${ev.time_start ? ev.time_start.slice(0, 5) : '19:00'} BRT · <a href="${recUrl}" target="_blank" rel="noopener" class="text-red-400 hover:text-red-300 no-underline font-semibold">🎥 ${recLabel}</a>`;
               }
             }
           } else if (dateEl) {
