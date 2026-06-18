@@ -1,0 +1,5 @@
+---
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/admin/selection?lang=en-US');
+return Astro.redirect(`/admin/selection?app=${encodeURIComponent(id)}&lang=en-US`);
+---

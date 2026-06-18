@@ -1,0 +1,14 @@
+---
+/**
+ * /admin/selection/applications/[id] — deep-link permalink to a single application.
+ * The application detail surface is the modal on /admin/selection (tabs Info/Evaluate/
+ * Interview/Comms/Videos/Audit), so this route redirects there with ?app=<id>, which
+ * the dashboard opens on load (maybeOpenDeepLinkedApplicant).
+ *
+ * Fixes the 404 the selection crons' notification links pointed at:
+ * #781 detect_stuck_selection_funnel + _selection_interview_overdue_cron.
+ */
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/admin/selection');
+return Astro.redirect(`/admin/selection?app=${encodeURIComponent(id)}`);
+---

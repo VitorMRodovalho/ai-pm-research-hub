@@ -5538,6 +5538,7 @@ const ptBR: Record<string, string> = {
   'admin.selection.noCandidates': 'Nenhum candidato',
   'admin.selection.errorPrefix': 'Erro',
   // ── Selection modal — Ω-B+.10 p147 (modal Info tab) ──
+  'admin.selection.modal.deepLinkNotFound': 'Candidatura não encontrada no ciclo atual. Verifique o filtro de ciclo.',
   'admin.selection.modal.tabInfo': 'Informações',
   'admin.selection.modal.tabEvaluate': 'Avaliar',
   'admin.selection.modal.tabInterview': 'Entrevista',
