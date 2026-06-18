@@ -83,6 +83,7 @@ const SEL_I18N = {
     both: t('admin.selection.statusBoth', lang),
   },
   modal: {
+    deepLinkNotFound: t('admin.selection.modal.deepLinkNotFound', lang),
     tabInfo: t('admin.selection.modal.tabInfo', lang),
     tabEvaluate: t('admin.selection.modal.tabEvaluate', lang),
     tabInterview: t('admin.selection.modal.tabInterview', lang),
@@ -5463,10 +5464,28 @@ const SEL_I18N = {
   }
 
   /* ── permission gate ──────────────────────────────── */
+  // Deep-link: the selection crons (#781 detect_stuck_selection_funnel,
+  // _selection_interview_overdue_cron) notify the GP with a link to a specific
+  // application. The detail surface is the modal below, so /admin/selection/applications/[id]
+  // redirects here with ?app=<id>; open that applicant once, then strip the param
+  // so re-gates (nav:member events) don't re-open it.
+  function maybeOpenDeepLinkedApplicant() {
+    const id = new URLSearchParams(window.location.search).get('app');
+    if (!id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('app');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (allRows.some(r => r.id === id)) {
+      openApplicantModal(id);
+    } else {
+      toast(T.modal.deepLinkNotFound, 'error');
+    }
+  }
+
   function applyGate(m: any) {
     if (m && canAccessAdminRoute(m, 'admin_selection')) {
       showPanel();
-      loadCycles().then(() => loadDashboard());
+      loadCycles().then(() => loadDashboard()).then(() => maybeOpenDeepLinkedApplicant());
     } else {
       showDenied();
     }
