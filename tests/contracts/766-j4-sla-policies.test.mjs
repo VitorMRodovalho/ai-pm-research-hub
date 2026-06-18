@@ -84,13 +84,16 @@ test('migration: the 7-day interview idempotency window stays hardcoded (NOT an 
 });
 
 // ── DB-gated: live seed at parity ────────────────────────────────────────────────
-test('DB: sla_policies holds exactly the 4 SLA windows, all category=sla', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: sla_policies contains the 4 J4 SLA windows, all category=sla', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.from('sla_policies').select('policy_key, category');
   assert.ok(!error, error?.message);
-  const keys = (data || []).map((r) => r.policy_key).sort();
-  assert.deepEqual(keys, POLICIES.map((p) => p.key).sort(), 'exactly the 4 SLA policy keys');
-  assert.ok((data || []).every((r) => r.category === 'sla'), 'all 4 are category=sla');
+  const keys = new Set((data || []).map((r) => r.policy_key));
+  // Superset, not exact: the table is the shared selection-SLA config surface. The
+  // ÉPICO D stuck-funnel PR (mig 208) added interview_booking_grace + noshow_recovery_grace.
+  // This test owns only the 4 J4 keys — assert they are present, don't pin the total.
+  for (const p of POLICIES) assert.ok(keys.has(p.key), `${p.key} present`);
+  assert.ok((data || []).every((r) => r.category === 'sla'), 'all rows are category=sla');
 });
 
 test('DB: each seeded value_interval is at PARITY with the cron fallback literal', { skip: dbGated ? false : skipMsg }, async () => {
