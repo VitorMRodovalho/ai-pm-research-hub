@@ -13,6 +13,7 @@ import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import PostPromotionJourney from '../components/onboarding/PostPromotionJourney';
 import BuddyBlock from '../components/buddy/BuddyBlock';
+import EntryChapterNudge from '../components/onboarding/EntryChapterNudge';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -128,6 +129,13 @@ const WK = {
          replacement for the static HBLOCK that vanished with the onboarding card. Appears AFTER
          onboarding completes; reads first_attendance/first_deliverable milestones. -->
     <PostPromotionJourney client:load lang={lang} />
+
+    <!-- #625 follow-up / ADR-0104: entry-chapter adoption nudge. Dismissible pull to the existing
+         /profile entry-chapter card (0/48 adoption live). Self-gates: non-guest active members
+         with >= 1 BR affiliation and no entry chapter chosen yet. FE-only, no new DB state.
+         Placed BEFORE BuddyBlock (ux-leader R1): a one-click governance action outranks the
+         optional social pointer when both surface for the same established member. -->
+    <EntryChapterNudge client:load lang={lang} />
 
     <!-- #766 H5: Buddy/padrinho social pointer (below the journey block; sibling, not wrapped) -->
     <div class="mb-6">

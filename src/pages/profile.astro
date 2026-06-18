@@ -1412,7 +1412,7 @@ const PROFILE_I18N = {
     // C5 — no BR affiliations found (the observable symptom of a hidden PMI profile).
     if (affils.length === 0) {
       return `
-        <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <div id="entry-chapter-card" class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
           ${head}
           <div class="mt-1 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[.75rem] text-amber-800">
             ${PROFILE_I18N.entryChapterEmptyGuide}
@@ -1434,7 +1434,7 @@ const PROFILE_I18N = {
     }).join('');
 
     return `
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+      <div id="entry-chapter-card" class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         ${head}
         <div class="text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">${PROFILE_I18N.entryChapterAffiliationsLabel}</div>
         ${rows}
@@ -1915,6 +1915,20 @@ const PROFILE_I18N = {
     // Load notification preferences + linked providers after render
     loadNotifPrefs();
     loadLinkedProviders();
+
+    // Deep-link from the /workspace entry-chapter nudge (EntryChapterNudge island):
+    // scroll the entry-chapter card into view once. Affiliations are loaded by loadExtras
+    // before renderProfile, so #entry-chapter-card normally exists by now; retry a few times
+    // in case this render beats the DOM insertion (code-reviewer LOW).
+    if (location.hash === '#entry-chapter-card' && !(window as any).__entryChapterScrolled) {
+      (window as any).__entryChapterScrolled = true;
+      const scrollToCard = (tries: number) => {
+        const card = document.getElementById('entry-chapter-card');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        else if (tries > 0) setTimeout(() => scrollToCard(tries - 1), 150);
+      };
+      scrollToCard(5);
+    }
   }
 
   function normalizeCredlyFieldValue(input?: HTMLInputElement | null) {
