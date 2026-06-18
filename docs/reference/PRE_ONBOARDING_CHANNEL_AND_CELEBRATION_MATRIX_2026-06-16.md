@@ -1,6 +1,7 @@
 # Matriz de Canais & Marcos "jeito Disney" — Jornada de Pré-Onboarding (J2 + J5)
 
 > **Status:** vivo · **Origem:** discovery #740 (gaps J2 + J5) · **Aterrado:** 2026-06-16 (Wave 4)
+> · **Reconciliado:** 2026-06-18 (Épico J pós-D) — J4 saiu de FUTURO p/ ✅ feito; H1 (jornada pós-promoção) shipou.
 > **Escopo:** primeira pernada (aprovação na seleção → aceite VEP → pré-onboarding → termo → promoção → 1ºs dias).
 > **Companheiro de:** [`PRE_ONBOARDING_COMMS_MAP_2026-06-16.md`](./PRE_ONBOARDING_COMMS_MAP_2026-06-16.md) (J1 — o mapa
 > de **o que** é comunicado por etapa). Este doc define **por qual canal** (J2) e **como celebramos marcos** (J5).
@@ -69,9 +70,13 @@ Tom: caloroso, segunda pessoa, orientado ao próximo passo — **sem números fa
 ## Lacunas / próximos passos (honestos)
 - **J5 marcos server-side** (termo assinado member-side, promoção, 1ª presença, 1ª entrega): exigem gatilho no
   evento (trigger/cron) + persistência de "já celebrado" — **feature futura**, não simulada aqui. Severidade 🟢.
-- **J4 — cadência/SLA configurável** (já registrado no comms map): janelas fixas no código dos crons; config = futuro.
+  Parcial: promoção agora tem jornada pós-promoção (H1, #780); celebração dedicada de marco segue futura.
+- **J4 — cadência/SLA configurável:** ✅ **feito [2026-06-18]** (#776/#777) — `sla_policies` + UI admin em
+  `/admin/settings`. Ver tabela de janelas no [comms map (J1)](./PRE_ONBOARDING_COMMS_MAP_2026-06-16.md#cadência--sla-configurável-j4--implementada-2026-06-18).
 - **J6 — cópia operacional canônica** embutida nos e-mails/telas: ver §9 do discovery; parcialmente embutido
-  (aceite VEP, sync de filiação privada já estão em telas/banners).
+  (aceite VEP, sync de filiação privada já estão em telas/banners; o template `vep_offer_accept_reminder` do D7
+  carrega o passo-a-passo de aceite — #782).
+- **J3 WhatsApp:** segue **manual** (link de grupo coletivo, sem gatilho automatizado); automação = projeto à parte.
 
 ## Cross-ref
 - [`PRE_ONBOARDING_COMMS_MAP_2026-06-16.md`](./PRE_ONBOARDING_COMMS_MAP_2026-06-16.md) (J1)
