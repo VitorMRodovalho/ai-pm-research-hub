@@ -90,6 +90,12 @@ const TRIBE_I18N = {
   moveToCancelled: t('tribe.moveTo.cancelled', lang),
   joinWhatsApp: t('tribe.joinWhatsApp', lang),
   chatWhatsApp: t('tribe.chatWhatsApp', lang),
+  // #766 H5 buddy/padrinho (PR2 — volunteer pull on the Members tab)
+  buddyNoPadrino: t('buddy.pool.noPadrino', lang),
+  buddyOfferCta: t('buddy.pool.offerCta', lang),
+  buddyOffered: t('buddy.pool.offered', lang),
+  buddyToastOffered: t('buddy.toast.offered', lang),
+  buddyToastError: t('buddy.toast.error', lang),
   lgpdMask: t('tribe.lgpdMask', lang),
   lgpdTooltip: t('tribe.lgpdTooltip', lang),
   broadcastTab: t('tribe.broadcastTab', lang),
@@ -472,6 +478,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let allDeliverables: any[] = [];
   let publishedArtifacts: any[] = [];
   let contactData: Record<string, {email?:string, phone?:string}> = {};
+  // #766 H5: member ids in MY tribe I can volunteer to buddy (no active pairing, non-guest, ≠ me).
+  // get_my_buddy().can_volunteer_for is already scoped to the caller's own tribe, so this set is
+  // naturally empty when viewing another tribe (the CTA only shows on the viewer's own tribe).
+  let canVolunteerSet: Set<string> = new Set();
   let contextSwitchLoaded = false;
   let headerLeader: any = null;
   let headerSlots: any[] = [];
@@ -1041,8 +1051,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           <div class="flex flex-wrap gap-1">${roleBadge} ${desigBadges}</div>
           ${contactHtml}
           ${waButton(m)}
+          ${buddyPoolHtml(m)}
         </div>
       </div>`;
+  }
+
+  // #766 H5: discreet "no buddy yet" + volunteer CTA on the row of an afilhado without a padrinho.
+  // Only renders for members in canVolunteerSet (own-tribe, non-guest, no active pairing, ≠ me).
+  function buddyPoolHtml(m: any): string {
+    if (!canVolunteerSet.has(m.id)) return '';
+    return `<div class="mt-2 flex items-center gap-2 flex-wrap" data-buddy-row="${escapeHtml(m.id)}">
+      <span class="text-[10px] text-[var(--text-muted)] italic">${escapeHtml(I18N.buddyNoPadrino || 'sem padrinho ainda')}</span>
+      <button type="button" data-action="offer-buddy" data-member-id="${escapeHtml(m.id)}"
+        class="min-h-[44px] inline-flex items-center px-2.5 py-1 rounded-lg bg-teal/10 text-teal text-[.65rem] font-bold border-0 cursor-pointer hover:bg-teal/20 transition-all">
+        ${escapeHtml(I18N.buddyOfferCta || 'Oferecer-me como padrinho')}
+      </button>
+    </div>`;
   }
 
   function waButton(m: any): string {
@@ -1428,6 +1452,27 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             window.open(data.url, '_blank', 'noopener');
           } else {
             (window as any).toast?.(data?.error || 'Error', 'error');
+          }
+        })();
+      }
+
+      if (action === 'offer-buddy') {
+        e.preventDefault();
+        const memberId = target.dataset.memberId;
+        if (!memberId || !sb) return;
+        const btn = target as HTMLButtonElement;
+        btn.disabled = true;
+        (async () => {
+          try {
+            const { data, error } = await sb.rpc('offer_buddy', { p_afilhado_member_id: memberId });
+            if (error || data?.ok === false) throw new Error(error?.message || 'failed');
+            canVolunteerSet.delete(memberId);
+            const row = document.querySelector(`[data-buddy-row="${memberId}"]`);
+            if (row) row.innerHTML = `<span class="text-[10px] text-teal font-semibold">${escapeHtml(I18N.buddyOffered || 'Oferta enviada')} ✓</span>`;
+            (window as any).toast?.(I18N.buddyToastOffered || 'Oferta enviada!', 'success');
+          } catch (_) {
+            btn.disabled = false;
+            (window as any).toast?.(I18N.buddyToastError || 'Erro', 'error');
           }
         })();
       }
@@ -1857,6 +1902,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
           if (parsed && typeof parsed === 'object') { contactData = parsed; }
         } catch (_) { /* non-critical */ }
+      }
+
+      // #766 H5: who in my tribe can I volunteer to buddy? (own-tribe scoped server-side)
+      if (currentMember && currentMember.tribe_id === TRIBE_ID) {
+        try {
+          const { data: buddy } = await sb.rpc('get_my_buddy');
+          const pool = buddy?.can_volunteer_for || [];
+          canVolunteerSet = new Set(pool.map((p: any) => p.member_id));
+        } catch (_) { /* non-critical — pool indicator just won't show */ }
       }
 
       renderMembers(allMembers);
