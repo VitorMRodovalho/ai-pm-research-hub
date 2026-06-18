@@ -475,8 +475,8 @@ describe('p266 #382 W4f Primitives — blind-review primitives (ADR-0099 §7)', 
     it('check_schema_invariants() reports 31 invariants with X violation_count=0', { skip: !sb }, async () => {
       const { data, error } = await sb.rpc('check_schema_invariants');
       assert.equal(error, null);
-      // 23 at p266 (X-add); #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25; #483 (mig 119) added B2_current_cycle_active_terminal_status → 26; #740 Wave 3b-ii (mig 195) added U_active_person_has_primary_chapter_affiliation → 27; #766 (mig 200) added AA_volunteer_term_complete_when_cert_issued → 28; #766 PR2 (mig 202) added AB_term_signed_milestone_has_cert_ancestry → 29; #766 PR3 (mig 203) added AC_first_attendance_milestone_has_attendance + AD_first_deliverable_milestone_has_completed_deliverable → 31; #766 PR4 (mig 204) added NO invariant (promotion = mutable cache) → still 31; #766 PR5 (mig 205) added AE_profile_complete_milestone_has_profile_completed_at → 32.
-      assert.equal(data.length, 32);
+      // 23 at p266 (X-add); #481 (mig 094) added Y_chapter_pipeline_parity + Z_webinar_status_domain → 25; #483 (mig 119) added B2_current_cycle_active_terminal_status → 26; #740 Wave 3b-ii (mig 195) added U_active_person_has_primary_chapter_affiliation → 27; #766 (mig 200) added AA_volunteer_term_complete_when_cert_issued → 28; #766 PR2 (mig 202) added AB_term_signed_milestone_has_cert_ancestry → 29; #766 PR3 (mig 203) added AC_first_attendance_milestone_has_attendance + AD_first_deliverable_milestone_has_completed_deliverable → 31; #766 PR4 (mig 204) added NO invariant (promotion = mutable cache) → still 31; #766 PR5 (mig 205) added AE_profile_complete_milestone_has_profile_completed_at → 32; D4/D5 (mig 210) added AF_open_interview_is_newest_row → 33.
+      assert.equal(data.length, 33);
       const x = data.find(r => r.invariant_name === 'X_blind_review_pareceres_session_product_match');
       assert.ok(x, 'X invariant present');
       assert.equal(x.violation_count, 0);

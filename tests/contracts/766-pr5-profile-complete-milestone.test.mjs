@@ -102,11 +102,12 @@ test('FE: profile_complete copy has ZERO numbers and NO points mention (+50pts a
 });
 
 // ── DB-gated: live behaviour ────────────────────────────────────────────────────
-test('DB: check_schema_invariants reports 32 invariants, 0 violations, AE present', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: check_schema_invariants reports >=32 invariants, 0 violations, AE present', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  assert.equal(data.length, 32, `expected 32 invariants, got ${data.length}`);
+  // >= 32: this PR's invariant set is AE's floor; later PRs append (D4/D5 mig 210 added AF → 33).
+  assert.ok(data.length >= 32, `expected >=32 invariants, got ${data.length}`);
   const total = data.reduce((s, r) => s + r.violation_count, 0);
   assert.equal(total, 0, 'no invariant may have violations');
   const ae = data.find((r) => /^AE_/.test(r.invariant_name));
