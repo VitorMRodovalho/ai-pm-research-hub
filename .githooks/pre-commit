@@ -55,10 +55,12 @@ if [[ -n "$key_hits" ]]; then
 fi
 
 # 4. Real member emails (heuristic: @pmi, @nucleo domains in non-test files)
-# Allow in tests/fixtures/, tests/, and .env.example
+# Allow in tests/fixtures/, tests/, and .env.example.
+# Also exempt system no-reply sender addresses (e.g. donotreply@pmi.org) — these are
+# institutional senders that legitimately appear in email templates/copy, not member PII.
 email_hits=$(git diff --cached -U0 --diff-filter=ACMR --name-only | while read f; do
   [[ "$f" == tests/* || "$f" == *.env.example || "$f" == *fixtures* ]] && continue
-  git diff --cached -U0 -- "$f" | grep -E '^\+' | grep -iE '[a-z0-9._%+-]+@(pmi-|pmi\.|nucleoia)' | while read line; do
+  git diff --cached -U0 -- "$f" | grep -E '^\+' | grep -iE '[a-z0-9._%+-]+@(pmi-|pmi\.|nucleoia)' | grep -ivE '(donotreply|no-?reply|noreply)@' | while read line; do
     echo "  $f: $line"
   done
 done)
