@@ -12,6 +12,7 @@ import MyCardsWidget from '../components/workspace/MyCardsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import PostPromotionJourney from '../components/onboarding/PostPromotionJourney';
+import TribeRequestBlock from '../components/tribe/TribeRequestBlock';
 import BuddyBlock from '../components/buddy/BuddyBlock';
 import EntryChapterNudge from '../components/onboarding/EntryChapterNudge';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
@@ -124,6 +125,12 @@ const WK = {
 
     <!-- Onboarding Checklist -->
     <OnboardingChecklist client:load lang={lang} />
+
+    <!-- Tribe Selection Híbrida PR2: continuous post-promotion tribe-entry request. Self-gates via
+         get_my_tribe_request_context (eligible = active, termed, no tribe yet). Mutually exclusive
+         with PostPromotionJourney (which needs tribe_id != null), so it sits just above it; a
+         researcher without a tribe needs one before the first-days journey applies. -->
+    <TribeRequestBlock client:load lang={lang} />
 
     <!-- #766 H1: post-promotion journey (first days of the real role). Persistent, stateful
          replacement for the static HBLOCK that vanished with the onboarding card. Appears AFTER
