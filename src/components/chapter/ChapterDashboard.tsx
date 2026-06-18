@@ -33,6 +33,9 @@ const T: Record<string, Record<string, string>> = {
     byTribeTitle: 'Membros por Tribo', noTribe: 'Sem tribo',
     scriptTitle: 'Script de divulgação', scriptHint: 'Copie e compartilhe para divulgar seu capítulo.',
     scriptCopy: 'Copiar', scriptCopied: 'Copiado!',
+    pipelineTitle: 'Processo Seletivo', pipelineDeadline: 'Encerra em', pipelineApps: 'candidaturas',
+    pipelineBooking: 'Link de agendamento', pipelineEmpty: 'Nenhum ciclo de seleção em andamento.',
+    pipelineLast: 'Último ciclo encerrou em',
   },
   'en-US': {
     subtitle: 'Executive view of your chapter contribution to the Hub.',
@@ -53,6 +56,9 @@ const T: Record<string, Record<string, string>> = {
     byTribeTitle: 'Members by Tribe', noTribe: 'No tribe',
     scriptTitle: 'Outreach script', scriptHint: 'Copy and share to promote your chapter.',
     scriptCopy: 'Copy', scriptCopied: 'Copied!',
+    pipelineTitle: 'Selection Process', pipelineDeadline: 'Closes on', pipelineApps: 'applications',
+    pipelineBooking: 'Booking link', pipelineEmpty: 'No selection cycle in progress.',
+    pipelineLast: 'Last cycle closed on',
   },
   'es-LATAM': {
     subtitle: 'Vista ejecutiva de la contribución de su capítulo al Hub.',
@@ -73,6 +79,9 @@ const T: Record<string, Record<string, string>> = {
     byTribeTitle: 'Miembros por Tribu', noTribe: 'Sin tribu',
     scriptTitle: 'Script de divulgación', scriptHint: 'Copia y comparte para difundir tu capítulo.',
     scriptCopy: 'Copiar', scriptCopied: '¡Copiado!',
+    pipelineTitle: 'Proceso de Selección', pipelineDeadline: 'Cierra el', pipelineApps: 'candidaturas',
+    pipelineBooking: 'Enlace de agenda', pipelineEmpty: 'Ningún ciclo de selección en curso.',
+    pipelineLast: 'Último ciclo cerró el',
   },
 };
 
@@ -197,6 +206,16 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
     if (data && typeof data === 'object') setScript(data as Record<string, string>);
   }, [getSb]);
   useEffect(() => { fetchScript(); }, [fetchScript]);
+
+  // #106 PR3 Bloco 3: selection pipeline summary (separate lazy RPC; same chapter as the dashboard).
+  const [pipeline, setPipeline] = useState<any>(null);
+  const fetchPipeline = useCallback(async () => {
+    const sb = getSb(); if (!sb) { setTimeout(fetchPipeline, 400); return; }
+    const { data } = await sb.rpc('get_chapter_selection_summary', { p_chapter: chapter || null });
+    if (data && !data.error) setPipeline(data);
+  }, [getSb, chapter]);
+  useEffect(() => { fetchPipeline(); }, [fetchPipeline]);
+
   const copyScript = useCallback(() => {
     const text = script?.[scriptTab] || '';
     if (!text || !navigator.clipboard) return;
@@ -360,6 +379,38 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
             </button>
             <span aria-live="polite" className="sr-only">{copied ? t.scriptCopied : ''}</span>
           </div>
+        </div>
+      )}
+
+      {/* #106 PR3 Bloco 3: selection pipeline (graceful empty-state per ux R2) */}
+      {pipeline && (
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+          <h2 className="text-sm font-bold text-navy mb-2">{t.pipelineTitle}</h2>
+          {pipeline.open ? (
+            <div className="space-y-1.5">
+              <div className="text-sm font-semibold text-[var(--text-primary)]">{pipeline.open.title}</div>
+              <div className="text-xs text-[var(--text-secondary)]">
+                {t.pipelineDeadline} <strong>{pipeline.open.close_date ? new Date(pipeline.open.close_date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</strong>
+                {' · '}<strong className="text-teal">{pipeline.open.open_apps ?? 0}</strong> {t.pipelineApps}
+              </div>
+              {pipeline.open.booking_url && (
+                <a href={pipeline.open.booking_url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center text-xs font-semibold text-teal hover:underline no-print">
+                  {t.pipelineBooking} ↗
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 text-xs text-[var(--text-muted)]">
+              <span aria-hidden="true">🗓️</span>
+              <p>
+                {t.pipelineEmpty}
+                {pipeline.last?.close_date && (
+                  <span className="block mt-0.5">{t.pipelineLast} {new Date(pipeline.last.close_date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}.</span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
