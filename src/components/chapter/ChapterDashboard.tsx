@@ -16,7 +16,7 @@ function useLang(propLang?: string): string {
 const T: Record<string, Record<string, string>> = {
   'pt-BR': {
     subtitle: 'Visão executiva da contribuição do seu capítulo ao Núcleo.',
-    cycle: 'Ciclo 3', print: 'Imprimir', selectChapter: 'Selecionar capítulo',
+    cycle: 'Ciclo', print: 'Imprimir', csv: 'Exportar CSV', selectChapter: 'Selecionar capítulo',
     members: 'Membros Ativos', output: 'Produção Científica', attendance: 'Participação',
     hours: 'Horas Contribuídas', pdu: 'PDUs (máx 25)', certs: 'Certificações PMI',
     partnerships: 'Parcerias', gamification: 'Gamificação', avgXp: 'XP Médio',
@@ -28,10 +28,13 @@ const T: Record<string, Record<string, string>> = {
     observers: 'Observadores', alumni: 'Alumni', completed: 'Cards concluídos',
     publications: 'Publicações', hubAvg: 'vs Núcleo', other: 'Outros',
     reliabilityLbl: 'Confiabilidade',
+    mvTitle: 'Movimentações (30 dias)', mvEntries: 'Entradas', mvExits: 'Saídas',
+    mvReturn: 'Quer voltar', mvEmpty: 'Sem movimentações nos últimos 30 dias.',
+    byTribeTitle: 'Membros por Tribo', noTribe: 'Sem tribo',
   },
   'en-US': {
     subtitle: 'Executive view of your chapter contribution to the Hub.',
-    cycle: 'Cycle 3', print: 'Print', selectChapter: 'Select chapter',
+    cycle: 'Cycle', print: 'Print', csv: 'Export CSV', selectChapter: 'Select chapter',
     members: 'Active Members', output: 'Research Output', attendance: 'Participation',
     hours: 'Hours Contributed', pdu: 'PDUs (max 25)', certs: 'PMI Certifications',
     partnerships: 'Partnerships', gamification: 'Gamification', avgXp: 'Avg XP',
@@ -43,10 +46,13 @@ const T: Record<string, Record<string, string>> = {
     observers: 'Observers', alumni: 'Alumni', completed: 'Cards completed',
     publications: 'Publications', hubAvg: 'vs Hub', other: 'Other',
     reliabilityLbl: 'Reliability',
+    mvTitle: 'Movements (30 days)', mvEntries: 'Joined', mvExits: 'Left',
+    mvReturn: 'Open to return', mvEmpty: 'No movements in the last 30 days.',
+    byTribeTitle: 'Members by Tribe', noTribe: 'No tribe',
   },
   'es-LATAM': {
     subtitle: 'Vista ejecutiva de la contribución de su capítulo al Hub.',
-    cycle: 'Ciclo 3', print: 'Imprimir', selectChapter: 'Seleccionar capítulo',
+    cycle: 'Ciclo', print: 'Imprimir', csv: 'Exportar CSV', selectChapter: 'Seleccionar capítulo',
     members: 'Miembros Activos', output: 'Producción Científica', attendance: 'Participación',
     hours: 'Horas Contribuidas', pdu: 'PDUs (máx 25)', certs: 'Certificaciones PMI',
     partnerships: 'Alianzas', gamification: 'Gamificación', avgXp: 'XP Promedio',
@@ -58,6 +64,29 @@ const T: Record<string, Record<string, string>> = {
     observers: 'Observadores', alumni: 'Egresados', completed: 'Cards completados',
     publications: 'Publicaciones', hubAvg: 'vs Hub', other: 'Otros',
     reliabilityLbl: 'Confiabilidad',
+    mvTitle: 'Movimientos (30 días)', mvEntries: 'Entradas', mvExits: 'Salidas',
+    mvReturn: 'Quiere volver', mvEmpty: 'Sin movimientos en los últimos 30 días.',
+    byTribeTitle: 'Miembros por Tribu', noTribe: 'Sin tribu',
+  },
+};
+
+// Offboard reason labels per language (the RPC neutralizes health/policy_violation → 'other'
+// server-side for LGPD, so those never reach the FE). Mirrors offboard_reason_categories.label_*.
+const REASONS: Record<string, Record<string, string>> = {
+  'pt-BR': {
+    end_of_cycle: 'Fim de ciclo', personal_agenda: 'Agenda pessoal', personal_workload: 'Sobrecarga profissional',
+    academic_conflict: 'Conflito acadêmico', relocation: 'Mudança de localidade', external_priority: 'Prioridade externa',
+    lack_of_fit: 'Falta de fit', other: 'Outros',
+  },
+  'en-US': {
+    end_of_cycle: 'End of cycle', personal_agenda: 'Personal agenda', personal_workload: 'Work overload',
+    academic_conflict: 'Academic conflict', relocation: 'Relocation', external_priority: 'External priority',
+    lack_of_fit: 'Lack of fit', other: 'Other',
+  },
+  'es-LATAM': {
+    end_of_cycle: 'Fin de ciclo', personal_agenda: 'Agenda personal', personal_workload: 'Sobrecarga profesional',
+    academic_conflict: 'Conflicto académico', relocation: 'Mudanza', external_priority: 'Prioridad externa',
+    lack_of_fit: 'Falta de fit', other: 'Otros',
   },
 };
 
@@ -137,6 +166,38 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
     return () => { if (chartInst.current) chartInst.current.destroy(); };
   }, [data, t]);
 
+  // #106 PR1: instrumentation — fire once when the dashboard data first loads (product-leader).
+  const viewedRef = useRef(false);
+  useEffect(() => {
+    if (data && !data.error && !viewedRef.current) {
+      viewedRef.current = true;
+      const m = (window as any).navGetMember?.();
+      (window as any).__nucleoTrack?.('chapter_dashboard_viewed', {
+        chapter_code: data.chapter,
+        is_own_chapter: m?.chapter === data.chapter,
+        designation: Array.isArray(m?.designations) ? m.designations.join(',') : null,
+      });
+    }
+  }, [data]);
+
+  // #106 PR1 Bloco 5: CSV export of the already-loaded member list (FE-only, no extra RPC).
+  const exportCsv = useCallback(() => {
+    const rows = (data?.members || []) as any[];
+    const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = [t.name, t.role, t.xp, t.attendance, t.trailLbl].map(esc).join(',');
+    const lines = [header].concat(
+      rows.map((m: any) => [m.name, m.operational_role, m.total_xp, `${m.attendance_pct}%`, `${m.trail_count}/7`].map(esc).join(','))
+    );
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chapter_${data?.chapter || 'export'}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    (window as any).__nucleoTrack?.('chapter_csv_exported', { chapter_code: data?.chapter, rows: rows.length });
+  }, [data, t]);
+
   if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{t.loading}</div>;
   if (!data) return <div className="text-center py-12 text-[var(--text-muted)]">{t.noData}</div>;
 
@@ -148,6 +209,11 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
   const pr = data.partnerships || {};
   const g = data.gamification || {};
   const members = data.members || [];
+  const mv = data.movements || {};
+  const mvEntries = (mv.entries || []) as any[];
+  const mvExits = (mv.exits || []) as any[];
+  const byTribeEntries = Object.entries((p.by_tribe || {}) as Record<string, number>).sort((a, b) => b[1] - a[1]);
+  const reasonLabel = (code: string) => (REASONS[lang] || REASONS['pt-BR'])[code] || code;
 
   return (
     <div className="space-y-6">
@@ -156,7 +222,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
         <div>
           <h1 className="text-xl font-extrabold text-navy print:text-2xl">{data.chapter}</h1>
           <p className="text-xs text-[var(--text-secondary)]">{t.subtitle}</p>
-          <span className="text-[10px] text-[var(--text-muted)]">{t.cycle} · {new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}</span>
+          <span className="text-[10px] text-[var(--text-muted)]">{data.cycle_label || t.cycle} · {new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}</span>
         </div>
         <div className="flex items-center gap-2 no-print">
           {isGP && data.available_chapters && (
@@ -165,6 +231,9 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
               {(data.available_chapters || []).map((ch: string) => <option key={ch} value={ch}>{ch}</option>)}
             </select>
           )}
+          <button onClick={exportCsv} className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)] no-print">
+            ⬇️ {t.csv}
+          </button>
           <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)] no-print">
             🖨️ {t.print}
           </button>
@@ -182,7 +251,65 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
         <MetricCard icon="🏆" label={t.gamification} value={g.avg_xp || 0} sub={`${t.hubAvg}: ${g.hub_avg_xp || 0}`} />
       </div>
 
-      {/* Comparison Chart */}
+      {/* #106 PR1 Bloco 2: Movements 30d (card-list, high position per ux R1) */}
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+          <h2 className="text-sm font-bold text-navy">{t.mvTitle}</h2>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="px-2 py-0.5 rounded-full bg-teal/10 text-teal font-bold">+{mv.joined_30d || 0} {t.mvEntries}</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">−{mv.left_30d || 0} {t.mvExits}</span>
+          </div>
+        </div>
+        {(mvEntries.length === 0 && mvExits.length === 0) ? (
+          <p className="text-xs text-[var(--text-muted)]">{t.mvEmpty}</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-teal mb-2">{t.mvEntries} ({mvEntries.length})</div>
+              <div className="space-y-1.5">
+                {mvEntries.map((e: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--surface-section-cool)]">
+                    <span className="font-medium text-[var(--text-primary)] truncate">{e.name}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">{new Date(e.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700 mb-2">{t.mvExits} ({mvExits.length})</div>
+              <div className="space-y-1.5">
+                {mvExits.map((e: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--surface-section-cool)]">
+                    <span className="font-medium text-[var(--text-primary)] truncate">{e.name}</span>
+                    <span className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">{reasonLabel(e.reason_code)}</span>
+                      {e.return_interest && <span className="text-[10px] text-teal" title={t.mvReturn} aria-label={t.mvReturn}>↩</span>}
+                      <span className="text-[10px] text-[var(--text-muted)]">{new Date(e.offboarded_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* #106 PR1 Bloco 1: snapshot by tribe (sum == active; '__none__' → Sem tribo) */}
+      {byTribeEntries.length > 0 && (
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+          <h2 className="text-sm font-bold text-navy mb-3">{t.byTribeTitle}</h2>
+          <div className="flex flex-wrap gap-2">
+            {byTribeEntries.map(([tname, cnt]) => (
+              <span key={tname} className="text-xs px-2.5 py-1 rounded-lg bg-[var(--surface-section-cool)] border border-[var(--border-subtle)]">
+                <span className="font-medium text-[var(--text-primary)]">{tname === '__none__' ? t.noTribe : tname}</span>
+                <span className="ml-1.5 font-bold text-teal">{cnt}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Comparison Chart (moved below operational blocks per ux R1 — detail, not primary) */}
       <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
         <h2 className="text-sm font-bold text-navy mb-3">{t.compTitle}</h2>
         <div style={{ height: '180px' }}><canvas ref={chartRef} /></div>
