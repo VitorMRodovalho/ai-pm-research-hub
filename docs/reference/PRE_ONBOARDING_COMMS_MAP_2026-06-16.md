@@ -1,8 +1,16 @@
 # Mapa de Comunicações — Jornada de Pré-Onboarding (J1)
 
 > **Status:** vivo · **Origem:** discovery #740 (gap J1) · **Aterrado:** 2026-06-16 (Wave 2)
+> · **Reconciliado:** 2026-06-18 (Épico J pós-D) com o estado live — ver nota abaixo.
 > **Escopo:** primeira pernada (aprovação na seleção → aceite VEP → pré-onboarding →
 > termo → promoção). Seleção de tribo é jornada separada (ver discovery #740).
+
+> **🔄 Reconciliação 2026-06-18:** entre 06-16 e 06-18 shiparam peças que este doc dava como
+> FUTURO. Corrigido contra queries vivas: **J4 (SLA configurável)** = ✅ feito (`sla_policies`
+> + UI admin, #776/#777); **D7 (auto-e-mail de aceite VEP)** = ✅ feito (#782) — supersede a nota
+> "painel basta"; **D5/D3 (push ao GP de funil travado)** = ✅ feito (#781), camada PUSH além do
+> pull do painel D1; catálogo `_delivery_mode_for` agora conhece os tipos novos (lacuna de higiene
+> fechada). Detalhes nas linhas marcadas **[2026-06-18]** e na seção "Lacunas".
 
 J1 do discovery pedia "definir quais e-mails/lembretes automáticos em cada estágio".
 Este doc **documenta o que JÁ existe** (não propõe) — o re-grounding da Wave 2 mostrou
@@ -25,6 +33,7 @@ não substitui as fontes de verdade abaixo.
 |---|---|---|---|---|
 | **Aprovado na seleção** | Candidato | sino + e-mail · `selection_approved` | trigger | imediato (sino); e-mail canônico vem no termo |
 | **Oferta VEP pendente** (aprovado, sem ACEITE no VEP) | Candidato | e-mail oficial do **PMI** (remetente `donotreply at pmi.org`) | externo (PMI) | no envio da oferta |
+| ⤷ **[2026-06-18] lembrete próprio (D7)** | Candidato | e-mail · template `vep_offer_accept_reminder` | cron `nudge-vep-offer-accept-daily` → `process_pending_vep_offer_reminders` (single-fire, SLA `offer_accept_grace` 7d a partir de `vep_offer_extended_at`) | diário 17:00 |
 | ⤷ visibilidade p/ liderança | GP/curadoria | painel **D1** (balde "Oferta VEP não aceita") | pull (in-app) | ao abrir `/admin` |
 | **Convite de entrevista** (cutoff aprovado) | Candidato | e-mail · `cutoff_approved_email_sent_at` | cron `selection-cutoff-pending-daily` (strict-above-target) | diário 14:00 |
 | ⤷ in-band/below-target (sem auto-convite) | GP | painel **D1** (balde "sem convite") — **decisão manual** (PM 2026-06-16) | pull (in-app) | ao abrir `/admin` |
@@ -33,7 +42,9 @@ não substitui as fontes de verdade abaixo.
 | **Entrevista vencida / nunca conduzida** | Entrevistadores | `selection_interview_overdue` (digest) | cron `selection-interview-overdue-daily` | diário 14:00 |
 | ⤷ agendamento travado >48h | — | rescue `selection-stuck-scheduled-rescue-daily` | cron | diário 15:00 |
 | ⤷ convite enviado, nunca agendado | GP | painel **D1** (balde correspondente) | pull (in-app) | ao abrir `/admin` |
+| ⤷ **[2026-06-18] push ao GP (D5)** | GP/managers | sino · `selection_candidate_unbooked` | cron `detect-stuck-selection-funnel-daily` → `detect_stuck_selection_funnel` (bucket `invited_never_booked`, SLA `interview_booking_grace` 10d a partir do convite) | diário 16:00 |
 | **No-show** | GP | painel **D1** (balde "no-show") | pull (in-app) | ao abrir `/admin` |
+| ⤷ **[2026-06-18] push ao GP (D3)** | GP/managers | sino · `selection_noshow_unrecovered` | cron `detect-stuck-selection-funnel-daily` → `detect_stuck_selection_funnel` (bucket `noshow_not_recovered`, SLA `noshow_recovery_grace` 3d) | diário 16:00 |
 | **Pré-onboarding — termo disponível** | Candidato | e-mail · `selection_termo_due` (e-mail principal pós-VEP-Active, com termo + próximos passos) | trigger p157/p159 | imediato |
 | ⤷ **apto a assinar (lado-liderança)** | GP + Dir. Voluntariado (`manage_member`) | sino · `selection_apto_to_sign_digest` (agregado) → link p/ fila **E1** | cron `selection-apto-to-sign-digest-daily` (Wave 2 E2) | diário 13:45 |
 | **Onboarding parado / overdue** | Candidato | `selection_onboarding_overdue` | cron `detect-onboarding-overdue-daily` | diário 13:00 |
@@ -53,17 +64,30 @@ não substitui as fontes de verdade abaixo.
 > [`PRE_ONBOARDING_CHANNEL_AND_CELEBRATION_MATRIX_2026-06-16.md`](./PRE_ONBOARDING_CHANNEL_AND_CELEBRATION_MATRIX_2026-06-16.md)
 > (Wave 4) — o **princípio** por trás da coluna "Canal / tipo" acima + a matriz de celebração de marcos.
 
+## Cadência / SLA configurável (J4) — ✅ implementada [2026-06-18]
+
+As janelas dos crons **não são mais fixas no código**: ficam na tabela `sla_policies` (SSOT),
+editáveis por GP em `/admin/settings` → "Janelas de SLA" (gate `manage_platform`, #776/#777).
+Valores vivos (queried 2026-06-18):
+
+| policy_key | Janela | Usado por |
+|---|---|---|
+| `interview_booking_grace` | 10 dias | `detect_stuck_selection_funnel` (bucket invited_never_booked) |
+| `noshow_recovery_grace` | 3 dias | `detect_stuck_selection_funnel` (bucket noshow_not_recovered) |
+| `offer_accept_grace` | 7 dias | `process_pending_vep_offer_reminders` (D7, single-fire) |
+| `interview_overdue_grace` | 24h | `_selection_interview_overdue_cron` |
+| `stuck_scheduled_grace` | 48h | `_selection_stuck_scheduled_rescue_cron` |
+| `reschedule_nudge_initial` | 3 dias | `process_pending_reschedule_nudges` (1º nudge) |
+| `reschedule_nudge_repeat` | 3 dias | `process_pending_reschedule_nudges` (subsequentes) |
+
 ## Lacunas conhecidas (não cobertas aqui)
-- **J4 — cadência/SLA configurável** (oferta não aceita, termo não assinado, onboarding
-  parado, convite sem agendamento): hoje as janelas são **fixas no código** dos crons. Um
-  mecanismo de config (tabela + UI) é **feature futura** — registrado em #740, **não** simulado
-  como configurável neste doc.
-- **D7 auto-e-mail próprio** (segundo nudge além do PMI p/ oferta não aceita): decisão PM
-  2026-06-16 = **painel basta** (nudge manual); não há auto-e-mail nosso.
-- Registro do tipo `selection_apto_to_sign_digest` no catálogo ADR-0022 + `_delivery_mode_for`:
-  follow-up de higiene (#740) — hoje o `delivery_mode` é setado direto no INSERT do cron.
+- **J5 marcos server-side** (termo assinado member-side, promoção, 1ª presença, 1ª entrega):
+  ainda parciais/futuros — ver a matriz de marcos no doc companheiro.
+- **J3 WhatsApp** segue **manual** (link de grupo coletivo, sem gatilho automatizado): decisão de
+  canal documentada no doc companheiro (Parte A); automação = projeto à parte (Business API).
 
 ## Cross-ref
 - Discovery: `docs/project-governance/PRE_ONBOARDING_JOURNEY_DISCOVERY_2026-06-16.md`
 - Modelo guest/pré-onboarding: `PRE_ONBOARDING_GUEST_MODEL.md`
 - PRs Wave 2: #745 (D1), #746 (E1), #747 (E2) · umbrella #740
+- PRs reconciliação 2026-06-18: #776/#777 (J4 SLA config + UI), #781 (D5/D3 push funil), #782 (D7 auto-e-mail VEP)
