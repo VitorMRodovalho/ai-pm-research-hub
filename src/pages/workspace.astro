@@ -11,10 +11,31 @@ import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import MyCardsWidget from '../components/workspace/MyCardsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
+import BuddyBlock from '../components/buddy/BuddyBlock';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// #766 H5 buddy/padrinho (PR2) — copy resolved server-side so keys live in the 3 dicts; the
+// BuddyBlock island is canonical (H1 reuses it). {name} placeholders are filled in the FE.
+const BUDDY_COPY = {
+  offerTitle: t('buddy.offer.title', lang),
+  offerBody: t('buddy.offer.body', lang),
+  offerAccept: t('buddy.offer.accept', lang),
+  offerDecline: t('buddy.offer.decline', lang),
+  pointerTitle: t('buddy.pointer.title', lang),
+  pointerBody: t('buddy.pointer.body', lang),
+  pointerWhatsapp: t('buddy.pointer.whatsapp', lang),
+  pointerFallback: t('buddy.pointer.fallback', lang),
+  padrinoConfirmed: t('buddy.padrino.confirmed', lang),
+  padrinoPending: t('buddy.padrino.pending', lang),
+  padrinoRevoke: t('buddy.padrino.revoke', lang),
+  toastAccepted: t('buddy.toast.accepted', lang),
+  toastDeclined: t('buddy.toast.declined', lang),
+  toastRevoked: t('buddy.toast.revoked', lang),
+  toastError: t('buddy.toast.error', lang),
+};
 
 const WK = {
   meta: t('wk.meta', lang),
@@ -101,6 +122,11 @@ const WK = {
 
     <!-- Onboarding Checklist -->
     <OnboardingChecklist client:load lang={lang} />
+
+    <!-- #766 H5: Buddy/padrinho social pointer (below the onboarding block, canonical for H1) -->
+    <div class="mb-6">
+      <BuddyBlock client:load lang={lang} copy={BUDDY_COPY} />
+    </div>
 
     <!-- Observer Banner -->
     <div id="wk-observer-banner" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-6">
