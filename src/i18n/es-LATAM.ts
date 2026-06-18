@@ -5533,6 +5533,7 @@ const esLATAM: Record<string, string> = {
   'admin.selection.noCandidates': 'Ningún candidato',
   'admin.selection.errorPrefix': 'Error',
   // ── Selection modal — Ω-B+.10 p147 (modal Info tab) ──
+  'admin.selection.modal.deepLinkNotFound': 'Candidatura no encontrada en el ciclo actual. Revisa el filtro de ciclo.',
   'admin.selection.modal.tabInfo': 'Información',
   'admin.selection.modal.tabEvaluate': 'Evaluar',
   'admin.selection.modal.tabInterview': 'Entrevista',

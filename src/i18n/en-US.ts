@@ -5532,6 +5532,7 @@ const enUS: Record<string, string> = {
   'admin.selection.noCandidates': 'No candidate',
   'admin.selection.errorPrefix': 'Error',
   // ── Selection modal — Ω-B+.10 p147 (modal Info tab) ──
+  'admin.selection.modal.deepLinkNotFound': 'Application not found in the current cycle. Check the cycle filter.',
   'admin.selection.modal.tabInfo': 'Information',
   'admin.selection.modal.tabEvaluate': 'Evaluate',
   'admin.selection.modal.tabInterview': 'Interview',
