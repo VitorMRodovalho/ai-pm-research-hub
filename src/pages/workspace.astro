@@ -11,6 +11,7 @@ import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import MyCardsWidget from '../components/workspace/MyCardsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
+import PostPromotionJourney from '../components/onboarding/PostPromotionJourney';
 import BuddyBlock from '../components/buddy/BuddyBlock';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
@@ -123,7 +124,12 @@ const WK = {
     <!-- Onboarding Checklist -->
     <OnboardingChecklist client:load lang={lang} />
 
-    <!-- #766 H5: Buddy/padrinho social pointer (below the onboarding block, canonical for H1) -->
+    <!-- #766 H1: post-promotion journey (first days of the real role). Persistent, stateful
+         replacement for the static HBLOCK that vanished with the onboarding card. Appears AFTER
+         onboarding completes; reads first_attendance/first_deliverable milestones. -->
+    <PostPromotionJourney client:load lang={lang} />
+
+    <!-- #766 H5: Buddy/padrinho social pointer (below the journey block; sibling, not wrapped) -->
     <div class="mb-6">
       <BuddyBlock client:load lang={lang} copy={BUDDY_COPY} />
     </div>
