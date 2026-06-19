@@ -1952,15 +1952,18 @@ const PROFILE_I18N = {
     input.type = input.type === 'password' ? 'text' : 'password';
   }
 
-  // ── Photo upload ──
-  document.getElementById('self-photo-input')?.addEventListener('change', async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
+  // ── Photo upload (event delegation — #self-photo-input is re-rendered by renderProfile) ──
+  document.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id !== 'self-photo-input') return;
+    const file = target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { (window as any).toast?.('Foto excede 2MB', 'error'); return; }
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    const member = currentMember || (window as any).navGetMember?.();
+    if (!sb || !member) return;
     try {
-      const sanitized = (currentMember.email || 'user').replace(/[@.]/g, '_');
+      const sanitized = (member.email || 'user').replace(/[@.]/g, '_');
       const ext = file.type === 'image/png' ? 'png' : 'jpg';
       const path = `avatars/${sanitized}.${ext}`;
       const { error: uploadErr } = await sb.storage.from('member-photos').upload(path, file, { upsert: true });
@@ -1971,6 +1974,7 @@ const PROFILE_I18N = {
       const avatarEl = document.getElementById('self-avatar');
       if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
       (window as any).toast?.('Foto atualizada!', 'success');
+      target.value = '';
     } catch (err: any) {
       (window as any).toast?.(err.message || PROFILE_I18N.photoUploadError || 'Error uploading photo', 'error');
     }
