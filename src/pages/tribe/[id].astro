@@ -96,6 +96,21 @@ const TRIBE_I18N = {
   buddyOffered: t('buddy.pool.offered', lang),
   buddyToastOffered: t('buddy.toast.offered', lang),
   buddyToastError: t('buddy.toast.error', lang),
+  // Tribe Selection Híbrida PR3 — leader's join-request queue (Membros tab)
+  reqTitle: t('tribe.requests.title', lang),
+  reqSubtitle: t('tribe.requests.subtitle', lang),
+  reqAccept: t('tribe.requests.accept', lang),
+  reqDecline: t('tribe.requests.decline', lang),
+  reqToastAccepted: t('tribe.requests.toastAccepted', lang),
+  reqToastDeclined: t('tribe.requests.toastDeclined', lang),
+  reqToastError: t('tribe.requests.toastError', lang),
+  reqToday: t('tribe.requests.today', lang),
+  reqDaysAgo: t('tribe.requests.daysAgo', lang),
+  reqExpiringSoon: t('tribe.requests.expiringSoon', lang),
+  reqDeclineReason: t('tribe.requests.declineReason', lang),
+  reqDeclineConfirm: t('tribe.requests.declineConfirm', lang),
+  reqCancel: t('tribe.requests.cancel', lang),
+  reqProcessing: t('tribe.requests.processing', lang),
   lgpdMask: t('tribe.lgpdMask', lang),
   lgpdTooltip: t('tribe.lgpdTooltip', lang),
   broadcastTab: t('tribe.broadcastTab', lang),
@@ -970,13 +985,124 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       </div>`;
   }
 
+  // ── Tribe Selection Híbrida PR3: leader's join-request queue ──
+  // Leader/GP-only section atop the Members tab. The server RPC enforces the real authority
+  // (Caminho-3: GP or volunteer/leader of THIS tribe); isLeaderOfThisTribeV4() is the display gate.
+  // Returns '' for non-leaders, RPC errors, or an empty queue (so the section never shows blank).
+  async function tribeRequestsSectionHtml(): Promise<string> {
+    if (!isLeaderOfThisTribeV4()) return '';
+    const sb = getSb();
+    if (!sb) return '';
+    let rows: any[] = [];
+    try {
+      const { data, error } = await sb.rpc('list_tribe_pending_requests', { p_tribe_id: TRIBE_ID });
+      if (error) return '';
+      rows = Array.isArray(data) ? data : [];
+    } catch (_) { return ''; }
+    if (rows.length === 0) return '';
+    const relDate = (iso: string): string => {
+      try {
+        const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+        return days <= 0 ? (I18N.reqToday || 'hoje') : (I18N.reqDaysAgo || 'há {n} dia(s)').replace('{n}', String(days));
+      } catch (_) { return ''; }
+    };
+    const expiringSoon = (iso: string): boolean => {
+      try { return new Date(iso).getTime() - Date.now() < 48 * 3600 * 1000; } catch (_) { return false; }
+    };
+    const cards = rows.map((r: any) => {
+      const initials = (r.invitee_name || '?').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+      const ageBadge = r.created_at
+        ? `<span class="text-[11px] text-[var(--text-muted)]">${escapeHtml(relDate(r.created_at))}</span>` : '';
+      const expBadge = (r.expires_at && expiringSoon(r.expires_at))
+        ? `<span class="text-amber-600 text-[10px] font-bold ml-1">${escapeHtml(I18N.reqExpiringSoon || 'Expira em breve')}</span>` : '';
+      return `
+        <div class="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4" data-tribe-req="${escapeHtml(r.invitation_id)}">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal text-xs font-bold shrink-0">${escapeHtml(initials)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-[14px] text-navy leading-tight">${escapeHtml(r.invitee_name || '—')}</div>
+              <div class="mt-0.5">${ageBadge}${expBadge}</div>
+              <p class="text-[13px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap break-words">${escapeHtml(r.message || '')}</p>
+              <div class="mt-3 flex items-center gap-2 flex-wrap" data-req-actions>
+                <button type="button" data-action="review-tribe-accept" data-invitation-id="${escapeHtml(r.invitation_id)}"
+                  class="min-h-[44px] inline-flex items-center px-3 rounded-lg bg-teal text-white text-xs font-bold border-0 cursor-pointer hover:bg-teal/90">
+                  ${escapeHtml(I18N.reqAccept || 'Aceitar')}
+                </button>
+                <button type="button" data-action="review-tribe-decline" data-invitation-id="${escapeHtml(r.invitation_id)}"
+                  class="min-h-[44px] inline-flex items-center px-3 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                  ${escapeHtml(I18N.reqDecline || 'Recusar')}
+                </button>
+              </div>
+              <div class="mt-3 hidden" data-req-decline-form>
+                <textarea data-req-note rows="2" maxlength="280"
+                  class="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal/50"
+                  placeholder="${escapeHtml(I18N.reqDeclineReason || 'Motivo opcional')}"></textarea>
+                <div class="mt-2 flex items-center gap-2 flex-wrap">
+                  <button type="button" data-action="review-tribe-decline-confirm" data-invitation-id="${escapeHtml(r.invitation_id)}"
+                    class="min-h-[44px] inline-flex items-center px-3 rounded-lg bg-amber-600 text-white text-xs font-bold border-0 cursor-pointer hover:bg-amber-700">
+                    ${escapeHtml(I18N.reqDeclineConfirm || 'Confirmar recusa')}
+                  </button>
+                  <button type="button" data-action="review-tribe-decline-cancel"
+                    class="min-h-[44px] inline-flex items-center px-3 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                    ${escapeHtml(I18N.reqCancel || 'Cancelar')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <section id="tribe-requests-section" aria-labelledby="tribe-requests-heading" class="mb-6 rounded-2xl border border-teal/40 bg-teal/5 p-5">
+        <h3 id="tribe-requests-heading" tabindex="-1" class="text-sm font-extrabold text-navy dark:text-teal">${escapeHtml(I18N.reqTitle || 'Pedidos de entrada')}</h3>
+        <p class="text-xs text-[var(--text-secondary)] mt-1 mb-3">${escapeHtml(I18N.reqSubtitle || '')}</p>
+        <div role="status" aria-live="polite" class="sr-only" data-req-status></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="tribe-requests-list">${cards}</div>
+      </section>`;
+  }
+
+  // Shared accept/decline submit: aria-busy + status (WCAG 4.1.3), focus move (2.4.3), optimistic remove.
+  async function submitTribeReview(card: HTMLElement | null, invitationId: string | undefined, decision: string, note: string | null) {
+    const sb = getSb();
+    if (!card || !invitationId || !sb) return;
+    card.setAttribute('aria-busy', 'true');
+    const btns = Array.from(card.querySelectorAll('button')) as HTMLButtonElement[];
+    btns.forEach((b) => { b.disabled = true; });
+    const statusEl = document.querySelector('#tribe-requests-section [data-req-status]') as HTMLElement | null;
+    if (statusEl) statusEl.textContent = I18N.reqProcessing || '';
+    try {
+      const { data, error } = await sb.rpc('review_tribe_request', { p_invitation_id: invitationId, p_decision: decision, p_note: note });
+      if (error || data?.ok === false) throw new Error(error?.message || 'failed');
+      const msg = decision === 'approve' ? (I18N.reqToastAccepted || 'Aprovado') : (I18N.reqToastDeclined || 'Recusado');
+      const list = document.getElementById('tribe-requests-list');
+      const willEmpty = list ? list.children.length <= 1 : true;
+      const nextBtn = (card.nextElementSibling as HTMLElement | null)?.querySelector('button') as HTMLElement | null;
+      card.remove();
+      const section = document.getElementById('tribe-requests-section');
+      if (willEmpty) {
+        section?.remove(); // toast's own live region announces the result
+      } else {
+        if (statusEl) statusEl.textContent = msg;
+        (nextBtn || document.getElementById('tribe-requests-heading'))?.focus();
+      }
+      (window as any).toast?.(msg, decision === 'approve' ? 'success' : 'info');
+    } catch (_) {
+      card.removeAttribute('aria-busy');
+      btns.forEach((b) => { b.disabled = false; });
+      (window as any).toast?.(I18N.reqToastError || 'Erro', 'error');
+    }
+  }
+
   // ── Members tab ──
   async function renderMembers(members: any[]) {
     const el = document.getElementById('panel-members');
     if (!el) return;
 
+    // Leader-only join-request queue sits above the roster (mutually useful: approving fills the roster).
+    const requestsHtml = await tribeRequestsSectionHtml();
+
     if (!members.length) {
-      el.innerHTML = `
+      el.innerHTML = requestsHtml + `
         <div class="text-center py-14">
           <div class="text-4xl mb-3">👥</div>
           <div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.noMembers}</div>
@@ -984,7 +1110,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       return;
     }
 
-    let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
+    let html = requestsHtml + `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
 
     // Fetch observers for this tribe
     try {
@@ -1475,6 +1601,38 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             (window as any).toast?.(I18N.buddyToastError || 'Erro', 'error');
           }
         })();
+      }
+
+      // Tribe Selection Híbrida PR3: leader approves a join request (one-click).
+      if (action === 'review-tribe-accept') {
+        e.preventDefault();
+        submitTribeReview(target.closest('[data-tribe-req]') as HTMLElement | null, target.dataset.invitationId, 'approve', null);
+      }
+
+      // Decline is two-step: reveal an optional-reason form so the requester gets a signal.
+      if (action === 'review-tribe-decline') {
+        e.preventDefault();
+        const card = target.closest('[data-tribe-req]') as HTMLElement | null;
+        if (!card) return;
+        card.querySelector('[data-req-actions]')?.classList.add('hidden');
+        const form = card.querySelector('[data-req-decline-form]') as HTMLElement | null;
+        form?.classList.remove('hidden');
+        (form?.querySelector('[data-req-note]') as HTMLTextAreaElement | null)?.focus();
+      }
+
+      if (action === 'review-tribe-decline-cancel') {
+        e.preventDefault();
+        const card = target.closest('[data-tribe-req]') as HTMLElement | null;
+        if (!card) return;
+        card.querySelector('[data-req-decline-form]')?.classList.add('hidden');
+        card.querySelector('[data-req-actions]')?.classList.remove('hidden');
+      }
+
+      if (action === 'review-tribe-decline-confirm') {
+        e.preventDefault();
+        const card = target.closest('[data-tribe-req]') as HTMLElement | null;
+        const note = (card?.querySelector('[data-req-note]') as HTMLTextAreaElement | null)?.value?.trim() || null;
+        submitTribeReview(card, target.dataset.invitationId, 'decline', note);
       }
 
       if (action === 'toggle-context-switch') {
