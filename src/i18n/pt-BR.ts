@@ -1261,6 +1261,7 @@ const ptBR: Record<string, string> = {
   'profile.volunteerBanner.missingLabel': 'Campos obrigatórios pendentes: ',
   'profile.volunteerBanner.fillAction': '✏️ Preencher',
   'profile.photoUploadError': 'Erro ao enviar foto',
+  'profile.photoHint': 'JPG ou PNG, máx. 2 MB',
   'profile.exportError': 'Erro ao exportar dados',
   'cert.contributions': 'Principais contribuições:',
   'gamification.cert.filterAll': 'Todos',
