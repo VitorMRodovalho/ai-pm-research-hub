@@ -10,7 +10,7 @@ const { lang = 'pt-BR' } = Astro.props;
     <h2 class="text-center text-2xl font-bold text-navy mb-8">
       {t('homepage.stats.title', lang)}
     </h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
       <div class="stat-card">
         <span id="pstat-members" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.members', lang)}</span>
@@ -18,6 +18,10 @@ const { lang = 'pt-BR' } = Astro.props;
       <div class="stat-card">
         <span id="pstat-tribes" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.tribes', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="pstat-verticals" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.verticals', lang)}</span>
       </div>
       <div class="stat-card">
         <span id="pstat-initiatives" class="text-3xl font-extrabold text-navy">&mdash;</span>
@@ -66,6 +70,8 @@ const { lang = 'pt-BR' } = Astro.props;
     if (el) el.textContent = String(data.active_members || 0);
     el = document.getElementById('pstat-tribes');
     if (el) el.textContent = String(data.total_tribes || 0);
+    el = document.getElementById('pstat-verticals');
+    if (el) el.textContent = String(data.total_verticals || 0);
     el = document.getElementById('pstat-initiatives');
     if (el) el.textContent = String(data.total_initiatives || 0);
     el = document.getElementById('pstat-events');
