@@ -620,7 +620,7 @@ const esLATAM: Record<string, string> = {
   'hero.title.line1': 'Núcleo de Estudios e Investigación en',
   'hero.title.accent': 'Inteligencia Artificial',
   'hero.title.line3': 'y Gestión de Proyectos',
-  'hero.subtitle': 'IA aplicada a la Gestión de Proyectos — investigación colaborativa entre capítulos PMI de Brasil',
+  'hero.subtitle': 'La costura entre los silos del PMI — comunidad voluntaria de investigación, desarrollo y networking, con la IA como el hilo que atraviesa toda credencial',
   'hero.date': 'Cronograma del kick-off publicado en la agenda del ciclo',
   'hero.countdown.days': 'Días',
   'hero.countdown.hours': 'Horas',
@@ -668,7 +668,7 @@ const esLATAM: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': '¿Qué es el Núcleo IA & GP?',
-  'nucleo.desc': 'Grupo colaborativo de investigación entre capítulos PMI de Brasil, enfocado en la intersección entre Inteligencia Artificial y Gestión de Proyectos. Investigadores voluntarios — seleccionados vía proceso asistido por IA (copilot) — producen artículos, prototipos y webinars sobre cómo la IA está transformando la profesión.',
+  'nucleo.desc': 'El Núcleo IA & GP es la costura entre los silos del PMI: una comunidad voluntaria que reúne buena gente de toda credencial — investigadores, líderes y curadores de capítulos de Brasil — en investigación, desarrollo y networking, con la IA como el hilo que atraviesa los silos. Voluntarios producen artículos, prototipos y webinars sobre cómo la IA transforma la profesión. Es la expresión humana de la misma integración que el propio PMI viene haciendo (PMO Global Alliance, GPM, Agile Alliance) — una lectura práctica de PMI:Next y del M.O.R.E.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Agenda',
@@ -5232,6 +5232,7 @@ const esLATAM: Record<string, string> = {
   'homepage.stats.title': 'La plataforma en números',
   'homepage.stats.members': 'Investigadores activos',
   'homepage.stats.tribes': 'Líneas de investigación',
+  'homepage.stats.verticals': 'Verticales',
   'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
   'homepage.stats.retention': 'Tasa de retención',

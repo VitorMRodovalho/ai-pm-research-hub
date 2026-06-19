@@ -6,6 +6,7 @@ import HomepageHero from '../../components/sections/HomepageHero.astro';
 import NucleoSection from '../../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../../lib/schedule';
 import QuadrantsSection from '../../components/sections/QuadrantsSection.astro';
+import VerticalsSection from '../../components/sections/VerticalsSection.tsx';
 import TribesSection from '../../components/sections/TribesSection.astro';
 import KpiSection from '../../components/sections/KpiSection.astro';
 import WeeklyScheduleSection from '../../components/sections/WeeklyScheduleSection.astro';
@@ -31,6 +32,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
   <NucleoSection lang={lang} />
   <PlatformStatsSection lang={lang} />
   <QuadrantsSection lang={lang} />
+  <VerticalsSection client:load lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <KpiSection lang={lang} />
   <WeeklyScheduleSection lang={lang} />

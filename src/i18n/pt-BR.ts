@@ -620,7 +620,7 @@ const ptBR: Record<string, string> = {
   'hero.title.line1': 'Núcleo de Estudos e Pesquisa em',
   'hero.title.accent': 'Inteligência Artificial',
   'hero.title.line3': '& Gestão de Projetos',
-  'hero.subtitle': 'IA aplicada à Gestão de Projetos — pesquisa colaborativa entre capítulos PMI do Brasil',
+  'hero.subtitle': 'A costura entre os silos do PMI — comunidade voluntária de pesquisa, desenvolvimento e networking, com a IA como o fio que atravessa toda credencial',
   'hero.date': 'Cronograma do kick-off publicado na agenda do ciclo',
   'hero.countdown.days': 'Dias',
   'hero.countdown.hours': 'Horas',
@@ -668,7 +668,7 @@ const ptBR: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': 'O que é o Núcleo IA & GP?',
-  'nucleo.desc': 'Grupo colaborativo de pesquisa entre capítulos PMI do Brasil, focado na interseção entre Inteligência Artificial e Gestão de Projetos. Pesquisadores voluntários — selecionados via processo assistido por IA (copilot) — produzem artigos, protótipos e webinars sobre como a IA está transformando a profissão.',
+  'nucleo.desc': 'O Núcleo IA & GP é a costura entre os silos do PMI: uma comunidade voluntária que reúne gente boa de toda credencial — pesquisadores, líderes e curadores de capítulos do Brasil — em pesquisa, desenvolvimento e networking, com a IA como o fio que atravessa os silos. Voluntários produzem artigos, protótipos e webinars sobre como a IA transforma a profissão. É a expressão humana da mesma integração que o próprio PMI vem fazendo (PMO Global Alliance, GPM, Agile Alliance) — uma leitura prática de PMI:Next e do M.O.R.E.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Agenda',
@@ -5237,6 +5237,7 @@ const ptBR: Record<string, string> = {
   'homepage.stats.title': 'A plataforma em números',
   'homepage.stats.members': 'Pesquisadores ativos',
   'homepage.stats.tribes': 'Tribos',
+  'homepage.stats.verticals': 'Verticais',
   'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
   'homepage.stats.retention': 'Taxa de retenção',
