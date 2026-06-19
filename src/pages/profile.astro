@@ -1931,6 +1931,24 @@ const PROFILE_I18N = {
       };
       scrollToCard(5);
     }
+
+    // Deep-link from the /workspace Credly nudge (CredlyNudge island, F2 #740): scroll the Credly
+    // field into view, open the inline 3-step guide, and focus the input. Retry a few times in case
+    // this render beats the DOM insertion (mirror the entry-chapter block above).
+    if (location.hash === '#credly' && !(window as any).__credlyScrolled) {
+      (window as any).__credlyScrolled = true;
+      const scrollToCredly = (tries: number) => {
+        const input = document.getElementById('self-credly') as HTMLInputElement | null;
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Open the "how to get my public Credly link" guide so the steps are visible on arrival.
+          const guide = input.closest('div')?.querySelector('details');
+          if (guide) (guide as HTMLDetailsElement).open = true;
+          input.focus({ preventScroll: true });
+        } else if (tries > 0) setTimeout(() => scrollToCredly(tries - 1), 150);
+      };
+      scrollToCredly(5);
+    }
   }
 
   function normalizeCredlyFieldValue(input?: HTMLInputElement | null) {
