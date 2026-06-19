@@ -1,5 +1,7 @@
 // ─── Português (Brasil) — idioma padrão ───
 
+import { CANONICAL_HOST } from '../lib/canonical';
+
 const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
@@ -425,7 +427,7 @@ const ptBR: Record<string, string> = {
   'cycleReport.evolutionTitle': 'Evolução C2 → C3',
   'cycleReport.attendanceByTribe': 'Presença por Tribo',
   'cycleReport.printFooterAuto': 'Documento gerado automaticamente pela plataforma digital do Núcleo de Estudos e Pesquisa em IA & GP',
-  'cycleReport.printFooterUrl': 'nucleoia.vitormr.dev · Verificável via código do relatório',
+  'cycleReport.printFooterUrl': `${CANONICAL_HOST} · Verificável via código do relatório`,
   'cycleReport.printFooterMarks': 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
   'cycleReport.errorLoadingCycle': 'Falha ao gerar relatório do ciclo.',
   'cycleReport.colCycle': 'Ciclo',
@@ -475,7 +477,7 @@ const ptBR: Record<string, string> = {
   'cycleReport.attReliabilityLbl': 'Confiabilidade de registro',
   'cycleReport.attEngagementHint': 'presença / encontros esperados',
   'cycleReport.attColAtRisk': 'Em Risco',
-  'cycleReport.footerTemplate': 'Gerado em {date} · Núcleo IA & GP · nucleoia.vitormr.dev',
+  'cycleReport.footerTemplate': `Gerado em {date} · Núcleo IA & GP · ${CANONICAL_HOST}`,
   'cycleReport.roleNone': 'Sem papel',
   'nav.adminCuratorship': 'Curadoria',
   'nav.adminPublications': 'Publicações',

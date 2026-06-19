@@ -3,8 +3,8 @@
 // runs before middleware and blocks MCP/OAuth cross-origin POSTs)
 
 import { defineMiddleware, sequence } from "astro:middleware";
+import { CANONICAL_HOST } from "./lib/canonical";
 
-const CANONICAL_HOST = "nucleoia.vitormr.dev";
 const LEGACY_HOSTS = [
   "platform.ai-pm-research-hub.workers.dev",
   "ai-pm-research-hub.pages.dev",

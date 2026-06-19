@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import ImpactPageIsland from '../components/islands/ImpactPageIsland';
+import { CANONICAL_ORIGIN } from '../lib/canonical';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -14,13 +15,13 @@ const pageDesc = t('about.meta.description', lang);
   <meta slot="head" property="og:title" content={pageTitle} />
   <meta slot="head" property="og:description" content={pageDesc} />
   <meta slot="head" property="og:type" content="website" />
-  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/about`} />
+  <meta slot="head" property="og:url" content={`${CANONICAL_ORIGIN}${langPrefix}/about`} />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ResearchOrganization",
     "name": "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
     "description": pageDesc,
-    "url": "https://nucleoia.vitormr.dev",
+    "url": CANONICAL_ORIGIN,
     "parentOrganization": { "@type": "Organization", "name": "Project Management Institute" },
     "numberOfEmployees": { "@type": "QuantitativeValue", "value": 51 }
   })} />

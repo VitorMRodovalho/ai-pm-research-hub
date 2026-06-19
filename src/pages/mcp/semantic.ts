@@ -19,13 +19,14 @@ import {
   resolveSupabaseAuthConfig,
   tryAutoRefresh,
 } from '../../lib/mcp-refresh';
+import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
 }
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/semantic';
-const BASE = 'https://nucleoia.vitormr.dev';
+const BASE = CANONICAL_ORIGIN;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
