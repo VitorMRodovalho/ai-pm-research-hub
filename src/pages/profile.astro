@@ -1952,6 +1952,25 @@ const PROFILE_I18N = {
     input.type = input.type === 'password' ? 'text' : 'password';
   }
 
+  // Upload a member asset (photo/signature) via the upload-member-asset Edge Function.
+  // Direct browser storage uploads are rejected by storage RLS (400) for authenticated users;
+  // the EF performs the write with the service role after authenticating the caller. The EF
+  // returns the public URL; the caller persists it via update_my_profile (which works). The
+  // user's JWT is attached automatically by functions.invoke.
+  async function uploadMemberAsset(sb: any, kind: 'photo' | 'signature', file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append('kind', kind);
+    fd.append('file', file);
+    const { data, error } = await sb.functions.invoke('upload-member-asset', { body: fd });
+    if (error) {
+      let msg = error.message;
+      try { const b = await error.context?.json?.(); if (b?.error) msg = b.error; } catch { /* keep generic */ }
+      throw new Error(msg);
+    }
+    if (!data?.url) throw new Error('upload failed');
+    return data.url as string;
+  }
+
   // ── Photo upload (event delegation — #self-photo-input is re-rendered by renderProfile) ──
   document.addEventListener('change', async (e) => {
     const target = e.target as HTMLInputElement;
@@ -1963,13 +1982,7 @@ const PROFILE_I18N = {
     const member = currentMember || (window as any).navGetMember?.();
     if (!sb || !member) return;
     try {
-      const sanitized = (member.email || 'user').replace(/[@.]/g, '_');
-      const ext = file.type === 'image/png' ? 'png' : 'jpg';
-      const path = `avatars/${sanitized}.${ext}`;
-      const { error: uploadErr } = await sb.storage.from('member-photos').upload(path, file, { upsert: true });
-      if (uploadErr) throw uploadErr;
-      const { data: urlData } = sb.storage.from('member-photos').getPublicUrl(path);
-      const photoUrl = urlData.publicUrl + '?t=' + Date.now();
+      const photoUrl = await uploadMemberAsset(sb, 'photo', file);
       await sb.rpc('update_my_profile', { p_fields: { photo_url: photoUrl } });
       const avatarEl = document.getElementById('self-avatar');
       if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
@@ -1992,11 +2005,7 @@ const PROFILE_I18N = {
     const member = (window as any).navGetMember?.();
     if (!sb || !member) return;
     try {
-      const path = `signatures/${(member.email || 'user').replace(/[@.]/g, '_')}.png`;
-      const { error } = await sb.storage.from('member-signatures').upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data: urlData } = sb.storage.from('member-signatures').getPublicUrl(path);
-      const sigUrl = urlData.publicUrl + '?t=' + Date.now();
+      const sigUrl = await uploadMemberAsset(sb, 'signature', file);
       await sb.rpc('update_my_profile', { p_fields: { signature_url: sigUrl } });
       const preview = document.getElementById('sig-preview');
       if (preview) preview.innerHTML = `<img src="${sigUrl}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">`;
