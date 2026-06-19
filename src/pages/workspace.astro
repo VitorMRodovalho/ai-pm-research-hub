@@ -255,6 +255,14 @@ const WK = {
   <script is:inline define:vars={{ langPrefix }}>window.__LANG_PREFIX = langPrefix;</script>
   <script>
     import { hasPermission, getSimulation } from '../lib/permissions';
+    // G3: canonical tier resolution (SSOT). Replaces the divergent local map that
+    // gave guests/alumni/unknown roles 'member' and ignored designations — see
+    // src/lib/admin/constants.ts getAccessTier (guest/unknown → 'visitor').
+    import { resolveTierFromMember } from '../lib/admin/constants';
+    // G3: belonging gate keyed on a real member record (id present), not on a
+    // truthy object or role. Pre-onboarding guests ARE registered (have id) and
+    // must reach /workspace; the genuine no-member case yields null → auth gate.
+    import { isRegisteredMember } from '../lib/routing';
     // p123 i18n nav: prefix preserves /en /es when navigating between sections
     const LP: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
     // ── Workspace Cockpit — client-side orchestration ──
@@ -317,18 +325,6 @@ const WK = {
         visitor: 0, member: 1, observer: 2, leader: 3, admin: 4, superadmin: 5,
       };
 
-      function resolveTier(m: any): string {
-        if (m.is_superadmin) return 'superadmin';
-        const role = m.operational_role || m.role || 'guest';
-        const map: Record<string, string> = {
-          manager: 'admin', deputy_manager: 'admin',
-          tribe_leader: 'leader', comms_leader: 'leader', facilitator: 'leader',
-          researcher: 'member', communicator: 'member',
-          guest: 'member',
-        };
-        return map[role] || 'member';
-      }
-
       function checkSubprojectAccess(
         sp: { minTier: string; designations: string[] },
         tier: string,
@@ -345,7 +341,7 @@ const WK = {
 
       // Listen for future nav:member events
       window.addEventListener('nav:member', ((e: CustomEvent) => {
-        if (e.detail) {
+        if (isRegisteredMember(e.detail)) {
           member = e.detail;
           onMemberReady();
         } else {
@@ -356,7 +352,7 @@ const WK = {
 
       // 1) Check if nav already has a member loaded
       const m = (window as any).navGetMember?.();
-      if (m) {
+      if (isRegisteredMember(m)) {
         member = m;
       } else {
         // 2) Nav might not be ready yet — check session directly
@@ -369,7 +365,7 @@ const WK = {
         }
       }
 
-      if (!member) {
+      if (!isRegisteredMember(member)) {
         $loading?.classList.add('hidden');
         $authGate?.classList.remove('hidden');
         return;
@@ -572,7 +568,7 @@ const WK = {
         { key: 'cpmai', label: 'CPMAI Prep Course', icon: '🎓', href: '/boards/75df916d-cc19-4d42-a58d-6017eb710a24', domain: 'cpmai_design', minTier: 'admin', designations: ['ambassador'] },
       ];
 
-      const memberTier = resolveTier(member);
+      const memberTier = resolveTierFromMember(member);
       const memberDesig = member.designations || [];
       const memberOpRole = member.operational_role || member.role || '';
 
