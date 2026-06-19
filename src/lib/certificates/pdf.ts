@@ -3,6 +3,8 @@
  * Used by /gamification (member view) and /admin/certificates (chapter board view).
  */
 
+import { CANONICAL_HOST, CANONICAL_ORIGIN } from "../canonical";
+
 export interface CertificateData {
   id?: string; // #648: cert id — fallback key for the frozen-PDF lookup when verification_code is absent
   member_name: string;
@@ -251,7 +253,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   // Header with PMI-GO logo (same reference as the example PDF)
   const headerBlock = `
     <div style="margin-bottom:20px">
-      <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
+      <img src="${CANONICAL_ORIGIN}/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
     </div>
     <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
       TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
@@ -299,7 +301,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       <div><b>${(certData.member_name || '').toUpperCase()}</b></div>
       <div>Data: ${certData.signed_at ? new Date(certData.signed_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }) : '—'}</div>
       <div>Código: ${certData.verification_code || '—'}</div>
-      <div style="color:#1a5490">Verifique em nucleoia.vitormr.dev/verify/${certData.verification_code || ''}</div>
+      <div style="color:#1a5490">Verifique em ${CANONICAL_HOST}/verify/${certData.verification_code || ''}</div>
       <div style="font-size:7px;color:#888;margin-top:3px">Fundamento: Lei nº 14.063/2020 Art. 4º §I (assinatura eletrônica simples)</div>
     </div>`;
 
@@ -363,7 +365,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const annexBlock = `
     <div class="cert-page" style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
       <div style="margin-bottom:20px">
-        <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" />
+        <img src="${CANONICAL_ORIGIN}/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" />
       </div>
       <h2 style="font-weight:bold;color:#000;font-size:16px;margin:24px 0 14px">ANEXO - LEI DO SERVIÇO VOLUNTÁRIO</h2>
       <p style="font-size:11px;color:#333;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>

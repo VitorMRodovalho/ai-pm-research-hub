@@ -12,6 +12,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import manifest from '../../lib/mcp-manifest.json';
+import { CANONICAL_HOST, CANONICAL_ORIGIN } from '../../lib/canonical';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
@@ -165,7 +166,7 @@ const generatedDate = new Date(manifest.generated_at).toLocaleDateString(
     <footer class="text-center text-[.78rem] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-6">
       {t('mcp.docs.footer.generated', lang)}: {generatedDate} ·
       {t('mcp.docs.footer.source', lang)}:
-      <a href="https://nucleoia.vitormr.dev/mcp" class="text-teal no-underline hover:underline">nucleoia.vitormr.dev/mcp</a>
+      <a href={`${CANONICAL_ORIGIN}/mcp`} class="text-teal no-underline hover:underline">{CANONICAL_HOST}/mcp</a>
     </footer>
 
   </div>

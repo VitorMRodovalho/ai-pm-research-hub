@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import { createClient } from '@supabase/supabase-js';
 import type { APIRoute } from 'astro';
+import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 export const GET: APIRoute = async (context) => {
   const sb = createClient(
@@ -29,7 +30,7 @@ export const GET: APIRoute = async (context) => {
   return rss({
     title: 'Núcleo IA & GP — Publications',
     description: 'Peer-reviewed publications, articles, and research output from PMI Brasil chapters volunteer researchers on AI applied to Project Management.',
-    site: context.site ?? 'https://nucleoia.vitormr.dev',
+    site: context.site ?? CANONICAL_ORIGIN,
     items,
     customData: '<language>pt-BR</language>',
   });
