@@ -100,10 +100,19 @@ test('#630 live: confirmed tribes have seven linked weekly tribe events through 
     const rows = (events ?? []).filter((event) => {
       const eventDate = new Date(`${event.date}T12:00:00Z`);
       return byInitiative.get(event.initiative_id) === tribeId
-        && event.status !== 'cancelled'
         && eventDate.getUTCDay() === spec.day;
     });
-    assert.equal(rows.length, spec.count, `tribe ${tribeId} event count`);
+    // #803 (BUG-630.A): assert the seeded weekly cadence by counting DISTINCT
+    // dates on the expected weekday in ANY status. A legitimately cancelled
+    // instance keeps its row, so it still counts as a planned slot. The window
+    // holds exactly `spec.count` occurrences of the weekday, so `>= spec.count`
+    // distinct dates proves full coverage with no gap — and stays green through
+    // legitimate cancellations/reschedules, unlike the old "exactly N active" gate.
+    const distinctDates = new Set(rows.map((event) => event.date));
+    assert.ok(
+      distinctDates.size >= spec.count,
+      `tribe ${tribeId} weekly grid: expected >= ${spec.count} distinct weekday-${spec.day} slots, got ${distinctDates.size}`,
+    );
     assert.ok(rows.every((event) => event.type === 'tribo'), `tribe ${tribeId} all events type=tribo`);
     assert.ok(rows.every((event) => event.initiative_id), `tribe ${tribeId} all events linked to initiative`);
   }
@@ -119,17 +128,26 @@ test('#630 live: comms workgroup has Tuesday weekly and Thursday biweekly alignm
     .lte('date', '2026-07-31');
   assert.ifError(error);
 
-  const activeEvents = (events ?? []).filter((event) => event.status !== 'cancelled');
-  const tuesdays = activeEvents.filter((event) => event.title.endsWith('(terça)'));
-  const thursdays = activeEvents.filter((event) => event.title.endsWith('(quinta quinzenal)'));
-  assert.deepEqual(tuesdays.map((event) => event.date).sort(), [
+  // #803 (BUG-630.A): assert the expected anchor dates are PRESENT in any status
+  // (a cancelled instance keeps its row + date), rather than an exact equality
+  // over active rows that one legitimate cancellation would break.
+  const allEvents = events ?? [];
+  const tuesdayDates = new Set(
+    allEvents.filter((event) => event.title.endsWith('(terça)')).map((event) => event.date),
+  );
+  const thursdayDates = new Set(
+    allEvents.filter((event) => event.title.endsWith('(quinta quinzenal)')).map((event) => event.date),
+  );
+  for (const date of [
     '2026-06-16', '2026-06-23', '2026-06-30',
     '2026-07-07', '2026-07-14', '2026-07-21', '2026-07-28',
-  ]);
-  assert.deepEqual(thursdays.map((event) => event.date).sort(), [
-    '2026-06-25', '2026-07-09', '2026-07-23',
-  ]);
-  for (const event of activeEvents) {
+  ]) {
+    assert.ok(tuesdayDates.has(date), `comms Tuesday weekly alignment missing ${date}`);
+  }
+  for (const date of ['2026-06-25', '2026-07-09', '2026-07-23']) {
+    assert.ok(thursdayDates.has(date), `comms Thursday biweekly alignment missing ${date}`);
+  }
+  for (const event of allEvents) {
     assert.equal(event.type, 'comms');
     assert.equal(event.time_start, '19:30:00');
     assert.equal(event.duration_minutes, 60);
