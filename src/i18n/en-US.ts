@@ -1259,6 +1259,7 @@ const enUS: Record<string, string> = {
   'profile.volunteerBanner.missingLabel': 'Required fields pending: ',
   'profile.volunteerBanner.fillAction': '✏️ Fill in',
   'profile.photoUploadError': 'Error uploading photo',
+  'profile.photoHint': 'JPG or PNG, max 2 MB',
   'profile.exportError': 'Error exporting data',
   'cert.contributions': 'Key contributions:',
   'gamification.cert.filterAll': 'All',
