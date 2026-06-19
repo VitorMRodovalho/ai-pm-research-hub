@@ -60,7 +60,8 @@
 - **Council:** `data-architect` (config do kind + seed + autoridade de quem gere vertical; confirmar zero-migration).
 - **Aceite:** ≥1 `community_vertical` consultável com `status`; landing consegue lê-la ao vivo.
 
-### Fatia B — Landing value-prop (FE; branch → QA visual → prod)
+### Fatia B — Landing value-prop (FE; branch → QA visual → prod) — 🟡 B1+B2 EM PR (#810, 2026-06-19); B3 mapa adiado
+> **B1 (camada de dado, mig `20260805000222`) + B2 (FE verticais) shipados no PR #810** (PM escolheu B1+B2 agora, mapa B3 depois). `get_public_verticals()` anon-safe (zero-PII) + `visitor_leads.target_vertical` (uuid FK) + `total_verticals`; `VerticalsSection` island (hub-and-spoke + CTA protagonista por `status='forming'` → `capture_visitor_lead(target_vertical)`); contador no bloco 2; copy CoP/pós-IA nas 3 dicts. Council data-architect+security (B1), code-reviewer+ux-leader (B2). **B3 mapa Brasil/LatAm = net-new sem componente reusável → sessão dedicada.**
 - **Copy CoP/pós-IA** no herói/núcleo/visão (espinha narrativa do brief §1) — i18n nas 3 dicts.
 - **Bloco 3 — hub-and-spoke**: raios = lista dinâmica de `community_vertical` (não fixos). Componente visual net-new; *este visual É o pitch*.
 - **Bloco 6 — "Seja protagonista"**: CTA dirigido por `status='forming'`; interesse entra como `capture_visitor_lead` (`target_vertical`).

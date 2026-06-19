@@ -620,7 +620,7 @@ const enUS: Record<string, string> = {
   'hero.title.line1': 'Study and Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
-  'hero.subtitle': 'The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
+  'hero.subtitle': 'The seam across PMI\'s silos — a volunteer community for research, development and networking, with AI as the thread that crosses every credential',
   'hero.date': 'Kick-off schedule published in the current cycle agenda',
   'hero.countdown.days': 'Days',
   'hero.countdown.hours': 'Hours',
@@ -668,7 +668,7 @@ const enUS: Record<string, string> = {
 
   // ── Nucleo Section ──
   'nucleo.title': 'What is the AI & PM Research Hub?',
-  'nucleo.desc': 'A collaborative research group across PMI chapters in Brazil, focused on the intersection of Artificial Intelligence and Project Management. Volunteer researchers — selected via an AI-assisted (copilot) process — produce papers, prototypes, and webinars on how AI is transforming the profession.',
+  'nucleo.desc': 'Núcleo IA & GP is the seam across PMI\'s silos: a volunteer community that brings good people from every credential — researchers, leaders and curators from Brazilian chapters — together in research, development and networking, with AI as the thread that crosses the silos. Volunteers produce papers, prototypes and webinars on how AI is transforming the profession. It is the human expression of the very integration PMI itself has been pursuing (PMO Global Alliance, GPM, Agile Alliance) — a practical reading of PMI:Next and M.O.R.E.',
 
   // ── Weekly Schedule ──
   'schedule.label': 'Schedule',
@@ -5231,6 +5231,7 @@ const enUS: Record<string, string> = {
   'homepage.stats.title': 'The platform in numbers',
   'homepage.stats.members': 'Active researchers',
   'homepage.stats.tribes': 'Tribes',
+  'homepage.stats.verticals': 'Verticals',
   'homepage.stats.initiatives': 'Initiatives',
   'homepage.stats.events': 'Events held',
   'homepage.stats.retention': 'Retention rate',
