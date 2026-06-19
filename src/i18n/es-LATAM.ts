@@ -1259,6 +1259,7 @@ const esLATAM: Record<string, string> = {
   'profile.volunteerBanner.missingLabel': 'Campos obligatorios pendientes: ',
   'profile.volunteerBanner.fillAction': '✏️ Completar',
   'profile.photoUploadError': 'Error al subir foto',
+  'profile.photoHint': 'JPG o PNG, máx. 2 MB',
   'profile.exportError': 'Error al exportar datos',
   'cert.contributions': 'Contribuciones principales:',
   'gamification.cert.filterAll': 'Todos',
