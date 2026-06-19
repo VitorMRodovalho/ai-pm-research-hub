@@ -15,6 +15,7 @@ import PostPromotionJourney from '../components/onboarding/PostPromotionJourney'
 import TribeRequestBlock from '../components/tribe/TribeRequestBlock';
 import BuddyBlock from '../components/buddy/BuddyBlock';
 import EntryChapterNudge from '../components/onboarding/EntryChapterNudge';
+import CredlyNudge from '../components/onboarding/CredlyNudge';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -143,6 +144,12 @@ const WK = {
          Placed BEFORE BuddyBlock (ux-leader R1): a one-click governance action outranks the
          optional social pointer when both surface for the same established member. -->
     <EntryChapterNudge client:load lang={lang} />
+
+    <!-- F2 #740 follow-up: Credly adoption nudge. Dismissible pull to the existing /profile Credly
+         field + 3-step guide (PR #762). Self-gates: active non-guest/non-alumni research-tribe member
+         with no credly_url (the measured 8). FE-only, no new DB state; in-memory eligibility (no RPC).
+         Sibling of EntryChapterNudge, also BEFORE BuddyBlock (governance/XP action > social pointer). -->
+    <CredlyNudge client:load lang={lang} />
 
     <!-- #766 H5: Buddy/padrinho social pointer (below the journey block; sibling, not wrapped) -->
     <div class="mb-6">
