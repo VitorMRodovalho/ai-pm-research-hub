@@ -3,8 +3,9 @@
 // FIX: Added CORS headers + OPTIONS handler for MCP client compatibility
 
 import type { APIRoute } from "astro";
+import { CANONICAL_ORIGIN } from "../../lib/canonical";
 
-const BASE = "https://nucleoia.vitormr.dev";
+const BASE = CANONICAL_ORIGIN;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

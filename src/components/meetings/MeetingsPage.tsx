@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { marked } from 'marked';
 import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
+import { CANONICAL_HOST } from '../../lib/canonical';
 
 interface Meeting {
   id: string;
@@ -480,7 +481,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                       <div class="meta">${date}${m.event.tribe_name ? ` · ${m.event.tribe_name}` : ''} · ${m.attendee_count || 0} presentes</div>
                       ${m.event.agenda_text ? `<h2>Agenda</h2>${marked.parse(m.event.agenda_text)}` : ''}
                       <h2>Ata</h2>${marked.parse(m.event.minutes_text)}
-                      <div class="footer">Núcleo de IA & GP — nucleoia.vitormr.dev · Documento gerado em ${new Date().toLocaleString('pt-BR')}</div>
+                      <div class="footer">Núcleo de IA & GP — ${CANONICAL_HOST} · Documento gerado em ${new Date().toLocaleString('pt-BR')}</div>
                       </body></html>`;
                     const w = window.open('', '_blank');
                     if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }

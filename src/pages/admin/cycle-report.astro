@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { CANONICAL_HOST } from '../../lib/canonical';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 // Pre-render strings for inline TS script via define:vars (Ω-B+.6.b p143)
@@ -212,7 +213,7 @@ const CR_I18N = {
     attColEngagement: 'Participação %', attColReliability: 'Confiabilidade %',
     attEngagementLbl: 'Participação (geral)', attReliabilityLbl: 'Confiabilidade de registro',
     attEngagementHint: 'presença / encontros esperados', attColAtRisk: 'Em Risco',
-    footerTemplate: 'Gerado em {date} · Núcleo IA & GP · nucleoia.vitormr.dev',
+    footerTemplate: `Gerado em {date} · Núcleo IA & GP · ${CANONICAL_HOST}`,
     roleLabels: {
       researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo',
       comms_leader: 'Líder de Comunicação', sponsor: 'Patrocinador',
