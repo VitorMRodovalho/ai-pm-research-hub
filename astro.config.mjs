@@ -3,9 +3,10 @@ import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import { CANONICAL_ORIGIN } from './src/lib/canonical';
 
 export default defineConfig({
-  site: 'https://nucleoia.vitormr.dev',
+  site: CANONICAL_ORIGIN,
   output: 'server',
   security: { checkOrigin: false },  // CSRF handled in middleware (MCP/OAuth need cross-origin POST)
   adapter: cloudflare({

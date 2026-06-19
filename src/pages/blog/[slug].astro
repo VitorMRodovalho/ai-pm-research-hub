@@ -6,6 +6,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
+import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langKey = lang;
@@ -59,8 +60,8 @@ const pageTitle = postTitle ? `${postTitle} | Núcleo IA & GP` : t('blog.title',
   <meta slot="head" property="og:title" content={postTitle} />
   <meta slot="head" property="og:description" content={postExcerpt} />
   <meta slot="head" property="og:type" content="article" />
-  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/blog/${slug}`} />
-  <meta slot="head" property="og:image" content={post?.cover_image_url || 'https://nucleoia.vitormr.dev/favicon.svg'} />
+  <meta slot="head" property="og:url" content={`${CANONICAL_ORIGIN}${langPrefix}/blog/${slug}`} />
+  <meta slot="head" property="og:image" content={post?.cover_image_url || `${CANONICAL_ORIGIN}/favicon.svg`} />
   <meta slot="head" name="twitter:card" content="summary_large_image" />
   <meta slot="head" name="description" content={postExcerpt} />
 

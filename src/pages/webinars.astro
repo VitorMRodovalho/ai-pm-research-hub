@@ -5,6 +5,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
+import { CANONICAL_ORIGIN } from '../lib/canonical';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
@@ -44,7 +45,7 @@ function fmtTime(iso: string): string {
 <BaseLayout title={`${t('webinars.title', lang)} — Núcleo IA & GP`} activePage="webinars" lang={lang}>
   <meta slot="head" property="og:title" content={t('webinars.title', lang)} />
   <meta slot="head" property="og:description" content={t('webinars.subtitle', lang)} />
-  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/webinars`} />
+  <meta slot="head" property="og:url" content={`${CANONICAL_ORIGIN}${langPrefix}/webinars`} />
 
   <main class="max-w-[900px] mx-auto px-4 py-8">
     <div class="mb-6">
