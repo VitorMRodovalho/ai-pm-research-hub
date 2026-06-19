@@ -201,6 +201,7 @@ const PROFILE_I18N = {
   historyTypeExterno: t('profile.history.typeExterno', lang),
   noSignature: t('profile.noSignature', lang),
   photoUploadError: t('profile.photoUploadError', lang),
+  photoHint: t('profile.photoHint', lang),
   exportError: t('profile.exportError', lang),
   // p134 Ω-A: LGPD section + delete confirm prompt + toasts
   lgpdPrivacyTitle: t('profile.lgpdPrivacyTitle', lang),
@@ -1626,6 +1627,7 @@ const PROFILE_I18N = {
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Nome</label>
             <input type="text" id="self-name" value="${m.name || ''}"
               class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm font-semibold focus:outline-none focus:border-teal">
+            <p class="text-[.7rem] text-[var(--text-muted)] mt-1">📷 ${PROFILE_I18N.photoHint || 'JPG ou PNG, máx. 2 MB'}</p>
           </div>
         </div>
       </div>
