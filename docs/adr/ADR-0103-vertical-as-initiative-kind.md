@@ -1,9 +1,10 @@
 # ADR-0103 — Vertical (PMI credential community) as an `initiative_kind`
 
-- **Status:** Proposed (draft / skeleton — 2026-06-12)
-- **Issue:** #661 ([Discussão] Modelo Verticais × Quadrantes × Tribos)
-- **Origin:** Conceptual model `docs/strategy/verticals_x_quadrants_model.md` (a IA como linha de costura entre os silos do PMI). Ratified in principle by PM (Vitor) on 2026-06-12.
+- **Status:** Accepted (2026-06-19 — Ciclo 4 Fatia 0/A)
+- **Issue:** #661 ([Discussão] Modelo Verticais × Quadrantes × Tribos) · #680 (Ciclo 4 frontpage)
+- **Origin:** Conceptual model `docs/strategy/verticals_x_quadrants_model.md` (a IA como linha de costura entre os silos do PMI). Ratified in principle by PM (Vitor) on 2026-06-12; **ratified + implemented (kind config + piloto Construção)** on 2026-06-19.
 - **Refs:** ADR-0005 (`initiative` as domain primitive), ADR-0009 (config-driven `initiative_kinds`), ADR-0004 (`organization_id`), ADR-0007 (`can()` / engagement grants).
+- **Migration:** `supabase/migrations/20260805000221_community_vertical_kind_seed.sql` (kind + engagement_kinds `vertical_lead`/`vertical_member`). Vertical-piloto Construção criada via `create_initiative` em runtime (`81fdbdfa-4a92-401f-9e50-9318be9b94fe`).
 
 ## Context
 
@@ -62,12 +63,26 @@ The question this ADR settles: **is a vertical a first-class `initiative_kind`, 
 - **(B) Vertical as a new top-level entity peer to `initiative`.** Rejected: fragments the model, contradicts ADR-0005 (one primitive) and ADR-0009 (config-driven kinds).
 - **(C) Vertical contains the tribe's deliverables (containment, not reference).** Rejected: breaks the anti-silo invariant — would make verticals owners of knowledge and recreate the silos.
 
-## Open questions (for council / issue #661)
+## Open questions — resolved at ratification (PM, 2026-06-19)
 
-1. Verticals **curated** (fixed catalog, `max_concurrent_per_org`) or **open** (any community proposes)?
-2. `verticals` as `text[]` on the deliverable vs. a `deliverable_verticals` join table (join table if we need per-routing metadata like framing/owner).
-3. Does each vertical get its **own** anchor credential *in addition to* the shared Champion→CPMAI ladder (current assumption: yes), or is the ladder the only credential surface?
-4. Pilot vertical for Ciclo 4 (institutional timing favors ESG or Agile).
+1. **Curated vs. open → CURATED.** Verticals são um catálogo curado: só GP/liderança cria via `create_initiative`. `max_concurrent_per_org = 8` (config). O teto é um botão de config (ADR-0009, editável no admin **sem migration**) e pode ser elevado quando uma vertical específica precisar de mais — reversível por design. Abrir a proposta à comunidade fica como evolução futura (fluxo request-to-join), não bloqueia o Ciclo 4.
+2. **`verticals text[]` vs. join → DEFERIDA.** O roteamento deliverable↔vertical não é necessário para a landing (que só lê a existência da vertical + `metadata.status`). Decidir quando o relatório `GROUP BY vertical` ou metadata de roteamento (framing/owner) for necessário. Sem impacto na Fatia A.
+3. **Âncora própria + escada → SIM.** Cada vertical tem sua credencial-âncora (`metadata.anchor_credential`, ex.: Construção = PMI-CP) **além** da escada transversal Champion→CPMAI. Bakeado no `custom_fields_schema`.
+4. **Vertical-piloto → CONSTRUÇÃO** (PM sobrepôs a sugestão ESG/Ágil): Henrique Diniz já em pré-onboarding como líder fundador = âncora real, não vaporware.
+
+## Implementação (Fatia A, 2026-06-19) — o que foi feito vs. adiado
+
+**Feito** (migration `20260805000221` + runtime):
+- Kind `community_vertical`: `has_board/meeting_notes/deliverables/attendance/certificate = false` (a vertical referencia, não executa — anti-silo §3), `max_concurrent_per_org = 8`, `lifecycle_states` no domínio do engine (`draft/active/concluded/archived`). `metadata.status` (`forming|open|paused`) é ortogonal ao `initiatives.status` e é o que a landing lê para o CTA.
+- `custom_fields_schema` com `required: [anchor_credential, status]` (validado por `validate_initiative_metadata` — presença + tipo; enum não é validado no trigger, controlado pela app).
+- Par dedicado de engagement kinds `vertical_lead` (legal_basis=consent) + `vertical_member` (legitimate_interest), `initiative_kinds_allowed=['community_vertical']`. **Não** se reusou `committee_*`/`workgroup_*` para não contaminar a CASE WHEN de `operational_role` (`sync_operational_role_cache`) nem a semântica legal.
+- Vertical Construção criada (`81fdbdfa…`, `initiatives.status=active`, `metadata.status=forming`, anchor PMI-CP, parceiro Global Construction Ambassadors). Henrique registrado como **líder pretendido em `metadata.intended_lead`** (`engagement_status=pending_volunteer_term`).
+
+**Adiado para a ativação** (kickoff do Ciclo 4 / termo de voluntário do Henrique — decisão PM "não promover ainda"):
+- **Engajar o Henrique** como `vertical_lead × leader` (via `manage_initiative_engagement`) — só após o termo de voluntário assinado.
+- **Seeds de `engagement_kind_permissions`** para `vertical_lead × leader` (manage_member/initiative, view_pii/initiative, write/initiative): não conceder PII/gestão a um líder ainda em pré-onboarding; gestão da coorte fundadora é GP-only por ora.
+- **Elevação de `operational_role`**: `vertical_lead` hoje deriva `guest` (não está na CASE WHEN); elevar (ex.: → researcher) só quando a vertical for `open`. Evita mexer em trigger crítico sem necessidade.
+- **Invariante `AJ_vertical_no_tribe_child`** (guard: `community_vertical` não pode parentear `research_tribe` — inverteria o eixo produção/distribuição, §Costs): só relevante quando existir fluxo de criação de filhos de vertical. `create_initiative` não cria filhos automaticamente; o guard entra junto com esse fluxo (Fatia B+).
 
 ---
-*Skeleton authored with PMO (Claude); decision and ratification are the PM/council's. Fill Context constraints against prod before moving to Accepted.*
+*Authored with PMO (Claude); decision and ratification are the PM/council's. Ratified + implemented against prod 2026-06-19.*
