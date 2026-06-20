@@ -3,7 +3,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import OnboardingCockpitNudge from '../../components/onboarding/OnboardingCockpitNudge';
 import HomepageHero from '../../components/sections/HomepageHero.astro';
-import NucleoSection from '../../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../../lib/schedule';
 import QuadrantsSection from '../../components/sections/QuadrantsSection.astro';
 import VerticalsSection from '../../components/sections/VerticalsSection.tsx';
@@ -30,7 +29,6 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
   <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
   <HomepageHero lang={lang} />
-  <NucleoSection lang={lang} />
   <PlatformStatsSection lang={lang} />
   <QuadrantsSection lang={lang} />
   <VerticalsSection client:load lang={lang} />
