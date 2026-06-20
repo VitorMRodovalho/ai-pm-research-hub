@@ -25,8 +25,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const MIG = 'supabase/migrations/20260805000143_homepage_stats_pre_onboarding_and_next_general_meeting.sql';
 const MIG_630 = 'supabase/migrations/20260805000161_630_public_retention_excludes_pre_onboarding.sql';
+const MIG_R2 = 'supabase/migrations/20260805000223_r2_public_stats_impact_hours.sql';
 const body = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 const retentionBody = existsSync(MIG_630) ? readFileSync(MIG_630, 'utf8') : '';
+const r2Body = existsSync(MIG_R2) ? readFileSync(MIG_R2, 'utf8') : '';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -85,6 +87,16 @@ test('mig 161 static: public retention_rate excludes pre-onboarding from the ret
   assert.match(retentionBody, /Zero PII public surface/);
 });
 
+test('mig R2 static: public stats exposes impact_hours from the canonical source (single denominator)', () => {
+  assert.ok(existsSync(MIG_R2), 'migration R2 (impact_hours in public stats) exists');
+  assert.match(r2Body, /CREATE OR REPLACE FUNCTION public\.get_public_platform_stats\(\)/);
+  // The proof surface must read the SAME primitive the hero uses (get_homepage_stats),
+  // so the two surfaces cannot drift: round(get_impact_hours_canonical()).
+  assert.match(r2Body, /'impact_hours',\s*round\(public\.get_impact_hours_canonical\(\)\)/,
+    'impact_hours sourced from canonical helper, rounded identically to the hero');
+  assert.match(r2Body, /GRANT EXECUTE ON FUNCTION public\.get_public_platform_stats\(\) TO anon, authenticated, service_role;/);
+});
+
 // ── DB-GATED ──────────────────────────────────────────────────────────────────────
 const svc = () => createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -105,6 +117,16 @@ test('behavioural: active_members + pre_onboarding cohort == total in-cycle acti
   const inCycle = part.filter((m) => m.is_active && m.current_cycle_active);
   assert.ok(Number(plat.active_members) <= inCycle.length,
     'public stat is a subset of in-cycle actives (pre-onboarding excluded)');
+});
+
+test('behavioural: public stats impact_hours ≡ homepage_stats impact_hours (R2 single proof source)', { skip: svcGated ? false : skipMsg }, async () => {
+  const sb = svc();
+  const { data: plat, error: e1 } = await sb.rpc('get_public_platform_stats');
+  assert.ifError(e1);
+  const { data: home, error: e2 } = await sb.rpc('get_homepage_stats');
+  assert.ifError(e2);
+  assert.equal(Number(plat.impact_hours), Number(home.impact_hours),
+    'platform_stats.impact_hours ≡ homepage_stats.impact_hours (hero headline and proof surface share one canonical source)');
 });
 
 test('behavioural: public retention_rate recomputes from operating cohort only', { skip: svcGated ? false : skipMsg }, async () => {

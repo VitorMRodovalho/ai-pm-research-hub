@@ -5238,6 +5238,8 @@ const esLATAM: Record<string, string> = {
   'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
   'homepage.stats.retention': 'Tasa de retención',
+  'homepage.stats.hours': 'Horas de impacto',
+  'homepage.stats.chapters': 'Capítulos activos',
 
   // ── Attendance History (F5) ──
   'profile.history.title': 'Mi historial de asistencia',
