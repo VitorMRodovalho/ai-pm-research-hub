@@ -24,36 +24,29 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       {t('hero.title.line3', lang)}
     </h1>
 
-    <h2 class="text-[clamp(.9rem,2.5vw,1.3rem)] text-white/60 font-normal mb-8">
+    <h2 class="text-[clamp(.9rem,2.5vw,1.3rem)] text-white/60 font-normal mb-4">
       {t('hero.subtitle', lang)}
     </h2>
 
-    <!-- Stats counters -->
-    <div class="flex flex-wrap justify-center gap-6 sm:gap-10 mb-8">
+    <!-- Protagonist gain + PMI hook (absorbed from nucleo) -->
+    <p class="text-[clamp(.85rem,2vw,1.05rem)] text-white/75 font-normal max-w-[680px] mx-auto mb-8">
+      {t('hero.gain', lang)}
+    </p>
+
+    <!-- Single live proof number -->
+    <div class="flex justify-center mb-8">
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.members', lang)}</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.initiatives', lang)}</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
+        <div class="text-4xl sm:text-5xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
     </div>
 
     <!-- CTAs -->
     <div class="flex flex-wrap justify-center gap-3 mb-6">
-      <a href="#nucleo" class="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl text-[.9rem] font-semibold no-underline hover:bg-white/15 transition-all">
-        {t('hero.cta.learn', lang)}
+      <a href="#verticals" class="px-6 py-3 bg-[#05BFE0] text-navy rounded-xl text-[.9rem] font-bold no-underline hover:opacity-90 transition-all">
+        {t('hero.cta.protagonist', lang)}
       </a>
-      <button id="hero-auth-btn" class="px-6 py-3 bg-[#05BFE0] text-navy rounded-xl text-[.9rem] font-bold border-0 cursor-pointer hover:opacity-90 transition-all">
+      <button id="hero-auth-btn" class="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl text-[.9rem] font-semibold cursor-pointer hover:bg-white/15 transition-all">
         {t('hero.cta.login', lang)}
       </button>
     </div>
@@ -195,9 +188,6 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     try {
       const { data: stats } = await sb.rpc('get_homepage_stats');
       if (stats) {
-        animateCounter('stat-members', stats.members);
-        animateCounter('stat-tribes', stats.tribes);
-        animateCounter('stat-initiatives', stats.initiatives || 0);
         animateCounter('stat-hours', stats.impact_hours, 'h');
       }
     } catch (e) { console.warn('homepage stats:', e); }
