@@ -5243,6 +5243,8 @@ const ptBR: Record<string, string> = {
   'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
   'homepage.stats.retention': 'Taxa de retenção',
+  'homepage.stats.hours': 'Horas de impacto',
+  'homepage.stats.chapters': 'Capítulos ativos',
 
   // ── Attendance History (F5) ──
   'profile.history.title': 'Meu histórico de presença',

@@ -10,22 +10,15 @@ const { lang = 'pt-BR' } = Astro.props;
     <h2 class="text-center text-2xl font-bold text-navy mb-8">
       {t('homepage.stats.title', lang)}
     </h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
+    <!-- R2: curated "live proof" surface — 5 strong numbers, single RPC, consistent denominator. -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
       <div class="stat-card">
         <span id="pstat-members" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.members', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="pstat-tribes" class="text-3xl font-extrabold text-navy">&mdash;</span>
-        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.tribes', lang)}</span>
-      </div>
-      <div class="stat-card">
-        <span id="pstat-verticals" class="text-3xl font-extrabold text-navy">&mdash;</span>
-        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.verticals', lang)}</span>
-      </div>
-      <div class="stat-card">
-        <span id="pstat-initiatives" class="text-3xl font-extrabold text-navy">&mdash;</span>
-        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.initiatives', lang)}</span>
+        <span id="pstat-hours" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.hours', lang)}</span>
       </div>
       <div class="stat-card">
         <span id="pstat-events" class="text-3xl font-extrabold text-navy">&mdash;</span>
@@ -34,6 +27,10 @@ const { lang = 'pt-BR' } = Astro.props;
       <div class="stat-card">
         <span id="pstat-retention" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.retention', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="pstat-chapters" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.chapters', lang)}</span>
       </div>
     </div>
   </div>
@@ -68,16 +65,14 @@ const { lang = 'pt-BR' } = Astro.props;
     var el: HTMLElement | null;
     el = document.getElementById('pstat-members');
     if (el) el.textContent = String(data.active_members || 0);
-    el = document.getElementById('pstat-tribes');
-    if (el) el.textContent = String(data.total_tribes || 0);
-    el = document.getElementById('pstat-verticals');
-    if (el) el.textContent = String(data.total_verticals || 0);
-    el = document.getElementById('pstat-initiatives');
-    if (el) el.textContent = String(data.total_initiatives || 0);
+    el = document.getElementById('pstat-hours');
+    if (el) el.textContent = String(Math.round(data.impact_hours || 0)) + 'h';
     el = document.getElementById('pstat-events');
     if (el) el.textContent = String(data.total_events || 0);
     el = document.getElementById('pstat-retention');
     if (el) el.textContent = (data.retention_rate || 0).toFixed(0) + '%';
+    el = document.getElementById('pstat-chapters');
+    if (el) el.textContent = String(data.total_chapters || 0);
   })
   .catch(function(err) { console.warn('platform-stats fetch failed', err); });
   try { (window as any).__nucleoTrack?.('homepage_stats_viewed'); } catch(e) {}

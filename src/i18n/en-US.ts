@@ -5237,6 +5237,8 @@ const enUS: Record<string, string> = {
   'homepage.stats.initiatives': 'Initiatives',
   'homepage.stats.events': 'Events held',
   'homepage.stats.retention': 'Retention rate',
+  'homepage.stats.hours': 'Impact hours',
+  'homepage.stats.chapters': 'Active chapters',
 
   // ── Attendance History (F5) ──
   'profile.history.title': 'My attendance history',
