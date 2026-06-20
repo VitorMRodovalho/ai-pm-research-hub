@@ -13,7 +13,7 @@ const enUS: Record<string, string> = {
   'meetings.meta.description': 'Searchable archive of all Hub meeting minutes. Full-text search, filters by tribe and type, cross-tribe view.',
 
   // ── Nav ──
-  'nav.brand': 'AI & PM Research Hub — Cycle 3',
+  'nav.brand': 'AI & PM Research Hub — Cycle 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrants',
   'nav.tribes': 'Research Streams',
@@ -647,9 +647,7 @@ const enUS: Record<string, string> = {
   'hero.chaptersAnnounce': '15 PMI Brazil Chapters',
   'hero.chaptersAnnounceSub': 'Union announced · CBGPL Apr 2026',
   'hero.cta.learn': 'Learn More ↓',
-  'hero.cta.protagonist': 'Be a protagonist',
-  'hero.cta.login': 'Sign in',
-  'hero.gain': 'Research, publish and lead a vertical alongside peers of every credential — and earn PMI co-branded credentials. The practical read of PMI:Next and M.O.R.E.',
+  'hero.cta.login': 'Sign In / Register',
   'hero.member.greeting': 'Hello,',
   'hero.member.nextMeeting': '📅 Next Meeting',
   'hero.member.yourTribe': '🔬 Your Tribe',
