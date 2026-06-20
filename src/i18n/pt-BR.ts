@@ -13,7 +13,7 @@ const ptBR: Record<string, string> = {
   'meetings.meta.description': 'Arquivo pesquisável de todas as atas de reunião do Núcleo. Busca full-text, filtros por tribo e tipo, visão cross-tribo.',
 
   // ── Nav ──
-  'nav.brand': 'Núcleo IA & GP — Ciclo 3',
+  'nav.brand': 'Núcleo IA & GP — Ciclo 03',
   'nav.agenda': 'Pauta',
   'nav.quadrants': 'Quadrantes',
   'nav.tribes': 'Tribos',
@@ -647,9 +647,7 @@ const ptBR: Record<string, string> = {
   'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'União anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conhecer o Núcleo ↓',
-  'hero.cta.protagonist': 'Seja protagonista',
-  'hero.cta.login': 'Entrar',
-  'hero.gain': 'Pesquise, publique e lidere uma vertical ao lado de gente boa de toda credencial — e conquiste credenciais PMI co-branded. É a leitura prática de PMI:Next e do M.O.R.E.',
+  'hero.cta.login': 'Entrar / Criar conta',
   'hero.member.greeting': 'Olá,',
   'hero.member.nextMeeting': '📅 Próxima Geral',
   'hero.member.yourTribe': '🔬 Sua Tribo',
