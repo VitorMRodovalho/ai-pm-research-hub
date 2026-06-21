@@ -9,20 +9,34 @@
 interface Props {
   activeUFs: string[];
   founderUF?: string | null;
+  // PD-MAP — densidade de membros por UF (opt-in + k>=5, via get_public_state_reach).
+  // Quando presente (>=1 UF), o mapa pinta intensidade (escala teal) por estado e marca
+  // os capítulos com contorno; quando ausente, cai no modo R9 (fill teal = capítulo).
+  density?: Record<string, number>;
   ariaLabel: string;
   class?: string;
 }
-const { activeUFs, founderUF = null, ariaLabel, class: className = '' } = Astro.props;
+const { activeUFs, founderUF = null, density = {}, ariaLabel, class: className = '' } = Astro.props;
+
+const densityEntries = Object.entries(density).filter(([, n]) => Number(n) > 0);
+const hasDensity = densityEntries.length > 0;
+const densityMax = hasDensity ? Math.max(...densityEntries.map(([, n]) => Number(n))) : 0;
 
 // CSS escopado pelo container `.nia-brmap` (renderizado via set:html p/ alcançar
-// os ids globais do SVG sem o scoping do Astro). Founder depois do active → vence.
+// os ids globais do SVG sem o scoping do Astro). Ordem = leitura final por estado:
+// base cinza → densidade (ou fill de capítulo no modo R9) → contorno de capítulo
+// (só no modo densidade) → fundador laranja (sempre vence).
 const activeSel = activeUFs.map((uf) => `.nia-brmap #${uf}`).join(',');
+const densityCss = densityEntries
+  .map(([uf, n]) => `.nia-brmap #${uf}{fill:var(--color-teal);fill-opacity:${(0.3 + 0.7 * (Number(n) / densityMax)).toFixed(3)}}`)
+  .join('\n');
 const css = `
 .nia-brmap svg{width:100%;height:auto;display:block;max-width:420px;margin:0 auto}
 .nia-brmap .state{fill:var(--map-inactive,#D7DEE3);stroke:var(--surface-section-cool,#fff);stroke-width:.5;stroke-linejoin:round;transition:fill .15s ease}
-${activeSel ? `${activeSel}{fill:var(--color-teal)}` : ''}
-.nia-brmap .state:hover{fill:var(--color-purple)}
-${founderUF ? `.nia-brmap #${founderUF}{fill:var(--color-orange)}` : ''}
+${hasDensity ? densityCss : (activeSel ? `${activeSel}{fill:var(--color-teal)}` : '')}
+${hasDensity && activeSel ? `${activeSel}{stroke:var(--color-purple);stroke-width:1.2}` : ''}
+.nia-brmap .state:hover{fill:var(--color-purple);fill-opacity:1}
+${founderUF ? `.nia-brmap #${founderUF}{fill:var(--color-orange);fill-opacity:1}` : ''}
 `;
 ---
 <div class={`nia-brmap ${className}`}>
