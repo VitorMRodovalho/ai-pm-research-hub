@@ -728,6 +728,10 @@ const enUS: Record<string, string> = {
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
   'chapters.founder': 'Founding Chapter',
+  // National coverage map (R9 — states highlighted live from registry)
+  'chapters.mapTitle': 'National presence',
+  'chapters.mapAria': 'Brazilian states with active PMI chapters',
+  'chapters.mapLegendActive': 'Active chapter',
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
