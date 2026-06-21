@@ -24,11 +24,10 @@ const VEP = {
 type Vertical = {
   id: string;
   title: string;
-  description: string | null;
   vertical_status: 'forming' | 'open' | 'paused' | null;
-  anchor_credential: string | null;
-  credential_body: string | null;
-  partner_org: string | null;
+  // PD-CERT scrub (mig 229): get_public_verticals() no longer returns description /
+  // anchor_credential / credential_body / partner_org — the public API stays credential-free
+  // and partnership-claim-free. The card describes the vertical by CONTEXT (i18n VERTICAL_DESC).
 };
 
 type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
@@ -139,7 +138,8 @@ const STATUS_STYLE: Record<string, string> = {
  * (which embeds "ancorada na credencial PMI-X") nor `anchor_credential` — this also localizes the
  * cards in en/es (was GAP-B2.C: DB prose is pt-only). Keyed by the live DB `title`; unknown title
  * → suppressed (never falls back to the credential-bearing DB description). CPMAI stays explicit
- * (the common spine line below). DB/RPC payload scrub of anchor_credential = tracked follow-up.
+ * (the common spine line below). DB/RPC payload scrub: DONE (mig 229) — get_public_verticals()
+ * no longer returns anchor_credential/credential_body/description/partner_org.
  */
 const VERTICAL_DESC: Record<Lang, Record<string, string>> = {
   'pt-BR': {
@@ -359,7 +359,7 @@ function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; 
       {/* partner_org NOT rendered: claiming "Parceria: Global Construction Ambassadors" without a
           signed agreement is an unsubstantiated partnership claim (same paper-trail rule as
           co-branding). Members may individually be ambassadors, but the org has no formal accord.
-          Re-enable per-vertical only when backed by a signed instrument. DB scrub = follow-up. */}
+          Re-enable per-vertical only when backed by a signed instrument. DB scrub: DONE (mig 229). */}
       {/* CTA → VEP (inscrição oficial). Dois cadastros distintos: pesquisador + líder. Substitui o
           antigo formulário de lead (FounderForm dead-code abaixo — limpeza trivial pendente). */}
       {isForming && (
