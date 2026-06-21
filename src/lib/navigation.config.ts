@@ -49,15 +49,18 @@ export const TIER_RANK: Record<AccessTier, number> = {
 
 export const NAV_ITEMS: NavItem[] = [
   // ─── Home anchor links (always visible) ───
-  // R5 (Ciclo 4): nav público alinhado ao funil — âncoras de conversão (#verticals/#partners)
-  // adicionadas; âncoras de membro (#tribes/#kpis/#rules) e #vision (seção cortada) removidas.
-  { key: 'quadrants',  labelKey: 'nav.quadrants',  href: '/#quadrants',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'verticals',  labelKey: 'nav.verticals',  href: '/#verticals',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'partners',   labelKey: 'nav.partners',   href: '/#partners',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'networking', labelKey: 'nav.networking',  href: '/#breakout',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'trail',      labelKey: 'nav.trail',      href: '/#trail',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'team',       labelKey: 'nav.team',       href: '/#team',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'resources',  labelKey: 'nav.resources',  href: '/#resources',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  // Polish C4 (Ciclo 4, 2026-06-21): menu curado ao funil anon, em ORDEM de página (PD-NAV).
+  // Removidos: #quadrants (âncora interna redundante de #verticals), #breakout/networking (seção
+  // não renderizada na home = link morto), #resources (zona de membro, fim da home). Adicionados:
+  // #platform-stats, #capitulos, #join, #agenda. #trail usa ladder.label ("A escada"), não nav.trail.
+  { key: 'verticals',      labelKey: 'nav.verticals',     href: '/#verticals',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'platform-stats', labelKey: 'nav.platformStats', href: '/#platform-stats', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'trail',          labelKey: 'ladder.label',      href: '/#trail',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'chapters',       labelKey: 'nav.chapters',      href: '/#capitulos',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'join',           labelKey: 'nav.join',          href: '/#join',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'partners',       labelKey: 'nav.partners',      href: '/#partners',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'agenda',         labelKey: 'nav.agenda',        href: '/#agenda',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'team',           labelKey: 'nav.team',          href: '/#team',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' },

@@ -871,11 +871,18 @@ test('eslint i18n gate and visual dark mode playwright suite are configured', ()
   assert.equal(visualSpec.includes("dark mode visual baseline'"), true);
 });
 
-test('navigation renders home anchors without deprecated agenda (pauta removed)', () => {
+test('navigation home anchors curated to the funnel (C4 polish, PD-NAV)', () => {
   const navConfig = read('src/lib/navigation.config.ts');
   const nav = read('src/components/nav/Nav.astro');
-  assert.equal(navConfig.includes("key: 'quadrants'"), true);
-  assert.equal(navConfig.includes("key: 'agenda'"), false, 'agenda/pauta removed from nav');
+  // Dead/redundant anchors removed in the C4 polish: #quadrants is an inner anchor of #verticals
+  // (redundant) and #breakout/networking is not rendered on the home (dead link).
+  assert.equal(navConfig.includes("key: 'quadrants'"), false, 'redundant #quadrants removed');
+  assert.equal(navConfig.includes("key: 'networking'"), false, 'dead #breakout/networking removed');
+  // Real funnel anchors present (in page order): verticals → platform-stats → trail → chapters →
+  // join → partners → agenda → team. #agenda now points to the public Agenda Viva (R8), not a stub.
+  for (const k of ['platform-stats', 'chapters', 'join', 'agenda']) {
+    assert.equal(navConfig.includes(`key: '${k}'`), true, `home anchor '${k}' present`);
+  }
   assert.equal(nav.includes('item.disabled ? ('), true, 'disabled items still render as span when present');
 });
 

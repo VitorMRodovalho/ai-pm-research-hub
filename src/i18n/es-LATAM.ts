@@ -18,6 +18,9 @@ const esLATAM: Record<string, string> = {
   'nav.quadrants': 'Cuadrantes',
   'nav.verticals': 'Verticales',
   'nav.partners': 'Socios',
+  'nav.platformStats': 'Números',
+  'nav.chapters': 'Capítulos',
+  'nav.join': 'Súmate',
   'nav.tribes': 'Líneas de Investigación',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -651,7 +654,7 @@ const esLATAM: Record<string, string> = {
   'hero.cta.learn': 'Conocer el Núcleo ↓',
   'hero.cta.protagonist': 'Sé protagonista',
   'hero.cta.login': 'Ingresar',
-  'hero.gain': 'Investiga, publica y lidera una vertical junto a gente de toda credencial — y obtén credenciales PMI co-branded. La lectura práctica de PMI:Next y del M.O.R.E.',
+  'hero.gain': 'Investiga, publica y lidera una vertical junto a gente de toda área de actuación — y ve tu progreso reconocido en la Ruta PMI AI.',
   'hero.member.greeting': 'Hola,',
   'hero.member.nextMeeting': '📅 Próxima Reunión',
   'hero.member.yourTribe': '🔬 Tu Tribu',
@@ -759,7 +762,7 @@ const esLATAM: Record<string, string> = {
   'router.subtitle': 'Tú, investigador, o tu organización. El camino del protagonista es el principal; las alianzas institucionales entran por la puerta de al lado.',
   'router.protagonist.tag': 'Puerta principal',
   'router.protagonist.title': 'Para ti, investigador',
-  'router.protagonist.desc': 'Únete a una vertical, obtén la credencial PMI y construye autoridad en IA aplicada a la gestión. La cohorte fundadora está abierta.',
+  'router.protagonist.desc': 'Únete a una vertical, haz investigación de alto nivel y construye autoridad en IA aplicada a la gestión. La cohorte fundadora está abierta.',
   'router.protagonist.cta': 'Sé protagonista',
   'router.partner.tag': 'Puerta secundaria',
   'router.partner.title': 'Para tu organización',
@@ -783,9 +786,9 @@ const esLATAM: Record<string, string> = {
   // ── El Modelo (R3 — fusión cuadrantes × verticales) ──
   'model.label': 'EL MODELO',
   'model.title': 'Qué investigamos y para qué comunidades',
-  'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por credencial PMI (para quién). La IA atraviesa los dos.',
+  'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por contexto de actuación (para quién). La IA atraviesa los dos.',
   'model.axisWhat': 'El qué · dominios de conocimiento',
-  'model.axisWho': 'Para quién · comunidades por credencial PMI',
+  'model.axisWho': 'Para quién · comunidades por contexto de actuación',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',
@@ -868,12 +871,12 @@ const esLATAM: Record<string, string> = {
 
   // ── La escalera (R4 — fusión trail+cpmai como progresión por tier) ──
   'ladder.label': 'La escalera',
-  'ladder.title': 'Una escalera de certificación, por tier',
-  'ladder.subtitle': 'De la Ruta PMI AI al grupo de estudio CPMAI hasta la certificación PMI-CPMAI™ — una progresión por mérito, con certificados reales. Cada peldaño suma a la meta anual del Núcleo.',
+  'ladder.title': 'Una escalera de maestría, por tier',
+  'ladder.subtitle': 'De la Ruta PMI AI al grupo de estudio CPMAI hasta la certificación PMI-CPMAI™ (emitidas por PMI) — una progresión por mérito y protagonismo. Cada peldaño suma a tu portafolio de investigación y a la meta anual del Núcleo.',
   // ── Trail ──
   'trail.label': 'Meta 2026: 70% de la Ruta PMI AI Completa',
   'trail.title': 'Ruta PMI AI',
-  'trail.subtitle': '4 mini-certificaciones core + 2 de especialidad + 2 cursos complementarios + 1 cert. master (PMI-CPMAI). Tu progreso aparece en vivo al ingresar.',
+  'trail.subtitle': '6 mini-certificaciones de la Ruta PMI AI (emitidas por PMI, verificadas vía Credly) + 2 cursos complementarios + la certificación master PMI-CPMAI™. Tu progreso aparece en vivo al ingresar.',
   'trail.credlyNote': '📌 Tu finalización en PMI.org sincroniza el badge Credly aquí automáticamente en hasta 5 días.',
   'trail.core': 'Core (4 mini-certs obligatorias)',
   'trail.specialty': 'Especialidad (2 mini-certs)',

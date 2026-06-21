@@ -19,6 +19,9 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+/* PD-NAV-3 (Ciclo 4 polish): the sticky nav overlaps an anchored section's heading when you jump
+   to it. Offset anchor targets by ~nav height so the heading clears the bar (web + mobile). */
+section[id], [id].scroll-anchor { scroll-margin-top: 5rem; }
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
