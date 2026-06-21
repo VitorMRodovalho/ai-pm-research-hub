@@ -755,6 +755,7 @@ const esLATAM: Record<string, string> = {
   'country.FR': 'Francia',
   'country.DE': 'Alemania',
   'country.XX': 'Otros',
+  'country.ZZ': 'Internacional',
 
   // ── Enrutador de conversión (R7 — dos puertas: protagonista · socio) ──
   'router.label': 'PARTICIPA',

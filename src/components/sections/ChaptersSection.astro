@@ -37,6 +37,8 @@ const reachMembers = countryReach.reduce((sum, c) => sum + Number(c.member_count
 
 // Bandeira emoji a partir do ISO-3166-1 alpha-2 (regional indicator symbols).
 function flagEmoji(code: string): string {
+  // PD-MAP-1: 'ZZ' (e 'XX') = bucket genérico "Internacional" (k-anon LGPD) → globo, não bandeira ZZ.
+  if (code === 'ZZ' || code === 'XX') return '🌎';
   if (!/^[A-Z]{2}$/.test(code)) return '🌐';
   return String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
 }
