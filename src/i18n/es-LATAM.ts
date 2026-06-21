@@ -740,6 +740,7 @@ const esLATAM: Record<string, string> = {
   'chapters.mapLegendActive': 'Capítulo activo',
   'chapters.mapLegendDensity': 'Densidad de miembros por estado',
   'chapters.mapDensityNote': 'Densidad agregada de miembros que autorizaron mostrar su estado. Los estados con menos de 5 miembros se omiten (protección de privacidad · LGPD).',
+  'chapters.intlBeyond': 'miembros más allá de Brasil',
   'chapters.activeLabel': 'socios activos',
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',

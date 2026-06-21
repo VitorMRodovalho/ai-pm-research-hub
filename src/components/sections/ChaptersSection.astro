@@ -35,6 +35,12 @@ try {
 const reachCountries = countryReach.length;
 const reachMembers = countryReach.reduce((sum, c) => sum + Number(c.member_count || 0), 0);
 
+// Anotação discreta de internacionais ao lado do mapa do Brasil (decisão PM 2026-06-21):
+// o mapa é Brasil-por-estado (honesto); membros fora do Brasil são contabilizados aqui, nomeados.
+// Reusa get_public_country_reach (já k-anon): tudo que não é BR = internacional.
+const intlReach = countryReach.filter((c) => c.country_code !== 'BR');
+const intlTotal = intlReach.reduce((sum, c) => sum + Number(c.member_count || 0), 0);
+
 // PD-MAP — Heatmap por estado (densidade de membros que autorizaram + supressão k>=5,
 // via get_public_state_reach). Gate de produto: a camada de densidade só ACENDE com >=2 UFs
 // (decisão PM — evita "mapa vazio" enquanto o opt-in não tem substrato). Abaixo disso o mapa
@@ -100,6 +106,12 @@ function flagEmoji(code: string): string {
       {hasDensity && (
         <p class="text-[.7rem] text-[var(--text-muted)] mt-2 max-w-[520px] mx-auto">
           {t('chapters.mapDensityNote', lang)}
+        </p>
+      )}
+      {intlTotal > 0 && (
+        <p class="text-[.8rem] text-[var(--text-secondary)] mt-3 max-w-[560px] mx-auto">
+          <span class="font-bold text-teal">+{intlTotal}</span> {t('chapters.intlBeyond', lang)}
+          <span class="text-[var(--text-muted)]"> — {intlReach.map((c) => `${flagEmoji(c.country_code)} ${t(`country.${c.country_code}`, lang)}`).join(' · ')}</span>
         </p>
       )}
     </div>
