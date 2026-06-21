@@ -13,7 +13,7 @@ const esLATAM: Record<string, string> = {
   'meetings.meta.description': 'Archivo buscable de todas las actas de reunión del Núcleo. Búsqueda full-text, filtros por tribu y tipo, vista cross-tribu.',
 
   // ── Nav ──
-  'nav.brand': 'Núcleo IA & GP — Ciclo 3',
+  'nav.brand': 'Núcleo IA & GP — Ciclo 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Cuadrantes',
   'nav.verticals': 'Verticales',
