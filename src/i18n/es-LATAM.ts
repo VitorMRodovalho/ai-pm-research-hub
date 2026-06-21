@@ -730,6 +730,22 @@ const esLATAM: Record<string, string> = {
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',
   'chapters.cta': 'Para capítulos PMI: contacta al GP para iniciar integración →',
+  // Alcance internacional (R6 — leyenda nombrada por país, datos en vivo)
+  'chapters.reachTitle': 'Alcance internacional',
+  'chapters.reachIntro': 'Los investigadores activos del Núcleo ya están en',
+  'chapters.reachCountries': 'países',
+  'chapters.reachMembersSuffix': 'investigadores',
+  'country.BR': 'Brasil',
+  'country.PT': 'Portugal',
+  'country.US': 'EE. UU.',
+  'country.IT': 'Italia',
+  'country.ES': 'España',
+  'country.AR': 'Argentina',
+  'country.GB': 'Reino Unido',
+  'country.CA': 'Canadá',
+  'country.FR': 'Francia',
+  'country.DE': 'Alemania',
+  'country.XX': 'Otros',
 
   // ── Quadrants ──
   'quadrants.label': 'Estructura de Conocimiento',

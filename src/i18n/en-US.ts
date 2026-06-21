@@ -730,6 +730,22 @@ const enUS: Record<string, string> = {
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
   'chapters.cta': 'For PMI chapters: contact the PM to begin integration →',
+  // International reach (R6 — named per-country legend, live data)
+  'chapters.reachTitle': 'International reach',
+  'chapters.reachIntro': "The Núcleo's active researchers are already in",
+  'chapters.reachCountries': 'countries',
+  'chapters.reachMembersSuffix': 'researchers',
+  'country.BR': 'Brazil',
+  'country.PT': 'Portugal',
+  'country.US': 'USA',
+  'country.IT': 'Italy',
+  'country.ES': 'Spain',
+  'country.AR': 'Argentina',
+  'country.GB': 'United Kingdom',
+  'country.CA': 'Canada',
+  'country.FR': 'France',
+  'country.DE': 'Germany',
+  'country.XX': 'Others',
 
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
