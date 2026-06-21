@@ -210,6 +210,7 @@ const PROFILE_I18N = {
   shareAddressHint: t('profile.shareAddressHint', lang),
   shareBirthDateLabel: t('profile.shareBirthDateLabel', lang),
   statePlaceholder: t('profile.statePlaceholder', lang),
+  countryPlaceholder: t('profile.countryPlaceholder', lang),
   allowStateMapLabel: t('profile.allowStateMapLabel', lang),
   privacyDisclaimer: t('profile.privacyDisclaimer', lang),
   readPrivacyPolicy: t('profile.readPrivacyPolicy', lang),
@@ -1532,6 +1533,56 @@ const PROFILE_I18N = {
     return UF_NAME_TO_CODE[s.toLowerCase()] || '';
   }
 
+  // PD-MAP follow-up: o campo estado é ACOPLADO ao país. País grande com estados (Brasil, EUA)
+  // → <select> de UF; demais países → texto livre (p/ o Termo de Voluntariado não ficar incompleto
+  // para membros internacionais — regressão do select só-BR). normUSState mapeia legado (Virgínia→VA).
+  const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+  const US_NAME_TO_CODE: Record<string,string> = {
+    'virginia':'VA','virgínia':'VA','florida':'FL','flórida':'FL','california':'CA','califórnia':'CA',
+    'new york':'NY','nova york':'NY','texas':'TX','massachusetts':'MA','washington':'WA',
+    'new jersey':'NJ','illinois':'IL','georgia':'GA','north carolina':'NC','pennsylvania':'PA',
+    'district of columbia':'DC','washington dc':'DC',
+  };
+  function normUSState(raw: any): string {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    const up = s.toUpperCase();
+    if (US_STATES.includes(up)) return up;
+    return US_NAME_TO_CODE[s.toLowerCase()] || '';
+  }
+
+  // País = pick-list (valores = nome canônico PT, compatível com get_public_country_reach + dado salvo).
+  const COUNTRIES = ['Brasil','Estados Unidos','Portugal','Argentina','Bolívia','Canadá','Chile','Colômbia','Costa Rica','Cuba','El Salvador','Equador','Espanha','França','Alemanha','Guatemala','Honduras','Irlanda','Itália','México','Nicarágua','Panamá','Paraguai','Peru','Reino Unido','República Dominicana','Uruguai','Venezuela','Angola','Moçambique','Cabo Verde','Austrália','Japão','Outro'];
+  function countryKey(raw: any): 'BR' | 'US' | 'OTHER' | '' {
+    const v = String(raw || '').trim().toLowerCase();
+    if (!v) return '';
+    if (/bras|brazil/.test(v) || v === 'br') return 'BR';
+    if (/estados unidos|united states|usa|eua/.test(v) || v === 'us') return 'US';
+    return 'OTHER';
+  }
+  // Mapeia o país salvo (texto livre legado: "Brazil"/"USA"/"United States") → opção canônica do select.
+  function canonicalCountry(raw: any): string {
+    const k = countryKey(raw);
+    if (k === 'BR') return 'Brasil';
+    if (k === 'US') return 'Estados Unidos';
+    const v = String(raw || '').trim().toLowerCase();
+    if (!v) return '';
+    return COUNTRIES.find((c) => c.toLowerCase() === v) || '';
+  }
+  const STATE_FIELD_CLS = 'w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal';
+  // Renderiza o controle de estado conforme o país: select de UF (BR/US) ou texto livre (demais).
+  function stateFieldInner(cKey: string, currentState: any): string {
+    if (cKey === 'BR' || cKey === 'US') {
+      const list = cKey === 'BR' ? BR_UFS : US_STATES;
+      const cur = cKey === 'BR' ? normUF(currentState) : normUSState(currentState);
+      return `<select id="self-state" class="${STATE_FIELD_CLS} bg-[var(--surface-card)]">`
+        + `<option value="">${PROFILE_I18N.statePlaceholder}</option>`
+        + list.map((s) => `<option value="${s}" ${cur === s ? 'selected' : ''}>${s}</option>`).join('')
+        + `</select>`;
+    }
+    return `<input type="text" id="self-state" value="${String(currentState || '')}" placeholder="${PROFILE_I18N.statePlaceholder}" class="${STATE_FIELD_CLS}">`;
+  }
+
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
@@ -1741,16 +1792,15 @@ const PROFILE_I18N = {
           </div>
           <div>
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Estado</label>
-            <select id="self-state"
-              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal bg-[var(--surface-card)]">
-              <option value="">${PROFILE_I18N.statePlaceholder}</option>
-              ${BR_UFS.map((uf) => `<option value="${uf}" ${normUF(m.state) === uf ? 'selected' : ''}>${uf}</option>`).join('')}
-            </select>
+            <div id="self-state-host">${stateFieldInner(countryKey(m.country), m.state)}</div>
           </div>
           <div>
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">País</label>
-            <input type="text" id="self-country" value="${m.country || ''}" placeholder="Ex: Brasil"
-              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+            <select id="self-country"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal bg-[var(--surface-card)]">
+              <option value="">${PROFILE_I18N.countryPlaceholder}</option>
+              ${COUNTRIES.map((c) => `<option value="${c}" ${canonicalCountry(m.country) === c ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
           </div>
         </div>
         <div class="mt-4">
@@ -2411,14 +2461,13 @@ const PROFILE_I18N = {
         if (credlyNormalizeTimer) clearTimeout(credlyNormalizeTimer);
         credlyNormalizeTimer = setTimeout(() => normalizeCredlyFieldValue(target), 300);
       }
-      // Toggle CEP wrapper visibility based on country (Brasil only)
-      if (target instanceof HTMLInputElement && target.id === 'self-country') {
+      // País → CEP só p/ Brasil + reconstrói o campo estado acoplado ao país (BR/US select, demais texto)
+      if ((target instanceof HTMLInputElement || target instanceof HTMLSelectElement) && target.id === 'self-country') {
+        const cKey = countryKey(target.value);
         const wrapper = document.getElementById('self-cep-wrapper');
-        if (wrapper) {
-          const v = target.value.trim().toLowerCase();
-          const isBrasil = v.includes('brasil') || v.includes('brazil') || v === 'br';
-          wrapper.classList.toggle('hidden', !isBrasil);
-        }
+        if (wrapper) wrapper.classList.toggle('hidden', cKey !== 'BR');
+        const host = document.getElementById('self-state-host');
+        if (host) host.innerHTML = stateFieldInner(cKey, '');
       }
       // Format CEP as user types: 00000-000
       if (target instanceof HTMLInputElement && target.id === 'self-cep') {
