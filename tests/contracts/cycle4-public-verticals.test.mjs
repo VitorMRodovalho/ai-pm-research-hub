@@ -21,6 +21,10 @@ import { createClient } from '@supabase/supabase-js';
 const MIG = 'supabase/migrations/20260805000222_cycle4_b1_public_verticals.sql';
 const body = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 
+// PD-CERT scrub (mig 229): the public verticals payload drops credential/partnership fields.
+const MIG_SCRUB = 'supabase/migrations/20260805000229_pd_cert_scrub_public_verticals_credential.sql';
+const scrubBody = existsSync(MIG_SCRUB) ? readFileSync(MIG_SCRUB, 'utf8') : '';
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -44,6 +48,24 @@ test('mig 222 static: get_public_verticals is anon-executable and PII-safe', () 
   assert.ok(!/intended_lead/.test(fnBody), 'public RPC body must not select metadata.intended_lead');
   assert.ok(!/i\.metadata\b(?![-]>>'(status|anchor_credential|credential_body|partner_org)')/.test(fnBody),
     'only whitelisted metadata keys are surfaced');
+});
+
+test('mig 229 static: PD-CERT scrub drops credential/partnership fields from public payload', () => {
+  assert.ok(existsSync(MIG_SCRUB), 'migration 229 exists');
+  assert.match(scrubBody, /CREATE OR REPLACE FUNCTION public\.get_public_verticals\(\)/);
+  // the scrubbed jsonb_build_object surfaces ONLY id/title/vertical_status.
+  // Check the EMISSION patterns (accessors), so the explanatory comment naming the
+  // removed fields doesn't false-positive.
+  assert.match(scrubBody, /'vertical_status', i\.metadata->>'status'/);
+  for (const banned of [
+    /metadata->>'anchor_credential'/,
+    /metadata->>'credential_body'/,
+    /metadata->>'partner_org'/,
+    /'description', i\.description/,
+  ]) {
+    assert.ok(!banned.test(scrubBody),
+      `scrubbed RPC must not surface ${banned} (credential/partnership leak)`);
+  }
 });
 
 test('mig 222 static: target_vertical is a uuid FK resolved defensively in capture_visitor_lead', () => {
@@ -73,8 +95,8 @@ test('behavioural: get_public_verticals returns shaped rows with vertical_status
     'no intended_lead / person_id PII leaks to anon');
   for (const v of data) {
     assert.deepEqual(Object.keys(v).sort(),
-      ['anchor_credential', 'credential_body', 'description', 'id', 'partner_org', 'title', 'vertical_status'],
-      'exactly the whitelisted public keys');
+      ['id', 'title', 'vertical_status'],
+      'PD-CERT scrub (mig 229): exactly the credential-free public keys');
     assert.ok(['forming', 'open', 'paused', null].includes(v.vertical_status));
   }
 });
