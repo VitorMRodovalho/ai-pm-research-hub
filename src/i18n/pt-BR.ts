@@ -16,6 +16,8 @@ const ptBR: Record<string, string> = {
   'nav.brand': 'Núcleo IA & GP — Ciclo 3',
   'nav.agenda': 'Pauta',
   'nav.quadrants': 'Quadrantes',
+  'nav.verticals': 'Verticais',
+  'nav.partners': 'Parceiros',
   'nav.tribes': 'Tribos',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -1389,6 +1391,8 @@ const ptBR: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Links e Recursos',
   'resources.title': 'Próximos Passos',
+  'resources.memberLabel': 'Área do membro',
+  'resources.memberTitle': 'Recursos do voluntário',
   'resources.linkText': 'Abrir →',
   'resources.noResources': 'Nenhum recurso disponível no momento.',
   'resources.playlist.title': 'Playlist YouTube',
@@ -1426,6 +1430,11 @@ const ptBR: Record<string, string> = {
   'footer.chapters': 'Capítulos parceiros PMI Brasil',
   'footer.trademarks': 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
   'footer.gp': 'GP: Vitor Maia Rodovalho',
+  'footer.resourcesTitle': 'Recursos públicos',
+  'footer.webinars': 'Webinars',
+  'footer.meetings': 'Reuniões Gerais',
+  'footer.courses': 'Cursos IA — PMI',
+  'footer.contact': 'Contato',
 
   // ── Role labels ──
   'role.manager': 'Gerente',

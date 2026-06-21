@@ -1009,7 +1009,9 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
   const es = read('src/pages/es/index.astro');
   for (const content of [pt, en, es]) {
     assert.equal(content.includes('getHomeSchedule'), true);
-    assert.equal(content.includes('ResourcesSection deadline={deadlineIso}'), true);
+    // R5 (Ciclo 4): deadline migrou da ResourcesSection (playlist foi p/ o rodapé) e
+    // segue cabeada do schedule compartilhado para a TribesSection (consumidor real).
+    assert.equal(content.includes('TribesSection deadline={deadlineIso}'), true);
   }
   // All locales now use HomepageHero (unified in CBGPL prep)
   for (const content of [pt, en, es]) {
@@ -1033,18 +1035,21 @@ test('home fallback copy no longer hardcodes kickoff dates or recurring meeting 
   assert.equal(hero.includes("hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'"), false);
 });
 
-test('resources fallback playlist no longer hardcodes saturday deadline copy', () => {
+test('R5: public playlist moved to footer; ResourcesSection holds no deadline copy', () => {
+  // R5 (Ciclo 4): a playlist pública e a copy de deadline saíram da ResourcesSection
+  // (demovida para zona de membro). O link público de webinars vive agora no rodapé (BaseLayout).
   const resources = read('src/components/sections/ResourcesSection.astro');
-  const pt = read('src/i18n/pt-BR.ts');
-  const en = read('src/i18n/en-US.ts');
-  const es = read('src/i18n/es-LATAM.ts');
+  const footer = read('src/layouts/BaseLayout.astro');
 
+  // Sem copy de deadline de sábado hardcoded em lugar nenhum da seção
   assert.equal(resources.includes('8 vídeos. Escolha até Sáb 12h.'), false);
   assert.equal(resources.includes("title: 'Playlist YouTube'"), false);
-  assert.equal(resources.includes("t('resources.playlist.descPrefix', lang)"), true);
-  assert.equal(pt.includes("'resources.playlist.descPrefix'"), true);
-  assert.equal(en.includes("'resources.playlist.descPrefix'"), true);
-  assert.equal(es.includes("'resources.playlist.descPrefix'"), true);
+  // A playlist inteira deixou a seção (nada de descPrefix/deadline aqui)
+  assert.equal(resources.includes("resources.playlist"), false);
+  assert.equal(resources.includes('formatPlaylistDeadline'), false);
+  // O link público de webinars (playlist do YouTube) está no rodapé
+  assert.equal(footer.includes("t('footer.webinars', lang)"), true);
+  assert.equal(footer.includes('PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc'), true);
 });
 
 test('public home locale copy no longer hardcodes cycle 3 labels', () => {

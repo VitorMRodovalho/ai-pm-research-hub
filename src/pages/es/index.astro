@@ -14,7 +14,6 @@ import LadderSection from '../../components/sections/LadderSection.astro';
 import TrailRankingSection from '../../components/sections/TrailRankingSection.astro';
 import ChaptersSection from '../../components/sections/ChaptersSection.astro';
 import TeamSection from '../../components/sections/TeamSection.astro';
-import VisionSection from '../../components/sections/VisionSection.astro';
 import ResourcesSection from '../../components/sections/ResourcesSection.astro';
 import { t } from '../../i18n/utils';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
@@ -27,19 +26,20 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
+  {/* ── Zona ANON (arriba — el embudo): valor → modelo → escalera → prueba → cobertura → conversión → agenda → equipo ── */}
   <HomepageHero lang={lang} />
-  <PlatformStatsSection lang={lang} />
   <ModelSection lang={lang} />
-  <PartnersSection client:load lang={lang} />
-  <TribesSection deadline={deadlineIso} lang={lang} />
-  <KpiSection lang={lang} />
-  <WeeklyScheduleSection lang={lang} />
-  <RulesSection lang={lang} />
   <LadderSection lang={lang} />
-  <TrailRankingSection lang={lang} />
+  <PlatformStatsSection lang={lang} />
   <ChaptersSection lang={lang} />
+  <PartnersSection client:load lang={lang} />
+  <WeeklyScheduleSection lang={lang} />
   <TeamSection lang={lang} />
-  <VisionSection lang={lang} />
-  <ResourcesSection deadline={deadlineIso} lang={lang} />
+  {/* ── Zona MIEMBRO (abajo — degradada, mantenida): tribus → reglas → panel KPI → leaderboard + enlaces de miembro ── */}
+  <TribesSection deadline={deadlineIso} lang={lang} />
+  <RulesSection lang={lang} />
+  <KpiSection lang={lang} />
+  <TrailRankingSection lang={lang} />
+  <ResourcesSection lang={lang} />
   <PresentationLayer context="home" lang={lang} />
 </BaseLayout>
