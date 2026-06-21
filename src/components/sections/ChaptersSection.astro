@@ -2,6 +2,7 @@
 import { t, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 import { loadChapters } from '../../lib/chapters';
+import BrazilMap from './BrazilMap.astro';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
@@ -12,12 +13,52 @@ const sbAnon = createClient(
 );
 const chapters = await loadChapters(sbAnon);
 
-// CBGPL 2026-04-29: Ivan Lourenço (PMI-GO) anunciou união de 15 capítulos PMI Brasil.
-// Registry hoje tem 5 ativos (founding); 10 adicionais entrarão quando lista oficial chegar.
-// Quando registry estiver completo (15 rows), substituir literal por chapters.length.
-const ANNOUNCED_TOTAL = 15;
+// Registry completo (CBGPL 2026: 15 capítulos PMI Brasil). O contador é o nº de capítulos
+// carregados ao vivo — nada hardcoded (fallback de chapters.ts cobre RPC indisponível).
 const activeCount = chapters.length;
-const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
+
+// R9 — Mapa de cobertura nacional. UFs com capítulo ativo (chapter_code = sigla UF)
+// + o UF fundador (contratante). Tudo derivado do registry ao vivo, nada hardcoded.
+const activeUFs = chapters.map((c) => c.chapter_code).filter(Boolean);
+const founderUF = chapters.find((c) => c.is_contracting)?.chapter_code ?? null;
+
+// R6 — Alcance internacional (legenda nomeada por país, ao vivo). get_public_country_reach()
+// agrega members.country (ISO-2) sobre a MESMA população de active_members ("pesquisadores
+// ativos"), então a soma das contagens bate com o denominador canônico. Zero-PII.
+type CountryReach = { country_code: string; member_count: number };
+let countryReach: CountryReach[] = [];
+try {
+  const { data, error } = await sbAnon.rpc('get_public_country_reach');
+  if (!error && Array.isArray(data)) countryReach = data as CountryReach[];
+} catch { /* legenda some se a RPC falhar — banda de capítulos segue íntegra */ }
+
+const reachCountries = countryReach.length;
+const reachMembers = countryReach.reduce((sum, c) => sum + Number(c.member_count || 0), 0);
+
+// PD-MAP — Heatmap por estado (densidade de membros que autorizaram + supressão k>=5,
+// via get_public_state_reach). Gate de produto: a camada de densidade só ACENDE com >=2 UFs
+// (decisão PM — evita "mapa vazio" enquanto o opt-in não tem substrato). Abaixo disso o mapa
+// segue no modo R9 (capítulo/fundador). Zero-PII, mesma população do country reach.
+type StateReach = { state_code: string; member_count: number };
+let stateReach: StateReach[] = [];
+try {
+  const { data, error } = await sbAnon.rpc('get_public_state_reach');
+  if (!error && Array.isArray(data)) stateReach = data as StateReach[];
+} catch { /* densidade some se a RPC falhar — banda de capítulos segue íntegra */ }
+
+const densityMap: Record<string, number> = {};
+if (stateReach.length >= 2) {
+  for (const s of stateReach) densityMap[s.state_code] = Number(s.member_count || 0);
+}
+const hasDensity = Object.keys(densityMap).length > 0;
+
+// Bandeira emoji a partir do ISO-3166-1 alpha-2 (regional indicator symbols).
+function flagEmoji(code: string): string {
+  // PD-MAP-1: 'ZZ' (e 'XX') = bucket genérico "Internacional" (k-anon LGPD) → globo, não bandeira ZZ.
+  if (code === 'ZZ' || code === 'XX') return '🌎';
+  if (!/^[A-Z]{2}$/.test(code)) return '🌐';
+  return String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
+}
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="capitulos">
@@ -25,14 +66,43 @@ const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-purple mb-2">
       {t('chapters.label', lang)}
     </div>
-    <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-2">
-      {ANNOUNCED_TOTAL} {t('chapters.title', lang)}
+    <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
+      {activeCount} {t('chapters.title', lang)}
     </h2>
-    {onboardingCount > 0 && (
-      <p class="text-sm text-[var(--text-muted)] mb-8">
-        {activeCount} {t('chapters.activeLabel', lang)} · {onboardingCount} {t('chapters.onboardingLabel', lang)}
-      </p>
-    )}
+
+    <!-- R9 — mapa de cobertura nacional: estados-capítulo destacados ao vivo -->
+    <div class="mb-10">
+      <BrazilMap
+        activeUFs={activeUFs}
+        founderUF={founderUF}
+        density={densityMap}
+        ariaLabel={`${activeCount} ${t('chapters.mapAria', lang)}`}
+      />
+      <div class="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 mt-4 text-[.8rem] text-[var(--text-secondary)]">
+        {hasDensity ? (
+          <span class="inline-flex items-center gap-2">
+            <span class="inline-block w-12 h-3 rounded-sm" style="background:linear-gradient(to right, color-mix(in srgb, var(--color-teal) 30%, transparent), var(--color-teal))"></span>
+            {t('chapters.mapLegendDensity', lang)}
+          </span>
+        ) : (
+          <span class="inline-flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-sm" style="background:var(--color-teal)"></span>
+            {t('chapters.mapLegendActive', lang)}
+          </span>
+        )}
+        {founderUF && (
+          <span class="inline-flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-sm" style="background:var(--color-orange)"></span>
+            {t('chapters.founder', lang)} (PMI {chapters.find((c) => c.is_contracting)?.state})
+          </span>
+        )}
+      </div>
+      {hasDensity && (
+        <p class="text-[.7rem] text-[var(--text-muted)] mt-2 max-w-[520px] mx-auto">
+          {t('chapters.mapDensityNote', lang)}
+        </p>
+      )}
+    </div>
 
     <div class="flex flex-wrap justify-center gap-4 mb-8">
       {chapters.map((c) => (
@@ -49,6 +119,27 @@ const onboardingCount = Math.max(ANNOUNCED_TOTAL - activeCount, 0);
         </div>
       ))}
     </div>
+
+    {reachCountries > 0 && (
+      <div class="mb-8">
+        <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">
+          {t('chapters.reachTitle', lang)}
+        </div>
+        <p class="text-sm text-[var(--text-secondary)] mb-4">
+          {t('chapters.reachIntro', lang)} <strong>{reachCountries} {t('chapters.reachCountries', lang)}</strong>
+          {' · '}{reachMembers} {t('chapters.reachMembersSuffix', lang)}
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+          {countryReach.map((c) => (
+            <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-full pl-3 pr-4 py-1.5 flex items-center gap-2">
+              <span class="text-lg leading-none" aria-hidden="true">{flagEmoji(c.country_code)}</span>
+              <span class="text-sm font-bold text-[var(--text-primary)]">{t(`country.${c.country_code}`, lang)}</span>
+              <span class="text-sm font-semibold text-teal tabular-nums">{c.member_count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 inline-block">
       <p class="text-sm text-[var(--text-secondary)] mb-2">

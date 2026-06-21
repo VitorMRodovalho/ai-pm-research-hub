@@ -1,0 +1,290 @@
+---
+/**
+ * LadderSection — Cycle 4 landing "A escada" (R4): fuses trail(escada) + cpmai mural.
+ *
+ * Presents the certification ladder as a single tier progression (target doc §3/§4,
+ * bloco 4): the PMI AI Trail tiers (core → specialty → complementary → master cert)
+ * build toward the PMI-CPMAI apex, and the CPMAI mural (real certified members) is the
+ * proof of who has already reached the top. Champion → Grupo CPMAI → PMI-CPMAI.
+ *
+ * Replaces the former separate TrailSection (tiers part) + CpmaiSection. The trail
+ * completion leaderboard is split off into TrailRankingSection (operational, demoted to
+ * the member zone in R5). Anchor id="trail" preserved (nav.trail + profile.astro link).
+ * No rebrand — reuses palette tokens.
+ */
+import {
+  coreCourses,
+  specialtyCourses,
+  complementaryCourses,
+  masterCertCourses,
+} from '../../data/trail';
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+
+let core = [] as ReturnType<typeof coreCourses>;
+let specialty = [] as ReturnType<typeof specialtyCourses>;
+let complementary = [] as ReturnType<typeof complementaryCourses>;
+let master = [] as ReturnType<typeof masterCertCourses>;
+let masterPrep = [] as ReturnType<typeof complementaryCourses>;
+try {
+  core = Array.isArray(coreCourses()) ? coreCourses() : [];
+  specialty = Array.isArray(specialtyCourses()) ? specialtyCourses() : [];
+  complementary = Array.isArray(complementaryCourses()) ? complementaryCourses() : [];
+  master = Array.isArray(masterCertCourses()) ? masterCertCourses() : [];
+  // Bridge: complementary courses that are recommended prep for PMI-CPMAI Master Cert
+  masterPrep = complementary.filter((c) => c.code === 'CPMAI_INTRO' || c.code === 'AI_PATTERNS');
+} catch {
+  core = []; specialty = []; complementary = []; master = []; masterPrep = [];
+}
+---
+
+<section class="py-16 px-6" id="trail">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      {t('ladder.label', lang)}
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      {t('ladder.title', lang)}
+    </h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[800px] mb-3">
+      {t('ladder.subtitle', lang)}
+    </p>
+    <p class="text-[.78rem] text-[var(--text-muted)] max-w-[800px] mb-10 italic">
+      {t('trail.credlyNote', lang)}
+    </p>
+
+    <!-- Tier 1+2 grid: Core + Specialty -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <!-- Core (4 obrigatórios) -->
+      <div class="bg-[var(--surface-section-warm)] rounded-2xl p-6 border-l-4 border-teal">
+        <div class="text-[.7rem] font-bold text-teal uppercase tracking-wider mb-4">
+          {t('trail.core', lang)}
+        </div>
+        {core.map((c, i) => (
+          <a href={c.url} target="_blank" rel="noopener"
+             class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-primary)] hover:text-teal transition-colors">
+            <span class="w-[22px] h-[22px] rounded-md bg-teal text-white flex items-center justify-center
+                         text-[.65rem] font-bold flex-shrink-0">
+              {i + 1}
+            </span>
+            <span class="text-[.82rem] font-medium">{c.name}</span>
+          </a>
+        ))}
+        {!core.length && (
+          <p class="text-[.82rem] text-[var(--text-secondary)]">{t('trail.coreUnavailable', lang)}</p>
+        )}
+      </div>
+
+      <!-- Specialty (2 mini-certs) -->
+      <div class="bg-[var(--surface-section-warm)] rounded-2xl p-6 border-l-4 border-purple">
+        <div class="text-[.7rem] font-bold text-purple uppercase tracking-wider mb-4">
+          {t('trail.specialty', lang)}
+        </div>
+        {specialty.map((c, i) => (
+          <a href={c.url} target="_blank" rel="noopener"
+             class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-primary)] hover:text-purple transition-colors">
+            <span class="w-[22px] h-[22px] rounded-md bg-purple text-white flex items-center justify-center
+                         text-[.65rem] font-bold flex-shrink-0">
+              {core.length + i + 1}
+            </span>
+            <span class="text-[.82rem] font-medium">{c.name}</span>
+          </a>
+        ))}
+        {!specialty.length && (
+          <p class="text-[.82rem] text-[var(--text-secondary)]">{t('trail.specialtyUnavailable', lang)}</p>
+        )}
+        {complementary.length > 0 && (
+          <div class="mt-4 pt-3 border-t border-[var(--border-subtle)]">
+            <div class="text-[.65rem] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+              {t('trail.complementary', lang)}
+            </div>
+            {complementary.map((c, i) => (
+              <a href={c.url} target="_blank" rel="noopener"
+                 class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-secondary)] hover:text-purple transition-colors opacity-70">
+                <span class="w-[22px] h-[22px] rounded-md bg-gray-400 text-white flex items-center justify-center
+                             text-[.65rem] font-bold flex-shrink-0">
+                  {core.length + specialty.length + i + 1}
+                </span>
+                <span class="text-[.82rem] font-medium">{c.name}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Tier 4: Master Cert (full-width destaque) — apex of the courses -->
+    {master.length > 0 && (
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border-l-4 border-amber-600 mb-12 dark:from-amber-950/30 dark:to-orange-950/30">
+        <div class="flex items-start gap-4 flex-wrap">
+          <div class="flex-1 min-w-[250px]">
+            <div class="text-[.7rem] font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <span>👑</span> {t('trail.master', lang)}
+            </div>
+            {master.map((c) => (
+              <div class="mb-2">
+                <a href={c.url} target="_blank" rel="noopener"
+                   class="text-[.95rem] font-bold text-navy hover:text-amber-700 transition-colors no-underline block">
+                  {c.name} →
+                </a>
+              </div>
+            ))}
+            <p class="text-[.78rem] text-[var(--text-secondary)] mt-1">
+              {t('trail.masterDesc', lang)}
+            </p>
+            {masterPrep.length > 0 && (
+              <div class="mt-4 pt-3 border-t border-amber-200/60 dark:border-amber-800/40">
+                <div class="text-[.65rem] font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span>↑</span> {t('trail.master.recommendedPrep', lang)}
+                </div>
+                <p class="text-[.7rem] text-[var(--text-muted)] mb-2 italic">
+                  {t('trail.master.prepHint', lang)}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  {masterPrep.map((c) => (
+                    <a href={c.url} target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1.5 text-[.72rem] font-semibold text-amber-800 bg-amber-100/70 hover:bg-amber-200 px-2.5 py-1 rounded-full no-underline transition-colors dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/70">
+                      {c.name} ↗
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Apex: PMI-CPMAI mural (real certified members) — who already reached the top ── */}
+    <div id="cpmai" class="scroll-mt-24 pt-4 border-t border-[var(--border-subtle)]">
+      <div class="text-[.7rem] font-bold tracking-[.12em] uppercase text-amber mb-2 mt-8">
+        {t('cpmai.label', lang)}
+      </div>
+      <h3 class="text-[clamp(1.3rem,3vw,1.9rem)] font-extrabold leading-tight mb-3">
+        {t('cpmai_showcase.title', lang)}
+      </h3>
+      <p class="text-[.95rem] text-[var(--text-secondary)] max-w-[700px] mb-6">
+        {t('cpmai_showcase.subtitle', lang)}
+      </p>
+
+      {/* Announcement: CPMAI now in PT-BR + study group forming (the "Grupo CPMAI" rung) */}
+      <div class="bg-amber/10 border-2 border-amber/30 rounded-2xl p-5 mb-10 max-w-[800px]">
+        <div class="flex items-start gap-3">
+          <span class="text-2xl flex-shrink-0" aria-hidden="true">🌎</span>
+          <div class="flex-1">
+            <div class="font-bold text-[var(--text-primary)] text-[.95rem]">{t('cpmai.announce.title', lang)}</div>
+            <p class="text-[.85rem] text-[var(--text-secondary)] mt-1 leading-relaxed">{t('cpmai.announce.body', lang)}</p>
+            <a href="https://www.pmi.org/certifications/ai-project-management-cpmai" target="_blank" rel="noopener"
+               class="text-teal text-[.78rem] font-semibold no-underline hover:underline mt-2 inline-block">
+              {t('cpmai.announce.link', lang)} →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="cpmai-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">
+        {t('common.loading', lang)}
+      </div>
+
+      <!-- Empty state -->
+      <div id="cpmai-empty" class="hidden">
+        <div class="bg-amber/5 border border-amber/20 rounded-2xl p-8 text-center max-w-[600px] mx-auto">
+          <div class="text-4xl mb-3">🎓</div>
+          <p class="text-[var(--text-secondary)] text-sm">
+            {t('cpmai.noCerts', lang)}
+          </p>
+        </div>
+      </div>
+
+      <!-- Certified members grid (populated by client script) -->
+      <div id="cpmai-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Hidden text for the CPMAI mural client script to read translated strings -->
+<span id="cpmai-view-text" class="hidden">{t('cpmai.viewBadge', lang)}</span>
+<span id="cpmai-certified-in-text" class="hidden">{t('cpmai.certifiedIn', lang)}</span>
+
+<script>
+  // ── Load CPMAI-certified members from Supabase (apex of the ladder) ──
+  async function loadCpmaiMembers() {
+    const loading = document.getElementById('cpmai-loading');
+    const empty = document.getElementById('cpmai-empty');
+    const grid = document.getElementById('cpmai-grid');
+    if (!loading || !empty || !grid) return;
+
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) {
+        // Supabase not ready yet, wait for nav boot
+        window.addEventListener('nav:member', () => loadCpmaiMembers(), { once: true });
+        // Also try after a short delay as fallback
+        setTimeout(loadCpmaiMembers, 2000);
+        return;
+      }
+
+      // Query members with cpmai_certified = true OR who have CPMAI badges in credly_badges
+      const { data: members, error } = await sb
+        .from('public_members')
+        .select('id, name, photo_url, chapter, credly_badges, credly_url, cpmai_certified_at')
+        .eq('current_cycle_active', true)
+        .or('cpmai_certified.eq.true,credly_badges.cs.[{"category":"cpmai"}]')
+        .order('cpmai_certified_at', { ascending: true, nullsFirst: false });
+
+      loading.classList.add('hidden');
+
+      if (error || !members || members.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      // Build cards
+      grid.innerHTML = members.map((m: any) => {
+        const safeName = String(m?.name || 'Membro sem nome');
+        const photoUrl = m.photo_url || '';
+        const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const cpmaiBadge = m.credly_badges?.find?.((b: any) => b.category === 'cpmai');
+        const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
+        const rawBadgeName = cpmaiBadge?.name || '';
+        const certType = rawBadgeName.includes('CPMAI') ? 'PMI-CPMAI™' : (rawBadgeName || 'PMI-CPMAI');
+        const certDate = m.cpmai_certified_at || cpmaiBadge?.issued_at || null;
+        const certDateStr = certDate ? new Date(certDate).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-US' : document.documentElement.lang === 'es' ? 'es' : 'pt-BR', { month: 'short', year: 'numeric' }) : '';
+
+        return `
+          <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">
+            ${photoUrl
+              ? `<img src="${photoUrl}" alt="${safeName}" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-amber/30">`
+              : `<div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center text-amber font-bold text-lg mx-auto mb-3 border-2 border-amber/30">${initials}</div>`
+            }
+            <div class="font-bold text-sm text-navy">${safeName}</div>
+            <div class="text-[.68rem] text-[var(--text-muted)] mt-0.5">${m.chapter || ''}</div>
+            <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">
+              🎓 ${certType}
+            </div>
+            ${certDateStr ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-1">${document.getElementById('cpmai-certified-in-text')?.textContent || 'Certificado em'} ${certDateStr}</div>` : ''}
+            ${badgeUrl ? `<div class="mt-2"><a href="${badgeUrl}" target="_blank" rel="noopener" class="text-[.7rem] text-teal hover:underline no-underline">${document.getElementById('cpmai-view-text')?.textContent || 'View badge →'}</a></div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      grid.classList.remove('hidden');
+      grid.classList.add('grid');
+    } catch (err) {
+      console.warn('CPMAI mural load error:', err);
+      loading.classList.add('hidden');
+      empty.classList.remove('hidden');
+    }
+  }
+
+  // Boot after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(loadCpmaiMembers, 500));
+  } else {
+    setTimeout(loadCpmaiMembers, 500);
+  }
+</script>

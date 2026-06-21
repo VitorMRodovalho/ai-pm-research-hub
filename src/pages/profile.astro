@@ -209,6 +209,8 @@ const PROFILE_I18N = {
   shareAddressLabel: t('profile.shareAddressLabel', lang),
   shareAddressHint: t('profile.shareAddressHint', lang),
   shareBirthDateLabel: t('profile.shareBirthDateLabel', lang),
+  statePlaceholder: t('profile.statePlaceholder', lang),
+  allowStateMapLabel: t('profile.allowStateMapLabel', lang),
   privacyDisclaimer: t('profile.privacyDisclaimer', lang),
   readPrivacyPolicy: t('profile.readPrivacyPolicy', lang),
   gpManagedFields: t('profile.gpManagedFields', lang),
@@ -1510,6 +1512,26 @@ const PROFILE_I18N = {
       </div>`;
   }
 
+  // 27 UFs (PD-MAP-3): campo estado é um <select> p/ higiene na fonte (substitui texto livre
+  // que misturava 'GO'/'Goiás'). normUF mapeia o valor salvo (texto livre legado) → sigla.
+  const BR_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+  const UF_NAME_TO_CODE: Record<string,string> = {
+    'acre':'AC','alagoas':'AL','amapa':'AP','amapá':'AP','amazonas':'AM','bahia':'BA',
+    'ceara':'CE','ceará':'CE','distrito federal':'DF','espirito santo':'ES','espírito santo':'ES',
+    'goias':'GO','goiás':'GO','maranhao':'MA','maranhão':'MA','mato grosso':'MT',
+    'mato grosso do sul':'MS','minas gerais':'MG','para':'PA','pará':'PA','paraiba':'PB','paraíba':'PB',
+    'parana':'PR','paraná':'PR','pernambuco':'PE','piaui':'PI','piauí':'PI','rio de janeiro':'RJ',
+    'rio grande do norte':'RN','rio grande do sul':'RS','rondonia':'RO','rondônia':'RO','roraima':'RR',
+    'santa catarina':'SC','sao paulo':'SP','são paulo':'SP','sergipe':'SE','tocantins':'TO',
+  };
+  function normUF(raw: any): string {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    const up = s.toUpperCase();
+    if (BR_UFS.includes(up)) return up;
+    return UF_NAME_TO_CODE[s.toLowerCase()] || '';
+  }
+
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
@@ -1719,8 +1741,11 @@ const PROFILE_I18N = {
           </div>
           <div>
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Estado</label>
-            <input type="text" id="self-state" value="${m.state || ''}" placeholder="Ex: GO, SP, CE"
-              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+            <select id="self-state"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal bg-[var(--surface-card)]">
+              <option value="">${PROFILE_I18N.statePlaceholder}</option>
+              ${BR_UFS.map((uf) => `<option value="${uf}" ${normUF(m.state) === uf ? 'selected' : ''}>${uf}</option>`).join('')}
+            </select>
           </div>
           <div>
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">País</label>
@@ -1752,6 +1777,10 @@ const PROFILE_I18N = {
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-share-birth-date" class="mt-0.5" ${m.share_birth_date ? 'checked' : ''}>
               <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.shareBirthDateLabel}</span>
+            </label>
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-allow-state-map" class="mt-0.5" ${m.allow_state_in_public_map ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.allowStateMapLabel}</span>
             </label>
           </div>
           <p class="text-[.65rem] text-[var(--text-muted)] mt-3">
@@ -2128,7 +2157,7 @@ const PROFILE_I18N = {
     if (pmiId !== (currentMember.pmi_id || null)) fields.pmi_id = pmiId;
     const shareWa = shareWaEl?.checked ?? false;
     if (shareWa !== currentMember.share_whatsapp) fields.share_whatsapp = shareWa;
-    const stateVal = (document.getElementById('self-state') as HTMLInputElement)?.value.trim() || null;
+    const stateVal = (document.getElementById('self-state') as HTMLSelectElement)?.value.trim() || null;
     if (stateVal !== (currentMember.state || null)) fields.state = stateVal;
     const countryVal = (document.getElementById('self-country') as HTMLInputElement)?.value.trim() || null;
     if (countryVal !== (currentMember.country || null)) fields.country = countryVal;
@@ -2150,6 +2179,9 @@ const PROFILE_I18N = {
     if (shareAddress !== (currentMember.share_address ?? false)) fields.share_address = shareAddress;
     const shareBirthDate = (document.getElementById('self-share-birth-date') as HTMLInputElement)?.checked ?? false;
     if (shareBirthDate !== (currentMember.share_birth_date ?? false)) fields.share_birth_date = shareBirthDate;
+    // PD-MAP: consentimento p/ heatmap público por estado (opt-in, revogável)
+    const allowStateMap = (document.getElementById('self-allow-state-map') as HTMLInputElement)?.checked ?? false;
+    if (allowStateMap !== (currentMember.allow_state_in_public_map ?? false)) fields.allow_state_in_public_map = allowStateMap;
 
     let data: any;
     if (Object.keys(fields).length > 0) {
