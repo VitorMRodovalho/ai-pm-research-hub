@@ -747,6 +747,19 @@ const ptBR: Record<string, string> = {
   'country.DE': 'Alemanha',
   'country.XX': 'Outros',
 
+  // ── Roteador de conversão (R7 — duas portas: protagonista · parceiro) ──
+  'router.label': 'FAÇA PARTE',
+  'router.title': 'Duas portas para fazer parte',
+  'router.subtitle': 'Você, pesquisador, ou sua organização. O caminho do protagonista é o principal; parcerias institucionais entram pela porta ao lado.',
+  'router.protagonist.tag': 'Porta principal',
+  'router.protagonist.title': 'Para você, pesquisador',
+  'router.protagonist.desc': 'Entre numa vertical, conquiste a credencial PMI e construa autoridade em IA aplicada à gestão. A coorte fundadora está aberta.',
+  'router.protagonist.cta': 'Seja protagonista',
+  'router.partner.tag': 'Porta secundária',
+  'router.partner.title': 'Para sua organização',
+  'router.partner.desc': 'Hubs, escolas e empresas que trazem alcance e audiência. Você traz a estratégia e o talento; o Núcleo + PMI fecha o ciclo com execução, governança e credencial.',
+  'router.partner.cta': 'Seja parceiro',
+
   // ── Quadrants ──
   'quadrants.label': 'Estrutura de Conhecimento',
   'quadrants.title': '4 Quadrantes Estratégicos',

@@ -747,6 +747,19 @@ const enUS: Record<string, string> = {
   'country.DE': 'Germany',
   'country.XX': 'Others',
 
+  // ── Conversion router (R7 — two doors: protagonist · partner) ──
+  'router.label': 'TAKE PART',
+  'router.title': 'Two doors to take part',
+  'router.subtitle': 'You, a researcher, or your organization. The protagonist path is the main one; institutional partnerships come in through the door next to it.',
+  'router.protagonist.tag': 'Primary door',
+  'router.protagonist.title': 'For you, researcher',
+  'router.protagonist.desc': 'Join a vertical, earn the PMI credential and build authority in AI applied to management. The founding cohort is open.',
+  'router.protagonist.cta': 'Be a protagonist',
+  'router.partner.tag': 'Secondary door',
+  'router.partner.title': 'For your organization',
+  'router.partner.desc': 'Hubs, schools and companies that bring reach and audience. You bring strategy and talent; Núcleo + PMI closes the loop with execution, governance and credential.',
+  'router.partner.cta': 'Become a partner',
+
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
   'quadrants.title': '4 Strategic Quadrants',

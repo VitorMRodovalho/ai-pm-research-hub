@@ -747,6 +747,19 @@ const esLATAM: Record<string, string> = {
   'country.DE': 'Alemania',
   'country.XX': 'Otros',
 
+  // ── Enrutador de conversión (R7 — dos puertas: protagonista · socio) ──
+  'router.label': 'PARTICIPA',
+  'router.title': 'Dos puertas para participar',
+  'router.subtitle': 'Tú, investigador, o tu organización. El camino del protagonista es el principal; las alianzas institucionales entran por la puerta de al lado.',
+  'router.protagonist.tag': 'Puerta principal',
+  'router.protagonist.title': 'Para ti, investigador',
+  'router.protagonist.desc': 'Únete a una vertical, obtén la credencial PMI y construye autoridad en IA aplicada a la gestión. La cohorte fundadora está abierta.',
+  'router.protagonist.cta': 'Sé protagonista',
+  'router.partner.tag': 'Puerta secundaria',
+  'router.partner.title': 'Para tu organización',
+  'router.partner.desc': 'Hubs, escuelas y empresas que aportan alcance y audiencia. Tú aportas la estrategia y el talento; Núcleo + PMI cierra el ciclo con ejecución, gobernanza y credencial.',
+  'router.partner.cta': 'Sé socio',
+
   // ── Quadrants ──
   'quadrants.label': 'Estructura de Conocimiento',
   'quadrants.title': '4 Cuadrantes Estratégicos',
