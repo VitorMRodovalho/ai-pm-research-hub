@@ -829,6 +829,10 @@ const esLATAM: Record<string, string> = {
   'rules.m4.title': 'Impacto Global',
   'rules.m4.text': 'AI Ambassadors & Comunidad',
 
+  // ── La escalera (R4 — fusión trail+cpmai como progresión por tier) ──
+  'ladder.label': 'La escalera',
+  'ladder.title': 'Una escalera de certificación, por tier',
+  'ladder.subtitle': 'De la Ruta PMI AI al grupo de estudio CPMAI hasta la certificación PMI-CPMAI™ — una progresión por mérito, con certificados reales. Cada peldaño suma a la meta anual del Núcleo.',
   // ── Trail ──
   'trail.label': 'Meta 2026: 70% de la Ruta PMI AI Completa',
   'trail.title': 'Ruta PMI AI',
