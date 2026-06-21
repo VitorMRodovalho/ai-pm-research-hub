@@ -21,10 +21,13 @@ const sb = SUPABASE_URL && SERVICE_KEY
 test('#676 slice5 static: homepage reads canonical sources (events RPC + derived slots)', () => {
   const body = read(SECTION);
   assert.ok(body, 'WeeklyScheduleSection present');
-  assert.match(body, /rpc\('get_next_general_meeting'\)/, 'general meeting via the events-derived RPC');
+  // R8 (R-AGENDA-HOME): the login-walled get_next_general_meeting card was replaced by the
+  // public AgendaVivaPublic island, which reads get_geral_agenda_viva — also events-derived
+  // (type='geral'), anon-safe, never a hardcoded cadence. The canonical-source invariant holds.
+  assert.match(body, /AgendaVivaPublic/, 'general meeting surfaced via the public Agenda Viva island');
+  const agenda = read('src/components/agenda/AgendaVivaPublic.tsx');
+  assert.match(agenda, /rpc\('get_geral_agenda_viva'/, 'Agenda Viva reads the events-derived canonical RPC');
   assert.match(body, /from\('tribe_meeting_slots'\)/, 'tribe schedule reads the derived slots cache');
-  // the load-bearing invariant comment must stay (events, not a hardcoded cadence string)
-  assert.match(body, /events table instead of a hardcoded cadence/i, 'documents the canonical-source invariant');
 });
 
 test('#676 slice5 live: get_next_general_meeting is derived from a real geral event', { skip: sb ? false : 'Supabase env required' }, async () => {

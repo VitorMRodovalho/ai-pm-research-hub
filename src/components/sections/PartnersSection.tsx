@@ -211,7 +211,7 @@ function PartnerForm({ l, lp, onClose }: { l: Record<string, string>; lp: string
       {consentError && <p id="partner-consent-error" className="text-xs text-red-600">{l.formConsentRequired}</p>}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={status === 'submitting'}
-          className="px-5 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer disabled:opacity-50 bg-orange">
+          className="px-5 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer disabled:opacity-50 bg-[var(--color-orange-deep)]">
           {status === 'submitting' ? l.formSubmitting : l.formSubmit}
         </button>
         <button type="button" onClick={onClose}
@@ -274,7 +274,7 @@ export default function PartnersSection({ lang = 'pt-BR' }: { lang?: Lang }) {
         {!open && (
           <div>
             <button type="button" onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-1 px-6 py-3 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-orange">
+              className="inline-flex items-center gap-1 px-6 py-3 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-[var(--color-orange-deep)]">
               {l.cta} <span aria-hidden="true">→</span>
             </button>
             <p className="text-xs text-[var(--text-secondary)] mt-2">{l.ctaSub}</p>

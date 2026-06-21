@@ -871,11 +871,18 @@ test('eslint i18n gate and visual dark mode playwright suite are configured', ()
   assert.equal(visualSpec.includes("dark mode visual baseline'"), true);
 });
 
-test('navigation renders home anchors without deprecated agenda (pauta removed)', () => {
+test('navigation home anchors curated to the funnel (C4 polish, PD-NAV)', () => {
   const navConfig = read('src/lib/navigation.config.ts');
   const nav = read('src/components/nav/Nav.astro');
-  assert.equal(navConfig.includes("key: 'quadrants'"), true);
-  assert.equal(navConfig.includes("key: 'agenda'"), false, 'agenda/pauta removed from nav');
+  // Dead/redundant anchors removed in the C4 polish: #quadrants is an inner anchor of #verticals
+  // (redundant) and #breakout/networking is not rendered on the home (dead link).
+  assert.equal(navConfig.includes("key: 'quadrants'"), false, 'redundant #quadrants removed');
+  assert.equal(navConfig.includes("key: 'networking'"), false, 'dead #breakout/networking removed');
+  // Real funnel anchors present (in page order): verticals → platform-stats → trail → chapters →
+  // join → partners → agenda → team. #agenda now points to the public Agenda Viva (R8), not a stub.
+  for (const k of ['platform-stats', 'chapters', 'join', 'agenda']) {
+    assert.equal(navConfig.includes(`key: '${k}'`), true, `home anchor '${k}' present`);
+  }
   assert.equal(nav.includes('item.disabled ? ('), true, 'disabled items still render as span when present');
 });
 
@@ -1009,7 +1016,9 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
   const es = read('src/pages/es/index.astro');
   for (const content of [pt, en, es]) {
     assert.equal(content.includes('getHomeSchedule'), true);
-    assert.equal(content.includes('ResourcesSection deadline={deadlineIso}'), true);
+    // R5 (Ciclo 4): deadline migrou da ResourcesSection (playlist foi p/ o rodapé) e
+    // segue cabeada do schedule compartilhado para a TribesSection (consumidor real).
+    assert.equal(content.includes('TribesSection deadline={deadlineIso}'), true);
   }
   // All locales now use HomepageHero (unified in CBGPL prep)
   for (const content of [pt, en, es]) {
@@ -1033,18 +1042,21 @@ test('home fallback copy no longer hardcodes kickoff dates or recurring meeting 
   assert.equal(hero.includes("hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'"), false);
 });
 
-test('resources fallback playlist no longer hardcodes saturday deadline copy', () => {
+test('R5: public playlist moved to footer; ResourcesSection holds no deadline copy', () => {
+  // R5 (Ciclo 4): a playlist pública e a copy de deadline saíram da ResourcesSection
+  // (demovida para zona de membro). O link público de webinars vive agora no rodapé (BaseLayout).
   const resources = read('src/components/sections/ResourcesSection.astro');
-  const pt = read('src/i18n/pt-BR.ts');
-  const en = read('src/i18n/en-US.ts');
-  const es = read('src/i18n/es-LATAM.ts');
+  const footer = read('src/layouts/BaseLayout.astro');
 
+  // Sem copy de deadline de sábado hardcoded em lugar nenhum da seção
   assert.equal(resources.includes('8 vídeos. Escolha até Sáb 12h.'), false);
   assert.equal(resources.includes("title: 'Playlist YouTube'"), false);
-  assert.equal(resources.includes("t('resources.playlist.descPrefix', lang)"), true);
-  assert.equal(pt.includes("'resources.playlist.descPrefix'"), true);
-  assert.equal(en.includes("'resources.playlist.descPrefix'"), true);
-  assert.equal(es.includes("'resources.playlist.descPrefix'"), true);
+  // A playlist inteira deixou a seção (nada de descPrefix/deadline aqui)
+  assert.equal(resources.includes("resources.playlist"), false);
+  assert.equal(resources.includes('formatPlaylistDeadline'), false);
+  // O link público de webinars (playlist do YouTube) está no rodapé
+  assert.equal(footer.includes("t('footer.webinars', lang)"), true);
+  assert.equal(footer.includes('PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc'), true);
 });
 
 test('public home locale copy no longer hardcodes cycle 3 labels', () => {
