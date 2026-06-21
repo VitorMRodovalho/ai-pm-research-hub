@@ -36,7 +36,7 @@ type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 const LABELS: Record<Lang, Record<string, string>> = {
   'pt-BR': {
     hubLine1: 'Núcleo',
-    hubLine2: '+ IA',
+    hubLine2: 'IA & GP',
     hubCaption: 'a comunidade',
     ladder: 'O fio comum: IA aplicada à sua área de atuação.',
     statusForming: 'Em formação',
@@ -65,8 +65,8 @@ const LABELS: Record<Lang, Record<string, string>> = {
     cancel: 'Cancelar',
   },
   'en-US': {
-    hubLine1: 'Núcleo',
-    hubLine2: '+ AI',
+    hubLine1: 'AI & PM',
+    hubLine2: 'Research Hub',
     hubCaption: 'the community',
     ladder: 'The common thread: AI applied to your field of practice.',
     statusForming: 'Forming',
@@ -95,7 +95,7 @@ const LABELS: Record<Lang, Record<string, string>> = {
   },
   'es-LATAM': {
     hubLine1: 'Núcleo',
-    hubLine2: '+ IA',
+    hubLine2: 'IA & GP',
     hubCaption: 'la comunidad',
     ladder: 'El hilo común: IA aplicada a tu área de actuación.',
     statusForming: 'En formación',
@@ -218,8 +218,8 @@ function Radial({ verticals, l }: { verticals: Vertical[]; l: Record<string, str
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full flex flex-col items-center justify-center text-center shadow-md z-10"
         style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}
       >
-        <span className="text-white font-extrabold text-lg leading-none">{l.hubLine1}</span>
-        <span className="text-white font-extrabold text-xl leading-none">{l.hubLine2}</span>
+        <span className="text-white font-extrabold text-[.92rem] leading-tight">{l.hubLine1}</span>
+        <span className="text-white font-extrabold text-[.92rem] leading-tight">{l.hubLine2}</span>
         <span className="text-white/80 text-[.55rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
       </div>
 
@@ -421,8 +421,8 @@ export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
           <div role="img" aria-label={l.hubAria}
             className="relative w-32 h-32 rounded-full flex flex-col items-center justify-center text-center shadow-md mb-4"
             style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}>
-            <span className="text-white font-extrabold text-lg leading-none">{l.hubLine1}</span>
-            <span className="text-white font-extrabold text-xl leading-none">{l.hubLine2}</span>
+            <span className="text-white font-extrabold text-[.92rem] leading-tight">{l.hubLine1}</span>
+            <span className="text-white font-extrabold text-[.92rem] leading-tight">{l.hubLine2}</span>
             <span className="text-white/80 text-[.55rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
           </div>
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 text-sm text-[var(--text-secondary)] text-center max-w-[560px]">
@@ -439,8 +439,8 @@ export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
             <div role="img" aria-label={l.hubAria}
               className="relative w-28 h-28 rounded-full flex flex-col items-center justify-center text-center shadow-md"
               style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}>
-              <span className="text-white font-extrabold text-base leading-none">{l.hubLine1}</span>
-              <span className="text-white font-extrabold text-lg leading-none">{l.hubLine2}</span>
+              <span className="text-white font-extrabold text-[.78rem] leading-tight">{l.hubLine1}</span>
+              <span className="text-white font-extrabold text-[.78rem] leading-tight">{l.hubLine2}</span>
               <span className="text-white/80 text-[.5rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
             </div>
           </div>
