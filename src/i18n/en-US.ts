@@ -683,6 +683,8 @@ const enUS: Record<string, string> = {
   'schedule.tribeMeetings': 'Tribe Meetings',
   'schedule.yourTribe': 'your tribe',
   'schedule.noMeetings': 'No meetings scheduled.',
+  'schedule.publicTitle': 'Where protagonism happens',
+  'schedule.publicSubtitle': 'The next General Meetings are open. Each one has 90 minutes of agenda with blocks for protagonists to present cases, demos and ideas — live, with the whole hub.',
 
   // ── Agenda ──
   'agenda.unit': 'min',

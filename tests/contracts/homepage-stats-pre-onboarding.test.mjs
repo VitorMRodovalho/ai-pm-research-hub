@@ -62,15 +62,19 @@ test('mig 143 static: get_next_general_meeting is anon-executable, zero-PII shap
   }
 });
 
-test('mig 143 static: WeeklyScheduleSection consumes the RPC and keeps the i18n fallback', () => {
+test('mig 143 static: homepage agenda surfaces the canonical events-derived agenda (R8) + no stale cadence', () => {
+  // R8 (R-AGENDA-HOME): the login-walled get_next_general_meeting card was replaced by the
+  // public AgendaVivaPublic island (reads get_geral_agenda_viva — events-derived, anon-safe,
+  // type='geral'). get_next_general_meeting (mig 143) remains a valid anon RPC in the DB but
+  // is no longer consumed by the homepage FE.
   const comp = readFileSync('src/components/sections/WeeklyScheduleSection.astro', 'utf8');
-  assert.match(comp, /rpc\('get_next_general_meeting'\)/, 'component calls the public RPC');
-  assert.match(comp, /schedule\.generalSchedule/, 'SSR i18n fallback retained');
+  assert.match(comp, /AgendaVivaPublic/, 'agenda section mounts the public Agenda Viva island');
+  const agenda = readFileSync('src/components/agenda/AgendaVivaPublic.tsx', 'utf8');
+  assert.match(agenda, /rpc\('get_geral_agenda_viva'/, 'Agenda Viva consumes the events-derived canonical RPC');
   for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
     const i18n = readFileSync(`src/i18n/${dict}.ts`, 'utf8');
-    assert.match(i18n, /'schedule\.generalSchedule':/, `${dict} has the fallback key`);
     assert.ok(!/'schedule\.generalSchedule':\s*'[^']*19:30/.test(i18n),
-      `${dict} fallback no longer claims the stale 19:30 cadence`);
+      `${dict} cadence fallback never claims the stale 19:30 cadence`);
   }
 });
 

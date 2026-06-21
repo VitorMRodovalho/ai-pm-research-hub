@@ -683,6 +683,8 @@ const esLATAM: Record<string, string> = {
   'schedule.tribeMeetings': 'Reuniones de Tribu',
   'schedule.yourTribe': 'tu tribu',
   'schedule.noMeetings': 'No hay reuniones programadas.',
+  'schedule.publicTitle': 'Donde sucede el protagonismo',
+  'schedule.publicSubtitle': 'Las próximas Reuniones Generales son abiertas. Cada una tiene 90 minutos de agenda con bloques para que los protagonistas presenten casos, demos e ideas — en vivo, con todo el núcleo.',
 
   // ── Agenda ──
   'agenda.unit': 'min',
