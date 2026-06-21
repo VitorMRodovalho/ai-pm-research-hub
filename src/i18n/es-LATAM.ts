@@ -728,6 +728,10 @@ const esLATAM: Record<string, string> = {
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
   'chapters.founder': 'Capítulo Fundador',
+  // Mapa de cobertura nacional (R9 — estados destacados en vivo vía registry)
+  'chapters.mapTitle': 'Presencia nacional',
+  'chapters.mapAria': 'estados brasileños con capítulos PMI activos',
+  'chapters.mapLegendActive': 'Capítulo activo',
   'chapters.activeLabel': 'socios activos',
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',
