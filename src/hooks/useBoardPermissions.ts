@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import type { Board } from '../types/board';
 import { waitForSb } from './useBoard';
-import { getSimulation, type OperationalTier } from '../lib/permissions';
+import { getSimulation, canFor, type OperationalTier } from '../lib/permissions';
 
 interface MemberContext {
   id: string;
@@ -130,7 +130,24 @@ export function useBoardPermissions(board: Board | null): Permissions {
   const isComms = effectiveDesig.some((d: string) => ['comms_leader', 'comms_member'].includes(d));
   const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');
 
-  const canManageBoard = isSuperadmin || isManager || (isLeader && isOwnTribe);
+  // V4 (ADR-0007): honor engagement-derived write_board for the board's
+  // initiative/tribe scope. The tier-only logic above ignores the canonical
+  // `can()` model, so a board linked to an initiative but created with
+  // board_scope='global' locked out its own engaged team (only the
+  // operational_role cache + board_scope were consulted). This realigns the UI
+  // gate with the board_items RLS (rls_can_for_initiative('write_board', ...)),
+  // which already grants these members write. `canFor` short-circuits on
+  // org-scoped write_board (tribe/vertical leaders, GP, comms_leader, curator)
+  // and also honors per-initiative grants. Suppressed under simulation (W144)
+  // so the simulated tier stays authoritative — canFor reads the real caller's
+  // capability cache, not the overlay. Scoped to boards that carry an
+  // initiative/tribe link, so unlinked global boards keep their current gate.
+  const canWriteScopedBoard = !sim.active && (
+    (board.initiative_id ? canFor('write_board', { type: 'initiative', id: board.initiative_id }) : false)
+    || (board.tribe_id != null ? canFor('write_board', { type: 'tribe', id: board.tribe_id }) : false)
+  );
+
+  const canManageBoard = isSuperadmin || isManager || (isLeader && isOwnTribe) || canWriteScopedBoard;
   // Comms team has full editorial control over global boards (communication hub)
   const isCommsOnGlobal = isComms && isGlobal;
 
