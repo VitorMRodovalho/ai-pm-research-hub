@@ -49,14 +49,14 @@ export const TIER_RANK: Record<AccessTier, number> = {
 
 export const NAV_ITEMS: NavItem[] = [
   // ─── Home anchor links (always visible) ───
+  // R5 (Ciclo 4): nav público alinhado ao funil — âncoras de conversão (#verticals/#partners)
+  // adicionadas; âncoras de membro (#tribes/#kpis/#rules) e #vision (seção cortada) removidas.
   { key: 'quadrants',  labelKey: 'nav.quadrants',  href: '/#quadrants',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'tribes',     labelKey: 'nav.tribes',     href: '/#tribes',     minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'kpis',       labelKey: 'nav.kpis',       href: '/#kpis',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'verticals',  labelKey: 'nav.verticals',  href: '/#verticals',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'partners',   labelKey: 'nav.partners',   href: '/#partners',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'networking', labelKey: 'nav.networking',  href: '/#breakout',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'rules',      labelKey: 'nav.rules',      href: '/#rules',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'trail',      labelKey: 'nav.trail',      href: '/#trail',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'team',       labelKey: 'nav.team',       href: '/#team',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'vision',     labelKey: 'nav.vision',     href: '/#vision',     minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'resources',  labelKey: 'nav.resources',  href: '/#resources',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───

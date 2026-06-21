@@ -16,6 +16,8 @@ const enUS: Record<string, string> = {
   'nav.brand': 'AI & PM Research Hub — Cycle 3',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrants',
+  'nav.verticals': 'Verticals',
+  'nav.partners': 'Partners',
   'nav.tribes': 'Research Streams',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -1385,6 +1387,8 @@ const enUS: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Links & Resources',
   'resources.title': 'Next Steps',
+  'resources.memberLabel': 'Member area',
+  'resources.memberTitle': 'Volunteer resources',
   'resources.linkText': 'Open →',
   'resources.noResources': 'No resources available at the moment.',
   'resources.playlist.title': 'YouTube Playlist',
@@ -1422,6 +1426,11 @@ const enUS: Record<string, string> = {
   'footer.chapters': 'PMI Brazil partner chapters',
   'footer.trademarks': 'PMI®, PMBOK®, PMP®, and PMI-CPMAI™ are registered trademarks of PMI, Inc.',
   'footer.gp': 'PM: Vitor Maia Rodovalho',
+  'footer.resourcesTitle': 'Public resources',
+  'footer.webinars': 'Webinars',
+  'footer.meetings': 'General Meetings',
+  'footer.courses': 'AI Courses — PMI',
+  'footer.contact': 'Contact',
 
   // ── Role labels ──
   'role.manager': 'Manager',
