@@ -36,7 +36,7 @@ const { lang = 'pt-BR' } = Astro.props;
          class="group flex flex-col rounded-2xl border-2 border-orange/40 bg-[var(--surface-card)] p-7 no-underline
                 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
          style="border-top: 5px solid #FF610F">
-        <span class="self-start text-[.62rem] font-bold tracking-[.12em] uppercase text-white bg-orange px-2.5 py-1 rounded-full mb-4">
+        <span class="self-start text-[.62rem] font-bold tracking-[.12em] uppercase text-white bg-[var(--color-orange-deep)] px-2.5 py-1 rounded-full mb-4">
           {t('router.protagonist.tag', lang)}
         </span>
         <h3 class="font-extrabold text-xl text-[var(--text-primary)] mb-2">
@@ -45,7 +45,7 @@ const { lang = 'pt-BR' } = Astro.props;
         <p class="text-sm text-[var(--text-secondary)] mb-6 flex-grow">
           {t('router.protagonist.desc', lang)}
         </p>
-        <span class="inline-flex items-center gap-1.5 self-start px-6 py-3 rounded-xl font-bold text-sm text-white bg-orange
+        <span class="inline-flex items-center gap-1.5 self-start px-6 py-3 rounded-xl font-bold text-sm text-white bg-[var(--color-orange-deep)]
                      group-hover:opacity-90 transition-opacity">
           {t('router.protagonist.cta', lang)} <span aria-hidden="true">→</span>
         </span>

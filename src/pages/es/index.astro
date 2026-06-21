@@ -31,11 +31,11 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
-  {/* ── Zona ANON (arriba — el embudo): valor → modelo → escalera → prueba → cobertura → conversión → agenda → equipo ── */}
+  {/* ── Zona ANON (arriba — el embudo): valor → modelo → prueba → escalera → cobertura → conversión → agenda → equipo ── */}
   <HomepageHero lang={lang} />
   <ModelSection lang={lang} />
-  <LadderSection lang={lang} />
   <PlatformStatsSection lang={lang} />
+  <LadderSection lang={lang} />
   <ChaptersSection lang={lang} />
   <RouterSection lang={lang} />
   <PartnersSection client:load lang={lang} />

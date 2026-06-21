@@ -116,6 +116,45 @@ const STATUS_STYLE: Record<string, string> = {
   paused: 'bg-gray-400/10 text-gray-500 border-gray-400/30',
 };
 
+/**
+ * Vertical descriptions, by CONTEXT of practice — NOT by credential (PD-CERT-4, PM 2026-06-21).
+ * The home presents verticals as research themes the practitioner recognizes by context; the PMI
+ * credential + knowledge area stay IMPLICIT (never written) to avoid reading as a certification
+ * funnel (conflict with PMI certification boards) and because they are research themes, not tracks.
+ * Authored here in all 3 langs (credential-free) so the FE NEVER renders the DB `description`
+ * (which embeds "ancorada na credencial PMI-X") nor `anchor_credential` — this also localizes the
+ * cards in en/es (was GAP-B2.C: DB prose is pt-only). Keyed by the live DB `title`; unknown title
+ * → suppressed (never falls back to the credential-bearing DB description). CPMAI stays explicit
+ * (the common spine line below). DB/RPC payload scrub of anchor_credential = tracked follow-up.
+ */
+const VERTICAL_DESC: Record<Lang, Record<string, string>> = {
+  'pt-BR': {
+    'Ágil': 'IA aplicada à gestão adaptativa e a times ágeis.',
+    'Construção': 'IA aplicada a megaprojetos e à gestão na construção.',
+    'ESG': 'IA aplicada à sustentabilidade e ao impacto ESG em projetos.',
+    'Negócio': 'IA aplicada à análise de negócio e à geração de valor.',
+    'PMO': 'IA aplicada a escritórios de projetos e à gestão de portfólio.',
+  },
+  'en-US': {
+    'Ágil': 'AI applied to adaptive management and agile teams.',
+    'Construção': 'AI applied to megaprojects and construction management.',
+    'ESG': 'AI applied to sustainability and ESG impact in projects.',
+    'Negócio': 'AI applied to business analysis and value generation.',
+    'PMO': 'AI applied to project offices and portfolio management.',
+  },
+  'es-LATAM': {
+    'Ágil': 'IA aplicada a la gestión adaptativa y a equipos ágiles.',
+    'Construção': 'IA aplicada a megaproyectos y a la gestión en construcción.',
+    'ESG': 'IA aplicada a la sostenibilidad y al impacto ESG en proyectos.',
+    'Negócio': 'IA aplicada al análisis de negocio y a la generación de valor.',
+    'PMO': 'IA aplicada a oficinas de proyectos y a la gestión de portafolio.',
+  },
+};
+
+function verticalDesc(lang: Lang, title: string): string | null {
+  return (VERTICAL_DESC[lang] || VERTICAL_DESC['pt-BR'])[title] ?? null;
+}
+
 function statusLabel(l: Record<string, string>, s: string | null): string {
   if (s === 'open') return l.statusOpen;
   if (s === 'paused') return l.statusPaused;
@@ -182,9 +221,7 @@ function Radial({ verticals, l }: { verticals: Vertical[]; l: Record<string, str
             style={{ borderTop: '3px solid #FF610F' }}
           >
             <div className="font-bold text-[.8rem] leading-tight text-[var(--text-primary)]">{nd.v.title}</div>
-            {nd.v.anchor_credential && (
-              <div className="text-[.62rem] text-[var(--text-secondary)] mt-0.5">{nd.v.anchor_credential}</div>
-            )}
+            {/* PD-CERT-4: credential (anchor_credential) is implicit — not rendered. */}
             <span
               className={`inline-block mt-1 text-[.55rem] font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full border ${STATUS_STYLE[nd.v.vertical_status || 'forming'] || STATUS_STYLE.forming}`}
             >
@@ -275,7 +312,7 @@ function FounderForm({ vertical, l, lp, onClose }: { vertical: Vertical; l: Reco
       {consentError && <p className="text-xs text-red-600">{l.formConsentRequired}</p>}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={status === 'submitting'}
-          className="px-5 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer disabled:opacity-50 bg-orange">
+          className="px-5 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer disabled:opacity-50 bg-[var(--color-orange-deep)]">
           {status === 'submitting' ? l.formSubmitting : l.formSubmit}
         </button>
         <button type="button" onClick={onClose}
@@ -300,22 +337,18 @@ function VerticalCard({ v, l, lp, lang }: { v: Vertical; l: Record<string, strin
         <span className={`text-[.62rem] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border ${sStyle}`}>
           {statusLabel(l, v.vertical_status)}
         </span>
-        {v.anchor_credential && (
-          <span className="text-[.62rem] font-semibold text-[var(--text-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
-            {l.anchorPrefix}: {v.anchor_credential}
-          </span>
-        )}
+        {/* PD-CERT-4: the PMI credential (anchor_credential) stays IMPLICIT — not rendered as a chip. */}
       </div>
       <h3 className="font-bold text-lg text-[var(--text-primary)] mb-1">{v.title}</h3>
-      {/* description is authored in pt-BR only; suppress on /en/ /es/ rather than show wrong-language
-          prose (ux M2). Localized descriptions tracked as GAP-B2.C. */}
-      {v.description && lang === 'pt-BR' && <p className="text-sm text-[var(--text-secondary)] mb-2">{v.description}</p>}
+      {/* PD-CERT-4 + GAP-B2.C: description by CONTEXT of practice, authored credential-free in all 3
+          langs (VERTICAL_DESC). NEVER renders the DB `description` (it embeds the PMI credential). */}
+      {verticalDesc(lang, v.title) && <p className="text-sm text-[var(--text-secondary)] mb-2">{verticalDesc(lang, v.title)}</p>}
       {v.partner_org && (
         <p className="text-xs text-[var(--text-secondary)] mb-1">{l.partnerPrefix}: <span className="font-medium">{v.partner_org}</span></p>
       )}
       {isForming && !open && (
         <button type="button" onClick={() => setOpen(true)}
-          className="mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-orange">
+          className="mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-[var(--color-orange-deep)]">
           {l.ctaProtagonist} →
         </button>
       )}

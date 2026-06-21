@@ -14,10 +14,13 @@ const ptBR: Record<string, string> = {
 
   // ── Nav ──
   'nav.brand': 'Núcleo IA & GP — Ciclo 3',
-  'nav.agenda': 'Pauta',
+  'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrantes',
   'nav.verticals': 'Verticais',
   'nav.partners': 'Parceiros',
+  'nav.platformStats': 'Números',
+  'nav.chapters': 'Capítulos',
+  'nav.join': 'Faça parte',
   'nav.tribes': 'Tribos',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -651,7 +654,7 @@ const ptBR: Record<string, string> = {
   'hero.cta.learn': 'Conhecer o Núcleo ↓',
   'hero.cta.protagonist': 'Seja protagonista',
   'hero.cta.login': 'Entrar',
-  'hero.gain': 'Pesquise, publique e lidere uma vertical ao lado de gente boa de toda credencial — e conquiste credenciais PMI co-branded. É a leitura prática de PMI:Next e do M.O.R.E.',
+  'hero.gain': 'Pesquise, publique e lidere uma vertical ao lado de gente boa de toda área de atuação — e veja seu progresso reconhecido na Trilha PMI AI.',
   'hero.member.greeting': 'Olá,',
   'hero.member.nextMeeting': '📅 Próxima Geral',
   'hero.member.yourTribe': '🔬 Sua Tribo',
@@ -759,7 +762,7 @@ const ptBR: Record<string, string> = {
   'router.subtitle': 'Você, pesquisador, ou sua organização. O caminho do protagonista é o principal; parcerias institucionais entram pela porta ao lado.',
   'router.protagonist.tag': 'Porta principal',
   'router.protagonist.title': 'Para você, pesquisador',
-  'router.protagonist.desc': 'Entre numa vertical, conquiste a credencial PMI e construa autoridade em IA aplicada à gestão. A coorte fundadora está aberta.',
+  'router.protagonist.desc': 'Entre numa vertical, faça pesquisa de alto nível e construa autoridade em IA aplicada à gestão. A coorte fundadora está aberta.',
   'router.protagonist.cta': 'Seja protagonista',
   'router.partner.tag': 'Porta secundária',
   'router.partner.title': 'Para sua organização',
@@ -783,9 +786,9 @@ const ptBR: Record<string, string> = {
   // ── O Modelo (R3 — fusão quadrantes × verticais) ──
   'model.label': 'O MODELO',
   'model.title': 'O que pesquisamos e para quais comunidades',
-  'model.subtitle': 'Dois eixos que se cruzam: quatro quadrantes de conhecimento (o quê) e verticais por credencial PMI (para quem). A IA atravessa os dois.',
+  'model.subtitle': 'Dois eixos que se cruzam: quatro quadrantes de conhecimento (o quê) e verticais por contexto de atuação (para quem). A IA atravessa os dois.',
   'model.axisWhat': 'O quê · domínios de conhecimento',
-  'model.axisWho': 'Para quem · comunidades por credencial PMI',
+  'model.axisWho': 'Para quem · comunidades por contexto de atuação',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',
@@ -868,12 +871,12 @@ const ptBR: Record<string, string> = {
 
   // ── A escada (R4 — fusão trail+cpmai como progressão por tier) ──
   'ladder.label': 'A escada',
-  'ladder.title': 'Uma escada de certificação, por tier',
-  'ladder.subtitle': 'Da Trilha PMI AI ao grupo de estudos CPMAI até a certificação PMI-CPMAI™ — uma progressão por mérito, com certificados reais. Cada degrau soma à meta anual do Núcleo.',
+  'ladder.title': 'Uma escada de maestria, por tier',
+  'ladder.subtitle': 'Da Trilha PMI AI ao grupo de estudos CPMAI até a certificação PMI-CPMAI™ (emitidas pelo PMI) — uma progressão por mérito e protagonismo. Cada degrau soma ao seu portfólio de pesquisa e à meta anual do Núcleo.',
   // ── Trail PMI AI (p169 — canonical naming "Trilha PMI AI" + 4 tiers) ──
   'trail.label': 'Meta 2026: 70% da Trilha PMI AI Completa',
   'trail.title': 'Trilha PMI AI',
-  'trail.subtitle': '4 mini-certificações core + 2 de especialidade + 2 cursos complementares + 1 cert. master (PMI-CPMAI). Seu progresso aparece ao vivo quando você faz login.',
+  'trail.subtitle': '6 mini-certificações da Trilha PMI AI (emitidas pelo PMI, verificadas via Credly) + 2 cursos complementares + a certificação master PMI-CPMAI™. Seu progresso aparece ao vivo quando você faz login.',
   'trail.credlyNote': '📌 Conclusão no PMI.org sincroniza seu badge Credly aqui automaticamente em até 5 dias.',
   'trail.core': 'Core (4 mini-certs obrigatórias)',
   'trail.specialty': 'Especialidade (2 mini-certs)',

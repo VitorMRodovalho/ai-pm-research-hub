@@ -18,6 +18,9 @@ const enUS: Record<string, string> = {
   'nav.quadrants': 'Quadrants',
   'nav.verticals': 'Verticals',
   'nav.partners': 'Partners',
+  'nav.platformStats': 'Numbers',
+  'nav.chapters': 'Chapters',
+  'nav.join': 'Join',
   'nav.tribes': 'Research Streams',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -651,7 +654,7 @@ const enUS: Record<string, string> = {
   'hero.cta.learn': 'Learn More ↓',
   'hero.cta.protagonist': 'Be a protagonist',
   'hero.cta.login': 'Sign in',
-  'hero.gain': 'Research, publish and lead a vertical alongside peers of every credential — and earn PMI co-branded credentials. The practical read of PMI:Next and M.O.R.E.',
+  'hero.gain': 'Research, publish and lead a vertical alongside peers from every field — and see your progress recognized in the PMI AI Trail.',
   'hero.member.greeting': 'Hello,',
   'hero.member.nextMeeting': '📅 Next Meeting',
   'hero.member.yourTribe': '🔬 Your Tribe',
@@ -759,7 +762,7 @@ const enUS: Record<string, string> = {
   'router.subtitle': 'You, a researcher, or your organization. The protagonist path is the main one; institutional partnerships come in through the door next to it.',
   'router.protagonist.tag': 'Primary door',
   'router.protagonist.title': 'For you, researcher',
-  'router.protagonist.desc': 'Join a vertical, earn the PMI credential and build authority in AI applied to management. The founding cohort is open.',
+  'router.protagonist.desc': 'Join a vertical, do high-level research and build authority in AI applied to management. The founding cohort is open.',
   'router.protagonist.cta': 'Be a protagonist',
   'router.partner.tag': 'Secondary door',
   'router.partner.title': 'For your organization',
@@ -783,9 +786,9 @@ const enUS: Record<string, string> = {
   // ── The Model (R3 — quadrants × verticals fusion) ──
   'model.label': 'THE MODEL',
   'model.title': 'What we research and for which communities',
-  'model.subtitle': 'Two axes that intersect: four knowledge quadrants (the what) and verticals by PMI credential (for whom). AI runs across both.',
+  'model.subtitle': 'Two axes that intersect: four knowledge quadrants (the what) and verticals by field of practice (for whom). AI runs across both.',
   'model.axisWhat': 'The what · knowledge domains',
-  'model.axisWho': 'For whom · communities by PMI credential',
+  'model.axisWho': 'For whom · communities by field of practice',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Leaders',
@@ -868,12 +871,12 @@ const enUS: Record<string, string> = {
 
   // ── The ladder (R4 — fused trail+cpmai as tier progression) ──
   'ladder.label': 'The ladder',
-  'ladder.title': 'A certification ladder, by tier',
-  'ladder.subtitle': 'From the PMI AI Trail to the CPMAI study group to the PMI-CPMAI™ certification — a merit-based progression, with real certificates. Every rung adds to the Núcleo\'s annual goal.',
+  'ladder.title': 'A mastery ladder, by tier',
+  'ladder.subtitle': 'From the PMI AI Trail to the CPMAI study group to the PMI-CPMAI™ certification (issued by PMI) — a progression by merit and protagonism. Every rung adds to your research portfolio and to the Núcleo\'s annual goal.',
   // ── Trail ──
   'trail.label': '2026 Goal: 70% PMI AI Trail Completion',
   'trail.title': 'PMI AI Trail',
-  'trail.subtitle': '4 core mini-certifications + 2 specialty + 2 complementary courses + 1 master cert (PMI-CPMAI). Your progress shows live when you sign in.',
+  'trail.subtitle': '6 mini-certifications of the PMI AI Trail (issued by PMI, verified via Credly) + 2 complementary courses + the master PMI-CPMAI™ certification. Your progress shows live when you sign in.',
   'trail.credlyNote': '📌 Completion on PMI.org auto-syncs your Credly badge here within 5 days.',
   'trail.core': 'Core (4 mandatory mini-certs)',
   'trail.specialty': 'Specialty (2 mini-certs)',
