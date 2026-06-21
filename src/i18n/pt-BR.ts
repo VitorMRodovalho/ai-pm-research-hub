@@ -829,6 +829,10 @@ const ptBR: Record<string, string> = {
   'rules.m4.title': 'Impacto Global',
   'rules.m4.text': 'AI Ambassadors & Comunidade',
 
+  // ── A escada (R4 — fusão trail+cpmai como progressão por tier) ──
+  'ladder.label': 'A escada',
+  'ladder.title': 'Uma escada de certificação, por tier',
+  'ladder.subtitle': 'Da Trilha PMI AI ao grupo de estudos CPMAI até a certificação PMI-CPMAI™ — uma progressão por mérito, com certificados reais. Cada degrau soma à meta anual do Núcleo.',
   // ── Trail PMI AI (p169 — canonical naming "Trilha PMI AI" + 4 tiers) ──
   'trail.label': 'Meta 2026: 70% da Trilha PMI AI Completa',
   'trail.title': 'Trilha PMI AI',

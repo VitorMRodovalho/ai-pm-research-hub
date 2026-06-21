@@ -829,6 +829,10 @@ const enUS: Record<string, string> = {
   'rules.m4.title': 'Global Impact',
   'rules.m4.text': 'AI Ambassadors & Community',
 
+  // ── The ladder (R4 — fused trail+cpmai as tier progression) ──
+  'ladder.label': 'The ladder',
+  'ladder.title': 'A certification ladder, by tier',
+  'ladder.subtitle': 'From the PMI AI Trail to the CPMAI study group to the PMI-CPMAI™ certification — a merit-based progression, with real certificates. Every rung adds to the Núcleo\'s annual goal.',
   // ── Trail ──
   'trail.label': '2026 Goal: 70% PMI AI Trail Completion',
   'trail.title': 'PMI AI Trail',
