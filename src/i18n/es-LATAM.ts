@@ -16,6 +16,11 @@ const esLATAM: Record<string, string> = {
   'nav.brand': 'Núcleo IA & GP — Ciclo 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Cuadrantes',
+  'nav.verticals': 'Verticales',
+  'nav.partners': 'Socios',
+  'nav.platformStats': 'Números',
+  'nav.chapters': 'Capítulos',
+  'nav.join': 'Súmate',
   'nav.tribes': 'Líneas de Investigación',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -564,6 +569,8 @@ const esLATAM: Record<string, string> = {
   'profile.shareAddressLabel': 'Compartir mi dirección/ciudad con otros miembros',
   'profile.shareAddressHint': '(no recomendado — por defecto: privado)',
   'profile.shareBirthDateLabel': 'Compartir mi fecha de cumpleaños (dd/mm) para felicitaciones institucionales',
+  'profile.statePlaceholder': 'Selecciona tu estado',
+  'profile.allowStateMapLabel': 'Autorizo la inclusión de mi estado de residencia en mapas de distribución geográfica exhibidos públicamente en la plataforma Núcleo IA & GP. El dato aparecerá solo de forma agregada (nunca individual). Puedes revocar en cualquier momento.',
   'profile.privacyDisclaimer': 'Dirección y teléfono se usan siempre en el Acuerdo de Voluntariado. Estas opciones controlan solo si otros miembros pueden verlos en tu perfil público.',
   'profile.readPrivacyPolicy': 'Leer Política de Privacidad',
   'profile.gpManagedFields': '🔒 Email, capítulo, rol y tribu son gestionados por el GP.',
@@ -647,7 +654,9 @@ const esLATAM: Record<string, string> = {
   'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'Unión anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conocer el Núcleo ↓',
-  'hero.cta.login': 'Ingresar / Crear cuenta',
+  'hero.cta.protagonist': 'Sé protagonista',
+  'hero.cta.login': 'Ingresar',
+  'hero.gain': 'Investiga, publica y lidera una vertical junto a gente de toda área de actuación — y ve tu progreso reconocido en la Ruta PMI AI.',
   'hero.member.greeting': 'Hola,',
   'hero.member.nextMeeting': '📅 Próxima Reunión',
   'hero.member.yourTribe': '🔬 Tu Tribu',
@@ -679,6 +688,8 @@ const esLATAM: Record<string, string> = {
   'schedule.tribeMeetings': 'Reuniones de Tribu',
   'schedule.yourTribe': 'tu tribu',
   'schedule.noMeetings': 'No hay reuniones programadas.',
+  'schedule.publicTitle': 'Donde sucede el protagonismo',
+  'schedule.publicSubtitle': 'Las próximas Reuniones Generales son abiertas. Cada una tiene 90 minutos de agenda con bloques para que los protagonistas presenten casos, demos e ideas — en vivo, con todo el núcleo.',
 
   // ── Agenda ──
   'agenda.unit': 'min',
@@ -722,10 +733,46 @@ const esLATAM: Record<string, string> = {
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
   'chapters.founder': 'Capítulo Fundador',
+  // Mapa de cobertura nacional (R9 — estados destacados en vivo vía registry)
+  'chapters.mapTitle': 'Presencia nacional',
+  'chapters.mapAria': 'estados brasileños con capítulos PMI activos',
+  'chapters.mapLegendActive': 'Capítulo activo',
+  'chapters.mapLegendDensity': 'Densidad de miembros por estado',
+  'chapters.mapDensityNote': 'Densidad agregada de miembros que autorizaron mostrar su estado. Los estados con menos de 5 miembros se omiten (protección de privacidad · LGPD).',
   'chapters.activeLabel': 'socios activos',
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',
   'chapters.cta': 'Para capítulos PMI: contacta al GP para iniciar integración →',
+  // Alcance internacional (R6 — leyenda nombrada por país, datos en vivo)
+  'chapters.reachTitle': 'Alcance internacional',
+  'chapters.reachIntro': 'Los investigadores activos del Núcleo ya están en',
+  'chapters.reachCountries': 'países',
+  'chapters.reachMembersSuffix': 'investigadores',
+  'country.BR': 'Brasil',
+  'country.PT': 'Portugal',
+  'country.US': 'EE. UU.',
+  'country.IT': 'Italia',
+  'country.ES': 'España',
+  'country.AR': 'Argentina',
+  'country.GB': 'Reino Unido',
+  'country.CA': 'Canadá',
+  'country.FR': 'Francia',
+  'country.DE': 'Alemania',
+  'country.XX': 'Otros',
+  'country.ZZ': 'Internacional',
+
+  // ── Enrutador de conversión (R7 — dos puertas: protagonista · socio) ──
+  'router.label': 'PARTICIPA',
+  'router.title': 'Dos puertas para participar',
+  'router.subtitle': 'Tú, investigador, o tu organización. El camino del protagonista es el principal; las alianzas institucionales entran por la puerta de al lado.',
+  'router.protagonist.tag': 'Puerta principal',
+  'router.protagonist.title': 'Para ti, investigador',
+  'router.protagonist.desc': 'Únete a una vertical, haz investigación de alto nivel y construye autoridad en IA aplicada a la gestión. La cohorte fundadora está abierta.',
+  'router.protagonist.cta': 'Sé protagonista',
+  'router.partner.tag': 'Puerta secundaria',
+  'router.partner.title': 'Para tu organización',
+  'router.partner.desc': 'Hubs, escuelas y empresas que aportan alcance y audiencia. Tú aportas la estrategia y el talento; Núcleo + PMI cierra el ciclo con ejecución, gobernanza y credencial.',
+  'router.partner.cta': 'Sé socio',
 
   // ── Quadrants ──
   'quadrants.label': 'Estructura de Conocimiento',
@@ -740,6 +787,13 @@ const esLATAM: Record<string, string> = {
   'quadrants.q4.title': 'Futuro y Responsabilidad',
   'quadrants.q4.sub': 'Ética, Gobernanza y Sociedad',
   'quadrants.unavailable': 'Cuadrantes temporalmente no disponibles.',
+
+  // ── El Modelo (R3 — fusión cuadrantes × verticales) ──
+  'model.label': 'EL MODELO',
+  'model.title': 'Qué investigamos y para qué comunidades',
+  'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por contexto de actuación (para quién). La IA atraviesa los dos.',
+  'model.axisWhat': 'El qué · dominios de conocimiento',
+  'model.axisWho': 'Para quién · comunidades por contexto de actuación',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',
@@ -820,10 +874,14 @@ const esLATAM: Record<string, string> = {
   'rules.m4.title': 'Impacto Global',
   'rules.m4.text': 'AI Ambassadors & Comunidad',
 
+  // ── La escalera (R4 — fusión trail+cpmai como progresión por tier) ──
+  'ladder.label': 'La escalera',
+  'ladder.title': 'Una escalera de maestría, por tier',
+  'ladder.subtitle': 'De la Ruta PMI AI al grupo de estudio CPMAI hasta la certificación PMI-CPMAI™ (emitidas por PMI) — una progresión por mérito y protagonismo. Cada peldaño suma a tu portafolio de investigación y a la meta anual del Núcleo.',
   // ── Trail ──
   'trail.label': 'Meta 2026: 70% de la Ruta PMI AI Completa',
   'trail.title': 'Ruta PMI AI',
-  'trail.subtitle': '4 mini-certificaciones core + 2 de especialidad + 2 cursos complementarios + 1 cert. master (PMI-CPMAI). Tu progreso aparece en vivo al ingresar.',
+  'trail.subtitle': '6 mini-certificaciones de la Ruta PMI AI (emitidas por PMI, verificadas vía Credly) + 2 cursos complementarios + la certificación master PMI-CPMAI™. Tu progreso aparece en vivo al ingresar.',
   'trail.credlyNote': '📌 Tu finalización en PMI.org sincroniza el badge Credly aquí automáticamente en hasta 5 días.',
   'trail.core': 'Core (4 mini-certs obligatorias)',
   'trail.specialty': 'Especialidad (2 mini-certs)',
@@ -1331,7 +1389,7 @@ const esLATAM: Record<string, string> = {
   'kpi.manual': 'Manual',
 
   // ── Team ──
-  'team.label': '44 Colaboradores · 5 Capítulos · 1 Misión',
+  'team.label': 'Quienes lo hacen',
   'team.title': 'Nuestro Equipo',
   'team.subtitle': 'Investigadores, líderes y gestores unidos en la intersección IA + GP.',
   'team.leaders': 'Líderes de Línea & Gestión',
@@ -1372,6 +1430,8 @@ const esLATAM: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Enlaces y Recursos',
   'resources.title': 'Próximos Pasos',
+  'resources.memberLabel': 'Área del miembro',
+  'resources.memberTitle': 'Recursos del voluntario',
   'resources.linkText': 'Abrir →',
   'resources.noResources': 'No hay recursos disponibles en este momento.',
   'resources.playlist.title': 'Playlist de YouTube',
@@ -1409,6 +1469,11 @@ const esLATAM: Record<string, string> = {
   'footer.chapters': 'Capítulos socios PMI Brasil',
   'footer.trademarks': 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.',
   'footer.gp': 'GP: Vitor Maia Rodovalho',
+  'footer.resourcesTitle': 'Recursos públicos',
+  'footer.webinars': 'Webinars',
+  'footer.meetings': 'Reuniones Generales',
+  'footer.courses': 'Cursos IA — PMI',
+  'footer.contact': 'Contacto',
 
   // ── Role labels ──
   'role.manager': 'Gerente',
@@ -5236,6 +5301,8 @@ const esLATAM: Record<string, string> = {
   'homepage.stats.initiatives': 'Iniciativas',
   'homepage.stats.events': 'Eventos realizados',
   'homepage.stats.retention': 'Tasa de retención',
+  'homepage.stats.hours': 'Horas de impacto',
+  'homepage.stats.chapters': 'Capítulos activos',
 
   // ── Attendance History (F5) ──
   'profile.history.title': 'Mi historial de asistencia',

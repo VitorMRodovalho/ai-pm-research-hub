@@ -1,0 +1,75 @@
+---
+/**
+ * RouterSection — Cycle 4 landing "Protagonistas & Parceiros" (R7): the two-door conversion router.
+ *
+ * Target doc §4 (order 6) / §2 principle #4: after proof (R2) and coverage (R6), the visitor hits a
+ * single, explicit fork — one primary CTA repeated ("Seja protagonista", same destination as the hero
+ * and the model), and a secondary partner door (PMI-GO owns the relationship). It does NOT duplicate
+ * the deep content of either door: the protagonist door scrolls up to #verticals (the model + founder
+ * forms) and the partner door scrolls down to #partners (the value-exchange deep-dive immediately
+ * below). This makes the funnel legible — no parede de login before conversion.
+ *
+ * Anchor: id="join". No rebrand — reuses palette tokens (orange = protagonista/primary, teal =
+ * institutional/secondary). SSR via the 3-dict i18n (router.*), so it is locale-identical by build.
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+---
+
+<section class="py-16 px-6 bg-[var(--surface-base)] scroll-mt-24" id="join">
+  <div class="max-w-[1100px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      {t('router.label', lang)}
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      {t('router.title', lang)}
+    </h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[760px] mb-10">
+      {t('router.subtitle', lang)}
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      {/* ── Porta principal: protagonista (primary, orange) ── */}
+      <a href="#verticals"
+         class="group flex flex-col rounded-2xl border-2 border-orange/40 bg-[var(--surface-card)] p-7 no-underline
+                shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+         style="border-top: 5px solid #FF610F">
+        <span class="self-start text-[.62rem] font-bold tracking-[.12em] uppercase text-white bg-[var(--color-orange-deep)] px-2.5 py-1 rounded-full mb-4">
+          {t('router.protagonist.tag', lang)}
+        </span>
+        <h3 class="font-extrabold text-xl text-[var(--text-primary)] mb-2">
+          {t('router.protagonist.title', lang)}
+        </h3>
+        <p class="text-sm text-[var(--text-secondary)] mb-6 flex-grow">
+          {t('router.protagonist.desc', lang)}
+        </p>
+        <span class="inline-flex items-center gap-1.5 self-start px-6 py-3 rounded-xl font-bold text-sm text-white bg-[var(--color-orange-deep)]
+                     group-hover:opacity-90 transition-opacity">
+          {t('router.protagonist.cta', lang)} <span aria-hidden="true">→</span>
+        </span>
+      </a>
+
+      {/* ── Porta secundária: parceiro (secondary, teal) ── */}
+      <a href="#partners"
+         class="group flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-7 no-underline
+                shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+         style="border-top: 5px solid #00799E">
+        <span class="self-start text-[.62rem] font-bold tracking-[.12em] uppercase text-teal border border-teal/40 px-2.5 py-1 rounded-full mb-4">
+          {t('router.partner.tag', lang)}
+        </span>
+        <h3 class="font-bold text-xl text-[var(--text-primary)] mb-2">
+          {t('router.partner.title', lang)}
+        </h3>
+        <p class="text-sm text-[var(--text-secondary)] mb-6 flex-grow">
+          {t('router.partner.desc', lang)}
+        </p>
+        <span class="inline-flex items-center gap-1.5 self-start px-6 py-3 rounded-xl font-semibold text-sm text-teal border border-teal
+                     group-hover:bg-teal/5 transition-colors">
+          {t('router.partner.cta', lang)} <span aria-hidden="true">→</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>

@@ -16,6 +16,11 @@ const enUS: Record<string, string> = {
   'nav.brand': 'AI & PM Research Hub — Cycle 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrants',
+  'nav.verticals': 'Verticals',
+  'nav.partners': 'Partners',
+  'nav.platformStats': 'Numbers',
+  'nav.chapters': 'Chapters',
+  'nav.join': 'Join',
   'nav.tribes': 'Research Streams',
   'nav.kpis': 'KPIs',
   'nav.networking': 'Networking',
@@ -564,6 +569,8 @@ const enUS: Record<string, string> = {
   'profile.shareAddressLabel': 'Share my address/city with other members',
   'profile.shareAddressHint': '(not recommended — default: private)',
   'profile.shareBirthDateLabel': 'Share my birthday (dd/mm) for institutional greetings',
+  'profile.statePlaceholder': 'Select your state',
+  'profile.allowStateMapLabel': 'I authorize including my state of residence in geographic distribution maps shown publicly on the Núcleo IA & GP platform. The data appears only in aggregate form (never individually). You may revoke this at any time.',
   'profile.privacyDisclaimer': 'Address and phone are always used in the Volunteer Agreement. These options control only whether other members can see them on your public profile.',
   'profile.readPrivacyPolicy': 'Read Privacy Policy',
   'profile.gpManagedFields': '🔒 Email, chapter, role, and tribe are managed by GP.',
@@ -647,7 +654,9 @@ const enUS: Record<string, string> = {
   'hero.chaptersAnnounce': '15 PMI Brazil Chapters',
   'hero.chaptersAnnounceSub': 'Union announced · CBGPL Apr 2026',
   'hero.cta.learn': 'Learn More ↓',
-  'hero.cta.login': 'Sign In / Register',
+  'hero.cta.protagonist': 'Be a protagonist',
+  'hero.cta.login': 'Sign in',
+  'hero.gain': 'Research, publish and lead a vertical alongside peers from every field — and see your progress recognized in the PMI AI Trail.',
   'hero.member.greeting': 'Hello,',
   'hero.member.nextMeeting': '📅 Next Meeting',
   'hero.member.yourTribe': '🔬 Your Tribe',
@@ -679,6 +688,8 @@ const enUS: Record<string, string> = {
   'schedule.tribeMeetings': 'Tribe Meetings',
   'schedule.yourTribe': 'your tribe',
   'schedule.noMeetings': 'No meetings scheduled.',
+  'schedule.publicTitle': 'Where protagonism happens',
+  'schedule.publicSubtitle': 'The next General Meetings are open. Each one has 90 minutes of agenda with blocks for protagonists to present cases, demos and ideas — live, with the whole hub.',
 
   // ── Agenda ──
   'agenda.unit': 'min',
@@ -722,10 +733,46 @@ const enUS: Record<string, string> = {
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
   'chapters.founder': 'Founding Chapter',
+  // National coverage map (R9 — states highlighted live from registry)
+  'chapters.mapTitle': 'National presence',
+  'chapters.mapAria': 'Brazilian states with active PMI chapters',
+  'chapters.mapLegendActive': 'Active chapter',
+  'chapters.mapLegendDensity': 'Member density by state',
+  'chapters.mapDensityNote': 'Aggregate density of members who authorized displaying their state. States with fewer than 5 members are omitted (privacy protection · LGPD).',
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
   'chapters.cta': 'For PMI chapters: contact the PM to begin integration →',
+  // International reach (R6 — named per-country legend, live data)
+  'chapters.reachTitle': 'International reach',
+  'chapters.reachIntro': "The Núcleo's active researchers are already in",
+  'chapters.reachCountries': 'countries',
+  'chapters.reachMembersSuffix': 'researchers',
+  'country.BR': 'Brazil',
+  'country.PT': 'Portugal',
+  'country.US': 'USA',
+  'country.IT': 'Italy',
+  'country.ES': 'Spain',
+  'country.AR': 'Argentina',
+  'country.GB': 'United Kingdom',
+  'country.CA': 'Canada',
+  'country.FR': 'France',
+  'country.DE': 'Germany',
+  'country.XX': 'Others',
+  'country.ZZ': 'International',
+
+  // ── Conversion router (R7 — two doors: protagonist · partner) ──
+  'router.label': 'TAKE PART',
+  'router.title': 'Two doors to take part',
+  'router.subtitle': 'You, a researcher, or your organization. The protagonist path is the main one; institutional partnerships come in through the door next to it.',
+  'router.protagonist.tag': 'Primary door',
+  'router.protagonist.title': 'For you, researcher',
+  'router.protagonist.desc': 'Join a vertical, do high-level research and build authority in AI applied to management. The founding cohort is open.',
+  'router.protagonist.cta': 'Be a protagonist',
+  'router.partner.tag': 'Secondary door',
+  'router.partner.title': 'For your organization',
+  'router.partner.desc': 'Hubs, schools and companies that bring reach and audience. You bring strategy and talent; Núcleo + PMI closes the loop with execution, governance and credential.',
+  'router.partner.cta': 'Become a partner',
 
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
@@ -740,6 +787,13 @@ const enUS: Record<string, string> = {
   'quadrants.q4.title': 'Future & Responsibility',
   'quadrants.q4.sub': 'Ethics, Governance, and Society',
   'quadrants.unavailable': 'Quadrants temporarily unavailable.',
+
+  // ── The Model (R3 — quadrants × verticals fusion) ──
+  'model.label': 'THE MODEL',
+  'model.title': 'What we research and for which communities',
+  'model.subtitle': 'Two axes that intersect: four knowledge quadrants (the what) and verticals by field of practice (for whom). AI runs across both.',
+  'model.axisWhat': 'The what · knowledge domains',
+  'model.axisWho': 'For whom · communities by field of practice',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Leaders',
@@ -820,10 +874,14 @@ const enUS: Record<string, string> = {
   'rules.m4.title': 'Global Impact',
   'rules.m4.text': 'AI Ambassadors & Community',
 
+  // ── The ladder (R4 — fused trail+cpmai as tier progression) ──
+  'ladder.label': 'The ladder',
+  'ladder.title': 'A mastery ladder, by tier',
+  'ladder.subtitle': 'From the PMI AI Trail to the CPMAI study group to the PMI-CPMAI™ certification (issued by PMI) — a progression by merit and protagonism. Every rung adds to your research portfolio and to the Núcleo\'s annual goal.',
   // ── Trail ──
   'trail.label': '2026 Goal: 70% PMI AI Trail Completion',
   'trail.title': 'PMI AI Trail',
-  'trail.subtitle': '4 core mini-certifications + 2 specialty + 2 complementary courses + 1 master cert (PMI-CPMAI). Your progress shows live when you sign in.',
+  'trail.subtitle': '6 mini-certifications of the PMI AI Trail (issued by PMI, verified via Credly) + 2 complementary courses + the master PMI-CPMAI™ certification. Your progress shows live when you sign in.',
   'trail.credlyNote': '📌 Completion on PMI.org auto-syncs your Credly badge here within 5 days.',
   'trail.core': 'Core (4 mandatory mini-certs)',
   'trail.specialty': 'Specialty (2 mini-certs)',
@@ -1331,7 +1389,7 @@ const enUS: Record<string, string> = {
   'kpi.manual': 'Manual',
 
   // ── Team ──
-  'team.label': '44 Collaborators · 5 Chapters · 1 Mission',
+  'team.label': 'Who makes it happen',
   'team.title': 'Our Team',
   'team.subtitle': 'Researchers, leaders, and managers united at the intersection of AI + PM.',
   'team.leaders': 'Stream Leaders & Management',
@@ -1372,6 +1430,8 @@ const enUS: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Links & Resources',
   'resources.title': 'Next Steps',
+  'resources.memberLabel': 'Member area',
+  'resources.memberTitle': 'Volunteer resources',
   'resources.linkText': 'Open →',
   'resources.noResources': 'No resources available at the moment.',
   'resources.playlist.title': 'YouTube Playlist',
@@ -1409,6 +1469,11 @@ const enUS: Record<string, string> = {
   'footer.chapters': 'PMI Brazil partner chapters',
   'footer.trademarks': 'PMI®, PMBOK®, PMP®, and PMI-CPMAI™ are registered trademarks of PMI, Inc.',
   'footer.gp': 'PM: Vitor Maia Rodovalho',
+  'footer.resourcesTitle': 'Public resources',
+  'footer.webinars': 'Webinars',
+  'footer.meetings': 'General Meetings',
+  'footer.courses': 'AI Courses — PMI',
+  'footer.contact': 'Contact',
 
   // ── Role labels ──
   'role.manager': 'Manager',
@@ -5235,6 +5300,8 @@ const enUS: Record<string, string> = {
   'homepage.stats.initiatives': 'Initiatives',
   'homepage.stats.events': 'Events held',
   'homepage.stats.retention': 'Retention rate',
+  'homepage.stats.hours': 'Impact hours',
+  'homepage.stats.chapters': 'Active chapters',
 
   // ── Attendance History (F5) ──
   'profile.history.title': 'My attendance history',

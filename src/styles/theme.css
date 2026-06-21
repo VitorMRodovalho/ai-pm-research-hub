@@ -24,6 +24,10 @@
   --color-orange: #FF610F;
   --color-orange-muted: #ED7D31;
   --color-orange-light: #FFF3ED;
+  /* PD-POL-2 (Ciclo 4 polish): #FF610F + white text = 3.01:1 (fails WCAG AA). This darker orange
+     is 5.18:1 on white — use ONLY for text-bearing CTAs/buttons; brand --color-orange stays for
+     accents/borders/badges. Cascades into dark mode (the dark block redefines orange, not -deep). */
+  --color-orange-deep: #C2410C;
   --color-teal: #05BFE0;
   --color-teal-deep: #00799E;
   --color-teal-light: #E8FAFE;

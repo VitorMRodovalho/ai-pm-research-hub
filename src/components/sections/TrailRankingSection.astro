@@ -1,0 +1,148 @@
+---
+/**
+ * TrailRankingSection — Cycle 4 landing (R4 split): the PMI AI Trail completion
+ * leaderboard, extracted verbatim from the former TrailSection.
+ *
+ * This is the operational/member-facing ranking panel. R4 only splits it out of the
+ * "A escada" section (LadderSection) so the ladder stays a clean tier progression;
+ * R5 demotes this component to the member zone at the end of the home. Anchor
+ * id="trail-ranking" (distinct from the ladder's #trail).
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+---
+
+<section class="py-16 px-6" id="trail-ranking">
+  <div class="max-w-[1200px] mx-auto">
+    <!-- Ranking panel (mini-certs only — 6 trail badges) -->
+    <div class="bg-navy rounded-3xl p-8 text-white">
+      <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
+        <div>
+          <div class="text-[1.1rem] font-extrabold">{t('trail.ranking.title', lang)}</div>
+          <div class="text-[.82rem] text-white/50">{t('trail.ranking.sub', lang)}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <select id="trailTribeFilter" class="bg-white/10 border border-white/20 text-white text-[.75rem] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#05BFE0]">
+            <option value="">{t('trail.ranking.allTribes', lang) || 'Todas as Tribos'}</option>
+          </select>
+          <div id="trailKPI" class="text-center">
+            <div class="text-[2rem] font-extrabold text-[#05BFE0]">--</div>
+            <div class="text-[.7rem] text-white/50">{t('trail.ranking.avg', lang)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="rankingContainer"
+           class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+        <div class="text-white/40 text-[.85rem]">{t('common.loading', lang)}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<span id="trail-i18n-avg" class="hidden">{t('trail.ranking.avg', lang)}</span>
+<span id="trail-i18n-completed" class="hidden">{t('trail.completed', lang)}</span>
+<span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
+<span id="trail-i18n-noMembers" class="hidden">{t('trail.ranking.noMembers', lang)}</span>
+
+<script>
+  import { TOTAL_COURSES as TOTAL } from '../../data/trail';
+  const trailRankingAvg = document.getElementById('trail-i18n-avg')?.textContent || 'Overall average';
+  const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
+  const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';
+  const trailNoMembers = document.getElementById('trail-i18n-noMembers')?.textContent || 'No members in this tribe';
+
+  async function bootTrail() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(bootTrail, 200); return; }
+
+    // Use SECURITY DEFINER RPC — works for both anon and authenticated
+    const { data: rows, error } = await sb.rpc('get_public_trail_ranking');
+    if (error || !rows) return;
+
+    const allRanked = (rows as any[]).map((r: any) => ({
+      name: r.member_name,
+      photo: r.photo_url,
+      completed: r.completed || 0,
+      inProgress: r.in_progress || 0,
+      pct: r.pct || 0,
+      tribeId: r.tribe_id,
+      tribeName: r.tribe_name,
+    }));
+
+    // Populate tribe filter dropdown
+    const tribeFilter = document.getElementById('trailTribeFilter') as HTMLSelectElement | null;
+    if (tribeFilter) {
+      const tribes = new Map<number, string>();
+      allRanked.forEach((r: any) => { if (r.tribeId && r.tribeName) tribes.set(r.tribeId, r.tribeName); });
+      tribes.forEach((name, id) => {
+        const opt = document.createElement('option');
+        opt.value = String(id);
+        opt.textContent = `T${id} — ${name}`;
+        tribeFilter.appendChild(opt);
+      });
+      tribeFilter.addEventListener('change', () => renderRanking(tribeFilter.value ? parseInt(tribeFilter.value) : null));
+    }
+
+    function renderRanking(filterTribeId: number | null) {
+      const ranked = filterTribeId ? allRanked.filter((r: any) => r.tribeId === filterTribeId) : allRanked;
+
+      // KPI
+      const avg = ranked.length > 0
+        ? Math.round(ranked.reduce((s: number, r: any) => s + r.pct, 0) / ranked.length)
+        : 0;
+      const kpiColor = avg >= 70 ? '#70AD47' : avg >= 30 ? '#FF610F' : '#D5340B';
+      const kpiEl = document.getElementById('trailKPI');
+      if (kpiEl) {
+        kpiEl.innerHTML = `<div style="font-size:2rem;font-weight:800;color:${kpiColor}">${avg}%</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.5)">${trailRankingAvg}</div>`;
+      }
+
+      // Ranking cards
+      const container = document.getElementById('rankingContainer');
+      if (!container) return;
+      if (ranked.length === 0) {
+        container.innerHTML = `<div class="text-white/40 text-[.85rem]">${trailNoMembers}</div>`;
+        return;
+      }
+      container.innerHTML = ranked.map((r: any) => {
+      const safeName = String(r?.name || 'Membro sem nome');
+      const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+      const photoEl = r.photo
+        ? `<img src="${r.photo}" class="w-8 h-8 rounded-full object-cover" alt="">`
+        : `<div class="w-8 h-8 rounded-full bg-teal flex items-center justify-center text-white text-[.65rem] font-bold">${initials}</div>`;
+      const barColor = r.pct >= 100 ? '#70AD47' : r.pct >= 50 ? '#05BFE0' : r.pct > 0 ? '#FF610F' : 'rgba(255,255,255,.1)';
+      const badge = r.pct >= 100 ? ' ⭐' : r.pct >= 50 ? ' 🔥' : '';
+      return `<div class="bg-white/[.06] rounded-xl p-3 flex items-center gap-2.5">
+        ${photoEl}
+        <div class="flex-1 min-w-0">
+          <div class="text-[.78rem] font-semibold truncate">${safeName.split(' ').slice(0, 2).join(' ')}${badge}</div>
+          <div class="bg-white/10 rounded h-1.5 mt-1 overflow-hidden">
+            <div class="h-full rounded transition-all duration-500" style="width:${r.pct}%;background:${barColor}"></div>
+          </div>
+          <div class="text-[.6rem] text-white/40 mt-0.5">${r.completed}/${TOTAL} ${trailCompleted}${r.inProgress > 0 ? ` · ${r.inProgress} ${trailInProgress}` : ''}</div>
+        </div>
+        <div class="text-base font-extrabold" style="color:${barColor}">${r.pct}%</div>
+      </div>`;
+    }).join('');
+    }
+
+    // Initial render with server-side KPI
+    try {
+      const { data: health } = await sb.rpc('exec_portfolio_health');
+      const trailKpi = (Array.isArray(health) ? health : []).find((h: any) => h.metric_key === 'certification_trail');
+      const serverAvg = trailKpi?.current || 0;
+      const kpiColor = serverAvg >= 70 ? '#70AD47' : serverAvg >= 30 ? '#FF610F' : '#D5340B';
+      const kpiEl = document.getElementById('trailKPI');
+      if (kpiEl) {
+        kpiEl.innerHTML = `<div style="font-size:2rem;font-weight:800;color:${kpiColor}">${serverAvg}%</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.5)">${trailRankingAvg}</div>`;
+      }
+    } catch {}
+    renderRanking(null);
+  }
+
+  bootTrail();
+</script>

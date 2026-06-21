@@ -41,6 +41,10 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // (ADR-0050 #101, p73). LGPD-aligned member self-management. Set only via
   // set_my_gamification_visibility() RPC; not derivable from any other state.
   ['members.gamification_opt_out', 'LGPD opt-out flag for leaderboard visibility (ADR-0050); no derivation source'],
+  // Pure user consent — opt-IN flag (DEFAULT false) authorizing the member's state (UF) to appear
+  // in the public aggregated heatmap (Cycle4 PD-MAP-2). Set only via update_my_profile() from the
+  // profile consent checkbox; revocable (LGPD Art. 18). Not derivable from any other state.
+  ['members.allow_state_in_public_map', 'LGPD opt-in consent for public state heatmap (Cycle4 PD-MAP-2); user-set via profile, no derivation source'],
   // Pure user preference — opt-in/out flag for weekly card digest (issue #98, p39).
   // Set only via /settings/notifications toggle; not derivable from any other state.
   ['members.notify_weekly_digest', 'User opt-out flag for weekly card digest; no derivation source'],
