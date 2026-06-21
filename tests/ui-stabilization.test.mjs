@@ -1146,6 +1146,22 @@ test('BoardEngine hooks use correct Supabase RPC patterns (no .catch on rpc)', (
   assert.equal(useFilters.includes('curationStatus'), true);
 });
 
+test('useBoardPermissions honors engagement-derived write_board for initiative/tribe-linked boards (#819/#820)', () => {
+  const usePerms = read('src/hooks/useBoardPermissions.ts');
+  // Must consult the V4 capability model (canFor), not just operational_role tier.
+  assert.equal(usePerms.includes('canFor'), true, 'must import/use canFor');
+  assert.equal(/canFor\(\s*'write_board'\s*,\s*\{\s*type:\s*'initiative'/.test(usePerms), true,
+    'must check write_board on the board initiative scope');
+  assert.equal(/canFor\(\s*'write_board'\s*,\s*\{\s*type:\s*'tribe'/.test(usePerms), true,
+    'must check write_board on the board tribe scope');
+  // Folded into canManageBoard so canCreate/canEditAny/canMove inherit it.
+  assert.equal(/canManageBoard\s*=[^;]*canWriteScopedBoard/.test(usePerms), true,
+    'canWriteScopedBoard must feed canManageBoard');
+  // Suppressed under simulation so the simulated tier stays authoritative (W144).
+  assert.equal(/canWriteScopedBoard\s*=\s*!sim\.active/.test(usePerms), true,
+    'scoped write_board must be gated behind !sim.active');
+});
+
 test('BoardEngine orchestrator integrates all sub-components and DnD', () => {
   const engine = read('src/components/islands/BoardEngine.tsx');
   assert.equal(engine.includes('import BoardHeader'), true);
