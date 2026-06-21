@@ -570,6 +570,7 @@ const esLATAM: Record<string, string> = {
   'profile.shareAddressHint': '(no recomendado — por defecto: privado)',
   'profile.shareBirthDateLabel': 'Compartir mi fecha de cumpleaños (dd/mm) para felicitaciones institucionales',
   'profile.statePlaceholder': 'Selecciona tu estado',
+  'profile.countryPlaceholder': 'Selecciona tu país',
   'profile.allowStateMapLabel': 'Autorizo la inclusión de mi estado de residencia en mapas de distribución geográfica exhibidos públicamente en la plataforma Núcleo IA & GP. El dato aparecerá solo de forma agregada (nunca individual). Puedes revocar en cualquier momento.',
   'profile.privacyDisclaimer': 'Dirección y teléfono se usan siempre en el Acuerdo de Voluntariado. Estas opciones controlan solo si otros miembros pueden verlos en tu perfil público.',
   'profile.readPrivacyPolicy': 'Leer Política de Privacidad',
