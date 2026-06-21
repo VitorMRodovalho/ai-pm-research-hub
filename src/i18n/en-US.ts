@@ -755,6 +755,7 @@ const enUS: Record<string, string> = {
   'country.FR': 'France',
   'country.DE': 'Germany',
   'country.XX': 'Others',
+  'country.ZZ': 'International',
 
   // ── Conversion router (R7 — two doors: protagonist · partner) ──
   'router.label': 'TAKE PART',

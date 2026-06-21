@@ -755,6 +755,7 @@ const ptBR: Record<string, string> = {
   'country.FR': 'França',
   'country.DE': 'Alemanha',
   'country.XX': 'Outros',
+  'country.ZZ': 'Internacional',
 
   // ── Roteador de conversão (R7 — duas portas: protagonista · parceiro) ──
   'router.label': 'FAÇA PARTE',

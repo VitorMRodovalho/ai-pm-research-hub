@@ -13,6 +13,14 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+// Inscrição oficial de voluntário = via VEP (plataforma de voluntários do PMI). Dois cadastros
+// DISTINTOS: pesquisador (Pesquisador Nível 4) e líder (Líder de Iniciativa). Mesmas vagas do
+// rodapé (ResourcesSection.astro) — manter sincronizado se a vaga mudar.
+const VEP = {
+  researcher: 'https://volunteer.pmi.org/opportunities/64967',
+  leader: 'https://volunteer.pmi.org/opportunities/64966',
+};
+
 type Vertical = {
   id: string;
   title: string;
@@ -30,14 +38,16 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubLine1: 'Núcleo',
     hubLine2: '+ IA',
     hubCaption: 'a comunidade',
-    ladder: 'Trilha comum: PMIxAI Champion → Grupo de Estudos CPMAI → PMI-CPMAI',
+    ladder: 'O fio comum: IA aplicada à sua área de atuação.',
     statusForming: 'Em formação',
     statusOpen: 'Aberta',
     statusPaused: 'Pausada',
     anchorPrefix: 'Âncora',
     partnerPrefix: 'Parceria',
     ctaProtagonist: 'Seja protagonista',
-    ctaSub: 'Entre na coorte fundadora — a liderança vai te chamar para confirmar.',
+    ctaResearcher: 'Candidatar-se como pesquisador',
+    ctaLeader: 'Candidatar-se como líder',
+    ctaSub: 'A inscrição é feita na plataforma de voluntários do PMI (VEP) — pesquisador e líder são cadastros distintos.',
     hubAria: 'Núcleo + IA, a comunidade no centro das verticais',
     radialAria: 'Diagrama radial: Núcleo + IA no centro, cada raio é uma vertical de comunidade',
     empty: 'As verticais do Ciclo 4 estão sendo formadas. Em breve aqui.',
@@ -58,14 +68,16 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubLine1: 'Núcleo',
     hubLine2: '+ AI',
     hubCaption: 'the community',
-    ladder: 'Common track: PMIxAI Champion → CPMAI Study Group → PMI-CPMAI',
+    ladder: 'The common thread: AI applied to your field of practice.',
     statusForming: 'Forming',
     statusOpen: 'Open',
     statusPaused: 'Paused',
     anchorPrefix: 'Anchor',
     partnerPrefix: 'Partner',
     ctaProtagonist: 'Be a protagonist',
-    ctaSub: 'Join the founding cohort — the leadership will reach out to confirm.',
+    ctaResearcher: 'Apply as researcher',
+    ctaLeader: 'Apply as leader',
+    ctaSub: 'Enrollment is on the PMI volunteer platform (VEP) — researcher and leader are distinct registrations.',
     hubAria: 'Núcleo + AI, the community at the center of the verticals',
     radialAria: 'Radial diagram: Núcleo + AI at the center, each spoke is a community vertical',
     empty: 'The Cycle 4 verticals are being formed. Coming soon.',
@@ -85,14 +97,16 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubLine1: 'Núcleo',
     hubLine2: '+ IA',
     hubCaption: 'la comunidad',
-    ladder: 'Ruta común: PMIxAI Champion → Grupo de Estudio CPMAI → PMI-CPMAI',
+    ladder: 'El hilo común: IA aplicada a tu área de actuación.',
     statusForming: 'En formación',
     statusOpen: 'Abierta',
     statusPaused: 'Pausada',
     anchorPrefix: 'Ancla',
     partnerPrefix: 'Alianza',
     ctaProtagonist: 'Sé protagonista',
-    ctaSub: 'Únete a la cohorte fundadora — el liderazgo te contactará para confirmar.',
+    ctaResearcher: 'Postularse como investigador',
+    ctaLeader: 'Postularse como líder',
+    ctaSub: 'La inscripción se hace en la plataforma de voluntarios del PMI (VEP) — investigador y líder son registros distintos.',
     hubAria: 'Núcleo + IA, la comunidad en el centro de las verticales',
     radialAria: 'Diagrama radial: Núcleo + IA en el centro, cada radio es una vertical de comunidad',
     empty: 'Las verticales del Ciclo 4 se están formando. Pronto aquí.',
@@ -325,13 +339,12 @@ function FounderForm({ vertical, l, lp, onClose }: { vertical: Vertical; l: Reco
   );
 }
 
-function VerticalCard({ v, l, lp, lang }: { v: Vertical; l: Record<string, string>; lp: string; lang: Lang }) {
-  const [open, setOpen] = useState(false);
+function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; lang: Lang }) {
   const isForming = v.vertical_status === 'forming';
   const sStyle = STATUS_STYLE[v.vertical_status || 'forming'] || STATUS_STYLE.forming;
 
   return (
-    <div className={`relative p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] w-full ${open ? 'sm:w-[460px]' : 'sm:w-[340px]'}`}
+    <div className="relative p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] w-full sm:w-[340px]"
       style={{ borderTop: '4px solid #FF610F' }}>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className={`text-[.62rem] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border ${sStyle}`}>
@@ -343,24 +356,33 @@ function VerticalCard({ v, l, lp, lang }: { v: Vertical; l: Record<string, strin
       {/* PD-CERT-4 + GAP-B2.C: description by CONTEXT of practice, authored credential-free in all 3
           langs (VERTICAL_DESC). NEVER renders the DB `description` (it embeds the PMI credential). */}
       {verticalDesc(lang, v.title) && <p className="text-sm text-[var(--text-secondary)] mb-2">{verticalDesc(lang, v.title)}</p>}
-      {v.partner_org && (
-        <p className="text-xs text-[var(--text-secondary)] mb-1">{l.partnerPrefix}: <span className="font-medium">{v.partner_org}</span></p>
+      {/* partner_org NOT rendered: claiming "Parceria: Global Construction Ambassadors" without a
+          signed agreement is an unsubstantiated partnership claim (same paper-trail rule as
+          co-branding). Members may individually be ambassadors, but the org has no formal accord.
+          Re-enable per-vertical only when backed by a signed instrument. DB scrub = follow-up. */}
+      {/* CTA → VEP (inscrição oficial). Dois cadastros distintos: pesquisador + líder. Substitui o
+          antigo formulário de lead (FounderForm dead-code abaixo — limpeza trivial pendente). */}
+      {isForming && (
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            <a href={VEP.researcher} target="_blank" rel="noopener"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white no-underline cursor-pointer bg-[var(--color-orange-deep)]">
+              {l.ctaResearcher} →
+            </a>
+            <a href={VEP.leader} target="_blank" rel="noopener"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-teal no-underline cursor-pointer border border-teal/40 hover:bg-teal/5 transition-colors">
+              {l.ctaLeader} →
+            </a>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">{l.ctaSub}</p>
+        </div>
       )}
-      {isForming && !open && (
-        <button type="button" onClick={() => setOpen(true)}
-          className="mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-[var(--color-orange-deep)]">
-          {l.ctaProtagonist} →
-        </button>
-      )}
-      {isForming && !open && <p className="text-xs text-[var(--text-secondary)] mt-1.5">{l.ctaSub}</p>}
-      {isForming && open && <FounderForm vertical={v} l={l} lp={lp} onClose={() => setOpen(false)} />}
     </div>
   );
 }
 
 export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
   const l = LABELS[lang] || LABELS['pt-BR'];
-  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [verticals, setVerticals] = useState<Vertical[] | null>(null);
 
   useEffect(() => {
@@ -428,7 +450,7 @@ export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
 
           {/* actionable layer: the cards with the protagonista CTA */}
           <div className="flex flex-wrap justify-center gap-5">
-            {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lp={lp} lang={lang} />)}
+            {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lang={lang} />)}
           </div>
         </>
       )}
