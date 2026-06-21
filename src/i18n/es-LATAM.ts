@@ -1381,7 +1381,7 @@ const esLATAM: Record<string, string> = {
   'kpi.manual': 'Manual',
 
   // ── Team ──
-  'team.label': '44 Colaboradores · 5 Capítulos · 1 Misión',
+  'team.label': 'Quienes lo hacen',
   'team.title': 'Nuestro Equipo',
   'team.subtitle': 'Investigadores, líderes y gestores unidos en la intersección IA + GP.',
   'team.leaders': 'Líderes de Línea & Gestión',

@@ -1381,7 +1381,7 @@ const enUS: Record<string, string> = {
   'kpi.manual': 'Manual',
 
   // ── Team ──
-  'team.label': '44 Collaborators · 5 Chapters · 1 Mission',
+  'team.label': 'Who makes it happen',
   'team.title': 'Our Team',
   'team.subtitle': 'Researchers, leaders, and managers united at the intersection of AI + PM.',
   'team.leaders': 'Stream Leaders & Management',

@@ -1385,7 +1385,7 @@ const ptBR: Record<string, string> = {
   'kpi.manual': 'Manual',
 
   // ── Team ──
-  'team.label': '44 Colaboradores · 5 Capítulos · 1 Missão',
+  'team.label': 'Quem faz acontecer',
   'team.title': 'Nosso Time',
   'team.subtitle': 'Pesquisadores, líderes e gestores unidos pela interseção IA + GP.',
   'team.leaders': 'Líderes de Tribo & Gestão',
