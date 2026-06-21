@@ -4,8 +4,7 @@ import Toast from '../components/ui/Toast.astro';
 import OnboardingCockpitNudge from '../components/onboarding/OnboardingCockpitNudge';
 import HomepageHero from '../components/sections/HomepageHero.astro';
 import { getHomeSchedule } from '../lib/schedule';
-import QuadrantsSection from '../components/sections/QuadrantsSection.astro';
-import VerticalsSection from '../components/sections/VerticalsSection.tsx';
+import ModelSection from '../components/sections/ModelSection.astro';
 import PartnersSection from '../components/sections/PartnersSection.tsx';
 import TribesSection from '../components/sections/TribesSection.astro';
 import KpiSection from '../components/sections/KpiSection.astro';
@@ -31,8 +30,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
   <HomepageHero lang={lang} />
   <ChaptersSection lang={lang} />
   <PlatformStatsSection lang={lang} />
-  <QuadrantsSection lang={lang} />
-  <VerticalsSection client:load lang={lang} />
+  <ModelSection lang={lang} />
   <PartnersSection client:load lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <RulesSection lang={lang} />

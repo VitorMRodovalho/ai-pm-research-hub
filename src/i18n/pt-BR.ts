@@ -743,6 +743,13 @@ const ptBR: Record<string, string> = {
   'quadrants.q4.sub': 'Ética, Governança e Sociedade',
   'quadrants.unavailable': 'Quadrantes temporariamente indisponíveis.',
 
+  // ── O Modelo (R3 — fusão quadrantes × verticais) ──
+  'model.label': 'O MODELO',
+  'model.title': 'O que pesquisamos e para quais comunidades',
+  'model.subtitle': 'Dois eixos que se cruzam: quatro quadrantes de conhecimento (o quê) e verticais por credencial PMI (para quem). A IA atravessa os dois.',
+  'model.axisWhat': 'O quê · domínios de conhecimento',
+  'model.axisWho': 'Para quem · comunidades por credencial PMI',
+
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',
   'tribes.title': 'Escolha sua Tribo',

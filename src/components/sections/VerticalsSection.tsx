@@ -1,12 +1,15 @@
 /**
- * VerticalsSection — Cycle 4 landing bloco 3 (hub-and-spoke) + bloco 6 (CTA "Seja protagonista").
+ * VerticalsSection — Cycle 4 landing, the "para quem" axis of the fused "O Modelo" section (R3).
  *
- * Reads community_vertical initiatives LIVE via get_public_verticals() (B1, anon-safe). The
- * hub-and-spoke diagram IS the pitch (brief §5a): center = Núcleo + IA (the seam), spokes =
- * the verticals, the Champion → CPMAI ladder is the common spine. Nothing is hardcoded — the
- * diagram renders whatever verticals exist (1 today: Construção, em formação). Forming verticals
- * surface a founder CTA → capture_visitor_lead(target_vertical) (brief §4). No rebrand: reuses
- * existing palette tokens; the orange accent (already in the system) marks the protagonista CTA.
+ * Renders the §5a radial hub-and-spoke as THE pitch: center = Núcleo + IA (the seam),
+ * spokes = the verticals (each spoke a community/credential), the Champion → CPMAI ladder is
+ * the common spine. Reads community_vertical initiatives LIVE via get_public_verticals() (B1,
+ * anon-safe) — nothing is hardcoded; the diagram renders whatever verticals exist. Forming
+ * verticals surface a founder CTA → capture_visitor_lead(target_vertical) (brief §4).
+ *
+ * R3 change: this component no longer owns a <section>/header (the parent ModelSection.astro
+ * does, fusing it with the quadrants axis). It exposes only the radial + ladder + cards block.
+ * No rebrand: reuses existing palette tokens; the orange accent marks the protagonista CTA.
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 
@@ -24,10 +27,6 @@ type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 
 const LABELS: Record<Lang, Record<string, string>> = {
   'pt-BR': {
-    label: 'O MODELO',
-    title: 'Verticais de comunidade por credencial PMI',
-    subtitle:
-      'Cada vertical reúne pesquisadores em torno de uma credencial PMI — pesquisa, desenvolvimento e networking sobre IA aplicada à gestão de projetos.',
     hubLine1: 'Núcleo',
     hubLine2: '+ IA',
     hubCaption: 'a comunidade',
@@ -39,7 +38,8 @@ const LABELS: Record<Lang, Record<string, string>> = {
     partnerPrefix: 'Parceria',
     ctaProtagonist: 'Seja protagonista',
     ctaSub: 'Entre na coorte fundadora — a liderança vai te chamar para confirmar.',
-    hubAria: 'Núcleo + IA, a comunidade entre as verticais',
+    hubAria: 'Núcleo + IA, a comunidade no centro das verticais',
+    radialAria: 'Diagrama radial: Núcleo + IA no centro, cada raio é uma vertical de comunidade',
     empty: 'As verticais do Ciclo 4 estão sendo formadas. Em breve aqui.',
     formName: 'Nome',
     formEmail: 'E-mail',
@@ -55,10 +55,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     cancel: 'Cancelar',
   },
   'en-US': {
-    label: 'THE MODEL',
-    title: 'Community verticals by PMI credential',
-    subtitle:
-      'Each vertical gathers researchers around a PMI credential — research, development and networking on AI applied to project management.',
     hubLine1: 'Núcleo',
     hubLine2: '+ AI',
     hubCaption: 'the community',
@@ -70,7 +66,8 @@ const LABELS: Record<Lang, Record<string, string>> = {
     partnerPrefix: 'Partner',
     ctaProtagonist: 'Be a protagonist',
     ctaSub: 'Join the founding cohort — the leadership will reach out to confirm.',
-    hubAria: 'Núcleo + AI, the community across the verticals',
+    hubAria: 'Núcleo + AI, the community at the center of the verticals',
+    radialAria: 'Radial diagram: Núcleo + AI at the center, each spoke is a community vertical',
     empty: 'The Cycle 4 verticals are being formed. Coming soon.',
     formName: 'Name',
     formEmail: 'Email',
@@ -85,10 +82,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     cancel: 'Cancel',
   },
   'es-LATAM': {
-    label: 'EL MODELO',
-    title: 'Verticales de comunidad por credencial PMI',
-    subtitle:
-      'Cada vertical reúne investigadores en torno a una credencial PMI — investigación, desarrollo y networking sobre IA aplicada a la gestión de proyectos.',
     hubLine1: 'Núcleo',
     hubLine2: '+ IA',
     hubCaption: 'la comunidad',
@@ -100,7 +93,8 @@ const LABELS: Record<Lang, Record<string, string>> = {
     partnerPrefix: 'Alianza',
     ctaProtagonist: 'Sé protagonista',
     ctaSub: 'Únete a la cohorte fundadora — el liderazgo te contactará para confirmar.',
-    hubAria: 'Núcleo + IA, la comunidad entre las verticales',
+    hubAria: 'Núcleo + IA, la comunidad en el centro de las verticales',
+    radialAria: 'Diagrama radial: Núcleo + IA en el centro, cada radio es una vertical de comunidad',
     empty: 'Las verticales del Ciclo 4 se están formando. Pronto aquí.',
     formName: 'Nombre',
     formEmail: 'Correo',
@@ -126,6 +120,81 @@ function statusLabel(l: Record<string, string>, s: string | null): string {
   if (s === 'open') return l.statusOpen;
   if (s === 'paused') return l.statusPaused;
   return l.statusForming;
+}
+
+/**
+ * Radial hub-and-spoke (§5a) — center = Núcleo + IA, spokes radiate to live vertical nodes.
+ * Read-only pitch visual; the actionable layer (CTA/founder form) is the cards below. Nodes are
+ * placed by trig around a circle (first node at top, -90°); SVG lines draw the spokes behind.
+ * Desktop only — on mobile the diagram collapses to the center node + stacked cards (the spokes
+ * read poorly on narrow screens). 1 vertical today renders as center + 1 node (honest, grows).
+ */
+function Radial({ verticals, l }: { verticals: Vertical[]; l: Record<string, string> }) {
+  const n = verticals.length;
+  const cx = 50;
+  const cy = 50;
+  const R = 34; // node-ring radius in viewBox units
+  const nodes = verticals.map((v, i) => {
+    const ang = ((-90 + i * (360 / Math.max(n, 1))) * Math.PI) / 180;
+    return { v, x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
+  });
+
+  return (
+    <div
+      className="relative mx-auto mb-2 hidden sm:block w-full max-w-[460px] aspect-square"
+      role="img"
+      aria-label={l.radialAria}
+    >
+      {/* spokes */}
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible" aria-hidden="true">
+        {nodes.map((nd, i) => (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={nd.x}
+            y2={nd.y}
+            stroke="var(--border-default)"
+            strokeWidth={0.5}
+          />
+        ))}
+      </svg>
+
+      {/* center — the seam */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full flex flex-col items-center justify-center text-center shadow-md z-10"
+        style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}
+      >
+        <span className="text-white font-extrabold text-lg leading-none">{l.hubLine1}</span>
+        <span className="text-white font-extrabold text-xl leading-none">{l.hubLine2}</span>
+        <span className="text-white/80 text-[.55rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
+      </div>
+
+      {/* spoke nodes — each a community/credential */}
+      {nodes.map((nd, i) => (
+        <div
+          key={i}
+          className="absolute -translate-x-1/2 -translate-y-1/2 z-20 w-[124px]"
+          style={{ left: `${nd.x}%`, top: `${nd.y}%` }}
+        >
+          <div
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] px-3 py-2 text-center shadow-sm"
+            style={{ borderTop: '3px solid #FF610F' }}
+          >
+            <div className="font-bold text-[.8rem] leading-tight text-[var(--text-primary)]">{nd.v.title}</div>
+            {nd.v.anchor_credential && (
+              <div className="text-[.62rem] text-[var(--text-secondary)] mt-0.5">{nd.v.anchor_credential}</div>
+            )}
+            <span
+              className={`inline-block mt-1 text-[.55rem] font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full border ${STATUS_STYLE[nd.v.vertical_status || 'forming'] || STATUS_STYLE.forming}`}
+            >
+              {statusLabel(l, nd.v.vertical_status)}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function FounderForm({ vertical, l, lp, onClose }: { vertical: Vertical; l: Record<string, string>; lp: string; onClose: () => void }) {
@@ -283,41 +352,53 @@ export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
   }, []);
 
   return (
-    <section className="py-16 px-6 bg-[var(--surface-base)]" id="verticals">
-      <div className="max-w-[1100px] mx-auto">
-        <div className="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">{l.label}</div>
-        <h2 className="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">{l.title}</h2>
-        <p className="text-base text-[var(--text-secondary)] max-w-[760px] mb-10">{l.subtitle}</p>
+    <div className="mt-4">
+      {/* Para quem — the verticals. Radial hub-and-spoke is the pitch; cards carry the CTA. */}
+      {verticals === null && (
+        <div className="flex flex-wrap justify-center gap-5" aria-busy="true">
+          <div className="w-full sm:w-[340px] h-40 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] animate-pulse" />
+        </div>
+      )}
 
-        {/* Hub — the seam. The spokes (vertical cards) sit below; the ladder is the common spine. */}
-        <div className="flex flex-col items-center mb-8">
+      {verticals !== null && verticals.length === 0 && (
+        <div className="flex flex-col items-center">
+          {/* center node alone — the seam still reads even with no verticals yet */}
           <div role="img" aria-label={l.hubAria}
-            className="relative w-36 h-36 rounded-full flex flex-col items-center justify-center text-center shadow-md"
+            className="relative w-32 h-32 rounded-full flex flex-col items-center justify-center text-center shadow-md mb-4"
             style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}>
             <span className="text-white font-extrabold text-lg leading-none">{l.hubLine1}</span>
             <span className="text-white font-extrabold text-xl leading-none">{l.hubLine2}</span>
-            <span className="text-white/80 text-[.6rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
+            <span className="text-white/80 text-[.55rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
           </div>
-          <div className="w-px h-8 bg-[var(--border-default)]" aria-hidden="true" />
-          <p className="text-xs text-[var(--text-secondary)] text-center max-w-[560px]">{l.ladder}</p>
-        </div>
-
-        {verticals === null && (
-          <div className="flex flex-wrap justify-center gap-5" aria-busy="true">
-            <div className="w-full sm:w-[340px] h-40 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] animate-pulse" />
-          </div>
-        )}
-        {verticals !== null && verticals.length === 0 && (
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 text-sm text-[var(--text-secondary)] text-center">
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 text-sm text-[var(--text-secondary)] text-center max-w-[560px]">
             {l.empty}
           </div>
-        )}
-        {verticals !== null && verticals.length > 0 && (
+        </div>
+      )}
+
+      {verticals !== null && verticals.length > 0 && (
+        <>
+          {/* desktop: radial diagram. mobile: center node only (cards stack below) */}
+          <Radial verticals={verticals} l={l} />
+          <div className="flex sm:hidden flex-col items-center mb-4">
+            <div role="img" aria-label={l.hubAria}
+              className="relative w-28 h-28 rounded-full flex flex-col items-center justify-center text-center shadow-md"
+              style={{ background: 'radial-gradient(circle at 50% 35%, #00799E, #074a63)' }}>
+              <span className="text-white font-extrabold text-base leading-none">{l.hubLine1}</span>
+              <span className="text-white font-extrabold text-lg leading-none">{l.hubLine2}</span>
+              <span className="text-white/80 text-[.5rem] uppercase tracking-widest mt-1">{l.hubCaption}</span>
+            </div>
+          </div>
+
+          {/* the common spine — the ladder every vertical shares */}
+          <p className="text-xs text-[var(--text-secondary)] text-center max-w-[620px] mx-auto mb-8">{l.ladder}</p>
+
+          {/* actionable layer: the cards with the protagonista CTA */}
           <div className="flex flex-wrap justify-center gap-5">
             {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lp={lp} lang={lang} />)}
           </div>
-        )}
-      </div>
-    </section>
+        </>
+      )}
+    </div>
   );
 }
