@@ -13,6 +13,7 @@ import RulesSection from '../components/sections/RulesSection.astro';
 import LadderSection from '../components/sections/LadderSection.astro';
 import TrailRankingSection from '../components/sections/TrailRankingSection.astro';
 import ChaptersSection from '../components/sections/ChaptersSection.astro';
+import RouterSection from '../components/sections/RouterSection.astro';
 import TeamSection from '../components/sections/TeamSection.astro';
 import ResourcesSection from '../components/sections/ResourcesSection.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
@@ -32,6 +33,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
   <LadderSection lang={lang} />
   <PlatformStatsSection lang={lang} />
   <ChaptersSection lang={lang} />
+  <RouterSection lang={lang} />
   <PartnersSection client:load lang={lang} />
   <WeeklyScheduleSection lang={lang} />
   <TeamSection lang={lang} />
