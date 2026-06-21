@@ -743,6 +743,13 @@ const esLATAM: Record<string, string> = {
   'quadrants.q4.sub': 'Ética, Gobernanza y Sociedad',
   'quadrants.unavailable': 'Cuadrantes temporalmente no disponibles.',
 
+  // ── El Modelo (R3 — fusión cuadrantes × verticales) ──
+  'model.label': 'EL MODELO',
+  'model.title': 'Qué investigamos y para qué comunidades',
+  'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por credencial PMI (para quién). La IA atraviesa los dos.',
+  'model.axisWhat': 'El qué · dominios de conocimiento',
+  'model.axisWho': 'Para quién · comunidades por credencial PMI',
+
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',
   'tribes.title': 'Elige tu Línea de Investigación',

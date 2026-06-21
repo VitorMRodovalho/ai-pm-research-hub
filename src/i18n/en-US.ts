@@ -743,6 +743,13 @@ const enUS: Record<string, string> = {
   'quadrants.q4.sub': 'Ethics, Governance, and Society',
   'quadrants.unavailable': 'Quadrants temporarily unavailable.',
 
+  // ── The Model (R3 — quadrants × verticals fusion) ──
+  'model.label': 'THE MODEL',
+  'model.title': 'What we research and for which communities',
+  'model.subtitle': 'Two axes that intersect: four knowledge quadrants (the what) and verticals by PMI credential (for whom). AI runs across both.',
+  'model.axisWhat': 'The what · knowledge domains',
+  'model.axisWho': 'For whom · communities by PMI credential',
+
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Leaders',
   'tribes.title': 'Choose Your Research Stream',

@@ -1,0 +1,69 @@
+---
+/**
+ * ModelSection — Cycle 4 landing "O Modelo" (R3): the fused quadrants × verticals block.
+ *
+ * Two orthogonal axes presented together (target doc §3/§4): the quadrants are the "o quê"
+ * (knowledge domains, server-rendered from i18n) and the verticals are the "para quem"
+ * (communities by PMI credential, a live React island with the §5a radial hub-and-spoke).
+ * Replaces the former separate QuadrantsSection + VerticalsSection.
+ *
+ * Anchors preserved: section id="verticals" (the hero CTA target #verticals) and an inner
+ * #quadrants anchor (nav config still links there). No rebrand — reuses palette tokens.
+ */
+import { QUADRANTS } from '../../data/quadrants';
+import { t, type Lang } from '../../i18n/utils';
+import VerticalsSection from './VerticalsSection.tsx';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+
+const COLORS: Record<string, string> = {
+  teal: '#00799E', orange: '#FF610F', purple: '#4F17A8', emerald: '#10B981',
+};
+
+const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
+---
+
+<section class="py-16 px-6 bg-[var(--surface-base)]" id="verticals">
+  <div class="max-w-[1100px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      {t('model.label', lang)}
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      {t('model.title', lang)}
+    </h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[760px] mb-10">
+      {t('model.subtitle', lang)}
+    </p>
+
+    {/* ── Eixo 1: o quê (quadrantes de conhecimento) ── */}
+    <div id="quadrants" class="scroll-mt-24 text-[.7rem] font-bold tracking-[.12em] uppercase text-teal mb-4">
+      {t('model.axisWhat', lang)}
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-14">
+      {safeQuadrants.map((q) => (
+        <div class="relative p-7 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)]
+                    hover:-translate-y-px hover:shadow-md transition-all duration-200"
+             style={`border-left: 4px solid ${COLORS[q.color]}`}>
+          <div class="text-[.65rem] font-extrabold tracking-[.2em] uppercase mb-1"
+               style={`color: ${COLORS[q.color]}`}>
+            {t(q.labelKey, lang)}
+          </div>
+          <div class="font-bold text-lg mb-1">{t(q.titleKey, lang)}</div>
+          <div class="text-[.85rem] text-[var(--text-secondary)]">{t(q.subtitleKey, lang)}</div>
+        </div>
+      ))}
+      {!safeQuadrants.length && (
+        <div class="col-span-full bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] p-6 text-sm text-[var(--text-secondary)]">
+          {t('quadrants.unavailable', lang)}
+        </div>
+      )}
+    </div>
+
+    {/* ── Eixo 2: para quem (verticais por credencial PMI) — radial ao vivo + CTA ── */}
+    <div class="text-[.7rem] font-bold tracking-[.12em] uppercase text-orange mb-4">
+      {t('model.axisWho', lang)}
+    </div>
+    <VerticalsSection client:load lang={lang} />
+  </div>
+</section>
