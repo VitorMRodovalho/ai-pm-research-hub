@@ -570,6 +570,7 @@ const ptBR: Record<string, string> = {
   'profile.shareAddressHint': '(não recomendado — padrão: privado)',
   'profile.shareBirthDateLabel': 'Compartilhar minha data de aniversário (dd/mm) para felicitações institucionais',
   'profile.statePlaceholder': 'Selecione o estado',
+  'profile.countryPlaceholder': 'Selecione o país',
   'profile.allowStateMapLabel': 'Autorizo a inclusão do meu estado de residência em mapas de distribuição geográfica exibidos publicamente na plataforma Núcleo IA & GP. O dado aparecerá apenas de forma agregada (nunca individual). Você pode revogar a qualquer momento.',
   'profile.privacyDisclaimer': 'Endereço e telefone são sempre usados no Termo de Voluntariado. Essas opções controlam apenas se outros membros podem ver no seu perfil público.',
   'profile.readPrivacyPolicy': 'Ler Política de Privacidade',

@@ -570,6 +570,7 @@ const enUS: Record<string, string> = {
   'profile.shareAddressHint': '(not recommended — default: private)',
   'profile.shareBirthDateLabel': 'Share my birthday (dd/mm) for institutional greetings',
   'profile.statePlaceholder': 'Select your state',
+  'profile.countryPlaceholder': 'Select your country',
   'profile.allowStateMapLabel': 'I authorize including my state of residence in geographic distribution maps shown publicly on the Núcleo IA & GP platform. The data appears only in aggregate form (never individually). You may revoke this at any time.',
   'profile.privacyDisclaimer': 'Address and phone are always used in the Volunteer Agreement. These options control only whether other members can see them on your public profile.',
   'profile.readPrivacyPolicy': 'Read Privacy Policy',
