@@ -683,6 +683,8 @@ const ptBR: Record<string, string> = {
   'schedule.tribeMeetings': 'Reuniões de Tribo',
   'schedule.yourTribe': 'sua tribo',
   'schedule.noMeetings': 'Nenhuma reunião agendada.',
+  'schedule.publicTitle': 'Onde o protagonismo acontece',
+  'schedule.publicSubtitle': 'As próximas Reuniões Gerais são abertas. Cada uma tem 90 minutos de pauta com blocos para protagonistas apresentarem casos, demos e ideias — ao vivo, com o núcleo todo.',
 
   // ── Agenda ──
   'agenda.unit': 'min',
