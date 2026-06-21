@@ -740,6 +740,7 @@ const ptBR: Record<string, string> = {
   'chapters.mapLegendActive': 'Capítulo ativo',
   'chapters.mapLegendDensity': 'Densidade de membros por estado',
   'chapters.mapDensityNote': 'Densidade agregada de membros que autorizaram a exibição do seu estado. Estados com menos de 5 membros são omitidos (proteção à privacidade · LGPD).',
+  'chapters.intlBeyond': 'membros além do Brasil',
   'chapters.activeLabel': 'parceiros ativos',
   'chapters.onboardingLabel': 'em integração',
   'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
