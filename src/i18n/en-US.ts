@@ -13,7 +13,7 @@ const enUS: Record<string, string> = {
   'meetings.meta.description': 'Searchable archive of all Hub meeting minutes. Full-text search, filters by tribe and type, cross-tribe view.',
 
   // ── Nav ──
-  'nav.brand': 'AI & PM Research Hub — Cycle 3',
+  'nav.brand': 'AI & PM Research Hub — Cycle 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrants',
   'nav.verticals': 'Verticals',
