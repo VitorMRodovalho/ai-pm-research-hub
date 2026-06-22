@@ -6649,6 +6649,7 @@ const ptBR: Record<string, string> = {
   'comp.agendaViva.homeCta': 'Reserve seu bloco',
   // Reserva (logado)
   'comp.agendaViva.reserveHeading': 'Reservar um bloco',
+  'comp.agendaViva.manageHeading': 'Seu bloco',
   'comp.agendaViva.reserveCta': 'Reservar bloco',
   'comp.agendaViva.fEvent': 'Reunião',
   'comp.agendaViva.fFormat': 'Formato',

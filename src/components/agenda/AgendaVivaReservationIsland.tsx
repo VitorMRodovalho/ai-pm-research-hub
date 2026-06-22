@@ -186,7 +186,15 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
     finally { setBusy(null); }
   };
 
-  if (loading || !allowed) return null; // anon/insufficient → public island already shows a login hint
+  // #813: the edit/cancel UI for a block the user already owns must NOT depend on
+  // the (async, fail-closed) capability cache. `is_mine` is server-derived from
+  // auth.uid() in get_geral_agenda_viva, so an authenticated owner always sees it
+  // even when canFor('reserve_agenda_block') is still false (cache not yet loaded
+  // or nav:member not re-fired). Render the island whenever the caller owns a block
+  // OR holds the reserve capability; the NEW-reservation form stays gated on `allowed`.
+  const ownsAnyBlock = events.some((ev) => ev.blocks.some((b) => b.is_mine));
+  if (loading) return null;
+  if (!allowed && !ownsAnyBlock) return null; // anon/insufficient → public island already shows a login hint
 
   const inputCls = 'mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm';
 
@@ -233,7 +241,10 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
   return (
     <div className="mb-8 space-y-4">
       <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-        <CalendarPlus size={18} className="text-orange" /> {t('comp.agendaViva.reserveHeading', 'Reservar um bloco')}
+        <CalendarPlus size={18} className="text-orange" />{' '}
+        {allowed
+          ? t('comp.agendaViva.reserveHeading', 'Reservar um bloco')
+          : t('comp.agendaViva.manageHeading', 'Seu bloco')}
       </h2>
       {events.map((ev) => {
         const myBlock = ev.blocks.find((b) => b.is_mine);
@@ -286,7 +297,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
                   </div>
                 )}
               </div>
-            ) : draft ? (
+            ) : allowed && draft ? (
               <>
                 {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug))}
                 <div className="mt-3 flex justify-end">
