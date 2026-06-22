@@ -172,10 +172,43 @@ Ex: para `manage_member`, buscar `prosrc ILIKE '%volunteer%'` ou `%agreement%` p
 
 ---
 
+## Eixo ortogonal: visibilidade ≠ autoridade-de-ação (ADR-0105, #785)
+
+Os três caminhos acima respondem **"o caller PODE fazer a action X?"** (autoridade-de-ação). A
+confidencialidade de iniciativas (ADR-0105) introduz um **eixo ortogonal** que responde uma pergunta
+diferente: **"o caller PODE VER esta linha?"** (visibilidade). Não confundir os dois — uma iniciativa
+confidencial não muda quem tem `write_board` ou `manage_member`; muda apenas quem enxerga suas linhas.
+
+**Mecanismo:** helper único `rls_can_see_initiative(p_initiative_id)` (`SECURITY DEFINER STABLE`) que
+reusa o mesmo padrão de scope do Caminho 1 (`auth_engagements.initiative_id`, como `view_pii` faz).
+Retorna `true` para:
+- `initiative_id IS NULL` (linhas org-level sem iniciativa — read-all preservado);
+- iniciativa `standard` (piso = org-members-only, inalterado);
+- iniciativa `confidential` em que o caller tem engagement autoritativo;
+- superadmin / `manage_platform` (decisão PM #1 — GP sempre vê).
+
+**Por que é um eixo separado e não um Caminho 4:** os Caminhos 1–3 concedem *capacidade de agir*; o gate
+de visibilidade *filtra linhas* numa dimensão de confidencialidade. Como o helper devolve `true` para tudo
+que não é confidencial, o caminho não-confidencial é byte-idêntico ao anterior — não há gap a auditar nos
+Caminhos 1–3 por causa dele.
+
+**Defesa em profundidade (obrigatória):** RLS (RESTRICTIVE SELECT cascade) **e** gate explícito nas RPCs
+`SECURITY DEFINER` de leitura são ambos necessários — SECDEF **bypassa** RLS, então RLS sozinha não basta.
+⚠️ **Checklist ao criar uma RPC SECDEF nova que lê** `initiatives`/`events`/`project_boards`/`board_items`/
+`meeting_artifacts`/`tribe_deliverables`/`recurring_meeting_rules`/`governance_documents`: chamar
+`rls_can_see_initiative()` (ou o resolver `rls_can_see_board()`/`rls_can_see_artifact_link()`), senão a RPC
+**vaza** linhas confidenciais. Curadoria exclui confidenciais por padrão (decisão PM #2); agregados públicos
+filtram `visibility <> 'confidential'`.
+
+**Quem seta a visibilidade:** `create_initiative` (qualquer criador na org — subir o muro é inócuo) e
+`update_initiative` (gated pelo `can(...,'manage_member','initiative',id)` já existente — coordenador/GP;
+baixar `confidential→standard` expõe dados, logo fica atrás desse mesmo gate + oversight de GP).
+
 ## Quando este doc precisa de update
 
 - **Path 4 emerge:** se uma 4ª maneira de conceder autoridade é introduzida (ex: ABAC com row-level expressions). Adicionar com exemplo + procedure update.
 - **Designation nova:** quando uma nova designation é introduzida (ex: `voluntariado_co_director`), adicionar à matriz na seção "Caminho 2".
 - **ADR novo de auth:** se ADR-00XX altera o modelo (ex: ADR-0070+ adiciona `manage_member_in_chapter`), refletir aqui.
+- **Eixo de visibilidade novo:** se um novo valor de `initiatives.visibility` (ex: `restricted_to_kinds`) ou uma nova dimensão de confidencialidade for introduzida (ADR-0105), atualizar a seção "Eixo ortogonal".
 
 Mantenedor: PM (Vitor) ou platform-guardian agent quando audit V4 for executado.
