@@ -6639,6 +6639,12 @@ const enUS: Record<string, string> = {
   'comp.agendaViva.materialLink': 'Material',
   'comp.agendaViva.statusReserved': 'Reserved',
   'comp.agendaViva.statusConfirmed': 'Confirmed',
+  'comp.agendaViva.statusNotHeld': 'Block not held',
+  'comp.agendaViva.concludedBadge': 'Concluded',
+  'comp.agendaViva.columnNoBlocks': 'No blocks',
+  'comp.agendaViva.blocksLabel': 'blocks',
+  'comp.agendaViva.blockLabelOne': 'block',
+  'comp.agendaViva.gridAria': 'General Meetings agenda by date',
   'comp.agendaViva.loginHint': 'Sign in to reserve your block.',
   'comp.agendaViva.homeCta': 'Reserve your block',
   // Reservation (signed in)

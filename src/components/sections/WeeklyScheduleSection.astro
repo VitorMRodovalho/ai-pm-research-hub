@@ -25,8 +25,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       {t('schedule.publicSubtitle', lang)}
     </p>
 
-    <!-- Public protagonism agenda (anon-safe). Replaces the login-walled general-meeting card. -->
-    <AgendaVivaPublic client:visible lang={lang} />
+    <!-- Public protagonism agenda (anon-safe). Replaces the login-walled general-meeting card.
+         #812: range="both" surfaces the last concluded meeting + the next ones (past→future
+         columns-by-date timeline), the "pós-evento" state the PM asked for. -->
+    <AgendaVivaPublic client:visible lang={lang} range="both" />
 
     <!-- Funnel CTA tie-in: 4th touch of the repeated primary "Seja protagonista" → #join -->
     <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
