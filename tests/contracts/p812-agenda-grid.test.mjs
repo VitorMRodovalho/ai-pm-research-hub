@@ -51,7 +51,8 @@ describe('p812 FE — Agenda Viva grid', () => {
     for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
       const i18n = readFileSync(`src/i18n/${dict}.ts`, 'utf8');
       for (const key of NEW_KEYS) {
-        assert.match(i18n, new RegExp(`'${key.replace(/\./g, '\\.')}'\\s*:`), `${dict} must define ${key}`);
+        // plain substring check on the quoted dict entry — no RegExp, so no escaping concerns
+        assert.ok(i18n.includes(`'${key}':`), `${dict} must define ${key}`);
       }
     }
   });
