@@ -6643,6 +6643,7 @@ const enUS: Record<string, string> = {
   'comp.agendaViva.homeCta': 'Reserve your block',
   // Reservation (signed in)
   'comp.agendaViva.reserveHeading': 'Reserve a block',
+  'comp.agendaViva.manageHeading': 'Your block',
   'comp.agendaViva.reserveCta': 'Reserve block',
   'comp.agendaViva.fEvent': 'Meeting',
   'comp.agendaViva.fFormat': 'Format',
