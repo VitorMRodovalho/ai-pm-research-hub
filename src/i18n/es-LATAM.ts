@@ -6639,6 +6639,12 @@ const esLATAM: Record<string, string> = {
   'comp.agendaViva.materialLink': 'Material',
   'comp.agendaViva.statusReserved': 'Reservado',
   'comp.agendaViva.statusConfirmed': 'Confirmado',
+  'comp.agendaViva.statusNotHeld': 'Bloque no realizado',
+  'comp.agendaViva.concludedBadge': 'Concluida',
+  'comp.agendaViva.columnNoBlocks': 'Sin bloques',
+  'comp.agendaViva.blocksLabel': 'bloques',
+  'comp.agendaViva.blockLabelOne': 'bloque',
+  'comp.agendaViva.gridAria': 'Agenda de las Reuniones Generales por fecha',
   'comp.agendaViva.loginHint': 'Inicia sesión para reservar tu bloque.',
   'comp.agendaViva.homeCta': 'Reserva tu bloque',
   // Reserva (con sesión)
