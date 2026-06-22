@@ -188,8 +188,21 @@ const I18N = {
         .from('approval_chains')
         .select('id, document_id, status, gates, opened_at')
         .in('document_id', docIds);
+      // A doc can have multiple chains (e.g. a superseded R00 chain + the active
+      // R01 chain after a re-circulation). Pick the most relevant per doc instead
+      // of letting an arbitrary last-wins overwrite the active one with a superseded
+      // chain. Rank: active > review > anything else; tie-break by latest opened_at.
+      var chainRank = { active: 3, approved: 3, review: 2, under_review: 2 };
       var chainsByDoc = {};
-      (chainsRes.data || []).forEach(function(c){ chainsByDoc[c.document_id] = c; });
+      (chainsRes.data || []).forEach(function(c){
+        var prev = chainsByDoc[c.document_id];
+        if (!prev) { chainsByDoc[c.document_id] = c; return; }
+        var rNew = chainRank[c.status] || 0;
+        var rOld = chainRank[prev.status] || 0;
+        if (rNew > rOld || (rNew === rOld && (c.opened_at || '') > (prev.opened_at || ''))) {
+          chainsByDoc[c.document_id] = c;
+        }
+      });
 
       // Fetch initiatives info (titles)
       var initIds = docs.map(function(d){return d.initiative_id;}).filter(Boolean);
@@ -200,6 +213,19 @@ const I18N = {
           .select('id, title, kind')
           .in('id', initIds);
         (initsRes.data || []).forEach(function(i){ initsByid[i.id] = i; });
+      }
+
+      // Resolve the CURRENT version label from current_version_id. The doc.version
+      // column is a denormalized label that can lag behind the current version
+      // (e.g. stays "R00" after R01 is published), so prefer the live version row.
+      var verIds = docs.map(function(d){return d.current_version_id;}).filter(Boolean);
+      var verLabelById = {};
+      if (verIds.length) {
+        var versRes = await sb
+          .from('document_versions')
+          .select('id, version_label')
+          .in('id', verIds);
+        (versRes.data || []).forEach(function(v){ verLabelById[v.id] = v.version_label; });
       }
 
       var tbody = document.getElementById('charters-tbody');
@@ -217,7 +243,7 @@ const I18N = {
               '<div class="font-semibold text-[var(--text-primary)] text-[13px]">' + esc(d.title) + '</div>' +
               '<div class="text-[11px] text-[var(--text-muted)] mt-0.5">' + initLabel + '</div>' +
             '</td>' +
-            '<td class="py-3 pr-3 text-[12px]">' + esc(d.version || '—') + '</td>' +
+            '<td class="py-3 pr-3 text-[12px]">' + esc(verLabelById[d.current_version_id] || d.version || '—') + '</td>' +
             '<td class="py-3 pr-3">' + badgeForStatus(d.status) + '</td>' +
             '<td class="py-3 pr-3">' + summarizeChain(chain) + '</td>' +
             '<td class="py-3 pr-3">' + actions + '</td>' +
