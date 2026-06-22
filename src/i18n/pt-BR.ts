@@ -6645,6 +6645,12 @@ const ptBR: Record<string, string> = {
   'comp.agendaViva.materialLink': 'Material',
   'comp.agendaViva.statusReserved': 'Reservado',
   'comp.agendaViva.statusConfirmed': 'Confirmado',
+  'comp.agendaViva.statusNotHeld': 'Bloco não realizado',
+  'comp.agendaViva.concludedBadge': 'Concluída',
+  'comp.agendaViva.columnNoBlocks': 'Sem blocos',
+  'comp.agendaViva.blocksLabel': 'blocos',
+  'comp.agendaViva.blockLabelOne': 'bloco',
+  'comp.agendaViva.gridAria': 'Agenda das Reuniões Gerais por data',
   'comp.agendaViva.loginHint': 'Entre na plataforma para reservar seu bloco.',
   'comp.agendaViva.homeCta': 'Reserve seu bloco',
   // Reserva (logado)
