@@ -6643,6 +6643,7 @@ const esLATAM: Record<string, string> = {
   'comp.agendaViva.homeCta': 'Reserva tu bloque',
   // Reserva (con sesión)
   'comp.agendaViva.reserveHeading': 'Reservar un bloque',
+  'comp.agendaViva.manageHeading': 'Tu bloque',
   'comp.agendaViva.reserveCta': 'Reservar bloque',
   'comp.agendaViva.fEvent': 'Reunión',
   'comp.agendaViva.fFormat': 'Formato',
