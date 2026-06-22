@@ -147,9 +147,16 @@ describe('p599-600 — DB-gated (skip without env)', () => {
     // get_initiative_detail has no auth gate on member_count (caller context only enriches
     // user_engagement), so the service-role client can probe the full surface.
     // Concurrent pairs (council LOW): keeps the probe O(1) wall-clock as initiatives grow.
-    const { data: inits, error } = await sb.from('initiatives').select('id, title');
+    // Confidential initiatives (ADR-0105 / #785) are intentionally gated out of
+    // get_initiative_detail for a non-engaged / service-role caller → member_count
+    // comes back undefined BY DESIGN, which is not a header/roster parity violation.
+    // Exclude them from the sweep; the confidential gate itself is covered by the
+    // 785-confidential-initiative-{rls,rpcs} contracts.
+    const { data: inits, error } = await sb.from('initiatives').select('id, title, visibility');
     if (error) { console.warn(`[p599-600] initiatives unavailable: ${error.message}`); return; }
-    const results = await Promise.all((inits ?? []).map(async (i) => {
+    const results = await Promise.all((inits ?? [])
+      .filter((i) => i.visibility !== 'confidential')
+      .map(async (i) => {
       const [{ data: detail }, { data: roster }] = await Promise.all([
         sb.rpc('get_initiative_detail', { p_initiative_id: i.id }),
         sb.rpc('get_initiative_roster_count', { p_initiative_id: i.id }),
