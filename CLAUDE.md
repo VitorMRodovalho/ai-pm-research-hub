@@ -77,7 +77,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 2. Custom domain `nucleoia.vitormr.dev` (`.workers.dev` has Bot Fight Mode blocking datacenter IPs)
 3. `@modelcontextprotocol/sdk@1.29.0` + WebStandardStreamableHTTPServerTransport + Zod 4 schemas for MCP
 4. Webinars table is source of truth (not events filtered by type)
-5. Board items read-all for Tier 1+ members (curators need cross-board access)
+5. Board items read-all for Tier 1+ members (curators need cross-board access). **Carve-out (ADR-0105, #785):** confidential initiatives (`initiatives.visibility='confidential'`) are EXCLUDED from this read-all — their board/events/artifacts/docs are visible only to engaged members + GP (`manage_platform`). Gate = `rls_can_see_initiative()`; curation excludes confidential by default. Any new SECDEF read RPC over initiative-linked tables MUST apply the gate (see `docs/reference/V4_AUTHORITY_MODEL.md`).
 6. LGPD: anon/ghost gets nothing from PII tables; public data via SECURITY DEFINER RPCs only
 7. V4 Authority: `can()` is the canonical gate (ADR-0007). RLS uses `rls_can(action)` helpers. `operational_role` is a cache maintained by `sync_operational_role_cache` trigger.
 
