@@ -53,6 +53,15 @@ test('m3 PR2 DB: calc_attendance_pct == canonical engagement global, and is no l
   assert.ok(!eng.error, eng.error?.message);
   const calcPct = Number(calc.data);
   const engPct = Math.round(Number(eng.data.avg_rate) * 100 * 10) / 10;
-  assert.equal(calcPct, engPct, 'calc_attendance_pct must equal engagement avg_rate × 100 (delegation)');
+  // #844: compare at 1-decimal granularity, NOT bit-equality. calc_attendance_pct rounds
+  // avg_rate*100 to 1dp in Postgres `numeric` (half-away); this test recomputes it in JS float.
+  // When avg_rate lands exactly on an x.x5 boundary (e.g. 0.7615 → 76.1500), JS float makes
+  // 0.7615*100 === 76.14999999999999 and rounds DOWN to 76.1 while Postgres rounds UP to 76.2 —
+  // a spurious ±0.1 flake. Compare integer tenths with an off-by-one tolerance (float-safe: a
+  // raw `<= 0.1` itself flakes because 76.2 - 76.1 === 0.10000000000000853 in IEEE-754). A real
+  // delegation bug would diverge by many tenths, not one rounding ulp.
+  const tenths = (x) => Math.round(x * 10);
+  assert.ok(Math.abs(tenths(calcPct) - tenths(engPct)) <= 1,
+    `calc_attendance_pct must match engagement avg_rate × 100 at 1dp (delegation); got calc=${calcPct} eng=${engPct}`);
   assert.ok(calcPct >= 0 && calcPct <= 100, `must be a 0..100 percentage, got ${calcPct}`);
 });
