@@ -106,12 +106,23 @@ describe('p599-600 — ACL restated for single-file auditability', () => {
 });
 
 describe('p599-600 — DB-gated (skip without env)', () => {
-  it('live bodies match the migration captures (Phase-C normalized md5)', { skip: !sb }, async () => {
+  it('live bodies match the LATEST migration capture (Phase-C normalized md5)', { skip: !sb }, async () => {
     const { createHash } = await import('node:crypto');
     const localMd5 = (body) => createHash('md5').update(body.replace(/\s+/g, ' ')).digest('hex');
+    // get_initiative_detail + get_initiative_gamification were last re-created by PR-3
+    // (#785 confidential-initiative RPC gate, mig 20260805000233): that file is now their
+    // canonical body capture. The #599/#600 intent (roster denominator + #600 scope gate) is
+    // preserved there and is still asserted statically above against the originating 138.
+    const PR3 = readFileSync('supabase/migrations/20260805000233_p785_pr3_confidential_initiative_rpcs.sql', 'utf8');
+    const pr3Body = (name) => {
+      const m = PR3.match(new RegExp(
+        `CREATE OR REPLACE FUNCTION public\\.${name}\\([^)]*\\)[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`
+      ));
+      return m ? m[1] : '';
+    };
     const expected = {
-      get_initiative_detail: localMd5(DETAIL_BODY),
-      get_initiative_gamification: localMd5(GAMIF_BODY),
+      get_initiative_detail: localMd5(pr3Body('get_initiative_detail')),
+      get_initiative_gamification: localMd5(pr3Body('get_initiative_gamification')),
     };
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) { console.warn(`[p599-600] helper unavailable: ${error.message}`); return; }
