@@ -88,6 +88,11 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // governance choice). members.chapter is now the derived/compat value (Wave 3b-ii) maintained
   // by triggers — registered in KNOWN_CACHE_COLUMNS below.
   ['members.entry_chapter_code', 'Member-chosen chapter of entry (Wave 3a #740, ADR-0104); governance choice, not derived'],
+  // Visibility gate for confidential initiatives (#785, PR-1). enum 'standard'|'confidential',
+  // DEFAULT 'standard' (behavior-neutral). Curator/admin governance CHOICE set via
+  // create/update_initiative (PR-4), not derived from any other state. The companion helper
+  // rls_can_see_initiative() reads it; no cache/sync relationship to maintain.
+  ['initiatives.visibility', 'Confidential-initiative visibility gate (#785); governance choice set on create/update, no derivation source'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.
