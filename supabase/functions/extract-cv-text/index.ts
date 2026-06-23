@@ -21,6 +21,7 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken } from "../_shared/service-auth.ts";
 import { extractText, getDocumentProxy } from "npm:unpdf@1.6.2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -143,10 +144,10 @@ Deno.serve(async (req) => {
 
   const ah = req.headers.get("Authorization") ?? "";
   const tk = ah.replace(/^Bearer\s+/i, "").trim();
-  // Server-to-server only: caller MUST present the literal service_role key.
-  // The JWT role-claim decode fallback was removed (#738) — it trusted an
-  // UNVERIFIED payload.role, which a forged JWT could spoof.
-  const isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
+  // Service-role gate (#738): exact env-key match, else PostgREST verifies the JWT
+  // signature via current_caller_role() (accepts the vault service_role_key pg_net
+  // sends, rejects forgeries). See _shared/service-auth.ts.
+  const isServiceRole = await isServiceRoleToken(SUPABASE_URL, tk);
   if (!isServiceRole) {
     return json({ error: "unauthorized", message: "service-role only" }, 401);
   }

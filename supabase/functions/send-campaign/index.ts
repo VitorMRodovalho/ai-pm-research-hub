@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
 
 const cors = {
@@ -32,11 +33,11 @@ Deno.serve(async (req) => {
     if (!tk) return json({ error: 'No token' }, 401)
 
     const sb = createClient(url, srk)
-    // Service-role detection: literal compare against the vault key only.
-    // The JWT role-claim decode fallback was removed (#738) — it set isServiceRole
-    // from an UNVERIFIED payload.role, which a forged JWT could spoof. A non-literal
-    // token now falls through to the signature-verified getUser() admin path below.
-    const isServiceRole = tk === srk
+    // Service-role gate (#738): exact env-key match, else PostgREST verifies the
+    // JWT signature via current_caller_role() (accepts the vault service_role_key
+    // pg_net sends, rejects forgeries). A non-service token still falls through to
+    // the getUser() admin path below. See _shared/service-auth.ts.
+    const isServiceRole = await isServiceRoleToken(url, tk)
 
     if (!isServiceRole) {
       const { data: { user }, error: userError } = await sb.auth.getUser(tk)
