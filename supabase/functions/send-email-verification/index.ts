@@ -1,5 +1,6 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
 
 // P168 R4 — send-email-verification
@@ -71,10 +72,10 @@ Deno.serve(async (req) => {
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
 
-    // Server-to-server only: caller MUST present the literal service_role key.
-    // A JWT-decode fallback was removed (#738) — it accepted any token whose
-    // unverified payload.role === 'service_role', which a forged JWT could spoof.
-    const isServiceRole = tk === srk
+    // Service-role gate (#738): exact env-key match, else PostgREST verifies the
+    // JWT signature via current_caller_role(). Rejects forged tokens; accepts the
+    // vault service_role_key that pg_net dispatchers send. See _shared/service-auth.ts.
+    const isServiceRole = await isServiceRoleToken(url, tk)
     if (!isServiceRole) return json({ error: 'Forbidden: service_role required' }, 403)
 
     const body = await req.json().catch(() => ({}))

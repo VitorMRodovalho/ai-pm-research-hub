@@ -36,6 +36,7 @@
 // is unaffected — asymmetric design preserved intentionally.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -347,12 +348,13 @@ Deno.serve(async (req: Request) => {
   }
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  // Server-to-server only: caller MUST present the literal service_role key.
-  // Previously this decoded the JWT and trusted an UNVERIFIED payload.role,
-  // which a forged JWT could spoof (#738). Compare against the vault key instead.
+  // Service-role gate (#738): exact env-key match, else PostgREST verifies the JWT
+  // signature via current_caller_role() (accepts the vault service_role_key pg_net
+  // sends, rejects forgeries). Previously decoded an UNVERIFIED payload.role. See
+  // _shared/service-auth.ts.
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (token !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!(await isServiceRoleToken(SUPABASE_URL, token))) {
     return json({ error: "unauthorized_service_role_only" }, 401);
   }
 
