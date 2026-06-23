@@ -32,19 +32,11 @@ Deno.serve(async (req) => {
     if (!tk) return json({ error: 'No token' }, 401)
 
     const sb = createClient(url, srk)
-    // Service-role detection: literal compare first (fast path), fallback to JWT
-    // role claim decode (resilient to env↔vault key rotation drift).
-    let isServiceRole = tk === srk
-    if (!isServiceRole) {
-      try {
-        const parts = tk.split('.')
-        if (parts.length === 3) {
-          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-          const payload = JSON.parse(payloadJson)
-          if (payload.role === 'service_role') isServiceRole = true
-        }
-      } catch { /* not a parseable JWT, fall through */ }
-    }
+    // Service-role detection: literal compare against the vault key only.
+    // The JWT role-claim decode fallback was removed (#738) — it set isServiceRole
+    // from an UNVERIFIED payload.role, which a forged JWT could spoof. A non-literal
+    // token now falls through to the signature-verified getUser() admin path below.
+    const isServiceRole = tk === srk
 
     if (!isServiceRole) {
       const { data: { user }, error: userError } = await sb.auth.getUser(tk)
