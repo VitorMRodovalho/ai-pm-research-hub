@@ -285,16 +285,10 @@ Deno.serve(async (req) => {
 
   const ah = req.headers.get("Authorization") ?? "";
   const tk = ah.replace(/^Bearer\s+/i, "").trim();
-  let isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
-  if (!isServiceRole) {
-    try {
-      const parts = tk.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-        if (payload.role === "service_role") isServiceRole = true;
-      }
-    } catch { /* not JWT */ }
-  }
+  // service_role requires the literal vault key. The JWT role-claim decode fallback
+  // was removed (#738) — it trusted an UNVERIFIED payload.role. A non-literal token
+  // now flows to the user path below, where getUser() verifies the JWT signature.
+  const isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
 
   // p109 Onda 4 Fase 1: accept user JWT with manage_member permission (admin/GP).
   // Pattern mirrors MCP analyze_application tool — same auth gate for cron + admin invocation.

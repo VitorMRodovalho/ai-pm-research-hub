@@ -143,20 +143,10 @@ Deno.serve(async (req) => {
 
   const ah = req.headers.get("Authorization") ?? "";
   const tk = ah.replace(/^Bearer\s+/i, "").trim();
-  // Accept either exact env key match OR a JWT whose payload.role === 'service_role'.
-  // Vault-stored service_role_key may differ from injected SUPABASE_SERVICE_ROLE_KEY
-  // env var (e.g., post-rotation skew); JWT decode is the canonical check.
-  // Pattern mirrors pmi-ai-triage auth gate.
-  let isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
-  if (!isServiceRole && tk.length > 0) {
-    try {
-      const parts = tk.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-        if (payload.role === "service_role") isServiceRole = true;
-      }
-    } catch { /* not a JWT */ }
-  }
+  // Server-to-server only: caller MUST present the literal service_role key.
+  // The JWT role-claim decode fallback was removed (#738) — it trusted an
+  // UNVERIFIED payload.role, which a forged JWT could spoof.
+  const isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
   if (!isServiceRole) {
     return json({ error: "unauthorized", message: "service-role only" }, 401);
   }

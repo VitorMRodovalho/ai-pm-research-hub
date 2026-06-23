@@ -74,17 +74,10 @@ Deno.serve(async (req) => {
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
 
-    let isServiceRole = tk === srk
-    if (!isServiceRole) {
-      try {
-        const parts = tk.split('.')
-        if (parts.length === 3) {
-          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-          const payload = JSON.parse(payloadJson)
-          if (payload.role === 'service_role') isServiceRole = true
-        }
-      } catch { /* not JWT */ }
-    }
+    // Server-to-server only: caller MUST present the literal service_role key.
+    // A JWT-decode fallback was removed (#738) — it accepted any token whose
+    // unverified payload.role === 'service_role', which a forged JWT could spoof.
+    const isServiceRole = tk === srk
     if (!isServiceRole) return json({ error: 'Forbidden: service_role required' }, 403)
 
     const body = await req.json().catch(() => ({}))
