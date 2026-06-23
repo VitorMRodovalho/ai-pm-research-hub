@@ -24,6 +24,7 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -192,10 +193,11 @@ Deno.serve(async (req) => {
 
   const ah = req.headers.get("Authorization") ?? "";
   const tk = ah.replace(/^Bearer\s+/i, "").trim();
-  // service_role requires the literal vault key. The JWT role-claim decode fallback
-  // was removed (#738) — it trusted an UNVERIFIED payload.role. A non-literal token
-  // now flows to the user path below, where getUser() verifies the JWT signature.
-  const isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
+  // Service-role gate (#738): exact env-key match, else PostgREST verifies the JWT
+  // signature via current_caller_role() (accepts the vault service_role_key pg_net
+  // sends, rejects forgeries). A non-service token flows to the user path below,
+  // where getUser() verifies the signature. See _shared/service-auth.ts.
+  const isServiceRole = await isServiceRoleToken(SUPABASE_URL, tk);
 
   let callerMemberId: string | null = null;
   if (!isServiceRole) {
