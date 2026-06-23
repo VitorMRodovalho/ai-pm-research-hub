@@ -347,15 +347,13 @@ Deno.serve(async (req: Request) => {
   }
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
+  // Server-to-server only: caller MUST present the literal service_role key.
+  // Previously this decoded the JWT and trusted an UNVERIFIED payload.role,
+  // which a forged JWT could spoof (#738). Compare against the vault key instead.
   const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    if (payload.role !== "service_role") {
-      return json({ error: "unauthorized_service_role_only", got: payload.role ?? "no_role" }, 401);
-    }
-  } catch (_) {
-    return json({ error: "invalid_jwt" }, 401);
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (token !== SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: "unauthorized_service_role_only" }, 401);
   }
 
   const body = await req.json().catch(() => ({}));
