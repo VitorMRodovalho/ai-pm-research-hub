@@ -157,16 +157,10 @@ Deno.serve(async (req) => {
 
   const ah = req.headers.get("Authorization") ?? "";
   const tk = ah.replace(/^Bearer\s+/i, "").trim();
-  let isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
-  if (!isServiceRole) {
-    try {
-      const parts = tk.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-        if (payload.role === "service_role") isServiceRole = true;
-      }
-    } catch { /* not JWT */ }
-  }
+  // Server-to-server only: caller MUST present the literal service_role key.
+  // The JWT role-claim decode fallback was removed (#738) — it trusted an
+  // UNVERIFIED payload.role, which a forged JWT could spoof.
+  const isServiceRole = tk === SUPABASE_SERVICE_ROLE_KEY;
   if (!isServiceRole) return json({ error: "service_role only" }, 401);
   if (!GEMINI_API_KEY) return json({ error: "GEMINI_API_KEY not configured" }, 503);
 
