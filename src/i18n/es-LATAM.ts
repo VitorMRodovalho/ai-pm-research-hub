@@ -734,13 +734,6 @@ const esLATAM: Record<string, string> = {
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
   'chapters.founder': 'Capítulo Fundador',
-  // Mapa de cobertura nacional (R9 — estados destacados en vivo vía registry)
-  'chapters.mapTitle': 'Presencia nacional',
-  'chapters.mapAria': 'estados brasileños con capítulos PMI activos',
-  'chapters.mapLegendActive': 'Capítulo activo',
-  'chapters.mapLegendDensity': 'Densidad de miembros por estado',
-  'chapters.mapDensityNote': 'Densidad agregada de miembros que autorizaron mostrar su estado. Los estados con menos de 5 miembros se omiten (protección de privacidad · LGPD).',
-  'chapters.intlBeyond': 'miembros más allá de Brasil',
   // Mapa mundial (PD-MAP-WORLD — pines por país + estados BR/EUA de quien consintió)
   'chapters.worldMapAria': 'Mapa mundial de investigadores activos del Núcleo por país y estado',
   'chapters.mapLegendCountry': 'Investigadores por país',

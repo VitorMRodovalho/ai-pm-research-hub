@@ -734,13 +734,6 @@ const enUS: Record<string, string> = {
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
   'chapters.founder': 'Founding Chapter',
-  // National coverage map (R9 — states highlighted live from registry)
-  'chapters.mapTitle': 'National presence',
-  'chapters.mapAria': 'Brazilian states with active PMI chapters',
-  'chapters.mapLegendActive': 'Active chapter',
-  'chapters.mapLegendDensity': 'Member density by state',
-  'chapters.mapDensityNote': 'Aggregate density of members who authorized displaying their state. States with fewer than 5 members are omitted (privacy protection · LGPD).',
-  'chapters.intlBeyond': 'members beyond Brazil',
   // World map (PD-MAP-WORLD — country pins + BR/US state pins for opted-in members)
   'chapters.worldMapAria': 'World map of active Núcleo researchers by country and state',
   'chapters.mapLegendCountry': 'Researchers by country',
