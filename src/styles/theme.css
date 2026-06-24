@@ -46,6 +46,7 @@
   --surface-elevated: #FFFFFF;          /* modals, popovers */
   --surface-section-warm: #F7F4EF;     /* tribes, vision, breakout */
   --surface-section-cool: #F0F4F8;     /* resources */
+  --map-inactive: #C7D2DD;             /* world-map land silhouette (WorldReachMap) */
   --surface-section-dark: #003B5C;     /* KPIs, team (keeps dark) */
   --surface-section-footer: #200F3B;   /* footer */
   --surface-input: #FFFFFF;            /* form inputs */
@@ -186,6 +187,7 @@
   --surface-elevated: #1C2A3F;
   --surface-section-warm: #10182A;
   --surface-section-cool: #0E1726;
+  --map-inactive: #2B3A4F;             /* world-map land silhouette (dark) */
   --surface-section-dark: #080E1C;
   --surface-section-footer: #0A0718;
   --surface-input: #1C2A3F;
