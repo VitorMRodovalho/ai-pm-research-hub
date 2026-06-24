@@ -219,6 +219,13 @@ test('webinars requires leader tier OR comms/curator/facilitator designation/rol
   // facilitator should access via operationalRole
   const fac = getItemAccessibility(item, 'member', [], true, 'facilitator');
   assert.ok(fac.enabled, 'facilitator role should grant webinars access');
+
+  // #867 follow-up regression: a pre-onboarding guest (operational_role='guest',
+  // AccessTier collapses to 'visitor') must NOT access the leader-tier webinars item.
+  // Guards against the 'guest' typo previously present in allowedOperationalRoles, which
+  // surfaced the /webinars admin link as enabled for the whole pre-onboarding cohort.
+  const guest = getItemAccessibility(item, 'visitor', [], true, 'guest');
+  assert.equal(guest.enabled, false, 'pre-onboarding guest must NOT access the leader-tier webinars item');
 });
 
 test('publications requires leader tier OR curator/comms designation/communicator role', () => {
