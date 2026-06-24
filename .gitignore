@@ -47,6 +47,10 @@ Sensitive/
 sensitive/
 docs/project-governance/DATA_INGESTION_POLICY.md
 
+# Diagnosis screenshots: scraped from prod UI, contain member PII (names/photos:
+# CPMAI mural, team gallery, tribe leaders). NEVER commit to the PUBLIC repo. See #816.
+docs/strategy/diagnosis/screenshots/
+
 # Data Science: local-only analysis scripts and sensitive inputs
 scripts/data_science/
 
@@ -76,3 +80,44 @@ REPO_INVENTORY.md
 *.rpm
 *.AppImage
 tmp/
+
+# === #816 — Public-repo governance: keep internal / PII / legal-draft / partner docs out of the PUBLIC tree ===
+# This repo is PUBLIC. Sensitive material lives in the private org wiki (nucleo-ia-gp/wiki) + Sensitive/ + data/.
+# NOTE: .gitignore only blocks FUTURE untracked adds. Already-tracked sensitive files are purged separately
+#       (see #816 — history rewrite). Signed/public-final versions can be force-added with `git add -f`.
+# NOTE: docs/legal/ is intentionally KEPT public — compliance/transparency SSOT under contract tests
+#       (638 runbook, 641 annex, 642 DPA sub-processor inventory, RoPA). Do NOT add it here.
+
+# Internal meetings, agendas, briefings (named people + strategy)
+docs/**/ATA_*
+docs/**/PAUTA_*
+docs/**/BRIEFING_*
+docs/**/DEMO_SCRIPT_*
+docs/**/*briefing_reuniao*
+
+# Unsigned legal / IP instrument drafts + legal opinions (pareceres) — NOT the docs/legal/ compliance SSOT
+docs/instrumentos-ip/
+docs/council/cr-050-*-source/
+docs/council/**/*legal-counsel*
+docs/**/*_DRAFT.html
+docs/drafts/*termo_voluntario*
+docs/drafts/*ip_policy*
+docs/drafts/p148_external_reviewer_agreement*
+docs/drafts/r3c3-clause*
+docs/drafts/v2.7_*
+docs/drafts/p269_*
+
+# Partner dossiers, commercial pitch decks, BSP/commercial outreach, multi-client/whitelabel + directorate intel
+docs/strategy/partnerships/
+docs/strategy/deck/
+docs/strategy/whatsapp_bsp_*
+docs/strategy/*_multi_client_gaps.md
+docs/strategy/*_directorate_mapping.md
+
+# Applicant / member PII audits, extractions, peer-review briefings
+docs/**/*GMAIL_DATA*
+docs/**/*VIDEO_SCREENING*
+docs/**/*selection-journey-audit*
+docs/**/*peer_review_briefing*
+docs/**/*WHATSAPP_CROSS_GROUP*
+docs/drafts/p131_email_*
