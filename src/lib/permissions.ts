@@ -250,8 +250,10 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   ],
   // Ponto Focal do Capítulo (#670) — função-anchored. O presidente do capítulo intitula o ponto
   // focal do programa; ele PRECISA de visibilidade (programa + seu capítulo). Concede só a
-  // VISIBILIDADE (sem `admin.access`): o middleware libera apenas rotas de leitura explicitamente
-  // allowlisted para chapter_liaison, nunca o shell admin inteiro.
+  // VISIBILIDADE (sem `admin.access`): este capability set (consumido por canFor(), ADR-0011) +
+  // navigation.config.ts liberam apenas as rotas de leitura allowlisted, nunca o shell admin
+  // inteiro. (Não há mais auth-gate SSR — aposentado em #856/ADR-0106; a fronteira é RLS +
+  // SECURITY DEFINER + este gate client-side.)
   chapter_liaison: [
     'admin.analytics', 'admin.analytics.chapter',
     'admin.portfolio', 'admin.partners', 'admin.sustainability',

@@ -12,7 +12,7 @@
 
 | Pacote | Versao Instalada | Importado em | Uso |
 |--------|-----------------|-------------|-----|
-| `astro` | 6.x | `astro.config.mjs`, `src/middleware/index.ts`, `src/pages/api/search.ts` | Framework principal SSR |
+| `astro` | 6.x | `astro.config.mjs`, `src/middleware.ts`, `src/pages/api/search.ts` | Framework principal SSR |
 | `@astrojs/cloudflare` | 13.x | `astro.config.mjs` | Adapter para deploy Cloudflare Workers SSR |
 | `@astrojs/react` | 5.0.0 | `astro.config.mjs` | Integracao React (islands) |
 | `react` | 19.2.4 | 13+ componentes em `src/components/` e `src/hooks/` | Biblioteca UI (islands architecture) |
