@@ -1,0 +1,14 @@
+world-equirect.svg — Atlantic-cropped equirectangular world land silhouette.
+
+Source: "BlankMap-Equirectangular.svg", Wikimedia Commons.
+  https://commons.wikimedia.org/wiki/File:BlankMap-Equirectangular.svg
+License: CC0 1.0 Universal (Public Domain Dedication) — no attribution required.
+  https://creativecommons.org/publicdomain/zero/1.0/
+Underlying data: Natural Earth (Tom Patterson, Nathaniel Vaughn Kelso et al.),
+  public domain — https://www.naturalearthdata.com/
+
+Local processing (Ciclo 4, PD-MAP-WORLD): coordinate precision reduced to 1 decimal
+(svgo), country <path> elements outside the Atlantic window dropped, and the viewBox
+cropped to "45 12 180 136" (lon -135..45, lat 78..-58). Projection unchanged
+(plate carrée, λ0=0): a point (lat,lon) lands at viewBox (lon+180, 90-lat).
+Used as an alpha mask (CSS) in src/components/sections/WorldReachMap.astro.
