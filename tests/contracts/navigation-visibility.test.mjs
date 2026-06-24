@@ -88,7 +88,57 @@ const PROFILES = {
   comms_member: { tier: 'member', isLoggedIn: true, designations: ['comms_member'], operationalRole: 'researcher' },
   curator: { tier: 'observer', isLoggedIn: true, designations: ['curator'], operationalRole: 'researcher' },
   co_gp: { tier: 'observer', isLoggedIn: true, designations: ['co_gp'], operationalRole: 'researcher' },
+  // #867: pre-onboarding guest — logged in, unsigned volunteer term → operational_role='guest' collapses to AccessTier 'visitor' (rank 0).
+  preonboardingGuest: { tier: 'visitor', isLoggedIn: true, designations: [], operationalRole: 'guest' },
 };
+
+// ─── #867: pre-term journey is guest-reachable; member-only + admin stay locked ───
+//
+// The nav gate is cosmetic (ADR-0106: the real data boundary is RLS + SECURITY DEFINER + canFor()).
+// This asserts the *reachability* contract: a logged-in guest can open the pre-term journey, and
+// nothing member-only or admin/LGPD-sensitive is opened by the same change.
+
+const PRETERM_GUEST_ITEMS = ['workspace', 'onboarding', 'profile', 'certificates', 'volunteer-agreement'];
+const MEMBER_ONLY_LOCKED_FOR_GUEST = [
+  'attendance', 'meetings', 'my-initiatives', 'my-tribe', 'boards',
+  'presentations', 'notifications', 'my-pending', 'stakeholder-dashboard',
+];
+
+test('#867 pre-term journey items are visible AND enabled for a pre-onboarding guest', () => {
+  const g = PROFILES.preonboardingGuest;
+  for (const key of PRETERM_GUEST_ITEMS) {
+    const item = parseNavItem(key);
+    assert.equal(item.minTier, 'visitor', `${key} must be minTier:'visitor' for the pre-term journey`);
+    assert.equal(item.requiresAuth, true, `${key} must keep requiresAuth:true (invisible to anon)`);
+    const result = getItemAccessibility(item, g.tier, g.designations, g.isLoggedIn, g.operationalRole);
+    assert.ok(result.visible && result.enabled, `${key} must be reachable (visible+enabled) for a pre-onboarding guest`);
+    // still invisible to anonymous (requiresAuth gate)
+    const anon = getItemAccessibility(item, 'visitor', [], false, '');
+    assert.equal(anon.visible, false, `${key} must stay invisible to anonymous visitors`);
+  }
+});
+
+test('#867 regression: member-only items stay LOCKED for a pre-onboarding guest', () => {
+  const g = PROFILES.preonboardingGuest;
+  for (const key of MEMBER_ONLY_LOCKED_FOR_GUEST) {
+    const item = parseNavItem(key);
+    const result = getItemAccessibility(item, g.tier, g.designations, g.isLoggedIn, g.operationalRole);
+    assert.equal(result.enabled, false, `${key} must remain disabled for a pre-onboarding guest (not opened by #867)`);
+  }
+});
+
+test('#867 regression: admin + LGPD-sensitive items stay closed to a pre-onboarding guest', () => {
+  const g = PROFILES.preonboardingGuest;
+  for (const key of navItemKeys) {
+    const item = parseNavItem(key);
+    if (!item.href.startsWith('/admin') && !item.lgpdSensitive) continue;
+    const result = getItemAccessibility(item, g.tier, g.designations, g.isLoggedIn, g.operationalRole);
+    assert.equal(result.enabled, false, `admin/lgpd item ${key} must stay disabled for a pre-onboarding guest`);
+    if (item.lgpdSensitive) {
+      assert.equal(result.visible, false, `lgpdSensitive item ${key} must stay invisible to a pre-onboarding guest`);
+    }
+  }
+});
 
 // ─── LGPD items must be invisible to visitor, researcher, tribe_leader ───
 
