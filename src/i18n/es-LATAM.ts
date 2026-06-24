@@ -745,7 +745,7 @@ const esLATAM: Record<string, string> = {
   'chapters.worldMapAria': 'Mapa mundial de investigadores activos del Núcleo por país y estado',
   'chapters.mapLegendCountry': 'Investigadores por país',
   'chapters.mapLegendState': 'Estados con miembros que autorizaron mostrarlo',
-  'chapters.mapStateNote': 'Estados con 3+ miembros que autorizaron mostrar su estado de residencia (agregado, nunca individual · LGPD).',
+  'chapters.mapStateNote': 'Estados con 3+ miembros que autorizaron mostrar su estado de residencia (agregado, nunca individual · LGPD). Ya contabilizados en el total del país.',
   'chapters.activeLabel': 'socios activos',
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',

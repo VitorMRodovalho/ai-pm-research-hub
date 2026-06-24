@@ -745,7 +745,7 @@ const ptBR: Record<string, string> = {
   'chapters.worldMapAria': 'Mapa-múndi com pesquisadores ativos do Núcleo por país e estado',
   'chapters.mapLegendCountry': 'Pesquisadores por país',
   'chapters.mapLegendState': 'Estados com membros que autorizaram exibição',
-  'chapters.mapStateNote': 'Estados com 3+ membros que autorizaram a exibição do seu estado de residência (agregado, nunca individual · LGPD).',
+  'chapters.mapStateNote': 'Estados com 3+ membros que autorizaram a exibição do seu estado de residência (agregado, nunca individual · LGPD). Já contabilizados no total do país.',
   'chapters.activeLabel': 'parceiros ativos',
   'chapters.onboardingLabel': 'em integração',
   'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
