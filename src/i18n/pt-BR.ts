@@ -741,6 +741,11 @@ const ptBR: Record<string, string> = {
   'chapters.mapLegendDensity': 'Densidade de membros por estado',
   'chapters.mapDensityNote': 'Densidade agregada de membros que autorizaram a exibição do seu estado. Estados com menos de 5 membros são omitidos (proteção à privacidade · LGPD).',
   'chapters.intlBeyond': 'membros além do Brasil',
+  // Mapa-múndi (PD-MAP-WORLD — pins por país + estados BR/EUA de quem consentiu)
+  'chapters.worldMapAria': 'Mapa-múndi com pesquisadores ativos do Núcleo por país e estado',
+  'chapters.mapLegendCountry': 'Pesquisadores por país',
+  'chapters.mapLegendState': 'Estados com membros que autorizaram exibição',
+  'chapters.mapStateNote': 'Estados com 3+ membros que autorizaram a exibição do seu estado de residência (agregado, nunca individual · LGPD).',
   'chapters.activeLabel': 'parceiros ativos',
   'chapters.onboardingLabel': 'em integração',
   'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
