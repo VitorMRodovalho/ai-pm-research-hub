@@ -38,6 +38,8 @@ const pinLabel = (p: (typeof ordered)[number]) =>
         <span
           class={`nia-pin nia-pin--${p.kind}`}
           style={`left:${p.leftPct.toFixed(2)}%;top:${p.topPct.toFixed(2)}%;width:${d}px;height:${d}px`}
+          role="img"
+          tabindex="0"
           title={label}
           aria-label={label}
         >
@@ -90,7 +92,7 @@ const pinLabel = (p: (typeof ordered)[number]) =>
     cursor: default;
   }
   .nia-pin__count {
-    font-size: clamp(0.55rem, 1.6vw, 0.74rem);
+    font-size: clamp(0.65rem, 1.6vw, 0.74rem);
     pointer-events: none;
   }
   .nia-pin--country {

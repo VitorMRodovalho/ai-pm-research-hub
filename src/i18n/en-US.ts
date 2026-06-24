@@ -745,7 +745,7 @@ const enUS: Record<string, string> = {
   'chapters.worldMapAria': 'World map of active Núcleo researchers by country and state',
   'chapters.mapLegendCountry': 'Researchers by country',
   'chapters.mapLegendState': 'States with members who opted in',
-  'chapters.mapStateNote': 'States with 3+ members who authorized displaying their state of residence (aggregate, never individual · LGPD).',
+  'chapters.mapStateNote': 'States with 3+ members who authorized displaying their state of residence (aggregate, never individual · LGPD). Already counted in the country total.',
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
