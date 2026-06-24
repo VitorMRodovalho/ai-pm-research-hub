@@ -134,15 +134,22 @@ export function applySecurityHeaders(
   return target;
 }
 
+// A `/foo/` prefix also matches the BARE `/foo` (no trailing slash). Without this,
+// the index route `/admin` escaped `/admin/` and shipped without no-store/noindex
+// (caught in live validation of #855) while `/admin/members` was covered.
+function prefixMatches(pathname: string, prefix: string): boolean {
+  return pathname === prefix.slice(0, -1) || pathname.startsWith(prefix);
+}
+
 /** True when `pathname` must be served with a no-store Cache-Control. */
 export function isNoStorePath(pathname: string): boolean {
   return (
     NO_STORE_EXACT.includes(pathname) ||
-    NO_STORE_PREFIXES.some((p) => pathname.startsWith(p))
+    NO_STORE_PREFIXES.some((p) => prefixMatches(pathname, p))
   );
 }
 
 /** True when `pathname` must carry X-Robots-Tag: noindex, nofollow. */
 export function isNoIndexPath(pathname: string): boolean {
-  return NOINDEX_PREFIXES.some((p) => pathname.startsWith(p));
+  return NOINDEX_PREFIXES.some((p) => prefixMatches(pathname, p));
 }

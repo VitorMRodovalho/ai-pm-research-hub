@@ -27,6 +27,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { isNoStorePath, isNoIndexPath } from '../../src/lib/securityHeaders.ts';
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -125,4 +126,18 @@ test('parity: no-store + noindex per-route policy matches _headers', () => {
     .filter(([, h]) => /noindex/.test(h['X-Robots-Tag'] || '')).map(([p]) => p);
   assert.deepEqual(noindexPaths, ['/admin/*'], 'noindex is admin-only in _headers');
   assert.match(SSOT, /NOINDEX_PREFIXES[\s\S]*?["']\/admin\/["']/, 'SSOT noindex = /admin/');
+});
+
+test('per-route matchers: a /foo/ prefix also covers the BARE /foo index route', () => {
+  // Regression guard: live #855 validation found bare `/admin` shipped without
+  // no-store/noindex because it did not match the `/admin/` prefix.
+  assert.equal(isNoIndexPath('/admin'), true, 'bare /admin is noindex');
+  assert.equal(isNoStorePath('/admin'), true, 'bare /admin is no-store');
+  assert.equal(isNoIndexPath('/admin/members'), true, '/admin subpath is noindex');
+  assert.equal(isNoStorePath('/admin/members'), true, '/admin subpath is no-store');
+  assert.equal(isNoStorePath('/workspace'), true, 'exact /workspace is no-store');
+  // The public home must NOT be no-store/noindex.
+  assert.equal(isNoStorePath('/'), false, 'home is not no-store');
+  assert.equal(isNoIndexPath('/'), false, 'home is not noindex');
+  assert.equal(isNoIndexPath('/about'), false, 'public /about is not noindex');
 });
