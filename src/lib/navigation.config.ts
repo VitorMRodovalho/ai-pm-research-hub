@@ -63,11 +63,11 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'team',           labelKey: 'nav.team',          href: '/#team',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───
-  { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' },
+  { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'visitor', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (page self-gates own data; RLS/SECDEF is the boundary, not nav)
 
   // ─── Tool pages (public) ───
   { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
-  { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/workspace',   minTier: 'member',  requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' },
+  { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/workspace',   minTier: 'visitor', requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' }, // #867 pre-term journey — guest-reachable
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   // #701 Agenda Viva — public General Meetings agenda (anon-OK; reservation gated in-page).
   { key: 'reunioes-gerais', labelKey: 'nav.reunioesGerais', href: '/reunioes-gerais', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
@@ -86,7 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'blog',         labelKey: 'nav.blog',         href: '/blog',          minTier: 'visitor', requiresAuth: false, section: 'main',   group: 'tools', navSlot: 'primary' },
 
   // ─── Profile drawer only ───
-  { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
+  { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'visitor', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (profile.astro self-gates via isRegisteredMember; own-row SECDEF)
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
@@ -119,8 +119,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'visitor',  requiresAuth: false, section: 'both', group: 'member', navSlot: 'none', drawerSection: 'meu-espaco' },
 
   // ─── Drawer-only secondary links (R4) ───
-  { key: 'certificates',        labelKey: 'nav.certificates',  href: '/certificates',        minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
-  { key: 'volunteer-agreement', labelKey: 'nav.volunteer',     href: '/volunteer-agreement', minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
+  { key: 'certificates',        labelKey: 'nav.certificates',  href: '/certificates',        minTier: 'visitor', requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (own-scope SECDEF)
+  { key: 'volunteer-agreement', labelKey: 'nav.volunteer',     href: '/volunteer-agreement', minTier: 'visitor', requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (signing surface; term body gated in-page)
   { key: 'changelog',           labelKey: 'nav.changelog',     href: '/changelog',           minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools',   drawerSection: 'explorar' },
   { key: 'my-pending',          labelKey: 'nav.myPending',     href: '/governance/my-pending', minTier: 'member', requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
 ];
