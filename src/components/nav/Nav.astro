@@ -1116,7 +1116,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
   });
 
-  // Sync Supabase access_token to cookie for SSR middleware (GC-089)
+  // Keep the sb-access-token cookie in sync with the Supabase session (GC-089).
+  // NOTE: the SSR auth-gate middleware that consumed this cookie was retired in
+  // #856 / ADR-0106 (the gate was dead-shadowed for ~3 months and protected no data —
+  // RLS + canFor() are the boundary). The cookie has no active SSR consumer today;
+  // kept harmless (clearing on logout is still correct). Candidate for future cleanup.
   function syncAuthCookie(session: any) {
     if (session?.access_token) {
       document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure`;
