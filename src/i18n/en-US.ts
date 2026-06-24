@@ -741,6 +741,11 @@ const enUS: Record<string, string> = {
   'chapters.mapLegendDensity': 'Member density by state',
   'chapters.mapDensityNote': 'Aggregate density of members who authorized displaying their state. States with fewer than 5 members are omitted (privacy protection · LGPD).',
   'chapters.intlBeyond': 'members beyond Brazil',
+  // World map (PD-MAP-WORLD — country pins + BR/US state pins for opted-in members)
+  'chapters.worldMapAria': 'World map of active Núcleo researchers by country and state',
+  'chapters.mapLegendCountry': 'Researchers by country',
+  'chapters.mapLegendState': 'States with members who opted in',
+  'chapters.mapStateNote': 'States with 3+ members who authorized displaying their state of residence (aggregate, never individual · LGPD).',
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',

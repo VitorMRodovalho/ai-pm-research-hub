@@ -1,0 +1,114 @@
+---
+// World reach map (Ciclo 4 — PD-MAP-WORLD). Atlantic-centered equirectangular world, pins por
+// PAÍS (get_public_country_reach, k-anon — ZZ vira chip de legenda, nunca pin) e por ESTADO
+// BR/EUA de quem consentiu (get_public_state_reach_v2, k≥3). FE-puro: recebe os payloads zero-PII
+// já agregados e só posiciona/dimensiona. Land = SVG CC0 (Natural Earth) via máscara CSS (tinge com
+// token de tema). Projeção/centroides em src/lib/worldMap.ts — nada de geografia hardcoded aqui.
+import { t, type Lang } from '../../i18n/utils';
+import { buildGeoPins, pinDiameter } from '../../lib/worldMap';
+
+interface Props {
+  countryReach: Array<{ country_code: string; member_count: number | string }>;
+  stateReach: Array<{ country_code: string; region_code: string; member_count: number | string }>;
+  lang: Lang;
+  ariaLabel: string;
+  class?: string;
+}
+const { countryReach, stateReach, lang, ariaLabel, class: className = '' } = Astro.props;
+
+const { pins } = buildGeoPins(countryReach ?? [], stateReach ?? []);
+// Larger country pins first (painted under), then smaller; state pins last so they sit on top.
+const ordered = [...pins].sort((a, b) =>
+  a.kind === b.kind ? b.count - a.count : a.kind === 'country' ? -1 : 1,
+);
+const countryName = (code: string) => t(`country.${code}`, lang);
+const pinLabel = (p: (typeof ordered)[number]) =>
+  p.kind === 'country'
+    ? `${countryName(p.countryCode)} · ${p.count}`
+    : `${p.regionName}, ${countryName(p.countryCode)} · ${p.count}`;
+---
+
+<div class={`nia-worldmap ${className}`} role="img" aria-label={ariaLabel}>
+  <div class="nia-worldmap__land" aria-hidden="true"></div>
+  <div class="nia-worldmap__pins">
+    {ordered.map((p) => {
+      const d = pinDiameter(p.kind, p.count);
+      const label = pinLabel(p);
+      return (
+        <span
+          class={`nia-pin nia-pin--${p.kind}`}
+          style={`left:${p.leftPct.toFixed(2)}%;top:${p.topPct.toFixed(2)}%;width:${d}px;height:${d}px`}
+          title={label}
+          aria-label={label}
+        >
+          <span class="nia-pin__count">{p.count}</span>
+        </span>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .nia-worldmap {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    aspect-ratio: 180 / 136;
+  }
+  /* Land silhouette: external CC0 SVG used as an alpha mask so a theme token tints it. */
+  .nia-worldmap__land {
+    position: absolute;
+    inset: 0;
+    background-color: var(--map-inactive, #cbd5e1);
+    -webkit-mask-image: url(/assets/maps/world-equirect.svg);
+    mask-image: url(/assets/maps/world-equirect.svg);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+  }
+  .nia-worldmap__pins {
+    position: absolute;
+    inset: 0;
+  }
+  .nia-pin {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 700;
+    line-height: 1;
+    border: 2px solid var(--surface-section-cool, #f0f4f8);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    cursor: default;
+  }
+  .nia-pin__count {
+    font-size: clamp(0.55rem, 1.6vw, 0.74rem);
+    pointer-events: none;
+  }
+  .nia-pin--country {
+    background-color: var(--color-teal, #00799e);
+    z-index: 1;
+  }
+  .nia-pin--state {
+    background-color: var(--color-orange, #ff610f);
+    z-index: 2;
+  }
+  .nia-pin:hover,
+  .nia-pin:focus-visible {
+    background-color: var(--color-purple, #4f17a8);
+    transform: translate(-50%, -50%) scale(1.18);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nia-pin { transition: none; }
+  }
+</style>
