@@ -55,8 +55,13 @@ export default function OnboardingCockpitNudge({ lang = 'pt-BR' }: Props) {
     // Best-effort progress for the banner (non-blocking; banner shows regardless).
     const sb = getSb();
     sb?.rpc('get_candidate_onboarding_progress').then((res: any) => {
-      const p = res?.data?.pre_onboarding;
-      if (p && typeof p.total === 'number') setProgress({ completed: p.completed || 0, total: p.total });
+      // #872: read the member's own CANONICAL onboarding progress. The legacy `pre_onboarding`
+      // (phase-based) aggregate has been dead since p155 (2026-05-13) consolidated onto the
+      // canonical onboarding_steps catalog, so it always returned 0 → the "0/0 passos" symptom.
+      // `onboarding.total` is 0 for cohorts with no canonical rows (e.g. external reviewers) →
+      // the count is omitted rather than rendered as a misleading 0/0.
+      const p = res?.data?.onboarding;
+      if (p && typeof p.total === 'number' && p.total > 0) setProgress({ completed: p.completed ?? 0, total: p.total });
     }).catch(() => { /* ignore */ });
   }, [getSb, workspaceUrl]);
 
