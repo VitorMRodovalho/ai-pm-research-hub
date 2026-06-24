@@ -291,10 +291,11 @@ async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetri
     // The /rest/ organizationalEntityFollowerStatistics endpoint no longer
     // returns total follower counts (only demographic facets), so the total
     // comes from the dedicated networkSizes endpoint. The org URN is a path
-    // key here; the gateway accepts the literal colon form documented by LinkedIn.
+    // key here and MUST be URL-encoded — the raw colon form returns
+    // 400 ILLEGAL_ARGUMENT "Syntax exception in path variables".
     let followers: number | null = null
     const networkResp = await fetchWithRetry(
-      `https://api.linkedin.com/rest/networkSizes/${orgUrn}?edgeType=COMPANY_FOLLOWED_BY_MEMBER`,
+      `https://api.linkedin.com/rest/networkSizes/${encodeURIComponent(orgUrn)}?edgeType=COMPANY_FOLLOWED_BY_MEMBER`,
       { headers: liHeaders }
     )
     if (networkResp.ok) {
