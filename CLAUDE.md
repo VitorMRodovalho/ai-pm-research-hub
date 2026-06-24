@@ -80,6 +80,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 5. Board items read-all for Tier 1+ members (curators need cross-board access). **Carve-out (ADR-0105, #785):** confidential initiatives (`initiatives.visibility='confidential'`) are EXCLUDED from this read-all — their board/events/artifacts/docs are visible only to engaged members + GP (`manage_platform`). Gate = `rls_can_see_initiative()`; curation excludes confidential by default. Any new SECDEF read RPC over initiative-linked tables MUST apply the gate (see `docs/reference/V4_AUTHORITY_MODEL.md`).
 6. LGPD: anon/ghost gets nothing from PII tables; public data via SECURITY DEFINER RPCs only
 7. V4 Authority: `can()` is the canonical gate (ADR-0007). RLS uses `rls_can(action)` helpers. `operational_role` is a cache maintained by `sync_operational_role_cache` trigger.
+8. **No SSR auth gate by design (ADR-0106, #856).** There is intentionally NO route auth-gate in middleware. The boundary is RLS + SECURITY DEFINER RPCs + client-side `canFor()` (anon gets an empty admin shell, no data). `src/middleware.ts` is the ONLY middleware (does redirect + CSRF + #855 security headers); NEVER recreate `src/middleware/index.ts` (Astro loads one module; it would silently shadow the live one — the #855/#856 root cause). Guarded by `tests/contracts/856-auth-gate-retired-shadow-guard.test.mjs`.
 
 ## Detailed Rules (loaded on demand)
 - Database: `.claude/rules/database.md`
