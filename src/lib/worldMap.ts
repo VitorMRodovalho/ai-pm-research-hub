@@ -64,9 +64,9 @@ export const REGION_NAMES: Record<string, string> = {
   CT: 'Connecticut', DE: 'Delaware', DC: 'Washington, D.C.', FL: 'Flórida', GA: 'Geórgia',
   HI: 'Havaí', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky',
   LA: 'Luisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
-  MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+  MO: 'Missouri', MS: 'Mississippi', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
   NM: 'Novo México', NY: 'Nova York', NC: 'Carolina do Norte', ND: 'Dakota do Norte', OH: 'Ohio',
-  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pensilvânia', RI: 'Rhode Island', SD: 'Dakota do Sul',
+  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pensilvânia', RI: 'Rhode Island', SC: 'Carolina do Sul', SD: 'Dakota do Sul',
   TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virgínia', WA: 'Washington',
   WV: 'Virgínia Ocidental', WI: 'Wisconsin', WY: 'Wyoming',
   // Brazilian UFs (collide with some US codes — resolved by country before lookup)
@@ -98,8 +98,9 @@ function regionName(countryCode: string, region: string): string {
 /**
  * Build the placeable pin list from the two zero-PII RPC payloads. Country pins come from
  * get_public_country_reach (k-anon, ZZ excluded → legend), state pins from
- * get_public_state_reach_v2 (consented + k≥3). Off-window or unknown-centroid rows are skipped
- * by the caller's legend totals, never silently dropped from counts.
+ * get_public_state_reach_v2 (consented + k≥3). Off-window or unknown-centroid rows are returned as
+ * pins-skipped (skippedCountries/skippedStates); a skipped STATE's members still count in that
+ * country's pin (country layer covers all active members), so no member is dropped from a total.
  */
 export function buildGeoPins(
   countryReach: Array<{ country_code: string; member_count: number | string }>,
