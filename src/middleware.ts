@@ -1,9 +1,18 @@
 // src/middleware.ts
 // Canonical domain redirect + CSRF protection (manual, because Astro checkOrigin
-// runs before middleware and blocks MCP/OAuth cross-origin POSTs)
+// runs before middleware and blocks MCP/OAuth cross-origin POSTs) + SSR security
+// headers (#855).
+//
+// #855: `public/_headers` is a Cloudflare-PAGES feature; on Workers it is a NO-OP
+// for SSR HTML (it only decorates the static-asset system, /_astro/*). So the CSP /
+// X-Frame-Options / etc. it declares never reach SSR responses (home `/`, every
+// .astro page). We re-apply the SAME policy here, from the shared SSOT
+// (src/lib/securityHeaders.ts), so SSR routes carry it too. A parity contract test
+// (tests/contracts/855-ssr-security-headers-parity.test.mjs) keeps the two in sync.
 
 import { defineMiddleware, sequence } from "astro:middleware";
 import { CANONICAL_HOST } from "./lib/canonical";
+import { applySecurityHeaders } from "./lib/securityHeaders";
 
 const LEGACY_HOSTS = [
   "platform.ai-pm-research-hub.workers.dev",
@@ -15,7 +24,9 @@ const LEGACY_HOSTS = [
 // /api/internal/ — invoked by DB trigger pg_net (cert PDF auto-gen, p225 #281)
 const CSRF_BYPASS_PREFIXES = ["/oauth/", "/mcp", "/.well-known/", "/api/internal/"];
 
-// Redirect legacy domains to canonical (301 permanent)
+// 1) Redirect legacy domains to canonical (301 permanent). Short-circuits WITHOUT
+//    next(), so a bare 301 never reaches the header step below — intended (a
+//    redirect needs no CSP), identical to current prod behavior.
 const redirectMiddleware = defineMiddleware((context, next) => {
   const host = context.url.hostname;
   if (LEGACY_HOSTS.includes(host)) {
@@ -30,7 +41,8 @@ const redirectMiddleware = defineMiddleware((context, next) => {
   return next();
 });
 
-// Manual CSRF: block cross-origin form POSTs on non-bypass routes
+// 2) Manual CSRF: block cross-origin form POSTs on non-bypass routes. The 403
+//    short-circuit also returns WITHOUT next() and stays header-free (intended).
 const csrfMiddleware = defineMiddleware((context, next) => {
   const method = context.request.method;
   if (method !== "POST" && method !== "PUT" && method !== "DELETE") {
@@ -60,4 +72,18 @@ const csrfMiddleware = defineMiddleware((context, next) => {
   return next();
 });
 
-export const onRequest = sequence(redirectMiddleware, csrfMiddleware);
+// 3) Security headers on every SSR response (#855). Runs LAST so it decorates the
+//    rendered response coming back up. The header set + the Workers-immutability
+//    guard live in the SSOT (applySecurityHeaders). Static assets (/_astro/*) are
+//    served by the Cloudflare assets system and never enter Astro middleware, so
+//    public/_headers keeps sole ownership of their immutable cache — no double-set.
+const securityHeadersMiddleware = defineMiddleware(async (context, next) => {
+  const response = await next();
+  return applySecurityHeaders(response, context.url.pathname);
+});
+
+export const onRequest = sequence(
+  redirectMiddleware,
+  csrfMiddleware,
+  securityHeadersMiddleware,
+);
