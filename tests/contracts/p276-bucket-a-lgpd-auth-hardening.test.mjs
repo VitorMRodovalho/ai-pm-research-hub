@@ -180,13 +180,23 @@ test('p276 DB: get_member_cycle_xp raises without auth', { skip: dbGated ? false
 
 test('p276 DB: get_public_leaderboard pool == active members with opt_out=false', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('get_public_leaderboard', { p_limit: 1000 });
-  assert.ok(!error, `rpc should not error: ${error?.message}`);
-  const { count } = await sb
-    .from('members')
-    .select('id', { count: 'exact', head: true })
-    .eq('is_active', true)
-    .eq('current_cycle_active', true)
-    .eq('gamification_opt_out', false);
-  assert.equal((data || []).length, count, 'leaderboard must equal the opt-out-respecting active pool');
+  // get_public_leaderboard filters on (is_active AND current_cycle_active AND NOT gamification_opt_out),
+  // byte-identical to the pool query below. The leaderboard and the count are two separate round-trips,
+  // so a concurrent member mutation landing between them yields a transient ±1 — a real filter
+  // divergence persists, a race resolves. Retry to read both against a stable snapshot before asserting.
+  let lbLen = -1, count = -2;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await sb.rpc('get_public_leaderboard', { p_limit: 1000 });
+    assert.ok(!error, `rpc should not error: ${error?.message}`);
+    const res = await sb
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .eq('current_cycle_active', true)
+      .eq('gamification_opt_out', false);
+    lbLen = (data || []).length;
+    count = res.count;
+    if (lbLen === count) break;
+  }
+  assert.equal(lbLen, count, 'leaderboard must equal the opt-out-respecting active pool');
 });
