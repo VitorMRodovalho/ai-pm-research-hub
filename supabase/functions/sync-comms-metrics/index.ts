@@ -35,6 +35,7 @@ type IngestionPayload = {
   triggered_by?: string
   dry_run?: boolean
   channels?: string[]  // optional: sync only specific channels
+  force_refresh?: boolean  // force LinkedIn token refresh regardless of expiry (verification)
 }
 
 type ChannelConfig = {
@@ -609,6 +610,89 @@ function isTokenExpiringSoon(cfg: ChannelConfig): boolean {
   return expiresAt > Date.now() && expiresAt < Date.now() + SEVEN_DAYS_MS
 }
 
+// ─── LinkedIn 3-legged token auto-refresh ───
+// LinkedIn access tokens live 60 days; the stored refresh token lives ~1 year.
+// When the access token is expired/expiring (or force=true for verification),
+// exchange the refresh token for a fresh access token (LinkedIn rotates the
+// refresh token too) and persist. Requires LINKEDIN_CLIENT_ID + _SECRET as EF
+// secrets. No-op for non-LinkedIn channels. Returns the (possibly updated) cfg;
+// on any failure leaves the stored token untouched (downstream flags expiry).
+async function maybeRefreshLinkedInToken(
+  sb: ReturnType<typeof createClient>,
+  cfg: ChannelConfig,
+  force = false,
+): Promise<ChannelConfig> {
+  if (cfg.channel !== 'linkedin' || !cfg.oauth_refresh_token) return cfg
+
+  const expiresAt = cfg.token_expires_at ? new Date(cfg.token_expires_at).getTime() : 0
+  const needsRefresh = force || !cfg.oauth_token || !expiresAt || expiresAt < Date.now() + SEVEN_DAYS_MS
+  if (!needsRefresh) return cfg
+
+  const clientId = Deno.env.get('LINKEDIN_CLIENT_ID')
+  const clientSecret = Deno.env.get('LINKEDIN_CLIENT_SECRET')
+  if (!clientId || !clientSecret) {
+    console.warn('LinkedIn token needs refresh but LINKEDIN_CLIENT_ID/LINKEDIN_CLIENT_SECRET not configured')
+    return cfg
+  }
+
+  try {
+    const form = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: cfg.oauth_refresh_token,
+      client_id: clientId,
+      client_secret: clientSecret,
+    })
+    const resp = await fetchWithRetry('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+    }, 2)
+
+    if (!resp.ok) {
+      console.warn(`LinkedIn token refresh ${resp.status}: ${(await resp.text()).slice(0, 300)}`)
+      return cfg
+    }
+
+    const data = await resp.json()
+    const newToken = data?.access_token as string | undefined
+    if (!newToken) {
+      console.warn('LinkedIn token refresh: response missing access_token')
+      return cfg
+    }
+    const expiresIn = Number(data.expires_in) || 0
+    const newExpiry = new Date(Date.now() + expiresIn * 1000).toISOString()
+    // LinkedIn rotates the refresh token — keep the new one (fall back to the old).
+    const newRefresh = (data.refresh_token as string | undefined) || cfg.oauth_refresh_token
+    const refreshExpiresIn = Number(data.refresh_token_expires_in) || 0
+
+    const newConfig = {
+      ...(cfg.config || {}),
+      token_refreshed_at: new Date().toISOString(),
+      ...(refreshExpiresIn
+        ? { refresh_token_expires_at: new Date(Date.now() + refreshExpiresIn * 1000).toISOString() }
+        : {}),
+    }
+
+    const { error: updErr } = await sb.from('comms_channel_config').update({
+      oauth_token: newToken,
+      oauth_refresh_token: newRefresh,
+      token_expires_at: newExpiry,
+      config: newConfig,
+      sync_status: 'active',
+    }).eq('channel', 'linkedin')
+    if (updErr) {
+      console.warn('LinkedIn token refresh persist failed:', updErr.message)
+      return cfg
+    }
+
+    console.log(`LinkedIn token refreshed (force=${force}); new access expiry ${newExpiry}`)
+    return { ...cfg, oauth_token: newToken, oauth_refresh_token: newRefresh, token_expires_at: newExpiry, config: newConfig }
+  } catch (e) {
+    console.warn('LinkedIn token refresh error:', e instanceof Error ? e.message : String(e))
+    return cfg
+  }
+}
+
 // ─── Per-channel sync orchestrator ───
 
 async function syncFromChannelConfigs(
@@ -616,6 +700,7 @@ async function syncFromChannelConfigs(
   triggeredBy: string,
   dryRun: boolean,
   filterChannels?: string[],
+  forceRefresh = false,
 ): Promise<{ total_upserted: number; channel_results: Record<string, unknown>[] }> {
   const { data: configs, error } = await sb
     .from('comms_channel_config')
@@ -637,24 +722,32 @@ async function syncFromChannelConfigs(
       continue
     }
 
+    // Auto-refresh the LinkedIn 3-legged token when expired/expiring (no-op for
+    // other channels). Skipped on dry-run to keep it side-effect free, unless
+    // forceRefresh is set (verification path).
+    let activeCfg = cfg
+    if (!dryRun || forceRefresh) {
+      activeCfg = await maybeRefreshLinkedInToken(sb, cfg, forceRefresh)
+    }
+
     // Check token validity
-    if (!isTokenValid(cfg)) {
+    if (!isTokenValid(activeCfg)) {
       await sb.from('comms_channel_config')
         .update({ sync_status: 'token_expired' })
-        .eq('channel', cfg.channel)
-      channelResults.push({ channel: cfg.channel, status: 'token_expired' })
+        .eq('channel', activeCfg.channel)
+      channelResults.push({ channel: activeCfg.channel, status: 'token_expired' })
       continue
     }
 
     // Check if expiring soon (still sync but flag)
-    if (isTokenExpiringSoon(cfg)) {
-      channelResults.push({ channel: cfg.channel, warning: 'token_expiring_soon' })
+    if (isTokenExpiringSoon(activeCfg)) {
+      channelResults.push({ channel: activeCfg.channel, warning: 'token_expiring_soon' })
     }
 
-    const runKey = `${RUN_KEY_PREFIX}_${cfg.channel}_${new Date().toISOString()}`
+    const runKey = `${RUN_KEY_PREFIX}_${activeCfg.channel}_${new Date().toISOString()}`
 
     try {
-      const metrics = await fetcher(cfg)
+      const metrics = await fetcher(activeCfg)
 
       if (!dryRun && metrics.length > 0) {
         const { error: upsertError } = await sb
@@ -688,7 +781,7 @@ async function syncFromChannelConfigs(
       const mediaFetcher = MEDIA_FETCHERS[cfg.channel]
       if (mediaFetcher && !dryRun) {
         try {
-          const mediaItems = await mediaFetcher(cfg)
+          const mediaItems = await mediaFetcher(activeCfg)
           if (mediaItems.length > 0) {
             const { error: mediaError } = await sb
               .from('comms_media_items')
@@ -832,7 +925,7 @@ Deno.serve(async (req) => {
     }
 
     // New path: sync from comms_channel_config (per-channel API calls)
-    const result = await syncFromChannelConfigs(sb, triggeredBy, dryRun, body.channels)
+    const result = await syncFromChannelConfigs(sb, triggeredBy, dryRun, body.channels, !!body.force_refresh)
 
     return new Response(JSON.stringify({
       success: true,
