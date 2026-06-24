@@ -50,6 +50,12 @@ type ChannelConfig = {
 const RUN_KEY_PREFIX = 'comms_metrics'
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
+// LinkedIn Community Management API version (YYYYMM). The legacy /v2/ endpoints
+// were sunset; current org-statistics live under /rest/ and REQUIRE this header
+// alongside X-Restli-Protocol-Version: 2.0.0. Keep current — stale monikers 410.
+// Docs: learn.microsoft.com/linkedin/marketing/community-management/organizations
+const LINKEDIN_VERSION = '202606'
+
 function parseInteger(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
   if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value)
@@ -272,42 +278,67 @@ async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetri
   const today = new Date().toISOString().slice(0, 10)
   const metrics: NormalizedMetric[] = []
 
-  try {
-    // Fetch follower count
-    const followersResp = await fetchWithRetry(
-      `https://api.linkedin.com/v2/organizationalEntityFollowerStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
-    )
+  // Versioned Community Management API headers. /rest/ requires BOTH the
+  // LinkedIn-Version moniker and the Rest.li 2.0.0 protocol header.
+  const liHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'LinkedIn-Version': LINKEDIN_VERSION,
+    'X-Restli-Protocol-Version': '2.0.0',
+  }
 
+  try {
+    // ── Follower count ──
+    // The /rest/ organizationalEntityFollowerStatistics endpoint no longer
+    // returns total follower counts (only demographic facets), so the total
+    // comes from the dedicated networkSizes endpoint. The org URN is a path
+    // key here and MUST be URL-encoded — the raw colon form returns
+    // 400 ILLEGAL_ARGUMENT "Syntax exception in path variables".
     let followers: number | null = null
-    if (followersResp.ok) {
-      const followersData = await followersResp.json()
-      const element = followersData?.elements?.[0]
-      if (element) {
-        followers = parseInteger(
-          (element.followerCounts?.organicFollowerCount || 0) +
-          (element.followerCounts?.paidFollowerCount || 0)
-        )
-      }
+    const networkResp = await fetchWithRetry(
+      `https://api.linkedin.com/rest/networkSizes/${encodeURIComponent(orgUrn)}?edgeType=COMPANY_FOLLOWED_BY_MEMBER`,
+      { headers: liHeaders }
+    )
+    if (networkResp.ok) {
+      const networkData = await networkResp.json()
+      followers = parseInteger(networkData?.firstDegreeSize)
+    } else {
+      console.warn(`LinkedIn networkSizes ${networkResp.status}: ${(await networkResp.text()).slice(0, 300)}`)
     }
 
-    // Fetch share statistics
+    // ── Lifetime share statistics (impressions, clicks, engagement) ──
     const shareResp = await fetchWithRetry(
-      `https://api.linkedin.com/v2/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
+      `https://api.linkedin.com/rest/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
+      { headers: liHeaders }
     )
 
     let reach: number | null = null
     let engagement: number | null = null
+    let shareExtras: Record<string, unknown> = {}
     if (shareResp.ok) {
       const shareData = await shareResp.json()
       const totals = shareData?.elements?.[0]?.totalShareStatistics
       if (totals) {
         reach = parseInteger(totals.impressionCount)
-        const clicks = totals.clickCount || 0
-        const impressions = totals.impressionCount || 1
-        engagement = parseEngagement(clicks / impressions)
+        // LinkedIn supplies an official org engagement rate
+        // ((clicks+likes+comments+shares)/impressions). Use it when present,
+        // else fall back to clicks/impressions.
+        if (typeof totals.engagement === 'number') {
+          engagement = parseEngagement(totals.engagement)
+        } else {
+          const clicks = totals.clickCount || 0
+          const impressions = totals.impressionCount || 1
+          engagement = parseEngagement(clicks / impressions)
+        }
+        shareExtras = {
+          unique_impressions: parseInteger(totals.uniqueImpressionsCount),
+          clicks: parseInteger(totals.clickCount),
+          likes: parseInteger(totals.likeCount),
+          comments: parseInteger(totals.commentCount),
+          shares: parseInteger(totals.shareCount),
+        }
       }
+    } else {
+      console.warn(`LinkedIn shareStatistics ${shareResp.status}: ${(await shareResp.text()).slice(0, 300)}`)
     }
 
     metrics.push({
@@ -318,7 +349,12 @@ async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetri
       engagement_rate: engagement,
       leads: null,
       source: 'api',
-      payload: { api: 'linkedin_org_stats' },
+      payload: {
+        api: 'linkedin_org_stats',
+        version: LINKEDIN_VERSION,
+        followers_source: 'networkSizes',
+        ...shareExtras,
+      },
     })
   } catch (e) {
     console.error('LinkedIn fetch error:', e)
