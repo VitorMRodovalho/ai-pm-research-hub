@@ -92,6 +92,7 @@ const jsI18n = JSON.stringify({
   meetings: t('nav.meetings', lang),
   myTribe: t('nav.myTribe', lang),
   exploreTribes: t('nav.exploreTribes', lang),
+  goToMyTribe: t('nav.goToMyTribe', lang),
   myInitiatives: t('nav.myInitiatives', lang),
   tribePrefix: t('workspace.tribePrefix', lang),
   logout: t('nav.logout', lang),
@@ -434,6 +435,13 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         + '</a>';
     }
 
+    // #886: first row links straight to the member's own tribe (when they have one).
+    const myHref = resolveMyTribeHref();
+    if (myHref) {
+      html += '<a href="' + myHref + '" class="flex items-center gap-2 px-3 py-1.5 text-[.78rem] text-navy font-bold hover:bg-[var(--surface-hover)] no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.8rem]">&#x27A1;&#xFE0F;</span><span class="truncate">' + (i18n.goToMyTribe || 'Ir para minha tribo') + '</span></a>';
+      html += '<hr class="border-[var(--border-subtle)] my-1">';
+    }
+
     if (research.length) {
       html += '<div class="px-3 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Tribos de Pesquisa</div>';
       html += research.map((t: any) => tribeRow(t)).join('');
@@ -470,6 +478,13 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         + '</a>';
     }
 
+    // #886: first row links straight to the member's own tribe (when they have one).
+    const myHref = resolveMyTribeHref();
+    if (myHref) {
+      html += '<a href="' + myHref + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-navy font-bold no-underline hover:bg-[var(--surface-hover)] transition-all"><span class="w-4 h-4 flex items-center justify-center">&#x27A1;&#xFE0F;</span>' + (i18n.goToMyTribe || 'Ir para minha tribo') + '</a>';
+      html += '<hr class="border-[var(--border-subtle)] my-1">';
+    }
+
     if (research.length) {
       html += '<div class="px-2 pt-1 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Pesquisa</div>';
       html += research.map((t: any) => row(t)).join('');
@@ -482,6 +497,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       html += '<div class="px-2 pt-2 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Ciclos Anteriores</div>';
       html += legacy.map((t: any) => row(t, true)).join('');
     }
+    // #886: footer link to the full initiatives catalog (parity with desktop dropdown).
+    html += '<a href="' + base + '/initiatives" class="flex items-center gap-2 px-2 py-1.5 mt-1 rounded-lg text-[.7rem] text-[var(--text-muted)] font-medium no-underline hover:bg-[var(--surface-hover)] transition-all border-t border-[var(--border-subtle)]"><span class="w-4 h-4 flex items-center justify-center">&#x1F680;</span>' + (i18n.myInitiatives || 'Todas Iniciativas') + '</a>';
     return html || '<div class="px-2 py-1.5 text-[.7rem] text-[var(--text-muted)]">Nenhuma tribo disponível.</div>';
   }
 
@@ -503,6 +520,13 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         + '</a>';
     }
 
+    // #886: first row links straight to the member's own tribe (when they have one).
+    const myHref = resolveMyTribeHref();
+    if (myHref) {
+      html += '<a href="' + myHref + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2 text-white text-sm font-bold no-underline hover:bg-white/10 transition-all"><span class="w-5 h-5 flex items-center justify-center">&#x27A1;&#xFE0F;</span>' + (i18n.goToMyTribe || 'Ir para minha tribo') + '</a>';
+      html += '<hr class="border-white/10 my-1">';
+    }
+
     if (research.length) {
       html += '<div class="px-4 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-white/40">Pesquisa</div>';
       html += research.map((t: any) => row(t)).join('');
@@ -515,6 +539,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       html += '<div class="px-4 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-white/30">Ciclos Anteriores</div>';
       html += legacy.map((t: any) => row(t, true)).join('');
     }
+    // #886: footer link to the full initiatives catalog (was missing on mobile — the bug
+    // where even an admin saw "Explorar Tribos" without any path to initiatives on mobile).
+    html += '<a href="' + base + '/initiatives" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2 mt-1 text-white/70 text-sm font-medium no-underline hover:bg-white/10 transition-all border-t border-white/10"><span class="w-5 h-5 flex items-center justify-center">&#x1F680;</span>' + (i18n.myInitiatives || 'Todas Iniciativas') + '</a>';
     return html || '<div class="px-4 py-2.5 text-white/50 text-sm">Nenhuma tribo disponível.</div>';
   }
 
@@ -556,10 +583,13 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (access.visible && access.enabled && item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const href = resolveMyTribeHref();
         const canBrowseTribes = canExploreTribes(_member);
-        if (href) {
-          if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.myTribe || 'Minha Tribo'; }
-          if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.myTribe || 'Minha Tribo'; } }
-        } else if (canBrowseTribes) {
+        // #886: ALWAYS render the explore dropdown for members who can browse — even when
+        // they already belong to a tribe. The dropdown's first row links to their own tribe
+        // ("Ir para minha tribo"); the rest lists all tribes + "Todas Iniciativas". Without
+        // this, tribe-having members (e.g. the comms team) had no menu path to discover other
+        // tribes/initiatives. Trigger keeps the familiar "Minha Tribo" label when in a tribe.
+        if (canBrowseTribes) {
+          const triggerLabel = href ? (i18n.myTribe || 'Minha Tribo') : (i18n.exploreTribes || 'Explorar Tribos');
           // Desktop: inject dropdown trigger
           if (desktopEl) {
             desktopEl.style.display = 'inline-flex';
@@ -569,7 +599,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
             desktopEl.setAttribute('role', 'button');
             desktopEl.setAttribute('aria-haspopup', 'true');
             desktopEl.setAttribute('aria-expanded', 'false');
-            desktopEl.innerHTML = (i18n.exploreTribes || 'Explorar Tribos') + ' <span class="text-[.55rem] ml-0.5 opacity-60">&#x25BE;</span>';
+            desktopEl.innerHTML = triggerLabel + ' <span class="text-[.55rem] ml-0.5 opacity-60">&#x25BE;</span>';
             // Create dropdown container if missing
             if (!document.getElementById('tribe-dropdown')) {
               var dd = document.createElement('div');
@@ -587,8 +617,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
             mobileEl.removeAttribute('href');
             mobileEl.setAttribute('data-action', 'toggle-tribe-dropdown-mobile');
             mobileEl.setAttribute('role', 'button');
-            if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = (i18n.exploreTribes || 'Explorar Tribos') + ' ▾'; }
-            else { mobileEl.textContent = (i18n.exploreTribes || 'Explorar Tribos') + ' ▾'; }
+            mobileEl.setAttribute('tabindex', '0'); // #886: an <a> without href drops out of the tab order
+            mobileEl.setAttribute('aria-expanded', 'false');
+            if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = triggerLabel + ' ▾'; }
+            else { mobileEl.textContent = triggerLabel + ' ▾'; }
             if (!document.getElementById('tribe-dropdown-mobile')) {
               var ddm = document.createElement('div');
               ddm.id = 'tribe-dropdown-mobile';
@@ -596,6 +628,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
               mobileEl.parentElement?.insertBefore(ddm, mobileEl.nextSibling);
             }
           }
+        } else if (href) {
+          if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.myTribe || 'Minha Tribo'; }
+          if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.myTribe || 'Minha Tribo'; } }
         } else {
           if (desktopEl) { desktopEl.setAttribute('href', '/#tribes'); desktopEl.classList.add('opacity-50', 'pointer-events-none'); desktopEl.style.display = 'inline-flex'; }
           if (mobileEl) { mobileEl.setAttribute('href', '/#tribes'); mobileEl.classList.add('opacity-50', 'pointer-events-none'); mobileEl.style.display = 'block'; }
@@ -818,21 +853,23 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       }
       if (item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const resolved = resolveMyTribeHref();
-        if (!resolved) {
-          href = '/#tribes';
-          if (canExploreTribes(_member)) {
-            labelOverride = i18n.exploreTribes || 'Explorar Tribos';
-            const icon = DRAWER_ICONS[item.key] || '';
-            return '<div class="drawer-tribe-group">'
-              + '<button data-action="toggle-drawer-tribes" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 bg-transparent transition-all ' + extraClass + '">'
-              + icon + '<span>' + labelOverride + '</span><span class="ml-auto text-[.6rem] opacity-50 drawer-tribe-chevron">&#x25B6;</span></button>'
-              + '<div id="drawer-tribe-list" class="hidden ml-6 mt-1 flex flex-col gap-0.5"></div>'
-              + '</div>';
-          } else {
-            disabledClass = ' opacity-50 pointer-events-none';
-          }
-        } else {
+        // #886: ALWAYS a collapsible explore group for members who can browse — even when
+        // they already belong to a tribe (the dropdown's first row links to their own tribe).
+        // Previously a tribe-having member got a flat direct link and lost every path to
+        // discover other tribes/initiatives.
+        if (canExploreTribes(_member)) {
+          labelOverride = resolved ? (i18n.myTribe || 'Minha Tribo') : (i18n.exploreTribes || 'Explorar Tribos');
+          const icon = DRAWER_ICONS[item.key] || '';
+          return '<div class="drawer-tribe-group">'
+            + '<button data-action="toggle-drawer-tribes" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 bg-transparent transition-all ' + extraClass + '">'
+            + icon + '<span>' + labelOverride + '</span><span class="ml-auto text-[.6rem] opacity-50 drawer-tribe-chevron">&#x25B6;</span></button>'
+            + '<div id="drawer-tribe-list" class="hidden ml-6 mt-1 flex flex-col gap-0.5"></div>'
+            + '</div>';
+        } else if (resolved) {
           href = resolved;
+        } else {
+          href = '/#tribes';
+          disabledClass = ' opacity-50 pointer-events-none';
         }
       }
       const label = labelOverride || i18n[toCamelKey(item.key)] || item.labelKey;
@@ -974,6 +1011,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (!ddm) return;
       var isOpenM = !ddm.classList.contains('hidden');
       ddm.classList.toggle('hidden');
+      target.setAttribute('aria-expanded', String(!isOpenM)); // #886: a11y parity with desktop handler
       if (!isOpenM) {
         loadTribesForDropdown().then(function(tribes) {
           ddm!.innerHTML = renderMobileTribeDropdown(tribes);

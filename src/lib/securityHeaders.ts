@@ -30,17 +30,21 @@
  *
  * `frame-ancestors 'none'` mirrors `X-Frame-Options: DENY` in the CSP layer
  * (modern UAs prefer frame-ancestors; this prevents a future permissive CSP from
- * silently overriding the XFO header). `frame-src 'none'` keeps the page from
- * EMBEDDING third-party frames; both are intentional for the public surface.
+ * silently overriding the XFO header) — this is the clickjacking guard and stays
+ * `'none'` ALWAYS. `frame-src` controls what WE may embed (not who embeds us);
+ * it is scoped to `https://calendar.google.com` ONLY, for the editorial calendar
+ * iframe on /admin/comms (#886). Adding any new frame source is a security review
+ * item — keep this allowlist minimal. `img-src` includes `https://i.ytimg.com`
+ * for YouTube video thumbnails on /admin/comms (#886).
  */
 export const CSP =
   "default-src 'self'; " +
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://us.posthog.com https://static.cloudflareinsights.com; " +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
-  "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com; " +
+  "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com https://i.ytimg.com; " +
   "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com; " +
-  "frame-src 'none'; " +
+  "frame-src https://calendar.google.com; " +
   "object-src 'none'; " +
   "frame-ancestors 'none'; " +
   "base-uri 'self'";
