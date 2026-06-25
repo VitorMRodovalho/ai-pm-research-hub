@@ -201,10 +201,15 @@ const COMMS_I18N = {
             <p class="text-[var(--text-muted)] max-w-lg mx-auto">Pra exibir o calendário editorial: (1) tornar o Google Calendar institucional <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">público</code> ou <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">shared via link</code>, (2) copiar URL de "Integrar agenda" → "URL pública neste calendário", (3) update <code class="text-[.7rem] bg-[var(--surface-hover)] px-1 rounded">site_config.comms_calendar_embed_url</code> via SQL ou tool admin.</p>
             <p class="text-[10px] text-[var(--text-muted)] mt-3">Mantém workflow Comms team em GCal (source of truth); este painel é só visualização.</p>
           </div>
-          <!-- #886: sandbox is defense-in-depth — this PR is what first enables the iframe to load
-               (CSP frame-src 'none' -> calendar.google.com). allow-scripts+allow-same-origin render
-               the public Google Calendar embed; allow-popups opens event links in a new tab. -->
-          <iframe id="comms-calendar-iframe" class="hidden w-full" style="height: 500px; border: 0;" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups" title="Calendário Editorial Comms"></iframe>
+          <!-- #886b: deliberately NO sandbox. A public Google Calendar embed needs BOTH allow-scripts
+               AND allow-same-origin to render, and that exact pair is an ESCAPABLE sandbox — browsers
+               warn it "can escape its sandboxing", i.e. it gives false assurance plus console noise
+               while not actually isolating anything. The real, sufficient controls are:
+               CSP `frame-src https://calendar.google.com` (only Google Calendar can EVER be framed),
+               `frame-ancestors 'none'`, and the embed URL being superadmin-write-only (site_config RLS).
+               Do NOT re-add an allow-scripts+allow-same-origin sandbox here (re-introduces the warning
+               for zero security gain). -->
+          <iframe id="comms-calendar-iframe" class="hidden w-full" style="height: 500px; border: 0;" loading="lazy" title="Calendário Editorial Comms"></iframe>
         </div>
       </section>
 
