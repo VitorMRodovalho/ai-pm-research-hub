@@ -79,9 +79,22 @@ test('parity: middleware CSP byte-equals _headers /* CSP (anti-drift)', () => {
   );
 });
 
-test('parity: CSP carries frame-ancestors and frame-src none (clickjacking layer)', () => {
-  assert.match(ssotCsp, /frame-ancestors 'none'/, "CSP must declare frame-ancestors 'none'");
-  assert.match(ssotCsp, /frame-src 'none'/, "CSP must declare frame-src 'none'");
+test('parity: CSP keeps frame-ancestors none (clickjacking) + a minimal frame-src allowlist', () => {
+  // frame-ancestors 'none' is the actual clickjacking guard (who may embed US) and
+  // stays 'none' ALWAYS. frame-src controls what WE embed; #886 scopes it to the
+  // Google Calendar editorial embed on /admin/comms ONLY. Keep this allowlist
+  // minimal — adding any new frame source is a security-review item.
+  // The trailing `;` is load-bearing in BOTH patterns below: it anchors the directive's
+  // value so a second source appended before the separator (e.g. `'none' https://attacker.com`)
+  // FAILS the test instead of slipping through as a mere substring match.
+  assert.match(ssotCsp, /frame-ancestors 'none';/, "CSP must declare frame-ancestors 'none' as the SOLE value");
+  assert.match(ssotCsp, /frame-src https:\/\/calendar\.google\.com;/, 'frame-src is scoped to ONLY the calendar embed (#886)');
+  assert.ok(!/frame-src[^;]*\*/.test(ssotCsp), 'frame-src must not contain a wildcard');
+  assert.ok(!/frame-src[^;]*'unsafe/.test(ssotCsp), "frame-src must not contain 'unsafe-*'");
+});
+
+test('#886: img-src allows YouTube thumbnails (i.ytimg.com) for /admin/comms', () => {
+  assert.match(ssotCsp, /img-src[^;]*https:\/\/i\.ytimg\.com/, 'img-src must allow i.ytimg.com (comms media thumbnails)');
 });
 
 test('parity: the other global headers match between _headers /* and the SSOT', () => {

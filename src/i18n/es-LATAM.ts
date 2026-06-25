@@ -60,6 +60,7 @@ const esLATAM: Record<string, string> = {
   'admin.analytics.artifacts': 'Artefactos',
   'admin.analytics.noData': 'Sin datos disponibles',
   'nav.exploreTribes': 'Explorar Tribus',
+  'nav.goToMyTribe': 'Ir a mi tribu',
   'nav.publications': 'Publicaciones y Envíos',
   'nav.boardComms': '📋 Board Comunicación',
   'nav.boardPublications': '📄 Board Publicaciones',

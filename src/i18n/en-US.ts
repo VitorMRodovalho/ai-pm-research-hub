@@ -60,6 +60,7 @@ const enUS: Record<string, string> = {
   'admin.analytics.artifacts': 'Artifacts',
   'admin.analytics.noData': 'No data available',
   'nav.exploreTribes': 'Explore Tribes',
+  'nav.goToMyTribe': 'Go to my tribe',
   'nav.publications': 'Publications & Submissions',
   'nav.boardComms': '📋 Comms Board',
   'nav.boardPublications': '📄 Publications Board',
