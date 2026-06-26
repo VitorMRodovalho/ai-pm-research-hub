@@ -742,7 +742,7 @@ const enUS: Record<string, string> = {
   'chapters.mapLegendCountry': 'Researchers by country',
   'chapters.mapLegendContinent': 'Continents (grouped)',
   'chapters.mapLegendState': 'States with members who opted in',
-  'chapters.mapStateNote': 'States with 3+ members who authorized displaying their state of residence (aggregate, never individual · LGPD). Already counted in the country total.',
+  'chapters.mapNote': 'The map shows where the Núcleo is present, by country (aggregate count, min. 3 members). Each member may authorize displaying their state (Brazil/USA) or country of residence — aggregated (min. 3) or precise, even as the only one in their location — under Settings → Profile. The rest is grouped by continent. No individual location appears without authorization (LGPD).',
   'chapters.activeLabel': 'active partners',
   'chapters.onboardingLabel': 'onboarding',
   'chapters.goal': 'Union announced at CBGPL 2026 — PMI Brazil chapters in progressive integration',
