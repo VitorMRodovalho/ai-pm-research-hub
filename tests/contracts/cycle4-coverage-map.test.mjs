@@ -24,6 +24,7 @@ const SECTION = 'src/components/sections/ChaptersSection.astro';
 const ASSET = 'public/assets/maps/world-equirect.svg';
 const MIG_COL = 'supabase/migrations/20260805000226_pd_map_2_allow_state_column.sql';
 const MIG_V2 = 'supabase/migrations/20260805000241_pd_map_world_state_reach_v2.sql';
+const MIG_CONT_897 = 'supabase/migrations/20260805000253_fix_continent_reach_unmapped_country_vanish_897.sql';
 
 test('PD-MAP-WORLD: the Brazil-only choropleth was retired (no BrazilMap import remains)', () => {
   assert.ok(!existsSync('src/components/sections/BrazilMap.astro'), 'BrazilMap.astro removed');
@@ -111,6 +112,29 @@ test('PD-MAP-WORLD: state-reach v2 migration carries the LGPD gates (opt-in + k�
   assert.match(rpc, /SECURITY DEFINER/, 'RPC is SECURITY DEFINER (zero-PII public surface)');
   assert.match(rpc, /REVOKE ALL ON FUNCTION public\.get_public_state_reach_v2/, 'PUBLIC execute revoked');
   assert.match(rpc, /GRANT EXECUTE ON FUNCTION public\.get_public_state_reach_v2\(integer\) TO anon, authenticated, service_role/, 'granted to the three roles');
+});
+
+test('PD-MAP-WORLD (#897): continent-reach keeps every unmapped-country (XX) member in the residual', () => {
+  // continent_reach is the SOLE source of the ZZ "Internacional" chip (country_reach's own ZZ is
+  // filtered out client-side). The old residual filter (ct.total<3 AND NOT is_precise) was written
+  // for RECOGNIZED countries but also hit the synthetic XX bucket — which is never a named pin
+  // (country_reach folds XX->ZZ) nor a precise pin (no centroid). That silently dropped (a) a
+  // precise-consenter in an unsupported country (#897) and (b) >=3 members spread across unmapped
+  // countries (XX bucket >=3). The fix: XX bypasses BOTH filters and always stays in the residual.
+  const rpc = read(MIG_CONT_897);
+  assert.ok(rpc, '#897 continent-reach fix migration present');
+  assert.match(rpc, /CREATE OR REPLACE FUNCTION public\.get_public_continent_reach\(\)/, 'redefines continent_reach');
+  // the XX-bypass branch keeps unmapped-country members in the residual
+  assert.match(rpc, /n\.code = 'XX'/, "XX bucket bypasses the recognized-country exclusions (stays in residual)");
+  // the recognized-small-country gate is preserved (so named/precise pins are still deduped out)
+  assert.match(rpc, /OR \(ct\.total < 3 AND NOT n\.is_precise\)/, 'recognized small countries still gated by total<3 + not-precise');
+  // the buggy form had `ct.total<3` and `NOT is_precise` as standalone TOP-LEVEL ANDs (which also
+  // gated the XX bucket). The fix nests them inside `OR (...)`, so the standalone `AND ct.total < 3`
+  // must be gone — that's the #897 root cause that dropped XX members.
+  assert.doesNotMatch(rpc, /AND\s+ct\.total\s*<\s*3/, 'no standalone top-level total<3 filter (the #897 root cause; now nested in the OR)');
+  assert.match(rpc, /SECURITY DEFINER/, 'stays SECURITY DEFINER (zero-PII public surface)');
+  // ZZ stays an aggregate chip, never a placeable pin (k-anon preserved)
+  assert.match(rpc, /ELSE 'ZZ'/, 'unmapped -> ZZ Internacional bucket');
 });
 
 test('PD-MAP-WORLD: coverage-map i18n keys exist in all 3 dictionaries', () => {
