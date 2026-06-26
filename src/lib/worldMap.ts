@@ -78,11 +78,27 @@ export const REGION_NAMES: Record<string, string> = {
   _AL: 'Alagoas',
 };
 
+// Continent centroids (lat, lon) for the residual continent pins (k>=3 per continent, from
+// get_public_continent_reach). 'ZZ' (Internacional) has no single location → legend chip only,
+// never a pin. Codes match the SQL continent mapping (EU/SA/NA + AF reserved for the future).
+export const CONTINENT_CENTROIDS: Record<string, [number, number]> = {
+  EU: [50.0, 10.0],   // central Europe
+  SA: [-15.0, -60.0], // central South America
+  NA: [58.0, -100.0], // central Canada (residual NA is non-US/BR → sits north of the US country pin)
+  AF: [2.0, 20.0],    // central Africa (reserved)
+};
+
+// Continent display names (pt-BR proper nouns; recognizable across locales), mirroring REGION_NAMES.
+// Kept out of the i18n dicts. 'ZZ' = the Internacional bucket label for the legend chip.
+export const CONTINENT_NAMES: Record<string, string> = {
+  EU: 'Europa', SA: 'América do Sul', NA: 'América do Norte', AF: 'África', ZZ: 'Internacional',
+};
+
 export interface GeoPin {
-  kind: 'country' | 'state';
-  code: string;            // 'BR' / 'US-VA' / 'BR-SP'
-  countryCode: string;     // 'BR' / 'US'
-  regionName?: string;     // 'Virgínia' (state pins only)
+  kind: 'country' | 'state' | 'continent';
+  code: string;            // 'BR' / 'US-VA' / 'BR-SP' / 'EU'
+  countryCode: string;     // 'BR' / 'US' (continent pins: the continent code)
+  regionName?: string;     // 'Virgínia' (state pins) / 'Europa' (continent pins)
   count: number;
   leftPct: number;
   topPct: number;
@@ -96,27 +112,47 @@ function regionName(countryCode: string, region: string): string {
 }
 
 /**
- * Build the placeable pin list from the two zero-PII RPC payloads. Country pins come from
- * get_public_country_reach (k-anon, ZZ excluded → legend), state pins from
- * get_public_state_reach_v2 (consented + k≥3). Off-window or unknown-centroid rows are returned as
- * pins-skipped (skippedCountries/skippedStates); a skipped STATE's members still count in that
- * country's pin (country layer covers all active members), so no member is dropped from a total.
+ * Build the placeable pin list from the zero-PII RPC payloads (unified geo opt-in model,
+ * legal-counsel parecer 2026-06-25). Four layers, painted in order:
+ *  - countryReach (get_public_country_reach): named countries k>=3 (BR/US + any >=3) → country pins;
+ *    'ZZ'/'XX' excluded (the Internacional bucket is a legend chip, surfaced via continentReach).
+ *  - preciseCountryReach (get_public_precise_country_reach): non-BR/US countries with >=1 member who
+ *    consented to precise (k=1) display → country pins; deduped against named countries.
+ *  - stateReach (get_public_state_reach_v3): BR/US states, dual-population (k=1 precise + k>=3 aggregate).
+ *  - continentReach (get_public_continent_reach): the residual grouped by continent (k>=3) → continent
+ *    pins; the 'ZZ' row carries no centroid and is returned to the caller as the Internacional chip.
+ * Off-window or unknown-centroid rows are returned as pins-skipped; their members still count in a
+ * coarser layer, so no member is dropped from a total.
  */
 export function buildGeoPins(
   countryReach: Array<{ country_code: string; member_count: number | string }>,
   stateReach: Array<{ country_code: string; region_code: string; member_count: number | string }>,
-): { pins: GeoPin[]; skippedCountries: string[]; skippedStates: string[] } {
+  preciseCountryReach: Array<{ country_code: string; member_count: number | string }> = [],
+  continentReach: Array<{ continent_code: string; member_count: number | string }> = [],
+): { pins: GeoPin[]; skippedCountries: string[]; skippedStates: string[]; skippedContinents: string[] } {
   const pins: GeoPin[] = [];
   const skippedCountries: string[] = [];
   const skippedStates: string[] = [];
+  const skippedContinents: string[] = [];
+  const seenCountry = new Set<string>();
+
+  const pushCountry = (code: string, count: number) => {
+    if (seenCountry.has(code)) return;
+    const centroid = COUNTRY_CENTROIDS[code];
+    if (!centroid || !isInWindow(centroid[0], centroid[1])) { skippedCountries.push(code); return; }
+    const { leftPct, topPct } = projectToWindow(centroid[0], centroid[1]);
+    pins.push({ kind: 'country', code, countryCode: code, count, leftPct, topPct });
+    seenCountry.add(code);
+  };
 
   for (const c of countryReach) {
-    const code = c.country_code;
-    if (code === 'ZZ' || code === 'XX') continue; // intl bucket → legend chip, not a pin
-    const centroid = COUNTRY_CENTROIDS[code];
-    if (!centroid || !isInWindow(centroid[0], centroid[1])) { skippedCountries.push(code); continue; }
-    const { leftPct, topPct } = projectToWindow(centroid[0], centroid[1]);
-    pins.push({ kind: 'country', code, countryCode: code, count: Number(c.member_count || 0), leftPct, topPct });
+    if (c.country_code === 'ZZ' || c.country_code === 'XX') continue; // intl bucket → continentReach/chip
+    pushCountry(c.country_code, Number(c.member_count || 0));
+  }
+  // Precise (k=1) consented countries — un-bucket the member from ZZ into a named country pin.
+  for (const c of preciseCountryReach) {
+    if (c.country_code === 'ZZ' || c.country_code === 'XX') continue;
+    pushCountry(c.country_code, Number(c.member_count || 0));
   }
 
   for (const s of stateReach) {
@@ -128,12 +164,25 @@ export function buildGeoPins(
       regionName: regionName(s.country_code, s.region_code), count: Number(s.member_count || 0), leftPct, topPct,
     });
   }
-  return { pins, skippedCountries, skippedStates };
+
+  for (const ct of continentReach) {
+    const code = ct.continent_code;
+    if (code === 'ZZ' || code === 'XX') continue; // Internacional → legend chip, not a pin
+    const centroid = CONTINENT_CENTROIDS[code];
+    if (!centroid || !isInWindow(centroid[0], centroid[1])) { skippedContinents.push(code); continue; }
+    const { leftPct, topPct } = projectToWindow(centroid[0], centroid[1]);
+    pins.push({
+      kind: 'continent', code, countryCode: code,
+      regionName: CONTINENT_NAMES[code] || code, count: Number(ct.member_count || 0), leftPct, topPct,
+    });
+  }
+
+  return { pins, skippedCountries, skippedStates, skippedContinents };
 }
 
-/** Pin diameter in px from member count (sqrt scale; country pins larger than state pins). */
-export function pinDiameter(kind: 'country' | 'state', count: number): number {
-  const base = kind === 'country' ? 20 : 15;
-  const k = kind === 'country' ? 4.2 : 2.6;
+/** Pin diameter in px from member count (sqrt scale; country/continent pins larger than state pins). */
+export function pinDiameter(kind: 'country' | 'state' | 'continent', count: number): number {
+  const base = kind === 'state' ? 15 : 20;
+  const k = kind === 'state' ? 2.6 : 4.2;
   return Math.round(base + k * Math.sqrt(Math.max(count, 1)));
 }

@@ -2,6 +2,7 @@
 import { t, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 import { loadChapters } from '../../lib/chapters';
+import { CONTINENT_NAMES } from '../../lib/worldMap';
 import WorldReachMap from './WorldReachMap.astro';
 
 interface Props { lang?: Lang; }
@@ -17,33 +18,51 @@ const chapters = await loadChapters(sbAnon);
 // carregados ao vivo — nada hardcoded (fallback de chapters.ts cobre RPC indisponível).
 const activeCount = chapters.length;
 
-// R6 — Alcance internacional (legenda nomeada por país, ao vivo). get_public_country_reach()
-// agrega members.country (ISO-2) sobre a MESMA população de active_members ("pesquisadores
-// ativos"), então a soma das contagens bate com o denominador canônico. Zero-PII.
+// R6 — Alcance internacional + camadas do opt-in unificado de localização (parecer legal-counsel
+// 2026-06-25). get_public_country_reach() agrega members.country (ISO-2) k>=3; precise_country_reach
+// un-bucketiza quem consentiu exibição precisa (k=1); continent_reach decompõe o residual em
+// continentes (k>=3) + 'ZZ' (Internacional). Tudo zero-PII, MESMA população canônica de active_members.
 type CountryReach = { country_code: string; member_count: number };
+type StateReach = { country_code: string; region_code: string; member_count: number };
+type ContinentReach = { continent_code: string; member_count: number };
+
 let countryReach: CountryReach[] = [];
 try {
   const { data, error } = await sbAnon.rpc('get_public_country_reach');
   if (!error && Array.isArray(data)) countryReach = data as CountryReach[];
 } catch { /* legenda some se a RPC falhar — banda de capítulos segue íntegra */ }
 
-// Países NOMEADOS p/ a contagem "N países" — exclui o bucket k-anon 'ZZ'/'XX' ("Internacional"),
-// que não é um país e não deve inflar o número (ele aparece como chip 🌎 separado abaixo).
-const namedReach = countryReach.filter((c) => c.country_code !== 'ZZ' && c.country_code !== 'XX');
+// Países do opt-in PRECISO (k=1): non-BR/US que consentiram aparecer mesmo como único membro.
+let preciseCountryReach: CountryReach[] = [];
+try {
+  const { data, error } = await sbAnon.rpc('get_public_precise_country_reach');
+  if (!error && Array.isArray(data)) preciseCountryReach = data as CountryReach[];
+} catch { /* camada precise some se a RPC falhar */ }
+
+// Países NOMEADOS p/ a contagem "N países" — k>=3 nomeados (BR/US/…) + países do opt-in preciso (k=1).
+// Exclui 'ZZ'/'XX' ("Internacional"); o residual aparece como chips de continente abaixo.
+const namedReach = [
+  ...countryReach.filter((c) => c.country_code !== 'ZZ' && c.country_code !== 'XX'),
+  ...preciseCountryReach.filter((c) => c.country_code !== 'ZZ' && c.country_code !== 'XX'),
+];
 const reachCountries = namedReach.length;
 const reachMembers = namedReach.reduce((sum, c) => sum + Number(c.member_count || 0), 0);
 
-// PD-MAP-WORLD — pins por ESTADO (BR UFs + US states) de membros que autorizaram a exibição
-// (get_public_state_reach_v2: opt-in allow_state_in_public_map + supressão k>=3, parecer
-// legal-counsel 2026-06-23). Camada de detalhe sobre os pins de país; some sozinha enquanto
-// nenhum estado tem >=3 opt-ins. Zero-PII, mesma população canônica do country reach.
-type StateReachV2 = { country_code: string; region_code: string; member_count: number };
-let stateReachV2: StateReachV2[] = [];
+// PD-MAP-WORLD — pins por ESTADO (BR/US) via get_public_state_reach_v3: dual-população (k=1 preciso
+// + k>=3 agregado legado), nunca somadas abaixo de k (parecer 2026-06-25). Some sozinha enquanto vazia.
+let stateReach: StateReach[] = [];
 try {
-  const { data, error } = await sbAnon.rpc('get_public_state_reach_v2');
-  if (!error && Array.isArray(data)) stateReachV2 = data as StateReachV2[];
+  const { data, error } = await sbAnon.rpc('get_public_state_reach_v3');
+  if (!error && Array.isArray(data)) stateReach = data as StateReach[];
 } catch { /* a camada de estado some se a RPC falhar — os pins de país seguem íntegros */ }
-const hasStatePins = stateReachV2.length > 0;
+const hasStatePins = stateReach.length > 0;
+
+// Continente — residual não-consentido agrupado (k>=3) + 'ZZ' (Internacional). Substitui o chip ZZ plano.
+let continentReach: ContinentReach[] = [];
+try {
+  const { data, error } = await sbAnon.rpc('get_public_continent_reach');
+  if (!error && Array.isArray(data)) continentReach = data as ContinentReach[];
+} catch { /* camada de continente some se a RPC falhar */ }
 
 // Bandeira emoji a partir do ISO-3166-1 alpha-2 (regional indicator symbols).
 function flagEmoji(code: string): string {
@@ -67,7 +86,9 @@ function flagEmoji(code: string): string {
     <div class="mb-10">
       <WorldReachMap
         countryReach={countryReach}
-        stateReach={stateReachV2}
+        stateReach={stateReach}
+        preciseCountryReach={preciseCountryReach}
+        continentReach={continentReach}
         lang={lang}
         ariaLabel={t('chapters.worldMapAria', lang)}
       />
@@ -76,6 +97,12 @@ function flagEmoji(code: string): string {
           <span class="inline-block w-3 h-3 rounded-full" style="background:var(--color-teal)"></span>
           {t('chapters.mapLegendCountry', lang)}
         </span>
+        {continentReach.some((c) => c.continent_code !== 'ZZ' && c.continent_code !== 'XX') && (
+          <span class="inline-flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-full" style="background:var(--color-navy)"></span>
+            {t('chapters.mapLegendContinent', lang)}
+          </span>
+        )}
         {hasStatePins && (
           <span class="inline-flex items-center gap-2">
             <span class="inline-block w-3 h-3 rounded-full" style="background:var(--color-orange)"></span>
@@ -116,10 +143,17 @@ function flagEmoji(code: string): string {
           {' · '}{reachMembers} {t('chapters.reachMembersSuffix', lang)}
         </p>
         <div class="flex flex-wrap justify-center gap-3">
-          {countryReach.map((c) => (
+          {namedReach.map((c) => (
             <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-full pl-3 pr-4 py-1.5 flex items-center gap-2">
               <span class="text-lg leading-none" aria-hidden="true">{flagEmoji(c.country_code)}</span>
               <span class="text-sm font-bold text-[var(--text-primary)]">{t(`country.${c.country_code}`, lang)}</span>
+              <span class="text-sm font-semibold text-teal tabular-nums">{c.member_count}</span>
+            </div>
+          ))}
+          {continentReach.map((c) => (
+            <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-full pl-3 pr-4 py-1.5 flex items-center gap-2">
+              <span class="text-lg leading-none" aria-hidden="true">{c.continent_code === 'ZZ' || c.continent_code === 'XX' ? '🌎' : '🌍'}</span>
+              <span class="text-sm font-bold text-[var(--text-primary)]">{c.continent_code === 'ZZ' || c.continent_code === 'XX' ? t(`country.${c.continent_code}`, lang) : (CONTINENT_NAMES[c.continent_code] || c.continent_code)}</span>
               <span class="text-sm font-semibold text-teal tabular-nums">{c.member_count}</span>
             </div>
           ))}

@@ -212,6 +212,8 @@ const PROFILE_I18N = {
   statePlaceholder: t('profile.statePlaceholder', lang),
   countryPlaceholder: t('profile.countryPlaceholder', lang),
   allowStateMapLabel: t('profile.allowStateMapLabel', lang),
+  allowPreciseLocationMapLabel: t('profile.allowPreciseLocationMapLabel', lang),
+  legacyStateMapNote: t('profile.legacyStateMapNote', lang),
   privacyDisclaimer: t('profile.privacyDisclaimer', lang),
   readPrivacyPolicy: t('profile.readPrivacyPolicy', lang),
   gpManagedFields: t('profile.gpManagedFields', lang),
@@ -1829,9 +1831,16 @@ const PROFILE_I18N = {
               <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.shareBirthDateLabel}</span>
             </label>
             <label class="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" id="self-allow-state-map" class="mt-0.5" ${m.allow_state_in_public_map ? 'checked' : ''}>
+              <input type="checkbox" id="self-allow-precise-map" class="mt-0.5" ${m.allow_precise_location_in_public_map ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.allowPreciseLocationMapLabel}</span>
+            </label>
+            ${m.allow_state_in_public_map ? `
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-allow-state-map" class="mt-0.5" checked>
               <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.allowStateMapLabel}</span>
             </label>
+            ${!m.allow_precise_location_in_public_map ? `<p class="text-[.65rem] text-[var(--text-muted)] pl-6 -mt-1">${PROFILE_I18N.legacyStateMapNote}</p>` : ''}
+            ` : ''}
           </div>
           <p class="text-[.65rem] text-[var(--text-muted)] mt-3">
             ${PROFILE_I18N.privacyDisclaimer}
@@ -2229,9 +2238,13 @@ const PROFILE_I18N = {
     if (shareAddress !== (currentMember.share_address ?? false)) fields.share_address = shareAddress;
     const shareBirthDate = (document.getElementById('self-share-birth-date') as HTMLInputElement)?.checked ?? false;
     if (shareBirthDate !== (currentMember.share_birth_date ?? false)) fields.share_birth_date = shareBirthDate;
-    // PD-MAP: consentimento p/ heatmap público por estado (opt-in, revogável)
+    // PD-MAP: consentimento legado p/ heatmap público por estado agregado (k>=3, opt-in, revogável).
+    // Checkbox só renderiza para quem já o tem (os grandfathered); novos membros usam o toggle preciso abaixo.
     const allowStateMap = (document.getElementById('self-allow-state-map') as HTMLInputElement)?.checked ?? false;
     if (allowStateMap !== (currentMember.allow_state_in_public_map ?? false)) fields.allow_state_in_public_map = allowStateMap;
+    // PD-MAP unified opt-in: localização precisa (estado BR/US ou país) mesmo a k=1 (parecer 2026-06-25).
+    const allowPreciseMap = (document.getElementById('self-allow-precise-map') as HTMLInputElement)?.checked ?? false;
+    if (allowPreciseMap !== (currentMember.allow_precise_location_in_public_map ?? false)) fields.allow_precise_location_in_public_map = allowPreciseMap;
 
     let data: any;
     if (Object.keys(fields).length > 0) {

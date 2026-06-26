@@ -573,6 +573,8 @@ const ptBR: Record<string, string> = {
   'profile.statePlaceholder': 'Selecione o estado',
   'profile.countryPlaceholder': 'Selecione o país',
   'profile.allowStateMapLabel': 'Autorizo a inclusão do meu estado de residência em mapas de distribuição geográfica exibidos publicamente na plataforma Núcleo IA & GP. O dado aparecerá apenas de forma agregada (nunca individual). Você pode revogar a qualquer momento.',
+  'profile.allowPreciseLocationMapLabel': 'Autorizo a inclusão da minha localização geográfica — estado de residência (para membros do Brasil e dos Estados Unidos) ou país de residência (para membros de outros países) — em mapas de distribuição geográfica exibidos publicamente na plataforma Núcleo IA & GP. Estou ciente de que meu estado ou país poderá aparecer mesmo que eu seja o único membro desta plataforma naquela localização, tornando minha origem geográfica identificável no contexto desta comunidade. Posso revogar esta autorização a qualquer momento nas configurações do meu perfil.',
+  'profile.legacyStateMapNote': 'Você autorizou a exibição agregada do seu estado (mínimo de 3 membros). Para aparecer mesmo como único membro da sua localização, marque a opção acima.',
   'profile.privacyDisclaimer': 'Endereço e telefone são sempre usados no Termo de Voluntariado. Essas opções controlam apenas se outros membros podem ver no seu perfil público.',
   'profile.readPrivacyPolicy': 'Ler Política de Privacidade',
   'profile.gpManagedFields': '🔒 Email, capítulo, papel e tribo são geridos pelo GP.',
@@ -738,6 +740,7 @@ const ptBR: Record<string, string> = {
   // Mapa-múndi (PD-MAP-WORLD — pins por país + estados BR/EUA de quem consentiu)
   'chapters.worldMapAria': 'Mapa-múndi com pesquisadores ativos do Núcleo por país e estado',
   'chapters.mapLegendCountry': 'Pesquisadores por país',
+  'chapters.mapLegendContinent': 'Continentes (agrupado)',
   'chapters.mapLegendState': 'Estados com membros que autorizaram exibição',
   'chapters.mapStateNote': 'Estados com 3+ membros que autorizaram a exibição do seu estado de residência (agregado, nunca individual · LGPD). Já contabilizados no total do país.',
   'chapters.activeLabel': 'parceiros ativos',

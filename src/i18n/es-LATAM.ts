@@ -573,6 +573,8 @@ const esLATAM: Record<string, string> = {
   'profile.statePlaceholder': 'Selecciona tu estado',
   'profile.countryPlaceholder': 'Selecciona tu país',
   'profile.allowStateMapLabel': 'Autorizo la inclusión de mi estado de residencia en mapas de distribución geográfica exhibidos públicamente en la plataforma Núcleo IA & GP. El dato aparecerá solo de forma agregada (nunca individual). Puedes revocar en cualquier momento.',
+  'profile.allowPreciseLocationMapLabel': 'Autorizo la inclusión de mi ubicación geográfica — estado de residencia (para miembros de Brasil y Estados Unidos) o país de residencia (para miembros de otros países) — en mapas de distribución geográfica exhibidos públicamente en la plataforma Núcleo IA & GP. Soy consciente de que mi estado o país podrá aparecer incluso si soy el único miembro de esta plataforma en esa ubicación, haciendo identificable mi origen geográfico en el contexto de esta comunidad. Puedo revocar esta autorización en cualquier momento en la configuración de mi perfil.',
+  'profile.legacyStateMapNote': 'Autorizaste la exhibición agregada de tu estado (mínimo de 3 miembros). Para aparecer incluso como único miembro de tu ubicación, marca la opción de arriba.',
   'profile.privacyDisclaimer': 'Dirección y teléfono se usan siempre en el Acuerdo de Voluntariado. Estas opciones controlan solo si otros miembros pueden verlos en tu perfil público.',
   'profile.readPrivacyPolicy': 'Leer Política de Privacidad',
   'profile.gpManagedFields': '🔒 Email, capítulo, rol y tribu son gestionados por el GP.',
@@ -738,6 +740,7 @@ const esLATAM: Record<string, string> = {
   // Mapa mundial (PD-MAP-WORLD — pines por país + estados BR/EUA de quien consintió)
   'chapters.worldMapAria': 'Mapa mundial de investigadores activos del Núcleo por país y estado',
   'chapters.mapLegendCountry': 'Investigadores por país',
+  'chapters.mapLegendContinent': 'Continentes (agrupado)',
   'chapters.mapLegendState': 'Estados con miembros que autorizaron mostrarlo',
   'chapters.mapStateNote': 'Estados con 3+ miembros que autorizaron mostrar su estado de residencia (agregado, nunca individual · LGPD). Ya contabilizados en el total del país.',
   'chapters.activeLabel': 'socios activos',

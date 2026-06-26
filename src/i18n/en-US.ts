@@ -573,6 +573,8 @@ const enUS: Record<string, string> = {
   'profile.statePlaceholder': 'Select your state',
   'profile.countryPlaceholder': 'Select your country',
   'profile.allowStateMapLabel': 'I authorize including my state of residence in geographic distribution maps shown publicly on the Núcleo IA & GP platform. The data appears only in aggregate form (never individually). You may revoke this at any time.',
+  'profile.allowPreciseLocationMapLabel': 'I authorize the inclusion of my geographic location — state of residence (for members in Brazil and the United States) or country of residence (for members elsewhere) — in geographic distribution maps shown publicly on the Núcleo IA & GP platform. I understand that my state or country may be displayed even if I am the only member of this platform in that location, making my geographic origin identifiable within this community. I may revoke this authorization at any time in my profile settings.',
+  'profile.legacyStateMapNote': 'You authorized aggregate display of your state (minimum of 3 members). To appear even as the only member of your location, check the option above.',
   'profile.privacyDisclaimer': 'Address and phone are always used in the Volunteer Agreement. These options control only whether other members can see them on your public profile.',
   'profile.readPrivacyPolicy': 'Read Privacy Policy',
   'profile.gpManagedFields': '🔒 Email, chapter, role, and tribe are managed by GP.',
@@ -738,6 +740,7 @@ const enUS: Record<string, string> = {
   // World map (PD-MAP-WORLD — country pins + BR/US state pins for opted-in members)
   'chapters.worldMapAria': 'World map of active Núcleo researchers by country and state',
   'chapters.mapLegendCountry': 'Researchers by country',
+  'chapters.mapLegendContinent': 'Continents (grouped)',
   'chapters.mapLegendState': 'States with members who opted in',
   'chapters.mapStateNote': 'States with 3+ members who authorized displaying their state of residence (aggregate, never individual · LGPD). Already counted in the country total.',
   'chapters.activeLabel': 'active partners',
