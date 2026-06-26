@@ -8,12 +8,16 @@
 > **Escopo**: 24 tabelas/views + 1 função preservadas com anon SELECT
 > grant após Track R Phase R3 (p59) + 1 função PII (`get_gp_whatsapp`)
 > com inline LGPD comment + 1 função de agenda sem PII
-> (`get_next_general_meeting`, 2026-06-11) + 3 funções do mapa-múndi de
-> alcance (seção H — 2 ativas + 1 legado deprecado, 2026-06-23).
-> Total: **29 superfícies**.
+> (`get_next_general_meeting`, 2026-06-11) + 6 funções do mapa-múndi de
+> alcance (seção H — 4 ativas + 2 legadas deprecadas; agregadas k≥3 e
+> localização precisa consentida k=1, 2026-06-26).
+> Total: **32 superfícies**.
 >
-> **Atualizado**: 2026-06-23 (seção H — funções do mapa-múndi de distribuição
-> de membros, PR #852/#853; itens anteriores: 2026-06-11 header DPO;
+> **Atualizado**: 2026-06-26 (seção H expandida — opt-in de localização
+> precisa k=1: novas funções `get_public_state_reach_v3`,
+> `get_public_precise_country_reach`, `get_public_continent_reach`; PR
+> #894/#896 backend+UI + este PR-3 de governança. Itens anteriores:
+> 2026-06-23 mapa-múndi PR #852/#853; 2026-06-11 header DPO;
 > corpo 2026-04-26, p59)
 > **Próxima revisão**: trimestral (cadência sponsor touchpoint)
 > **Sponsor**: PMI-GO (Ivan Lourenço, Presidente)
@@ -358,13 +362,30 @@ Dashboards e catálogos públicos de saída institucional.
 
 ---
 
-## H. Public Reach Map Functions (3)
+## H. Public Reach Map Functions (6)
 
 Funções `SECURITY DEFINER` que alimentam o **mapa-múndi de distribuição de
-membros** na homepage (`#capitulos`, "Capítulos PMI Integrados" — PR #852/#853,
-2026-06-23). Substituíram o choropleth Brasil-only (`BrazilMap.astro`, deletado).
-Todas retornam **apenas agregados** com piso de k-anonimato; nenhuma expõe linha
-individual.
+membros** na homepage (`#capitulos`, "Capítulos PMI Integrados"). Originadas em
+PR #852/#853 (2026-06-23) e expandidas em PR #894/#896 (2026-06-26) com o opt-in
+unificado de **localização precisa** (k=1). Substituíram o choropleth Brasil-only
+(`BrazilMap.astro`, deletado).
+
+**Dois regimes coexistem, por base legal distinta** (parecer legal-counsel 2026-06-25):
+
+- **Agregado (Art. 7, IX — legítimo interesse, k≥3):** país (H.1) e continente
+  residual (H.4). Contagens com piso de anonimato; nenhuma linha individual.
+- **Consentido (Art. 7, I — consentimento específico):** estado BR/US (porção
+  precise de H.2) e país não-BR/US (H.3). Exibem a localização do membro **mesmo
+  a k=1** (um único membro), exclusivamente para quem ativou o opt-in específico e
+  informado `allow_precise_location_in_public_map`. A população legada
+  `allow_state_in_public_map` permanece **k≥3** ("nunca individual").
+
+As populações agregada e precise são tratadas em **subconsultas segregadas** e
+**jamais somadas** quando a contagem agregada é inferior a 3 (regra "d" do parecer —
+evita reconstruir indiretamente a população legada sub-k). Nenhuma função expõe PII
+direta; o output é sempre `(localização, contagem)`. **A premissa anterior "nenhuma
+expõe linha individual" não vale mais** para a porção precise/H.3, que é exibição
+individual por consentimento explícito.
 
 ### H.1 `get_public_country_reach()`
 
@@ -383,33 +404,73 @@ individual.
 | **Retenção** | N/A (derivado ao vivo de `members`; sem persistência própria) |
 | **Medidas técnicas (Art. 46)** | SECURITY DEFINER; REVOKE ALL FROM PUBLIC + GRANT EXECUTE só a anon/authenticated/service_role |
 
-### H.2 `get_public_state_reach_v2(p_min_k int DEFAULT 3)`
+### H.2 `get_public_state_reach_v3(p_min_k int DEFAULT 3)` — dual-população (ATIVA)
 
 | Campo ROPA | Valor |
 |---|---|
-| **Categoria de dado** | Agregado consentido — contagem de membros por **estado/UF** (BR) e **state** (US) |
-| **Base legal** | **Art. 7, I (consentimento)** — opt-in explícito `members.allow_state_in_public_map` + Art. 7, IX (transparência) sobre o agregado |
-| **Finalidade** | Pins de estado (BR/EUA) no mapa-múndi, apenas para quem autorizou exibir seu estado de residência de forma agregada |
-| **Output** | `(country_code, region_code, member_count)` — só BR UFs + US states de membros opt-in |
-| **k-anonimato** | **Piso rígido k≥3 via `GREATEST(p_min_k, 3)`** — inbypassável; estados com < 3 opt-ins não aparecem. k≤2 é proibido pelo texto de consentimento ("apenas de forma agregada · nunca individual") |
-| **Texto de consentimento** | `profile.allowStateMapLabel`: "meu estado de residência ... apenas de forma agregada (nunca individual)" — país-agnóstico (cobre US states), **sem citar k** (parecer legal-counsel 2026-06-23, **Cenário A**: ajuste 5→3 não exige re-consentimento, só atualização de COMMENT/RoPA) |
-| **Titulares** | Membros ativos que ativaram o opt-in de estado |
-| **Revogação** | Desativar o toggle em `/profile` ⇒ removido do agregado no próximo render |
-| **Transferência internacional** | Igual a H.1 — sem transferência de dado individual; output agregado via CDN, entrada em sa-east-1. |
-| **Retenção** | Output: N/A (derivado ao vivo de `members`). Flag de consentimento `members.allow_state_in_public_map`: persiste enquanto membro ativo; anonimizada pelo cron `anonymize_inactive_members` 5 anos após offboarding (ADR-0014). |
-| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, `search_path=''`; REVOKE ALL FROM PUBLIC + GRANT EXECUTE só a anon/authenticated/service_role; **piso k inbypassável** via `GREATEST(p_min_k, 3)` no corpo (não depende de o caller respeitar o parâmetro) |
-| **Migration** | `20260805000241` (criação v2 com piso k≥3) |
+| **Status** | **Ativa** — função de estado em uso pela homepage (`ChaptersSection.astro`) desde PR #896 (2026-06-26). Substituiu a v2 (H.5) no frontend. |
+| **Categoria de dado** | Localização de residência por **estado/UF** (BR) e **state** (US) de membros que consentiram. Duas populações: **(a)** agregada (`allow_state_in_public_map AND NOT allow_precise…`) e **(b)** precisa (`allow_precise_location_in_public_map`). |
+| **Base legal** | **Art. 7, I (consentimento) — base primária e vinculante** das duas porções: legado `allow_state_in_public_map` ("nunca individual", k≥3) + novo `allow_precise_location_in_public_map` ("mesmo que eu seja o único", k=1). Revogado o consentimento, o membro sai da próxima consulta. *Nota:* a porção agregada k≥3 seria independentemente defensável por Art. 7, IX (como H.1), mas, tendo-se **solicitado** o consentimento, IX **não** é base alternativa para essa população (evita stacking de bases — orientação ANPD). |
+| **Finalidade** | Pins de estado (BR/EUA): a porção precise exibe o estado **mesmo a k=1**; a agregada só a partir de k≥3. |
+| **Output** | `(country_code, region_code, member_count)` com `member_count = count_precise + (count_aggregate SE count_aggregate ≥ GREATEST(p_min_k,3), senão 0)`. Pin aparece se `count_precise ≥ 1 OR count_aggregate ≥ GREATEST(p_min_k,3)`. |
+| **Regra de segregação (parecer "d")** | As duas populações são contadas em `FILTER`s separados e **jamais somadas** quando `count_aggregate < 3` — impede reconstruir a população legada sub-k a partir do total exibido. Um precise-consenter sai da população agregada (`is_aggregate = allow_state AND NOT allow_precise`). |
+| **k-anonimato** | **Precise: k=1** (o consentimento específico cobre a exibição individual). **Agregada: piso rígido k≥3** via `GREATEST(p_min_k, 3)` — inbypassável independentemente do parâmetro do caller. |
+| **Denominador** | Membros `is_active AND current_cycle_active AND NOT pré-onboarding` que ativaram pelo menos um dos dois flags. |
+| **Texto de consentimento** | Agregado: `profile.allowStateMapLabel` ("apenas de forma agregada · nunca individual", país-agnóstico, sem citar k). Precise: `profile.allowPreciseLocationMapLabel` (estado BR/US **ou** país; "mesmo que eu seja o único"; ciente de que a origem fica identificável no contexto da comunidade). |
+| **Grandfather** | Quem consentiu só o flag legado permanece em k≥3; migrar para k=1 exige **re-consentimento ativo** (marcar o toggle novo). Silêncio ≠ aceite (Art. 7, I) — k=1 retroativo é vedado. |
+| **Titulares** | Membros ativos que ativaram um dos opt-ins de localização. |
+| **Revogação** | Desativar o toggle correspondente em `/profile` ⇒ removido no próximo render. |
+| **Transferência internacional** | Igual a H.1 — sem transferência de dado individual; output via CDN, entrada em sa-east-1. |
+| **Retenção** | Output: N/A (derivado ao vivo de `members`). Flags de consentimento: persistem enquanto membro ativo; anonimizados pelo cron `anonymize_inactive_members` 5 anos após offboarding (ADR-0014). |
+| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, STABLE, `search_path=''`; piso k≥3 inbypassável na porção agregada via `GREATEST(p_min_k,3)`; segregação de populações; carrega o fix `LIMIT 1` da colisão `br_lookup` (mig `…250`). ACL alinhada ao padrão: `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE` a anon/authenticated/service_role (mig `…252`, PR-3). |
+| **Migration** | `20260805000250` (fix colisão `br_lookup`) + `20260805000251` (v3 dual-população + coluna/RPCs do opt-in precise) |
 
-### H.3 `get_public_state_reach()` — legado (deprecado)
+### H.3 `get_public_precise_country_reach()` — NOVA (consentida, k=1)
 
 | Campo ROPA | Valor |
 |---|---|
-| **Status** | **Deprecado** — superseder por H.2 (`_v2`). Mantido transitoriamente; remoção pendente |
-| **Categoria / base legal** | Idêntico a H.2 (consentimento + agregado), com piso original k≥5 |
-| **ACL** | Alinhada ao padrão das demais reach RPCs em `20260805000242` (2026-06-23): `REVOKE ALL ... FROM PUBLIC` — era a única das 3 ainda exposta a `PUBLIC` (`{=X/postgres}`); benigna (agregado zero-PII k≥5) mas inconsistente com o padrão v2 |
-| **Ação recomendada** | `DROP FUNCTION` após confirmar que nenhum caller residual usa a v1 |
+| **Status** | **Ativa** — PR #894/#896 (2026-06-26). |
+| **Categoria de dado** | País de residência de membros **fora de BR/US** que ativaram o opt-in de localização precisa. |
+| **Base legal** | **Art. 7, I (consentimento específico e informado)** — `allow_precise_location_in_public_map`, texto `profile.allowPreciseLocationMapLabel`. |
+| **Finalidade** | Pin de país (teal) no mapa-múndi para o membro consentente, **mesmo a k=1** (único membro do país). |
+| **Output** | `(country_code, member_count)` — só países reconhecidos (PT, IT, ES, AR, GB, CA, FR, DE); `member_count` = nº de consententes. Países não reconhecidos não recebem pin (caem no residual de continente/`ZZ`). BR/US são excluídos (sempre pin nomeado; a precisão deles é a camada de estado, H.2). |
+| **k-anonimato** | **k=1** — o consentimento explícito cobre a exibição individual. |
+| **Denominador** | Membros `is_active AND current_cycle_active AND NOT pré-onboarding` com `allow_precise_location_in_public_map = true`. |
+| **Titulares** | Membros ativos fora de BR/US que ativaram o opt-in precise. |
+| **Revogação** | Desativar o toggle em `/profile` ⇒ removido no próximo render. |
+| **Transferência internacional** | Sem transferência de dado individual ao exterior; output via CDN, entrada em sa-east-1. |
+| **Retenção** | Output: N/A (derivado ao vivo). Flag: igual a H.2 (anonimizado 5 anos pós-offboarding, ADR-0014). |
+| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, STABLE, `search_path=''`; output só código de país + contagem (zero-PII direta). ACL REVOKE-PUBLIC alinhada (mig `…252`, PR-3). |
+| **Migration** | `20260805000251` |
 
-**Riscos residuais identificados (revisão do mapa + parecer legal-counsel, 2026-06-23):**
+### H.4 `get_public_continent_reach()` — NOVA (agregada residual, k≥3)
+
+| Campo ROPA | Valor |
+|---|---|
+| **Status** | **Ativa** — PR #894/#896 (2026-06-26). |
+| **Categoria de dado** | Agregado estatístico — contagem do **residual** de membros por continente (os que as camadas mais finas não exibem). |
+| **Base legal** | **Art. 7, IX (legítimo interesse)** — **sem novo consentimento**: agrega o residual com piso de anonimato (mesma base de H.1). |
+| **Teste de balanceamento (Art. 10, §2º)** | Idêntico a H.1: interesse legítimo em comunicar o alcance continental; impacto mínimo (output agregado k≥3, sem singularização); **o interesse prevalece**. |
+| **Finalidade** | Pin de continente (navy, no centroide) + chip de legenda para o residual; bucket `ZZ` (Internacional) para o resto. |
+| **Output** | `(continent_code, member_count)` agrupado por continente quando ≥3, senão colapsado em `ZZ`. **Exclui**: BR/US (pin nomeado), países com total ≥3 (pin nomeado), e precise-consententes (já exibidos em H.3) — **sem double-count**. |
+| **k-anonimato** | **k≥3 por continente**; abaixo disso → `ZZ`. `ZZ` é chip de legenda, nunca pin. |
+| **Titulares** | Membros ativos (processados; output sem localização individual — apenas agregado continental k≥3). |
+| **Transferência internacional** | Igual a H.1. |
+| **Retenção** | N/A (derivado ao vivo de `members`). |
+| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, STABLE, `search_path=''`; exclui precise-consententes para não double-contar; k≥3 por continente. ACL REVOKE-PUBLIC alinhada (mig `…252`, PR-3). |
+| **Migration** | `20260805000251` |
+
+### H.5 `get_public_state_reach_v2(p_min_k)` + `get_public_state_reach()` — legados (deprecados)
+
+| Campo ROPA | Valor |
+|---|---|
+| **Status** | **Deprecados** — superados pela v3 (H.2). A v2 deixou de ser chamada pelo frontend em PR #896; referências remanescentes a `_v2` em `WorldReachMap.astro`/`worldMap.ts` são **comentários stale**, não chamadas. A v1 já estava deprecada desde a v2. |
+| **Categoria / base legal** | Idêntico à porção agregada de H.2 (Art. 7, I — `allow_state_in_public_map` + IX). v2: piso k≥3; v1: piso original k≥5. |
+| **Diferença p/ v3** | População **única** (só agregada `allow_state`); sem a porção precise k=1. A v2 tinha o bug de colisão `br_lookup` (#893), **resolvido em `…250`** (LIMIT 1); a v3 incorpora o mesmo fix nativamente em `…251`. |
+| **ACL** | v2/v1 = REVOKE-PUBLIC (mig `…242`); as 3 funções novas (H.2/H.3/H.4) foram alinhadas ao mesmo padrão em `…252` (PR-3). |
+| **Ação recomendada** | `DROP FUNCTION` de v1 e v2 após confirmar 0 callers residuais (limpar também os comentários stale que citam v2/k≥3 em `WorldReachMap.astro`, `worldMap.ts` e `ChaptersSection.astro`). |
+
+**Riscos residuais identificados (revisão do mapa + pareceres legal-counsel, 2026-06-23 + 2026-06-25):**
 
 - **Disclosure do bucket `ZZ`**: a contagem do bucket `ZZ` (países sub-k) é
   publicamente visível. Revela que *existe* membro em país com < 3 membros,
@@ -425,14 +486,40 @@ individual.
   exibidos", não "fulano reside em X"); impacto ao titular mínimo. **Decisão PM (2026-06-23):
   aceitar o risco residual** — suprimir a simultaneidade país+estado teria custo de UX
   superior ao ganho marginal de privacidade. Rever se o nº de membros em países sub-k crescer.
-- **Camada de estado é opt-in puro**: membros sem o toggle nunca entram em H.2 —
-  ausência de pin de estado não é, por si, dado sobre o membro.
-- **Follow-up de transparência (`/privacy`)**: o texto de consentimento (`/profile`) não
-  cita valor de k (correto — permite o ajuste 5→3 sem re-consentimento, Cenário A), mas
-  `/privacy` também não descreve hoje a garantia de agregação mínima do mapa. Gap de
-  transparência (Art. 6, VI) de severidade baixa — **adicionar a `/privacy`, antes da
-  revisão trimestral (2026-07-26), uma linha**: "país/estado de residência exibido apenas
-  de forma agregada, com piso mínimo de anonimato". *Não* alterar o texto de opt-in em si.
+- **Camadas de localização são opt-in puro**: membros sem nenhum dos toggles nunca
+  entram em H.2/H.3 — ausência de pin não é, por si, dado sobre o membro.
+- **Disclosure individual por consentimento (precise, k=1)** — *por design*: a porção
+  precise de H.2 (estado BR/US) e H.3 (país) tornam a origem geográfica do membro
+  **identificável no contexto da comunidade mesmo quando ele é o único** de sua
+  localização. Isto **não é um vazamento**: é exibição individual sob consentimento
+  específico e informado (Art. 7, I), com texto `profile.allowPreciseLocationMapLabel`
+  que declara expressamente esse efeito, revogável a qualquer momento. A população
+  legada (`allow_state`, "nunca individual") **não** é arrastada para k=1 sem
+  re-consentimento ativo. Sem consentimento precise, nada individual aparece.
+- **Follow-up de transparência (`/privacy`) — ✅ RESOLVIDO (PR-3, 2026-06-26)**: o
+  gap de Art. 6, VI (o `/privacy` não descrevia a garantia de agregação mínima nem o
+  nível precise) foi fechado pela nova subseção **3.1 "Exibição pública de localização
+  no mapa geográfico"** (chaves `privacy.s3map.*`, 3 idiomas), que descreve os dois
+  níveis (agregado mínimo de 3 · localização precisa consentida) + revogação. O texto
+  do opt-in em `/profile` **não** foi alterado.
+- **Hardening de ACL — ✅ RESOLVIDO (PR-3, mig `…252`)**: H.2 (`_v3`), H.3
+  (`precise_country_reach`) e H.4 (`continent_reach`) estavam com **ACL default
+  `PUBLIC EXECUTE`** (`=X/postgres`), divergindo do `REVOKE ALL FROM PUBLIC` de
+  H.1/H.5 (mig `…242`). Benigno (SECDEF, `search_path=''`, output agregado/zero-PII
+  direta), mas inconsistente com o padrão de hardening deste RoPA. **Alinhado no
+  PR-3** via `REVOKE ALL ... FROM PUBLIC` + `GRANT EXECUTE` só a
+  anon/authenticated/service_role (mig `…252`) — verificado ao vivo (antes:
+  `=X/postgres` presente; depois: ausente).
+- **Bug latente (0 consenters hoje) — precise-consenter em país não-suportado some
+  do mapa**: `get_public_precise_country_reach` reconhece só 8 países (PT, IT, ES,
+  AR, GB, CA, FR, DE); um membro com `allow_precise=true` em país fora dessa lista
+  (a) não recebe pin preciso (H.3, `ELSE NULL`) **e** (b) é excluído do residual de
+  continente (H.4, `AND NOT n.is_precise`) ⇒ desaparece das duas camadas. Hoje é
+  **behavior-neutral** (0 precise-consenters), mas viola a expectativa do
+  consentimento. O texto de `/privacy` foi redigido para **não** prometer cobertura
+  universal ("para os países suportados pela plataforma"). **Follow-up (#897):**
+  ampliar a lista de países OU não excluir do residual o precise-consenter de país
+  não-reconhecido.
 
 ---
 
@@ -440,10 +527,11 @@ individual.
 
 | Base legal Art. 7 | Quantidade de superfícies | Lista |
 |---|---|---|
-| **I (consentimento)** | 2 | get_public_state_reach_v2, get_public_state_reach (legado) — opt-in `allow_state_in_public_map` (combinada com IX sobre o agregado) |
-| **V (execução de contrato)** | 5 | public_publications, public_members, members_public_safe, gamification_points, tribe_selections, get_gp_whatsapp |
-| **V + IX (combinada)** | 5 | (mesmas acima — predominante para PII institucional) |
-| **IX (legítimo interesse) — apenas** | 20 | Todas as outras (operacional, agregado, reference) — inclui get_public_country_reach (agregado anonimizado k≥3) |
+| **I (consentimento)** | 4 | get_public_state_reach_v3, get_public_precise_country_reach, get_public_state_reach_v2 (legado), get_public_state_reach (legado) — opt-ins de localização (`allow_state_in_public_map` k≥3 + `allow_precise_location_in_public_map` k=1; combinada com IX na porção agregada) |
+| **V (execução de contrato)** | 6 | public_publications, public_members, members_public_safe, gamification_points, tribe_selections, get_gp_whatsapp |
+| **V + IX (combinada)** | ↳ mesmas 6 de V | (sub-nota, **não soma** — predominante para PII institucional) |
+| **IX (legítimo interesse) — apenas** | 21 | Demais operacional/agregado/reference — inclui get_public_country_reach + get_public_continent_reach (agregados k≥3) |
+| **N/A (sem dado pessoal)** | 1 | get_next_general_meeting (agenda institucional — Art. 5, I não alcançado) |
 
 **Predominância Art. 7, IX** reflete natureza voluntária + transparente
 do Núcleo IA. Onde há PII, Art. 7, V documenta o termo de voluntariado
@@ -455,8 +543,9 @@ como base contratual.
 
 | Sensibilidade | Quantidade | Treatment |
 |---|---|---|
-| **Não-PII / agregado / referência** | 21 | Anon access OK — risco zero (inclui as 3 reach RPCs da seção H — agregados k≥3, sem singularização) |
-| **PII institucional (nome, papel, foto)** | 5 | Anon access OK per consent + termo |
+| **Não-PII / agregado / referência / N/A** | 21 | Anon access OK — risco zero (inclui get_public_country_reach + get_public_continent_reach — agregados k≥3, sem singularização; e get_next_general_meeting, sem dado pessoal) |
+| **Localização consentida (estado/país, Art. 7, I)** | 4 | get_public_state_reach_v3 + get_public_precise_country_reach **podem singularizar a k=1** sob consentimento específico e informado; v2/v1 legados só agregam k≥3. Output sem identificador direto (só localização + contagem). |
+| **PII institucional (nome, papel, foto)** | 6 | Anon access OK per consent + termo (inclui blog_posts — nome do autor) |
 | **PII direta (telefone)** | 1 | Anon access OK per consent explícito de GP role |
 | **PII sensível (Art. 5, II)** | 0 | N/A — nenhuma superfície |
 
@@ -476,7 +565,8 @@ pode exercer:
 | Portabilidade (Art. 18, V) | Self-service export `export_my_personal_data` |
 | Eliminação (Art. 18, VI) | `delete_my_personal_data` self-service + admin escalation se necessário |
 | Informação sobre uso compartilhado (Art. 18, VII) | Privacy policy `/privacy` + ROPA público via solicitação |
-| Revogação de consentimento (Art. 18, IX) | Offboarding via `offboard_member` ⇒ remove engagements ⇒ removes from public_members |
+| Revogação de consentimento de localização (Art. 18, IX) | Self-service: desativar o toggle em `/profile` (Configurações → Meu Perfil) ⇒ removido no próximo render do mapa; não requer offboarding. Aplica-se a `allow_state_in_public_map` e `allow_precise_location_in_public_map` (seções H.2/H.3) |
+| Revogação de consentimento — geral (Art. 18, IX) | Offboarding via `offboard_member` ⇒ remove engagements ⇒ removes from public_members |
 
 ---
 
@@ -492,10 +582,13 @@ documentando:
 **Migrations**:
 - `20260426161441_track_r_phase3_intentional_public_comments.sql` — 24 superfícies
 - `20260426162019_track_r_phase3_lgpd_comment_get_gp_whatsapp.sql` — 1 função
-- `20260805000241_*` — `get_public_state_reach_v2` (mapa-múndi, piso k≥3, seção H.2)
-- `20260805000242_revoke_public_get_public_state_reach.sql` — alinha ACL do legado H.3 ao padrão REVOKE-PUBLIC (2026-06-23)
+- `20260805000241_*` — `get_public_state_reach_v2` (mapa-múndi, piso k≥3; agora legado H.5)
+- `20260805000242_revoke_public_get_public_state_reach.sql` — alinha ACL do legado ao padrão REVOKE-PUBLIC (2026-06-23)
+- `20260805000250_fix_state_reach_v2_br_lookup_collision.sql` — fix `LIMIT 1` da colisão `br_lookup` (#893; reaproveitado pela v3)
+- `20260805000251_precise_location_optin_backend.sql` — coluna `allow_precise_location_in_public_map` + `get_public_state_reach_v3` (dual-população) + `get_public_precise_country_reach` + `get_public_continent_reach` (seções H.2/H.3/H.4; PR #894)
+- `20260805000252_revoke_public_precise_reach_funcs.sql` — alinha ACL das 3 funções novas (H.2/H.3/H.4) ao padrão `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE` a anon/authenticated/service_role; corrige o cross-ref do COMMENT da coluna (`RoPA H.4` → `H.2/H.3`); PR-3
 
-**Trilha imutável**: GitHub commits assinados (`2ff39e8`, `ca072c8`).
+**Trilha imutável**: GitHub commits assinados (`2ff39e8`, `ca072c8`; mapa precise: `d6dfe5c0`, `0c6404a6`).
 
 ---
 
