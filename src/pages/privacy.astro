@@ -83,6 +83,15 @@ const s1ChaptersText = t('privacy.s1.chapters', lang).replace('{list}', privacyC
           </tbody>
         </table>
       </div>
+
+      {/* S3.1 — Exibição pública de localização no mapa (opt-in, dois níveis) */}
+      <h3 class="text-base font-semibold text-[var(--text-primary)] mt-4">3.1. {t('privacy.s3map.title', lang)}</h3>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s3map.intro', lang)}</p>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li><strong>{t('privacy.s3map.aggregateLabel', lang)}:</strong> {t('privacy.s3map.aggregateDesc', lang)}</li>
+        <li><strong>{t('privacy.s3map.preciseLabel', lang)}:</strong> {t('privacy.s3map.preciseDesc', lang)}</li>
+      </ul>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s3map.revoke', lang)}</p>
     </section>
 
     {/* S4 — Compartilhamento */}
