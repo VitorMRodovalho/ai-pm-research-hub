@@ -15,11 +15,36 @@ const sb = SUPABASE_URL && SERVICE_KEY
 const HUB_COMMS = '9ea82b09-55c6-4cc3-ab7f-178518d0ab47';
 const TEST_GRP = '00000000-0000-4000-8000-000000000676';
 const TEST_GRP_PAUSED = '00000000-0000-4000-8000-000000000677';
-const HORIZON = '2026-08-31';
+const BIWEEKLY_ANCHOR = '2026-06-11'; // a Thursday; 14-day parity anchor for the synthetic rule
+
+// #676 flake fix: HORIZON was a FIXED date ('2026-08-31'), so the count of FUTURE
+// biweekly Thursdays in the window shrank as the calendar advanced (5 -> 4 -> ... -> 0),
+// silently failing the hardcoded `created_events === 5`. Use a ROLLING horizon
+// (today + 84d) so the window never empties, and compute the expected count from the
+// same rule the RPC uses (generate_series(anchor, horizon, 14d) WHERE d >= GREATEST(anchor, current_date)).
+function isoPlusDaysUTC(n) {
+  const d = new Date();
+  const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + n * 86400000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+const HORIZON = isoPlusDaysUTC(84);
 
 function utcDow(d) { return new Date(`${d}T12:00:00Z`).getUTCDay(); } // 0=Sun..6=Sat
 function daysBetween(a, b) {
   return Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400000);
+}
+// Future biweekly occurrences the reconcile RPC will materialize: mirrors
+// `generate_series(anchor, horizon, '14 days') WHERE d >= GREATEST(anchor, current_date)`.
+function futureBiweeklyCount(anchorISO, horizonISO) {
+  const DAY = 86400000;
+  const now = new Date();
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const anchor = Date.parse(`${anchorISO}T00:00:00Z`);
+  const horizon = Date.parse(`${horizonISO}T00:00:00Z`);
+  const start = Math.max(anchor, todayUTC);
+  let count = 0;
+  for (let t = anchor; t <= horizon; t += 14 * DAY) if (t >= start) count++;
+  return count;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,20 +143,24 @@ test('#676 live: reconcile generates biweekly Thursdays on parity, idempotently'
       scope_type: 'initiative', initiative_id: HUB_COMMS, title: 'TEST 676 biweekly',
       event_type: 'comms', audience_level: 'initiative', visibility: 'leadership',
       day_of_week: 4, time_start: '19:30', duration_minutes: 60, frequency: 'biweekly',
-      anchor_date: '2026-06-11', meeting_link: 'https://example.test/676', recurrence_group: TEST_GRP, status: 'active',
+      anchor_date: BIWEEKLY_ANCHOR, meeting_link: 'https://example.test/676', recurrence_group: TEST_GRP, status: 'active',
     })
     .select('id').single();
   assert.ifError(eIns);
 
+  // Expected future occurrences = what the RPC will materialize for THIS run's clock.
+  const expectedFuture = futureBiweeklyCount(BIWEEKLY_ANCHOR, HORIZON);
+  assert.ok(expectedFuture >= 1, 'rolling horizon must contain at least one future biweekly Thursday');
+
   try {
     const { data: first, error: e1 } = await sb.rpc('reconcile_recurring_meeting', { p_rule_id: rule.id, p_horizon_end: HORIZON });
     assert.ifError(e1);
-    assert.equal(first.created_events, 5, 'first run creates the five future Thursdays');
+    assert.equal(first.created_events, expectedFuture, 'first run creates every future Thursday in the horizon');
 
     const { data: ev1 } = await sb.from('events').select('date').eq('recurrence_group', TEST_GRP);
     for (const e of ev1 ?? []) {
       assert.equal(utcDow(e.date), 4, `${e.date} is a Thursday`);
-      assert.equal(daysBetween(e.date, '2026-06-11') % 14, 0, `${e.date} on 14-day parity from anchor`);
+      assert.equal(daysBetween(e.date, BIWEEKLY_ANCHOR) % 14, 0, `${e.date} on 14-day parity from anchor`);
     }
 
     const { data: second, error: e2 } = await sb.rpc('reconcile_recurring_meeting', { p_rule_id: rule.id, p_horizon_end: HORIZON });
@@ -139,7 +168,7 @@ test('#676 live: reconcile generates biweekly Thursdays on parity, idempotently'
     assert.equal(second.created_events, 0, 'second run is a no-op (idempotent, no duplicates)');
 
     const { count } = await sb.from('events').select('*', { count: 'exact', head: true }).eq('recurrence_group', TEST_GRP);
-    assert.equal(count, 5, 'still exactly five events after re-running');
+    assert.equal(count, expectedFuture, 'still exactly the future-Thursday count after re-running');
   } finally {
     await sb.from('events').delete().eq('recurrence_group', TEST_GRP);
     await sb.from('recurring_meeting_rules').delete().eq('recurrence_group', TEST_GRP);

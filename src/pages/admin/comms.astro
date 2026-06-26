@@ -727,7 +727,7 @@ const COMMS_I18N = {
         const channelColor: Record<string, string> = { instagram: 'text-pink-600', youtube: 'text-red-600', linkedin: 'text-blue-700' };
         const date = m.published_at ? new Date(m.published_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
         return `<article class="rounded-xl border border-[var(--border-default)] overflow-hidden">
-          ${m.thumbnail_url ? `<img src="${escapeHtml(m.thumbnail_url)}" alt="" class="w-full h-32 object-cover" loading="lazy" />` : '<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-[var(--text-muted)] text-2xl">' + (m.channel === 'youtube' ? '\u25B6' : '\uD83D\uDCF7') + '</div>'}
+          ${(m.cached_image_url || m.thumbnail_url) ? `<img src="${escapeHtml(m.cached_image_url || m.thumbnail_url)}" alt="" class="w-full h-32 object-cover" loading="lazy" />` : '<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-[var(--text-muted)] text-2xl">' + (m.channel === 'youtube' ? '\u25B6' : '\uD83D\uDCF7') + '</div>'}
           <div class="p-3">
             <div class="flex items-center gap-1.5 mb-1">
               <span class="${channelColor[m.channel] || ''} text-[.65rem] font-bold uppercase">${escapeHtml(m.channel)}</span>

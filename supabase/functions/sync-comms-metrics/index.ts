@@ -467,6 +467,9 @@ type MediaItem = {
   caption: string | null
   permalink: string | null
   thumbnail_url: string | null
+  // #889: transient — source image to cache (IG IMAGE posts have no thumbnail_url,
+  // only media_url). NOT persisted to comms_media_items; used only by cacheMediaImage.
+  media_url?: string | null
   published_at: string | null
   likes: number
   comments: number
@@ -475,6 +478,33 @@ type MediaItem = {
   reach: number | null
   views: number | null
   payload: Record<string, unknown>
+}
+
+// #889: download a remote image (IG thumbnail/media URL — short-lived cdninstagram)
+// and cache it in the public 'comms-media' bucket; returns the stable public URL.
+// Non-fatal: any failure returns null and the caller leaves cached_image_url unset.
+async function cacheMediaImage(sb: any, channel: string, externalId: string, srcUrl: string): Promise<string | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort('timeout'), 15_000)
+  try {
+    const res = await fetch(srcUrl, { signal: controller.signal })
+    if (!res.ok) return null
+    const ct = (res.headers.get('content-type') || '').toLowerCase()
+    if (!ct.startsWith('image/')) return null
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    if (bytes.byteLength === 0 || bytes.byteLength > 5_000_000) return null
+    const ext = ct.includes('png') ? 'png' : ct.includes('webp') ? 'webp' : 'jpg'
+    const path = `${channel}/${externalId}.${ext}`
+    const { error } = await sb.storage.from('comms-media').upload(path, bytes, { upsert: true, contentType: ct })
+    if (error) { console.warn('comms-media upload failed', externalId, error.message); return null }
+    const { data } = sb.storage.from('comms-media').getPublicUrl(path)
+    return data?.publicUrl || null
+  } catch (e) {
+    console.warn('cacheMediaImage failed', externalId, e instanceof Error ? e.message : e)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function fetchInstagramMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
@@ -486,7 +516,10 @@ async function fetchInstagramMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
   try {
     // Fetch recent media list
     const mediaResp = await fetchWithRetry(
-      `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,permalink,thumbnail_url&limit=25&access_token=${token}`
+      // #889: media_url added — IG IMAGE posts return no thumbnail_url (video-only field);
+      // media_url is the image source for those. Both are short-lived cdninstagram URLs,
+      // which is why we cache them to Storage below.
+      `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,permalink,thumbnail_url,media_url&limit=25&access_token=${token}`
     )
     if (!mediaResp.ok) return []
     const mediaData = await mediaResp.json()
@@ -499,6 +532,7 @@ async function fetchInstagramMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
         caption: m.caption ? m.caption.slice(0, 500) : null,
         permalink: m.permalink || null,
         thumbnail_url: m.thumbnail_url || null,
+        media_url: m.media_url || null,
         published_at: m.timestamp || null,
         likes: parseInt(m.like_count || '0', 10),
         comments: parseInt(m.comments_count || '0', 10),
@@ -803,6 +837,36 @@ async function syncFromChannelConfigs(
                 synced_at: new Date().toISOString(),
               })), { onConflict: 'channel,external_id' })
             if (!mediaError) mediaCount = mediaItems.length
+
+            // #889: cache Instagram thumbnails to Storage (cdninstagram URLs expire;
+            // image posts have no thumbnail_url at all). Idempotent (skip already-cached)
+            // and non-fatal (a download failure never breaks the metrics sync).
+            if (cfg.channel === 'instagram') {
+              try {
+                const ids = mediaItems.map(m => m.external_id)
+                const { data: existing } = await sb
+                  .from('comms_media_items')
+                  .select('external_id, cached_image_url')
+                  .eq('channel', 'instagram')
+                  .in('external_id', ids)
+                const alreadyCached = new Set(
+                  (existing || []).filter((r: any) => r.cached_image_url).map((r: any) => r.external_id)
+                )
+                for (const m of mediaItems) {
+                  if (alreadyCached.has(m.external_id)) continue
+                  // video → thumbnail_url (an image); image/carousel → media_url
+                  const src = m.media_type === 'VIDEO' ? m.thumbnail_url : (m.media_url || m.thumbnail_url)
+                  if (!src) continue
+                  const publicUrl = await cacheMediaImage(sb, 'instagram', m.external_id, src)
+                  if (publicUrl) {
+                    await sb.from('comms_media_items')
+                      .update({ cached_image_url: publicUrl })
+                      .eq('channel', 'instagram')
+                      .eq('external_id', m.external_id)
+                  }
+                }
+              } catch (e) { console.warn('Comms media cache:', e) }
+            }
           }
         } catch (e) { console.warn(`Media fetch ${cfg.channel}:`, e) }
       }
