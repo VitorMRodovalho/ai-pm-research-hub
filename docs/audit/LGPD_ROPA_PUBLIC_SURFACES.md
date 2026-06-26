@@ -452,13 +452,13 @@ individual por consentimento explícito.
 | **Base legal** | **Art. 7, IX (legítimo interesse)** — **sem novo consentimento**: agrega o residual com piso de anonimato (mesma base de H.1). |
 | **Teste de balanceamento (Art. 10, §2º)** | Idêntico a H.1: interesse legítimo em comunicar o alcance continental; impacto mínimo (output agregado k≥3, sem singularização); **o interesse prevalece**. |
 | **Finalidade** | Pin de continente (navy, no centroide) + chip de legenda para o residual; bucket `ZZ` (Internacional) para o resto. |
-| **Output** | `(continent_code, member_count)` agrupado por continente quando ≥3, senão colapsado em `ZZ`. **Exclui**: BR/US (pin nomeado), países com total ≥3 (pin nomeado), e precise-consententes (já exibidos em H.3) — **sem double-count**. |
-| **k-anonimato** | **k≥3 por continente**; abaixo disso → `ZZ`. `ZZ` é chip de legenda, nunca pin. |
+| **Output** | `(continent_code, member_count)` agrupado por continente quando ≥3, senão colapsado em `ZZ`. **Exclui**: BR/US (pin nomeado) e, **entre os países reconhecidos**, os com total ≥3 (pin nomeado) e os precise-consententes (já exibidos em H.3) — **sem double-count**. O bucket sintético `XX` (países não-mapeados) **nunca** é excluído — não vira pin nomeado nem preciso (sem centroide), então todo membro `XX` permanece no residual → `ZZ` (fix #897, mig `…253`). |
+| **k-anonimato** | **k≥3 por continente nomeado** (EU/SA/NA); abaixo disso → `ZZ`. O bucket residual `ZZ` (Internacional) **não tem piso próprio** — é o catch-all de todo membro cujo continente não atingiu k=3 **ou** cujo país é não-mapeado (`XX`); pode portanto exibir `count` < 3 (já era assim em H.1 antes do mapa). Não singulariza país nem indivíduo: revela só "existem ≥N membros fora dos pins nomeados". `ZZ` é chip de legenda, nunca pin. |
 | **Titulares** | Membros ativos (processados; output sem localização individual — apenas agregado continental k≥3). |
 | **Transferência internacional** | Igual a H.1. |
 | **Retenção** | N/A (derivado ao vivo de `members`). |
-| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, STABLE, `search_path=''`; exclui precise-consententes para não double-contar; k≥3 por continente. ACL REVOKE-PUBLIC alinhada (mig `…252`, PR-3). |
-| **Migration** | `20260805000251` |
+| **Medidas técnicas (Art. 46)** | SECURITY DEFINER, STABLE, `search_path=''`; exclui precise-consententes **de países reconhecidos** para não double-contar; **`XX` (não-mapeado) sempre mantido no residual** (#897, mig `…253`); k≥3 por continente. ACL REVOKE-PUBLIC alinhada (mig `…252`, PR-3). |
+| **Migration** | `20260805000251` (criação) · `20260805000253` (fix #897 — `XX` sempre no residual) |
 
 ### H.5 `get_public_state_reach_v2(p_min_k)` + `get_public_state_reach()` — legados (deprecados)
 
@@ -510,16 +510,23 @@ individual por consentimento explícito.
   PR-3** via `REVOKE ALL ... FROM PUBLIC` + `GRANT EXECUTE` só a
   anon/authenticated/service_role (mig `…252`) — verificado ao vivo (antes:
   `=X/postgres` presente; depois: ausente).
-- **Bug latente (0 consenters hoje) — precise-consenter em país não-suportado some
-  do mapa**: `get_public_precise_country_reach` reconhece só 8 países (PT, IT, ES,
-  AR, GB, CA, FR, DE); um membro com `allow_precise=true` em país fora dessa lista
-  (a) não recebe pin preciso (H.3, `ELSE NULL`) **e** (b) é excluído do residual de
-  continente (H.4, `AND NOT n.is_precise`) ⇒ desaparece das duas camadas. Hoje é
-  **behavior-neutral** (0 precise-consenters), mas viola a expectativa do
-  consentimento. O texto de `/privacy` foi redigido para **não** prometer cobertura
-  universal ("para os países suportados pela plataforma"). **Follow-up (#897):**
-  ampliar a lista de países OU não excluir do residual o precise-consenter de país
-  não-reconhecido.
+- **precise-consenter em país não-suportado some do mapa — ✅ RESOLVIDO (#897, mig
+  `…253`, 2026-06-26)**: `get_public_precise_country_reach` reconhece só 8 países
+  (PT, IT, ES, AR, GB, CA, FR, DE); um membro com `allow_precise=true` em país fora
+  dessa lista não recebe pin preciso (H.3, `ELSE NULL`). O bug: `get_public_continent_reach`
+  o excluía **também** do residual (`AND NOT n.is_precise`) ⇒ sumia das duas camadas
+  — pior que não consentir (um não-consenter no mesmo país ainda cairia no `ZZ`).
+  **Buraco-irmão descoberto no fix:** o filtro `ct.total<3` também era aplicado ao
+  bucket sintético `XX`, derrubando **qualquer** conjunto de ≥3 membros espalhados
+  por países não-mapeados (mesmo não-precise), já que `XX` nunca vira pin nomeado
+  (`get_public_country_reach` sempre dobra `XX`→`ZZ`). **Fix:** `XX` bypassa **ambos**
+  os filtros e permanece sempre no residual → chip `ZZ` (mesma exposição agregada
+  Art. 7,IX que um não-consenter já tem; **menos** do que o precise-consenter
+  autorizou). Behavior-neutral hoje (0 precise / 0 `XX`); provado por simulação no
+  engine PG (predicado antigo: `ZZ`=1, 5 membros sumindo; predicado novo: `ZZ`=6,
+  todos presentes). **Opção 1** (pin preciso para países arbitrários — exige
+  centroides novos em `worldMap.ts` + asset) fica como enhancement separado, fora
+  deste fix. Guard em `cycle4-coverage-map.test.mjs`.
 
 ---
 
@@ -587,6 +594,7 @@ documentando:
 - `20260805000250_fix_state_reach_v2_br_lookup_collision.sql` — fix `LIMIT 1` da colisão `br_lookup` (#893; reaproveitado pela v3)
 - `20260805000251_precise_location_optin_backend.sql` — coluna `allow_precise_location_in_public_map` + `get_public_state_reach_v3` (dual-população) + `get_public_precise_country_reach` + `get_public_continent_reach` (seções H.2/H.3/H.4; PR #894)
 - `20260805000252_revoke_public_precise_reach_funcs.sql` — alinha ACL das 3 funções novas (H.2/H.3/H.4) ao padrão `REVOKE ALL FROM PUBLIC` + `GRANT EXECUTE` a anon/authenticated/service_role; corrige o cross-ref do COMMENT da coluna (`RoPA H.4` → `H.2/H.3`); PR-3
+- `20260805000253_fix_continent_reach_unmapped_country_vanish_897.sql` — `get_public_continent_reach` (H.4): `XX` (países não-mapeados) sempre mantido no residual → não some do mapa; fecha #897 (precise-consenter em país não-suportado) + o buraco-irmão `XX`≥3; behavior-neutral (0 precise/0 `XX` hoje)
 
 **Trilha imutável**: GitHub commits assinados (`2ff39e8`, `ca072c8`; mapa precise: `d6dfe5c0`, `0c6404a6`).
 
