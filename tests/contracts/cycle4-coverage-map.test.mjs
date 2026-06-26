@@ -114,7 +114,7 @@ test('PD-MAP-WORLD: state-reach v2 migration carries the LGPD gates (opt-in + kâ
 });
 
 test('PD-MAP-WORLD: coverage-map i18n keys exist in all 3 dictionaries', () => {
-  const keys = ['chapters.worldMapAria', 'chapters.mapLegendCountry', 'chapters.mapLegendState', 'chapters.mapStateNote'];
+  const keys = ['chapters.worldMapAria', 'chapters.mapLegendCountry', 'chapters.mapLegendState', 'chapters.mapLegendContinent', 'chapters.mapNote'];
   for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
     const body = read(`src/i18n/${dict}.ts`);
     assert.ok(body, `${dict} dictionary present`);

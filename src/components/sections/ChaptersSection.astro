@@ -110,11 +110,12 @@ function flagEmoji(code: string): string {
           </span>
         )}
       </div>
-      {hasStatePins && (
-        <p class="text-[.7rem] text-[var(--text-muted)] mt-2 max-w-[520px] mx-auto">
-          {t('chapters.mapStateNote', lang)}
-        </p>
-      )}
+      {/* Always-shown note: explains all map levels (country aggregate · state/country by opt-in,
+          aggregate min-3 OR precise k=1 · continent residual) so the model is discoverable even
+          when the precise/continent layers currently have no data. */}
+      <p class="text-[.7rem] text-[var(--text-muted)] mt-2 max-w-[520px] mx-auto">
+        {t('chapters.mapNote', lang)}
+      </p>
     </div>
 
     <div class="flex flex-wrap justify-center gap-4 mb-8">
