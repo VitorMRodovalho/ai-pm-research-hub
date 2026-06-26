@@ -81,11 +81,15 @@ test('PD-MAP-WORLD: ChaptersSection feeds the map LIVE from both RPCs (anti-hard
   assert.ok(body, 'ChaptersSection.astro present');
   assert.match(body, /import WorldReachMap/, 'mounts the WorldReachMap');
   assert.match(body, /get_public_country_reach/, 'fetches the country-reach RPC');
-  assert.match(body, /get_public_state_reach_v2/, 'fetches the state-reach v2 RPC');
+  assert.match(body, /get_public_state_reach_v3/, 'fetches the state-reach v3 RPC (dual-population)');
+  assert.match(body, /get_public_precise_country_reach/, 'fetches the precise (k=1) country-reach RPC');
+  assert.match(body, /get_public_continent_reach/, 'fetches the continent-reach RPC (residual)');
   assert.match(body, /countryReach=\{countryReach\}/, 'passes country reach to the map');
-  assert.match(body, /stateReach=\{stateReachV2\}/, 'passes state reach to the map');
+  assert.match(body, /stateReach=\{stateReach\}/, 'passes state reach to the map');
+  assert.match(body, /preciseCountryReach=\{preciseCountryReach\}/, 'passes precise country reach to the map');
+  assert.match(body, /continentReach=\{continentReach\}/, 'passes continent reach to the map');
   // no hardcoded UF/country→count literal feeding the map
-  assert.doesNotMatch(body, /stateReachV2\s*=\s*\[\s*\{/, 'stateReachV2 is not a hardcoded literal');
+  assert.doesNotMatch(body, /stateReach\s*=\s*\[\s*\{/, 'stateReach is not a hardcoded literal');
 });
 
 test('PD-MAP-WORLD: the land asset exists, is CC0-noted, and keeps the Atlantic crop viewBox', () => {

@@ -10,22 +10,26 @@ import { buildGeoPins, pinDiameter } from '../../lib/worldMap';
 interface Props {
   countryReach: Array<{ country_code: string; member_count: number | string }>;
   stateReach: Array<{ country_code: string; region_code: string; member_count: number | string }>;
+  preciseCountryReach?: Array<{ country_code: string; member_count: number | string }>;
+  continentReach?: Array<{ continent_code: string; member_count: number | string }>;
   lang: Lang;
   ariaLabel: string;
   class?: string;
 }
-const { countryReach, stateReach, lang, ariaLabel, class: className = '' } = Astro.props;
+const { countryReach, stateReach, preciseCountryReach = [], continentReach = [], lang, ariaLabel, class: className = '' } = Astro.props;
 
-const { pins } = buildGeoPins(countryReach ?? [], stateReach ?? []);
-// Larger country pins first (painted under), then smaller; state pins last so they sit on top.
+const { pins } = buildGeoPins(countryReach ?? [], stateReach ?? [], preciseCountryReach ?? [], continentReach ?? []);
+// Paint order (bottom → top): country, continent, then state on top. Larger pins first within a
+// kind so smaller ones sit on top and stay clickable.
+const paintOrder: Record<string, number> = { country: 0, continent: 1, state: 2 };
 const ordered = [...pins].sort((a, b) =>
-  a.kind === b.kind ? b.count - a.count : a.kind === 'country' ? -1 : 1,
+  paintOrder[a.kind] !== paintOrder[b.kind] ? paintOrder[a.kind] - paintOrder[b.kind] : b.count - a.count,
 );
 const countryName = (code: string) => t(`country.${code}`, lang);
 const pinLabel = (p: (typeof ordered)[number]) =>
-  p.kind === 'country'
-    ? `${countryName(p.countryCode)} · ${p.count}`
-    : `${p.regionName}, ${countryName(p.countryCode)} · ${p.count}`;
+  p.kind === 'country' ? `${countryName(p.countryCode)} · ${p.count}`
+  : p.kind === 'continent' ? `${p.regionName} · ${p.count}`
+  : `${p.regionName}, ${countryName(p.countryCode)} · ${p.count}`;
 ---
 
 <div class={`nia-worldmap ${className}`} role="img" aria-label={ariaLabel}>
@@ -97,6 +101,10 @@ const pinLabel = (p: (typeof ordered)[number]) =>
   }
   .nia-pin--country {
     background-color: var(--color-teal, #00799e);
+    z-index: 1;
+  }
+  .nia-pin--continent {
+    background-color: var(--color-navy, #1b3a5b);
     z-index: 1;
   }
   .nia-pin--state {
