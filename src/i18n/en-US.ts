@@ -3682,6 +3682,15 @@ const enUS: Record<string, string> = {
   'privacy.s3.row11.data': 'Aggregate KPIs, publications, impact hours, top 3 by XP (already public data). No individual attendance or personal information.',
   'privacy.s3.row11.basis': 'Legitimate interest (Art. 7, IX) — co-sponsoring chapters monitor project outcomes. Access restricted to institutional email (@pmiXX.org.br).',
 
+  // S3.1 — Public display of location on the geographic map (opt-in, two levels)
+  'privacy.s3map.title': 'Public display of your location on the geographic map',
+  'privacy.s3map.intro': 'The homepage shows a map of the geographic distribution of Núcleo IA & GP members. Including your location in an identifiable way on this map is optional and based on your consent, with two levels:',
+  'privacy.s3map.aggregateLabel': 'Aggregate display (minimum of 3 members)',
+  'privacy.s3map.aggregateDesc': 'your state of residence (Brazil and the United States) is shown only when three or more authorizing members share the same location — never individually.',
+  'privacy.s3map.preciseLabel': 'Precise location display',
+  'privacy.s3map.preciseDesc': 'your state of residence (Brazil and the United States) or country of residence (for countries supported by the platform) may be shown even when you are the only member in your location, subject to specific and informed authorization.',
+  'privacy.s3map.revoke': 'Both levels are based on your consent (LGPD Art. 7, I) and can be enabled, changed, or revoked at any time under Settings → My Profile. With no active opt-in, you receive no individual state or country pin; your location may still be included in aggregate counts by country or continent (minimum of 3 members), based on legitimate institutional interest (Art. 7, IX), always without individual identification.',
+
   // S4 — Data sharing
   'privacy.s4.title': 'Data Sharing',
   'privacy.s4.chapters': 'Sponsoring PMI chapters: aggregated data per chapter (no individual PII)',

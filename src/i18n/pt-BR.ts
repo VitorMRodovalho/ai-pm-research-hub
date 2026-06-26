@@ -3687,6 +3687,15 @@ const ptBR: Record<string, string> = {
   'privacy.s3.row11.data': 'KPIs agregados, publicações, horas de impacto, top 3 por XP (dados já públicos). Sem dados individuais de presença ou informações pessoais.',
   'privacy.s3.row11.basis': 'Legítimo interesse (Art. 7, IX) — capítulos co-patrocinadores acompanham resultados do projeto. Acesso restrito a email institucional (@pmiXX.org.br).',
 
+  // S3.1 — Exibição pública de localização no mapa geográfico (opt-in, dois níveis)
+  'privacy.s3map.title': 'Exibição pública de localização no mapa geográfico',
+  'privacy.s3map.intro': 'A página inicial exibe um mapa de distribuição geográfica dos membros do Núcleo IA & GP. A inclusão da sua localização de forma identificável nesse mapa é opcional e baseada no seu consentimento, com dois níveis:',
+  'privacy.s3map.aggregateLabel': 'Exibição agregada (mínimo de 3 membros)',
+  'privacy.s3map.aggregateDesc': 'seu estado de residência (Brasil e Estados Unidos) é exibido apenas quando há três ou mais membros que autorizaram na mesma localização — nunca de forma individual.',
+  'privacy.s3map.preciseLabel': 'Exibição de localização precisa',
+  'privacy.s3map.preciseDesc': 'seu estado de residência (Brasil e Estados Unidos) ou país de residência (para os países suportados pela plataforma) pode ser exibido mesmo quando você é o único membro da sua localização, mediante autorização específica e informada.',
+  'privacy.s3map.revoke': 'Ambos os níveis têm base legal no seu consentimento (LGPD Art. 7º, I) e podem ser ativados, alterados ou revogados a qualquer momento em Configurações → Meu Perfil. Sem nenhum opt-in ativo, você não recebe pin individual de estado nem de país; sua localização pode, ainda assim, ser incluída em contagens agregadas por país ou continente (mínimo de 3 membros), com base no legítimo interesse institucional (Art. 7º, IX), sempre sem identificação individual.',
+
   // S4 — Compartilhamento
   'privacy.s4.title': 'Compartilhamento de Dados',
   'privacy.s4.chapters': 'Capítulos PMI patrocinadores: dados agregados por capítulo (sem PII individual)',
