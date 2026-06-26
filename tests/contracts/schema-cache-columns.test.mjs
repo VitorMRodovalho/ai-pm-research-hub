@@ -45,6 +45,12 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // in the public aggregated heatmap (Cycle4 PD-MAP-2). Set only via update_my_profile() from the
   // profile consent checkbox; revocable (LGPD Art. 18). Not derivable from any other state.
   ['members.allow_state_in_public_map', 'LGPD opt-in consent for public state heatmap (Cycle4 PD-MAP-2); user-set via profile, no derivation source'],
+  // Pure user consent — opt-IN flag (DEFAULT false) authorizing the member's state (BR/US) or country
+  // (other countries) to appear on the public map EVEN AT k=1 (sole member). Distinct from
+  // allow_state_in_public_map above (k>=3, "nunca individual"): the two consent populations are never
+  // merged (legal-counsel parecer 2026-06-25, RoPA H.4). Set only via update_my_profile() from the
+  // profile consent checkbox; revocable (LGPD Art. 18). Not derivable from any other state.
+  ['members.allow_precise_location_in_public_map', 'LGPD opt-in consent for precise (k=1) state/country public-map display (parecer 2026-06-25, RoPA H.4); user-set via profile, no derivation source'],
   // Pure user preference — opt-in/out flag for weekly card digest (issue #98, p39).
   // Set only via /settings/notifications toggle; not derivable from any other state.
   ['members.notify_weekly_digest', 'User opt-out flag for weekly card digest; no derivation source'],
