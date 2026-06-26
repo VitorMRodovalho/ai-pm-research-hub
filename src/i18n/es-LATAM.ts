@@ -742,7 +742,7 @@ const esLATAM: Record<string, string> = {
   'chapters.mapLegendCountry': 'Investigadores por país',
   'chapters.mapLegendContinent': 'Continentes (agrupado)',
   'chapters.mapLegendState': 'Estados con miembros que autorizaron mostrarlo',
-  'chapters.mapStateNote': 'Estados con 3+ miembros que autorizaron mostrar su estado de residencia (agregado, nunca individual · LGPD). Ya contabilizados en el total del país.',
+  'chapters.mapNote': 'El mapa muestra la presencia de Núcleo por país (conteo agregado, mín. 3 miembros). Cada miembro puede autorizar mostrar su estado (Brasil/EUA) o país de residencia — de forma agregada (mín. 3) o precisa, incluso siendo el único de su ubicación — en Configuración → Perfil. El resto se agrupa por continente. Ninguna ubicación individual aparece sin autorización (LGPD).',
   'chapters.activeLabel': 'socios activos',
   'chapters.onboardingLabel': 'en integración',
   'chapters.goal': 'Unión anunciada en CBGPL 2026 — capítulos PMI Brasil en integración progresiva',

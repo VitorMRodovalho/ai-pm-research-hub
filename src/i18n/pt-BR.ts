@@ -742,7 +742,7 @@ const ptBR: Record<string, string> = {
   'chapters.mapLegendCountry': 'Pesquisadores por país',
   'chapters.mapLegendContinent': 'Continentes (agrupado)',
   'chapters.mapLegendState': 'Estados com membros que autorizaram exibição',
-  'chapters.mapStateNote': 'Estados com 3+ membros que autorizaram a exibição do seu estado de residência (agregado, nunca individual · LGPD). Já contabilizados no total do país.',
+  'chapters.mapNote': 'O mapa mostra a presença do Núcleo por país (contagem agregada, mín. 3 membros). Cada membro pode autorizar exibir seu estado (Brasil/EUA) ou país de residência — de forma agregada (mín. 3) ou precisa, mesmo sendo o único da sua localização — em Configurações → Perfil. O restante é agrupado por continente. Nenhuma localização individual aparece sem autorização (LGPD).',
   'chapters.activeLabel': 'parceiros ativos',
   'chapters.onboardingLabel': 'em integração',
   'chapters.goal': 'União anunciada no CBGPL 2026 — capítulos PMI Brasil em integração progressiva',
