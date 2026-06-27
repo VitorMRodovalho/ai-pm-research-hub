@@ -106,6 +106,8 @@ ON CONFLICT (slug) DO UPDATE SET
 -- NÃO agenda cron. Ativação (quando cycle5 existir): agendar/chamar com p_dry_run=false + p_reapply_url do
 -- próximo ciclo. Bucket Expired/OfferExpired SOMENTE. Auth: comms-only => manage_member OU cron (ADR-0028),
 -- espelha o gate do D7 (NÃO é manage_platform; isto não toca ciclo de vida, só envia e-mail).
+-- NB: o corpo abaixo é mantido SEM comentários inline para casar byte-a-byte com o pg_proc.prosrc vivo
+-- (gate Phase C de body-hash drift compara live vs esta captura). Racional fica aqui + no COMMENT ON FUNCTION.
 CREATE OR REPLACE FUNCTION public.process_pending_vep_expired_reapply_invites(
   p_dry_run boolean DEFAULT true,
   p_reapply_url text DEFAULT NULL
@@ -125,7 +127,6 @@ DECLARE
   v_errors jsonb := '[]'::jsonb;
   v_candidates jsonb := '[]'::jsonb;
 BEGIN
-  -- Auth: cron (sem JWT / service_role) passa; usuário real exige manage_member (ADR-0028, espelha D7).
   IF auth.role() IS NOT NULL AND auth.role() NOT IN ('service_role') AND auth.uid() IS NOT NULL THEN
     IF NOT public.can_by_member(
       (SELECT id FROM public.members WHERE auth_id = auth.uid()),
@@ -135,7 +136,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- Sem URL de destino não há envio possível -> força dry-run (trava de dormência).
   IF p_reapply_url IS NULL OR length(trim(p_reapply_url)) = 0 THEN
     v_dry := true;
   END IF;
@@ -146,17 +146,16 @@ BEGIN
   FOR v_app IN
     SELECT a.id, a.applicant_name, a.first_name, a.email
     FROM public.selection_applications a
-    WHERE a.cutoff_approved_email_sent_at IS NOT NULL          -- passou a triagem objetiva + convite
-      AND a.status = 'rejected'                                -- flipado por expiração (não withdrawn)
-      AND a.vep_status_raw IN ('Expired', 'OfferExpired')      -- bucket ratificado (exclui OfferNotExtended/Withdrawn)
-      AND a.vep_expired_reapply_email_sent_at IS NULL          -- single-fire
+    WHERE a.cutoff_approved_email_sent_at IS NOT NULL
+      AND a.status = 'rejected'
+      AND a.vep_status_raw IN ('Expired', 'OfferExpired')
+      AND a.vep_expired_reapply_email_sent_at IS NULL
       AND a.email IS NOT NULL
       AND COALESCE(a.vep_expired_at, a.updated_at) < now() - v_grace
   LOOP
     v_would_send := v_would_send + 1;
     v_first_name := COALESCE(NULLIF(v_app.first_name, ''), split_part(v_app.applicant_name, ' ', 1));
 
-    -- LGPD: payload de retorno carrega só IDs/contagens, nunca nome/e-mail.
     v_candidates := v_candidates || jsonb_build_object('application_id', v_app.id);
 
     IF v_dry THEN
