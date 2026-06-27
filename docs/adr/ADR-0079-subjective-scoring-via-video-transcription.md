@@ -22,7 +22,7 @@ A plataforma tem três frentes IA ativas/declaradas (ADR-0074):
 
 **Gap concreto**: candidatos têm a opção de submeter vídeos (5 por pillar) em alternativa à entrevista síncrona (`pmi_video_screenings` table populated pelo fluxo Phase B). Transcrição automática (STT) está pipelined. Mas **não existe scoring automatizado sobre o conteúdo dos vídeos** — comitê precisaria assistir 5×~3-5min por candidato para formar opinião, inviável em ciclos com volume.
 
-Cycle 4 atual: 1 candidato ([REDACTED-332-NAME]) com 5 vídeos uploaded; 15 candidatos opted-out; 16 sem decisão. Volume baixo permite calibração inicial controlada antes de operacionalizar em ciclos maiores.
+Cycle 4 atual: 1 candidato (o candidato afetado (#332)) com 5 vídeos uploaded; 15 candidatos opted-out; 16 sem decisão. Volume baixo permite calibração inicial controlada antes de operacionalizar em ciclos maiores.
 
 **PM direção** (p150, 2026-05-12): "vamos em seguida para o full (pq é importante ter a funcionalidade operacional, até para facilitar feedbacks, engajamento e calibracoes futuras)".
 

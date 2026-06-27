@@ -17,7 +17,7 @@
  * source of `accessor_id` in the INSERT statement.
  *
  * Discovery: p239b — PM invoked the freshly-shipped MCP wrapper from
- * an authenticated MCP-Claude session for the actual [REDACTED-332-NAME]
+ * an authenticated MCP-Claude session for the actual the affected candidate (#332)
  * dispatch. RPC returned: "insert or update on table 'pii_access_log'
  * violates foreign key constraint 'pii_access_log_accessor_id_fkey'".
  *

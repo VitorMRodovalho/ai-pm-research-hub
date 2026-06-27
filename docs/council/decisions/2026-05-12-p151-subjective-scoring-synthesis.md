@@ -168,24 +168,24 @@ Bug concreto identificado por security-engineer: spec §3 step 1 da EF NÃO chec
 | p152 | Material change Termo Adesão v2.8 (draft + curador ratification path) | Doc draft + email curadores |
 | p153 | Migrations 1-6 (incluindo M0 consent column + M1 video_screening_analysis + M2 trigger sync + M3 pillar_rubrics + M4 RPCs + M5 cron) | Migrations applied + smoke |
 | p154 | EF `pmi-ai-subjective` + frontend (banner UI + consent gate + calibration view + notificações) + MCP tools | Code shipped |
-| p155 | QA + dry-run Cycle 4 ([REDACTED-332-NAME] com re-disclosure individual) + monitoring + DPA verification | Production-ready |
+| p155 | QA + dry-run Cycle 4 (o candidato afetado (#332) com re-disclosure individual) + monitoring + DPA verification | Production-ready |
 
 ---
 
 ## 7. Recomendação operacional (próxima ação)
 
-### Para [REDACTED-332-NAME] (Cycle 4 — único candidato com vídeos)
+### Para o candidato afetado (#332) (Cycle 4 — único candidato com vídeos)
 
 **ETHICAL PATH**: re-disclosure individual antes de rodar EF sobre vídeos dele. Não shipar production-grade scoring sobre cycle 4 sem consent gate dedicado em produção.
 
-**Opção interim para calibração técnica**: rodar EF em modo **dry-run não-persistente** sobre [REDACTED-332-NAME] para validar:
+**Opção interim para calibração técnica**: rodar EF em modo **dry-run não-persistente** sobre o candidato afetado (#332) para validar:
 - Quality de transcrição STT está acima de threshold (0.65)
 - Output JSON schema funciona corretamente
 - Prompt cache hit ratio é o esperado
 - Custo real bate com estimativa
 - Reasoning é coerente
 
-Resultados ficam em arquivo local (não em `video_screening_analysis`), apresentados para PM como evidência. Depois de consent gate shipa em produção, re-rodar com persistence completa se Eduardo aceitar.
+Resultados ficam em arquivo local (não em `video_screening_analysis`), apresentados para PM como evidência. Depois de consent gate shipa em produção, re-rodar com persistence completa se [candidato] aceitar.
 
 ### Para PM Vitor
 

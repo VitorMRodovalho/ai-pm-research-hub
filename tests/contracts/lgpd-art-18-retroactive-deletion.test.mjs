@@ -16,12 +16,12 @@
  *
  * The actual notification email dispatch is OUT OF SCOPE for this PR — PM
  * sends from nucleoia@pmigo.org.br using the docs/audit/lgpd-art11-remediation/
- * notification_eduardo_luz_p238_interim.md template (PM-approved interim text,
+ * notification_art18_interim_template.md template (PM-approved interim text,
  * pt-BR primary + en-US fallback). The Angeline legal-grade replacement is
  * sibling #334.
  *
  * Migration: supabase/migrations/20260805000023_p238_332_lgpd_art18_retroactive_deletion_log.sql
- * Template: docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md
+ * Template: docs/audit/lgpd-art11-remediation/notification_art18_interim_template.md
  *
  * Asserts:
  *   - Static migration (12): file present, ADD COLUMN IF NOT EXISTS jsonb,
@@ -34,7 +34,7 @@
  *     (transcription IS NULL guard), sanity DO + single-overload defense,
  *     NOTIFY pgrst.
  *   - Static docs (6): docs file present, contains application_id +
- *     video_id + drive_file_id of the affected row ([REDACTED-332-NAME]), declares
+ *     video_id + drive_file_id of the affected row (the affected candidate (#332)), declares
  *     template_version=interim_v1, contains pt-BR text + en-US fallback,
  *     references Art. 11 §I AND Art. 18 §IV, operational checklist step
  *     calls the RPC.
@@ -71,7 +71,7 @@ const MIGRATION_FILE = resolve(
 );
 const DOCS_FILE = resolve(
   ROOT,
-  'docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md'
+  'docs/audit/lgpd-art11-remediation/notification_art18_interim_template.md'
 );
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
@@ -79,10 +79,11 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
-// [REDACTED-332-NAME] — the 1 affected candidate (confirmed live p238 boot).
-const AFFECTED_APPLICATION_ID = '[REDACTED-332-APPLICATION_ID]';
-const AFFECTED_VIDEO_ID = '[REDACTED-332-VIDEO_ID]';
-const AFFECTED_DRIVE_FILE_ID = '[REDACTED-332-DRIVE_FILE_ID]';
+// SYNTHETIC probe IDs — real PII sanitized (#862). Values are irrelevant to the gate test:
+// the RPC rejects at auth.uid()=NULL BEFORE any lookup. Real instance lives only in the private wiki.
+const AFFECTED_APPLICATION_ID = /* synthetic */ '00000000-0000-4000-8000-000000000332';
+const AFFECTED_VIDEO_ID = '11111111-1111-4111-8111-000000000332';
+const AFFECTED_DRIVE_FILE_ID = 'SYNTHETIC-DRIVE-FILE-ID-332';
 
 // ===================================================================
 // STATIC migration body assertions (always run)
@@ -218,9 +219,9 @@ test('p238 #332: notification template docs file exists', () => {
 test('p238 #332: docs file declares interim_v1 template version + correct affected ids', () => {
   const body = readFileSync(DOCS_FILE, 'utf8');
   assert.match(body, /Template version[^a-zA-Z0-9]{1,12}interim_v1/i, 'docs must declare Template version: interim_v1');
-  assert.ok(body.includes(AFFECTED_APPLICATION_ID), `docs must reference application_id ${AFFECTED_APPLICATION_ID}`);
-  assert.ok(body.includes(AFFECTED_VIDEO_ID), `docs must reference video_id ${AFFECTED_VIDEO_ID}`);
-  assert.ok(body.includes(AFFECTED_DRIVE_FILE_ID), `docs must reference drive_file_id ${AFFECTED_DRIVE_FILE_ID}`);
+  assert.ok(body.includes('<APPLICATION_ID>'), 'template must contain the <APPLICATION_ID> placeholder (PII sanitized #332)');
+  assert.ok(body.includes('<VIDEO_ID>'), 'template must contain the <VIDEO_ID> placeholder (PII sanitized #332)');
+  assert.ok(body.includes('<DRIVE_FILE_ID>'), 'template must contain the <DRIVE_FILE_ID> placeholder (PII sanitized #332)');
 });
 
 test('p238 #332: docs file contains pt-BR primary + en-US fallback sections + cites Art. 11 + Art. 18', () => {

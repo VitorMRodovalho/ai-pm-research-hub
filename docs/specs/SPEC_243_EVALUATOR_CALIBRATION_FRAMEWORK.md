@@ -336,7 +336,7 @@ Per #243's 5-lane suggestion + the substrate gaps in §2.5. None of these are fi
 - HEAD commit at spec time: `5d01dbab` (PR #336 merge — p236 disposition close)
 - Invariants 19/19 = 0 violations
 - `selection_evaluations` rows with non-null/non-empty `criterion_notes`: TBD (run `SELECT count(*) FROM selection_evaluations WHERE criterion_notes IS NOT NULL AND criterion_notes::text != '{}'` post-spec to baseline)
-- `selection_evaluation_ai_suggestions` rows by type: only 1 of type `video` (cycle4 [REDACTED-332-NAME] background); other types reflect cycle3 history
+- `selection_evaluation_ai_suggestions` rows by type: only 1 of type `video` (cycle4 o candidato afetado (#332) background); other types reflect cycle3 history
 - `ai_calibration_runs` weekly cron is active
 - `/admin/ai-calibration` page is live with `AiCalibrationIsland` component
 - `/admin/selection` page is live with inline AI signals + per-criterion notes UI

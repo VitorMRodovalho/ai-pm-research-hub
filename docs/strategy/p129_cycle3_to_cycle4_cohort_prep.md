@@ -44,7 +44,7 @@ Todos `status='submitted'` + `interview_status='none'` + 0 evals (com 1 exceçã
 | Cristiano de Oliveira Santos Filho | PMI-DF | researcher | |
 | DJEIMIYS WILLIAN WILLE | PMI-RS | researcher | |
 | Edinan Soares | PMI-MG | researcher | |
-| [REDACTED-332-NAME] | PMI-RS | researcher | |
+| o candidato afetado (#332) | PMI-RS | researcher | |
 | Hector Rigon | (sem) | researcher | |
 | herlon alves de sousa | PMI-CE | leader | (note: Herlon CPMAI sponsor — special case?) |
 | Jessé Filipe Viana da Silva | PMI-RS | researcher | |

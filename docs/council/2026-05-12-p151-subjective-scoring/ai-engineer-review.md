@@ -16,7 +16,7 @@ D-MODEL deve ser Sonnet 4.6 com cache — Haiku 4.5 under-shoots para scoring qu
 
 **Gemini 2.5 Flash (Free Tier) — inviável para produção.** Sediment `feedback_gemini_free_tier_limits.md`: 10 RPM / 32K TPM. 250 calls/ciclo × ~7K tokens = 1.75M tokens. Qualquer burst (retry, admin re-run) satura. Gemini Free Tier não é SLA para produção e Pattern 43 já está saturando.
 
-**Multi-model A/B (opção D) — over-engineering.** Cycle 4 tem 1 candidato ([REDACTED-332-NAME]) com 5 vídeos. N=5 não geram dados estatísticos para comparar modelos. Sonnet 4.6 como baseline → reconsiderar A/B em cycle 5+ se custo escalar ($14/ano não é concern).
+**Multi-model A/B (opção D) — over-engineering.** Cycle 4 tem 1 candidato (o candidato afetado (#332)) com 5 vídeos. N=5 não geram dados estatísticos para comparar modelos. Sonnet 4.6 como baseline → reconsiderar A/B em cycle 5+ se custo escalar ($14/ano não é concern).
 
 **Cache hit ratio:** ~95%, idêntico ao calculado em ADR-0074. System prompt cached via `ephemeral` TTL 5min. Cron 5min processando lote de 10 mantém cache quente. Para garantir: processar no mesmo loop EF, não disparar 10 paralelas. Custo $3.50/ciclo válido.
 

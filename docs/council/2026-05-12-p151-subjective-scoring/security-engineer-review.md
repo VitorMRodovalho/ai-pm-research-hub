@@ -100,7 +100,7 @@ Para tabela NOVA `video_screening_analysis`, NOT NULL deve ser aplicado na migra
 
 **`failure_reason` text — risco concreto:**
 
-Spec (§2) define `failure_reason text` sem restrição. Risco: código EF popule com mensagens que incluem conteúdo da transcrição: `"Transcription too short: 'Olá meu nome é Eduardo'" (15 chars, minimum 20)`. Vaza PII (nome, fragmento de fala) em coluna não coberta por retenção diferenciada.
+Spec (§2) define `failure_reason text` sem restrição. Risco: código EF popule com mensagens que incluem conteúdo da transcrição: `"Transcription too short: 'Olá meu nome é [candidato]'" (15 chars, minimum 20)`. Vaza PII (nome, fragmento de fala) em coluna não coberta por retenção diferenciada.
 
 **Mitigação necessária:** sanitizar `failure_reason` na EF para nunca incluir dados do candidato. Enum de failure reasons preferível: `CHECK (failure_reason IN ('low_transcription_confidence','transcription_too_short','model_timeout','invalid_json_output','consent_revoked'))`. Texto livre reservado a failure codes, não content snippets.
 

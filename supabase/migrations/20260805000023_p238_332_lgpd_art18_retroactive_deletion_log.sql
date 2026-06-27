@@ -7,7 +7,7 @@
 -- all NEW transcriptions absent voice biometric consent. But at the moment
 -- the block landed, 1 pre-existing pmi_video_screenings row already had
 -- transcription text generated under the OLDER generic ai_analysis consent
--- regime ([REDACTED-332-NAME] / application e780d8a9 / Background pillar /
+-- regime (o candidato afetado (#332) / application [application_id redigido — #332] / Background pillar /
 -- video_screening 6afb7e26 / 2428 chars / drive_file 14bA9rCe...).
 -- LGPD Art. 18 §IV gives the data subject the right to deletion; we must
 -- (a) notify the affected candidate, (b) offer a deletion path, and (c)
@@ -15,7 +15,7 @@
 -- covers forward consent capture. Sibling C4 (#334) is producing the
 -- legal-grade notification template via Angeline async — until then this PR
 -- ships a PM-approved interim text (file
--- `docs/audit/lgpd-art11-remediation/notification_eduardo_luz_p238_interim.md`).
+-- `docs/audit/lgpd-art11-remediation/notification_art18_interim_template.md`).
 --
 -- This migration ships the audit-log infrastructure + 2 SECDEF RPCs to
 -- record the notification dispatch and (later, if requested) execute the
@@ -42,7 +42,7 @@
 -- events. PM dispatches the notification once; deletion only fires IF
 -- candidate requests it within the 30-day window (PM-approved default).
 -- Both must produce a verifiable audit row in pii_access_log even if
--- Eduardo never responds.
+-- [candidato] never responds.
 --
 -- Drive file removal is NOT in the SQL RPC scope — it requires Drive admin
 -- auth + manual confirmation. The deletion RPC captures the drive_file_id
