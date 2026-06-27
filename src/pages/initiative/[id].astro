@@ -76,6 +76,36 @@ const INIT_I18N = {
     progress: t('initiative.stats.progress', lang),
     backlog: t('initiative.stats.backlog', lang),
   },
+  // #211: self-service initiative metadata editing (Configurações tab)
+  configTab: t('initiative.configTab', lang),
+  accessRestrictedConfig: t('initiative.accessRestrictedConfig', lang),
+  config: {
+    title: t('initiative.config.title', lang),
+    desc: t('initiative.config.desc', lang),
+    sectionComms: t('initiative.config.sectionComms', lang),
+    sectionVideo: t('initiative.config.sectionVideo', lang),
+    sectionMeetings: t('initiative.config.sectionMeetings', lang),
+    whatsappUrl: t('initiative.config.whatsappUrl', lang),
+    whatsappNote: t('initiative.config.whatsappNote', lang),
+    driveUrl: t('initiative.config.driveUrl', lang),
+    youtubeNucleo: t('initiative.config.youtubeNucleo', lang),
+    youtubeEvent: t('initiative.config.youtubeEvent', lang),
+    meetingDay: t('initiative.config.meetingDay', lang),
+    meetingDayPlaceholder: t('initiative.config.meetingDayPlaceholder', lang),
+    cadencePlaceholder: t('initiative.config.cadencePlaceholder', lang),
+    meetingTimeStart: t('initiative.config.meetingTimeStart', lang),
+    meetingTimeEnd: t('initiative.config.meetingTimeEnd', lang),
+    timezone: t('initiative.config.timezone', lang),
+    cadenceHint: t('initiative.config.cadenceHint', lang),
+    meetingSchedule: t('initiative.config.meetingSchedule', lang),
+    meetingLink: t('initiative.config.meetingLink', lang),
+    venue: t('initiative.config.venue', lang),
+    save: t('initiative.config.save', lang),
+    saving: t('initiative.config.saving', lang),
+    saved: t('initiative.config.saved', lang),
+    error: t('initiative.config.error', lang),
+    urlHint: t('initiative.config.urlHint', lang),
+  },
 };
 ---
 <BaseLayout title="Iniciativa" activePage="initiatives" lang={lang}>
@@ -123,6 +153,7 @@ const INIT_I18N = {
         </div>
         <div id="governance-list" class="hidden space-y-3"></div>
       </div>
+      <div id="panel-config" class="hidden"></div>
 
       <EventMinutesIsland client:load />
 
@@ -238,7 +269,7 @@ const INIT_I18N = {
   // ── Tab switching ──
   function switchTab(tabName: string) {
     activeTab = tabName;
-    const panels = ['general', 'board', 'members', 'deliverables', 'attendance', 'gamification', 'governance'];
+    const panels = ['general', 'board', 'members', 'deliverables', 'attendance', 'gamification', 'governance', 'config'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -277,6 +308,10 @@ const INIT_I18N = {
     }
     // Governance tab — always available; populated from governance_documents linked to this initiative
     tabs.push({ key: 'governance', label: '📜 ' + (I18N.governanceTab || 'Governança') });
+    // #211: Configurações tab — only for those who can manage this initiative's metadata
+    if (canManage) {
+      tabs.push({ key: 'config', label: '⚙️ ' + (I18N.configTab || 'Configurações') });
+    }
 
     container.innerHTML = tabs.map((tab, i) => {
       const isFirst = i === 0;
@@ -815,6 +850,84 @@ const INIT_I18N = {
     </div>`;
   }
 
+  // ── Configurações tab (#211 — self-service initiative metadata editing) ──
+  // Field set mirrors the server-side whitelist in manage_initiative_metadata (migration …260).
+  // The RPC is the source of truth for authorization + URL validation; this form is convenience UX.
+  type ConfigField = { key: string; type: 'text' | 'time' | 'url'; section: 'comms' | 'video' | 'meetings'; labelKey: string; placeholder?: string; placeholderKey?: string };
+  const CONFIG_FIELDS: ConfigField[] = [
+    { key: 'whatsapp_url', type: 'url', section: 'comms', labelKey: 'whatsappUrl', placeholder: 'https://chat.whatsapp.com/...' },
+    { key: 'whatsapp_note', type: 'text', section: 'comms', labelKey: 'whatsappNote' },
+    { key: 'drive_url', type: 'url', section: 'comms', labelKey: 'driveUrl', placeholder: 'https://drive.google.com/...' },
+    { key: 'youtube_channel_nucleo', type: 'url', section: 'video', labelKey: 'youtubeNucleo', placeholder: 'https://youtube.com/@...' },
+    { key: 'youtube_channel_event', type: 'url', section: 'video', labelKey: 'youtubeEvent', placeholder: 'https://youtube.com/...' },
+    { key: 'meeting_day', type: 'text', section: 'meetings', labelKey: 'meetingDay', placeholderKey: 'meetingDayPlaceholder' },
+    { key: 'meeting_time_start', type: 'time', section: 'meetings', labelKey: 'meetingTimeStart' },
+    { key: 'meeting_time_end', type: 'time', section: 'meetings', labelKey: 'meetingTimeEnd' },
+    { key: 'timezone', type: 'text', section: 'meetings', labelKey: 'timezone', placeholder: 'America/Sao_Paulo' },
+    { key: 'cadence_hint', type: 'text', section: 'meetings', labelKey: 'cadenceHint', placeholderKey: 'cadencePlaceholder' },
+    { key: 'meeting_schedule', type: 'text', section: 'meetings', labelKey: 'meetingSchedule' },
+    { key: 'meeting_link', type: 'url', section: 'meetings', labelKey: 'meetingLink', placeholder: 'https://meet.google.com/...' },
+    { key: 'venue', type: 'text', section: 'meetings', labelKey: 'venue' },
+  ];
+
+  // Lazy-render guard (mirrors deliverablesLoaded / attendanceLoaded): re-rendering the form on every
+  // tab switch would wipe the user's unsaved edits. Reset to false after a successful save so the next
+  // visit re-renders with the freshly-saved metadata.
+  let configTabRendered = false;
+  function loadConfigTab() {
+    const el = document.getElementById('panel-config');
+    if (!el) return;
+    // Defense in depth: the tab is canManage-gated in renderTabs, but never render the form for
+    // a non-manager even if the panel is reached some other way. (The RPC still gates server-side.)
+    if (!canManage) {
+      el.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-sm text-amber-800">🔒 ${escapeHtml(I18N.accessRestrictedConfig || I18N.accessRestricted || 'Acesso restrito.')}</div>`;
+      return;
+    }
+    if (configTabRendered) return; // preserve in-progress edits across tab switches
+    const cfg = I18N.config || {};
+    const meta = (initData && initData.initiative && initData.initiative.metadata) || {};
+    const sections: { id: ConfigField['section']; title: string }[] = [
+      { id: 'comms', title: cfg.sectionComms || 'Comunicação' },
+      { id: 'video', title: cfg.sectionVideo || 'Vídeo (YouTube)' },
+      { id: 'meetings', title: cfg.sectionMeetings || 'Reuniões' },
+    ];
+    const fieldHtml = (f: ConfigField) => {
+      let val = meta[f.key] != null ? String(meta[f.key]) : '';
+      if (f.type === 'time' && val) val = val.slice(0, 5); // normalize HH:MM:SS → HH:MM for <input type=time>
+      const label = cfg[f.labelKey] || f.key;
+      const inputType = f.type === 'url' ? 'url' : f.type;
+      const phText = f.placeholderKey ? (cfg[f.placeholderKey] || '') : (f.placeholder || '');
+      const ph = phText ? ` placeholder="${escapeHtml(phText)}"` : '';
+      const hint = f.type === 'url'
+        ? `<span class="block text-[10px] text-[var(--text-muted)] mt-0.5">${escapeHtml(cfg.urlHint || '')}</span>`
+        : '';
+      return `<label class="block mb-3">
+        <span class="block text-xs font-semibold text-[var(--text-secondary)] mb-1">${escapeHtml(label)}</span>
+        <input id="cfg-${f.key}" data-cfg-key="${f.key}" type="${inputType}" value="${escapeHtml(val)}"${ph}
+          class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy transition-colors" />
+        ${hint}
+      </label>`;
+    };
+    const sectionsHtml = sections.map(s => {
+      const fields = CONFIG_FIELDS.filter(f => f.section === s.id);
+      return `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 mb-4">
+        <h3 class="text-sm font-bold text-navy mb-3">${escapeHtml(s.title)}</h3>
+        ${fields.map(fieldHtml).join('')}
+      </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="mb-4">
+        <h2 class="text-base font-bold text-[var(--text-primary)]">${escapeHtml(cfg.title || 'Configurações da Iniciativa')}</h2>
+        <p class="text-xs text-[var(--text-muted)] mt-1">${escapeHtml(cfg.desc || '')}</p>
+      </div>
+      ${sectionsHtml}
+      <div class="flex items-center gap-3 flex-wrap">
+        <button data-action="save-initiative-config" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-wait">${escapeHtml(cfg.save || 'Salvar Configurações')}</button>
+        <span id="cfg-status" class="text-sm" role="status" aria-live="polite"></span>
+      </div>`;
+    configTabRendered = true;
+  }
+
   // ── Boot ──
   async function boot() {
     const sb = getSb();
@@ -846,7 +959,7 @@ const INIT_I18N = {
     // Determine management permission
     canManage = currentMember.is_superadmin
       || ['manager', 'deputy_manager'].includes(currentMember.operational_role || '')
-      || (data.user_engagement && data.user_engagement.role === 'leader');
+      || (data.user_engagement && ['leader', 'owner'].includes(data.user_engagement.role));
 
     // Reveal shell
     document.getElementById('init-loading')?.classList.add('hidden');
@@ -869,6 +982,7 @@ const INIT_I18N = {
       if (tab === 'deliverables') await loadDeliverablesTab();
       if (tab === 'attendance') await loadAttendanceTab();
       if (tab === 'governance') await loadGovernanceTab();
+      if (tab === 'config') loadConfigTab();
     });
 
     // ── Governance tab — list project_charter + other docs linked to this initiative ──
@@ -976,6 +1090,46 @@ const INIT_I18N = {
       const target = e.target as HTMLElement;
       const action = target.dataset.action || target.closest('[data-action]')?.getAttribute('data-action');
       if (!action) return;
+
+      // #211: save initiative config metadata (whitelisted keys; RPC re-validates auth + URLs server-side)
+      if (action === 'save-initiative-config') {
+        const cfg = I18N.config || {};
+        const btn = (target.closest('[data-action="save-initiative-config"]') || target) as HTMLButtonElement;
+        const statusEl = document.getElementById('cfg-status');
+        const setStatus = (msg: string, kind: 'muted' | 'ok' | 'err') => {
+          if (!statusEl) return;
+          statusEl.textContent = msg;
+          statusEl.className = 'text-sm ' + (kind === 'ok' ? 'text-emerald-600' : kind === 'err' ? 'text-red-600' : 'text-[var(--text-muted)]');
+        };
+        // Collect the form values (WYSIWYG: every field is sent; an emptied field clears that key).
+        const metadata: Record<string, string> = {};
+        CONFIG_FIELDS.forEach(f => {
+          const input = document.getElementById('cfg-' + f.key) as HTMLInputElement | null;
+          if (input) metadata[f.key] = input.value.trim();
+        });
+        // Client-side URL pre-check (mirrors the server's *_url validation for faster feedback).
+        const badUrl = CONFIG_FIELDS.find(f => f.type === 'url' && metadata[f.key] && !/^https?:\/\//i.test(metadata[f.key]));
+        if (badUrl) {
+          setStatus((cfg.error || 'Erro') + ': ' + (cfg.urlHint || 'URL inválida'), 'err');
+          document.getElementById('cfg-' + badUrl.key)?.focus();
+          return;
+        }
+        btn.disabled = true;
+        setStatus(cfg.saving || 'Salvando…', 'muted');
+        const { data: result, error: cfgErr } = await sb.rpc('manage_initiative_metadata', {
+          p_initiative_id: INITIATIVE_ID, p_metadata: metadata,
+        });
+        btn.disabled = false;
+        if (cfgErr) { setStatus((cfg.error || 'Erro') + ': ' + (cfgErr.message || ''), 'err'); return; }
+        if (result?.error) { setStatus((cfg.error || 'Erro') + ': ' + result.error, 'err'); return; }
+        // Success — reflect locally so the header WhatsApp link + re-opens stay in sync (no full reload).
+        initData.initiative.metadata = { ...(initData.initiative.metadata || {}), ...metadata };
+        configTabRendered = false; // allow the next visit to re-render with the freshly-saved values
+        renderHeader();
+        const n = Array.isArray(result?.updated_keys) ? result.updated_keys.length : 0;
+        setStatus((cfg.saved || 'Configurações salvas.') + (n ? ` (${n})` : ''), 'ok');
+        return;
+      }
 
       if (action === 'create-event-prompt') {
         const title = prompt('Titulo do evento:');
