@@ -2992,7 +2992,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ approved: appr, revoke: efJson });
   });
 
-  mcp.tool("bulk_approve_drive_revocations", "Aprova e revoga TODAS as permissões Drive pendentes de um ex-membro de uma vez. Authority: manage_member (GP). Retorna resultado por linha. Mesma observação de 403-até-elevação-de-papel do approve_drive_revocation.", {
+  mcp.tool("bulk_approve_drive_revocations", "Aprova e revoga TODAS as permissões Drive pendentes de um ex-membro de uma vez. Authority: manage_member (GP). Retorna resultado por linha. Mesma observação de 403-até-elevação-de-papel do approve_drive_revocation. Se o membro tiver >100 pendências, as excedentes ficam status='approved' e são drenadas pelo cron horário (revoke-drive-drain-hourly).", {
     member_id: z.string().describe("UUID do ex-membro")
   }, async (params: { member_id: string }) => {
     const start = Date.now();

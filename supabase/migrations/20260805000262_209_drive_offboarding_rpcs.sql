@@ -160,6 +160,7 @@ DECLARE
 BEGIN
   IF public.current_caller_role() IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'service-role only'; END IF;
   v_org := (SELECT id FROM public.organizations ORDER BY created_at LIMIT 1);
+  IF v_org IS NULL THEN RAISE EXCEPTION 'no organization configured'; END IF;
 
   FOR rec IN SELECT value FROM jsonb_array_elements(coalesce(p_rows,'[]'::jsonb)) AS value
   LOOP
@@ -200,7 +201,7 @@ BEGIN
     FOR v_gp IN
       SELECT m.id FROM public.members m
       WHERE m.member_status='active'
-        AND (coalesce(m.is_superadmin,false) OR public.can_by_member(m.id,'manage_member'))
+        AND public.can_by_member(m.id,'manage_member')  -- V4 SSOT (ADR-0007/0011); no is_superadmin bypass
     LOOP
       -- Explicit casts disambiguate the 3 create_notification overloads (NULL link would be `unknown`).
       PERFORM public.create_notification(
@@ -243,15 +244,22 @@ BEGIN
     RAISE EXCEPTION 'invalid terminal status: %', p_status;
   END IF;
 
+  -- Idempotency guard: act only on a still-open row, so a concurrent caller (synchronous MCP approve +
+  -- the drain cron) cannot overwrite an already-terminal outcome with a different status.
   UPDATE public.drive_offboarding_audit
      SET status = p_status,
          google_error = p_google_error,
          revoked_at = CASE WHEN p_status IN ('revoked','already_absent') THEN now() ELSE revoked_at END,
          updated_at = now()
-   WHERE id = p_audit_id
+   WHERE id = p_audit_id AND status IN ('approved','pending_revoke')
    RETURNING * INTO v_row;
 
-  IF v_row.id IS NULL THEN RAISE EXCEPTION 'Audit row % not found', p_audit_id; END IF;
+  IF v_row.id IS NULL THEN
+    -- already terminal or missing → graceful no-op (no overwrite, no spurious audit row)
+    SELECT * INTO v_row FROM public.drive_offboarding_audit WHERE id = p_audit_id;
+    IF v_row.id IS NULL THEN RAISE EXCEPTION 'Audit row % not found', p_audit_id; END IF;
+    RETURN jsonb_build_object('audit_id', v_row.id, 'status', v_row.status, 'noop', true);
+  END IF;
 
   IF p_status IN ('revoked','already_absent') THEN
     INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes, metadata)

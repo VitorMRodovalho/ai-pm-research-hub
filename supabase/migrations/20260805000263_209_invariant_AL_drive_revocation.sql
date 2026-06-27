@@ -677,3 +677,5 @@ BEGIN
 
 END;
 $function$;
+
+NOTIFY pgrst, 'reload schema';
