@@ -6574,6 +6574,21 @@ const esLATAM: Record<string, string> = {
   // p153 GAP-152.5 — flag stale (no vino en el Apply VEP más reciente)
   'comp.vepBadge.off': 'VEP·OFF',
   'comp.vepBadge.offTooltip': 'No vino en el Apply VEP más reciente — probablemente removida del recruiter dashboard por PMI',
+  // #902 — estados terminales de expiración VEP + badge distinto "aprobado→oferta VEP expirada" + cuenta regresiva del plazo.
+  'comp.vepBadge.expired': 'VEP·Exp',
+  'comp.vepBadge.statusExpired': 'Solicitud/oferta VEP expirada',
+  'comp.vepBadge.offerExpired': 'VEP·OfExp',
+  'comp.vepBadge.statusOfferExpired': 'Oferta VEP expirada',
+  'comp.vepBadge.offerExtended': 'VEP·Ofert',
+  'comp.vepBadge.statusOfferExtended': 'Oferta extendida (esperando aceptación)',
+  'comp.vepBadge.complete': 'VEP·Compl',
+  'comp.vepBadge.statusComplete': 'Completado',
+  'comp.vepBadge.approvedExpiredShort': 'Aprob→VEP✗',
+  'comp.vepBadge.approvedExpiredTooltip': 'Aprobado en el corte, pero la solicitud/oferta VEP expiró — candidato retirado del embudo automáticamente, NO es un rechazo de evaluación',
+  'comp.vepBadge.deadlineDays': 'VEP expira en',
+  'comp.vepBadge.deadlineToday': 'VEP expira hoy',
+  'comp.vepBadge.deadlineTomorrow': 'VEP expira mañana',
+  'comp.vepBadge.deadlineTooltip': 'Plazo de la solicitud/oferta en PMI VEP — después de esta fecha el candidato se retira del embudo automáticamente',
   // ── Affiliation Queue — Dirección de Afiliación (#659) ──
   'comp.affiliationQueue.loading': 'Cargando cola…',
   'comp.recurringAgenda.heading': 'Agenda recurrente',

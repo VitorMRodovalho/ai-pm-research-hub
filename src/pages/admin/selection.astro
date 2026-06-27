@@ -247,6 +247,21 @@ const SEL_I18N = {
     // p153 GAP-152.5
     off: t('comp.vepBadge.off', lang),
     offTooltip: t('comp.vepBadge.offTooltip', lang),
+    // #902 — terminal-expiry statuses + approved→expired badge + deadline countdown
+    expired: t('comp.vepBadge.expired', lang),
+    statusExpired: t('comp.vepBadge.statusExpired', lang),
+    offerExpired: t('comp.vepBadge.offerExpired', lang),
+    statusOfferExpired: t('comp.vepBadge.statusOfferExpired', lang),
+    offerExtended: t('comp.vepBadge.offerExtended', lang),
+    statusOfferExtended: t('comp.vepBadge.statusOfferExtended', lang),
+    complete: t('comp.vepBadge.complete', lang),
+    statusComplete: t('comp.vepBadge.statusComplete', lang),
+    approvedExpiredShort: t('comp.vepBadge.approvedExpiredShort', lang),
+    approvedExpiredTooltip: t('comp.vepBadge.approvedExpiredTooltip', lang),
+    deadlineDays: t('comp.vepBadge.deadlineDays', lang),
+    deadlineToday: t('comp.vepBadge.deadlineToday', lang),
+    deadlineTomorrow: t('comp.vepBadge.deadlineTomorrow', lang),
+    deadlineTooltip: t('comp.vepBadge.deadlineTooltip', lang),
   },
   // #224 — admin JSON import observability labels (consumed by
   // renderJsonApplyResult + renderJsonDryRunPreview helpers).
@@ -780,6 +795,15 @@ const SEL_I18N = {
       statusOfferNotExtended: 'Ciclo encerrado sem oferta',
       lastSync: 'Última sync VEP', reconciled: 'Reconciliado em',
       off: 'VEP·OFF', offTooltip: 'Não veio no Apply VEP mais recente — provavelmente removida do recruiter dashboard pela PMI',
+      // #902
+      expired: 'VEP·Exp', statusExpired: 'Oferta/aplicação VEP expirada',
+      offerExpired: 'VEP·OfExp', statusOfferExpired: 'Oferta VEP expirada',
+      offerExtended: 'VEP·Ofert', statusOfferExtended: 'Oferta estendida (aguardando aceite)',
+      complete: 'VEP·Compl', statusComplete: 'Concluído',
+      approvedExpiredShort: 'Aprov→VEP✗',
+      approvedExpiredTooltip: 'Aprovado no cutoff, mas a oferta/aplicação VEP expirou — candidato saiu do funil automaticamente, NÃO é reprovação na avaliação',
+      deadlineDays: 'VEP expira em', deadlineToday: 'VEP expira hoje', deadlineTomorrow: 'VEP expira amanhã',
+      deadlineTooltip: 'Prazo da oferta/aplicação no PMI VEP — após esta data o candidato é removido do funil automaticamente',
     },
   };
 
@@ -1117,8 +1141,16 @@ const SEL_I18N = {
   function vepBadge(r: any): string {
     const status = r.vep_recon?.status_raw;
     const lastSeenAt = r.vep_recon?.last_seen_at;
+    const offerExpiresAt = r.vep_recon?.offer_expires_at;  // #902 forward-looking deadline (expiryDateUtc)
+    const expiredAt = r.vep_recon?.expired_at;             // #902 actual expiry (offer/applicationExpiredDateUtc)
     if (!status && !lastSeenAt) return '';
     const VB = T.vepBadge || {};
+    // #902 — VEP raw statuses for which a deadline countdown is meaningless: the
+    // candidate is OUT of the funnel (terminal-negative) OR the assignment is already
+    // done ('Complete', terminal-positive). Either way, suppress the countdown chip.
+    const VEP_TERMINAL = ['Withdrawn', 'Declined', 'OfferNotExtended', 'Expired', 'OfferExpired', 'Removed', 'Complete'];
+    const isVepTerminal = status ? VEP_TERMINAL.includes(status) : false;
+    const isExpiryFamily = status === 'Expired' || status === 'OfferExpired';
     let statusBadge = '';
     if (status) {
       const labelMap: Record<string, { short: string; long: string; cls: string }> = {
@@ -1127,6 +1159,11 @@ const SEL_I18N = {
         Withdrawn: { short: VB.withdrawn || 'VEP·Saiu', long: VB.statusWithdrawn || 'Desistiu', cls: 'bg-gray-100 text-gray-600' },
         Declined: { short: VB.declined || 'VEP·Recus', long: VB.statusDeclined || 'Recusado', cls: 'bg-rose-50 text-rose-700' },
         OfferNotExtended: { short: VB.offerNotExtended || 'VEP·SemOf', long: VB.statusOfferNotExtended || 'Sem oferta', cls: 'bg-amber-50 text-amber-700' },
+        // #902 — statuses that previously fell through to the gray "unknown" badge.
+        OfferExtended: { short: VB.offerExtended || 'VEP·Ofert', long: VB.statusOfferExtended || 'Oferta estendida (aguardando aceite)', cls: 'bg-cyan-50 text-cyan-700' },
+        Expired: { short: VB.expired || 'VEP·Exp', long: VB.statusExpired || 'Oferta/aplicação VEP expirada', cls: 'bg-rose-50 text-rose-700' },
+        OfferExpired: { short: VB.offerExpired || 'VEP·OfExp', long: VB.statusOfferExpired || 'Oferta VEP expirada', cls: 'bg-rose-50 text-rose-700' },
+        Complete: { short: VB.complete || 'VEP·Compl', long: VB.statusComplete || 'Concluído', cls: 'bg-emerald-50 text-emerald-700' },
       };
       const entry = labelMap[status] || { short: VB.unknown || 'VEP·?', long: status, cls: 'bg-slate-100 text-slate-600' };
       const lastSyncStr = lastSeenAt ? new Date(lastSeenAt).toLocaleDateString('pt-BR') : '—';
@@ -1135,6 +1172,46 @@ const SEL_I18N = {
       const tooltip = `${VB.tooltipPrefix || 'Status no PMI VEP'}: ${entry.long} · ${VB.lastSync || 'Última sync VEP'} ${lastSyncStr}${reconciledLine}`;
       statusBadge = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${entry.cls}" title="${esc(tooltip)}">${esc(entry.short)}</span>`;
     }
+
+    // #902 — distinct "aprovado → oferta/aplicação VEP expirada (DD/MM)" badge. Fires
+    // when the candidate passed the cutoff (cutoff_approved_email_sent_at set) but the
+    // VEP application/offer then expired — i.e. the silent approved→rejected flip this
+    // issue surfaces. Keyed on the expiry family only (Expired/OfferExpired), so it
+    // does not duplicate the OfferNotExtended/Withdrawn terminal cases.
+    let approvedExpiredBadge = '';
+    if (r.cutoff_approved_email_sent_at && isExpiryFamily) {
+      const whenIso = expiredAt || lastSeenAt;
+      const whenStr = whenIso ? new Date(whenIso).toLocaleDateString('pt-BR') : '—';
+      const tip = `${VB.approvedExpiredTooltip || 'Aprovado no cutoff, mas a oferta/aplicação VEP expirou'}${whenStr !== '—' ? ` (${whenStr})` : ''}`;
+      approvedExpiredBadge = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-300" title="${esc(tip)}">${esc(VB.approvedExpiredShort || 'Aprov→VEP✗')}${whenStr !== '—' ? ` ${esc(whenStr)}` : ''}</span>`;
+    }
+
+    // #902 — proactive deadline countdown. When the VEP offer/application has a
+    // forward-looking deadline still in the future and the candidate is NOT already
+    // out (terminal), show "expira em N dias" so operators can act BEFORE the silent
+    // expiry. Amber when ≤ 7 days (mirrors the offer_accept_grace window); only shown
+    // within 30 days to avoid noise on far-future deadlines.
+    let deadlineChip = '';
+    if (offerExpiresAt && !isVepTerminal) {
+      const expMs = new Date(offerExpiresAt).getTime();
+      if (Number.isFinite(expMs)) {
+        const daysLeft = Math.ceil((expMs - Date.now()) / 86400000);
+        if (daysLeft >= 0 && daysLeft <= 30) {
+          const label = daysLeft === 0
+            ? (VB.deadlineToday || 'VEP expira hoje')
+            : daysLeft === 1
+            ? (VB.deadlineTomorrow || 'VEP expira amanhã')
+            : `${VB.deadlineDays || 'VEP expira em'} ${daysLeft}d`;
+          const cls = daysLeft <= 7
+            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+            : 'bg-slate-50 text-slate-600 border border-slate-200';
+          const expStr = new Date(offerExpiresAt).toLocaleDateString('pt-BR');
+          const tip = `${VB.deadlineTooltip || 'Prazo da oferta/aplicação no PMI VEP'} (${expStr})`;
+          deadlineChip = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cls}" title="${esc(tip)}">⏳ ${esc(label)}</span>`;
+        }
+      }
+    }
+
     // GAP-152.5 stale flag — only render if lastSeenAt is meaningfully older than dataset max
     let staleBadge = '';
     if (lastSeenAt && latestVepSeenMs > 0) {
@@ -1145,7 +1222,7 @@ const SEL_I18N = {
         staleBadge = ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200" title="${esc(offTip)}">${esc(VB.off || 'VEP·OFF')}</span>`;
       }
     }
-    return `${statusBadge}${staleBadge}`;
+    return `${statusBadge}${approvedExpiredBadge}${deadlineChip}${staleBadge}`;
   }
 
   /* p150 PM feedback — PMI canonical chapter name → curto code mapping.

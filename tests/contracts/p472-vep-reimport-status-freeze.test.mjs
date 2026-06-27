@@ -112,21 +112,32 @@ test('#472 — existing-row SELECT loads status (needed for the freeze)', () => 
 });
 
 test('#472 — same-cycle update uses resolveReimportStatus, NOT bare payload.status', () => {
-  const block = sameCycleUpdateBlock(readDb());
+  const dbSrc = readDb();
+  const block = sameCycleUpdateBlock(dbSrc);
   const statusLine = block.split('\n').find((l) => /^\s*status\s*:/.test(l));
   assert.ok(statusLine, 'same-cycle update must still declare a `status:` key (update-coverage test)');
-  // #693 — the call now threads a third arg (payload.vep_status_raw) so a HARD
-  // terminal VEP decision can override the mid-pipeline freeze. The first two
-  // args MUST stay (existing.status, payload.status); the third is required so
-  // the terminal-honoring path is wired.
+  // #693 — the resolver threads a third arg (payload.vep_status_raw) so a HARD terminal
+  // VEP decision can override the mid-pipeline freeze. The first two args MUST stay
+  // (existing.status, payload.status); the third is required so the terminal-honoring
+  // path is wired. #902 — the resolved value may be wired EITHER inline OR via a
+  // `const newStatus = resolveReimportStatus(...)` one line above the update (so the
+  // same value is reused for auditVepTerminalClobber). Accept both forms; either way the
+  // exact 3-arg call must be present AND the status field must be wired to its result.
+  const RESOLVER_3ARG = /resolveReimportStatus\(\s*existing\.status\s*,\s*payload\.status\s*,\s*payload\.vep_status_raw\s*\)/;
+  const trimmed = statusLine.trim();
+  const inlineForm = RESOLVER_3ARG.test(trimmed);
+  const constForm =
+    /^status\s*:\s*newStatus\s*,?$/.test(trimmed) &&
+    new RegExp('const\\s+newStatus\\s*=\\s*' + RESOLVER_3ARG.source).test(stripComments(dbSrc));
   assert.ok(
-    /resolveReimportStatus\(\s*existing\.status\s*,\s*payload\.status\s*,\s*payload\.vep_status_raw\s*\)/.test(statusLine),
-    `status must be set via resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw) — got: "${statusLine.trim()}"`
+    inlineForm || constForm,
+    `status must be set via resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw) ` +
+      `(inline, or via a \`const newStatus = …\` reused for the audit) — got: "${trimmed}"`
   );
   // Forward defense: the exact pre-fix clobber must not reappear in db.ts CODE
   // (comments documenting the anti-pattern are stripped first).
   assert.ok(
-    !/status\s*:\s*payload\.status/.test(stripComments(readDb())),
+    !/status\s*:\s*payload\.status/.test(stripComments(dbSrc)),
     'REGRESSION: db.ts reverted to the unconditional `status: payload.status` overwrite (#472 B2)'
   );
 });
