@@ -11,6 +11,7 @@ import type {
   VepOpportunityRow,
   SelectionApplicationUpsert
 } from './types';
+import { safeTimestamp } from './script-mapper';
 
 const ORG_ID_DEFAULT = '2b4f58ab-7c45-4170-8718-b77ee69ff906';
 
@@ -63,6 +64,12 @@ export function mapPmiToNucleo(
       ?? detail.coverLetterInfo?.coverLetter
       ?? null,
     application_date: detail.applicationDate ?? null,
+    // #902 parity (server-to-server API path; currently dormant — see file header).
+    // VepApplicationDetail carries no forward-looking expiryDate, only the actual
+    // expiry timestamps, so only vep_expired_at is populated here. safeTimestamp
+    // normalizes + guards malformed dates to null (same as the active script path),
+    // so a bad PMI date can never throw and fail the upsert.
+    vep_expired_at: safeTimestamp(detail.offerExpiredDateUtc ?? detail.applicationExpiredDateUtc),
 
     status: mapPmiStatusToNucleo(detail.status),
     imported_at: new Date().toISOString(),

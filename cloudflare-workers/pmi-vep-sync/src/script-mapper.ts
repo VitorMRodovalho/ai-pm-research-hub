@@ -161,6 +161,14 @@ export function mapScriptToNucleo(
     // (Núcleo-side) to flag divergence.
     vep_status_raw: app.status ?? null,
     vep_last_seen_at: new Date().toISOString(),
+    // #902 — capture the VEP application/offer deadline + actual expiry that were
+    // previously dropped on the floor. expiryDateUtc is the forward-looking deadline
+    // (drives the admin/selection "expira em N dias" countdown); offer/application
+    // ExpiredDateUtc is the actual expiry date (drives the "aprovado → oferta VEP
+    // expirada DD/MM" badge). Normalized to ISO; malformed/absent → null (never throw,
+    // so a bad PMI date can't fail the whole upsert).
+    vep_offer_expires_at: safeTimestamp(app.expiryDateUtc),
+    vep_expired_at: safeTimestamp(app.offerExpiredDateUtc ?? app.applicationExpiredDateUtc),
     // Wave 3 synth fix (S-CONV-3 — 2 agents): null-semantic consistency vs empty string
     certifications: phaseBCertsString ?? null,
     role_applied: opp.role_default,
@@ -282,6 +290,19 @@ export function mapServiceHistory(
  * Already an array → return as-is (filtered for empty entries).
  * Anything else → null.
  */
+/**
+ * #902 — normalize a PMI lifecycle date string (e.g. expiryDateUtc,
+ * offerExpiredDateUtc) to an ISO timestamp for a timestamptz column. Returns null
+ * for absent / non-string / unparseable input so a malformed source date degrades
+ * gracefully (the field stays NULL) instead of throwing and failing the whole
+ * selection_applications upsert.
+ */
+export function safeTimestamp(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const t = Date.parse(value.trim());
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
+}
+
 export function parseMaybeCsvArray(value: unknown): string[] | null {
   if (value == null) return null;
   if (Array.isArray(value)) {

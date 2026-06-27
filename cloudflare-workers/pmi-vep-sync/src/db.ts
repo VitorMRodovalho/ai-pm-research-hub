@@ -412,7 +412,9 @@ export async function upsertSelectionApplication(
     .from('selection_applications')
     // email + vep_reconciled_at → #444 reconciled-email freeze;
     // status → #472 corr.#2 re-import status freeze (both applied below).
-    .select('id, cycle_id, email, status, vep_reconciled_at, consent_ai_analysis_at, consent_ai_analysis_revoked_at')
+    // #902: cutoff_approved_email_sent_at → distinguishes a VEP expiry AFTER cutoff
+    // approval from a plain evaluation rejection in the audit trail (auditVepTerminalClobber).
+    .select('id, cycle_id, email, status, vep_reconciled_at, consent_ai_analysis_at, consent_ai_analysis_revoked_at, cutoff_approved_email_sent_at')
     .eq('vep_application_id', payload.vep_application_id)
     .eq('vep_opportunity_id', payload.vep_opportunity_id)
     .maybeSingle();
@@ -474,6 +476,12 @@ export async function upsertSelectionApplication(
       // Worker reported success but vep_status_raw stayed NULL in all 97 apps.
       vep_status_raw: payload.vep_status_raw,
       vep_last_seen_at: payload.vep_last_seen_at,
+      // #902 — persist the captured VEP deadline + expiry on every refresh (they were
+      // mapped p902 but, like vep_status_raw pre-hotfix6, must reach the UPDATE SET or
+      // they silently stay NULL). Included in commonRefresh so cross-cycle partial
+      // refresh also keeps the deadline current.
+      vep_offer_expires_at: payload.vep_offer_expires_at ?? null,
+      vep_expired_at: payload.vep_expired_at ?? null,
       updated_at: new Date().toISOString()
     };
 
@@ -500,6 +508,12 @@ export async function upsertSelectionApplication(
     }
 
     // Same-cycle full update — decision-history fields also overwritten.
+    // #902 — resolve the status up front so a VEP-driven terminal flip can be audited
+    // (auditVepTerminalClobber below): the worker writes status directly via PostgREST,
+    // bypassing the audited DB-side reconcile_vep_terminal_status, so without this the
+    // approved→rejected clobber on a VEP expiry leaves NO admin_audit_log trail.
+    const newStatus = resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw);
+
     const { error } = await db
       .from('selection_applications')
       .update({
@@ -527,12 +541,15 @@ export async function upsertSelectionApplication(
         // #693 defect 1 — pass vep_status_raw so a HARD terminal VEP decision
         // (OfferNotExtended/Withdrawn/Expired/OfferExpired) terminalizes an
         // in-flight candidate instead of being frozen by the #472 mid-pipeline rule.
-        status: resolveReimportStatus(existing.status, payload.status, payload.vep_status_raw),
+        status: newStatus,
         imported_at: payload.imported_at,
       })
       .eq('id', existing.id);
 
     if (error) throw new Error(`update selection_applications: ${error.message}`);
+
+    // #902 — best-effort audit of a VEP-driven terminal clobber (never blocks ingest).
+    await auditVepTerminalClobber(db, existing, newStatus, payload);
 
     return {
       id: existing.id,
@@ -553,6 +570,57 @@ export async function upsertSelectionApplication(
       was_new: true,
       consent_active: false
     };
+  }
+}
+
+/**
+ * #902 — audit a VEP-driven terminal status clobber.
+ *
+ * The worker writes selection_applications.status DIRECTLY via PostgREST (see
+ * resolveReimportStatus, applied in the same-cycle UPDATE above). That bypasses the
+ * audited DB-side heal `reconcile_vep_terminal_status` (which writes admin_audit_log),
+ * so a candidate flipped approved→rejected because their VEP application/offer expired
+ * left NO audit trail and the resulting 'rejected' was indistinguishable from an
+ * evaluation rejection (the #902 root cause). This restores a trail and tags the
+ * specific "expired after cutoff approval" case via metadata.reason.
+ *
+ * Fires ONLY when the resolved status is a NEW terminal value AND it was driven by a
+ * HARD-terminal VEP decision (mirrors the resolveReimportStatus #693 branch) — a normal
+ * forward-pipeline move is never audited here. Best-effort: an audit-write failure is
+ * logged but never thrown, so it cannot fail the candidate's ingest.
+ */
+async function auditVepTerminalClobber(
+  db: SupabaseClient,
+  existing: { id: string; status: string | null; cutoff_approved_email_sent_at?: string | null },
+  newStatus: string,
+  payload: SelectionApplicationUpsert
+): Promise<void> {
+  const vepRaw = (payload.vep_status_raw ?? '').toLowerCase();
+  const flippedToTerminal = newStatus !== existing.status && SELECTION_TERMINAL_STATUSES.has(newStatus);
+  const viaHardTerminal =
+    VEP_HARD_TERMINAL_STATUSES.has(vepRaw) && SELECTION_TERMINAL_STATUSES.has(payload.status);
+  if (!flippedToTerminal || !viaHardTerminal) return;
+
+  const afterCutoffApproval = existing.cutoff_approved_email_sent_at != null;
+  try {
+    const { error } = await db.from('admin_audit_log').insert({
+      actor_id: null,
+      action: 'selection.vep_terminal_clobber',
+      target_type: 'selection_application',
+      target_id: existing.id,
+      changes: { status: { from: existing.status, to: newStatus } },
+      metadata: {
+        source: 'pmi-vep-sync',
+        vep_status_raw: payload.vep_status_raw,
+        after_cutoff_approval: afterCutoffApproval,
+        reason: afterCutoffApproval ? 'vep_expired_after_cutoff_approval' : 'vep_terminal',
+      },
+    });
+    if (error) {
+      console.warn(`[pmi-vep-sync] audit vep_terminal_clobber failed for ${existing.id}: ${error.message}`);
+    }
+  } catch (e) {
+    console.warn(`[pmi-vep-sync] audit vep_terminal_clobber threw for ${existing.id}: ${String(e)}`);
   }
 }
 
