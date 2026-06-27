@@ -2126,7 +2126,15 @@ const PROFILE_I18N = {
     const sb = (window as any).navGetSb?.();
     const member = (window as any).navGetMember?.();
     if (!sb || !member) return;
+    // #753 Part 4: capture the object path BEFORE clearing the field, then delete the orphaned
+    // storage object too (LGPD Art.16 minimization; owner-scoped DELETE policy added in mig …256).
+    const curSrc = document.querySelector('#sig-preview img')?.getAttribute('src') || '';
     await sb.rpc('update_my_profile', { p_fields: { signature_url: '' } });
+    try {
+      const after = curSrc.split('/member-signatures/')[1];
+      const path = after ? decodeURIComponent(after.split('?')[0]) : '';
+      if (path) await sb.storage.from('member-signatures').remove([path]);
+    } catch { /* non-fatal: the DB field is already cleared */ }
     const preview = document.getElementById('sig-preview');
     if (preview) preview.innerHTML = `<span class="text-[.7rem] text-[var(--text-muted)]">${PROFILE_I18N.noSignature || 'No signature'}</span>`;
     (window as any).toast?.('Assinatura removida', 'success');
