@@ -463,11 +463,20 @@ export function buildCertificateHTML(certData: CertificateData): string {
  * and member/counter_signer details from certificates + members tables.
  */
 export async function hydrateCertData(certData: CertificateData, sb: any): Promise<CertificateData> {
-  // Issuer signature
+  // Issuer signature — #753 P1: member-signatures is a PRIVATE bucket; resolve the stored value (a public-URL
+  // string carrying the path, or a bare path) to a short-TTL SIGNED URL. The <img> fetch is anonymous in both
+  // the client browser-print and the server-side puppeteer networkidle0 render, so it needs a self-authorizing
+  // signed URL. RLS lets any authenticated caller sign the GP/issuer signature; service_role (server) bypasses RLS.
   if (certData.issued_by && !certData.signature_url && sb) {
     try {
       const { data: issuer } = await sb.from('public_members').select('signature_url').eq('id', certData.issued_by).single();
-      if (issuer?.signature_url) certData.signature_url = issuer.signature_url;
+      const raw = issuer?.signature_url as string | undefined;
+      if (raw) {
+        const after = raw.split('/member-signatures/')[1];
+        const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
+        const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
+        if (signed?.signedUrl) certData.signature_url = signed.signedUrl;
+      }
     } catch {}
   }
 
