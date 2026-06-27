@@ -3947,6 +3947,10 @@ const SEL_I18N = {
     if (!confirm(`Deseja ${labels[decision] || decision} ${ids.length} candidato(s)?`)) return;
     let ok = 0;
     let fail = 0;
+    // #615: capture the real PostgREST error.message so a failed approval surfaces its root
+    // cause in the toast instead of a generic "N erro(s)" count (the #603 missing-column /
+    // NOT NULL failures were diagnosed blind because the error was swallowed here).
+    let firstError = '';
     for (const id of ids) {
       try {
         const updateData: any = { status: decision };
@@ -3957,9 +3961,16 @@ const SEL_I18N = {
         });
         if (error) throw error;
         ok++;
-      } catch { fail++; }
+      } catch (e: any) {
+        fail++;
+        if (!firstError) firstError = e?.message || String(e);
+      }
     }
-    toast(`${ok} atualizado(s)${fail ? `, ${fail} erro(s)` : ''}`);
+    if (fail) {
+      toast(`${ok} atualizado(s), ${fail} erro(s): ${firstError || 'desconhecido'}`, 'error');
+    } else {
+      toast(`${ok} atualizado(s)`);
+    }
     if (bulkFeedback) (document.getElementById('bulk-feedback') as HTMLInputElement).value = '';
     loadDashboard();
   }
