@@ -4557,6 +4557,8 @@ const esLATAM: Record<string, string> = {
   'initiative.config.youtubeNucleo': 'Canal de YouTube (Núcleo)',
   'initiative.config.youtubeEvent': 'Canal/lista de YouTube (eventos)',
   'initiative.config.meetingDay': 'Día de la reunión',
+  'initiative.config.meetingDayPlaceholder': 'Ej: Martes',
+  'initiative.config.cadencePlaceholder': 'Ej: Quincenal',
   'initiative.config.meetingTimeStart': 'Hora de inicio',
   'initiative.config.meetingTimeEnd': 'Hora de término',
   'initiative.config.timezone': 'Zona horaria',

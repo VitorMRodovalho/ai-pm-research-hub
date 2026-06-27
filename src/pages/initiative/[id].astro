@@ -91,6 +91,8 @@ const INIT_I18N = {
     youtubeNucleo: t('initiative.config.youtubeNucleo', lang),
     youtubeEvent: t('initiative.config.youtubeEvent', lang),
     meetingDay: t('initiative.config.meetingDay', lang),
+    meetingDayPlaceholder: t('initiative.config.meetingDayPlaceholder', lang),
+    cadencePlaceholder: t('initiative.config.cadencePlaceholder', lang),
     meetingTimeStart: t('initiative.config.meetingTimeStart', lang),
     meetingTimeEnd: t('initiative.config.meetingTimeEnd', lang),
     timezone: t('initiative.config.timezone', lang),
@@ -851,23 +853,27 @@ const INIT_I18N = {
   // ── Configurações tab (#211 — self-service initiative metadata editing) ──
   // Field set mirrors the server-side whitelist in manage_initiative_metadata (migration …260).
   // The RPC is the source of truth for authorization + URL validation; this form is convenience UX.
-  type ConfigField = { key: string; type: 'text' | 'time' | 'url'; section: 'comms' | 'video' | 'meetings'; labelKey: string; placeholder?: string };
+  type ConfigField = { key: string; type: 'text' | 'time' | 'url'; section: 'comms' | 'video' | 'meetings'; labelKey: string; placeholder?: string; placeholderKey?: string };
   const CONFIG_FIELDS: ConfigField[] = [
     { key: 'whatsapp_url', type: 'url', section: 'comms', labelKey: 'whatsappUrl', placeholder: 'https://chat.whatsapp.com/...' },
     { key: 'whatsapp_note', type: 'text', section: 'comms', labelKey: 'whatsappNote' },
     { key: 'drive_url', type: 'url', section: 'comms', labelKey: 'driveUrl', placeholder: 'https://drive.google.com/...' },
     { key: 'youtube_channel_nucleo', type: 'url', section: 'video', labelKey: 'youtubeNucleo', placeholder: 'https://youtube.com/@...' },
     { key: 'youtube_channel_event', type: 'url', section: 'video', labelKey: 'youtubeEvent', placeholder: 'https://youtube.com/...' },
-    { key: 'meeting_day', type: 'text', section: 'meetings', labelKey: 'meetingDay', placeholder: 'Ex: Terça-feira' },
+    { key: 'meeting_day', type: 'text', section: 'meetings', labelKey: 'meetingDay', placeholderKey: 'meetingDayPlaceholder' },
     { key: 'meeting_time_start', type: 'time', section: 'meetings', labelKey: 'meetingTimeStart' },
     { key: 'meeting_time_end', type: 'time', section: 'meetings', labelKey: 'meetingTimeEnd' },
     { key: 'timezone', type: 'text', section: 'meetings', labelKey: 'timezone', placeholder: 'America/Sao_Paulo' },
-    { key: 'cadence_hint', type: 'text', section: 'meetings', labelKey: 'cadenceHint', placeholder: 'Ex: Quinzenal' },
+    { key: 'cadence_hint', type: 'text', section: 'meetings', labelKey: 'cadenceHint', placeholderKey: 'cadencePlaceholder' },
     { key: 'meeting_schedule', type: 'text', section: 'meetings', labelKey: 'meetingSchedule' },
     { key: 'meeting_link', type: 'url', section: 'meetings', labelKey: 'meetingLink', placeholder: 'https://meet.google.com/...' },
     { key: 'venue', type: 'text', section: 'meetings', labelKey: 'venue' },
   ];
 
+  // Lazy-render guard (mirrors deliverablesLoaded / attendanceLoaded): re-rendering the form on every
+  // tab switch would wipe the user's unsaved edits. Reset to false after a successful save so the next
+  // visit re-renders with the freshly-saved metadata.
+  let configTabRendered = false;
   function loadConfigTab() {
     const el = document.getElementById('panel-config');
     if (!el) return;
@@ -877,6 +883,7 @@ const INIT_I18N = {
       el.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-sm text-amber-800">🔒 ${escapeHtml(I18N.accessRestrictedConfig || I18N.accessRestricted || 'Acesso restrito.')}</div>`;
       return;
     }
+    if (configTabRendered) return; // preserve in-progress edits across tab switches
     const cfg = I18N.config || {};
     const meta = (initData && initData.initiative && initData.initiative.metadata) || {};
     const sections: { id: ConfigField['section']; title: string }[] = [
@@ -889,7 +896,8 @@ const INIT_I18N = {
       if (f.type === 'time' && val) val = val.slice(0, 5); // normalize HH:MM:SS → HH:MM for <input type=time>
       const label = cfg[f.labelKey] || f.key;
       const inputType = f.type === 'url' ? 'url' : f.type;
-      const ph = f.placeholder ? ` placeholder="${escapeHtml(f.placeholder)}"` : '';
+      const phText = f.placeholderKey ? (cfg[f.placeholderKey] || '') : (f.placeholder || '');
+      const ph = phText ? ` placeholder="${escapeHtml(phText)}"` : '';
       const hint = f.type === 'url'
         ? `<span class="block text-[10px] text-[var(--text-muted)] mt-0.5">${escapeHtml(cfg.urlHint || '')}</span>`
         : '';
@@ -917,6 +925,7 @@ const INIT_I18N = {
         <button data-action="save-initiative-config" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-wait">${escapeHtml(cfg.save || 'Salvar Configurações')}</button>
         <span id="cfg-status" class="text-sm" role="status" aria-live="polite"></span>
       </div>`;
+    configTabRendered = true;
   }
 
   // ── Boot ──
@@ -1115,6 +1124,7 @@ const INIT_I18N = {
         if (result?.error) { setStatus((cfg.error || 'Erro') + ': ' + result.error, 'err'); return; }
         // Success — reflect locally so the header WhatsApp link + re-opens stay in sync (no full reload).
         initData.initiative.metadata = { ...(initData.initiative.metadata || {}), ...metadata };
+        configTabRendered = false; // allow the next visit to re-render with the freshly-saved values
         renderHeader();
         const n = Array.isArray(result?.updated_keys) ? result.updated_keys.length : 0;
         setStatus((cfg.saved || 'Configurações salvas.') + (n ? ` (${n})` : ''), 'ok');

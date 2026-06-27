@@ -4556,6 +4556,8 @@ const enUS: Record<string, string> = {
   'initiative.config.youtubeNucleo': 'YouTube channel (Núcleo)',
   'initiative.config.youtubeEvent': 'YouTube channel/playlist (events)',
   'initiative.config.meetingDay': 'Meeting day',
+  'initiative.config.meetingDayPlaceholder': 'e.g. Tuesday',
+  'initiative.config.cadencePlaceholder': 'e.g. Biweekly',
   'initiative.config.meetingTimeStart': 'Start time',
   'initiative.config.meetingTimeEnd': 'End time',
   'initiative.config.timezone': 'Time zone',

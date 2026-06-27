@@ -4562,6 +4562,8 @@ const ptBR: Record<string, string> = {
   'initiative.config.youtubeNucleo': 'Canal no YouTube (Núcleo)',
   'initiative.config.youtubeEvent': 'Canal/playlist no YouTube (eventos)',
   'initiative.config.meetingDay': 'Dia da reunião',
+  'initiative.config.meetingDayPlaceholder': 'Ex: Terça-feira',
+  'initiative.config.cadencePlaceholder': 'Ex: Quinzenal',
   'initiative.config.meetingTimeStart': 'Horário de início',
   'initiative.config.meetingTimeEnd': 'Horário de término',
   'initiative.config.timezone': 'Fuso horário',
