@@ -638,7 +638,17 @@ BEGIN
   -- #333 (Wave 4, #221/#218): voice-biometric consent enforcement — periodic detector that
   -- complements the write-time trigger trg_pmi_video_screening_voice_consent.
   RETURN QUERY
-  WITH drift AS (
+  WITH ack AS (
+    -- Applications with a documented LGPD Art.18 retroactive-notification retention basis
+    -- (the #332 acknowledged pre-block row). The application id is parsed from the pii_access_log
+    -- audit record so NO candidate identifier is hardcoded in this migration; the exclusion IS the
+    -- documented retention, and it self-heals to nothing if the row is eventually deleted.
+    SELECT (substring(pal.reason FROM 'application_id=([0-9a-fA-F-]+)'))::uuid AS application_id
+    FROM public.pii_access_log pal
+    WHERE pal.context = 'lgpd_art_18_retroactive_notification'
+      AND pal.reason ~ 'application_id='
+  ),
+  drift AS (
     SELECT vs.id
     FROM public.pmi_video_screenings vs
     WHERE vs.transcription IS NOT NULL
@@ -648,9 +658,12 @@ BEGIN
           AND sa.consent_voice_biometric_at IS NOT NULL
           AND sa.consent_voice_biometric_revoked_at IS NULL
       )
+      AND NOT EXISTS (
+        SELECT 1 FROM ack WHERE ack.application_id = vs.application_id
+      )
   )
   SELECT 'AK_voice_biometric_consent_enforcement'::text,
-         'every pmi_video_screenings row with transcription IS NOT NULL must have a matching selection_applications row where consent_voice_biometric_at IS NOT NULL AND consent_voice_biometric_revoked_at IS NULL (voice-biometric consent, LGPD Art.11). The BEFORE INSERT/UPDATE trigger trg_pmi_video_screening_voice_consent is the write-time moat; this invariant is the periodic detector for ANY drift (trigger disabled, consent revoked without deleting the row, raw SQL bypass). #333/#221/#218 Wave 4. KNOWN ALLOWLIST = 1 acknowledged pre-block row (the #332 retroactive-notification candidate, under tacit Art.18 retention after the 30-day window elapsed) — baseline 1, ratchets to 0 when that row is deleted. Named AK because the U_ code is already held by U_active_person_has_primary_chapter_affiliation.'::text,
+         'every pmi_video_screenings row with transcription IS NOT NULL must have a matching selection_applications row where consent_voice_biometric_at IS NOT NULL AND consent_voice_biometric_revoked_at IS NULL (voice-biometric consent, LGPD Art.11), UNLESS its application has a documented Art.18 retroactive-notification retention basis logged in pii_access_log. The BEFORE INSERT/UPDATE trigger trg_pmi_video_screening_voice_consent is the write-time moat; this invariant is the periodic detector for any NEW drift (trigger disabled, consent revoked without deleting the row, raw SQL bypass). #333/#221/#218 Wave 4. The 1 acknowledged pre-block row (#332, tacit Art.18 retention; PM path (b) 2026-06-27) is EXCLUDED via its retention record, so baseline is 0; a new non-consented transcription with no retention basis is flagged. Named AK because the U_ code is already held by U_active_person_has_primary_chapter_affiliation.'::text,
          'high'::text, COUNT(*)::integer,
          (SELECT array_agg(id ORDER BY id) FROM (SELECT id FROM drift LIMIT 10) s)
   FROM drift;
