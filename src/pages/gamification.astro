@@ -1706,12 +1706,19 @@ const SCORING_I18N = {
       return;
     }
     // Fetch issuer signature if issued_by is available
+    // #753 P1: member-signatures is private → resolve to a short-TTL signed URL for the anon <img> fetch.
     if (certData.issued_by && !certData.signature_url) {
       try {
         const sb = (window as any).navGetSb?.();
         if (sb) {
           const { data: issuer } = await sb.from('public_members').select('signature_url').eq('id', certData.issued_by).single();
-          if (issuer?.signature_url) certData.signature_url = issuer.signature_url;
+          const raw = issuer?.signature_url as string | undefined;
+          if (raw) {
+            const after = raw.split('/member-signatures/')[1];
+            const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
+            const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
+            if (signed?.signedUrl) certData.signature_url = signed.signedUrl;
+          }
         }
       } catch {}
     }
