@@ -1893,7 +1893,8 @@ const PROFILE_I18N = {
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-3">✍️ ${PROFILE_I18N.signature || 'Assinatura Digital'}</h2>
         <p class="text-[.65rem] text-[var(--text-muted)] mb-3">${PROFILE_I18N.signatureHint || 'Usada em certificados e documentos gerados pela plataforma.'}</p>
-        <div id="sig-preview" class="mb-3">${m.signature_url ? `<img src="${m.signature_url}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">` : `<span class="text-[.7rem] text-[var(--text-muted)]">${PROFILE_I18N.noSignature || 'No signature'}</span>`}</div>
+        <!-- #753 P1: member-signatures is private; the own-signature preview is signed client-side (sig-init below). -->
+        <div id="sig-preview" class="mb-3" data-sig="${m.signature_url || ''}">${m.signature_url ? '' : `<span class="text-[.7rem] text-[var(--text-muted)]">${PROFILE_I18N.noSignature || 'No signature'}</span>`}</div>
         <div class="flex gap-2 items-center">
           <label class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer hover:opacity-90 transition-all">
             📎 ${PROFILE_I18N.signatureUpload || 'Carregar assinatura'}
@@ -2099,6 +2100,25 @@ const PROFILE_I18N = {
     }
   });
 
+  // ── #753 P1: member-signatures is a PRIVATE bucket — sign the OWN signature client-side for display ──
+  async function signOwnSig(sb: any, raw: string | null | undefined): Promise<string> {
+    if (!sb || !raw) return '';
+    const after = String(raw).split('/member-signatures/')[1];
+    const path = after ? decodeURIComponent(after.split('?')[0]) : String(raw).replace(/^\/+/, '');
+    try { const { data } = await sb.storage.from('member-signatures').createSignedUrl(path, 600); return data?.signedUrl || ''; }
+    catch { return ''; }
+  }
+  function setSigImg(url: string) {
+    const preview = document.getElementById('sig-preview');
+    if (preview && url) preview.innerHTML = `<img src="${url}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">`;
+  }
+  // init: the SSR preview carries the raw signature_url in data-sig; sign it on load (own-signature RLS).
+  (async () => {
+    const preview = document.getElementById('sig-preview');
+    const raw = preview?.getAttribute('data-sig');
+    if (raw) { const signed = await signOwnSig((window as any).navGetSb?.(), raw); if (signed) setSigImg(signed); }
+  })();
+
   // ── Signature upload (event delegation — input may be re-rendered) ──
   document.addEventListener('change', async (e) => {
     const target = e.target as HTMLInputElement;
@@ -2113,8 +2133,8 @@ const PROFILE_I18N = {
     try {
       const sigUrl = await uploadMemberAsset(sb, 'signature', file);
       await sb.rpc('update_my_profile', { p_fields: { signature_url: sigUrl } });
-      const preview = document.getElementById('sig-preview');
-      if (preview) preview.innerHTML = `<img src="${sigUrl}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">`;
+      // #753 P1: bucket is private — display via a signed URL, not the raw (now non-resolving) public URL.
+      setSigImg(await signOwnSig(sb, sigUrl) || '');
       (window as any).toast?.('Assinatura salva!', 'success');
       target.value = '';
     } catch (err: any) { (window as any).toast?.(err.message || 'Erro', 'error'); }
