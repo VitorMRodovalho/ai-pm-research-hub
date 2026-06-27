@@ -169,6 +169,12 @@ export interface SelectionApplicationUpsert {
   // p150 P0 (2026-05-12) — VEP raw status capture for reconciliation report.
   vep_status_raw?: string | null;
   vep_last_seen_at?: string | null;
+  // #902 — VEP application/offer deadline + actual expiry, previously discarded by
+  // the mapper. vep_offer_expires_at = forward-looking deadline (PMI expiryDate →
+  // expiryDateUtc), used for the admin/selection countdown; vep_expired_at = actual
+  // expiry once terminal (offerExpiredDateUtc ?? applicationExpiredDateUtc).
+  vep_offer_expires_at?: string | null;
+  vep_expired_at?: string | null;
   profile_volunteer_interest?: string | null;
   profile_specialties?: string | null;
   profile_linkedin_url?: string | null;

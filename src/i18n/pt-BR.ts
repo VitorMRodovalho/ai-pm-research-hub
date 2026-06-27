@@ -6580,6 +6580,22 @@ const ptBR: Record<string, string> = {
   // p153 GAP-152.5 — stale flag (app não veio no Apply VEP mais recente)
   'comp.vepBadge.off': 'VEP·OFF',
   'comp.vepBadge.offTooltip': 'Não veio no Apply VEP mais recente — provavelmente removida do recruiter dashboard pela PMI',
+  // #902 — VEP terminal-expiry statuses (antes caíam no badge cinza "desconhecido"),
+  // badge distinto "aprovado→oferta VEP expirada" + countdown de prazo da oferta.
+  'comp.vepBadge.expired': 'VEP·Exp',
+  'comp.vepBadge.statusExpired': 'Oferta/aplicação VEP expirada',
+  'comp.vepBadge.offerExpired': 'VEP·OfExp',
+  'comp.vepBadge.statusOfferExpired': 'Oferta VEP expirada',
+  'comp.vepBadge.offerExtended': 'VEP·Ofert',
+  'comp.vepBadge.statusOfferExtended': 'Oferta estendida (aguardando aceite)',
+  'comp.vepBadge.complete': 'VEP·Compl',
+  'comp.vepBadge.statusComplete': 'Concluído',
+  'comp.vepBadge.approvedExpiredShort': 'Aprov→VEP✗',
+  'comp.vepBadge.approvedExpiredTooltip': 'Aprovado no cutoff, mas a oferta/aplicação VEP expirou — candidato saiu do funil automaticamente, NÃO é reprovação na avaliação',
+  'comp.vepBadge.deadlineDays': 'VEP expira em',
+  'comp.vepBadge.deadlineToday': 'VEP expira hoje',
+  'comp.vepBadge.deadlineTomorrow': 'VEP expira amanhã',
+  'comp.vepBadge.deadlineTooltip': 'Prazo da oferta/aplicação no PMI VEP — após esta data o candidato é removido do funil automaticamente',
   // ── Affiliation Queue — Pasta Diretoria de Filiação (#659) ──
   'comp.affiliationQueue.loading': 'Carregando fila…',
   'comp.recurringAgenda.heading': 'Agenda recorrente',

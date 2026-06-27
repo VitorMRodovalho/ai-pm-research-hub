@@ -6574,6 +6574,21 @@ const enUS: Record<string, string> = {
   // p153 GAP-152.5 — stale flag (row was not in the latest VEP Apply)
   'comp.vepBadge.off': 'VEP·OFF',
   'comp.vepBadge.offTooltip': 'Not in the latest VEP Apply — likely removed from the recruiter dashboard by PMI',
+  // #902 — VEP terminal-expiry statuses + distinct "approved→VEP offer expired" badge + offer-deadline countdown.
+  'comp.vepBadge.expired': 'VEP·Exp',
+  'comp.vepBadge.statusExpired': 'VEP application/offer expired',
+  'comp.vepBadge.offerExpired': 'VEP·OfExp',
+  'comp.vepBadge.statusOfferExpired': 'VEP offer expired',
+  'comp.vepBadge.offerExtended': 'VEP·Offer',
+  'comp.vepBadge.statusOfferExtended': 'Offer extended (awaiting acceptance)',
+  'comp.vepBadge.complete': 'VEP·Compl',
+  'comp.vepBadge.statusComplete': 'Completed',
+  'comp.vepBadge.approvedExpiredShort': 'Appr→VEP✗',
+  'comp.vepBadge.approvedExpiredTooltip': 'Approved at cutoff, but the VEP application/offer expired — candidate auto-removed from the funnel, NOT an evaluation rejection',
+  'comp.vepBadge.deadlineDays': 'VEP expires in',
+  'comp.vepBadge.deadlineToday': 'VEP expires today',
+  'comp.vepBadge.deadlineTomorrow': 'VEP expires tomorrow',
+  'comp.vepBadge.deadlineTooltip': 'PMI VEP application/offer deadline — after this date the candidate is auto-removed from the funnel',
   // ── Affiliation Queue — Diretoria de Filiação panel (#659) ──
   'comp.affiliationQueue.loading': 'Loading queue…',
   'comp.recurringAgenda.heading': 'Recurring agenda',
