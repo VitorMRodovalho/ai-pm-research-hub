@@ -5,6 +5,8 @@
 **Source:** Issue [#212](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/212)
 **Related:** ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0011, ADR-0018
 **Hard dependency:** Issue #209 (Drive offboarding cascade) — must ship first or be coordinated.
+**Decomposition:** This ADR is **C5** of the #221/#218 decomposition (its siblings: C1 [#331](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/331) UI consent · C2 [#332](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/332) retroactive deletion · C3 [#333](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/333) invariant · C4 [#334](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/334) legal email). As of 2026-06-27, C1+C2+C3 are **done** (C3 shipped invariant `AK_voice_biometric_consent_enforcement`); C4 is a parallel governance track **not required** for this ADR to reach Accepted. Authoring (#335) is complete; the remaining gate to **Accepted** is the §Open-items PM pass + a Tier-3 council review (PM-invoked).
+**Index note:** The `docs/adr/README.md` index erroneously listed ADR-0094 as "numbering reserved, no file" (a p223-audit false-negative); corrected 2026-06-27 (#335) — this file has existed since commit `c31b709e` (2026-05-20).
 
 ---
 
