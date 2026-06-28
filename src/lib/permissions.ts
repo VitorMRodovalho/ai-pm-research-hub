@@ -40,6 +40,8 @@ export type Designation =
   | 'alumni'
   | 'chapter_board'
   | 'filiacao_director'
+  | 'voluntariado_director'
+  | 'certificacao_director'
   | 'chapter_liaison';
 
 export type Permission =
@@ -61,6 +63,8 @@ export type Permission =
   | 'admin.simulation'
   | 'admin.gamification'
   | 'admin.filiacao'           // Diretoria de Filiação panel (#659) — narrow, function-anchored
+  | 'admin.voluntarios'        // Diretoria de Voluntariado panel (#670) — narrow, function-anchored
+  | 'admin.certificacao'       // Diretoria de Certificação panel (#670) — narrow, function-anchored
   // ── Boards ──
   | 'board.view_own_tribe'
   | 'board.view_all'
@@ -117,6 +121,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'admin.governance.view',
     'admin.sustainability', 'admin.portfolio', 'admin.partners',
     'admin.simulation', 'admin.gamification', 'admin.filiacao',
+    'admin.voluntarios', 'admin.certificacao',
     'board.view_all', 'board.view_global', 'board.create_item',
     'board.edit_tribe_items', 'board.delete_item',
     'board.manage_checklist', 'board.create_mirror',
@@ -212,6 +217,7 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
     'admin.sustainability', 'admin.portfolio', 'admin.simulation',
     'admin.governance.view', 'admin.gamification', 'admin.filiacao',
+    'admin.voluntarios', 'admin.certificacao',
     'board.view_all', 'board.view_global',
     'data.view_members', 'data.view_analytics',
     'champion.award', 'champion.award_general',
@@ -247,6 +253,19 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   // office holds no member.manage/analytics permission. Server RPCs are the real boundary.
   filiacao_director: [
     'admin.access', 'admin.filiacao',
+  ],
+  // Diretoria de Voluntariado + Diretoria de Certificação (offices) — #670. Same
+  // function-anchored pattern as filiacao_director: access follows the office (never a
+  // named individual), a single narrow panel permission + `admin.access` as the admin-shell
+  // entry ticket. The directors' server-side authority (volunteer-term signing for
+  // voluntariado_director, PMI-GO certificate signing for certificacao_director) lives in
+  // inline designation gates in the RPC layer (V4 Path-2) — this only wires the frontend
+  // capability surface so the office is not silently broken when held alone.
+  voluntariado_director: [
+    'admin.access', 'admin.voluntarios',
+  ],
+  certificacao_director: [
+    'admin.access', 'admin.certificacao',
   ],
   // Ponto Focal do Capítulo (#670) — função-anchored. O presidente do capítulo intitula o ponto
   // focal do programa; ele PRECISA de visibilidade (programa + seu capítulo). Concede só a
@@ -290,6 +309,8 @@ export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; e
   alumni:         { pt: 'Alumni',               en: 'Alumni',           es: 'Alumni' },
   chapter_board:  { pt: 'Diretoria do Capítulo', en: 'Chapter Board',   es: 'Directiva del Capítulo' },
   filiacao_director: { pt: 'Diretoria de Filiação', en: 'Affiliation Director', es: 'Dirección de Afiliación' },
+  voluntariado_director: { pt: 'Diretoria de Voluntariado', en: 'Volunteer Director', es: 'Dirección de Voluntariado' },
+  certificacao_director: { pt: 'Diretoria de Certificação', en: 'Certification Director', es: 'Dirección de Certificación' },
   chapter_liaison: { pt: 'Ponto Focal do Capítulo', en: 'Chapter Focal Point', es: 'Punto Focal del Capítulo' },
 };
 
