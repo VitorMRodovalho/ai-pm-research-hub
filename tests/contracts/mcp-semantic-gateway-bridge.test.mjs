@@ -195,8 +195,8 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3); then 304 → 303 via #191
   // (removed the broken advance_card_curation tool); then 303 → 306 via #188 (+3 curator-native tools);
   // then 306 → 307 via #415 (+1 get_recurrence_stockout); then 307 → 308 via #459 (+1 get_governance_document_body);
-  // then 308 → 311 via #209 (+3 drive revocation tools).
-  assert.match(m[0], /tools:\s*311/, '/health should report 311 tools on /mcp (308 → 311 via #209 drive revocation tools)');
+  // then 308 → 311 via #209 (+3 drive revocation tools); then 311 → 314 via #301 (+3 curation drive grant tools).
+  assert.match(m[0], /tools:\s*314/, '/health should report 314 tools on /mcp (311 → 314 via #301 curation drive grant tools)');
 });
 
 // ─── 7. /mcp regression-safety guarantee ──────────────────────────────────────

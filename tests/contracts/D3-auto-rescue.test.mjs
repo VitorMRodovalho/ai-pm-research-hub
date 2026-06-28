@@ -159,11 +159,11 @@ test('DB: column interview_auto_rescue_count exists, NOT NULL, default 0', { ski
   assert.equal(ai.violation_count, 0, 'cap=1 respected (baseline 0)');
 });
 
-test('DB: invariant total is 39, 0 violations', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: invariant total is 40, 0 violations', { skip: dbGated ? false : skipMsg }, async () => {
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  // #785 PR-2 (mig 232) added AJ_confidential_visibility_gate_present → 37; #333 (mig 259) added AK_voice_biometric_consent_enforcement → 38; #209 (mig 263) added AL_drive_revocation_terminal_consistency → 39.
-  assert.equal(data.length, 39, `expected 39 invariants, got ${data.length}`);
+  // #785 PR-2 (mig 232) added AJ_confidential_visibility_gate_present → 37; #333 (mig 259) added AK_voice_biometric_consent_enforcement → 38; #209 (mig 263) added AL_drive_revocation_terminal_consistency → 39; #301 (mig 268) added AM_drive_curation_grant_terminal_consistency → 40.
+  assert.equal(data.length, 40, `expected 40 invariants, got ${data.length}`);
   const offenders = data.filter(x => x.violation_count > 0).map(x => `${x.invariant_name}=${x.violation_count}`);
   assert.equal(offenders.length, 0, `unexpected violations: ${offenders.join(', ')}`);
 });
