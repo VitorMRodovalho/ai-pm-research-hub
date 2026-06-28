@@ -30,6 +30,12 @@ Steps: `apply_migration` → `Write` the file under `supabase/migrations/<ts>_*.
 current head) → `supabase migration repair --status applied <ts>`. NOTIFY not needed
 (no PostgREST surface change).
 
+> ⚠️ Pick the timestamp from the LIVE head, not `ls | tail`. As of 2026-06-28 the prod
+> `schema_migrations` already tracks `20260805000274/275/276` with no committed files
+> (uncommitted drift — see the hub drift issue), so the repo's apparent head (`...273`)
+> is stale. Query `SELECT version FROM supabase_migrations.schema_migrations ORDER BY
+> version DESC LIMIT 1` and use a greater value (≥ `...277`). Do NOT reuse `274`.
+
 ## 2. Secret + scope (owner action)
 
 - Add `w_organization_social` to the LinkedIn app + 3-legged re-auth; store the new token via
