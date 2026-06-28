@@ -1,16 +1,17 @@
-// publish-scheduled — drains the comms_scheduled_posts queue.
+// publish-scheduled — drains the comms_scheduled_posts queue (multi-channel).
 //
-// The Instagram Content Publishing API publishes on call (no future-time field), so the
+// The Instagram/LinkedIn publishing APIs publish on call (no future-time field), so the
 // platform owns scheduling. A pg_cron pings this EF every few minutes; it picks up rows
-// whose scheduled_at has passed and publishes them through the existing publish-instagram
-// function (one credential, one validated publish path — no logic duplicated here).
+// whose scheduled_at has passed and publishes each through the per-channel publish
+// function (one validated publish path per channel — no posting logic duplicated here).
+// Routing is by row.channel: instagram -> publish-instagram, linkedin -> publish-linkedin.
 //
 // Per row: pending -> publishing -> published | failed. Failures retry up to MAX_ATTEMPTS
 // (left as 'pending' for the next run), then settle as 'failed'. A row stuck in
 // 'publishing' (EF crashed mid-flight) is reclaimed after a stale window.
 //
 // Auth: Bearer / x-sync-secret = INSTAGRAM_PUBLISH_SECRET or SUPABASE_SERVICE_ROLE_KEY
-// (same contract as publish-instagram, so the cron's vault service_role_key works).
+// (same contract as the per-channel publish fns, so the cron's vault service_role_key works).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -19,6 +20,13 @@ import { isServiceRoleToken } from '../_shared/service-auth.ts'
 const MAX_ATTEMPTS = 3
 const BATCH = 5                         // publish at most N due rows per invocation
 const STALE_PUBLISHING_MIN = 30         // reclaim rows stuck in 'publishing' this long
+
+// Per-channel publish function. Each accepts the row payload + service-role auth and
+// returns { success, published, media_id, permalink } (channel-agnostic contract).
+const CHANNEL_PUBLISHERS: Record<string, string> = {
+  instagram: 'publish-instagram',
+  linkedin: 'publish-linkedin',
+}
 
 interface ScheduledRow {
   id: string
@@ -90,8 +98,10 @@ Deno.serve(async (req) => {
     if (!claimed) { results.push({ id: row.id, skipped: 'claimed by another run' }); continue }
 
     try {
-      // delegate to the validated single-post function (service role auth)
-      const res = await fetch(`${supabaseUrl}/functions/v1/publish-instagram`, {
+      // delegate to the validated per-channel publish function (service role auth)
+      const fn = CHANNEL_PUBLISHERS[row.channel]
+      if (!fn) throw new Error(`no publisher for channel '${row.channel}'`)
+      const res = await fetch(`${supabaseUrl}/functions/v1/${fn}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
         body: JSON.stringify(row.payload),
@@ -106,9 +116,9 @@ Deno.serve(async (req) => {
           published_at: new Date().toISOString(),
           error: null,
         }).eq('id', row.id)
-        results.push({ id: row.id, label: row.label, published: true, media_id: out.media_id })
+        results.push({ id: row.id, label: row.label, channel: row.channel, published: true, media_id: out.media_id })
       } else {
-        throw new Error(out?.error ?? `publish-instagram returned ${res.status}`)
+        throw new Error(out?.error ?? `${fn} returned ${res.status}`)
       }
     } catch (err) {
       const msg = String(err instanceof Error ? err.message : err)
