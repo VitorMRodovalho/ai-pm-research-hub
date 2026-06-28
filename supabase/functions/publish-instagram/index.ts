@@ -104,7 +104,9 @@ async function buildContainer(
     else if (p.video_url) params.video_url = p.video_url
     else throw new Error('STORIES requires image_url or video_url')
     const { id } = await graphPost(`${igUserId}/media`, params, token)
-    if (p.video_url) await waitForContainer(id, token)
+    // Story containers (image included) must reach FINISHED before publish, else
+    // media_publish returns 9007/2207027 "Media ID is not available".
+    await waitForContainer(id, token)
     return id
   }
 
