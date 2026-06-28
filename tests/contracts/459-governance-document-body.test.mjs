@@ -352,6 +352,6 @@ test('#459 logUsage extended with optional responseSummary → p_response_summar
     'logUsage must forward response_summary to log_mcp_usage');
 });
 
-test('#459 /health declares /mcp tools = 308', () => {
-  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*308\s*\}/);
+test('#459 + #209 /health declares /mcp tools = 311', () => {
+  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*311\s*\}/);
 });

@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-06-12T02:06:02.338Z",
+  "generated_at": "2026-06-27T23:02:48.566Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 319,
-  "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
+  "total": 323,
+  "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 21,
     "events": 15,
     "gamification": 12,
     "board": 67,
-    "tribe": 95,
-    "comms": 12,
+    "tribe": 98,
+    "comms": 13,
     "knowledge": 12,
     "partners": 11,
     "selection": 26,
@@ -1429,7 +1429,7 @@
     },
     {
       "name": "get_person",
-      "description": "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.",
+      "description": "Returns the V4 person profile: name, headshot (photo_url), LinkedIn (linkedin_url), location, Credly URL + badges, consent status. Sensitive PII (email, phone, address, birth date, pmi_id) only visible for own record or with view_pii permission. For a ready-to-use comms/divulgação card (parsed credentials + roles + clearance) prefer get_member_comms_card.",
       "domain": "tribe",
       "rpcs": [
         "get_person"
@@ -1446,6 +1446,19 @@
       "domain": "tribe",
       "rpcs": [
         "get_active_engagements"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "get_member_comms_card",
+      "description": "Returns a member's COMMS/divulgação card for banners, social posts, and decks: headshot (photo URL), display name, LinkedIn URL, credentials (PMP, PMI-CPMAI, etc.), Credly URL, and active roles/initiatives (for credits). Look up by name (`query`) or `person_id` — if a name matches more than one person it returns a disambiguation list (`ambiguous: true, matches: [...]`). Does NOT return email/phone/address. Includes `comms_clearance` (true when the member signed the volunteer term whose Cláusula 11 authorizes image use; false + `clearance_reason` otherwise — the controller decides usage, the route does not block). Gate: manage_event OR manage_member (comms/event leaders + admin/GP).",
+      "domain": "comms",
+      "rpcs": [
+        "get_member_comms_card"
       ],
       "tables": [],
       "canV4_actions": [],
@@ -1628,6 +1641,51 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "data"
+    },
+    {
+      "name": "list_drive_revocation_pending",
+      "description": "Lista permissões Google Drive de ex-membros (offboarded) detectadas pelo scan semanal, aguardando revisão/revogação. Mostra arquivo, e-mail/role da permissão, status e erro do Google (quando falha). Authority: manage_member (GP). Default status=pending_revoke; passe status='all' para todos.",
+      "domain": "tribe",
+      "rpcs": [
+        "admin_list_drive_revocation_audit"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "approve_drive_revocation",
+      "description": "Aprova a revogação de UMA permissão Drive de ex-membro (linha drive_offboarding_audit) e executa a remoção via Service Account imediatamente. Authority: manage_member (GP). Retorna o resultado do Google inline (revoked | already_absent | failed). NB: enquanto a SA não tiver papel organizer nas pastas, o Google retorna 403 e a linha fica 'failed' com a mensagem — comportamento esperado (gated, ADR-0094 G4.1).",
+      "domain": "tribe",
+      "rpcs": [
+        "approve_drive_revocation"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member"
+      ],
+      "external_fetch_count": 1,
+      "uses_service_role": true,
+      "return_shape_hint": "{ approved: appr, revoke: efJson }"
+    },
+    {
+      "name": "bulk_approve_drive_revocations",
+      "description": "Aprova e revoga TODAS as permissões Drive pendentes de um ex-membro de uma vez. Authority: manage_member (GP). Retorna resultado por linha. Mesma observação de 403-até-elevação-de-papel do approve_drive_revocation.",
+      "domain": "tribe",
+      "rpcs": [
+        "bulk_approve_drive_revocations"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member"
+      ],
+      "external_fetch_count": 1,
+      "uses_service_role": true,
+      "return_shape_hint": "{ approved_count: appr?.approved_count ?? 0, results }"
     },
     {
       "name": "get_application_returning_context",
@@ -4354,8 +4412,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent"
     },
     {
       "name": "search_nucleo_knowledge",
@@ -4370,8 +4427,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: "
     },
     {
       "name": "get_board_or_initiative_context",
@@ -4388,8 +4444,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations"
     },
     {
       "name": "get_operational_status",
@@ -4409,8 +4464,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:"
     }
   ]
 }
