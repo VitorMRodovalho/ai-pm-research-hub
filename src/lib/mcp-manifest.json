@@ -935,7 +935,7 @@
     },
     {
       "name": "get_curation_queue_state",
-      "description": "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. Read access requires curate_content, write_board, or participate_in_governance_review.",
+      "description": "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. For curate_content/manage_platform callers each item also carries Drive grant state (drive_permission_status, drive_grant_role, drive_grant_errors, missing_drive_access, temporary_access_expires_or_revokes_on). Read access requires curate_content, write_board, or participate_in_governance_review.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
