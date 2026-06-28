@@ -26,6 +26,13 @@ const MIG = readFileSync(
   'utf8',
 );
 
+// Drive layer (#190 + #301): the queue envelope surfaces per-item Drive grant
+// state, computed only for curate_content/manage_platform callers.
+const MIG_DRIVE = readFileSync(
+  join(resolve(process.cwd(), 'supabase/migrations'), '20260805000272_190_curation_queue_state_drive_access.sql'),
+  'utf8',
+);
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
@@ -57,6 +64,47 @@ test('#190: normalized envelope — origin_type + eligible_actions + actionable-
 
 test('#190: caller capability block is returned', () => {
   assert.match(MIG, /'caller', jsonb_build_object\([\s\S]*?'can_curate', v_can_curate[\s\S]*?'can_govern', v_can_govern/);
+});
+
+// ── (C) Drive layer (#190 + #301) — static asserts over the Drive-access migration ──
+test('#190 drive: re-declares get_curation_queue_state(p_status) (same signature, CREATE OR REPLACE)', () => {
+  assert.match(MIG_DRIVE, /CREATE OR REPLACE FUNCTION public\.get_curation_queue_state\(p_status text/);
+  assert.match(MIG_DRIVE, /SECURITY DEFINER/);
+});
+
+test('#190 drive: Drive visibility gate is curate_content OR manage_platform (mirrors get_board_item_drive_access)', () => {
+  assert.match(MIG_DRIVE, /v_can_manage\s*:=\s*public\.can_by_member\(v_member_id, 'manage_platform'\)/);
+  assert.match(MIG_DRIVE, /v_drive_visible\s*:=\s*\(v_can_curate OR v_can_manage\)/);
+  // the original read gate (curate|write_board|govern) must remain intact
+  assert.match(MIG_DRIVE, /IF NOT \(v_can_curate OR v_can_write_board OR v_can_govern\) THEN/);
+});
+
+test('#190 drive: each item carries the 5 Drive fields, all gated on v_drive_visible', () => {
+  for (const key of [
+    'drive_permission_status',
+    'drive_grant_role',
+    'drive_grant_errors',
+    'missing_drive_access',
+    'temporary_access_expires_or_revokes_on',
+  ]) {
+    assert.match(MIG_DRIVE, new RegExp(`'${key}',\\s*CASE WHEN v_drive_visible`), `${key} present + gated`);
+  }
+  // expiry mirrors the item-RPC's expires_or_revokes_on (= curation_due_at)
+  assert.match(MIG_DRIVE, /'temporary_access_expires_or_revokes_on', CASE WHEN v_drive_visible THEN q\.curation_due_at ELSE NULL END/);
+});
+
+test('#190 drive: per-file status bucketing mirrors the item-RPC (error>pending>ready)', () => {
+  assert.match(MIG_DRIVE, /FILTER \(WHERE g\.status IN \('failed','revoke_failed'\)\)[\s\S]*?THEN 'error'/);
+  assert.match(MIG_DRIVE, /FILTER \(WHERE g\.status = 'pending_grant'\)[\s\S]*?THEN 'pending'/);
+  assert.match(MIG_DRIVE, /FILTER \(WHERE g\.status = 'granted'\)[\s\S]*?THEN 'ready'/);
+  // item-level rollup keeps the same precedence
+  assert.match(MIG_DRIVE, /bool_or\(f\.file_status = 'error'\)\s*THEN 'error'/);
+  // 0 files -> 'missing'
+  assert.match(MIG_DRIVE, /WHEN dr\.board_item_id IS NULL THEN 'missing'/);
+});
+
+test('#190 drive: caller block exposes can_see_drive', () => {
+  assert.match(MIG_DRIVE, /'can_see_drive', v_drive_visible/);
 });
 
 // ── (B) DB-gated: the RPC exists and fail-closes for an unauthenticated caller ──
