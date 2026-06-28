@@ -396,7 +396,7 @@ const INIT_I18N = {
   }
 
   function applyGate(m: any) {
-    if (hasPermission(m, 'admin.full')) showPanel();
+    if (hasPermission(m, 'system.global_config')) showPanel();
     else showDenied();
   }
 
