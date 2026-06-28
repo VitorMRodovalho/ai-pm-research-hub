@@ -389,6 +389,22 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
 
   const historyBtnLabel = `${ui.historyLabel || 'Histórico'} (${item.review_history?.length || 0})`;
 
+  // #201: build Drive label strings OUTSIDE JSX. A template literal is a string literal even
+  // when it interpolates t(), so react/jsx-no-literals rejects it as a JSX child — compute here,
+  // render the variable below.
+  const driveFiles = drive?.files ?? [];
+  const driveGranteeNames = Array.from(new Set(driveFiles.flatMap((f) => f.grantees || [])));
+  const driveErrorMsgs = Array.from(new Set(driveFiles.flatMap((f) => f.errors || [])));
+  const driveExpiryLabel = drive?.expires_or_revokes_on
+    ? `${t('curation.drive.expiresOn', 'Acesso temporário até')} ${new Date(drive.expires_or_revokes_on).toLocaleDateString()}`
+    : '';
+  const driveGranteesLabel = driveGranteeNames.length
+    ? `${t('curation.drive.grantees', 'Com acesso')}: ${driveGranteeNames.join(', ')}`
+    : '';
+  const driveErrorsLabel = driveErrorMsgs.length
+    ? `${t('curation.drive.error', 'Erro ao conceder acesso')}: ${driveErrorMsgs.join('; ')}`
+    : '';
+
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
@@ -489,21 +505,19 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
                     );
                   })}
                 </ul>
-                {drive.expires_or_revokes_on ? (
+                {driveExpiryLabel ? (
                   <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
                     <Clock size={10} aria-hidden="true" />
-                    <span>{`${t('curation.drive.expiresOn', 'Acesso temporário até')} ${new Date(drive.expires_or_revokes_on).toLocaleDateString()}`}</span>
+                    <span>{driveExpiryLabel}</span>
                   </p>
                 ) : null}
-                {drive.files.some((f) => Array.isArray(f.grantees) && f.grantees.length > 0) ? (
-                  <p className="text-[10px] text-[var(--text-secondary)]">
-                    {`${t('curation.drive.grantees', 'Com acesso')}: ${Array.from(new Set(drive.files.flatMap((f) => f.grantees || []))).join(', ')}`}
-                  </p>
+                {driveGranteesLabel ? (
+                  <p className="text-[10px] text-[var(--text-secondary)]"><span>{driveGranteesLabel}</span></p>
                 ) : null}
-                {drive.files.some((f) => Array.isArray(f.errors) && f.errors.length > 0) ? (
+                {driveErrorsLabel ? (
                   <p className="text-[10px] text-red-700 dark:text-red-300 flex items-center gap-1">
                     <AlertTriangle size={10} aria-hidden="true" />
-                    <span>{`${t('curation.drive.error', 'Erro ao conceder acesso')}: ${Array.from(new Set(drive.files.flatMap((f) => f.errors || []))).join('; ')}`}</span>
+                    <span>{driveErrorsLabel}</span>
                   </p>
                 ) : null}
               </section>
