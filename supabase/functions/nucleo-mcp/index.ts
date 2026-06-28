@@ -2298,7 +2298,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     action: z.string().describe("create|update"),
     id: z.string().optional().describe("UUID of partner (required for update)"),
     name: z.string().optional().describe("Partner name (required for create)"),
-    entity_type: z.string().optional().describe("pmi_chapter|academia|empresa|community|research|association|outro"),
+    entity_type: z.string().optional().describe("academia|academic|governo|empresa|pmi_chapter|pmi_global|outro|community|research|association"),
     status: z.string().optional().describe("prospect|contact|negotiation|active|inactive|churned"),
     contact_name: z.string().optional().describe("Contact person name"),
     contact_email: z.string().optional().describe("Contact email"),
@@ -2338,7 +2338,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     whatsapp_url: z.string().optional().describe("WhatsApp group URL — stored in initiative.metadata.whatsapp_url"),
     meeting_link: z.string().optional().describe("Meeting link URL — stored in initiative.metadata.meeting_link"),
     drive_folder_url: z.string().optional().describe("Drive folder URL — stored in initiative.metadata.drive_folder_url"),
-    board_domain_key: z.string().optional().describe("project_boards.domain_key. Default: publications_submissions")
+    board_domain_key: z.string().optional().describe("project_boards.domain_key. Default: publications_submissions"),
+    allow_partner_reuse: z.boolean().optional().describe("Override the one-partner-per-active-initiative guard (#806). Default false: if the partner is already linked to an active initiative the call is BLOCKED with the existing initiatives listed. Set true only when a partner legitimately hosts multiple concurrent events.")
   }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
@@ -2375,9 +2376,14 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       p_meeting_link: params.meeting_link || null,
       p_drive_folder_url: params.drive_folder_url || null,
       p_board_domain_key: params.board_domain_key || 'publications_submissions',
+      p_allow_partner_reuse: params.allow_partner_reuse ?? false,
     });
     if (error) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, error.message, start); return err(error.message); }
-    if (data?.error) { await logUsage(sb, member.id, "create_external_speaker_engagement", false, data.error, start); return err(data.error); }
+    if (data?.error) {
+      const hint = data?.code === 'partner_already_linked' && data?.hint ? ` — ${data.hint}` : '';
+      await logUsage(sb, member.id, "create_external_speaker_engagement", false, data.error, start);
+      return err(data.error + hint);
+    }
     await logUsage(sb, member.id, "create_external_speaker_engagement", true, undefined, start);
     return ok(data);
   });
