@@ -19,8 +19,8 @@ describe('permissions types', () => {
     assert.equal(Object.keys(TIER_PERMISSIONS).length, 11);
   });
 
-  it('all 10 designations defined', () => {
-    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 10);
+  it('all 12 designations defined', () => {
+    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 12);
   });
 
   it('tier labels cover all tiers', () => {
