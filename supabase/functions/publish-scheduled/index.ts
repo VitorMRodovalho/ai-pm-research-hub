@@ -14,6 +14,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 
 const MAX_ATTEMPTS = 3
 const BATCH = 5                         // publish at most N due rows per invocation
@@ -41,14 +42,19 @@ Deno.serve(async (req) => {
 
   const publishSecret = Deno.env.get('INSTAGRAM_PUBLISH_SECRET')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const bearer = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
   const headerSecret = req.headers.get('x-sync-secret')
-  const valid = [publishSecret, serviceKey].filter(Boolean)
-  if (!valid.length || (!valid.includes(bearer ?? '') && !valid.includes(headerSecret ?? ''))) {
+
+  // INSTAGRAM_PUBLISH_SECRET is a shared secret for manual callers. The pg_cron drain sends
+  // the vault `service_role_key` — a genuine service JWT but NOT the env-injected key (the
+  // #738/#849 trap), so it must be verified cryptographically via PostgREST, never literal-compared.
+  const secretOk = !!publishSecret && (bearer === publishSecret || headerSecret === publishSecret)
+  const serviceOk = await isServiceRoleToken(supabaseUrl, bearer)
+  if (!secretOk && !serviceOk) {
     return json({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const sb = createClient(supabaseUrl, serviceKey!)
 
   // 1) reclaim rows stuck in 'publishing' (a prior run died mid-flight) back to pending.
