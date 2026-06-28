@@ -15,6 +15,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 
 const GRAPH = 'https://graph.facebook.com/v19.0'
 
@@ -152,17 +153,24 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ success: false, error: 'POST only' }, 405)
 
-  // Auth: dedicated secret or service role (consistent with sync-comms-metrics).
+  // Auth: dedicated secret (manual callers) OR a cryptographically-verified service_role token.
+  // INSTAGRAM_PUBLISH_SECRET is a shared secret for manual callers. The pg_cron drain delegates
+  // via publish-scheduled which sends a service JWT; a dispatcher could also send the vault
+  // `service_role_key` — a genuine service credential but NOT the env-injected key (the #738/#849
+  // trap) — so it must be verified via PostgREST, never literal-compared (#928). Mirrors
+  // publish-scheduled / publish-linkedin.
   const publishSecret = Deno.env.get('INSTAGRAM_PUBLISH_SECRET')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const bearer = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
   const headerSecret = req.headers.get('x-sync-secret')
-  const valid = [publishSecret, serviceKey].filter(Boolean)
-  if (!valid.length || (!valid.includes(bearer ?? '') && !valid.includes(headerSecret ?? ''))) {
+  const secretOk = !!publishSecret && (bearer === publishSecret || headerSecret === publishSecret)
+  const serviceOk = await isServiceRoleToken(supabaseUrl, bearer)
+  if (!secretOk && !serviceOk) {
     return json({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const sb = createClient(supabaseUrl, serviceKey!)
   const payload: PublishPayload = await req.json().catch(() => ({}))
 
   // Load the Instagram channel credential (same row the metrics cron reads).
