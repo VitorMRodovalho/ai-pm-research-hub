@@ -56,3 +56,28 @@ test('#201 i18n: artifact keys exist in all 3 locale dicts (parity)', () => {
     assert.match(raw, /'curation\.artifact\.empty':/, `${loc} must define curation.artifact.empty`);
   }
 });
+
+// ── #201 Drive layer (fed by #301 get_board_item_drive_access; deferred from the core PR) ──
+test('#201 drive: the review modal fetches per-file Drive access state on open', () => {
+  assert.match(island, /get_board_item_drive_access/, 'modal calls the item Drive-access RPC');
+  assert.match(island, /p_board_item_id:\s*item\.id/, 'keyed on the open item id');
+  assert.match(island, /drive_permission_status/, 'renders per-file permission status');
+  assert.match(island, /function driveStatusMeta/, 'status -> label/style mapper exists');
+});
+
+test('#201 drive: per-file rows link to drive_file_url and carry a status badge', () => {
+  assert.match(island, /drive\.files\.map/, 'iterates the Drive files array');
+  assert.match(island, /href=\{f\.drive_file_url\}/, 'per-file link uses drive_file_url');
+  // the 4-state vocabulary mirrors get_board_item_drive_access (ready|pending|error|missing)
+  assert.match(island, /curation\.drive\.statusReady/, 'ready label key referenced');
+  assert.match(island, /curation\.drive\.statusMissing/, 'missing label key referenced');
+});
+
+test('#201 drive i18n: curation.drive.* keys exist in all 3 locale dicts (parity)', () => {
+  const keys = ['title', 'statusReady', 'statusPending', 'statusError', 'statusMissing', 'expiresOn', 'grantees', 'error'];
+  for (const [loc, raw] of Object.entries(DICTS)) {
+    for (const k of keys) {
+      assert.match(raw, new RegExp(`'curation\\.drive\\.${k}':`), `${loc} must define curation.drive.${k}`);
+    }
+  }
+});

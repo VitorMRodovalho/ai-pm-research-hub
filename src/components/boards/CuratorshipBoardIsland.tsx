@@ -30,7 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   CheckCircle2, RotateCcw, XCircle, Clock, AlertTriangle,
   FileText, User, Star, ChevronDown, ChevronUp, Loader2, RefreshCw,
-  Paperclip, ExternalLink,
+  Paperclip, ExternalLink, FolderOpen,
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -61,6 +61,25 @@ type BoardItem = {
   tags?: string[] | null;
   review_count?: number;
   review_history?: ReviewHistoryEntry[] | null;
+};
+
+// #201 (Drive layer, fed by #301 get_board_item_drive_access): per-file Drive
+// permission state so a curator doesn't open a governed link they can't reach.
+type DriveFileAccess = {
+  drive_file_id: string;
+  drive_file_url: string;
+  filename: string;
+  drive_permission_status: 'ready' | 'pending' | 'error' | string;
+  grant_role?: string | null;
+  grantees?: string[] | null;
+  errors?: string[] | null;
+};
+type DriveAccess = {
+  board_item_id: string;
+  overall_status: 'missing' | 'pending' | 'error' | 'ready' | string;
+  missing_drive_access: boolean;
+  expires_or_revokes_on?: string | null;
+  files?: DriveFileAccess[] | null;
 };
 
 type LegacyItem = {
@@ -113,6 +132,17 @@ function getCriteria(t: (k: string, f?: string) => string) {
     { key: 'relevance', label: t('curation.rubric.relevance', 'Relevance'), tip: t('curation.rubric.relevanceTip', 'Contributes to the body of knowledge?') },
     { key: 'ethics', label: t('curation.rubric.ethics', 'Ethics'), tip: t('curation.rubric.ethicsTip', 'Respects responsible AI and governance?') },
   ] as const;
+}
+
+// #201: map a Drive permission status to a label + badge classes. Mirrors the
+// 4-state vocabulary returned by get_board_item_drive_access (ready|pending|error|missing).
+function driveStatusMeta(status: string | null | undefined, t: (k: string, f?: string) => string) {
+  switch (status) {
+    case 'ready':   return { label: t('curation.drive.statusReady', 'Acesso liberado'),       cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' };
+    case 'pending': return { label: t('curation.drive.statusPending', 'Acesso pendente'),      cls: 'bg-amber-100 text-amber-700' };
+    case 'error':   return { label: t('curation.drive.statusError', 'Falha no acesso'),        cls: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300' };
+    default:        return { label: t('curation.drive.statusMissing', 'Sem arquivos do Drive'), cls: 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]' };
+  }
 }
 
 // ─── SLA Badge ──────────────────────────────────────────────────────────────
@@ -326,6 +356,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [drive, setDrive] = useState<DriveAccess | null>(null);
 
   const allScored = CRITERIA.every((c) => (scores[c.key] || 0) > 0);
   const avgScore = allScored
@@ -339,6 +370,22 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
   }
 
   useEffect(() => { if (open) { setScores({}); setFeedback(''); setShowHistory(false); } }, [open, item?.id]);
+
+  // #201: on open, fetch the per-file Drive access state (get_board_item_drive_access,
+  // gated to curate_content|manage_platform). Fail-soft: a caller without access (or any
+  // RPC error) just yields null and the section is hidden.
+  useEffect(() => {
+    if (!open || !item?.id) { setDrive(null); return; }
+    let cancelled = false;
+    (async () => {
+      const sb = getSb();
+      if (!sb) return;
+      const { data, error } = await sb.rpc('get_board_item_drive_access', { p_board_item_id: item.id });
+      if (cancelled) return;
+      setDrive(error ? null : (data as DriveAccess));
+    })();
+    return () => { cancelled = true; };
+  }, [open, item?.id]);
 
   const historyBtnLabel = `${ui.historyLabel || 'Histórico'} (${item.review_history?.length || 0})`;
 
@@ -412,6 +459,59 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
                 </div>
               ) : null}
             </section>
+
+            {/* #201 (Drive layer, fed by #301 get_board_item_drive_access): per-file Drive
+                access status — so the curator never opens a governed link they can't reach.
+                Hidden when the caller can't see Drive state (RPC -> null) or no Drive files exist. */}
+            {drive && Array.isArray(drive.files) && drive.files.length > 0 ? (
+              <section className="space-y-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1">
+                    <FolderOpen size={13} aria-hidden="true" /> {t('curation.drive.title', 'Acesso ao Drive')}
+                  </h4>
+                  {(() => {
+                    const m = driveStatusMeta(drive.overall_status, t);
+                    return <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${m.cls}`}>{m.label}</span>;
+                  })()}
+                </div>
+                <ul className="space-y-1">
+                  {drive.files.map((f) => {
+                    const m = driveStatusMeta(f.drive_permission_status, t);
+                    return (
+                      <li key={f.drive_file_id} className="flex items-center gap-2">
+                        <a href={f.drive_file_url} target="_blank" rel="noopener noreferrer" title={f.filename}
+                           className="text-xs text-teal hover:underline inline-flex items-center gap-1 flex-1 min-w-0">
+                          <ExternalLink size={12} aria-hidden="true" className="flex-shrink-0" />
+                          <span className="truncate">{f.filename}</span>
+                        </a>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${m.cls}`}>{m.label}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {drive.expires_or_revokes_on ? (
+                  <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
+                    <Clock size={10} aria-hidden="true" />
+                    <span>{`${t('curation.drive.expiresOn', 'Acesso temporário até')} ${new Date(drive.expires_or_revokes_on).toLocaleDateString()}`}</span>
+                  </p>
+                ) : null}
+                {drive.files.some((f) => Array.isArray(f.grantees) && f.grantees.length > 0) ? (
+                  <p className="text-[10px] text-[var(--text-secondary)]">
+                    {`${t('curation.drive.grantees', 'Com acesso')}: ${Array.from(new Set(drive.files.flatMap((f) => f.grantees || []))).join(', ')}`}
+                  </p>
+                ) : null}
+                {drive.files.some((f) => Array.isArray(f.errors) && f.errors.length > 0) ? (
+                  <p className="text-[10px] text-red-700 dark:text-red-300 flex items-center gap-1">
+                    <AlertTriangle size={10} aria-hidden="true" />
+                    <span>{`${t('curation.drive.error', 'Erro ao conceder acesso')}: ${Array.from(new Set(drive.files.flatMap((f) => f.errors || []))).join('; ')}`}</span>
+                  </p>
+                ) : null}
+              </section>
+            ) : drive && drive.missing_drive_access ? (
+              <p className="text-[11px] text-[var(--text-muted)] italic flex items-center gap-1">
+                <FolderOpen size={12} aria-hidden="true" /> {t('curation.drive.statusMissing', 'Sem arquivos do Drive')}
+              </p>
+            ) : null}
 
             {item.review_history && item.review_history.length > 0 ? (
               <section>
