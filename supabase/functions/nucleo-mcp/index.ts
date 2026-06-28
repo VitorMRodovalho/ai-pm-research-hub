@@ -3021,6 +3021,83 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ approved_count: appr?.approved_count ?? 0, results });
   });
 
+  // TOOLS: Curation temporary Drive grants (#301 / ADR-0108) — GRANT mirror of #209. manage_platform (GP).
+  mcp.tool("list_curation_drive_grants", "Lista os grants temporários de Drive da curadoria (#301): por status/card, com curador, e-mail, arquivo, permission_id e erro do Google. Authority: manage_platform (GP). status omitido = todos. O grant é automático no handoff para curation_pending; esta tool é observabilidade.", {
+    status: z.string().optional().describe("pending_grant|granted|failed|pending_revoke|revoked|revoke_failed|cancelled. Default: todos"),
+    board_item_id: z.string().optional().describe("Filtrar por card de curadoria (UUID)"),
+    limit: z.number().optional().describe("Default 50, máx 200"),
+    offset: z.number().optional().describe("Default 0")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_curation_drive_grants", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) { await logUsage(sb, member.id, "list_curation_drive_grants", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+    const { data, error } = await sb.rpc("admin_list_curation_drive_grants", {
+      p_status: params.status ?? null, p_board_item_id: params.board_item_id ?? null, p_limit: params.limit ?? 50, p_offset: params.offset ?? 0
+    });
+    if (error) { await logUsage(sb, member.id, "list_curation_drive_grants", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_curation_drive_grants", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("force_grant_curation_drive_access", "Concede (ou re-concede) acesso temporário 'commenter' aos curadores nos artefatos Drive de um card em curadoria, executando via Service Account imediatamente. Authority: manage_platform (GP). Normalmente o grant é automático no handoff para curation_pending; use para remediar falhas. Mesma observação 403-até-elevação-de-papel do #209. Retorna resultado por linha.", {
+    board_item_id: z.string().describe("UUID do board_item (card em curadoria)")
+  }, async (params: { board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "force_grant_curation_drive_access", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "force_grant_curation_drive_access", false, "Invalid board_item_id", start); return err("board_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) { await logUsage(sb, member.id, "force_grant_curation_drive_access", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+    const { data: enq, error: enqErr } = await sb.rpc("force_grant_curation_drive_access", { p_board_item_id: params.board_item_id });
+    if (enqErr) { await logUsage(sb, member.id, "force_grant_curation_drive_access", false, enqErr.message, start); return err(enqErr.message); }
+    const grantIds: string[] = (enq?.grant_ids ?? []);
+    const results: any[] = [];
+    for (const id of grantIds.slice(0, 100)) {
+      try {
+        const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-curation-drive-grant`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+          body: JSON.stringify({ grant_id: id, action: "grant" })
+        });
+        const efJson = await efRes.json().catch(() => ({}));
+        results.push({ grant_id: id, ok: efRes.ok, result: efJson.result ?? null, google_status: efJson.google_status ?? null, note: efJson.note });
+      } catch (e) {
+        results.push({ grant_id: id, ok: false, error: String(e) });
+      }
+    }
+    await logUsage(sb, member.id, "force_grant_curation_drive_access", true, undefined, start);
+    return ok({ pending_count: enq?.pending_count ?? 0, results });
+  });
+
+  mcp.tool("force_revoke_curation_drive_access", "Revoga o acesso temporário de Drive concedido aos curadores nos artefatos de um card (executa o DELETE via Service Account imediatamente). Authority: manage_platform (GP). Normalmente a revogação é automática quando o item sai da curadoria; use para remediação. Retorna resultado por linha.", {
+    board_item_id: z.string().describe("UUID do board_item (card)")
+  }, async (params: { board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "force_revoke_curation_drive_access", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "force_revoke_curation_drive_access", false, "Invalid board_item_id", start); return err("board_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_platform'))) { await logUsage(sb, member.id, "force_revoke_curation_drive_access", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+    const { data: enq, error: enqErr } = await sb.rpc("force_revoke_curation_drive_access", { p_board_item_id: params.board_item_id });
+    if (enqErr) { await logUsage(sb, member.id, "force_revoke_curation_drive_access", false, enqErr.message, start); return err(enqErr.message); }
+    const grantIds: string[] = (enq?.grant_ids ?? []);
+    const results: any[] = [];
+    for (const id of grantIds.slice(0, 100)) {
+      try {
+        const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/manage-curation-drive-grant`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+          body: JSON.stringify({ grant_id: id, action: "revoke" })
+        });
+        const efJson = await efRes.json().catch(() => ({}));
+        results.push({ grant_id: id, ok: efRes.ok, result: efJson.result ?? null, google_status: efJson.google_status ?? null, note: efJson.note });
+      } catch (e) {
+        results.push({ grant_id: id, ok: false, error: String(e) });
+      }
+    }
+    await logUsage(sb, member.id, "force_revoke_curation_drive_access", true, undefined, start);
+    return ok({ pending_revoke_count: enq?.pending_revoke_count ?? 0, results });
+  });
+
   // TOOL: get_application_returning_context (#91 G4 — bridges offboarding history to selection review)
   mcp.tool("get_application_returning_context", "Returns offboarding context for a returning candidate's selection application. Surfaces return_interest, return_window_suggestion, lessons_learned, recommendation_for_future from the candidate's prior member_offboarding_records (if any). Used by selection committee to inform re-application decisions. Admin only (manage_member).", {
     application_id: z.string().describe("UUID of the selection_applications row")
@@ -7894,7 +7971,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 311 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 314 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",

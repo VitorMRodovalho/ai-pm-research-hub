@@ -129,11 +129,11 @@ test('#209: revoke EF uses write scope, acts only on approved, classifies 403/40
 });
 
 // ───────────────────────── Static: MCP + crons ─────────────────────────
-test('#209: 3 MCP tools registered + /health tools count bumped to 311', () => {
+test('#209: 3 MCP tools registered + /health tools count bumped to 311 (now 314 via #301)', () => {
   for (const t of ['list_drive_revocation_pending', 'approve_drive_revocation', 'bulk_approve_drive_revocations']) {
     assert.match(mcpIndex, new RegExp(`mcp\\.tool\\("${t}"`), `tool ${t} not registered`);
   }
-  assert.match(mcpIndex, /"\/mcp":\s*\{[^}]*tools:\s*311/);
+  assert.match(mcpIndex, /"\/mcp":\s*\{[^}]*tools:\s*314/);
   // approve tools invoke the revoke EF synchronously
   assert.match(mcpIndex, /functions\/v1\/revoke-drive-permission/);
 });
