@@ -547,7 +547,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 74 | get_wiki_health | — | — | Relatório de saúde da wiki |
 | 75 | list_initiatives | kind?, status? | — | Lista iniciativas (filtro por tipo/status) |
 | 76 | manage_initiative_engagement | initiative_id, person_id, kind, role?, action | manage_member | Add/remove/update membro em iniciativa |
-| 77 | get_curation_queue_state | status? | curate_content \\| write_board \\| participate_in_governance_review | Fila de curadoria normalizada (#190): estado FSM, SLA, eligible_actions por chamador + estado de grant de Drive por item (gated curate\\|manage) |
+| 77 | get_curation_queue_state | status? | curate_content \\| write_board \\| participate_in_governance_review | Fila de curadoria normalizada (#190): estado FSM, SLA, eligible_actions por chamador |
 | 78 | submit_curation_review | item_id, decision, criteria_scores?, feedback_notes? | participate_in_governance_review | Submeter revisão estruturada (aprovar/devolver/rejeitar; auto-publica no N-ésimo OK) |
 | 79 | assign_curation_reviewer | item_id, reviewer_id, round | participate_in_governance_review | Designar revisor (curate_content/co_gp) para uma rodada de curadoria |
 
@@ -1615,9 +1615,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // TOOL: get_curation_queue_state — Curators / board writers / governance reviewers.
   // Wraps the #190 normalized envelope: per-item curation FSM state, SLA, review round/count,
   // per-caller eligible_actions, and a caller capability block. The stable envelope #188 exposes.
-  // Drive layer (#190/#301): per-item drive_permission_status + grant role/errors/expiry are
-  // populated only for curate_content/manage_platform callers (null otherwise); caller.can_see_drive flags it.
-  mcp.tool("get_curation_queue_state", "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. For curate_content/manage_platform callers each item also carries Drive grant state (drive_permission_status missing|pending|error|ready, drive_grant_role, drive_grant_errors, missing_drive_access, temporary_access_expires_or_revokes_on). Read access requires curate_content, write_board, or participate_in_governance_review.", {
+  mcp.tool("get_curation_queue_state", "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. Read access requires curate_content, write_board, or participate_in_governance_review.", {
     status: z.string().optional().describe("Filter by curation_status: 'peer_review' | 'leader_review' | 'curation_pending'. Omit for the full active queue.")
   }, async (params: { status?: string }) => {
     const start = Date.now();
