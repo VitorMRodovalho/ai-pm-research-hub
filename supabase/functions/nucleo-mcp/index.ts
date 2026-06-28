@@ -2950,6 +2950,77 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOLS: Drive offboarding revocation cascade (#209 / ADR-0107) — manage_member (GP).
+  mcp.tool("list_drive_revocation_pending", "Lista permissões Google Drive de ex-membros (offboarded) detectadas pelo scan semanal, aguardando revisão/revogação. Mostra arquivo, e-mail/role da permissão, status e erro do Google (quando falha). Authority: manage_member (GP). Default status=pending_revoke; passe status='all' para todos.", {
+    status: z.string().optional().describe("pending_revoke|approved|revoked|failed|already_absent|skipped|all. Default: pending_revoke"),
+    member_id: z.string().optional().describe("Filtrar por ex-membro (UUID)"),
+    limit: z.number().optional().describe("Default 50, máx 200"),
+    offset: z.number().optional().describe("Default 0")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_drive_revocation_pending", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "list_drive_revocation_pending", false, "Unauthorized", start); return err("Unauthorized: admin only (manage_member)."); }
+    const p_status = params.status === undefined ? 'pending_revoke' : (params.status === 'all' ? null : params.status);
+    const { data, error } = await sb.rpc("admin_list_drive_revocation_audit", {
+      p_status, p_member_id: params.member_id ?? null, p_limit: params.limit ?? 50, p_offset: params.offset ?? 0
+    });
+    if (error) { await logUsage(sb, member.id, "list_drive_revocation_pending", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_drive_revocation_pending", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("approve_drive_revocation", "Aprova a revogação de UMA permissão Drive de ex-membro (linha drive_offboarding_audit) e executa a remoção via Service Account imediatamente. Authority: manage_member (GP). Retorna o resultado do Google inline (revoked | already_absent | failed). NB: enquanto a SA não tiver papel organizer nas pastas, o Google retorna 403 e a linha fica 'failed' com a mensagem — comportamento esperado (gated, ADR-0094 G4.1).", {
+    audit_id: z.string().describe("UUID da linha drive_offboarding_audit")
+  }, async (params: { audit_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "approve_drive_revocation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.audit_id)) { await logUsage(sb, member.id, "approve_drive_revocation", false, "Invalid audit_id", start); return err("audit_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "approve_drive_revocation", false, "Unauthorized", start); return err("Unauthorized: admin only (manage_member)."); }
+    const { data: appr, error: apprErr } = await sb.rpc("approve_drive_revocation", { p_audit_id: params.audit_id });
+    if (apprErr) { await logUsage(sb, member.id, "approve_drive_revocation", false, apprErr.message, start); return err(apprErr.message); }
+    // Execute the Drive DELETE via the revoke EF (service-role; ADR-0094 user-driven → direct EF call).
+    const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/revoke-drive-permission`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({ audit_id: params.audit_id })
+    });
+    const efJson = await efRes.json().catch(() => ({}));
+    if (!efRes.ok) { await logUsage(sb, member.id, "approve_drive_revocation", false, efJson.error || `EF ${efRes.status}`, start); return err(`Revoke failed: ${efJson.detail || efJson.error || efRes.status}`); }
+    await logUsage(sb, member.id, "approve_drive_revocation", true, undefined, start);
+    return ok({ approved: appr, revoke: efJson });
+  });
+
+  mcp.tool("bulk_approve_drive_revocations", "Aprova e revoga TODAS as permissões Drive pendentes de um ex-membro de uma vez. Authority: manage_member (GP). Retorna resultado por linha. Mesma observação de 403-até-elevação-de-papel do approve_drive_revocation. Se o membro tiver >100 pendências, as excedentes ficam status='approved' e são drenadas pelo cron horário (revoke-drive-drain-hourly).", {
+    member_id: z.string().describe("UUID do ex-membro")
+  }, async (params: { member_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "bulk_approve_drive_revocations", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "bulk_approve_drive_revocations", false, "Invalid member_id", start); return err("member_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "bulk_approve_drive_revocations", false, "Unauthorized", start); return err("Unauthorized: admin only (manage_member)."); }
+    const { data: appr, error: apprErr } = await sb.rpc("bulk_approve_drive_revocations", { p_member_id: params.member_id });
+    if (apprErr) { await logUsage(sb, member.id, "bulk_approve_drive_revocations", false, apprErr.message, start); return err(apprErr.message); }
+    const auditIds: string[] = (appr?.audit_ids ?? []);
+    const results: any[] = [];
+    for (const id of auditIds.slice(0, 100)) {
+      try {
+        const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/revoke-drive-permission`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+          body: JSON.stringify({ audit_id: id })
+        });
+        const efJson = await efRes.json().catch(() => ({}));
+        results.push({ audit_id: id, ok: efRes.ok, result: efJson.result ?? null, google_status: efJson.google_status ?? null, note: efJson.note });
+      } catch (e) {
+        results.push({ audit_id: id, ok: false, error: String(e) });
+      }
+    }
+    await logUsage(sb, member.id, "bulk_approve_drive_revocations", true, undefined, start);
+    return ok({ approved_count: appr?.approved_count ?? 0, results });
+  });
+
   // TOOL: get_application_returning_context (#91 G4 — bridges offboarding history to selection review)
   mcp.tool("get_application_returning_context", "Returns offboarding context for a returning candidate's selection application. Surfaces return_interest, return_window_suggestion, lessons_learned, recommendation_for_future from the candidate's prior member_offboarding_records (if any). Used by selection committee to inform re-application decisions. Admin only (manage_member).", {
     application_id: z.string().describe("UUID of the selection_applications row")
@@ -7823,7 +7894,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 308 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 311 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",
