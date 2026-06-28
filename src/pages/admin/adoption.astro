@@ -501,7 +501,7 @@ const ADP_I18N = {
         miniCard(T.lifecycleActiveC3, lc.active_c3 || 0, 'text-emerald-600'),
         miniCard(T.lifecycleAlumni, lc.alumni || 0, 'text-gray-500'),
         miniCard(T.lifecycleObservers, lc.observers_active || 0),
-        miniCard(T.lifecycleRetention, `${lc.retention_c2_c3 || 0}%`, 'text-blue-600'),
+        miniCard(T.lifecycleRetention, `${lc.retention_c2_c3 || 0}%${lc.retention_basis ? ` (${String(lc.retention_basis).replace('->', '→')})` : ''}`, 'text-blue-600'),
         miniCard(T.lifecycleFounders, `${lc.founders_active || 0}/${lc.founders_total || 0}`, lc.founders_active >= lc.founders_total ? 'text-emerald-600' : 'text-amber-600'),
       ].join('');
     }

@@ -25,6 +25,8 @@ const CR_I18N = {
   statTotal: t('cycleReport.statTotal', lang),
   statActive: t('cycleReport.statActive', lang),
   statRetention: t('cycleReport.statRetention', lang),
+  statRecurring: t('cycleReport.statRecurring', lang),
+  statRetentionCohort: t('cycleReport.statRetentionCohort', lang),
   statNewInCycle: t('cycleReport.statNewInCycle', lang),
   roleOther: t('cycleReport.roleOther', lang),
   tribeLeaderLabel: t('cycleReport.tribeLeaderLabel', lang),
@@ -198,6 +200,7 @@ const CR_I18N = {
     milestoneEvents: '📅 {n} eventos realizados no C3',
     subtitleGeneratedOn: 'Gerado em', metaPrefix: 'meta',
     statTotal: 'Total', statActive: 'Ativos', statRetention: 'Retenção',
+    statRecurring: 'Membros recorrentes', statRetentionCohort: 'Retenção (coorte)',
     statNewInCycle: 'Novos no Ciclo', roleOther: 'Outro',
     tribeLeaderLabel: 'Líder', tribeMembersLabel: 'Membros',
     tribeCardsLabel: 'Cards', tribeCompletionLabel: 'Conclusão',
@@ -384,7 +387,8 @@ const CR_I18N = {
       membersStatsEl.innerHTML = [
         statCard(T.statTotal, ms.total || 0),
         statCard(T.statActive, ms.active || 0, 'text-emerald-600'),
-        statCard(T.statRetention, `${ms.retention_rate || 0}%`, 'text-blue-600'),
+        statCard(T.statRetentionCohort, `${ms.retention_cohort_survival_pct ?? 0}%${ms.retention_basis ? ` (${String(ms.retention_basis).replace('->', '→')})` : ''}`, 'text-emerald-600'),
+        statCard(T.statRecurring, `${ms.recurring_members_pct ?? 0}%`, 'text-blue-600'),
         statCard(T.statNewInCycle, ms.new_this_cycle || 0, 'text-purple'),
       ].join('');
     }
