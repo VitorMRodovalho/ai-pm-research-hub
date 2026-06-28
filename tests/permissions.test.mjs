@@ -19,8 +19,23 @@ describe('permissions types', () => {
     assert.equal(Object.keys(TIER_PERMISSIONS).length, 11);
   });
 
-  it('all 12 designations defined', () => {
-    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 12);
+  it('all 13 designations defined', () => {
+    assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 13);
+  });
+
+  it('sponsor designation grants full read (no write) — Wave 1 Ivan/LIM', () => {
+    const perms = DESIGNATION_PERMISSIONS.sponsor;
+    // read surface present
+    for (const p of ['admin.access', 'admin.members.view', 'admin.portfolio', 'admin.partners',
+                     'admin.governance.view', 'board.view_all', 'board.view_global',
+                     'data.view_members', 'event.view_all']) {
+      assert.ok(perms.includes(p), `sponsor read perm missing: ${p}`);
+    }
+    // never any write/manage
+    for (const p of perms) {
+      assert.ok(!/\.(manage|create|edit|delete|anonymize)$/.test(p) && p !== 'admin.campaigns',
+        `sponsor must be read-only, found write perm: ${p}`);
+    }
   });
 
   it('tier labels cover all tiers', () => {

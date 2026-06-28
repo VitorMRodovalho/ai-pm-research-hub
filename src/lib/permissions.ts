@@ -32,6 +32,7 @@ export type OperationalTier =
 
 export type Designation =
   | 'deputy_manager'
+  | 'sponsor'
   | 'curator'
   | 'comms_leader'
   | 'comms_member'
@@ -212,6 +213,26 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
 // ==========================================
 
 export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
+  // Patrocinador (Wave 1 — Ivan / LATAM LIM). The `sponsor` designation previously granted NOTHING
+  // here, so a sponsor saw no admin panels even though RLS already lets any authoritative (non-guest)
+  // member READ all boards/initiatives (minus confidential #785) and the member directory. This grants
+  // the FULL READ surface (admin read panels + board/initiative read-all + member directory + analytics);
+  // NO write/manage (server RPCs remain the write boundary). Wave 2 decides chapter-layer restrictions
+  // for chapter sponsors/directors.
+  sponsor: [
+    'admin.access', 'admin.members.view',
+    'admin.analytics', 'admin.analytics.chapter',
+    'admin.curation', 'admin.governance.view',
+    'admin.sustainability', 'admin.portfolio', 'admin.partners',
+    'admin.gamification', 'admin.publications',
+    'admin.filiacao', 'admin.voluntarios', 'admin.certificacao',
+    'board.view_all', 'board.view_global',
+    'event.view_all',
+    'gamification.view_ranking',
+    'content.view_publications',
+    'data.view_members', 'data.view_analytics',
+    'workspace.access',
+  ],
   deputy_manager: [
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
@@ -301,6 +322,7 @@ export const TIER_LABELS: Record<OperationalTier, { pt: string; en: string; es: 
 
 export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; es: string }> = {
   deputy_manager: { pt: 'Vice-Gerente',         en: 'Deputy Manager',    es: 'Vice-Gerente' },
+  sponsor:        { pt: 'Patrocinador',         en: 'Sponsor',           es: 'Patrocinador' },
   curator:        { pt: 'Curador',              en: 'Curator',           es: 'Curador' },
   comms_leader:   { pt: 'Líder de Comunicação', en: 'Comms Leader',     es: 'Líder de Comunicación' },
   comms_member:   { pt: 'Time de Comunicação',  en: 'Comms Member',     es: 'Equipo de Comunicación' },
