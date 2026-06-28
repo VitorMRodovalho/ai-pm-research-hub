@@ -119,9 +119,6 @@ BEGIN
     END IF;
 
     IF v_status = 'approved' THEN
-      -- Council fix: BEGIN/EXCEPTION sub-block — canonical failure rolls back
-      -- this decision (status UPDATE + canonical side-effects) WITHOUT aborting
-      -- the rest of the batch (preserves best-effort semantics).
       BEGIN
         UPDATE public.selection_applications SET
           status     = v_status,
