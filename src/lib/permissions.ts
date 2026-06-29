@@ -217,8 +217,10 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   // here, so a sponsor saw no admin panels even though RLS already lets any authoritative (non-guest)
   // member READ all boards/initiatives (minus confidential #785) and the member directory. This grants
   // the FULL READ surface (admin read panels + board/initiative read-all + member directory + analytics);
-  // NO write/manage (server RPCs remain the write boundary). Wave 2 decides chapter-layer restrictions
-  // for chapter sponsors/directors.
+  // NO write/manage (server RPCs remain the write boundary). FU-1 (#952 / ADR-0110) revoked the backend
+  // sponsor WRITE seeds (manage_finance/manage_partner) so this client read-only now matches the V4
+  // catalog (F9 divergence closed); sponsor reads preserved via the new view_finance/view_partner actions.
+  // Wave 2 (FU-2) decides chapter-layer restrictions for chapter sponsors/directors.
   sponsor: [
     'admin.access', 'admin.members.view',
     'admin.analytics', 'admin.analytics.chapter',
@@ -519,8 +521,11 @@ export function canForAnyTribe(action: string): boolean {
 // (engagement-derived). Source: engagement_kind_permissions WHERE scope IN
 // ('organization','global'). Verdade institucional:
 //   - volunteer.{manager,deputy_manager,co_gp,leader,comms_leader} têm `write` org
-//   - sponsor.sponsor → manage_finance / manage_partner / view_internal_analytics
+//   - sponsor.sponsor → view_finance / view_partner / view_chapter_dashboards / view_internal_analytics
+//        (READ-ONLY após FU-1 #952: manage_finance/manage_partner revogados; o split de
+//         read/write criou view_finance+view_partner. Sponsor não escreve mais — ADR-0110.)
 //   - chapter_board.{liaison,board_member} → view_chapter_dashboards / view_pii / view_internal_analytics
+//        (liaison também tem manage_partner[write] + view_partner[read])
 //   - observer.{curator,reviewer} → participate_in_governance_review (não dá admin entry isolado)
 // Nota: 'participate_in_governance_review' propositalmente NÃO inclusa — observer.curator/reviewer
 // puros não devem ganhar admin entry, apenas governance review pages (gate separado).
@@ -535,6 +540,8 @@ export const ADMIN_TIER_ACTIONS = [
   'manage_platform',
   'view_internal_analytics',
   'view_chapter_dashboards',
+  'view_finance',   // FU-1 #952: read half of manage_finance (admin-tier read)
+  'view_partner',   // FU-1 #952: read half of manage_partner (admin-tier read)
 ] as const;
 
 // canForAdminEntry — true if the caller has any ENGAGEMENT-DERIVED org-scoped
