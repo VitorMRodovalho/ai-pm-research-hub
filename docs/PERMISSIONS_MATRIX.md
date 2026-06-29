@@ -24,7 +24,7 @@ herda todas as permissões dos tiers inferiores.
 
 > † A persona externa **`institutional_auditor`** (órgão da rede PMI, ex.: PMI LATAM) **exibe** como
 > observer (`getAccessTier → observer`) mas tem capability **estritamente mais estreita** — somente
-> `view_aggregate_analytics` (8 RPCs agregadas). Ver **§2.1** (ADR-0111 · GC-149).
+> `view_aggregate_analytics` (12 RPCs agregadas — 2 com supressão de célula pequena k=5). Ver **§2.1** (ADR-0111 · GC-149).
 
 **Implementação backend (V4 — ADR-0011)**: `can_by_member(member_id, action)` / `rls_can(action)` / `rls_is_superadmin()` são as gates canônicas. Helper `has_min_tier(integer)` foi DEPRECATED p181 e DROPPED p182 (2026-05-17) após todos 4 callers (3 RLS policies + `exec_cert_timeline`) migrarem para V4 native.
 **Implementação frontend**: `resolveTierFromMember(member)` → `hasMinimumTier(tier, required)` (UI gates) ou `canFor(member, action, scope)` (capability cache p163, ADR-0083).
@@ -62,7 +62,7 @@ do observer (`sponsor`/`curator`/`chapter_liaison`): somente `view_aggregate_ana
 | Atributo | Valor |
 |---|---|
 | **Badge** | "Auditor Institucional" 🔎 (display `getAccessTier → observer`, mas capability **estritamente mais estreita**) |
-| **Acesso** | Leitura **agregada** apenas — action dedicada `view_aggregate_analytics`, honrada por **8 RPCs** zero-PII/zero-escrita (allowlist por construção, ADR-0111) |
+| **Acesso** | Leitura **agregada** apenas — action dedicada `view_aggregate_analytics`, honrada por **12 RPCs** zero-PII/zero-escrita (allowlist por construção, ADR-0111 + emenda 2026-06-29; as 2 RPCs de quebra por capítulo aplicam supressão de célula pequena k=5 ao auditor externo) |
 | **Nunca tem** | `admin.access` amplo, diretório de membros, PII individual, dados de seleção, qualquer escrita ou `manage_*`. Carve-out RLS exclui o auditor de `rls_is_authoritative_member()` (não pega o diretório baseline) |
 | **Provisionamento** | **GP-only** (`manager`/`deputy_manager`); `end_date` **obrigatório** (CHECK no banco); **dormante** até o gate de governança (acordo + ciência dos parceiros + RoPA/LIA do DPO) |
 | **Referência** | ADR-0111 · GC-149 · `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` · Anexo R3 #641 §5.3 |

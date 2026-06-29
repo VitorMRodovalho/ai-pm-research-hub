@@ -29,15 +29,33 @@ import { resolve } from 'node:path';
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const FU3_FILE = '20260805000292_onda2_fu3_institutional_auditor.sql';
+const AMENDMENT_FILE = '20260805000294_onda2_adr0111_amend_aggregate_chapter_comms_rpcs.sql';
 
 const ACTION = 'view_aggregate_analytics';
 const KIND = 'institutional_auditor';
 
-// The curated allowlist: live-verified to return zero individual PII and perform zero writes.
-const SAFE_RPCS = [
+// The original FU-3 curated allowlist (8): live-verified zero individual PII / zero write. Pinned to FU3_FILE.
+const FU3_SAFE_RPCS = [
   'get_cycle_report', 'get_annual_kpis', 'get_selection_pipeline_metrics', 'get_diversity_dashboard',
   'get_portfolio_items', 'get_in_dashboard', 'get_comms_to_adoption_funnel', 'exec_role_transitions',
 ];
+
+// ADR-0111 amendment (AMENDMENT_FILE): 4 chapter/comms aggregate RPCs join the allowlist (8 -> 12).
+// Per-RPC adversarial review (2026-06-29) found a k-anonymity small-cell risk on the two chapter
+// member-breakdown RPCs; exec_chapter_dashboard + exec_chapter_comparison therefore implement
+// suppression for the EXTERNAL auditor (see SUPPRESSION_RPCS). get_chapter_selection_summary returns
+// count(*)+cycle metadata only; comms_metrics_latest_by_channel NULLs the opaque payload on the auditor path.
+const AMENDMENT_SAFE_RPCS = [
+  'exec_chapter_dashboard', 'get_chapter_selection_summary', 'exec_chapter_comparison',
+  'comms_metrics_latest_by_channel',
+];
+
+// The full curated allowlist (12) — the action must reach EXACTLY these and nothing else.
+const SAFE_RPCS = [...FU3_SAFE_RPCS, ...AMENDMENT_SAFE_RPCS];
+
+// RPCs that MUST keep the external-auditor k-anonymity small-cell suppression (security control,
+// not just a gate). A future edit dropping it for these re-opens the re-identification finding.
+const SUPPRESSION_RPCS = ['exec_chapter_dashboard', 'exec_chapter_comparison'];
 
 // RPCs proven to return individual PII or write — the auditor action must NEVER reach these.
 const PII_OR_WRITE_RPCS = [
@@ -108,14 +126,45 @@ test('FU-3 seeds the kind + the single auditor action correctly', () => {
   assert.match(body, /ADR-0111/i, 'header must reference ADR-0111');
 });
 
-test('FU-3 wires view_aggregate_analytics into EXACTLY the 8 curated safe RPCs', () => {
+test('FU-3 wires view_aggregate_analytics into EXACTLY the original 8 curated safe RPCs', () => {
   const body = stripComments(loadMigrations().find((x) => x.name === FU3_FILE).body);
-  for (const fn of SAFE_RPCS) {
+  for (const fn of FU3_SAFE_RPCS) {
     const bodies = functionBodies(body, fn);
     assert.ok(bodies.length >= 1, `${fn} CREATE OR REPLACE must be in the FU-3 migration`);
     assert.ok(bodies[bodies.length - 1].includes(ACTION),
       `${fn} gate must honor ${ACTION}`);
   }
+});
+
+test('ADR-0111 amendment wires the action into EXACTLY the 4 chapter/comms RPCs (20260805000294)', () => {
+  const m = loadMigrations().find((x) => x.name === AMENDMENT_FILE);
+  assert.ok(m, `${AMENDMENT_FILE} must exist`);
+  const body = stripComments(m.body);
+  for (const fn of AMENDMENT_SAFE_RPCS) {
+    const bodies = functionBodies(body, fn);
+    assert.ok(bodies.length >= 1, `${fn} CREATE OR REPLACE must be in the amendment migration`);
+    assert.ok(bodies[bodies.length - 1].includes(ACTION),
+      `${fn} gate must honor ${ACTION}`);
+  }
+});
+
+test('ADR-0111 amendment keeps k-anonymity small-cell suppression in the member-breakdown RPCs', () => {
+  // Forward-defense for the SECURITY CONTROL itself (not just the gate): the per-RPC adversarial
+  // review found a re-identification risk for an external auditor on tiny chapters (live: 3 chapters
+  // with 1 active member). The suppression must survive future edits.
+  const body = loadMigrations().find((x) => x.name === AMENDMENT_FILE).body;
+  for (const fn of SUPPRESSION_RPCS) {
+    const bodies = functionBodies(stripComments(body), fn);
+    assert.ok(bodies.length >= 1, `${fn} must be in the amendment migration`);
+    const live = bodies[bodies.length - 1];
+    // the external-auditor predicate (has aggregate action AND NOT internal analytics) gates suppression
+    assert.match(live, /can_by_member\([^)]*'view_aggregate_analytics'\)\s*\n?\s*AND NOT public\.can_by_member\([^)]*'view_internal_analytics'\)/i,
+      `${fn} must branch suppression on (view_aggregate_analytics AND NOT view_internal_analytics)`);
+  }
+  // dashboard returns a suppressed marker; comparison buckets into "Outros (<5 ativos)"
+  const full = body;
+  assert.match(full, /small_cell_below_threshold/i, 'exec_chapter_dashboard must return the small-cell suppressed marker');
+  assert.match(full, /Outros \(<5 ativos\)/, 'exec_chapter_comparison must collapse small chapters into the bucket');
 });
 
 test('forward-defense: view_aggregate_analytics reaches ONLY the curated allowlist (true bound, no drift)', () => {
