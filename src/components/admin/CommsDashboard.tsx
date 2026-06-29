@@ -12,6 +12,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 type CommsMetrics = {
   backlog_count: number;
@@ -33,6 +34,10 @@ const STATUS_LABELS: Record<string, string> = {
 const FORMAT_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899', '#6B7280'];
 
 export default function CommsDashboard() {
+  // #961: the comms-analytics gate routes non-comms callers to a zero payload, which
+  // makes the empty-state branches (below) reachable — they call t(), so the i18n hook
+  // must be wired (it was missing, leaving t undefined → ReferenceError once reached).
+  const t = usePageI18n();
   const [metrics, setMetrics] = useState<CommsMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

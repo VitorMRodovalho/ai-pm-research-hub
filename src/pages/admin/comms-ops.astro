@@ -6,7 +6,7 @@ import CommsDashboard from '../../components/admin/CommsDashboard';
 import BoardEngine from '../../components/islands/BoardEngine';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
-const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
+const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'comp.comms', 'common'], lang);
 
 // Pre-render strings for inline TS script via define:vars (Ω-B+.4 p141)
 const COMMSOPS_I18N = {
