@@ -10,6 +10,22 @@ Referência normativa: Manual de Governança e Operações R2 (DocuSign B2AFB185
 
 ## Decisões Implementadas
 
+### GC-150 — Auditor Institucional: Superfície Agregada 8 → 12 RPCs + Supressão de Célula Pequena (k=5)
+**Data:** 2026-06-29 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado (técnico, behavior-neutral — tier dormante)
+
+**Decisão (PM via `AskUserQuestion`):** Estender a capacidade agregada do auditor institucional externo de **8 → 12 RPCs**, adicionando dashboards de capítulo (`exec_chapter_dashboard`, `exec_chapter_comparison`, `get_chapter_selection_summary`) + métricas de comms agregadas (`comms_metrics_latest_by_channel`), **construindo a supressão de célula pequena em código** em vez de diferi-la ao processo (mig `20260805000294`, emenda ADR-0111).
+
+**Por que não foi um grant repetido:** uma **revisão adversarial por-RPC** (8 sub-agentes auditor+cético consultando o DB ao vivo) pegou um problema **comportamental** de LGPD que a verificação de fidelidade (drift/Phase-C, byte-fiel a live) **não** pega: `exec_chapter_dashboard`/`exec_chapter_comparison` quebram membros por capítulo, e **ao vivo 3 capítulos têm 1 único membro ativo** (`members.chapter` é texto livre, sem CHECK). Para esses capítulos, o "agregado" entregue a um auditor **externo** É o registro de um indivíduo re-identificável — exatamente o risco que o RoPA/LIA do FU-4 condicionava à supressão de célula pequena, que estava como compromisso de processo, não código.
+
+**Implementação:**
+1. **Supressão k=5 (em código), só para o auditor externo** (predicado `view_aggregate_analytics AND NOT view_internal_analytics`): `exec_chapter_dashboard` retorna marcador suprimido p/ capítulo com `<5` ativos; `exec_chapter_comparison` colapsa capítulos `<5` ativos num bucket `"Outros (<5 ativos)"`. Controladores internos (GP/liaison) recebem detalhe **completo inalterado** (split IF/ELSE → zero regressão à UI admin).
+2. **`get_chapter_selection_summary`**: só `count(*)` + metadados de ciclo (sem quebra de membro → sem supressão).
+3. **`comms_metrics_latest_by_channel`**: gate `OR` **inline** (não modifica o helper compartilhado `can_view_comms_analytics`, que vazaria `comms_top_media`/`comms_channel_status` transitivamente); `payload` jsonb opaco **NULL no caminho do auditor** (forward-defense).
+
+**Justificativa:** "zero-PII por construção" do ADR-0111 exige que as RPCs sejam seguras **agora**, não pendentes de processo futuro. A supressão em código honra o compromisso do RoPA/LIA no próprio gate. Excluída deste PR: `get_chapter_dashboard` (roster com nomes/fotos — permanece negada); `comms_top_media` (lista de posts, fora do escopo agregado). Achado separado registrado: `get_comms_dashboard_metrics` é SECDEF **sem gate** (não relacionado ao auditor).
+
+**Impacto técnico:** Migration `20260805000294`; ADR-0111 (§ Amendment); `tests/contracts/institutional-auditor-aggregate-scope.test.mjs` (`SAFE_RPCS` 8→12 com split FU3/emenda + forward-defense da supressão); `PERMISSIONS_MATRIX.md` §2.1; `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` §2.1/§2.3; Anexo R3 #641 §5.3. Verificação ao vivo 2-lados (GP detalhe completo / auditor suprimido), `carriers == 12`, dormância `route_to_suppression=0`.
+
 ### GC-149 — Arquitetura de Permissionamento (Onda 2): Sponsor Read-Only de Fato, Auditor Institucional Agregado, Assimetria Sede/Parceiro/Externo, SLA de Reassignment Function-Anchored e `end_date` em Engagements Institucionais
 **Data:** 2026-06-29 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado (camada técnica) + RASCUNHO (camada processo — gate de provisionamento do auditor pendente de DPO/parceiros)
 

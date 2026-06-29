@@ -58,3 +58,36 @@ Comportamento-neutro na população atual: **zero** membros `institutional_audit
 ## Invariantes respeitados
 
 function-anchored (papel, nunca indivíduo) · read ≠ write (action read-only; 37 RPCs de PII/escrita intocadas) · member-lifecycle = GP-only (LGPD Art. 18) · minimização LGPD (parceiro externo = só agregado) · confidenciais #785 (`get_portfolio_items` mantém `rls_can_see_initiative`) · **NÃO** seed-expandir actions destrutivas · ADR-0023 paridade A3 · DDL via `apply_migration` + sync de migration local + repair (database.md).
+
+---
+
+## Amendment (2026-06-29) — superfície agregada 8 → 12 + supressão de célula pequena (k=5)
+
+**Status:** Accepted · **Migration:** `20260805000294_onda2_adr0111_amend_aggregate_chapter_comms_rpcs.sql` · **#952.**
+
+A capacidade agregada do auditor foi estendida de **8 → 12 RPCs**, adicionando dashboards de capítulo + métricas de comms agregadas (decisão do PM via `AskUserQuestion`, 2026-06-29). As 4 novas: `exec_chapter_dashboard`, `exec_chapter_comparison`, `get_chapter_selection_summary`, `comms_metrics_latest_by_channel`.
+
+### Por que não foi um simples grant repetido
+
+Antes de aplicar, rodou-se uma **revisão adversarial por-RPC** (8 sub-agentes: auditor de fidelidade + cético de refutação por RPC, todos consultando o DB ao vivo). Ela pegou o que a verificação de fidelidade (leitura campo-a-campo) **não** pega — um problema **comportamental** de LGPD:
+
+- `exec_chapter_dashboard` e `exec_chapter_comparison` **quebram membros por capítulo**. Ao vivo, **3 capítulos têm 1 único membro ativo** (PMI-PR, PMI-SP, Outro) e `members.chapter` **não tem CHECK/enum** (texto livre). Para esses capítulos, o "agregado" entregue a um auditor **externo** É o registro de um indivíduo re-identificável (role/tribo/cert/horas) — exatamente o "risco de re-identificação reconhecido" que o RoPA/LIA do FU-4 condiciona à supressão de célula pequena (§2.3/§8 do doc de cooperação), que até então **não estava implementada**.
+
+### Decisão (PM, `AskUserQuestion`): construir a supressão em código, não diferir
+
+- **Predicado de auditor externo (inline, sem helper)**: `can_by_member(_, 'view_aggregate_analytics') AND NOT can_by_member(_, 'view_internal_analytics')`. Mantém o invariante elegante do teste (`carriers == SAFE_RPCS`); controladores internos nunca disparam supressão → **behavior-neutral** (ao vivo: 0 membros atuais alcançam o branch; tier dormante).
+- `exec_chapter_dashboard`: auditor externo + capítulo com `<5` ativos → marcador `{suppressed:true, reason:'small_cell_below_threshold', threshold:5}` (sem detalhe).
+- `exec_chapter_comparison`: auditor externo → capítulos `<5` ativos colapsam num único bucket `"Outros (<5 ativos)"` (counts somados). Caminho interno = query original **verbatim** (split IF/ELSE → zero regressão à UI admin ao vivo).
+- `get_chapter_selection_summary`: só `count(*)` + metadados de ciclo (sem quebra de membro) → sem supressão necessária.
+- `comms_metrics_latest_by_channel`: gate `OR` **inline** (não modifica o helper compartilhado `can_view_comms_analytics`, que vazaria `comms_top_media`/`comms_channel_status` transitivamente). O `payload` jsonb opaco (controlado por ingestão) é **NULL no caminho do auditor** (forward-defense do achado da revisão).
+
+### Verificação (ao vivo, 2026-06-29)
+
+- `carriers` da action = **exatamente 12** (8 + 4); teste de contrato verde (`deepEqual(carriers, SAFE_RPCS)`).
+- **2 lados:** GP (Vitor, via `request.jwt.claims`) → `exec_chapter_dashboard('PMI-SP')` retorna detalhe **completo** (não suprimido) e `exec_chapter_comparison()` lista **11 capítulos nomeados** (regressão zero). Auditor (branch standalone) → PMI-SP suprimido; capítulos `<5` colapsados em "Outros (<5 ativos)" (total 8 / ativos 7).
+- **Dormância:** `holders_of_action=0`, `route_to_suppression=0` (nenhum membro atual alcança a supressão).
+- Mecânica: DO-block `replace()` + asserção match-único no `exec_chapter_dashboard` (18KB, zero transcrição); CREATE OR REPLACE pleno nos 3 menores; arquivo `…294` = SSOT literal pós-apply (Phase-C file==live); phantom-row do apply renomeada para a version canônica.
+
+### Lição (cross-ref pt12 / [LL] #588)
+
+Revisão adversarial **comportamental** (lente de domínio: security/LGPD) e validação de **fidelidade** (drift/Phase-C) são **camadas ortogonais**: o gate estava byte-fiel a live E ainda assim entregaria PII por célula pequena. Ambas necessárias.

@@ -140,11 +140,13 @@ Esse eixo e **distinto** do compartilhamento com capitulos parceiros e nao se co
 - o auditor institucional **nao e capitulo parceiro** — nao possui membros no Programa e nao e
   controlador de nenhum dado tratado aqui; e **destinatario** de agregados, nao agente de tratamento;
 - recebe **apenas indicadores agregados** program-wide, **sem dado pessoal individual por construcao**
-  (allowlist de 8 RPCs SECDEF zero-PII verificadas — ADR-0111), sem recorte nominal de capitulo, sem
-  dados de selecao, sem escrita. O PMI-GO adota supressao de celula pequena (k-anonimato) quando algum
-  subgrupo for identificavel, conforme protocolado em
-  `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` §2.3/§8 (garantia de processo, nao
-  de resultado absoluto enquanto a supressao nao estiver implementada);
+  (allowlist de 12 RPCs SECDEF zero-PII verificadas — ADR-0111 + emenda 2026-06-29), sem recorte nominal
+  de capitulo, sem dados de selecao, sem escrita. O PMI-GO adota supressao de celula pequena
+  (k-anonimato): para as 2 RPCs de quebra de membro por capitulo (`exec_chapter_dashboard`,
+  `exec_chapter_comparison`) a supressao esta **implementada em codigo (k=5)** para o auditor externo
+  (capitulos com <5 membros ativos sao suprimidos/bucketizados); para as demais RPCs agregadas que
+  cruzem subgrupos sensiveis identificaveis o endurecimento transversal segue como FU, conforme
+  `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` §2.3/§8;
 - o acesso e **GP-only para provisionar**, com **prazo (`end_date`) obrigatorio**, e **revogavel**;
 - esta sujeito a um **gate de governanca proprio** (acordo de cooperacao + ciencia dos capitulos
   parceiros + ratificacao RoPA/LIA do DPO) antes do primeiro provisionamento.
