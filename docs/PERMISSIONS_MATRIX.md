@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-06-13 (#670: `chapter_liaison` sem `admin.access` amplo; middleware SSR libera apenas rotas admin de leitura explicitamente allowlisted para ponto focal). Anterior: 2026-06-04 (#196: refresh — curadoria V4 (`curate_content` / `participate_in_governance_review`), distinção entre *discoverability* de nav e autoridade real de backend; contagens MCP/EF/cron des-fixadas → fontes runtime).
+> Última atualização: 2026-06-29 (#952 Onda 2 FU-3/FU-4: persona `institutional_auditor` — auditor institucional externo read-only agregado, §2.1; ver ADR-0111 + GC-149). Anterior: 2026-06-13 (#670: `chapter_liaison` sem `admin.access` amplo; middleware SSR libera apenas rotas admin de leitura explicitamente allowlisted para ponto focal). Anterior: 2026-06-04 (#196: refresh — curadoria V4 (`curate_content` / `participate_in_governance_review`), distinção entre *discoverability* de nav e autoridade real de backend; contagens MCP/EF/cron des-fixadas → fontes runtime).
 
 ---
 
@@ -18,9 +18,13 @@ herda todas as permissões dos tiers inferiores.
 | 5    | superadmin  | `is_superadmin = true`                          | `rls_is_superadmin()` (no V4 catalog)  |
 | 4    | admin       | `manager`, `deputy_manager`, ou `co_gp`         | `can_by_member('manage_platform')`     |
 | 3    | leader      | `tribe_leader`                                   | scope-aware via `canFor()` (ADR-0083) |
-| 2    | observer    | `sponsor`, `curator`, `chapter_liaison`           | designation-based per capability       |
+| 2    | observer    | `sponsor`, `curator`, `chapter_liaison` †          | designation-based per capability       |
 | 1    | member      | `researcher`, `facilitator`, `communicator`       | engagement-based per capability        |
 | 0    | visitor     | Sem role, sem designação, ou não autenticado       | —                                      |
+
+> † A persona externa **`institutional_auditor`** (órgão da rede PMI, ex.: PMI LATAM) **exibe** como
+> observer (`getAccessTier → observer`) mas tem capability **estritamente mais estreita** — somente
+> `view_aggregate_analytics` (8 RPCs agregadas). Ver **§2.1** (ADR-0111 · GC-149).
 
 **Implementação backend (V4 — ADR-0011)**: `can_by_member(member_id, action)` / `rls_can(action)` / `rls_is_superadmin()` são as gates canônicas. Helper `has_min_tier(integer)` foi DEPRECATED p181 e DROPPED p182 (2026-05-17) após todos 4 callers (3 RLS policies + `exec_cert_timeline`) migrarem para V4 native.
 **Implementação frontend**: `resolveTierFromMember(member)` → `hasMinimumTier(tier, required)` (UI gates) ou `canFor(member, action, scope)` (capability cache p163, ADR-0083).
@@ -47,6 +51,27 @@ sem subir de tier.
 
 ---
 
+## 2.1 Persona de auditoria institucional externa (`institutional_auditor`)
+
+`operational_role` derivado do `engagement_kind` **`institutional_auditor`** (role `auditor`), criado
+para um **órgão institucional externo** da rede PMI (ex.: PMI LATAM/Global/PMIxAI) prestar contas do
+Programa em nível **agregado**. **Mapeia a Tier 2 (observer) via `getAccessTier` apenas para fins de
+display de badge** — a capability real é **estritamente mais estreita** que a de qualquer outro ocupante
+do observer (`sponsor`/`curator`/`chapter_liaison`): somente `view_aggregate_analytics`.
+
+| Atributo | Valor |
+|---|---|
+| **Badge** | "Auditor Institucional" 🔎 (display `getAccessTier → observer`, mas capability **estritamente mais estreita**) |
+| **Acesso** | Leitura **agregada** apenas — action dedicada `view_aggregate_analytics`, honrada por **8 RPCs** zero-PII/zero-escrita (allowlist por construção, ADR-0111) |
+| **Nunca tem** | `admin.access` amplo, diretório de membros, PII individual, dados de seleção, qualquer escrita ou `manage_*`. Carve-out RLS exclui o auditor de `rls_is_authoritative_member()` (não pega o diretório baseline) |
+| **Provisionamento** | **GP-only** (`manager`/`deputy_manager`); `end_date` **obrigatório** (CHECK no banco); **dormante** até o gate de governança (acordo + ciência dos parceiros + RoPA/LIA do DPO) |
+| **Referência** | ADR-0111 · GC-149 · `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` · Anexo R3 #641 §5.3 |
+
+> Espelha o padrão "visibilidade sem shell admin" do `chapter_liaison`, porém com superfície **ainda
+> mais estreita** (só agregados) e voltada a uma parte **externa**, com prazo e gate de cooperação.
+
+---
+
 ## 3. Matriz de Permissões por Funcionalidade
 
 Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Sem acesso
@@ -64,10 +89,10 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; tribos inativas ficam reservadas ao Superadmin; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     | `chapter_liaison` não recebe shell amplo; usa rotas de leitura específicas |
-| Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`, `chapter_board`: V read-only |
+| Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`, `chapter_board`: V read-only; `institutional_auditor`: V read-only — só agregados via `view_aggregate_analytics` (§2.1) |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Admin Comms Ops `/admin/comms-ops` (W85 Cockpit) | — | — | — | — | V | V | `comms_leader`, `comms_member`: V — Dashboard com Recharts (boards communication, status, formato) |
-| Admin Portfolio `/admin/portfolio` | — | — | V | — | V | V | `sponsor`, `chapter_liaison`, `curator`, `co_gp`, `chapter_board`: V |
+| Admin Portfolio `/admin/portfolio` | — | — | V | — | V | V | `sponsor`, `chapter_liaison`, `curator`, `co_gp`, `chapter_board`: V; `institutional_auditor`: V (mantém gate confidencial #785) |
 | Admin Board Governance `/admin/governance-v2` | — | — | — | — | V/A | V/A | `curator`, `co_gp`: V/A |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
 | Webinars `/webinars`       |    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `comms_leader`, `comms_member`, `curator`, `co_gp`, `facilitator`, `guest` |
