@@ -30,7 +30,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { parseMigration } from '../helpers/rpc-body-drift-parser.mjs';
+import { parseMigration, loadLatestCaptures } from '../helpers/rpc-body-drift-parser.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000101_m5_419_d1_get_member_cycle_xp_rank_cycle_scoped.sql');
@@ -116,8 +116,14 @@ test('M5 behavioural: live get_member_cycle_xp body == migration body (deployed,
     assert.ok(live, 'get_member_cycle_xp present in live function inventory');
     assert.equal(live.is_secdef, true, 'live function is SECURITY DEFINER');
 
-    const block = parseMigration(MIG, migRaw).find((b) => b.name === 'get_member_cycle_xp');
-    assert.ok(block, 'migration body parses');
-    assert.equal(live.body_md5, block.bodyHash,
-      'live body hash must equal the migration capture (Phase-C: change is deployed, file == live)');
+    // Compare live against the LATEST migration capture (the function may be legitimately
+    // re-created by a later migration — e.g. mig …288 / Onda 2 FU-2 added the chapter-scope guard
+    // while preserving the M5 ranking logic asserted statically above). Pinning to MIG (mig …101)
+    // alone would false-fail on any unrelated re-creation; the latest-capture compare is the real
+    // "deployed, no drift" invariant (mirrors rpc-migration-coverage Phase C).
+    const { latest } = loadLatestCaptures(resolve(ROOT, 'supabase/migrations'));
+    const cap = [...latest.entries()].find(([k]) => k.split('@')[0] === 'get_member_cycle_xp');
+    assert.ok(cap, 'get_member_cycle_xp has a migration capture');
+    assert.equal(live.body_md5, cap[1].bodyHash,
+      'live body hash must equal the LATEST migration capture (Phase-C: change is deployed, file == live)');
   });
