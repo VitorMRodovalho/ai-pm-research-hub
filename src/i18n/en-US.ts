@@ -1497,6 +1497,7 @@ const enUS: Record<string, string> = {
   'role.comms_member': 'Communications Member',
   'role.chapter_liaison': 'Chapter Liaison',
   'role.deputy_manager': 'Deputy PM',
+  'role.institutional_auditor': 'Institutional Auditor',
 
   // ── Attendance page ──
   'attendance.title': 'Attendance & Impact Hours',

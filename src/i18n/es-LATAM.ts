@@ -1497,6 +1497,7 @@ const esLATAM: Record<string, string> = {
   'role.comms_member': 'Miembro de Comunicación',
   'role.chapter_liaison': 'Punto Focal',
   'role.deputy_manager': 'Deputy PM',
+  'role.institutional_auditor': 'Auditor Institucional',
 
   // ── Attendance page ──
   'attendance.title': 'Asistencia & Horas de Impacto',
