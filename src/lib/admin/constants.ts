@@ -6,13 +6,14 @@ import { hasPermission } from '../permissions';
 export const OPROLE_LABELS: Record<string, string> = {
   manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo',
   researcher: 'Pesquisador', facilitator: 'Facilitador', communicator: 'Multiplicador',
-  sponsor: 'Patrocinador', none: 'Sem papel', guest: 'Convidado'
+  sponsor: 'Patrocinador', institutional_auditor: 'Auditor Institucional',
+  none: 'Sem papel', guest: 'Convidado'
 };
 
 export const OPROLE_COLORS: Record<string, string> = {
   manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8',
   researcher: '#EC4899', facilitator: '#06B6D4', communicator: '#8B5CF6',
-  sponsor: '#BE2027', none: '#94A3B8', guest: '#94A3B8'
+  sponsor: '#BE2027', institutional_auditor: '#0D9488', none: '#94A3B8', guest: '#94A3B8'
 };
 
 export const DESIG_LABELS: Record<string, string> = {
@@ -86,7 +87,9 @@ const ROUTE_ALLOWED_DESIGNATIONS: Partial<Record<AdminRouteKey, readonly string[
 };
 
 const ROUTE_ALLOWED_OPERATIONAL_ROLES: Partial<Record<AdminRouteKey, readonly string[]>> = {
-  admin_analytics: ['chapter_liaison'],
+  // chapter_liaison (#670) + institutional_auditor (FU-3/ADR-0111): read-only roles that reach the
+  // aggregate analytics route without admin-tier. Both gate to PII-free aggregate data server-side.
+  admin_analytics: ['chapter_liaison', 'institutional_auditor'],
 };
 
 export { MAX_SLOTS } from '../../data/tribes';
@@ -151,6 +154,9 @@ export function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: str
   if (desigs.includes('co_gp')) return 'admin';
   if (opRole === 'tribe_leader') return 'leader';
   if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
+  // institutional_auditor (FU-3/ADR-0111): KPIs-agregados tier — reaches admin_analytics via the
+  // route oprole allowlist; never admin-tier write surfaces.
+  if (opRole === 'institutional_auditor') return 'observer';
   if (['researcher', 'facilitator', 'communicator'].includes(opRole)) return 'member';
   if (desigs.length > 0) return 'member';
   return 'visitor';

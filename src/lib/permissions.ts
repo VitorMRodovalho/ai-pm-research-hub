@@ -27,6 +27,7 @@ export type OperationalTier =
   | 'cop_participant'
   | 'cop_observer'
   | 'observer'
+  | 'institutional_auditor'
   | 'candidate'
   | 'visitor';
 
@@ -204,6 +205,22 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
     'content.view_publications',
   ],
 
+  // Auditor Institucional (FU-3 / ADR-0111 / #952) — external institutional reviewer
+  // (e.g. PMI LATAM). Read-only AGGREGATE analytics surface ONLY; mirrors the
+  // chapter_liaison "visibility-without-admin-shell" pattern: NO `admin.access`
+  // (so the generic admin nav with Members/Initiatives/etc. is NOT surfaced), NO
+  // write/manage, NO member directory / PII / governance. The capability set +
+  // navigation.config.ts allowlist + the `view_aggregate_analytics` V4 action
+  // (canForAdminEntry) open exactly the curated aggregate dashboards. The backend
+  // boundary is the 8 PII-free SECDEF RPCs that honor view_aggregate_analytics.
+  institutional_auditor: [
+    'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio',
+    'data.view_analytics',
+    'content.view_publications',
+    'workspace.access',
+  ],
+
   candidate: [],
   visitor: [],
 };
@@ -318,6 +335,7 @@ export const TIER_LABELS: Record<OperationalTier, { pt: string; en: string; es: 
   cop_participant:      { pt: 'Participante de Tribo',   en: 'Stream Participant',     es: 'Participante de Tribu',     icon: '👥' },
   cop_observer:         { pt: 'Observador de Tribo',     en: 'Stream Observer',        es: 'Observador de Tribu',       icon: '👁️' },
   observer:             { pt: 'Observador / Alumni',     en: 'Observer / Alumni',      es: 'Observador / Alumni',       icon: '📖' },
+  institutional_auditor:{ pt: 'Auditor Institucional',   en: 'Institutional Auditor',  es: 'Auditor Institucional',     icon: '🔎' },
   candidate:            { pt: 'Candidato',               en: 'Candidate',              es: 'Candidato',                 icon: '📋' },
   visitor:              { pt: 'Visitante',               en: 'Visitor',                es: 'Visitante',                 icon: '🌐' },
 };
@@ -349,6 +367,7 @@ export const TIER_COLORS: Record<OperationalTier, string> = {
   cop_participant: '#06B6D4',      // cyan
   cop_observer: '#94A3B8',         // gray
   observer: '#94A3B8',             // gray
+  institutional_auditor: '#0D9488',// teal (external institutional reviewer)
   candidate: '#CBD5E1',            // light gray
   visitor: '#CBD5E1',              // light gray
 };
@@ -542,6 +561,7 @@ export const ADMIN_TIER_ACTIONS = [
   'view_chapter_dashboards',
   'view_finance',   // FU-1 #952: read half of manage_finance (admin-tier read)
   'view_partner',   // FU-1 #952: read half of manage_partner (admin-tier read)
+  'view_aggregate_analytics', // FU-3 #952: institutional_auditor — PII-free aggregate read (ADR-0111)
 ] as const;
 
 // canForAdminEntry — true if the caller has any ENGAGEMENT-DERIVED org-scoped

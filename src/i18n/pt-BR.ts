@@ -1501,6 +1501,7 @@ const ptBR: Record<string, string> = {
   'role.comms_member': 'Membro de Comunicação',
   'role.chapter_liaison': 'Ponto Focal',
   'role.deputy_manager': 'Deputy PM',
+  'role.institutional_auditor': 'Auditor Institucional',
 
   // ── Attendance page ──
   'attendance.title': 'Presença & Horas de Impacto',
