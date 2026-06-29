@@ -128,6 +128,32 @@ ativacao. O pacote minimo de aprovacao deve conter:
 Enquanto esses itens nao forem aprovados, a plataforma deve permanecer em agregados-only para
 capitulos parceiros.
 
+### 5.3 Auditor institucional externo — eixo distinto, agregado program-wide, gated
+
+Alem do eixo sede↔capitulo parceiro (§5.1/§5.2), o Programa pode conceder a um **orgao institucional
+externo** da rede PMI (ex.: PMI LATAM, PMI Global, iniciativa PMIxAI) um acesso de **leitura agregada
+program-wide** para fins de prestacao de contas (accountability) institucional — caso de uso: a
+apresentacao do LIM.
+
+Esse eixo e **distinto** do compartilhamento com capitulos parceiros e nao se confunde com ele:
+
+- o auditor institucional **nao e capitulo parceiro** — nao possui membros no Programa e nao e
+  controlador de nenhum dado tratado aqui; e **destinatario** de agregados, nao agente de tratamento;
+- recebe **apenas indicadores agregados** program-wide, **sem dado pessoal individual por construcao**
+  (allowlist de 8 RPCs SECDEF zero-PII verificadas — ADR-0111), sem recorte nominal de capitulo, sem
+  dados de selecao, sem escrita. O PMI-GO adota supressao de celula pequena (k-anonimato) quando algum
+  subgrupo for identificavel, conforme protocolado em
+  `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` §2.3/§8 (garantia de processo, nao
+  de resultado absoluto enquanto a supressao nao estiver implementada);
+- o acesso e **GP-only para provisionar**, com **prazo (`end_date`) obrigatorio**, e **revogavel**;
+- esta sujeito a um **gate de governanca proprio** (acordo de cooperacao + ciencia dos capitulos
+  parceiros + ratificacao RoPA/LIA do DPO) antes do primeiro provisionamento.
+
+Regime, RoPA/LIA, protocolo de provisionamento e template de ciencia dos capitulos parceiros estao
+em `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` (#952 FU-4) e na implementacao
+tecnica do ADR-0111 (`institutional_auditor` + `view_aggregate_analytics`, allowlist por construcao).
+Enquanto esse gate nao for satisfeito, o tier permanece **dormante** (nenhum acesso concedido).
+
 ## 6. Incidentes e comunicacao
 
 Incidentes envolvendo dados pessoais no contexto da cooperacao federada devem seguir cadeia
@@ -197,6 +223,7 @@ DPO sobre a comunicacao externa.
 - Issue/PR #628 — reframe PMI-GO controladora, plataforma operadora.
 - Issue #641 — tracker deste anexo.
 - RoPA/LIA #625 F1 — `docs/legal/RoPA_625_AFFILIATION_VERIFICATION_LIA.md`.
+- Auditor institucional externo (§5.3) — `docs/legal/INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` (#952 FU-4) + ADR-0111.
 - ANPD — Guia Orientativo para Definicoes dos Agentes de Tratamento de Dados Pessoais e
   do Encarregado: https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/2021.05.27GuiaAgentesdeTratamento_Final.pdf
 - ANPD — Comunicacao de Incidente de Seguranca:

@@ -68,6 +68,18 @@ function functionBodies(allSql, name) {
   return [...allSql.matchAll(re)].map((m) => m[2]);
 }
 
+// Name-capturing sweep: map every CREATE OR REPLACE FUNCTION to its LATEST body across all
+// migrations (migrations load sorted by timestamp, so a later redefinition overwrites — latest wins,
+// i.e. what is actually live). Used to assert the allowlist as a true superset bound, not a denylist.
+function latestFunctionBodies() {
+  const re = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\([^)]*\)[\s\S]*?AS\s+\$(\w*)\$([\s\S]*?)\$\2\$/gi;
+  const map = new Map();
+  for (const { body } of loadMigrations()) {
+    for (const m of body.matchAll(re)) map.set(m[1], m[3]);
+  }
+  return map;
+}
+
 test('FU-3 migration is registered at the canonical name', () => {
   const m = loadMigrations().find((x) => x.name === FU3_FILE);
   assert.ok(m, `${FU3_FILE} must exist`);
@@ -104,6 +116,19 @@ test('FU-3 wires view_aggregate_analytics into EXACTLY the 8 curated safe RPCs',
     assert.ok(bodies[bodies.length - 1].includes(ACTION),
       `${fn} gate must honor ${ACTION}`);
   }
+});
+
+test('forward-defense: view_aggregate_analytics reaches ONLY the curated allowlist (true bound, no drift)', () => {
+  // Denylist (PII_OR_WRITE_RPCS) catches the KNOWN-bad surface; this asserts the COMPLEMENT —
+  // that no function OUTSIDE the curated 8 ever carries the action, even one not on the denylist.
+  // Converts the check from denylist into genuine allowlist-by-construction: any future migration
+  // wiring a 9th RPC into the action fails here. (Security review #952 FU-4.)
+  const carriers = [...latestFunctionBodies().entries()]
+    .filter(([, body]) => stripComments(body).includes(ACTION))
+    .map(([name]) => name)
+    .sort();
+  assert.deepEqual(carriers, [...SAFE_RPCS].sort(),
+    `${ACTION} must reach EXACTLY the curated allowlist — found carriers: ${carriers.join(', ') || '(none)'}`);
 });
 
 test('forward-defense: NO PII/write RPC ever gains the auditor action (any migration)', () => {
