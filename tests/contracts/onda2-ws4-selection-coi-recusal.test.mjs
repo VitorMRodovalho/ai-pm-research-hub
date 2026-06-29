@@ -51,6 +51,47 @@ test('ADR-0109: get_selection_rankings carries the recusal gate', () => {
     'recused branch must return the recused_conflict_of_interest error');
 });
 
+// ─── PR-2: the same gate replicated into every sibling selection surface ────
+test('ADR-0109 PR-2: migration file present', () => {
+  const m = readdirSync(MIGRATIONS_DIR).find(f => f.includes('adr0109_pr2_coi_recusal') && f.endsWith('.sql'));
+  assert.ok(m, 'expected migration adr0109_pr2_coi_recusal_sibling_rpcs');
+});
+
+// Latest CREATE OR REPLACE body per function across all migrations (later migration wins = live).
+function latestFunctionBodies() {
+  const re = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\([^)]*\)[\s\S]*?AS\s+\$(\w*)\$([\s\S]*?)\$\2\$/gi;
+  const map = new Map();
+  for (const f of readdirSync(MIGRATIONS_DIR).filter(x => x.endsWith('.sql')).sort()) {
+    const sql = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+    for (const m of sql.matchAll(re)) map.set(m[1], m[3]);
+  }
+  return map;
+}
+
+// Forward-defense: every candidate-data surface reachable by a view_internal_analytics / curate_content
+// holder must carry the COI gate. A future migration that redefines one of these WITHOUT the gate
+// (silently dropping the recusal) fails here.
+const GATED_SURFACES = [
+  'get_selection_rankings',
+  'get_selection_dashboard',
+  'get_selection_pipeline_metrics',
+  'get_selection_health',
+  'get_application_score_breakdown',
+  'get_vep_divergence_report',
+];
+
+test('ADR-0109 PR-2: ALL selection surfaces carry the recusal gate (no silent drop)', () => {
+  const bodies = latestFunctionBodies();
+  for (const fn of GATED_SURFACES) {
+    const body = bodies.get(fn);
+    assert.ok(body, `${fn} must have a CREATE OR REPLACE captured in migrations`);
+    assert.ok(/selection_coi_recused\s*\(/.test(body),
+      `${fn} latest body must call selection_coi_recused (ADR-0109 gate missing/dropped)`);
+    assert.ok(body.includes('recused_conflict_of_interest'),
+      `${fn} must return recused_conflict_of_interest when recused`);
+  }
+});
+
 // ─── Live DB checks (skip if no env) ───────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
