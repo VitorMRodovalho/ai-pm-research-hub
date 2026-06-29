@@ -257,11 +257,11 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
       const designations: string[] = member.designations || [];
       const isAdmin = await canV4(sb, member.id, 'manage_member');
       const isLeader = await canV4(sb, member.id, 'write');
-      const isSponsor = await canV4(sb, member.id, 'manage_partner');
+      const isSponsor = await canV4(sb, member.id, 'view_partner'); // FU-1: partner READ gate is view_partner (sponsor/liaison/GP); manage_partner is write-only now
       const isComms = isLeader; // comms_leader has 'write' — covered by isLeader
-      const isLiaison = isSponsor; // chapter_liaison/sponsor both have 'manage_partner' — covered by isSponsor
+      const isLiaison = isSponsor; // chapter_liaison/sponsor both have 'view_partner' — covered by isSponsor
       const hasViewPii = await canV4(sb, member.id, 'view_pii');
-      const isChapterBoard = isSponsor || hasViewPii; // board_member has 'view_pii' only (without 'manage_partner')
+      const isChapterBoard = isSponsor || hasViewPii; // board_member has 'view_pii' only (without 'view_partner')
       const hasTribe = !!member.tribe_id;
 
       // Build personalized tool guide
@@ -1431,7 +1431,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_chapter_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
     let chapter = params.chapter || member.chapter;
     if (!chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "No chapter", start); return err("No chapter assigned. Specify: GO, CE, DF, MG, RS."); }
-    const isPrivileged = (await canV4(sb, member.id, 'manage_member')) || (await canV4(sb, member.id, 'manage_partner'));
+    const isPrivileged = (await canV4(sb, member.id, 'manage_member')) || (await canV4(sb, member.id, 'view_partner')); // FU-1: read gate
     if (!isPrivileged && chapter !== member.chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "Cross-chapter denied", start); return err("You can only view your own chapter."); }
     const { data, error } = await sb.rpc("get_chapter_dashboard", { p_chapter: chapter });
     if (error) { await logUsage(sb, member.id, "get_chapter_kpis", false, error.message, start); return err(error.message); }
@@ -1524,7 +1524,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_annual_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_annual_kpis", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'view_partner'))) { await logUsage(sb, member.id, "get_annual_kpis", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
     const { data, error } = await sb.rpc("get_annual_kpis");
     if (error) { await logUsage(sb, member.id, "get_annual_kpis", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_annual_kpis", true, undefined, start);
@@ -1574,7 +1574,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_partner_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_partner_pipeline", false, "Unauthorized", start); return err("Unauthorized: sponsors/admin only."); }
+    if (!(await canV4(sb, member.id, 'view_partner'))) { await logUsage(sb, member.id, "get_partner_pipeline", false, "Unauthorized", start); return err("Unauthorized: sponsors/admin only."); }
     const { data, error } = await sb.rpc("get_partner_pipeline");
     if (error) { await logUsage(sb, member.id, "get_partner_pipeline", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_partner_pipeline", true, undefined, start);
@@ -2125,7 +2125,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_portfolio_health", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_portfolio_health", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'view_partner'))) { await logUsage(sb, member.id, "get_portfolio_health", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
     const { data, error } = await sb.rpc("exec_portfolio_health", { p_cycle_code: params.cycle_code || "cycle3-2026" });
     if (error) { await logUsage(sb, member.id, "get_portfolio_health", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_portfolio_health", true, undefined, start);
@@ -2864,7 +2864,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_role_transitions", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_role_transitions", false, "Unauthorized", start); return err("Unauthorized: admin or sponsor only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'view_partner'))) { await logUsage(sb, member.id, "get_role_transitions", false, "Unauthorized", start); return err("Unauthorized: admin or sponsor only."); }
     const { data, error } = await sb.rpc("exec_role_transitions", {
       p_cycle_code: params.cycle_code || null,
       p_tribe_id: params.tribe_id || null,
