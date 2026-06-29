@@ -15,8 +15,8 @@ import {
 
 // ── Types sanity ──
 describe('permissions types', () => {
-  it('all 11 tiers defined', () => {
-    assert.equal(Object.keys(TIER_PERMISSIONS).length, 11);
+  it('all 12 tiers defined', () => {
+    assert.equal(Object.keys(TIER_PERMISSIONS).length, 12);
   });
 
   it('all 13 designations defined', () => {
@@ -97,6 +97,28 @@ describe('hasPermission (real mode)', () => {
     const member = { operational_role: 'manager' };
     assert.ok(hasPermission(member, 'admin.access'));
     assert.ok(hasPermission(member, 'admin.analytics'));
+  });
+
+  it('FU-3 institutional_auditor = aggregate read-only, no admin shell, no PII/write', () => {
+    const auditor = { operational_role: 'institutional_auditor', designations: [] };
+    // sees the curated AGGREGATE analytics surface...
+    assert.ok(hasPermission(auditor, 'admin.analytics'), 'auditor sees program analytics');
+    assert.ok(hasPermission(auditor, 'admin.analytics.chapter'), 'auditor sees chapter analytics');
+    assert.ok(hasPermission(auditor, 'admin.portfolio'), 'auditor sees portfolio');
+    assert.ok(hasPermission(auditor, 'data.view_analytics'), 'auditor sees analytics data');
+    assert.ok(hasPermission(auditor, 'workspace.access'), 'auditor has workspace access');
+    // ...but NEVER the admin shell, the member directory, finance/partner, governance, or any write.
+    assert.ok(!hasPermission(auditor, 'admin.access'), 'auditor must NOT have admin shell entry');
+    assert.ok(!hasPermission(auditor, 'admin.members.view'), 'auditor must NOT see member directory (PII)');
+    assert.ok(!hasPermission(auditor, 'data.view_members'), 'auditor must NOT read members PII');
+    assert.ok(!hasPermission(auditor, 'admin.partners'), 'auditor must NOT see partner management');
+    assert.ok(!hasPermission(auditor, 'admin.sustainability'), 'auditor must NOT see finance');
+    assert.ok(!hasPermission(auditor, 'admin.governance.view'), 'auditor must NOT read governance docs');
+    // no write/manage of any kind
+    for (const p of getEffectivePermissions(auditor)) {
+      assert.ok(!/\.(manage|create|edit|delete|anonymize|sync|calculate)$/.test(p) && p !== 'admin.campaigns',
+        `institutional_auditor must be read-only, found: ${p}`);
+    }
   });
 
   it('researcher does NOT have admin.access', () => {

@@ -83,7 +83,11 @@ test('rls-members-auth: no later migration recreates members_read_by_members on 
 
 test('rls-members-auth: no later migration loosens rls_is_authoritative_member (drops non-guest check)', () => {
   const offenders = subsequentMigrations().filter((m) => {
-    const block = m.body.match(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.rls_is_authoritative_member[\s\S]*?\$function\$/i)?.[0];
+    // Capture the FULL function (header + body), not just up to the opening `AS $function$`
+    // delimiter — the non-greedy `[\s\S]*?$function$` form stopped at the first delimiter and so
+    // never saw the body, silently passing any later redefinition. FU-3/ADR-0111 (#952) is the first
+    // later migration to redefine the helper (auditor carve-out) and surfaced the latent bug.
+    const block = m.body.match(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.rls_is_authoritative_member[\s\S]*?AS\s+\$function\$[\s\S]*?\$function\$/i)?.[0];
     if (!block) return false;
     return !/operational_role\s*<>\s*'guest'/i.test(block);
   });
