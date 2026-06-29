@@ -28,7 +28,17 @@ Grounding 2026-06-28: **0 instâncias atuais** (nenhum dos 13 detentores de aces
 
 ## Escopo / fast-follow (PR-2, rastreado)
 
-Este PR gateia **`get_selection_rankings`** (scores). As demais superfícies que expõem dado de candidato e são alcançáveis por um detentor de `view_internal_analytics` — **`get_selection_dashboard`** (18.9KB), **`get_selection_pipeline_metrics`**, **`get_selection_health`** — recebem o **mesmo gate** (uma chamada ao helper após a resolução do ciclo) no fast-follow rastreado. As RPCs gateadas por `manage_member` (`get_application_score_breakdown`, `get_application_detail`) são GP-only — um GP candidato é caso extraordinário e está fora do persona; ainda assim entram no fast-follow por completude. **0 instâncias atuais** → sem janela de exposição para o intervalo.
+Este PR (WS-4) gateia **`get_selection_rankings`** (scores). As demais superfícies que expõem dado de candidato e são alcançáveis por um detentor de `view_internal_analytics` — **`get_selection_dashboard`** (18.9KB), **`get_selection_pipeline_metrics`**, **`get_selection_health`** — recebem o **mesmo gate** (uma chamada ao helper após a resolução do ciclo) no fast-follow rastreado. As RPCs gateadas por `manage_member` (`get_application_score_breakdown`, `get_application_detail`) são GP-only — um GP candidato é caso extraordinário e está fora do persona; ainda assim entram no fast-follow por completude. **0 instâncias atuais** → sem janela de exposição para o intervalo.
+
+### PR-2 — CONCLUÍDO (2026-06-29, migration `20260805000293`)
+
+O fast-follow foi entregue. O **mesmo gate** (chamada a `selection_coi_recused` logo após o ciclo ser resolvido) foi replicado em **5 superfícies irmãs**:
+
+- **`get_selection_dashboard`**, **`get_selection_pipeline_metrics`**, **`get_selection_health`** — gate após a resolução do ciclo (`v_cycle_id` ou, no health, `(v_active_cycle->>'id')::uuid`).
+- **`get_application_score_breakdown`** — gate após carregar a aplicação e **antes** do log de PII (`v_caller.id`, `v_app.cycle_id`); persona = **curador-candidato** (gate `curate_content`), não GP. Isto também cobre o **MCP `get_application_detail`**, que apenas wrappa esta RPC (não existe RPC pg `get_application_detail`).
+- **`get_vep_divergence_report`** — expõe nome/email/`pmi_id` de candidatos divergentes e **varre TODOS os ciclos abertos**; por isso recusa um caller que seja candidato ativo em **qualquer ciclo aberto** (`EXISTS` reusando o helper sobre `selection_cycles.status='open'`), não apenas o ciclo mais recente — fechamento do gap apontado na revisão de security (multi-ciclo aberto simultâneo).
+
+Mecânica: cada corpo recebeu **apenas** o bloco de gate, injetado via `replace()` de uma âncora única por função sobre o corpo live (`pg_get_functiondef`), preservando o resto byte-a-byte; a migration `…293` é o SSOT literal pós-apply (drift Phase-C verde). Forward-defense `tests/contracts/onda2-ws4-selection-coi-recusal.test.mjs`: as **6** superfícies (rankings + 5) devem carregar o gate — uma redefinição futura que o remova falha o teste. Verificação 2-lados ao vivo: candidato não-GP → recusado; GP → nunca. **0 instâncias** no apply (forward-defense, sem janela de exposição).
 
 ## Consequências
 
