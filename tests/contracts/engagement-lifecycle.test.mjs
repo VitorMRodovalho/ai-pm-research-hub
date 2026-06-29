@@ -290,6 +290,8 @@ test('MCP: all write tools use canV4', () => {
     'mark_member_excused',
     'bulk_mark_excused',
     'promote_to_leader_track',
+    'approve_selection_application',
+    'reissue_agreement',
   ];
   for (const tool of writeTools) {
     const toolIndex = mcp.indexOf(`"${tool}"`);
@@ -305,4 +307,54 @@ test('MCP: all write tools use canV4', () => {
 test('MCP: canV4 is fail-closed', () => {
   const mcp = readFileSync(MCP_INDEX, 'utf8');
   assert.ok(mcp.includes('if (error) return false'), 'canV4 must return false on error (fail-closed)');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// #183 / P202 Phase 5 — canonical volunteer-lifecycle MCP tools
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('MCP #183: canonical lifecycle tools registered + explicitly gated', () => {
+  const mcp = readFileSync(MCP_INDEX, 'utf8');
+  // 4 new tools this PR + counter_sign_certificate (pre-existing) = the 5 canonical lifecycle tools.
+  const lifecycleTools = [
+    'approve_selection_application',
+    'list_pending_agreement_engagements',
+    'explain_pending_authority',
+    'reissue_agreement',
+    'counter_sign_certificate',
+  ];
+  for (const tool of lifecycleTools) {
+    assert.ok(mcp.includes(`mcp.tool("${tool}"`), `Lifecycle tool "${tool}" must be registered`);
+  }
+  // No V4-authority bypass (#183 AC): the 4 new tools gate via canV4 + log every path.
+  for (const tool of lifecycleTools.slice(0, 4)) {
+    const i = mcp.indexOf(`mcp.tool("${tool}"`);
+    const next = mcp.indexOf('mcp.tool(', i + 1);
+    const block = mcp.substring(i, next > -1 ? next : mcp.length);
+    assert.ok(block.includes('canV4'), `Lifecycle tool "${tool}" must gate via canV4`);
+    assert.ok(block.includes('logUsage'), `Lifecycle tool "${tool}" must log to mcp_usage_log`);
+  }
+  // Writes (approve, reissue) must carry the two-step confirm/preview guard.
+  for (const tool of ['approve_selection_application', 'reissue_agreement']) {
+    const i = mcp.indexOf(`mcp.tool("${tool}"`);
+    const next = mcp.indexOf('mcp.tool(', i + 1);
+    const block = mcp.substring(i, next > -1 ? next : mcp.length);
+    assert.ok(block.includes('confirm !== true'), `Write lifecycle tool "${tool}" must require confirm=true`);
+  }
+});
+
+test('MCP #183: lifecycle tools appear in the contract matrix', () => {
+  const matrix = JSON.parse(readFileSync(resolve(ROOT, 'docs/reference/mcp-tool-matrix.json'), 'utf8'));
+  const byName = new Map((matrix.tools || []).map(t => [t.name, t]));
+  const expectedGate = {
+    approve_selection_application: 'manage_platform',
+    list_pending_agreement_engagements: 'manage_member',
+    explain_pending_authority: 'manage_member',
+    reissue_agreement: 'manage_member',
+  };
+  for (const [tool, gate] of Object.entries(expectedGate)) {
+    const entry = byName.get(tool);
+    assert.ok(entry, `Tool "${tool}" must appear in the MCP contract matrix`);
+    assert.ok((entry.canV4_actions || []).includes(gate), `Tool "${tool}" matrix gate must include ${gate}`);
+  }
 });

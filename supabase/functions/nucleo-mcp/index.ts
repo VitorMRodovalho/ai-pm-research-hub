@@ -3742,6 +3742,110 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Canonical volunteer-lifecycle tools (#183 / P202 Phase 5). Each wraps a stable
+  // SECDEF RPC (no V4-authority/agreement bypass — the RPC gate is the boundary; the
+  // canV4() pre-check is defense-in-depth + a clean error). counter_sign_certificate
+  // (above) is the 5th lifecycle tool.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // TOOL: approve_selection_application — canonical approval → authoritative V4 graph (#179)
+  mcp.tool("approve_selection_application", "Finalize an approved/converted selection application into the authoritative V4 graph: ensures member + person + engagement (kind=volunteer) + required onboarding steps + an approval notification, and enqueues the volunteer term when the engagement kind requires an agreement. Idempotent — re-running does not duplicate person/engagement. Does NOT flip application status (the application must already be approved or converted). Authority: manage_platform (GP). Two-step confirm — materializes lifecycle records + audit log.", {
+    application_id: z.string().describe("Selection application UUID (must already be status approved or converted)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to apply. Without confirm: preview only.")
+  }, async (params: { application_id: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "approve_selection_application", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "approve_selection_application", false, "Invalid UUID", start); return err("application_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, "manage_platform"))) { await logUsage(sb, member.id, "approve_selection_application", false, "Unauthorized", start); return err("Unauthorized — requires manage_platform (GP)."); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "approve_selection_application", true, undefined, start, "preview");
+      return ok({ action: "approve_selection_application", preview: true, application_id: params.application_id, warning: "Materializes member/person/engagement/onboarding + notification and enqueues the volunteer term when required. Idempotent but audit-logged. Pass confirm=true to apply.", next_call: { ...params, confirm: true } });
+    }
+    const { data, error } = await sb.rpc("approve_selection_application", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "approve_selection_application", false, error.message, start); return err(error.message); }
+    if (data?.success === false) { await logUsage(sb, member.id, "approve_selection_application", false, data.error, start); return err(data.error || "approval failed"); }
+    await logUsage(sb, member.id, "approve_selection_application", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_pending_agreement_engagements — pending-term operational queue (#177/#180)
+  mcp.tool("list_pending_agreement_engagements", "Lists active engagements that require an agreement but have no linked certificate yet (the pending-term queue): per-person kind/role/initiative, whether an agreement notification was already sent, and a next_action hint. Authority: manage_member (GP/board). Read-only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_pending_agreement_engagements", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "list_pending_agreement_engagements", false, "Unauthorized", start); return err("Unauthorized — requires manage_member."); }
+    const { data, error } = await sb.rpc("get_pending_agreement_engagements");
+    if (error) { await logUsage(sb, member.id, "list_pending_agreement_engagements", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "list_pending_agreement_engagements", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "list_pending_agreement_engagements", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: explain_pending_authority — distinguish "no permission" from "authority pending a term" (#182)
+  mcp.tool("explain_pending_authority", "Explains what is blocking authoritative status across the volunteer lifecycle — distinguishing 'no permission' from 'authority pending a term'. Combines the pending-agreement queue (with per-person next_action) and the volunteer-agreement signing summary. Pass member_id to focus on one person; omit for the org-wide picture. Authority: manage_member (GP/board). Read-only.", {
+    member_id: z.string().optional().describe("Optional member UUID to focus the explanation on a single person.")
+  }, async (params: { member_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "explain_pending_authority", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.member_id && !isUUID(params.member_id)) { await logUsage(sb, member.id, "explain_pending_authority", false, "Invalid UUID", start); return err("member_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "explain_pending_authority", false, "Unauthorized", start); return err("Unauthorized — requires manage_member."); }
+    const [pendingRes, statusRes] = await Promise.all([
+      sb.rpc("get_pending_agreement_engagements"),
+      sb.rpc("get_volunteer_agreement_status"),
+    ]);
+    if (pendingRes.error) { await logUsage(sb, member.id, "explain_pending_authority", false, pendingRes.error.message, start); return err(pendingRes.error.message); }
+    const pending: any = pendingRes.data;
+    const agreementStatus: any = statusRes.error ? null : statusRes.data;
+    let pendingList: any[] = Array.isArray(pending?.pending) ? pending.pending : [];
+    let focus: any = null;
+    if (params.member_id) {
+      focus = pendingList.find((p: any) => p.member_id === params.member_id) || null;
+      pendingList = focus ? [focus] : [];
+    }
+    const explanation = {
+      action: "explain_pending_authority",
+      scope: params.member_id ? "member" : "org",
+      member_id: params.member_id || null,
+      pending_authority_total: pending?.total ?? 0,
+      pending_by_kind_role: pending?.by_kind_role ?? [],
+      pending_engagements: pendingList,
+      agreement_signing_summary: agreementStatus?.summary ?? null,
+      note: params.member_id
+        ? (focus
+            ? `Member has a pending-term engagement (${focus.kind}/${focus.role}). next_action: ${focus.next_action}. Authority is gated on the term until a certificate is linked.`
+            : "No pending-term engagement found for this member — if they still lack authority, the gap is engagement existence/role, not an unsigned agreement.")
+        : "Members in pending_engagements hold an engagement that requires an agreement but have no linked certificate yet; their authority is gated until the term is signed (and, for tier-2, counter-signed).",
+    };
+    await logUsage(sb, member.id, "explain_pending_authority", true, undefined, start);
+    return ok(explanation);
+  });
+
+  // TOOL: reissue_agreement — supersede + re-notify a member's current agreement (#177)
+  mcp.tool("reissue_agreement", "Reissues a member's CURRENT volunteer agreement: supersedes the active certificate, clears its engagement link, and notifies the member to re-sign the current term version. Use when a term must be re-signed (version change, correction). For first-time issuance, approve_selection_application enqueues the term automatically and the member self-signs — this tool is the re-trigger path, not first issuance. Authority: manage_member (GP). Two-step confirm — supersedes a certificate + notifies.", {
+    member_id: z.string().describe("Member UUID whose current volunteer agreement should be reissued"),
+    reason: z.string().describe("Reason for reissuance (audit-logged + shown to the member; capped at 500 chars)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to reissue. Without confirm: preview only.")
+  }, async (params: { member_id: string; reason: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "reissue_agreement", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "reissue_agreement", false, "Invalid UUID", start); return err("member_id must be a UUID"); }
+    if (!params.reason || params.reason.trim().length === 0) { await logUsage(sb, member.id, "reissue_agreement", false, "reason required", start); return err("reason is required (audit)."); }
+    if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "reissue_agreement", false, "Unauthorized", start); return err("Unauthorized — requires manage_member."); }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "reissue_agreement", true, undefined, start, "preview");
+      return ok({ action: "reissue_agreement", preview: true, member_id: params.member_id, reason: params.reason, warning: "Supersedes the member's current volunteer agreement and notifies them to re-sign. Audit-logged. Pass confirm=true to apply.", next_call: { ...params, confirm: true } });
+    }
+    const { data, error } = await sb.rpc("reissue_agreement", { p_member_id: params.member_id, p_reason: params.reason });
+    if (error) { await logUsage(sb, member.id, "reissue_agreement", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "reissue_agreement", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "reissue_agreement", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: exec_cert_timeline — exec dashboard cohort metric
   mcp.tool("exec_cert_timeline", "Returns cohort timeline of certificate issuance across N months: rolling pct of cohort that earned tier 1/2 + avg days-to-tier. Used in exec dashboards to track progression health.", {
     months: z.number().optional().describe("Lookback months. Default: 12.")
