@@ -6683,14 +6683,15 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // lock_document_version — freeze a draft + open approval chain
-  mcp.tool("lock_document_version", "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.", {
+  mcp.tool("lock_document_version", "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority. #571 Camada 5: optionally classify the version as 'material' or 'editorial' (change_class) — Material change drives re-acceptance (Termo 15.4.4); change_class is frozen once locked.", {
     version_id: z.string().describe("UUID of document_versions row to lock"),
     gates: z.array(z.object({
       kind: z.string().describe("gate kind: curator | leader_awareness | submitter_acceptance | chapter_witness | president_go | president_others | cert_director_go | member_ratification | external_signer"),
       order: z.number().describe("Gate order in chain (1-indexed)"),
       threshold: z.union([z.string(), z.number()]).describe("'all' or integer N (minimum signatures required)")
-    })).describe("Ordered gate sequence for this approval chain")
-  }, async (params: { version_id: string; gates: Array<{ kind: string; order: number; threshold: string | number }> }) => {
+    })).describe("Ordered gate sequence for this approval chain"),
+    change_class: z.enum(["editorial", "material"]).optional().describe("#571 Camada 5: Material vs Editorial classification (Política 12.2 5-prong). Resolved at lock and frozen thereafter. Omit to leave unclassified (treated as non-material downstream).")
+  }, async (params: { version_id: string; gates: Array<{ kind: string; order: number; threshold: string | number }>; change_class?: "editorial" | "material" }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "lock_document_version", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -6700,6 +6701,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const { data, error } = await sb.rpc("lock_document_version", {
       p_version_id: params.version_id,
       p_gates: params.gates,
+      p_change_class: params.change_class ?? null,
     });
     if (error) { await logUsage(sb, member.id, "lock_document_version", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "lock_document_version", true, undefined, start);

@@ -81,6 +81,8 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
   const [gates, setGates] = useState<Gate[]>([]);
   const [gatesUnsupported, setGatesUnsupported] = useState(false);
   const [changeNotes, setChangeNotes] = useState<string>('');
+  // #571 Camada 5 PR-1: Material vs Editorial classification, resolved at lock.
+  const [changeClass, setChangeClass] = useState<'' | 'editorial' | 'material'>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [locking, setLocking] = useState(false);
   const [signerPreview, setSignerPreview] = useState<SignerCount[]>([]);
@@ -234,6 +236,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
       return;
     }
     setModalOpen(true);
+    setChangeClass(''); // #571 PR-1: force a deliberate Material/Editorial choice each lock
     setPreviewLoading(true);
     setSignerPreview([]);
     const sb = getSb();
@@ -272,6 +275,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
     const res = await sb.rpc('lock_document_version', {
       p_version_id: versionId,
       p_gates: gates,
+      p_change_class: changeClass || null, // #571 Camada 5 PR-1: Material/Editorial
     });
     if (res.error || res.data?.error) {
       setLocking(false);
@@ -294,7 +298,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
     if (res.data?.chain_id) {
       setTimeout(() => { window.location.href = `/admin/governance/documents/${res.data.chain_id}`; }, 800);
     }
-  }, [versionId, gates, changeNotes, getSb]);
+  }, [versionId, gates, changeNotes, changeClass, getSb]);
 
   // ── Delete draft ──
   const deleteDraft = useCallback(async () => {
@@ -432,6 +436,34 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
                 </p>
               </div>
 
+              {/* Section 1.5 — Classificação Material/Editorial (#571 Camada 5 PR-1) */}
+              <div>
+                <p className="text-[12px] font-semibold text-[var(--text-secondary)] mb-1">
+                  Classificação da mudança <span className="text-red-600" aria-hidden="true">*</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-normal"> (obrigatória — fixada na versão ao lacrar; Política 12.2)</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChangeClass('material')}
+                    aria-pressed={changeClass === 'material'}
+                    className={`text-left rounded-lg border px-3 py-2 cursor-pointer ${changeClass === 'material' ? 'border-navy bg-navy/5 ring-1 ring-navy' : 'border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}
+                  >
+                    <span className="block text-[12px] font-bold text-[var(--text-primary)]">Material</span>
+                    <span className="block text-[11px] text-[var(--text-muted)]">Cria/altera obrigação, regime de PI, sanção ou janela de re-aceite — exige re-aceite expresso (Termo 15.4.4).</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChangeClass('editorial')}
+                    aria-pressed={changeClass === 'editorial'}
+                    className={`text-left rounded-lg border px-3 py-2 cursor-pointer ${changeClass === 'editorial' ? 'border-navy bg-navy/5 ring-1 ring-navy' : 'border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}
+                  >
+                    <span className="block text-[12px] font-bold text-[var(--text-primary)]">Editorial</span>
+                    <span className="block text-[11px] text-[var(--text-muted)]">Apenas redacional, sem tocar direitos/obrigações — ciência tácita (art. 111 CC), sem re-aceite.</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Section 2 — Impact preview */}
               <div>
                 <p className="text-[12px] font-semibold text-[var(--text-secondary)] mb-2">
@@ -503,8 +535,9 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
               <button
                 type="button"
                 onClick={lock}
-                disabled={locking}
-                className="rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-1.5 border-0 cursor-pointer hover:opacity-90 disabled:opacity-40"
+                disabled={locking || !changeClass}
+                title={!changeClass ? 'Escolha a classificação Material ou Editorial' : undefined}
+                className="rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-1.5 border-0 cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {locking ? 'Lacrando…' : `Lacrar ${versionLabel || 'versao'} e notificar signatarios`}
               </button>
