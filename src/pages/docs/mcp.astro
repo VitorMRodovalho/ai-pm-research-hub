@@ -1,13 +1,16 @@
 ---
 /**
- * /docs/mcp — Catálogo público das 236 ferramentas MCP do Núcleo IA & GP
+ * /docs/mcp — Catálogo público das ferramentas MCP do Núcleo IA & GP
  *
+ * Contagem viva = `manifest.total` (NÃO hardcode números aqui — eles envelhecem).
  * Conteúdo gerado a partir de `scripts/generate-mcp-manifest.mjs` que parseia
  * `supabase/functions/nucleo-mcp/index.ts`. Catalog é Path B (público + curado):
  * descrições de ferramentas marcadas `is_sensitive` ficam genéricas.
  *
  * Para regerar após mudanças no nucleo-mcp:
  *   node scripts/generate-mcp-manifest.mjs
+ * O frescor é garantido em CI por tests/contracts/mcp-manifest-fresh.test.mjs
+ * (falha o `npm test` se um mcp.tool() for adicionado/removido sem regerar).
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
