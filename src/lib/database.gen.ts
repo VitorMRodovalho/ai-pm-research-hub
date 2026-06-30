@@ -19804,7 +19804,7 @@ export type Database = {
         Returns: Json
       }
       lock_document_version: {
-        Args: { p_gates: Json; p_version_id: string }
+        Args: { p_change_class?: string; p_gates: Json; p_version_id: string }
         Returns: Json
       }
       log_cron_run_complete: {
