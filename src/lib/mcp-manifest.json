@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-30T01:06:47.735Z",
+  "generated_at": "2026-06-30T03:59:02.327Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 330,
   "by_domain": {
@@ -1635,7 +1635,7 @@
     },
     {
       "name": "lock_document_version",
-      "description": "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.",
+      "description": "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority. #571 Camada 5: optionally classify the version as 'material' or 'editorial' (change_class) — Material change drives re-acceptance (Termo 15.4.4); change_class is frozen once locked.",
       "domain": "governance",
       "permission": "write",
       "is_sensitive": false
