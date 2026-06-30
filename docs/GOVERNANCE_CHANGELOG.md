@@ -10,6 +10,17 @@ Referência normativa: Manual de Governança e Operações R2 (DocuSign B2AFB185
 
 ## Decisões Implementadas
 
+### GC-151 — Export Institucional (#572 Block A): Portabilidade de Migração/Encerramento Requer Autorização Formal da Presidência ANTES do Dump
+**Data:** 2026-06-29 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado (mecanismo) + pré-condição de governança (gate humano)
+
+**Decisão:** A capacidade de **portabilidade institucional** (doc4 §6.4 / Parecer 01/2026 rec g) entra como mecanismo GP-operado (mig `20260805000299`, ADR-0112): `pg_dump` (public + z_archive, formato aberto/reimportável) sobre a conexão Postgres direta + 4 RPCs SECDEF de apoio (manifesto de integridade SHA-256, dicionário de dados, settings com segredos redigidos, registro de conclusão). É **distinto** da portabilidade **individual** do titular (Art. 18, V — já entregue por `export_my_data`/#568) — não confundir os dois frameworks.
+
+**Gate humano (pré-condição operacional, NÃO automatizada):** executar um dump institucional real exige, ANTES do `pg_dump`: (1) **autorização formal de migração/encerramento assinada pela presidência do PMI-GO**, arquivada neste changelog; (2) se entrega a operador-sucessor, **DPA/Acordo de Operador** (Art. 39) assinado; (3) confirmação do **DPO** sobre pré-membros (#905, cron dormante) e mídia Art. 11 (voz/imagem — fora do dump, só URLs). O export só é legítimo em migração, encerramento ou requisição da ANPD — **nunca** rotineiro, **nunca** a parceiros/sponsors/auditores. Checklist completo em `docs/operations/INSTITUTIONAL_EXPORT_RUNBOOK.md`.
+
+**Controles compensatórios (no mecanismo):** gate `manage_platform AND caller_chapter_scope() IS NULL` (GP/sede; **não** `view_pii` — evita o vazamento cross-capítulo da FU-2); `REVOKE PUBLIC/anon`; **justificativa obrigatória** (≥10 chars) + **rate-limit 5/30 dias** + **auditoria de duas fases** (Art. 37). Aceitação de risco do PM: autorização por **ator único** (um JWT GP) é detecção/dissuasão, não prevenção — dual-control fica como follow-up dado que o evento é raro e deliberado. Segredos (`auth`/`vault` excluídos; `arm116_calendar_webhook_secret` redigido) nunca entram no dump. Integridade = **snapshot** (não prova de hash-chain do audit log — isso é #574).
+
+**Impacto técnico:** Migration `20260805000299`; ADR-0112; `docs/operations/INSTITUTIONAL_EXPORT_RUNBOOK.md`; `docs/legal/INSTITUTIONAL_EXPORT_DATA_DICTIONARY.md`; `tests/contracts/572-institutional-export.test.mjs`. #572 **permanece aberto** (Block C live; Block A aqui; Block B cross-operador gated em G12/#334).
+
 ### GC-150 — Auditor Institucional: Superfície Agregada 8 → 12 RPCs + Supressão de Célula Pequena (k=5)
 **Data:** 2026-06-29 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado (técnico, behavior-neutral — tier dormante)
 
