@@ -2,15 +2,20 @@
 // scripts/generate-mcp-manifest.mjs
 // Parses supabase/functions/nucleo-mcp/index.ts and emits a JSON manifest of
 // all MCP tools, grouped by domain + permission. Output:
-//   src/lib/mcp-manifest.json  (consumed by /docs/mcp Astro page)
+//   src/lib/mcp-manifest.json  (consumed by the /docs/mcp Astro catalog page)
 //
-// Run: node scripts/generate-mcp-manifest.mjs
+// Run:       node scripts/generate-mcp-manifest.mjs           # regenerate + write
+// Drift:     node scripts/generate-mcp-manifest.mjs --check   # exit 1 if the
+//            on-disk manifest is stale vs index.ts (no write). The same drift is
+//            asserted in CI by tests/contracts/mcp-manifest-fresh.test.mjs, so
+//            adding/removing an mcp.tool() without regenerating fails `npm test`.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const SOURCE_PATH = 'supabase/functions/nucleo-mcp/index.ts';
-const OUTPUT_PATH = 'src/lib/mcp-manifest.json';
+export const SOURCE_PATH = 'supabase/functions/nucleo-mcp/index.ts';
+export const OUTPUT_PATH = 'src/lib/mcp-manifest.json';
 
 const DOMAIN_RULES = [
   [/^(get_my_|set_my_)/, 'personal'],
@@ -52,66 +57,101 @@ function isSensitive(name) {
   return /pii|audit_log|offboard|inactivate|export_audit|chain_audit_report/.test(name);
 }
 
-const text = readFileSync(resolve(SOURCE_PATH), 'utf8');
-const re = /mcp\.tool\(\s*"([^"]+)"\s*,\s*"((?:[^"\\]|\\.)*)"\s*,/g;
-
-const tools = [];
-const seen = new Set();
-let match;
-while ((match = re.exec(text)) !== null) {
-  const name = match[1];
-  if (seen.has(name)) {
-    console.warn(`[warn] duplicate tool name: ${name}`);
-    continue;
+// Pure parser: source text -> { body, duplicates }. `body` excludes the volatile
+// `generated_at` so it can be compared byte-for-byte against the committed file.
+export function buildManifest(text) {
+  const re = /mcp\.tool\(\s*"([^"]+)"\s*,\s*"((?:[^"\\]|\\.)*)"\s*,/g;
+  const tools = [];
+  const seen = new Set();
+  const duplicates = [];
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    const name = match[1];
+    if (seen.has(name)) {
+      duplicates.push(name);
+      continue;
+    }
+    seen.add(name);
+    const description = match[2].replace(/\\"/g, '"').replace(/\\n/g, ' ').trim();
+    const domain = classifyDomain(name);
+    const permission = classifyPermission(name);
+    const sensitive = isSensitive(name);
+    tools.push({
+      name,
+      description: sensitive
+        ? 'Internal admin operation — full details available to authorized members on request.'
+        : description,
+      domain,
+      permission,
+      is_sensitive: sensitive,
+    });
   }
-  seen.add(name);
-  const description = match[2].replace(/\\"/g, '"').replace(/\\n/g, ' ').trim();
-  const domain = classifyDomain(name);
-  const permission = classifyPermission(name);
-  const sensitive = isSensitive(name);
-  tools.push({
-    name,
-    description: sensitive
-      ? 'Internal admin operation — full details available to authorized members on request.'
-      : description,
-    domain,
-    permission,
-    is_sensitive: sensitive,
+
+  const domainOrder = new Map(SAFE_DOMAIN_LIST.map((d, i) => [d, i]));
+  tools.sort((a, b) => {
+    const da = domainOrder.get(a.domain) ?? 99;
+    const db = domainOrder.get(b.domain) ?? 99;
+    if (da !== db) return da - db;
+    const permOrder = { read: 0, write: 1, admin: 2 };
+    if (permOrder[a.permission] !== permOrder[b.permission]) {
+      return permOrder[a.permission] - permOrder[b.permission];
+    }
+    return a.name.localeCompare(b.name);
   });
-}
 
-const domainOrder = new Map(SAFE_DOMAIN_LIST.map((d, i) => [d, i]));
-tools.sort((a, b) => {
-  const da = domainOrder.get(a.domain) ?? 99;
-  const db = domainOrder.get(b.domain) ?? 99;
-  if (da !== db) return da - db;
-  const permOrder = { read: 0, write: 1, admin: 2 };
-  if (permOrder[a.permission] !== permOrder[b.permission]) {
-    return permOrder[a.permission] - permOrder[b.permission];
+  const byDomain = {};
+  const byPermission = {};
+  for (const t of tools) {
+    byDomain[t.domain] = (byDomain[t.domain] || 0) + 1;
+    byPermission[t.permission] = (byPermission[t.permission] || 0) + 1;
   }
-  return a.name.localeCompare(b.name);
-});
 
-const byDomain = {};
-const byPermission = {};
-for (const t of tools) {
-  byDomain[t.domain] = (byDomain[t.domain] || 0) + 1;
-  byPermission[t.permission] = (byPermission[t.permission] || 0) + 1;
+  const body = {
+    source: SOURCE_PATH,
+    total: tools.length,
+    by_domain: byDomain,
+    by_permission: byPermission,
+    sensitive_count: tools.filter(t => t.is_sensitive).length,
+    domain_order: SAFE_DOMAIN_LIST,
+    tools,
+  };
+  return { body, duplicates };
 }
 
-const manifest = {
-  generated_at: new Date().toISOString(),
-  source: SOURCE_PATH,
-  total: tools.length,
-  by_domain: byDomain,
-  by_permission: byPermission,
-  sensitive_count: tools.filter(t => t.is_sensitive).length,
-  domain_order: SAFE_DOMAIN_LIST,
-  tools,
-};
+function main() {
+  const checkMode = process.argv.includes('--check');
+  const text = readFileSync(resolve(SOURCE_PATH), 'utf8');
+  const { body, duplicates } = buildManifest(text);
+  for (const d of duplicates) console.warn(`[warn] duplicate tool name: ${d}`);
 
-writeFileSync(resolve(OUTPUT_PATH), JSON.stringify(manifest, null, 2) + '\n');
-console.log(`[ok] ${tools.length} tools → ${OUTPUT_PATH}`);
-console.log('[ok] by_domain:', byDomain);
-console.log('[ok] by_permission:', byPermission);
-console.log(`[ok] sensitive (sanitized desc): ${manifest.sensitive_count}`);
+  if (checkMode) {
+    let onDisk;
+    try {
+      onDisk = JSON.parse(readFileSync(resolve(OUTPUT_PATH), 'utf8'));
+    } catch (e) {
+      console.error(`[stale] cannot read ${OUTPUT_PATH}: ${e.message}`);
+      process.exit(1);
+    }
+    const { generated_at: _ignored, ...onDiskBody } = onDisk;
+    if (JSON.stringify(onDiskBody) !== JSON.stringify(body)) {
+      console.error(`[stale] ${OUTPUT_PATH} is out of sync with ${SOURCE_PATH}.`);
+      console.error(`  on-disk total=${onDiskBody.total} vs parsed total=${body.total}`);
+      console.error(`  Fix: node scripts/generate-mcp-manifest.mjs && git add ${OUTPUT_PATH}`);
+      process.exit(1);
+    }
+    console.log(`[ok] ${OUTPUT_PATH} is fresh (${body.total} tools).`);
+    return;
+  }
+
+  const manifest = { generated_at: new Date().toISOString(), ...body };
+  writeFileSync(resolve(OUTPUT_PATH), JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`[ok] ${body.total} tools → ${OUTPUT_PATH}`);
+  console.log('[ok] by_domain:', body.by_domain);
+  console.log('[ok] by_permission:', body.by_permission);
+  console.log(`[ok] sensitive (sanitized desc): ${body.sensitive_count}`);
+}
+
+// Only run when executed directly (not when imported by the contract test).
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main();
+}
