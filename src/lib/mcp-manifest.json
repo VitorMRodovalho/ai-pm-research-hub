@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-06-08T00:54:52.417Z",
+  "generated_at": "2026-06-30T01:06:47.735Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 312,
+  "total": 330,
   "by_domain": {
     "personal": 21,
-    "tribe": 95,
-    "board": 67,
+    "tribe": 105,
+    "board": 70,
     "events": 15,
     "governance": 23,
-    "comms": 12,
+    "comms": 13,
     "partners": 11,
-    "gamification": 12,
-    "selection": 26,
+    "gamification": 14,
+    "selection": 27,
     "knowledge": 12,
     "admin": 1,
-    "health": 17
+    "health": 18
   },
   "by_permission": {
-    "read": 205,
-    "write": 98,
+    "read": 218,
+    "write": 103,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -297,6 +297,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_exclusion_declaration",
+      "description": "Returns one of the caller's PI-exclusion declarations with its full Anexo I asset list (sha256, OTS status per asset: unstamped → pending → confirmed; eficácia probatória plena = ALL confirmed, doc7 Cl.4.1). Declarant-only read. #569/ADR-0101.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_ghost_visitors",
       "description": "Returns ghost visitors: authenticated users with no linked member record. Includes fuzzy member name match. Admin/GP only.",
       "domain": "tribe",
@@ -347,7 +354,7 @@
     },
     {
       "name": "get_person",
-      "description": "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.",
+      "description": "Returns the V4 person profile: name, headshot (photo_url), LinkedIn (linkedin_url), location, Credly URL + badges, consent status. Sensitive PII (email, phone, address, birth date, pmi_id) only visible for own record or with view_pii permission. For a ready-to-use comms/divulgação card (parsed credentials + roles + clearance) prefer get_member_comms_card.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -507,6 +514,13 @@
       "is_sensitive": false
     },
     {
+      "name": "list_drive_revocation_pending",
+      "description": "Lista permissões Google Drive de ex-membros (offboarded) detectadas pelo scan semanal, aguardando revisão/revogação. Mostra arquivo, e-mail/role da permissão, status e erro do Google (quando falha). Authority: manage_member (GP). Default status=pending_revoke; passe status='all' para todos.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_initiative_engagements",
       "description": "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.",
       "domain": "tribe",
@@ -528,8 +542,22 @@
       "is_sensitive": false
     },
     {
+      "name": "list_my_exclusion_declarations",
+      "description": "Lists the caller's PI-exclusion declarations (doc7 — Declaração de Exclusão de PI e Autoria Independente) with per-declaration asset counts. Statuses: draft/active (accepting assets) | revoked (terminal). #569/ADR-0101.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_open_initiatives",
       "description": "Returns initiatives accepting new members via self-service (join_policy='request_to_join' or 'open'). Includes per-initiative has_active_engagement + has_pending_invitation flags so you can filter what you can actually join.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_pending_agreement_engagements",
+      "description": "Lists active engagements that require an agreement but have no linked certificate yet (the pending-term queue): per-person kind/role/initiative, whether an agreement notification was already sent, and a next_action hint. Authority: manage_member (GP/board). Read-only.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -591,8 +619,22 @@
       "is_sensitive": false
     },
     {
+      "name": "reissue_agreement",
+      "description": "Reissues a member's CURRENT volunteer agreement: supersedes the active certificate, clears its engagement link, and notifies the member to re-sign the current term version. Use when a term must be re-signed (version change, correction). For first-time issuance, approve_selection_application enqueues the term automatically and the member self-signs — this tool is the re-trigger path, not first issuance. Authority: manage_member (GP). Two-step confirm — supersedes a certificate + notifies.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "request_to_join_initiative",
       "description": "Request to join an initiative via self-service (Notion-style). Initiative must have join_policy='request_to_join' or 'open'. Message MUST be at least 50 characters describing your motivation. Owner of initiative will review and accept/decline. Default engagement kind inferred by initiative kind (study_group_participant, workgroup_member, committee_member, volunteer, observer).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "revoke_exclusion_declaration",
+      "description": "Revokes one of the caller's PI-exclusion declarations (TERMINAL — cannot be undone; register_exclusion_asset rejects revoked declarations). Assets and .ots proofs are KEPT through the retention window (eliminated 5y post-revocation by ots-retention-monthly — LGPD Art. 7º IX, exceção ao Art. 18 VI) and the revocation is audited. Declarant-only — a view_pii admin can fetch the PREVIEW (the read is logged to pii_access_log) but the confirm step is denied. #569/ADR-0101.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -661,6 +703,20 @@
       "is_sensitive": false
     },
     {
+      "name": "approve_drive_revocation",
+      "description": "Aprova a revogação de UMA permissão Drive de ex-membro (linha drive_offboarding_audit) e executa a remoção via Service Account imediatamente. Authority: manage_member (GP). Retorna o resultado do Google inline (revoked | already_absent | failed). NB: enquanto a SA não tiver papel organizer nas pastas, o Google retorna 403 e a linha fica 'failed' com a mensagem — comportamento esperado (gated, ADR-0094 G4.1).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "bulk_approve_drive_revocations",
+      "description": "Aprova e revoga TODAS as permissões Drive pendentes de um ex-membro de uma vez. Authority: manage_member (GP). Retorna resultado por linha. Mesma observação de 403-até-elevação-de-papel do approve_drive_revocation. Se o membro tiver >100 pendências, as excedentes ficam status='approved' e são drenadas pelo cron horário (revoke-drive-drain-hourly).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "bulk_mark_excused",
       "description": "Mark a member as excused for ALL eligible events in a date range (e.g. 'off the whole month'). Initiative leaders can mark members of shared initiatives. Org-scope admins (manage_event globally) can mark anyone.",
       "domain": "tribe",
@@ -684,6 +740,13 @@
     {
       "name": "create_drive_subfolder",
       "description": "Cria subpasta dentro de uma pasta Drive existente via Service Account. Optional auto-link: se auto_link_to_initiative_id fornecido, registra automaticamente em initiative_drive_links com link_purpose. Use case: 'Cria pasta /Atas dentro do workspace da Tribo X e vincula como purpose=minutes'. Authority: rls_is_member para create + write_initiative para auto-link.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "create_exclusion_declaration",
+      "description": "Creates a new PI-exclusion declaration (doc7 instance) for the caller. Returns the declaration UUID — then add Anexo I rows with register_exclusion_asset. Lifecycle is audited (admin_audit_log). #569/ADR-0101.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -787,6 +850,13 @@
       "is_sensitive": false
     },
     {
+      "name": "register_exclusion_asset",
+      "description": "Adds an Anexo I row (a pre-existing work) to one of the caller's draft/active PI-exclusion declarations. DIGEST-ONLY: pass the SHA-256 of the work — the file itself never leaves the Núcleo (compute locally, e.g. `sha256sum file`). The asset enters the OTS pipeline as 'unstamped'; the daily cron stamps it (pending) and later anchors it on Bitcoin (confirmed). #569/ADR-0101.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
       "name": "resolve_action_item",
       "description": "Resolve a meeting action item. Optionally carry-forward to a future event (creates a new linked action item there). Resolution_note recommended for audit trail. Requires manage_event (ADR-0046, #84 Onda 2 partial).",
       "domain": "tribe",
@@ -847,6 +917,20 @@
       "description": "Self-service exit from an initiative. Caller's active engagement is revoked with reason logged. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the only active holder of a required engagement kind for this initiative (e.g. sole study_group_owner) — transfer the role first via an admin/coordinator. Returns a preview payload unless confirm=true (ADR-0018 W1). Irreversible after confirm.",
       "domain": "tribe",
       "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "force_grant_curation_drive_access",
+      "description": "Concede (ou re-concede) acesso temporário 'commenter' aos curadores nos artefatos Drive de um card em curadoria, executando via Service Account imediatamente. Authority: manage_platform (GP). Normalmente o grant é automático no handoff para curation_pending; use para remediar falhas. Mesma observação 403-até-elevação-de-papel do #209. Retorna resultado por linha.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "force_revoke_curation_drive_access",
+      "description": "Revoga o acesso temporário de Drive concedido aos curadores nos artefatos de um card (executa o DELETE via Service Account imediatamente). Authority: manage_platform (GP). Normalmente a revogação é automática quando o item sai da curadoria; use para remediação. Retorna resultado por linha.",
+      "domain": "board",
+      "permission": "read",
       "is_sensitive": false
     },
     {
@@ -935,7 +1019,7 @@
     },
     {
       "name": "get_curation_queue_state",
-      "description": "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. For curate_content/manage_platform callers each item also carries Drive grant state (drive_permission_status, drive_grant_role, drive_grant_errors, missing_drive_access, temporary_access_expires_or_revokes_on). Read access requires curate_content, write_board, or participate_in_governance_review.",
+      "description": "Returns the curation queue with normalized per-item state: curation_status, SLA, review round/count, per-caller eligible_actions, and a caller capability block. For curate_content/manage_platform callers each item also carries Drive grant state (drive_permission_status missing|pending|error|ready, drive_grant_role, drive_grant_errors, missing_drive_access, temporary_access_expires_or_revokes_on). Read access requires curate_content, write_board, or participate_in_governance_review.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1048,6 +1132,13 @@
     {
       "name": "list_card_drive_files",
       "description": "Lista arquivos Drive vinculados a um card via plataforma. Retorna metadata (filename, size, mime_type, uploaded_by, drive_file_url). Skips soft-deleted.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "list_curation_drive_grants",
+      "description": "Lista os grants temporários de Drive da curadoria (#301): por status/card, com curador, e-mail, arquivo, permission_id e erro do Google. Authority: manage_platform (GP). status omitido = todos. O grant é automático no handoff para curation_pending; esta tool é observabilidade.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1460,7 +1551,7 @@
     },
     {
       "name": "get_pending_ratifications",
-      "description": "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.",
+      "description": "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | cert_director_go | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.",
       "domain": "governance",
       "permission": "read",
       "is_sensitive": false
@@ -1620,6 +1711,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_member_comms_card",
+      "description": "Returns a member's COMMS/divulgação card for banners, social posts, and decks: headshot (photo URL), display name, LinkedIn URL, credentials (PMP, PMI-CPMAI, etc.), Credly URL, and active roles/initiatives (for credits). Look up by name (`query`) or `person_id` — if a name matches more than one person it returns a disambiguation list (`ambiguous: true, matches: [...]`). Does NOT return email/phone/address. Includes `comms_clearance` (true when the member signed the volunteer term whose Cláusula 11 authorizes image use; false + `clearance_reason` otherwise — the controller decides usage, the route does not block). Gate: manage_event OR manage_member (comms/event leaders + admin/GP).",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_tribe_webinars",
       "description": "Returns webinars for your tribe or chapter.",
       "domain": "comms",
@@ -1753,6 +1851,20 @@
       "is_sensitive": false
     },
     {
+      "name": "explain_pending_authority",
+      "description": "Explains what is blocking authoritative status across the volunteer lifecycle — distinguishing 'no permission' from 'authority pending a term'. Combines the pending-agreement queue (with per-person next_action) and the volunteer-agreement signing summary. Pass member_id to focus on one person; omit for the org-wide picture. Authority: manage_member (GP/board). Read-only.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "export_anexo_i",
+      "description": "Exports the filled Anexo I of a PI-exclusion declaration (doc7): per-asset rows (titulo, natureza, sha256, OTS status, Bitcoin anchor block+UTC when confirmed) + the all_confirmed flag (eficácia probatória plena requires ALL assets confirmed — 'pending' is NOT yet anchored, doc7 Cl.4.1) + the digest-only legal notice. Art. 18 II LGPD: this is the portability path for the PROOF ARTIFACTS — complements export_my_data's pi_exclusion section (metadata only). Declarant self-service; admins with view_pii read org-fenced (access logged to pii_access_log, LGPD Art. 37). #569/ADR-0101 Slice 4.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_champions_ranking",
       "description": "Ranking of Champion recipients within scope (global or initiative) for a cycle. Returns aggregated stats: total_points + counts by surface (general/tribe/deliverable). Respects LGPD opt-out (gamification_opt_out). Limit clamp [1,100]. Useful for /tribe/[id] leaderboard or /admin transparency UX.",
       "domain": "gamification",
@@ -1761,7 +1873,7 @@
     },
     {
       "name": "get_initiative_gamification",
-      "description": "Returns the gamification ranking inside any initiative (workgroup, study_group, committee, etc.) by initiative UUID. Use list_initiatives to find UUIDs. For tribes use get_tribe_gamification with the tribe_id.",
+      "description": "Returns the gamification ranking for a standalone initiative (workgroup, study_group, committee, etc.) by initiative UUID. Caller must be an active participant of the initiative (any role) or hold the view_internal_analytics capability — otherwise returns {error: 'Unauthorized'} (#600 fail-closed gate). Tribe-backed initiatives delegate to get_tribe_gamification (own gate). Use list_initiatives to find UUIDs; for tribes prefer get_tribe_gamification with the tribe_id.",
       "domain": "gamification",
       "permission": "read",
       "is_sensitive": false
@@ -1953,6 +2065,13 @@
       "description": "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.",
       "domain": "selection",
       "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "approve_selection_application",
+      "description": "Finalize an approved/converted selection application into the authoritative V4 graph: ensures member + person + engagement (kind=volunteer) + required onboarding steps + an approval notification, and enqueues the volunteer term when the engagement kind requires an agreement. Idempotent — re-running does not duplicate person/engagement. Does NOT flip application status (the application must already be approved or converted). Authority: manage_platform (GP). Two-step confirm — materializes lifecycle records + audit log.",
+      "domain": "selection",
+      "permission": "write",
       "is_sensitive": false
     },
     {
@@ -2154,6 +2273,13 @@
     {
       "name": "get_lgpd_cron_health",
       "description": "Returns LGPD compliance cron health snapshot: 3 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly) with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y count of members 5y+ inactive not yet anonymized. Health signal: green (all crons <=35d), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + cron silent >35d). Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_ots_pipeline_health",
+      "description": "Returns the OpenTimestamps PI-exclusion pipeline health snapshot (#569/ADR-0101): pi_exclusion declarations/assets counts by status, retry-exhausted assets (stamp_attempts >= 5 — these silently fall OUT of the stamping claim and need intervention), claim-eligible backlog, oldest unstamped/pending ages, and the 3 cron jobs (ots-stamp-daily 02:10 UTC, ots-upgrade-daily 02:40 UTC, ots-retention-monthly) with last_run/failed_runs. Health signal: green (work draining, jobs fresh), yellow (newly scheduled / nothing to do / pending un-anchored >7d), red (exhausted work, failed runs, or backlog with stale daily jobs). Eficácia probatória plena (doc7 Cl.4.1) = 'confirmed', not 'pending'. Authority: view_internal_analytics. NOTE: pg_cron 'succeeded' does not imply the EF call returned 200 (#618) — cross-check net._http_response (TTL ~6h) when investigating.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
