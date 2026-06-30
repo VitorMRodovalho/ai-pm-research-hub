@@ -27,14 +27,21 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
 const MIG_DASH_PATH = 'supabase/migrations/20260805000157_625_admin_dashboard_active_members_exclude_pre_onboarding.sql';
+// The #625 file-level assertions (anchor / ACL / NOTIFY) stay pinned to the #625 migration (158).
 const MIG_GATE_PATH = 'supabase/migrations/20260805000158_625_can_sign_gate_volunteers_in_role_active_exclude_pre_onboarding.sql';
 const MIG_DASH = readFileSync(MIG_DASH_PATH, 'utf8');
 const MIG_GATE = readFileSync(MIG_GATE_PATH, 'utf8');
+// _can_sign_gate's CANONICAL capture moves whenever a PR legitimately extends it: #975 PR-3 (mig 303,
+// Gate Matrix v3) re-captured it verbatim + added committee_majority/partner_consultation. The live
+// md5 drift check + branch reproductions below track this canonical body (which still contains the
+// #625 branch verbatim). Repoint when _can_sign_gate is next re-captured.
+const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000303_975_pr3_camada5_material_ratification_chain.sql';
+const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
 
 const bodyOf = (src, fnName) =>
   (src.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fnName}[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`)) || [])[1] ?? '';
 const DASH_BODY = bodyOf(MIG_DASH, 'get_admin_dashboard');
-const GATE_BODY = bodyOf(MIG_GATE, '_can_sign_gate');
+const GATE_BODY = bodyOf(MIG_GATE_CANONICAL, '_can_sign_gate');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -110,7 +117,7 @@ describe('p625-sweep — DB-gated (skip without env)', () => {
     const fn = (data ?? []).find((f) => f.proname === '_can_sign_gate');
     assert.ok(fn, '_can_sign_gate exists live');
     assert.equal(fn.is_secdef, true);
-    assert.equal(fn.body_md5, await md5Norm(GATE_BODY), 'live _can_sign_gate drifted from mig 158');
+    assert.equal(fn.body_md5, await md5Norm(GATE_BODY), 'live _can_sign_gate drifted from its latest canonical capture (mig 303, #975 PR-3)');
   });
 
   it('both migrations registered once (no wall-clock shadow row)', { skip: !sb }, async () => {
