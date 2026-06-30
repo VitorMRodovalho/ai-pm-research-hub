@@ -91,18 +91,18 @@ const ALLOWLIST = new Set([
 // ─────────────────────────────────────────────────────────────────────────
 test('#965 migration revokes PUBLIC/anon/authenticated on the 6 side-effect fns + keeps service_role', () => {
   assert.ok(sql, `migration file missing at expected path: ${MIGRATION_PATH}`);
+  // Literal substring checks (no RegExp built from a variable — avoids incomplete-escaping, js/incomplete-sanitization).
   for (const sig of REVOKED) {
-    const esc = sig.replace(/[()]/g, '\\$&');
-    assert.match(sql, new RegExp(`REVOKE EXECUTE ON FUNCTION public\\.${esc} FROM PUBLIC, anon, authenticated`), `must revoke ${sig}`);
-    assert.match(sql, new RegExp(`GRANT  ?EXECUTE ON FUNCTION public\\.${esc} TO service_role`), `must keep service_role on ${sig}`);
+    assert.ok(sql.includes(`REVOKE EXECUTE ON FUNCTION public.${sig} FROM PUBLIC, anon, authenticated`), `must revoke ${sig}`);
+    assert.ok(sql.includes(`GRANT  EXECUTE ON FUNCTION public.${sig} TO service_role`), `must keep service_role on ${sig}`);
   }
   // token-gated dispatchers must NOT be revoked here
-  assert.doesNotMatch(sql, /REVOKE EXECUTE ON FUNCTION public\.request_application_enrichment/, 'token-gated request_application_enrichment must NOT be revoked');
-  assert.doesNotMatch(sql, /REVOKE EXECUTE ON FUNCTION public\.opt_out_all_pillars/, 'token-gated opt_out_all_pillars must NOT be revoked');
+  assert.ok(!sql.includes('REVOKE EXECUTE ON FUNCTION public.request_application_enrichment'), 'token-gated request_application_enrichment must NOT be revoked');
+  assert.ok(!sql.includes('REVOKE EXECUTE ON FUNCTION public.opt_out_all_pillars'), 'token-gated opt_out_all_pillars must NOT be revoked');
   // forward-defense audit RPC present, has_function_privilege-based, + itself locked down
-  assert.match(sql, /CREATE OR REPLACE FUNCTION public\._audit_secdef_public_grant_drift\(\)/);
-  assert.match(sql, /has_function_privilege\('anon', p\.oid, 'EXECUTE'\)/);
-  assert.match(sql, /REVOKE EXECUTE ON FUNCTION public\._audit_secdef_public_grant_drift\(\) FROM PUBLIC, anon, authenticated/);
+  assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public._audit_secdef_public_grant_drift()'), 'audit RPC must be defined');
+  assert.ok(sql.includes("has_function_privilege('anon', p.oid, 'EXECUTE')"), 'audit RPC must use has_function_privilege per-oid');
+  assert.ok(sql.includes('REVOKE EXECUTE ON FUNCTION public._audit_secdef_public_grant_drift() FROM PUBLIC, anon, authenticated'), 'audit RPC must be locked down');
 });
 
 // ─────────────────────────────────────────────────────────────────────────
