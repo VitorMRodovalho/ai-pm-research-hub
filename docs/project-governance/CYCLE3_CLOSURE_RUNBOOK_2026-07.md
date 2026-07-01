@@ -52,10 +52,17 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
   (`action='cron.offboard_executed'`).
 - **Auto-effect:** `alumni_recognition` cert auto-emitted (return-preserving reason); designations cleared;
   engagements offboarded; `is_active=false` → RLS cuts platform access.
-- **Manual tail (NOT done by the cron / RPC):**
-  - **Google Drive** access — enqueue revocation so `revoke-drive-drain-hourly` (jobid 64) drains it, or use the
-    drive-offboarding tooling (`DRIVE_OFFBOARDING_CASCADE.md` / `approve_drive_revocation`).
+- **Drive revocation tail (post-offboard, by design — NOT pre-enqueueable).** The queue (`drive_offboarding_
+  audit`) is populated by the **detection EF** (`audit-drive-offboarding-access`) which only matches members
+  **already offboarded** (`member_status` alumni/inactive + `offboarded_at` set). Mechanism verified functional
+  (10/10 `revoked`, 0 failed; SA role elevation done). Sequence, once Antonio is alumni (03/07):
+  1. **Detection** queues his Drive permissions — auto via the **weekly cron (Mon 06/07 05:00 UTC)**, or trigger
+     same-day 03/07 with a manual POST to the detection EF (service-role bearer).
+  2. **GP approve** (deliberate `manage_member` review gate): `bulk_approve_drive_revocations('f74e…')`.
+  3. **Drain** (`revoke-drive-drain-hourly`, jobid 64) does the actual Drive DELETE within the hour.
   - **WhatsApp group** removal — external, manual.
+  - **Cannot enqueue before 03/07** — he's still `active`; detection would not match him and pre-cutting would
+    strip his access before the 02/07 event.
 - **Cleanup:** after 03/07, `SELECT cron.unschedule('offboard-antonio-c3-2026-07-03');` (cosmetic — guards make it
   inert otherwise).
 - **Verify 03/07:** member `member_status='alumni'`; `alumni_recognition` cert present; Drive/WhatsApp revoked.
@@ -71,6 +78,8 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
   p_reason_category => 'end_of_cycle', p_reassign_to => <successor member_id>)` (auto `alumni_recognition`;
   `p_reassign_to` moves the leader's open `board_items`). Then promote the successor to the tribe-leader track.
 - Until #1020 exists, track card/board/task ownership handoff manually.
+- **Drive:** same post-offboard flow as §3 (detection → GP `bulk_approve_drive_revocations` → drain). Do **not**
+  revoke before her offboard — she is still an active tribe leader until the successor takes over.
 
 ---
 
