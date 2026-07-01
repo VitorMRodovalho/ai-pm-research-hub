@@ -21,7 +21,6 @@ const ADP_I18N = {
   lifecycleTotalEver: t('admin.adoption.lifecycleTotalEver', lang),
   lifecycleActiveC3: t('admin.adoption.lifecycleActiveC3', lang),
   lifecycleAlumni: t('admin.adoption.lifecycleAlumni', lang),
-  lifecycleObservers: t('admin.adoption.lifecycleObservers', lang),
   lifecycleRetention: t('admin.adoption.lifecycleRetention', lang),
   lifecycleFounders: t('admin.adoption.lifecycleFounders', lang),
   // Stakeholders
@@ -390,7 +389,7 @@ const ADP_I18N = {
     kpiActive7d: 'Ativos 7d', kpiActive30d: 'Ativos 30d',
     kpiNeverSeen: 'Nunca acessou', kpiSessionsPerMember: 'Sessões/membro',
     lifecycleTotalEver: 'Total histórico', lifecycleActiveC3: 'Ativos C3',
-    lifecycleAlumni: 'Alumni/Inativos', lifecycleObservers: 'Observers ativos',
+    lifecycleAlumni: 'Alumni',
     lifecycleRetention: 'Retenção C2→C3', lifecycleFounders: 'Founders ativos',
     stakeholderSponsors: 'Sponsors (Presidentes)', stakeholderLiaisons: 'Pontos Focais',
     stakeholderFounders: 'Founders', withAuthSuffix: 'com auth',
@@ -500,7 +499,6 @@ const ADP_I18N = {
         miniCard(T.lifecycleTotalEver, lc.total_ever || 0, 'text-navy'),
         miniCard(T.lifecycleActiveC3, lc.active_c3 || 0, 'text-emerald-600'),
         miniCard(T.lifecycleAlumni, lc.alumni || 0, 'text-gray-500'),
-        miniCard(T.lifecycleObservers, lc.observers_active || 0),
         miniCard(T.lifecycleRetention, `${lc.retention_c2_c3 || 0}%${lc.retention_basis ? ` (${String(lc.retention_basis).replace('->', '→')})` : ''}`, 'text-blue-600'),
         miniCard(T.lifecycleFounders, `${lc.founders_active || 0}/${lc.founders_total || 0}`, lc.founders_active >= lc.founders_total ? 'text-emerald-600' : 'text-amber-600'),
       ].join('');
