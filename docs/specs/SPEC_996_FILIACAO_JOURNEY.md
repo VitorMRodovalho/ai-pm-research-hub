@@ -1,7 +1,7 @@
 # SPEC 996 — Jornada de Verificação de Filiação (enriquecida)
 
 - **Issue:** #996 (melhoria) · depende de **#995** (bug do parser `pmi_memberships`)
-- **Status:** planejamento (não implementar nesta branch)
+- **Status:** planejamento (não implementar nesta branch) · **§6 decidido pelo PM = opção (a) "só membresia"**
 - **Data:** 2026-07-01
 - **Rota afetada:** `/admin/filiacao` · componente `src/components/admin/AffiliationQueueIsland.tsx`
 - **Autoridade de escrita (inalterada):** RPC SECURITY DEFINER + gate `filiacao_director` / `manage_member` + atestação F1b (`trg_affiliation_attestation`)
@@ -83,15 +83,22 @@ Substituir as 2 abas fixas por controles combináveis:
 - Frontend: `brChapters()` tolerante a string|objeto (resolvido por #995); novos filtros são estado de client
   sobre a coorte; nenhum novo endpoint de escrita.
 
-## 6. Decisão em aberto para o PM
+## 6. Decisão do PM — radar de expiração por capítulo
 
-**Radar de expiração por capítulo.** A fonte automática não traz a data. Opções:
-- **(a) Só membresia (recomendado):** farol automático = ativo/inativo (VEP); expiração só quando a diretoria
+> **DECIDIDO (PM, 2026-07-01): opção (a) — "só membresia".** Farol automático = ativo/inativo derivado do VEP;
+> a **data de expiração é manual** (entrada da diretoria no modal, gravada em
+> `member_affiliation_verifications.membership_expires_on`). **Não** haverá farol de expiração automático por
+> capítulo — a fonte não expõe a data e um farol derivado seria falso. As opções (b)/(c) ficam registradas como
+> caminho futuro caso a fonte passe a expor renovação por capítulo, mas **não** entram no escopo do #996.
+
+Contexto da decisão — a fonte automática não traz a data. Opções avaliadas:
+- **(a) Só membresia ✅ ESCOLHIDA:** farol automático = ativo/inativo (VEP); expiração só quando a diretoria
   digita a data. Simples e honesto.
-- **(b) Enriquecer o worker:** investigar se `community.pmi.org` expõe data de renovação por capítulo num campo
-  ainda não raspado (não há evidência hoje; `script-mapper.ts:78` só recebe nomes). Seria issue separada de
-  pipeline, alto custo, incerto.
-- **(c) Manual-first com lembrete:** entrada manual + cron de "radar de renovação" reusando `membership_expires_on`.
+- **(b) Enriquecer o worker (futuro, fora de escopo):** investigar se `community.pmi.org` expõe data de renovação
+  por capítulo num campo ainda não raspado (não há evidência hoje; `script-mapper.ts:78` só recebe nomes). Issue
+  separada de pipeline, alto custo, incerto.
+- **(c) Manual-first com lembrete (futuro, fora de escopo):** entrada manual + cron de "radar de renovação"
+  reusando `membership_expires_on`. Reconsiderar se a diretoria pedir lembretes ativos de vencimento.
 
 ## 7. Invariantes a preservar (não re-litigar)
 - Escrita **só** via RPC SECURITY DEFINER + gate `filiacao_director`/`manage_member` + atestação F1b.
