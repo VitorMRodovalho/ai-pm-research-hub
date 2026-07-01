@@ -94,7 +94,7 @@ Tabela nova (não extensão de `board_item_files`: um item tem N arquivos; "arte
 CREATE TABLE public.curation_artifact_snapshots (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id     uuid NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
-  initiative_id       uuid NOT NULL,          -- DENORMALIZADO de board_items no capture (gate ADR-0105 sem JOIN)
+  initiative_id       uuid,                   -- NULLABLE (grounding #988): board_item.board_id -> project_boards.initiative_id é nullable (2/25 boards org-level; NULL=visível, rls_can_see_initiative(NULL)=TRUE). DENORMALIZADO no capture p/ gate ADR-0105 sem JOIN
   board_item_id       uuid NOT NULL REFERENCES public.board_items(id) ON DELETE RESTRICT,
   board_item_file_id  uuid REFERENCES public.board_item_files(id)  ON DELETE RESTRICT,  -- nullable
   document_version_id uuid REFERENCES public.document_versions(id) ON DELETE RESTRICT,  -- nullable (a FK É a versão, imutável ADR-0113)
