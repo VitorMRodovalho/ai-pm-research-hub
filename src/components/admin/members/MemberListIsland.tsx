@@ -223,7 +223,9 @@ export default function MemberListIsland() {
 
   // Offboarding state
   const [offboardMember, setOffboardMember] = useState<MemberRow | null>(null);
-  const [offboardStatus, setOffboardStatus] = useState('observer');
+  // #1022-C: offboard targets are 'alumni' | 'inactive' only ('observer' retired — non-volunteer
+  // unbound by the term = LGPD/IP exposure; see admin_offboard_member + ADR-0071 Amendment 3).
+  const [offboardStatus, setOffboardStatus] = useState('alumni');
   const [offboardCategory, setOffboardCategory] = useState('time');
   const [offboardDetail, setOffboardDetail] = useState('');
   const [offboardReassign, setOffboardReassign] = useState('');
@@ -877,7 +879,7 @@ export default function MemberListIsland() {
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-between gap-2 flex-shrink-0">
               <div className="flex gap-2">
                 {editMember.is_active ? (
-                  <button onClick={() => { setOffboardMember(editMember); setOffboardStatus('observer'); setOffboardCategory('time'); setOffboardDetail(''); setOffboardReassign(''); closeEdit(); }}
+                  <button onClick={() => { setOffboardMember(editMember); setOffboardStatus('alumni'); setOffboardCategory('time'); setOffboardDetail(''); setOffboardReassign(''); closeEdit(); }}
                     className="px-3 py-2 rounded-lg text-[12px] font-semibold border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-50 cursor-pointer">
                     Gerenciar Status
                   </button>
@@ -1020,10 +1022,10 @@ export default function MemberListIsland() {
               <div>
                 <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Novo Status</label>
                 <div className="flex gap-2">
-                  {(['observer', 'alumni', 'inactive'] as const).map(s => (
+                  {(['alumni', 'inactive'] as const).map(s => (
                     <button key={s} onClick={() => setOffboardStatus(s)}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${offboardStatus === s ? 'bg-amber-100 border-amber-400 text-amber-800' : 'border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)]'}`}>
-                      {s === 'observer' ? '👁 Observer' : s === 'alumni' ? '🎓 Alumni' : '⏸ Inativo'}
+                      {s === 'alumni' ? '🎓 Alumni' : '⏸ Inativo'}
                     </button>
                   ))}
                 </div>
