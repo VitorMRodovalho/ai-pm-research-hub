@@ -4023,7 +4023,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== CERTIFICATES PUBLIC (issue #86 — external verification) =====
 
   // TOOL: verify_certificate (public — no auth required by design)
-  mcp.tool("verify_certificate", "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.", {
+  mcp.tool("verify_certificate", "Verifies a certificate's authenticity by its verification code. For a valid, currently-issued certificate returns metadata only: type, title, recipient (holder) name, issue date, issuing organization, and whether it was counter-signed (with date). Issuer and counter-signer individual names are never returned (LGPD minimization, #991); any non-issued code (missing, revoked, rejected, superseded) returns {valid:false} with no further detail. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.", {
     verification_code: z.string().describe("Unique verification code printed on the certificate PDF")
   }, async (params: { verification_code: string }) => {
     const start = Date.now();

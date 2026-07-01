@@ -58,53 +58,15 @@ const { code } = Astro.params;
   }
 
   function renderResult(data: any, lang: Lang): string {
-    if (!data || data.error === 'not_found') {
+    // #991: the RPC is status-oracle-free — any code that is not a currently-issued
+    // certificate (not found, revoked, rejected, superseded) returns an
+    // indistinguishable {valid:false}. We render one generic "not valid" state;
+    // members see revocation/rejection reasons on the authenticated /certificates page.
+    if (!data || data.valid !== true) {
       return `<div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
-        <div class="text-3xl mb-2">\u26A0\uFE0F</div>
-        <p class="font-semibold text-amber-800 dark:text-amber-300">${t('verify.notFound', lang)}</p>
-        <p class="text-sm text-amber-600 dark:text-amber-400 mt-1">${t('verify.notFoundHint', lang)}</p>
-      </div>`;
-    }
-
-    if (data.revoked) {
-      return `<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-        <div class="text-center mb-4"><div class="text-3xl mb-2">\u274C</div>
-          <p class="font-bold text-red-800 dark:text-red-300 text-lg">${t('verify.revoked', lang)}</p></div>
-        <div class="divide-y divide-[var(--border-subtle)]">
-          ${row(t('verify.type', lang), esc(data.title))}
-          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
-          ${data.revoked_at ? row(t('verify.revokedAt', lang), `<span class="text-red-600 dark:text-red-400">${fmtDate(data.revoked_at, lang)}</span>`) : ''}
-          ${data.revoked_reason ? row(t('verify.revokedReason', lang), esc(data.revoked_reason)) : ''}
-        </div>
-      </div>`;
-    }
-
-    // W3c-ii (B8): a rejected term was returned by a director/admin (the volunteer must re-sign).
-    // Rejection reuses revoked_at/revoked_reason on the DB side (3c-i).
-    if (data.rejected) {
-      return `<div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
-        <div class="text-center mb-4"><div class="text-3xl mb-2">\u21A9\uFE0F</div>
-          <p class="font-bold text-orange-800 dark:text-orange-300 text-lg">${t('verify.rejected', lang)}</p></div>
-        <div class="divide-y divide-[var(--border-subtle)]">
-          ${row(t('verify.type', lang), esc(data.title))}
-          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
-          ${data.revoked_at ? row(t('verify.rejectedAt', lang), `<span class="text-orange-600 dark:text-orange-400">${fmtDate(data.revoked_at, lang)}</span>`) : ''}
-        </div>
-      </div>`;
-    }
-    // Note: the rejection REASON (admin-authored governance rationale) is deliberately NOT shown on
-    // this anonymous verification surface (LGPD minimization). The member sees it on /certificates.
-
-    // W3c-ii (B8): a superseded term was replaced by a reissued one (no longer the current document).
-    if (data.superseded) {
-      return `<div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-        <div class="text-center mb-4"><div class="text-3xl mb-2">\u267B\uFE0F</div>
-          <p class="font-bold text-slate-700 dark:text-slate-300 text-lg">${t('verify.superseded', lang)}</p></div>
-        <div class="divide-y divide-[var(--border-subtle)]">
-          ${row(t('verify.type', lang), esc(data.title))}
-          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
-        </div>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-3 text-center">${t('verify.supersededHint', lang)}</p>
+        <div class="text-3xl mb-2">⚠️</div>
+        <p class="font-semibold text-amber-800 dark:text-amber-300">${t('verify.invalid', lang)}</p>
+        <p class="text-sm text-amber-600 dark:text-amber-400 mt-1">${t('verify.invalidHint', lang)}</p>
       </div>`;
     }
 
@@ -112,14 +74,17 @@ const { code } = Astro.params;
       row(t('verify.type', lang), esc(data.type || data.title)),
       row(t('verify.issuedTo', lang), `<span class="font-bold">${esc(data.member_name)}</span>`),
       data.issued_at ? row(t('verify.issuedAt', lang), fmtDate(data.issued_at, lang)) : '',
-      data.issued_by ? row(t('verify.issuedBy', lang), esc(data.issued_by)) : '',
-      data.counter_signed_by ? row(t('verify.counterSignedBy', lang), esc(data.counter_signed_by)) : '',
+      // #991: issuer / counter-signer NAMES are third-party PII and are no longer
+      // returned by the RPC; `authorized_by` is a fixed org-attribution string, and
+      // the counter-signature is surfaced as presence + date only (no name).
+      data.authorized_by ? row(t('verify.issuedBy', lang), esc(data.authorized_by)) : '',
+      data.has_counter_signature ? row(t('verify.counterSigned', lang), data.counter_signed_at ? fmtDate(data.counter_signed_at, lang) : '✓') : '',
       data.cycle ? row(t('verify.cycle', lang), `${data.cycle}${data.period_start && data.period_end ? ` (${data.period_start} — ${data.period_end})` : ''}`) : '',
       row(t('verify.code', lang), `<code class="text-[12px] bg-[var(--surface-hover)] px-2 py-0.5 rounded font-mono">${esc(data.verification_code)}</code>`),
     ].filter(Boolean).join('');
 
     return `<div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6">
-      <div class="text-center mb-4"><div class="text-3xl mb-2">\u2705</div>
+      <div class="text-center mb-4"><div class="text-3xl mb-2">✅</div>
         <p class="font-bold text-emerald-800 dark:text-emerald-300 text-lg">${t('verify.valid', lang)}</p></div>
       <div class="divide-y divide-[var(--border-subtle)]">${rows}</div>
     </div>`;

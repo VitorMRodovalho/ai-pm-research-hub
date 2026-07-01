@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-30T03:59:02.327Z",
+  "generated_at": "2026-07-01T12:49:18.541Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 330,
   "by_domain": {
@@ -1586,7 +1586,7 @@
     },
     {
       "name": "verify_certificate",
-      "description": "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
+      "description": "Verifies a certificate's authenticity by its verification code. For a valid, currently-issued certificate returns metadata only: type, title, recipient (holder) name, issue date, issuing organization, and whether it was counter-signed (with date). Issuer and counter-signer individual names are never returned (LGPD minimization, #991); any non-issued code (missing, revoked, rejected, superseded) returns {valid:false} with no further detail. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
       "domain": "governance",
       "permission": "read",
       "is_sensitive": false
