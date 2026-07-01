@@ -103,18 +103,25 @@ describe('w3c-ii — member surfaces', () => {
   });
 });
 
-describe('w3c-ii — verify page renders three invalid states', () => {
-  it('handles rejected and superseded in addition to revoked', () => {
-    assert.match(VERIFY, /if \(data\.rejected\)/);
-    assert.match(VERIFY, /if \(data\.superseded\)/);
-    assert.match(VERIFY, /verify\.rejected/);
-    assert.match(VERIFY, /verify\.superseded/);
+describe('w3c-ii + #991 — verify page collapses invalid states (status-oracle-free)', () => {
+  // #991 (PM full-collapse, 2026-07-01) reversed the …197 wave on the ANONYMOUS /verify
+  // surface: verify_certificate now returns an indistinguishable {valid:false} for any
+  // non-issued code, so the page no longer branches on revoked/rejected/superseded.
+  // The lifecycle reasons remain MEMBER-facing on /certificates (asserted above).
+  // Full no-oracle/no-PII guarantees live in 991-verify-certificate-no-pii-leak.test.mjs.
+  it('no longer distinguishes revoked/rejected/superseded (collapsed to one invalid state)', () => {
+    assert.doesNotMatch(VERIFY, /if \(data\.rejected\)/);
+    assert.doesNotMatch(VERIFY, /if \(data\.superseded\)/);
+    assert.doesNotMatch(VERIFY, /if \(data\.revoked\)/);
+    assert.match(VERIFY, /data\.valid !== true/);
   });
 });
 
 describe('w3c-ii — i18n 3-dict parity', () => {
   const KEYS = [
-    'verify.rejected', 'verify.rejectedAt', 'verify.superseded', 'verify.supersededHint',
+    // #991 removed verify.rejected/rejectedAt/superseded/supersededHint — the anonymous
+    // /verify lifecycle panels were collapsed (status-oracle-free). The member-facing
+    // reject/reissue keys below are unchanged by #991 and remain required.
     'certificates.status.rejected', 'certificates.rejectedReason', 'certificates.rejectedResign',
     'volunteer.rejected.title', 'volunteer.rejected.description', 'volunteer.rejected.reasonLabel',
     'profile.volunteerBanner.rejectedTitle', 'profile.volunteerBanner.rejectedDescription',
