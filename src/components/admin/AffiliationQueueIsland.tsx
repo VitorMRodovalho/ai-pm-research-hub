@@ -11,8 +11,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { brChapters, type PmiMembershipEntry } from '../../lib/affiliation-chapters';
 
-interface PmiMembership { chapterName: string; expiryDate?: string | null }
 interface LatestVerification {
   created_at: string;
   membership_active: boolean | null;
@@ -30,26 +30,8 @@ interface QueueRow {
   pmi_id_verified: boolean;
   vep_status_raw: string | null;
   vep_last_seen_at: string | null;
-  pmi_memberships: PmiMembership[] | null;
+  pmi_memberships: PmiMembershipEntry[] | null;
   latest_verification: LatestVerification | null;
-}
-
-/* BR-chapter detail from the PMI VEP membership list (the federated gate: "filiado a um capítulo
-   BR EM DIA"). Returns one entry per `*, Brazil Chapter` membership with parsed expiry state. */
-function brChapters(memberships: PmiMembership[] | null): Array<{ name: string; expiry: string | null; expired: boolean; soon: boolean }> {
-  if (!Array.isArray(memberships)) return [];
-  return memberships
-    .filter(m => typeof m?.chapterName === 'string' && /brazil chapter/i.test(m.chapterName))
-    .map(m => {
-      const short = m.chapterName.replace(/,?\s*Brazil Chapter$/i, '').trim();
-      const ts = m.expiryDate ? Date.parse(m.expiryDate) : NaN;
-      let expired = false, soon = false;
-      if (!Number.isNaN(ts)) {
-        const days = Math.ceil((ts - Date.now()) / 86400000);
-        expired = days < 0; soon = days >= 0 && days <= 30;
-      }
-      return { name: short, expiry: m.expiryDate || null, expired, soon };
-    });
 }
 
 /* "31 Jul 2026" (VEP) -> "2026-07-31" for the <input type=date>; '' if unparseable. */
