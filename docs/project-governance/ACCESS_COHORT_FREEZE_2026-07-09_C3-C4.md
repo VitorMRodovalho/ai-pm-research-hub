@@ -50,13 +50,30 @@ targeted account-claim / auth invite before the turn. No directed per-member inv
 **not** expire at this turn. **The retained-vs-exit frontier is empty this turn**: no C3 agreement lapses on
 2026-07-09, so there is no ambiguous per-person boundary to adjudicate. All 37 retain access.
 
-### 2.3 EXIT / RESTRICT
-**EMPTY.** No candidate for offboarding.
+### 2.3 EXIT / RESTRICT (involuntary / data-driven)
+**EMPTY.** No candidate for *involuntary* offboarding.
 - **No leak (ended-but-active):** query 2a → **0** active engagements with a past `end_date` across all 22
   (origin × kind) rows.
 - **No orphan access (2c):** every operational role has an active engagement — researcher 24/24,
   chapter_liaison 11/11, tribe_leader 6/6, sponsor 5/5, manager 2/2 (0 without engagement). The only roles
   without an active engagement are `alumni` (21), `none` (5), `guest` (1 of 35) — all correct non-access states.
+
+### 2.3b VOLUNTARY transitions at the turn (member/governance-driven, NOT data-driven)
+Separate from §2.3: the C3-closure review (2026-07-01, cross-ref #1003) surfaced **2 confirmed voluntary
+transitions** — these are legitimate member-lifecycle actions decided by governance/the member, not by the leak
+audit. The "empty exit list" above refers only to involuntary/data-driven offboarding.
+1. **One `tribe_leader` (tribe 2) — non-renewal → `alumni`** at cycle turn. `admin_offboard_member(p_new_status
+   => 'alumni', p_reason_category => 'end_of_cycle')` (return-preserving → auto-emits `alumni_recognition`).
+   **Triggers a tribe-2 leadership succession for cycle 4** (name a successor before the leader steps down).
+2. **One `researcher` (tribe 7) — own request → `observer`** for the rest of the cycle (capacity: work +
+   graduate studies; well-regarded, 100% attendance when present, wants to keep following). `admin_offboard_member
+   (p_new_status => 'observer', p_reason_category => 'personal_workload')` (return-preserving; keeps read access
+   as observer, not a full exit).
+
+> Both require the §3.1 named-approver sign-off before execution and must run via `admin_offboard_member` (§3.2),
+> **not** direct UPDATE. Member identities + the health/personal context stay OFF this committed doc (public repo;
+> LGPD Art. 11 sensitive data) — they live in the operator session / off-repo. Timing: the `observer` transition
+> is "até o final do ciclo" (execute at/around C3 close 02/07); the non-renewal aligns with the C4 turn.
 
 ### 2.4 Legacy / no-cycle engagements (context, not part of the turn)
 80 active engagements with no origin cycle (chapter_board 16, speaker 13, observer 12, volunteer 7,
