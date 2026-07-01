@@ -65,10 +65,13 @@ audit. The "empty exit list" above refers only to involuntary/data-driven offboa
 1. **One `tribe_leader` (tribe 2) — non-renewal → `alumni`** at cycle turn. `admin_offboard_member(p_new_status
    => 'alumni', p_reason_category => 'end_of_cycle')` (return-preserving → auto-emits `alumni_recognition`).
    **Triggers a tribe-2 leadership succession for cycle 4** (name a successor before the leader steps down).
-2. **One `researcher` (tribe 7) — own request → `observer`** for the rest of the cycle (capacity: work +
-   graduate studies; well-regarded, 100% attendance when present, wants to keep following). `admin_offboard_member
-   (p_new_status => 'observer', p_reason_category => 'personal_workload')` (return-preserving; keeps read access
-   as observer, not a full exit).
+2. **One `researcher` (tribe 7) — own request → `alumni`** at C3 closure (capacity: work + graduate studies).
+   `admin_offboard_member(p_new_status => 'alumni', p_reason_category => 'personal_workload')` (return-preserving
+   → auto-emits `alumni_recognition`). **NOT `observer`:** the member proposed an "ouvinte" role, but per PM the
+   observer state was governance-rejected (a non-volunteer is unbound by the term → LGPD/data/IP exposure) — so
+   the exit is a full `alumni` with access removed (platform via the RPC; **WhatsApp groups + Drive are external
+   and must be revoked separately** — see #1020 handoff + `DRIVE_OFFBOARDING_CASCADE.md`). Return preserved via
+   re-application. See #1022 for the observer-target defect.
 
 > Both require the §3.1 named-approver sign-off before execution and must run via `admin_offboard_member` (§3.2),
 > **not** direct UPDATE. Member identities + the health/personal context stay OFF this committed doc (public repo;
