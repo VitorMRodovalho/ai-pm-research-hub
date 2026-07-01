@@ -2,7 +2,8 @@
 
 **Issue:** #1003 (EPIC #1002). **Closure meeting:** Thursday **02/07/2026** (the "event" — members keep access
 through it). **Related:** #1004 (access turn 09/07, sibling freeze doc), #1008 (16/07 event — keep closure comms
-separate), #1020 (handoff protocol), #1021 (VEP coverage), #1022 (exit-state semantics).
+separate), #1020 (handoff protocol), #1021 (VEP coverage), #1022 (exit-state semantics), #1026 (auto Drive
+revocation on offboard — **recommended dependency before the C4 turn**, see §4).
 
 > Grounded live 2026-07-01. Member identities + health/personal context stay OFF this committed doc (public repo,
 > LGPD Art. 11); the identified lists live in the operator session.
@@ -80,6 +81,11 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
 - Until #1020 exists, track card/board/task ownership handoff manually.
 - **Drive:** same post-offboard flow as §3 (detection → GP `bulk_approve_drive_revocations` → drain). Do **not**
   revoke before her offboard — she is still an active tribe leader until the successor takes over.
+- **Recommended dependency — #1026:** the C4 turn offboards more than one member (Débora + any non-renewals).
+  Today Drive teardown is manual + weekly-batch (silent retention window). Landing **#1026** (event-triggered auto
+  revocation + exception-only GP review + queue frontend) **before the C4 turn** makes the turn's access teardown
+  automatic-by-governance instead of a manual GP sweep. Not a blocker for Antonio's single 03/07 exit; it is the
+  right structural fix for the multi-member C4 turn.
 
 ---
 
