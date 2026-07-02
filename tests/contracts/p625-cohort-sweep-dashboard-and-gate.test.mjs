@@ -37,10 +37,17 @@ const MIG_GATE = readFileSync(MIG_GATE_PATH, 'utf8');
 // #625 branch verbatim). Repoint when _can_sign_gate is next re-captured.
 const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000303_975_pr3_camada5_material_ratification_chain.sql';
 const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
+// get_admin_dashboard's CANONICAL capture moved to #932 Part 2 (mig 321), which re-captured it
+// verbatim + added the confidential-exclusion predicate on the two deliverables counts (the #625
+// active_members / adoption_7d logic below is preserved verbatim). The live md5 drift check tracks
+// this canonical body; the #625 static assertions still read mig 157. Repoint on the next re-capture.
+const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000321_932_confidential_aggregate_exclusion_part2.sql';
+const MIG_DASH_CANONICAL = readFileSync(MIG_DASH_CANONICAL_PATH, 'utf8');
 
 const bodyOf = (src, fnName) =>
   (src.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fnName}[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`)) || [])[1] ?? '';
 const DASH_BODY = bodyOf(MIG_DASH, 'get_admin_dashboard');
+const DASH_BODY_CANONICAL = bodyOf(MIG_DASH_CANONICAL, 'get_admin_dashboard');
 const GATE_BODY = bodyOf(MIG_GATE_CANONICAL, '_can_sign_gate');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -108,7 +115,7 @@ describe('p625-sweep — DB-gated (skip without env)', () => {
     if (error) { console.warn(`[p625-sweep] helper unavailable: ${error.message}`); return; }
     const fn = (data ?? []).find((f) => f.proname === 'get_admin_dashboard');
     assert.ok(fn, 'get_admin_dashboard exists live');
-    assert.equal(fn.body_md5, await md5Norm(DASH_BODY), 'live get_admin_dashboard drifted from mig 157');
+    assert.equal(fn.body_md5, await md5Norm(DASH_BODY_CANONICAL), 'live get_admin_dashboard drifted from its latest canonical capture (mig 321, #932 Part 2)');
   });
 
   it('live _can_sign_gate body matches the migration capture (Phase-C md5)', { skip: !sb }, async () => {
