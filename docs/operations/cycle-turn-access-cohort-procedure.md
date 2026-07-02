@@ -97,10 +97,35 @@ LEFT JOIN LATERAL (SELECT count(*) cnt FROM public.onboarding_progress o
 -- BEFORE the turn — they otherwise cannot access on day 9 despite an active engagement.
 ```
 
+**2e. Renewal radar — VEP service-end resolved by member email + renews flag (#1021):**
+```sql
+-- get_cycle_renewal_radar replaces the manual FK-only cross-join: it resolves each active
+-- volunteer's VEP service-end across ALL email-matched applications (not just the engagement's
+-- FK-linked app) and flags active_future / lapsing / unknown vs the turn date. Returns member PII →
+-- run as the operator (service_role via MCP) or an in-app GP (manage_member). Pass the turn date.
+SELECT jsonb_pretty(get_cycle_renewal_radar('2026-07-09'::date) -> 'summary');
+
+-- Expand the volunteers needing review (lapsing first, then unknown):
+SELECT r->>'member_name'          AS member,
+       r->>'role'                 AS role,
+       r->>'resolved_service_end' AS service_end,
+       r->>'service_end_source'   AS source,     -- linked | email_matched | unknown
+       r->>'renews_signal'        AS renews       -- active_future | lapsing | unknown
+FROM jsonb_array_elements(get_cycle_renewal_radar('2026-07-09'::date) -> 'members') r
+WHERE r->>'renews_signal' IN ('lapsing','unknown');
+-- `unknown` renews_signal = VEP service-end missing for that volunteer (radar blind) → manual VEP
+--   cross-check / backfill (off-issue, LGPD). It does NOT by itself mean "exit".
+-- `lapsing` = service ends at/before the turn date → exit candidate to review per §3.2.
+-- `email_matched` source = the date was recovered from a different app than the engagement's FK link
+--   (the #1021 fix) — no data repair is required for the radar to fire.
+```
+
 ## 3. Manual execution steps
 
-1. Run 2a–2d. Produce the explicit **keep / enter / exit** list (with reasons) for the operator's
-   review — keep member identities OFF this doc; put aggregates on the issue.
+1. Run 2a–2e. Produce the explicit **keep / enter / exit** list (with reasons) for the operator's
+   review — keep member identities OFF this doc; put aggregates on the issue. 2e's renewal radar
+   gives the per-volunteer service-end + renews flag so the exit decision no longer needs a manual
+   cross-join; treat `unknown` as "verify", not "exit".
 2. **Exit:** for each genuinely-lapsed member (2c operational-role orphan, or a retained-cycle
    engagement whose agreement `period_end` has passed and was not renewed) → `offboard_member`
    after per-member governance sign-off. **Never bulk.** (Access-flip is offboarding-based;
