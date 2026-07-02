@@ -57,10 +57,16 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
   audit`) is populated by the **detection EF** (`audit-drive-offboarding-access`) which only matches members
   **already offboarded** (`member_status` alumni/inactive + `offboarded_at` set). Mechanism verified functional
   (10/10 `revoked`, 0 failed; SA role elevation done). Sequence, once Antonio is alumni (03/07):
-  1. **Detection** queues his Drive permissions — auto via the **weekly cron (Mon 06/07 05:00 UTC)**, or trigger
-     same-day 03/07 with a manual POST to the detection EF (service-role bearer).
-  2. **GP approve** (deliberate `manage_member` review gate): `bulk_approve_drive_revocations('f74e…')`.
+  1. **Detection** queues his Drive permissions — **event-triggered at the offboard moment** (#1026 Fatia A,
+     `trg_drive_teardown_scan` → targeted EF scan); the weekly cron (Mon 06/07 05:00 UTC) remains the backstop.
+  2. **Approve** — depends on the #1039 kill-switch (`site_config drive_auto_revoke_enabled`):
+     - **switch ON (post go-live):** alumni rows are **auto-approved** (`approval_mode='auto'`, ADR-0107
+       Amendment 1) — no GP action; failures surface in `/admin/members/drive-teardown` for exception review.
+     - **switch OFF (ships dark):** manual GP approve as before: `bulk_approve_drive_revocations('f74e…')`.
   3. **Drain** (`revoke-drive-drain-hourly`, jobid 64) does the actual Drive DELETE within the hour.
+  - **Member comms (LGPD transparency, #1039 legal COND-1):** the exit message to the member must state that
+    Drive access ends automatically within ~1h of offboarding and any personal files should be retrieved before
+    the exit (mirrors the Privacy Notice §6 update).
   - **WhatsApp group** removal — external, manual.
   - **Cannot enqueue before 03/07** — he's still `active`; detection would not match him and pre-cutting would
     strip his access before the 02/07 event.
