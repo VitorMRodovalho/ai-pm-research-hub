@@ -75,7 +75,15 @@ export function mapScriptToNucleo(
   // as a JSON string scalar (jsonb_typeof='string'), not an array. The DB ended up
   // with NULL/string but never the array, so pmi_canonical chapter derivation failed.
   // Now we parse: array → use as-is; string → JSON.parse; anything else → null.
-  const phaseBMemberships = isPhaseBPrivate ? null : parseMaybeJsonArray(app.profileMembershipChapters) as Array<{ chapterName: string; expiryDate: string }> | null;
+  // #1037 — the enriched PMI export provides per-chapter expiry in `profileMemberships`
+  // ([{chapterName, expiryDate}]); the older `profileMembershipChapters` is chapter NAMES
+  // only (["PMI Global", ...]) with NO expiry. Prefer profileMemberships so pmi_memberships
+  // carries the membership VENCIMENTO that /admin/filiacao surfaces. Both can arrive
+  // double-encoded (p150) — parseMaybeJsonArray + normalizeMemberships handle every shape.
+  const phaseBMemberships = isPhaseBPrivate
+    ? null
+    : (normalizeMemberships(parseMaybeJsonArray(app.profileMemberships))
+       ?? normalizeMemberships(parseMaybeJsonArray(app.profileMembershipChapters)));
   const phaseBIndustry = isPhaseBPrivate ? null : (app.profileIndustry ?? null);
   const phaseBCompany = isPhaseBPrivate ? null : (app.profileCompany ?? null);
   const phaseBDesignation = isPhaseBPrivate ? null : (app.profileDesignation ?? null);
@@ -332,6 +340,36 @@ export function parseMaybeJsonArray(value: unknown): unknown[] | null {
     }
   }
   return null;
+}
+
+/**
+ * #1037 — normalize either PMI membership shape into the canonical
+ * [{ chapterName, expiryDate|null }] object form that pmi_memberships stores.
+ * Accepts the enriched object form [{chapterName, expiryDate}] (keeps the VENCIMENTO)
+ * and the names-only form ["PMI Global", ...] (expiryDate becomes null). Drops
+ * malformed entries; returns null for empty/absent input.
+ */
+export function normalizeMemberships(
+  arr: unknown[] | null
+): Array<{ chapterName: string; expiryDate: string | null }> | null {
+  if (!arr || arr.length === 0) return null;
+  const out: Array<{ chapterName: string; expiryDate: string | null }> = [];
+  for (const m of arr) {
+    if (typeof m === 'string') {
+      const cn = m.trim();
+      if (cn) out.push({ chapterName: cn, expiryDate: null });
+    } else if (m && typeof m === 'object') {
+      const cn = (m as { chapterName?: unknown }).chapterName;
+      if (typeof cn === 'string' && cn.trim()) {
+        const exp = (m as { expiryDate?: unknown }).expiryDate;
+        out.push({
+          chapterName: cn.trim(),
+          expiryDate: typeof exp === 'string' && exp.trim() ? exp.trim() : null,
+        });
+      }
+    }
+  }
+  return out.length > 0 ? out : null;
 }
 
 export function parseGeoFromLocation(loc: string | null | undefined): {
