@@ -28,7 +28,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 const ROOT = process.cwd();
@@ -147,4 +147,38 @@ test('#1026 runtime: targeted overload returns [] for a nonexistent member (wire
   const data = await res.json();
   assert.ok(Array.isArray(data), 'targeted overload must return a jsonb array');
   assert.equal(data.length, 0, 'a nonexistent member must resolve to an empty email set');
+});
+
+// ── Fatia C: panel reader RPC + frontend wiring (static) ──
+test('#1026-C static: get_drive_teardown_overview is manage_member-gated + logs pii + fail-closed grants', () => {
+  const body = latestFunctionBody('get_drive_teardown_overview');
+  assert.ok(body, 'get_drive_teardown_overview must be defined in a migration');
+  assert.match(body, /can_by_member\(v_caller_id, 'manage_member'\)/, 'the panel reader must require manage_member');
+  assert.match(body, /log_pii_access_batch\(/, 'the panel reader must log the member-name PII read (Art.37)');
+  assert.match(allSQL, /REVOKE ALL ON FUNCTION public\.get_drive_teardown_overview\(\) FROM PUBLIC, anon/, 'reader must be revoked from PUBLIC + anon');
+  assert.match(allSQL, /GRANT EXECUTE ON FUNCTION public\.get_drive_teardown_overview\(\) TO authenticated, service_role/, 'reader must grant EXECUTE to authenticated + service_role');
+});
+
+test('#1026-C static: panel page + island + per-locale redirects exist and reuse the existing RPCs', () => {
+  const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
+  const page = read('src/pages/admin/members/drive-teardown.astro');
+  assert.match(page, /DriveTeardownIsland/, 'page must mount the DriveTeardownIsland');
+  assert.match(page, /buildPageI18n\(\['driveTeardown', 'common'\]/, 'page must load the driveTeardown i18n bundle');
+  const island = read('src/components/admin/members/DriveTeardownIsland.tsx');
+  assert.match(island, /get_drive_teardown_overview/, 'island must call the new overview reader');
+  assert.match(island, /admin_list_drive_revocation_audit/, 'drill-down reuses the existing per-grant reader (no redundant RPC)');
+  assert.match(island, /bulk_approve_drive_revocations/, 'approve action reuses the existing manual-approve RPC (Fatia A model unchanged)');
+  // per-locale redirect stubs (i18n rule 4/5)
+  assert.ok(existsSync(resolve(ROOT, 'src/pages/en/admin/members/drive-teardown.astro')), 'en redirect stub must exist');
+  assert.ok(existsSync(resolve(ROOT, 'src/pages/es/admin/members/drive-teardown.astro')), 'es redirect stub must exist');
+});
+
+test('#1026-C static: driveTeardown i18n namespace has 3-dict parity', () => {
+  const count = (p) => (readFileSync(resolve(ROOT, p), 'utf8').match(/'driveTeardown\./g) || []).length;
+  const pt = count('src/i18n/pt-BR.ts');
+  const en = count('src/i18n/en-US.ts');
+  const es = count('src/i18n/es-LATAM.ts');
+  assert.ok(pt > 0, 'pt-BR must define the driveTeardown namespace');
+  assert.equal(en, pt, 'en-US driveTeardown key count must equal pt-BR (3-dict parity)');
+  assert.equal(es, pt, 'es-LATAM driveTeardown key count must equal pt-BR (3-dict parity)');
 });

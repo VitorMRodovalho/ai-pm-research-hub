@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, CalendarClock,
 } from 'lucide-react';
 import { hasPermission as checkPermission } from '../../lib/permissions';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, CalendarClock,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -54,6 +54,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
+      { href: '/admin/members/drive-teardown', label: { 'pt-BR': 'Teardown de Drive', 'en-US': 'Drive Teardown', 'es-LATAM': 'Teardown de Drive' }, icon: 'HardDrive', permission: 'admin.members.manage' },
     ],
   },
   {
