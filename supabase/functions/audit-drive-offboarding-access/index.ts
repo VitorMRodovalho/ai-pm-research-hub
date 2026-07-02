@@ -20,7 +20,13 @@
  *   never a literal token compare). SA creds: Vault google_drive_service_account_json.
  *   Absent → 503 not_configured (fail-safe).
  *
- * Body: { dry_run?: boolean, max_files?: number, source?: string }
+ * #1026 (Fatia A): a targeted { member_id } body runs the scan for ONE just-offboarded member
+ *   (fired event-triggered by trg_drive_teardown_scan on members), instead of the weekly cohort sweep.
+ *   Every scanned member also gets a drive_teardown_scans ledger row (grants_found=0 == positive
+ *   "verified no Drive access" attestation, LL#588). Approval model UNCHANGED (still pending_revoke,
+ *   manual GP approve). cron 63 stays the weekly reconciliation backstop.
+ *
+ * Body: { dry_run?: boolean, max_files?: number, source?: string, member_id?: string }
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { isServiceRoleToken } from "../_shared/service-auth.ts";
@@ -152,7 +158,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "unauthorized", detail: "service-role only" }), { status: 401 });
   }
 
-  let body: { dry_run?: boolean; max_files?: number; source?: string } = {};
+  let body: { dry_run?: boolean; max_files?: number; source?: string; member_id?: string } = {};
   try { body = await req.json(); } catch { /* empty body ok */ }
   const dryRun = body.dry_run === true;
 
@@ -199,25 +205,45 @@ Deno.serve(async (req) => {
 
   // ---- LIVE SCAN ----
   // 1. offboarded email → member map (SECDEF RPC; logs the PII read system-side).
-  const { data: emailData, error: emailErr } = await sb.rpc("get_offboarded_member_emails");
+  //    #1026: a targeted { member_id } event scan resolves just that member's email set; otherwise the
+  //    weekly sweep resolves the whole offboarded cohort. cron 63 stays the reconciliation backstop.
+  const targeted = typeof body.member_id === "string" && body.member_id.length > 0;
+  const scanSource = targeted ? "event" : "weekly";
+  const { data: emailData, error: emailErr } = targeted
+    ? await sb.rpc("get_offboarded_member_emails", { p_member_id: body.member_id })
+    : await sb.rpc("get_offboarded_member_emails");
   if (emailErr) return new Response(JSON.stringify({ error: "rpc_error", detail: emailErr.message }), { status: 500 });
   const emailToMember = new Map<string, string>();
   for (const r of (emailData ?? [])) emailToMember.set(String(r.email).toLowerCase(), r.member_id);
   if (emailToMember.size === 0) {
-    return new Response(JSON.stringify({ success: true, emails_scanned: 0, grants_found: 0, inserted: 0, refreshed: 0,
-      note: "no offboarded members with emails" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ success: true, targeted, member_id: body.member_id ?? null,
+      emails_scanned: 0, grants_found: 0, inserted: 0, refreshed: 0,
+      note: targeted ? "member not offboarded or has no emails — nothing to scan" : "no offboarded members with emails" }),
+      { status: 200, headers: { "Content-Type": "application/json" } });
   }
+
+  // #1026 per-member scan ledger accumulator: one drive_teardown_scans row per member scanned, so a member
+  // with 0 grants (present in emailToMember, contributes nothing to candidates[]) still yields the positive
+  // clean attestation. Keyed by member_id, so a member with >1 email is aggregated into a single row.
+  const perMember = new Map<string, { emails_scanned: number; grants_found: number; deletable: number; exceptions: number }>();
+  const accFor = (mid: string) => {
+    let m = perMember.get(mid);
+    if (!m) { m = { emails_scanned: 0, grants_found: 0, deletable: 0, exceptions: 0 }; perMember.set(mid, m); }
+    return m;
+  };
 
   // 2. Per offboarded email: find the files they can access, then read those files' permissions.
   const candidates: any[] = [];
   let emailsScanned = 0;
   let foldersConsidered = 0;
   for (const [email, memberId] of emailToMember) {
+    const acc = accFor(memberId); // ensure every scanned member yields a ledger row (even 0-grant = clean)
     if (email.includes("'") || email.includes("\\")) { errors.push(`skipped unsafe email token`); continue; }
     let folders: DriveItem[];
     try { folders = await findFilesSharedWith(email, accessToken); }
     catch (e) { errors.push(String(e)); continue; }
     emailsScanned++;
+    acc.emails_scanned++;
     // A matched folder is a DIRECT grant iff none of its parents is ALSO matched for this email — i.e.
     // it is the top of a shared subtree. Subfolders inheriting the grant have a matched parent and are
     // skipped. This works for My Drive (where permissionDetails.inherited is not exposed) AND shared
@@ -233,7 +259,9 @@ Deno.serve(async (req) => {
         catch (e) { errors.push(String(e)); continue; }
       }
       if (!p) continue;
-      if (p.role === "owner") continue; // cannot delete an owner permission; out of #209 scope (ADR-0107)
+      acc.grants_found++; // a real (non-inherited) folder grant this member holds
+      if (p.role === "owner") { acc.exceptions++; continue; } // undeletable owner perm; out of #209 scope (ADR-0107)
+      acc.deletable++;
       candidates.push({
         member_id: memberId,
         drive_file_id: f.id,
@@ -253,8 +281,29 @@ Deno.serve(async (req) => {
   const { data: upData, error: upErr } = await sb.rpc("upsert_drive_revocation_candidates", { p_rows: candidates });
   if (upErr) return new Response(JSON.stringify({ error: "upsert_error", detail: upErr.message, grants_found: candidates.length }), { status: 500 });
 
+  // 4. #1026 positive attestation — one drive_teardown_scans row per member scanned (grants_found=0 == clean).
+  let attestedClean = 0;
+  for (const [memberId, m] of perMember) {
+    if (m.grants_found === 0) attestedClean++;
+    const { error: recErr } = await sb.rpc("record_drive_teardown_scan", {
+      p_member_id: memberId,
+      p_scan_source: scanSource,
+      p_emails_scanned: m.emails_scanned,
+      p_grants_found: m.grants_found,
+      p_deletable_queued: m.deletable,
+      p_exceptions_found: m.exceptions,
+      p_notes: null,
+    });
+    if (recErr) errors.push(`ledger write failed for ${memberId}: ${recErr.message}`);
+  }
+
   return new Response(JSON.stringify({
     success: true,
+    targeted,
+    member_id: body.member_id ?? null,
+    scan_source: scanSource,
+    members_scanned: perMember.size,
+    attested_clean: attestedClean,
     emails_scanned: emailsScanned,
     direct_folder_grants_considered: foldersConsidered,
     grants_found: candidates.length,
