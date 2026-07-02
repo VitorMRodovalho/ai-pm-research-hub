@@ -14,6 +14,13 @@
  * (IMAGES_LOADED_PREDICATE, src/lib/certificates/pdf.ts) is the defence-in-depth
  * layer that also covers the remaining remote image (the issuer signature).
  *
+ * Conscious tradeoff (reviewed #1058): this constant (~33 KB base64) is imported by
+ * pdf.ts, which is reachable from the client print path (downloadCertificatePDF on
+ * certificates.astro / admin/certificates.astro), so it is NOT tree-shaken and adds
+ * ~33 KB to those authenticated, infrequently-loaded page bundles. Accepted because the
+ * client print-window path must ALSO be robust to a logo-fetch failure — the whole point
+ * of #1047. A future lazy dynamic-import for the client path is tracked as a follow-up.
+ *
  * Source of truth: public/assets/logos/pmigo.png (1268x470 PNG, ~24.9 KB).
  * To regenerate after replacing the asset:
  *   node -e "console.log('data:image/png;base64,'+require('fs').readFileSync('public/assets/logos/pmigo.png').toString('base64'))"

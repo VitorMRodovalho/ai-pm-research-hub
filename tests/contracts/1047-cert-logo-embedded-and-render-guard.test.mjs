@@ -50,6 +50,9 @@ test('pmigo-logo.ts exists and exports PMIGO_LOGO_DATA_URI as a PNG data URI', (
 
 test('embedded logo decodes byte-identically to public/assets/logos/pmigo.png', () => {
   const body = readFileSync(LOGO_MODULE, 'utf8');
+  // Format dependency: the base64 must stay a single-line string literal (optionally
+  // preceded by one newline after `=`). Do NOT let a formatter wrap it across lines —
+  // this extraction (and Node's Read/Edit tooling) rely on the single-line form.
   const m = body.match(/export const PMIGO_LOGO_DATA_URI\s*=\s*\n?\s*"(data:image\/png;base64,[A-Za-z0-9+/=]+)";/);
   assert.ok(m, 'PMIGO_LOGO_DATA_URI literal must be extractable');
   const b64 = m[1].replace('data:image/png;base64,', '');

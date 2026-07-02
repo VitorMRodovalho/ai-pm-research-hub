@@ -181,6 +181,10 @@ async function buildCertData(cert: CertRow): Promise<CertificateData> {
 async function renderPdf(browser: Browser, html: string, title: string): Promise<Buffer> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  // Note: this renderer uses playwright's `networkidle` (≤2 idle connections) while the
+  // forward endpoint uses puppeteer's `networkidle0` (0 connections). The intentional
+  // baseline difference is harmless because the IMAGES_LOADED_PREDICATE guard below is
+  // the actual gate in BOTH renderers (an undecoded image fails the render either way).
   await page.setContent(html, { waitUntil: 'networkidle', timeout: 30000 });
   // #1047 — fail LOUD if any image did not decode (broken logo/signature). networkidle
   // does NOT reject on a broken image, so without this guard a transient fetch failure
