@@ -35,12 +35,34 @@ function extractUsername(url: string): string | null {
 }
 
 async function fetchBadges(username: string): Promise<CredlyBadge[]> {
+  // Per-fetch timeout so a single slow/hanging Credly response cannot stall the
+  // whole batch (root cause of the 504 gateway timeout on the full sync).
   const resp = await fetch(`https://www.credly.com/users/${username}/badges.json`, {
     headers: { 'Accept': 'application/json', 'User-Agent': 'NucleoIA-GP/1.0' },
+    signal: AbortSignal.timeout(15000),
   })
   if (!resp.ok) throw new Error(`Credly ${resp.status}: ${username}`)
   const data = await resp.json()
   return data.data || data || []
+}
+
+// Bounded-concurrency worker pool. The batch sync is network-bound (one external
+// Credly fetch per member); running all 44 members serially exceeds the gateway
+// wall-clock limit (504). A small pool keeps total time to ~fetch_time × ceil(N/limit)
+// while staying gentle enough not to trip Credly rate limits.
+async function runPool<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  async function runner() {
+    while (true) {
+      const i = next++
+      if (i >= items.length) return
+      results[i] = await worker(items[i])
+    }
+  }
+  const runners = Array.from({ length: Math.min(limit, items.length) }, () => runner())
+  await Promise.all(runners)
+  return results
 }
 
 // classifyBadge imported from _shared/classify-badge.ts (GC-083)
@@ -327,23 +349,20 @@ Deno.serve(async (req) => {
       )
     }
 
+    const CONCURRENCY = 6
+    const details = await runPool(members, CONCURRENCY, async (member) => {
+      try {
+        return await processMember(sb, member)
+      } catch (err: any) {
+        return { member_id: member.id, success: false, error: err?.message || 'Unknown error' }
+      }
+    })
+
     let successCount = 0
     let failCount = 0
-    const details: { member_id: string; success: boolean; error?: string; total_points?: number }[] = []
-
-    for (const member of members) {
-      try {
-        const result = await processMember(sb, member)
-        if (result.success) {
-          successCount++
-        } else {
-          failCount++
-        }
-        details.push(result)
-      } catch (err: any) {
-        failCount++
-        details.push({ member_id: member.id, success: false, error: err?.message || 'Unknown error' })
-      }
+    for (const r of details) {
+      if (r.success) successCount++
+      else failCount++
     }
 
     return new Response(
