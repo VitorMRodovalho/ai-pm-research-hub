@@ -3,7 +3,25 @@
  * Used by /gamification (member view) and /admin/certificates (chapter board view).
  */
 
-import { CANONICAL_HOST, CANONICAL_ORIGIN } from "../canonical";
+import { CANONICAL_HOST } from "../canonical";
+import { PMIGO_LOGO_DATA_URI } from "./pmigo-logo";
+
+/**
+ * #1047 — Guard predicate evaluated in the headless page after `setContent` and
+ * BEFORE `page.pdf()`, in BOTH renderers (scripts/backfill-cert-pdfs.ts via
+ * playwright `waitForFunction`, and src/pages/api/internal/cert-pdf-render/[id].ts
+ * via CF puppeteer `waitForFunction`). It resolves truthy only when every <img> on
+ * the page has actually decoded (`complete && naturalWidth > 0`). If an image fails
+ * (the issuer signature is still a remote signed-URL fetch; the logo is now a data
+ * URI and always decodes), `waitForFunction` rejects on timeout → the render throws
+ * → the cert keeps `pdf_url NULL` and stays recoverable via backfill, instead of
+ * freezing a silently-defective PDF (`networkidle`/`networkidle0` do not fail on a
+ * broken image). A page with no images returns true immediately (`[].every` ⇒ true),
+ * so typographic certificates are unaffected. Exported so both renderers share ONE
+ * source of truth and the contract test can assert on it.
+ */
+export const IMAGES_LOADED_PREDICATE =
+  "Array.from(document.images).every(function(i){return i.complete && i.naturalWidth > 0;})";
 
 export interface CertificateData {
   id?: string; // #648: cert id — fallback key for the frozen-PDF lookup when verification_code is absent
@@ -253,7 +271,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   // Header with PMI-GO logo (same reference as the example PDF)
   const headerBlock = `
     <div style="margin-bottom:20px">
-      <img src="${CANONICAL_ORIGIN}/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
+      <img src="${PMIGO_LOGO_DATA_URI}" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
     </div>
     <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
       TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
@@ -365,7 +383,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const annexBlock = `
     <div class="cert-page" style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
       <div style="margin-bottom:20px">
-        <img src="${CANONICAL_ORIGIN}/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" />
+        <img src="${PMIGO_LOGO_DATA_URI}" alt="PMI Goiás" style="height:44px;width:auto;display:block" />
       </div>
       <h2 style="font-weight:bold;color:#000;font-size:16px;margin:24px 0 14px">ANEXO - LEI DO SERVIÇO VOLUNTÁRIO</h2>
       <p style="font-size:11px;color:#333;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>

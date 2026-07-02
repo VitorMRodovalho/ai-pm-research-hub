@@ -26,6 +26,7 @@ import puppeteer from '@cloudflare/puppeteer';
 import {
   buildCertificateHTML,
   hydrateCertData,
+  IMAGES_LOADED_PREDICATE,
   type CertificateData,
 } from '../../../../lib/certificates/pdf';
 
@@ -226,6 +227,12 @@ export const POST: APIRoute = async ({ params, request }) => {
     browser = await puppeteer.launch(browserBinding);
     const page = await browser.newPage();
     await page.setContent(fullDoc, { waitUntil: 'networkidle0', timeout: 30000 });
+    // #1047 — fail LOUD if any image did not decode. networkidle0 does NOT reject on a
+    // broken image (the 2026-05-22 root cause: a transient logo-fetch failure froze 41
+    // defective term PDFs). On timeout this throws → caught below as render_failed 500,
+    // the cert keeps pdf_url NULL, recoverable via backfill. The logo is now an inlined
+    // data URI (always decodes); this guard covers the remaining remote issuer signature.
+    await page.waitForFunction(IMAGES_LOADED_PREDICATE, { timeout: 10000 });
     pdfBytes = await page.pdf({
       format: 'A4',
       margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' },
