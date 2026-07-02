@@ -36,6 +36,7 @@ import { resolve } from 'node:path';
 import {
   buildCertificateHTML,
   hydrateCertData,
+  IMAGES_LOADED_PREDICATE,
   type CertificateData,
 } from '../src/lib/certificates/pdf.ts';
 
@@ -61,6 +62,7 @@ const LIMIT = arg('--limit') ? parseInt(arg('--limit')!, 10) : undefined;
 const DRY_RUN = flag('--dry-run');
 const FORCE = flag('--force');
 const CERT_FILTER = arg('--cert');
+const TYPE_FILTER = arg('--type'); // #1047 — scope a --force re-render to one cert type (e.g. volunteer_agreement)
 const OUT_DIR = arg('--out-dir');
 
 if (OUT_DIR) mkdirSync(OUT_DIR, { recursive: true });
@@ -115,6 +117,12 @@ async function fetchCerts(): Promise<CertRow[]> {
     q = q.eq('verification_code', CERT_FILTER);
   } else if (!FORCE) {
     q = q.is('pdf_url', null);
+  }
+  // #1047 — --type scopes the fetch to a single cert type. Combined with --force this
+  // re-renders exactly the affected cohort (e.g. the 41 volunteer_agreement terms)
+  // without overwriting the frozen PDFs of unaffected typographic certs.
+  if (TYPE_FILTER) {
+    q = q.eq('type', TYPE_FILTER);
   }
 
   const { data, error } = await q;
@@ -174,6 +182,15 @@ async function renderPdf(browser: Browser, html: string, title: string): Promise
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.setContent(html, { waitUntil: 'networkidle', timeout: 30000 });
+  // #1047 — fail LOUD if any image did not decode (broken logo/signature). networkidle
+  // does NOT reject on a broken image, so without this guard a transient fetch failure
+  // freezes a silently-defective PDF. On timeout this throws → the cert keeps pdf_url
+  // NULL and stays recoverable, instead of persisting a defective legal instrument.
+  try {
+    await page.waitForFunction(IMAGES_LOADED_PREDICATE, { timeout: 10000 });
+  } catch {
+    throw new Error('images_not_loaded: one or more <img> failed to decode before render (#1047)');
+  }
   const pdfBuffer = await page.pdf({
     format: 'A4',
     margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' },
@@ -197,7 +214,7 @@ async function uploadPdf(storagePath: string, pdfBuffer: Buffer): Promise<void> 
 
 async function main() {
   console.log('[backfill-cert-pdfs] start');
-  console.log(`  dry_run=${DRY_RUN}  force=${FORCE}  limit=${LIMIT ?? 'all'}  cert=${CERT_FILTER ?? '<all-null-pdf_url>'}  out_dir=${OUT_DIR ?? '<none>'}`);
+  console.log(`  dry_run=${DRY_RUN}  force=${FORCE}  limit=${LIMIT ?? 'all'}  cert=${CERT_FILTER ?? '<all-null-pdf_url>'}  type=${TYPE_FILTER ?? '<any>'}  out_dir=${OUT_DIR ?? '<none>'}`);
 
   const certs = await fetchCerts();
   console.log(`[backfill-cert-pdfs] fetched ${certs.length} cert(s) to process`);
