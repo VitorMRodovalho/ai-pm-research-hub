@@ -6,9 +6,9 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, CalendarClock,
 } from 'lucide-react';
-import { hasPermission as checkPermission } from '../../lib/permissions';
+import { hasPermission as checkPermission, type Permission } from '../../lib/permissions';
 
 /* ────────────────────────── Icon map ────────────────────────── */
 const ICONS: Record<string, React.FC<{ size?: number }>> = {
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, CalendarClock,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -25,7 +25,14 @@ interface SidebarItem {
   href: string;
   label: Record<string, string>;
   icon: string;
-  permission?: string;
+  /**
+   * Permission gate for this item. A single permission string, or an array =
+   * OR-semantics (item shows if the member holds ANY of them). Arrays exist
+   * because some pages admit more than one audience the permission model can't
+   * fold into one string (e.g. chapter-report: GP via admin.access OR chapter
+   * roles via admin.analytics.chapter). Nav is a UX hint; the page self-gates.
+   */
+  permission?: Permission | Permission[];
 }
 
 interface SidebarSection {
@@ -34,6 +41,10 @@ interface SidebarSection {
   label: Record<string, string>;
   items: SidebarItem[];
 }
+
+// Normalize an item's permission gate to a list (see SidebarItem.permission).
+const itemPerms = (item: SidebarItem): Permission[] =>
+  item.permission == null ? [] : Array.isArray(item.permission) ? item.permission : [item.permission];
 
 const SECTIONS: SidebarSection[] = [
   {
@@ -52,6 +63,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
       { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
+      { href: '/admin/vep-reconciliation', label: { 'pt-BR': 'Reconciliação VEP', 'en-US': 'VEP Reconciliation', 'es-LATAM': 'Reconciliación VEP' }, icon: 'ArrowLeftRight', permission: 'admin.access' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
       { href: '/admin/members/drive-teardown', label: { 'pt-BR': 'Teardown de Drive', 'en-US': 'Drive Teardown', 'es-LATAM': 'Teardown de Drive' }, icon: 'HardDrive', permission: 'admin.members.manage' },
@@ -78,6 +90,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart', permission: 'admin.portfolio' },
       { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
       { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
+      { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório do Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe del Capítulo' }, icon: 'FileText', permission: ['admin.access', 'admin.analytics.chapter'] },
       { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
     ],
   },
@@ -89,10 +102,13 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/sustainability', label: { 'pt-BR': 'Sustentabilidade', 'en-US': 'Sustainability', 'es-LATAM': 'Sostenibilidad' }, icon: 'Leaf', permission: 'admin.sustainability' },
       { href: '/admin/pilots', label: { 'pt-BR': 'Pilotos', 'en-US': 'Pilots', 'es-LATAM': 'Pilotos' }, icon: 'Rocket', permission: 'admin.portfolio' },
       { href: '/admin/agenda-recorrente', label: { 'pt-BR': 'Agenda Recorrente', 'en-US': 'Recurring Agenda', 'es-LATAM': 'Agenda Recurrente' }, icon: 'CalendarClock', permission: 'system.global_config' },
+      { href: '/admin/agenda-viva', label: { 'pt-BR': 'Agenda Viva', 'en-US': 'Live Agenda', 'es-LATAM': 'Agenda Viva' }, icon: 'CalendarDays', permission: 'admin.events.manage' },
       { href: '/admin/organization', label: { 'pt-BR': 'Organização', 'en-US': 'Organization', 'es-LATAM': 'Organización' }, icon: 'Building', permission: 'system.global_config' },
       { href: '/admin/settings', label: { 'pt-BR': 'Configurações', 'en-US': 'Settings', 'es-LATAM': 'Configuraciones' }, icon: 'Settings', permission: 'system.global_config' },
       { href: '/admin/audit-log', label: { 'pt-BR': 'Registro de Auditoria', 'en-US': 'Audit Log', 'es-LATAM': 'Registro de Auditoría' }, icon: 'ClipboardList', permission: 'system.global_config' },
       { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },
+      { href: '/admin/ai-calibration', label: { 'pt-BR': 'Calibração de IA', 'en-US': 'AI Calibration', 'es-LATAM': 'Calibración de IA' }, icon: 'SlidersHorizontal', permission: 'system.global_config' },
+      { href: '/admin/initiative-kinds', label: { 'pt-BR': 'Tipos de Iniciativa', 'en-US': 'Initiative Kinds', 'es-LATAM': 'Tipos de Iniciativa' }, icon: 'Shapes', permission: 'system.global_config' },
       { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
       { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.governance.view' },
       { href: '/admin/gamification', label: { 'pt-BR': 'Gamificação', 'en-US': 'Gamification', 'es-LATAM': 'Gamificación' }, icon: 'Trophy', permission: 'admin.gamification' },
@@ -133,9 +149,9 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
       if (!member) return;
       const perms = new Set<string>();
       SECTIONS.forEach(s => s.items.forEach(item => {
-        if (!item.permission || checkPermission(member, item.permission as any)) {
-          perms.add(item.permission || '');
-        }
+        itemPerms(item).forEach(p => {
+          if (checkPermission(member, p)) perms.add(p);
+        });
       }));
       setVisiblePerms(perms);
     }
@@ -203,9 +219,10 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
       {/* Sections */}
       <div className="flex-1 overflow-y-auto py-2">
         {SECTIONS.map(section => {
-          const visibleItems = section.items.filter(item =>
-            !item.permission || visiblePerms.has(item.permission)
-          );
+          const visibleItems = section.items.filter(item => {
+            const ps = itemPerms(item);
+            return ps.length === 0 || ps.some(p => visiblePerms.has(p));
+          });
           if (visibleItems.length === 0) return null;
 
           return (
