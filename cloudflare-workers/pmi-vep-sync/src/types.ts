@@ -157,8 +157,9 @@ export interface SelectionApplicationUpsert {
   profile_city?: string | null;
   profile_country?: string | null;
 
-  // Multi-chapter snapshot (Decision 2 hybrid)
-  pmi_memberships?: Array<{ chapterName: string; expiryDate: string }> | null;
+  // Multi-chapter snapshot (Decision 2 hybrid). expiryDate is null when the source
+  // only provided chapter names without the membership VENCIMENTO (#1037).
+  pmi_memberships?: Array<{ chapterName: string; expiryDate: string | null }> | null;
 
   // Phase B professional fields
   profile_industry?: string | null;
@@ -290,7 +291,11 @@ export interface ScriptApplication {
   profileState?: string | null;
   profileCity?: string | null;
   profileCountry?: string | null;
-  profileMembershipChapters?: Array<{ chapterName: string; expiryDate: string }> | null;
+  // #1037 — the enriched PMI export carries per-chapter expiry in `profileMemberships`
+  // ([{chapterName, expiryDate}]). `profileMembershipChapters` is chapter NAMES only
+  // (["PMI Global", ...]). Both can arrive double-encoded as a JSON string (p150).
+  profileMemberships?: Array<{ chapterName: string; expiryDate: string }> | string | null;
+  profileMembershipChapters?: Array<string> | Array<{ chapterName: string; expiryDate: string }> | string | null;
   profileIndustry?: string | null;
   profileCompany?: string | null;
   profileDesignation?: string | null;
