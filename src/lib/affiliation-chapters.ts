@@ -59,3 +59,40 @@ export function brChapters(
       return { name: short, expiry: m.expiryDate || null, expired, soon };
     });
 }
+
+export type ExpiryStatus = 'expired' | 'soon' | 'ok' | 'none';
+
+export interface ExpirySummary {
+  /** raw PMI expiry string of the SOONEST-expiring BR chapter (e.g. "31 Oct 2026") */
+  expiry: string | null;
+  /** whole days until that expiry (negative = already expired); null when no dated BR chapter */
+  days: number | null;
+  expired: boolean;
+  /** within the 30-day renewal window (and not yet expired) */
+  soon: boolean;
+  status: ExpiryStatus;
+}
+
+/**
+ * #1041 — collapse a member's BR-chapter memberships into ONE triage summary: the
+ * SOONEST-expiring dated BR chapter (the most urgent renewal). Powers the sortable
+ * "Vencimento" column + the provisional (VEP-derived) verification farol. `status='none'`
+ * when the member has no BR chapter carrying a parseable expiry.
+ */
+export function soonestBrExpiry(
+  memberships: PmiMembershipEntry[] | null | undefined,
+  now: number = Date.now(),
+): ExpirySummary {
+  let best: string | null = null;
+  let bestTs = Infinity;
+  for (const c of brChapters(memberships, now)) {
+    if (!c.expiry) continue;
+    const ts = Date.parse(c.expiry);
+    if (!Number.isNaN(ts) && ts < bestTs) { bestTs = ts; best = c.expiry; }
+  }
+  if (best === null) return { expiry: null, days: null, expired: false, soon: false, status: 'none' };
+  const days = Math.ceil((bestTs - now) / 86400000);
+  const expired = days < 0;
+  const soon = !expired && days <= 30;
+  return { expiry: best, days, expired, soon, status: expired ? 'expired' : soon ? 'soon' : 'ok' };
+}

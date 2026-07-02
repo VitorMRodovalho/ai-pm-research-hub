@@ -8,10 +8,10 @@
 //
 // Authority is function-anchored (PM 2026-06-12): access follows the office, never a name. The
 // server RPCs are the real boundary; this UI is convenience + the just-in-time attestation gate.
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
-import { brChapters, type PmiMembershipEntry } from '../../lib/affiliation-chapters';
+import { brChapters, soonestBrExpiry, type PmiMembershipEntry } from '../../lib/affiliation-chapters';
 
 interface LatestVerification {
   created_at: string;
@@ -42,17 +42,29 @@ function toDateInput(raw: string | null | undefined): string {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
-/* Verification farol from the latest append-only verification. */
-function farol(r: QueueRow, t: (k: string, f?: string) => string): { emoji: string; label: string; cls: string } {
+interface Farol { emoji: string; label: string; cls: string; provisional: boolean; key: 'expired' | 'soon' | 'ok' | 'unverified'; }
+
+/**
+ * Verification farol. A GP-recorded verification (append-only latest_verification) is
+ * AUTHORITATIVE. #1041 — when none exists yet, derive a PROVISIONAL status from the enriched
+ * VEP expiry (soonestBrExpiry) so the GP triages at a glance and opens the modal only to confirm.
+ */
+function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
   const v = r.latest_verification;
-  if (!v) return { emoji: '⚪', label: t('comp.affiliationQueue.affUnverified', 'Não verificada'), cls: 'bg-slate-100 text-slate-500' };
-  if (v.membership_active === false) return { emoji: '🔴', label: t('comp.affiliationQueue.affInactive', 'Filiação inativa'), cls: 'bg-rose-50 text-rose-700' };
-  if (v.membership_expires_on) {
-    const days = Math.ceil((new Date(v.membership_expires_on).getTime() - Date.now()) / 86400000);
-    if (days < 0) return { emoji: '🔴', label: t('comp.affiliationQueue.affExpired', 'Filiação vencida'), cls: 'bg-rose-50 text-rose-700' };
-    if (days <= 30) return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiring', 'Vence em breve'), cls: 'bg-amber-50 text-amber-700' };
+  if (v) {
+    if (v.membership_active === false) return { emoji: '🔴', label: t('comp.affiliationQueue.affInactive', 'Filiação inativa'), cls: 'bg-rose-50 text-rose-700', provisional: false, key: 'expired' };
+    if (v.membership_expires_on) {
+      const days = Math.ceil((new Date(v.membership_expires_on).getTime() - Date.now()) / 86400000);
+      if (days < 0) return { emoji: '🔴', label: t('comp.affiliationQueue.affExpired', 'Filiação vencida'), cls: 'bg-rose-50 text-rose-700', provisional: false, key: 'expired' };
+      if (days <= 30) return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiring', 'Vence em breve'), cls: 'bg-amber-50 text-amber-700', provisional: false, key: 'soon' };
+    }
+    return { emoji: '🟢', label: t('comp.affiliationQueue.affVerified', 'Verificada'), cls: 'bg-emerald-50 text-emerald-700', provisional: false, key: 'ok' };
   }
-  return { emoji: '🟢', label: t('comp.affiliationQueue.affVerified', 'Verificada'), cls: 'bg-emerald-50 text-emerald-700' };
+  const s = soonestBrExpiry(r.pmi_memberships);
+  if (s.status === 'expired') return { emoji: '🔴', label: t('comp.affiliationQueue.affExpiredVep', 'Vencida (VEP)'), cls: 'bg-rose-50 text-rose-700', provisional: true, key: 'expired' };
+  if (s.status === 'soon') return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiringVep', 'Vence em breve (VEP)'), cls: 'bg-amber-50 text-amber-700', provisional: true, key: 'soon' };
+  if (s.status === 'ok') return { emoji: '🟢', label: t('comp.affiliationQueue.affActiveVep', 'Ativa (VEP)'), cls: 'bg-emerald-50 text-emerald-700', provisional: true, key: 'ok' };
+  return { emoji: '⚪', label: t('comp.affiliationQueue.affUnverified', 'Não verificada'), cls: 'bg-slate-100 text-slate-500', provisional: false, key: 'unverified' };
 }
 
 const VEP_CLS: Record<string, string> = {
@@ -70,6 +82,8 @@ export default function AffiliationQueueIsland() {
   const [tab, setTab] = useState<'pre' | 'all'>('pre');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkVerifying, setBulkVerifying] = useState(false);
+  const [sortExpiry, setSortExpiry] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'action' | 'unverified'>('all');
 
   // ── load the queue (retry until Nav publishes the authed client) ──
   const fetchQueue = useCallback(async () => {
@@ -205,7 +219,22 @@ export default function AffiliationQueueIsland() {
     setSelectedIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const preCount = rows.filter(r => r.is_pre_onboarding).length;
-  const visible = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding) : rows;
+  const visible = useMemo(() => {
+    let list = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding) : rows.slice();
+    if (statusFilter === 'action') list = list.filter(r => { const k = farol(r, t).key; return k === 'expired' || k === 'soon'; });
+    else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
+    if (sortExpiry) {
+      list = list.slice().sort((a, b) => {
+        const da = soonestBrExpiry(a.pmi_memberships).days;
+        const db = soonestBrExpiry(b.pmi_memberships).days;
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;   // rows without a dated BR chapter sink to the bottom
+        if (db === null) return -1;
+        return da - db;              // soonest / already-expired first
+      });
+    }
+    return list;
+  }, [rows, tab, statusFilter, sortExpiry, t]);
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
     setSelectedIds(s => {
@@ -241,6 +270,17 @@ export default function AffiliationQueueIsland() {
         </button>
       </div>
 
+      {/* status filter */}
+      <div className="flex items-center gap-1.5 mb-4 text-[12px]">
+        <Filter size={13} className="text-[var(--text-muted)]" />
+        {(['all', 'action', 'unverified'] as const).map(fk => (
+          <button key={fk} onClick={() => setStatusFilter(fk)}
+            className={`px-2.5 py-1 rounded-full border cursor-pointer ${statusFilter === fk ? 'bg-teal-50 text-teal-700 border-teal-300' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
+            {t(`comp.affiliationQueue.filter_${fk}`, fk === 'all' ? 'Todos' : fk === 'action' ? 'Vencendo / Vencidas' : 'Não verificadas')}
+          </button>
+        ))}
+      </div>
+
       {/* bulk bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-[var(--surface-section-cool)]">
@@ -262,6 +302,12 @@ export default function AffiliationQueueIsland() {
                 <th className="px-3 py-2 w-10"><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="accent-teal-500" aria-label={t('comp.affiliationQueue.selectAll', 'Selecionar todos')} /></th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thMember', 'Membro')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thChapter', 'Capítulo / Filiação PMI')}</th>
+                <th className="px-3 py-2 text-left">
+                  <button onClick={() => setSortExpiry(s => !s)} className="inline-flex items-center gap-1 cursor-pointer uppercase tracking-wider hover:text-[var(--text-secondary)]" title={t('comp.affiliationQueue.sortExpiryHint', 'Ordenar por vencimento (vencidas/vencendo primeiro)')}>
+                    {t('comp.affiliationQueue.thExpiry', 'Vencimento')}
+                    <ArrowUpDown size={11} className={sortExpiry ? 'text-teal-600' : 'opacity-40'} />
+                  </button>
+                </th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thVep', 'VEP')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thStatus', 'Status')}</th>
                 <th className="px-3 py-2 text-center w-24">{t('comp.affiliationQueue.thActions', 'Ações')}</th>
@@ -278,6 +324,7 @@ export default function AffiliationQueueIsland() {
                       <div className="font-medium text-[var(--text-primary)] flex items-center gap-1.5">
                         {r.name}
                         {r.is_pre_onboarding && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-semibold">{t('comp.affiliationQueue.preBadge', 'pré')}</span>}
+                        {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
                       </div>
                       <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
                     </td>
@@ -302,13 +349,32 @@ export default function AffiliationQueueIsland() {
                         </div>
                       )}
                     </td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const s = soonestBrExpiry(r.pmi_memberships);
+                        if (!s.expiry) return <span className="text-[12px] text-[var(--text-muted)]">—</span>;
+                        const cls = s.expired ? 'text-rose-600' : s.soon ? 'text-amber-600' : 'text-[var(--text-secondary)]';
+                        const rel = s.expired
+                          ? t('comp.affiliationQueue.expiredAgo', 'vencida há {d}d').replace('{d}', String(Math.abs(s.days ?? 0)))
+                          : t('comp.affiliationQueue.expiresIn', 'vence em {d}d').replace('{d}', String(s.days ?? 0));
+                        return (
+                          <div className={`text-[12px] ${cls}`}>
+                            <div className="flex items-center gap-1"><CalendarClock size={11} /> {s.expiry}</div>
+                            <div className="text-[10px]">{rel}</div>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2 text-center">
                       {r.vep_status_raw
                         ? <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${VEP_CLS[r.vep_status_raw] || 'bg-slate-100 text-slate-600'}`}>{r.vep_status_raw}</span>
                         : <span className="text-[var(--text-muted)]">—</span>}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.cls}`} title={f.label}>{f.emoji} {f.label}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.cls} ${f.provisional ? 'border border-dashed border-current' : ''}`}
+                        title={f.provisional ? t('comp.affiliationQueue.provisionalHint', 'Status derivado do VEP — ainda não confirmado pela Diretoria de Filiação') : f.label}>
+                        {f.emoji} {f.label}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button onClick={() => requireAttest(() => openVerify(r))}
