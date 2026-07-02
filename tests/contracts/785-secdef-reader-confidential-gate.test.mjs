@@ -31,27 +31,21 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  *  - wrapper: delegates to an already-gated reader.
  *  - system: cron/notification/dev helper, not a user content read.
  */
-// NOTE (#932 Part 1, 2026-07-02): exec_cross_initiative_comparison, get_cycle_report, and
-// get_public_impact_data were REMOVED from this allowlist — they now exclude confidential (they
-// contain 'confidential', which _audit_secdef_initiative_reader_gates now treats as a gate). Those
-// three were CONTENT leaks (initiative title+leader / confidential board name / public event counts)
-// reachable by 12–15 non-GP holders of view_internal_analytics / view_chapter_dashboards, or anon.
-// The remaining aggregates below are the #932 Part-2 follow-up (count-only over board tables) OR are
-// structurally safe (tribe-scoped / GP-only) with the reason corrected inline.
+// NOTE (#932 Part 1 + Part 2, 2026-07-02): the CONTENT/public readers (Part 1: mig 320 —
+// exec_cross_initiative_comparison, get_cycle_report, get_public_impact_data) AND the count-only
+// board/event aggregates (Part 2: mig 321 — _artia_safe_monthly_metrics, exec_portfolio_board_summary,
+// exec_portfolio_health, get_admin_dashboard, get_annual_kpis, get_cycle_evolution, get_kpi_dashboard,
+// get_pilot_metrics, get_tags) were REMOVED from this allowlist — they now exclude confidential (they
+// contain 'confidential', which _audit_secdef_initiative_reader_gates treats as a gate). Only
+// get_portfolio_dashboard / get_portfolio_timeline remain as latent aggregates (they already filter
+// is_portfolio_item=true and there are 0 confidential portfolio items), plus the structurally-safe
+// (tribe-scoped / GP-only) readers with the reason corrected inline.
 const ALLOWLIST = {
-  // --- #932 Part-2 follow-up: count-only board-table aggregates (latent — confidential board has
-  //     0 is_portfolio_item / 0 curation_approved today; contamination is raw counts, not content) ---
-  _artia_safe_monthly_metrics: 'aggregate (Part-2: events + initiatives-active + publicacao board count)',
-  exec_portfolio_board_summary: 'aggregate (Part-2: by_lane card counts incl confidential cross_functional lane)',
-  exec_portfolio_health: 'aggregate (Part-2: meeting_hours inline events; impact_hours already excludes via canonical)',
-  get_admin_dashboard: 'aggregate (Part-2: deliverables_total/completed global board_items; reachable by view_chapter_dashboards)',
-  get_annual_kpis: 'aggregate (Part-2: events_total + publications tag counts; analytics-gated)',
-  get_cycle_evolution: 'aggregate (Part-2: events + board_items counts)',
-  get_kpi_dashboard: 'aggregate (Part-2: events impact + board articles)',
-  get_pilot_metrics: 'aggregate (Part-2: pilot-scoped auto_values total_events/boards/board_items)',
+  // --- #932 latent remainder: filter is_portfolio_item=true; 0 confidential portfolio items today.
+  //     Kept ungated (the is_portfolio_item filter is the current containment); would leak only if a
+  //     confidential board item is flagged is_portfolio_item by GP. Hardening tracked on #932. ---
   get_portfolio_dashboard: 'aggregate (latent: filters is_portfolio_item=true; 0 confidential portfolio items)',
   get_portfolio_timeline: 'aggregate (latent: filters is_portfolio_item=true; 0 confidential portfolio items)',
-  get_tags: 'aggregate (Part-2: per-tag board_item/event counts)',
   // --- structurally safe: scoped so the confidential initiative (legacy_tribe_id=NULL) never appears ---
   exec_chapter_dashboard: 'chapter-scoped (member.chapter join) + analytics/own-chapter gate (Part-2: indirect count only)',
   get_chapter_dashboard: 'chapter-scoped (member.chapter join) + analytics/own-chapter gate (Part-2: indirect count only)',
@@ -195,5 +189,24 @@ for (const name of GATED_IN_MIG932) {
     assert.ok(block, `${name} must be CREATE OR REPLACE'd in migration 320`);
     assert.ok(/confidential/.test(block),
       `${name} must exclude confidential (visibility <> 'confidential' / is_confidential_* / NOT EXISTS ... confidential)`);
+  });
+}
+
+// --- #932 Part 2 (2026-07-02): count-only board/event aggregates exclude confidential via the
+// session-blind helpers (is_confidential_board / is_confidential_initiative). Static guard so a
+// future rewrite of these readers cannot silently drop the exclusion.
+const MIG932P2 = 'supabase/migrations/20260805000321_932_confidential_aggregate_exclusion_part2.sql';
+
+const GATED_IN_MIG932P2 = [
+  '_artia_safe_monthly_metrics', 'exec_portfolio_board_summary', 'exec_portfolio_health',
+  'get_admin_dashboard', 'get_annual_kpis', 'get_cycle_evolution', 'get_kpi_dashboard',
+  'get_pilot_metrics', 'get_tags',
+];
+for (const name of GATED_IN_MIG932P2) {
+  test(`#932 Part 2 static: ${name} excludes confidential in mig 321`, () => {
+    const block = migBlock(MIG932P2, name);
+    assert.ok(block, `${name} must be CREATE OR REPLACE'd in migration 321`);
+    assert.ok(/is_confidential_(board|initiative)|visibility <> 'confidential'/.test(block),
+      `${name} must exclude confidential (is_confidential_board / is_confidential_initiative / visibility <> 'confidential')`);
   });
 }
