@@ -241,6 +241,28 @@ The **enforced behavioural consequence** is what makes the two states materially
   match the badge. No semantic change.
 - i18n keys `comp.memberList.status*` + `legendLabel` in all 3 dictionaries.
 
+## Amendment 3 — `observer` retired as an offboard target + inactive reversibility reaffirmed (#1022, 2026-07-01)
+
+#1022 audited exit-state semantics at C3 close. Two outcomes touch this ADR (C governance; D a premise correction). #1022-A/B (canonical alumni metric + dead `observers_active` removal in `get_adoption_dashboard`) are reporting fixes, not lifecycle changes, and are noted only under Delivered.
+
+### C — `observer` retired as an offboard target (governance / LGPD)
+
+`admin_offboard_member` accepted `p_new_status='observer'`, and the `/admin/members` offboard modal even **defaulted** to it. Per PM, the "ouvinte"/observer function was created then pulled back: a non-volunteer is **not bound by the volunteer term**, so their data / IP / LGPD obligations are left unbound. With 0 members holding `member_status='observer'` and no RLS policy referencing it, this was a dormant-but-reachable exposure.
+
+- `admin_offboard_member` now rejects `p_new_status='observer'` — only `alumni` (friendly, re-invitable) and `inactive` (administrative, reversible) remain valid offboard targets.
+- The offboard UI (`MemberListIsland.tsx`) picker + default drop `observer`.
+- The `member_status='observer'` **enum value is retained** (CHECK constraint unchanged) so historical rows and the defense-in-depth invariants (`A2_observer_role_consistency`, terminal-status guards) stay valid; the state is simply **no longer creatable**. This **supersedes** the Foundation transition-table entry `active → observer` (§ Decision) and the Amendment-1 mention of `observer→active`.
+- Disambiguation: `member_status='observer'` (this retired exit-state) is **distinct** from `engagement.kind='observer'` (a participatory engagement kind, ~13 active) — same word, two concepts. Only the exit-state is retired; the engagement kind is untouched.
+
+### D — `inactive` is REVERSIBLE by design (premise correction, no code change)
+
+#1022-D proposed making `inactive` terminal (block `inactive→active`), on the premise that it is a "dead-end". Grounding showed that premise is **incorrect**: `inactive` is intentionally reversible — `admin_reactivate_member`'s non-alumni branch reactivates it directly (the sabbatical path, Amendment 2 § "returns to active via the direct `admin_reactivate_member` path"), and **#976 Camada 5** disengages lapsed re-acceptors to a **reversible** `inactive` (`_reacceptance_disengage`), relying on the re-acceptance path to bring them back. Blocking `inactive→active` would break the reaccept flow. `validate_status_transition` is therefore left **unchanged**; `inactive` stays reversible.
+
+### Delivered
+
+- Migration `20260805000315_1022_exit_state_canonical_semantics.sql` (also lands #1022-A canonical alumni metric [loose OR → strict `member_status='alumni'`, 22→21] + #1022-B dead `observers_active` removal in `get_adoption_dashboard`).
+- Contract test `tests/contracts/1022-exit-state-canonical-semantics.test.mjs`.
+
 ## References
 
 - Migration: `supabase/migrations/20260516840000_arm9_foundation_g5g6_transition_validation_invariant_n.sql`
