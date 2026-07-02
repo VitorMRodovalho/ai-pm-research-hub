@@ -31,33 +31,40 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  *  - wrapper: delegates to an already-gated reader.
  *  - system: cron/notification/dev helper, not a user content read.
  */
+// NOTE (#932 Part 1, 2026-07-02): exec_cross_initiative_comparison, get_cycle_report, and
+// get_public_impact_data were REMOVED from this allowlist — they now exclude confidential (they
+// contain 'confidential', which _audit_secdef_initiative_reader_gates now treats as a gate). Those
+// three were CONTENT leaks (initiative title+leader / confidential board name / public event counts)
+// reachable by 12–15 non-GP holders of view_internal_analytics / view_chapter_dashboards, or anon.
+// The remaining aggregates below are the #932 Part-2 follow-up (count-only over board tables) OR are
+// structurally safe (tribe-scoped / GP-only) with the reason corrected inline.
 const ALLOWLIST = {
-  // aggregates / metrics (Tier 2 follow-up — counts, not content)
-  _artia_safe_monthly_metrics: 'aggregate metrics',
-  exec_all_tribes_summary: 'aggregate',
-  exec_chapter_comparison: 'aggregate',
-  exec_chapter_dashboard: 'aggregate',
-  exec_cross_initiative_comparison: 'aggregate',
-  exec_cycle_report: 'aggregate',
-  exec_portfolio_board_summary: 'aggregate',
-  exec_portfolio_health: 'aggregate',
-  exec_tribe_dashboard: 'aggregate',
-  get_admin_dashboard: 'aggregate',
-  get_annual_kpis: 'aggregate',
-  get_chapter_dashboard: 'aggregate',
-  get_comms_dashboard_metrics: 'aggregate',
-  get_cycle_evolution: 'aggregate',
-  get_cycle_report: 'aggregate',
-  get_kpi_dashboard: 'aggregate',
-  get_pilot_metrics: 'aggregate',
-  get_portfolio_dashboard: 'aggregate',
-  get_portfolio_planned_vs_actual: 'aggregate',
-  get_portfolio_timeline: 'aggregate',
-  get_public_impact_data: 'aggregate (public, k-anon)',
-  get_tags: 'aggregate (tag list)',
-  get_tribe_stats: 'aggregate',
-  platform_activity_summary: 'aggregate',
-  detect_operational_alerts: 'system/cron aggregate',
+  // --- #932 Part-2 follow-up: count-only board-table aggregates (latent — confidential board has
+  //     0 is_portfolio_item / 0 curation_approved today; contamination is raw counts, not content) ---
+  _artia_safe_monthly_metrics: 'aggregate (Part-2: events + initiatives-active + publicacao board count)',
+  exec_portfolio_board_summary: 'aggregate (Part-2: by_lane card counts incl confidential cross_functional lane)',
+  exec_portfolio_health: 'aggregate (Part-2: meeting_hours inline events; impact_hours already excludes via canonical)',
+  get_admin_dashboard: 'aggregate (Part-2: deliverables_total/completed global board_items; reachable by view_chapter_dashboards)',
+  get_annual_kpis: 'aggregate (Part-2: events_total + publications tag counts; analytics-gated)',
+  get_cycle_evolution: 'aggregate (Part-2: events + board_items counts)',
+  get_kpi_dashboard: 'aggregate (Part-2: events impact + board articles)',
+  get_pilot_metrics: 'aggregate (Part-2: pilot-scoped auto_values total_events/boards/board_items)',
+  get_portfolio_dashboard: 'aggregate (latent: filters is_portfolio_item=true; 0 confidential portfolio items)',
+  get_portfolio_timeline: 'aggregate (latent: filters is_portfolio_item=true; 0 confidential portfolio items)',
+  get_tags: 'aggregate (Part-2: per-tag board_item/event counts)',
+  // --- structurally safe: scoped so the confidential initiative (legacy_tribe_id=NULL) never appears ---
+  exec_chapter_dashboard: 'chapter-scoped (member.chapter join) + analytics/own-chapter gate (Part-2: indirect count only)',
+  get_chapter_dashboard: 'chapter-scoped (member.chapter join) + analytics/own-chapter gate (Part-2: indirect count only)',
+  get_tribe_stats: 'tribe-scoped (legacy_tribe_id filter; confidential has NULL legacy_tribe_id → never matches)',
+  get_portfolio_planned_vs_actual: 'tribe-join scoped (JOIN initiatives ON legacy_tribe_id=tribe; confidential NULL → excluded)',
+  get_comms_dashboard_metrics: 'can_view_comms_analytics gate + domain_key=communication (confidential board is cross_functional)',
+  // --- GP-only in practice (manage_platform, or +view_aggregate_analytics with 0 non-GP holders) ---
+  exec_all_tribes_summary: 'manage_platform OR view_chapter_dashboards; tribe-scoped (legacy_tribe_id=NULL invariant → safe)',
+  exec_chapter_comparison: 'manage_platform OR view_aggregate_analytics (0 non-GP hold it); confidential curation_approved=0 (latent)',
+  exec_cycle_report: 'manage_platform OR view_chapter_dashboards; all reads tribe-scoped via legacy_tribe_id (confidential NULL → safe)',
+  exec_tribe_dashboard: 'manage_platform OR view_chapter_dashboards; tribe/initiative-scoped (research_tribe; confidential NULL → safe)',
+  platform_activity_summary: 'gp-only (manage_platform gate — sees confidential anyway)',
+  detect_operational_alerts: 'system/cron aggregate, manage_platform-gated + tribe-scoped',
   check_code_schema_drift: 'dev helper, no member data',
   // self-scoped to caller
   export_my_data: 'self-scoped (auth.uid own data, LGPD export)',
@@ -155,3 +162,38 @@ test('#785 static: rls_can_see_item helper is created in mig 274', () => {
   assert.ok(/CREATE OR REPLACE FUNCTION public\.rls_can_see_item\(/.test(sql),
     'rls_can_see_item helper must be defined in migration 274');
 });
+
+// --- #932 Part 1 (2026-07-02): universal confidential exclusion from content/public/canonical readers.
+// Static guard so a future rewrite of these functions cannot silently drop the exclusion. Note
+// _artia_safe_event_summary reads only `events` (not board tables), so the DB-aware audit RPC above
+// does NOT track it — this static assertion is its only recurrence guard.
+const MIG932 = 'supabase/migrations/20260805000320_932_confidential_aggregate_exclusion_part1.sql';
+
+test('#932 static: helpers is_confidential_initiative + is_confidential_board defined in mig 320', () => {
+  const sql = readFileSync(resolve(process.cwd(), MIG932), 'utf8');
+  assert.ok(/CREATE OR REPLACE FUNCTION public\.is_confidential_initiative\(/.test(sql),
+    'is_confidential_initiative helper must be defined');
+  assert.ok(/CREATE OR REPLACE FUNCTION public\.is_confidential_board\(/.test(sql),
+    'is_confidential_board helper must be defined');
+});
+
+test('#932 static: audit RPC references_gate recognizes the confidential-exclusion predicate', () => {
+  const sql = readFileSync(resolve(process.cwd(), MIG932), 'utf8');
+  const block = migBlock(MIG932, '_audit_secdef_initiative_reader_gates');
+  assert.ok(block, '_audit_secdef_initiative_reader_gates must be re-created in mig 320');
+  assert.ok(/rls_can_see_\(initiative\|board\|item\)\|confidential/.test(block),
+    'references_gate regex must also match the word confidential');
+});
+
+const GATED_IN_MIG932 = [
+  'get_impact_hours_canonical', 'get_public_platform_stats', 'get_public_impact_data',
+  '_artia_safe_event_summary', 'exec_cross_initiative_comparison', 'get_cycle_report',
+];
+for (const name of GATED_IN_MIG932) {
+  test(`#932 static: ${name} excludes confidential in mig 320`, () => {
+    const block = migBlock(MIG932, name);
+    assert.ok(block, `${name} must be CREATE OR REPLACE'd in migration 320`);
+    assert.ok(/confidential/.test(block),
+      `${name} must exclude confidential (visibility <> 'confidential' / is_confidential_* / NOT EXISTS ... confidential)`);
+  });
+}
