@@ -6,11 +6,15 @@ import {
 import { usePageI18n } from '../../../i18n/usePageI18n';
 
 /**
- * /admin/members/drive-teardown — #1026 Fatia C.
+ * /admin/members/drive-teardown — #1026 Fatia C (+ Fatia B provenance, #1039).
  * Makes the (previously UI-less, LL#588) Drive-offboarding queue visible to the GP:
  *   - get_drive_teardown_overview() → per-member rollup (attested-clean / needs-action / not-scanned)
  *   - drill-down per member via admin_list_drive_revocation_audit
- *   - manual approve via bulk_approve_drive_revocations (still manual in Fatia A; drains via cron 64 ≤1h)
+ *   - manual approve via bulk_approve_drive_revocations (inactive lane; drains via cron 64 ≤1h)
+ *   - #1039: alumni rows are auto-approved (approval_mode='auto') when the kill-switch
+ *     site_config drive_auto_revoke_enabled is on — the panel shows in-flight autos and the
+ *     skipped exception lane (owner_permission | member_reactivated). GP cannot pause the
+ *     switch (superadmin-only site_config write) — see DRIVE_OFFBOARDING_CASCADE.md.
  */
 
 interface MemberRow {
@@ -20,8 +24,10 @@ interface MemberRow {
   offboarded_at: string | null;
   latest_scan_at: string | null;
   latest_grants_found: number | null;
+  latest_scan_source: string | null;
   pending_revoke: number;
   approved: number;
+  auto_approved: number;
   revoked: number;
   already_absent: number;
   failed: number;
@@ -40,6 +46,7 @@ interface Summary {
   not_scanned: number;
   open_pending: number;
   open_approved: number;
+  auto_approved: number;
   open_failed: number;
 }
 
@@ -50,6 +57,8 @@ interface Grant {
   drive_file_url: string | null;
   permission_role: string | null;
   status: string;
+  approval_mode: string | null;
+  skip_reason: string | null;
   detected_at: string | null;
 }
 
@@ -146,7 +155,7 @@ export default function DriveTeardownIsland() {
             {t('driveTeardown.title', 'Teardown de Acesso ao Drive')}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] max-w-3xl">
-            {t('driveTeardown.subtitle', 'Estado de revogação de acesso ao Google Drive por membro desligado. A detecção é disparada no desligamento; a aprovação da revogação é manual (executa via cron em até 1h).')}
+            {t('driveTeardown.subtitle', 'Estado de revogação de acesso ao Google Drive por membro desligado. A detecção é disparada no desligamento; alumni são auto-aprovados quando o auto-revoke está ativo (#1039), inactive permanece com aprovação manual. Execução via cron em até 1h.')}
           </p>
         </div>
         <button
@@ -171,6 +180,13 @@ export default function DriveTeardownIsland() {
           <StatCard label={t('driveTeardown.statNeedsAction', 'Requerem ação')} value={s.needs_action} tone="amber" icon={<Clock className="w-4 h-4" />} />
           <StatCard label={t('driveTeardown.statClean', 'Atestados limpos')} value={s.attested_clean} tone="emerald" icon={<CheckCircle2 className="w-4 h-4" />} />
           <StatCard label={t('driveTeardown.statNotScanned', 'Sem atestação')} value={s.not_scanned} tone="slate" />
+        </div>
+      )}
+
+      {s && s.auto_approved > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-xs text-blue-800 flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <span>{t('driveTeardown.autoInFlight', '{n} aprovação(ões) automática(s) de alumni em execução — a revogação roda via cron em até 1h. Não é necessária ação manual.').replace('{n}', String(s.auto_approved))}</span>
         </div>
       )}
 
@@ -208,11 +224,12 @@ export default function DriveTeardownIsland() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {m.pending_revoke > 0 && <Pill tone="amber">{t('driveTeardown.stPending', 'pendente')}: {m.pending_revoke}</Pill>}
-                          {m.approved > 0 && <Pill tone="blue">{t('driveTeardown.stApproved', 'aprovado')}: {m.approved}</Pill>}
+                          {m.approved > 0 && <Pill tone="blue">{t('driveTeardown.stApproved', 'aprovado')}: {m.approved}{m.auto_approved > 0 ? ` (${t('driveTeardown.autoShort', 'auto')}: ${m.auto_approved})` : ''}</Pill>}
                           {m.failed > 0 && <Pill tone="red">{t('driveTeardown.stFailed', 'falha')}: {m.failed}</Pill>}
                           {m.revoked > 0 && <Pill tone="emerald">{t('driveTeardown.stRevoked', 'revogado')}: {m.revoked}</Pill>}
                           {m.already_absent > 0 && <Pill tone="slate">{t('driveTeardown.stAbsent', 'ausente')}: {m.already_absent}</Pill>}
-                          {m.open_count === 0 && m.revoked === 0 && m.already_absent === 0 && <span className="text-xs text-[var(--text-muted)]">—</span>}
+                          {m.skipped > 0 && <Pill tone="slate">{t('driveTeardown.stSkipped', 'ignorado')}: {m.skipped}</Pill>}
+                          {m.open_count === 0 && m.revoked === 0 && m.already_absent === 0 && m.skipped === 0 && <span className="text-xs text-[var(--text-muted)]">—</span>}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-[var(--text-secondary)] text-xs">
@@ -255,7 +272,11 @@ export default function DriveTeardownIsland() {
                                     <span className="font-medium text-[var(--text-primary)]">{g.drive_file_name || g.drive_file_id || '—'}</span>
                                     <span className="text-[var(--text-muted)] ml-2">{g.permission_email} · {g.permission_role}</span>
                                   </div>
-                                  <Pill tone={g.status === 'revoked' ? 'emerald' : g.status === 'pending_revoke' ? 'amber' : g.status === 'approved' ? 'blue' : g.status === 'failed' ? 'red' : 'slate'}>{g.status}</Pill>
+                                  <Pill tone={g.status === 'revoked' ? 'emerald' : g.status === 'pending_revoke' ? 'amber' : g.status === 'approved' ? 'blue' : g.status === 'failed' ? 'red' : 'slate'}>
+                                    {g.status}
+                                    {g.approval_mode === 'auto' ? ` · ${t('driveTeardown.autoShort', 'auto')}` : ''}
+                                    {g.status === 'skipped' && g.skip_reason ? ` · ${g.skip_reason}` : ''}
+                                  </Pill>
                                 </div>
                               ))}
                             </div>
@@ -273,7 +294,7 @@ export default function DriveTeardownIsland() {
 
       <footer className="pt-1">
         <p className="text-xs text-[var(--text-muted)]">
-          {t('driveTeardown.footer', 'Detecção disparada no desligamento (event-triggered) + varredura semanal de reconciliação. "Aprovar revogação" marca para exclusão; a remoção efetiva roda via cron em até 1h. "Atestado limpo" = verificação positiva sem acesso ao Drive.')}
+          {t('driveTeardown.footer', 'Detecção disparada no desligamento (event-triggered) + varredura semanal de reconciliação. Alumni: aprovação automática (#1039, badge "auto") quando o auto-revoke está ativo; inactive: "Aprovar revogação" manual. A remoção efetiva roda via cron em até 1h. "Atestado limpo" = verificação positiva sem acesso. "ignorado" = fechado sem revogação (permissão de owner em revisão de exceção, ou cancelado por reativação do membro).')}
         </p>
       </footer>
     </div>

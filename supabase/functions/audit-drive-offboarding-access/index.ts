@@ -281,6 +281,24 @@ Deno.serve(async (req) => {
   const { data: upData, error: upErr } = await sb.rpc("upsert_drive_revocation_candidates", { p_rows: candidates });
   if (upErr) return new Response(JSON.stringify({ error: "upsert_error", detail: upErr.message, grants_found: candidates.length }), { status: 500 });
 
+  // 3b. #1039 (ADR-0107 Amendment 1): alumni-only auto-approve. The RPC is a no-op unless
+  // site_config 'drive_auto_revoke_enabled' = true (NULL-safe fail-closed kill-switch) and only
+  // flips pending_revoke rows whose member is alumni + offboarded — inactive stays on the manual
+  // GP lane (reversible, ADR-0071 Amd 3-D). No-arg on the weekly sweep = deliberate catch-up:
+  // rows that accumulated while the switch was off are approved on the first post-enable scan.
+  // Revocation itself executes via the hourly drain (cron 64). Non-fatal by design: a failure
+  // here never blocks detection/attestation (the manual approve lane keeps working).
+  let autoApproved = 0;
+  let autoRevokeEnabled: boolean | null = null;
+  {
+    const { data: autoData, error: autoErr } = await sb.rpc("auto_approve_alumni_drive_revocations", {
+      p_member_id: targeted ? body.member_id : null,
+      p_source: scanSource,
+    });
+    if (autoErr) errors.push(`auto_approve failed (manual lane unaffected): ${autoErr.message}`);
+    else { autoApproved = autoData?.approved_count ?? 0; autoRevokeEnabled = autoData?.enabled ?? null; }
+  }
+
   // 4. #1026 positive attestation — one drive_teardown_scans row per member scanned (grants_found=0 == clean).
   let attestedClean = 0;
   for (const [memberId, m] of perMember) {
@@ -309,6 +327,8 @@ Deno.serve(async (req) => {
     grants_found: candidates.length,
     inserted: upData?.inserted ?? 0,
     refreshed: upData?.refreshed ?? 0,
+    auto_revoke_enabled: autoRevokeEnabled,
+    auto_approved: autoApproved,
     errors: errors.slice(0, 20),
     error_count: errors.length,
   }), { status: 200, headers: { "Content-Type": "application/json" } });

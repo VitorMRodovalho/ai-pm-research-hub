@@ -136,4 +136,86 @@ checked off in a follow-up after the role elevation.
 
 ---
 
+## Amendment 1 — Fatia B: alumni-only auto-approve/auto-revoke (#1039, 2026-07-02)
+
+**Ratified:** PM Vitor Maia Rodovalho, 2026-07-02 (via council Tier-3 gate — see decision record
+`docs/council/decisions/2026-07-02-1039-drive-auto-revoke-alumni-only.md`; Tier-3 review
+`docs/council/2026-07-02-1039-fatia-b-auto-revoke-tier3.md`: legal-counsel, security-engineer,
+data-architect, accountability-advisor — 4× APPROVE_WITH_CONDITIONS, zero blockers, all conditions
+incorporated). Migration `20260805000319`.
+
+### Why the original manual gate existed — and why relaxing it is now safe
+
+The GP approval gate in this ADR's Decision was a **holding constraint, not a permanent policy**: at
+#209 time (2026-06-27) the SA lacked the organizer role (every revoke returned 403), the revocation
+path had never executed against real data, and a manual review compensated for both unknowns. Both
+have since closed: the SA role elevation is done, and the full pipeline has demonstrated **10/10
+zero-error revocations across the 27-member offboarded cohort** (grounded live 2026-07-02: 9 alumni +
+1 inactive rows, all `revoked`, 0 `failed`). What remained of the gate's value was reversal safety —
+and that is preserved structurally by the alumni-only scope (below) plus the new reactivation
+queue-clear.
+
+### The amendment
+
+1. **Alumni-only auto-approve.** New service-role RPC `auto_approve_alumni_drive_revocations`
+   (called by the detection EF after every upsert) flips `pending_revoke → approved` with
+   `approval_mode='auto'`, `approved_by = NULL`, ONLY for members with `member_status='alumni' AND
+   offboarded_at IS NOT NULL`, checked **at UPDATE time** (closes the detect→approve race). The
+   hourly drain (cron 64) — which never filtered on who approved — executes the revocation within
+   ~1h. No cron, revoke-EF, or trigger changes.
+2. **`inactive` stays manual — the asymmetry is deliberate and legally grounded** (legal REC-3):
+   `inactive` is reversible by design with NO pipeline gate before reactivation (ADR-0071 Amd 3-D
+   sabbatical; ADR-0116 `_reacceptance_disengage` exits to inactive) — auto-revoking it would strand
+   directly-reactivatable members. Alumni reactivation requires the multi-day re-engagement pipeline
+   (staged → invited → accepted), a natural intervention window. LGPD Art. 16 requires elimination
+   "without undue delay", not instantaneously — human review for reversible cases is not undue delay;
+   for permanent exits (alumni) the ≤1h automation is the stronger compliance posture.
+3. **Provenance model.** New column `approval_mode ('manual'|'auto')` — NOT a sentinel "system
+   member" (which would fabricate a members row and lie in the audit trail). Invariant AL amended in
+   lockstep: a `revoked` row needs `revoked_at` AND (`approved_by` OR `approval_mode='auto'`); an
+   auto row may never carry a human approver nor sit `pending_revoke`; `already_absent` remains
+   outside provenance checks by design (the grant was already gone — no proof of revocation is
+   required). The authorization record is a self-contained `admin_audit_log` entry
+   (`drive_revocation_auto_approved`, carries the exact `audit_ids`).
+4. **Kill-switch, ships dark.** `site_config['drive_auto_revoke_enabled']` seeded `'false'::jsonb`
+   (ADR-0116 precedent: dangerous automation ships dark; go-live is an explicit, audited OPS flip —
+   checklist in the runbook, gated on legal COND-1 comms + COND-3 retention issue). NULL-safe
+   fail-closed: a missing key means DISABLED. Write is superadmin-only; a GP cannot pause the switch.
+5. **Reactivation queue-clear (closes a pre-existing gap).** The AL invariant always promised "a
+   reversed offboarding must clear the revocation queue" but no mechanism existed.
+   `admin_reactivate_member` now cancels open rows (`pending_revoke`/`approved` →
+   `skipped`/`member_reactivated`) BEFORE clearing `offboarded_at`, in the same transaction — the
+   drain can never revoke a reactivated member's access (the revoke EF's status re-read guard closes
+   the cron race).
+6. **`skipped` redefined as the generic closed-without-revocation lane**, structurally disambiguated
+   by the new `skip_reason` column (`owner_permission` | `member_reactivated`, CHECK-enforced —
+   legal COND-2: free-text notes are not audit evidence).
+7. **NO auto re-grant on reactivation** (PM decision 2026-07-02, council-endorsed). Grounded in LGPD
+   Art. 6 III data-minimization — re-granting a stale historical folder set would recreate treatment
+   with obsolete scope and over-grant — not merely in the zero historical return rate. Re-grant is a
+   manual GP step contextual to the member's NEW engagement; the `revoked` audit history documents
+   what was revoked (runbook §Re-grant).
+8. **Weekly catch-up semantics.** The no-arg auto-approve call on the weekly sweep approves ALL
+   pending alumni rows globally — deliberate: rows accumulated while the switch was off drain on the
+   first post-enable scan. A large first-run count is expected behavior.
+
+### Known future constraint — multi-chapter expansion
+
+The institutional SA `nucleoia@pmigo.org.br` scope covers the PMI-GO workspace. A volunteer who is
+alumni in PMI-GO but active in another chapter sharing the same Drive subtree would be auto-revoked
+incorrectly. Multi-chapter expansion requires per-chapter SA credentials (ADR-0094 M1 deferred
+scope) or a membership-scope filter on the auto-approve RPC BEFORE enabling this feature for any
+non-PMI-GO chapter.
+
+### Follow-ups filed at amendment time
+
+- **#1054** — PII retention for terminal queue rows (5y + anonymization cron + ROPA/DPO; legal
+  COND-3 — gates go-live).
+- **#1055** — courtesy notification to the offboarded member at revocation time (legal REC-4 /
+  accountability).
+- **#1056** — governed `set_site_config` RPC bundling flip + audit atomically; per-row `unapprove`
+  escape hatch (security/accountability recommendations).
+
+---
+
 **Assisted-By:** Claude (Anthropic)
