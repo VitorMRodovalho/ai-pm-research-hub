@@ -6863,6 +6863,20 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.attestCheckbox': 'Declaro estar ciente e de acordo.',
   'comp.affiliationQueue.attesting': 'Registrando…',
   'comp.affiliationQueue.attestConfirm': 'Confirmar e acessar',
+  'comp.affiliationQueue.searchPh': 'Buscar por nome ou email',
+  'comp.affiliationQueue.filterChapterAll': 'Todos os capítulos',
+  'comp.affiliationQueue.filterVepAll': 'Todos VEP',
+  'comp.affiliationQueue.sort_attention': 'Precisa atenção',
+  'comp.affiliationQueue.sort_name': 'Nome',
+  'comp.affiliationQueue.sort_expiry': 'Vencimento',
+  'comp.affiliationQueue.sort_sync': 'Última sync',
+  'comp.affiliationQueue.expandHint': 'Ver identidade PMI',
+  'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.panelSince': 'Membro desde',
+  'comp.affiliationQueue.panelUntil': 'Membro até',
+  'comp.affiliationQueue.panelVolunteer': 'Registros de serviço PMI',
+  'comp.affiliationQueue.panelLastSync': 'Última sincronização VEP',
+  'comp.affiliationQueue.panelNoProfile': 'Sem enriquecimento VEP — verifique manualmente.',
 };
 
 export default ptBR;

@@ -6856,6 +6856,20 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.attestCheckbox': 'Declaro estar al tanto y de acuerdo.',
   'comp.affiliationQueue.attesting': 'Registrando…',
   'comp.affiliationQueue.attestConfirm': 'Confirmar y acceder',
+  'comp.affiliationQueue.searchPh': 'Buscar por nombre o email',
+  'comp.affiliationQueue.filterChapterAll': 'Todos los capítulos',
+  'comp.affiliationQueue.filterVepAll': 'Todos VEP',
+  'comp.affiliationQueue.sort_attention': 'Requiere atención',
+  'comp.affiliationQueue.sort_name': 'Nombre',
+  'comp.affiliationQueue.sort_expiry': 'Vencimiento',
+  'comp.affiliationQueue.sort_sync': 'Última sync',
+  'comp.affiliationQueue.expandHint': 'Ver identidad PMI',
+  'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.panelSince': 'Miembro desde',
+  'comp.affiliationQueue.panelUntil': 'Miembro hasta',
+  'comp.affiliationQueue.panelVolunteer': 'Registros de servicio PMI',
+  'comp.affiliationQueue.panelLastSync': 'Última sincronización VEP',
+  'comp.affiliationQueue.panelNoProfile': 'Sin enriquecimiento VEP — verifique manualmente.',
 };
 
 export default esLATAM;
