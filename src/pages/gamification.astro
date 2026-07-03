@@ -6,6 +6,18 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
+// #1087 wave 2 — pillar labels are the only pillar copy in the frontend; every
+// rule/threshold VALUE comes from get_gamification_rules_catalog at runtime.
+const PILLAR_I18N: Record<string, string> = {
+  presenca: t('gamification.pillar.presenca', lang),
+  trilha: t('gamification.pillar.trilha', lang),
+  certificacoes: t('gamification.pillar.certificacoes', lang),
+  producao: t('gamification.pillar.producao', lang),
+  curadoria: t('gamification.pillar.curadoria', lang),
+  champions: t('gamification.pillar.champions', lang),
+  protagonismo: t('gamification.pillar.protagonismo', lang),
+};
+
 const GAM_I18N = {
   loading: t('gamification.loading', lang),
   headingFull: t('gamification.headingFull', lang),
@@ -117,16 +129,35 @@ const GAM_I18N = {
   trailStatusInProgress: t('gamification.trail.statusInProgress', lang),
   trailStatusPending: t('gamification.trail.statusPending', lang),
   trailViewCourse: t('gamification.trail.viewCourse', lang),
-  mpCycleBreakdown: t('gamification.mp.cycleBreakdown', lang),
-  mpNoCycleData: t('gamification.mp.noCycleData', lang),
   credlyTierTitle: t('gamification.credly.tierTitle', lang),
   credlyTotalLabel: t('gamification.credly.totalLabel', lang),
   credlyTiersDesc: t('gamification.credly.tiersDesc', lang),
-  levelExplorer: t('gamification.levels.explorer', lang),
-  levelPractitioner: t('gamification.levels.practitioner', lang),
-  levelExpert: t('gamification.levels.expert', lang),
-  levelMaster: t('gamification.levels.master', lang),
-  levelLegend: t('gamification.levels.legend', lang),
+  levelNames: {
+    explorer: t('gamification.levels.explorer', lang),
+    practitioner: t('gamification.levels.practitioner', lang),
+    expert: t('gamification.levels.expert', lang),
+    master: t('gamification.levels.master', lang),
+    legend: t('gamification.levels.legend', lang),
+  },
+  pillarNames: PILLAR_I18N,
+  mpFilterCategory: t('gamification.mp.filterCategory', lang),
+  mpAllCategories: t('gamification.mp.allCategories', lang),
+  mpShowingOf: t('gamification.mp.showingOf', lang),
+  mpLoadMore: t('gamification.mp.loadMore', lang),
+  mpFilteredTotal: t('gamification.mp.filteredTotal', lang),
+  mpGrantedBy: t('gamification.mp.grantedBy', lang),
+  mpReversal: t('gamification.mp.reversal', lang),
+  mpChampionBy: t('gamification.mp.championBy', lang),
+  mpChampionCriteria: t('gamification.mp.championCriteria', lang),
+  mpEmptyFiltered: t('gamification.mp.emptyFiltered', lang),
+  lbChampionsDrillTitle: t('gamification.lb.championsDrillTitle', lang),
+  lbChampionsDrillEmpty: t('gamification.lb.championsDrillEmpty', lang),
+  lbChampionsDrillHint: t('gamification.lb.championsDrillHint', lang),
+  champSurfaceGeneral: t('gamification.champion.surface.general', lang),
+  champSurfaceTribe: t('gamification.champion.surface.tribe', lang),
+  champSurfaceDeliverable: t('gamification.champion.surface.deliverable', lang),
+  achCriteriaNote: t('gamification.ach.criteriaNote', lang),
+  dbLang: lang,
   achDefFirstPointsName: t('gamification.ach.def.firstPoints.name', lang),
   achDefFirstPointsDesc: t('gamification.ach.def.firstPoints.desc', lang),
   achDefPractitionerName: t('gamification.ach.def.practitioner.name', lang),
@@ -160,40 +191,15 @@ const GAM_I18N = {
   locale: lang === 'es-LATAM' ? 'es' : lang,
 };
 
+// #1087 wave 2 (G1): the popover renders the live rules catalog; only chrome
+// copy (title/goal/labels) lives here — never point values.
 const SCORING_I18N = {
   title: t('gamification.scoring.title', lang),
-  certSenior: t('gamification.scoring.certSenior', lang),
-  certSeniorSub: t('gamification.scoring.certSeniorSub', lang),
-  certCpmai: t('gamification.scoring.certCpmai', lang),
-  certMid: t('gamification.scoring.certMid', lang),
-  certMidSub: t('gamification.scoring.certMidSub', lang),
-  certPractitioner: t('gamification.scoring.certPractitioner', lang),
-  certPractitionerSub: t('gamification.scoring.certPractitionerSub', lang),
-  certEntry: t('gamification.scoring.certEntry', lang),
-  certEntrySub: t('gamification.scoring.certEntrySub', lang),
-  specialization: t('gamification.scoring.specialization', lang),
-  specializationSub: t('gamification.scoring.specializationSub', lang),
-  trail: t('gamification.scoring.trail', lang),
-  trailSub: t('gamification.scoring.trailSub', lang),
-  knowledgeAiPm: t('gamification.scoring.knowledgeAiPm', lang),
-  knowledgeAiPmSub: t('gamification.scoring.knowledgeAiPmSub', lang),
-  course: t('gamification.scoring.course', lang),
-  badge: t('gamification.scoring.badge', lang),
-  showcase: t('gamification.scoring.showcase', lang),
-  showcaseSub: t('gamification.scoring.showcaseSub', lang),
-  talk: t('gamification.scoring.talk', lang),
-  talkSub: t('gamification.scoring.talkSub', lang),
-  deliverable: t('gamification.scoring.deliverable', lang),
-  deliverableSub: t('gamification.scoring.deliverableSub', lang),
-  artifact: t('gamification.scoring.artifact', lang),
-  action: t('gamification.scoring.action', lang),
-  actionSub: t('gamification.scoring.actionSub', lang),
-  champion: t('gamification.scoring.champion', lang),
-  championSub: t('gamification.scoring.championSub', lang),
-  curation: t('gamification.scoring.curation', lang),
-  curationSub: t('gamification.scoring.curationSub', lang),
-  attendance: t('gamification.scoring.attendance', lang),
   goal: t('gamification.scoring.goal', lang),
+  loading: t('gamification.scoring.loading', lang),
+  onTimeBonus: t('gamification.scoring.onTimeBonus', lang),
+  perCriterion: t('gamification.scoring.perCriterion', lang),
+  pillars: PILLAR_I18N,
 };
 ---
 <BaseLayout title={t('gamification.titleFull', lang)} activePage="gamification" lang={lang}>
@@ -218,69 +224,22 @@ const SCORING_I18N = {
       </div>
     </div>
 
-    <!-- XP Level Legend -->
-    <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-[var(--border-default)] p-5 mb-6">
+    <!-- XP Level Legend — #1087 wave 2: tiers render from the live catalog
+         (platform_settings.gamification_level_thresholds); hidden until the
+         member session confirms (the catalog RPC is member-only). -->
+    <div id="level-legend-card" class="hidden bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-[var(--border-default)] p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.levels.title', lang)}</h3>
-      <div class="flex flex-wrap gap-3">
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">🌱</span>
-          <div><strong>{t('gamification.levels.explorer', lang)}</strong><span class="text-[var(--text-muted)] ml-1">0–30 pts</span></div>
-        </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">⚡</span>
-          <div><strong>{t('gamification.levels.practitioner', lang)}</strong><span class="text-[var(--text-muted)] ml-1">31–90 pts</span></div>
-        </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">🔥</span>
-          <div><strong>{t('gamification.levels.expert', lang)}</strong><span class="text-[var(--text-muted)] ml-1">91–200 pts</span></div>
-        </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">💎</span>
-          <div><strong>{t('gamification.levels.master', lang)}</strong><span class="text-[var(--text-muted)] ml-1">201–400 pts</span></div>
-        </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">🏆</span>
-          <div><strong>{t('gamification.levels.legend', lang)}</strong><span class="text-[var(--text-muted)] ml-1">401+ pts</span></div>
-        </div>
-      </div>
+      <div class="flex flex-wrap gap-3" id="level-legend-chips"></div>
     </div>
 
-    <!-- Points legend -->
-    <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
+    <!-- Points legend — #1087 wave 2: one chip per pillar, XP ranges derived
+         from gamification_rules via the catalog (no repeated values). -->
+    <div id="points-legend-card" class="hidden bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3 flex items-center gap-1.5">
         {t('gamification.pointsLegend.title', lang)}
-        <ScoringInfoPopover client:load i18n={SCORING_I18N} />
+        <ScoringInfoPopover client:load lang={lang} i18n={SCORING_I18N} />
       </h3>
-      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-[13px]">
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
-          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.attendance', lang)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[11px]">+20</span>
-          <span class="text-[var(--text-secondary)]">Trilha PMI</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-[11px]">+20</span>
-          <span class="text-[var(--text-secondary)]">AI & PM</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-[11px]">30-50</span>
-          <span class="text-[var(--text-secondary)]">Certificações</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-[11px]">+25</span>
-          <span class="text-[var(--text-secondary)]">Especialização</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-[11px]">15-25</span>
-          <span class="text-[var(--text-secondary)]">🎤 Showcase</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
-          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.deliverable', lang)}</span>
-        </div>
-      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-[13px]" id="points-legend-chips"></div>
     </div>
 
     <!-- Tabs -->
@@ -551,11 +510,19 @@ const SCORING_I18N = {
   import { buildTrailProgressByMember } from '../lib/trail-progress';
   import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
   import { hasPermission } from '../lib/permissions';
+  import {
+    getCatalog, getLevelInfo, pillarXpRange, rulesByPillar, localizeI18n,
+    fetchChampionAttribution, criterionLabel,
+  } from '../lib/gamification-catalog';
 
   const I = (typeof window !== 'undefined' && (window as any).__GAMIFICATION_I18N) || {};
 
   let sb: any = null;
   let MEMBER: any = null;
+  // #1087 wave 2 — SSOT rules catalog (rules + champion criteria + level tiers).
+  // Loaded once after the member session confirms; every displayed rule value
+  // and threshold on this page derives from it (ADR-0081 Pattern 47).
+  let CATALOG: any = null;
   let leaderboardData: any[] = [];
   // #419 M5 D1: default the member leaderboard to the current cycle (matches the
   // now-cycle-scoped rank). The 'Todos os tempos' toggle still shows lifetime.
@@ -573,23 +540,6 @@ const SCORING_I18N = {
       .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
       .replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-
-  const CATEGORY_META: Record<string, { icon: string; color: string; bg: string; label: string }> = {
-    attendance:          { icon: '📅', color: '#2563EB', bg: '#EFF6FF', label: 'Presença' },
-    trail:               { icon: '🧭', color: '#7C3AED', bg: '#F5F3FF', label: 'Trilha PMI' },
-    course:              { icon: '🎓', color: '#7C3AED', bg: '#F5F3FF', label: 'Curso' },
-    knowledge_ai_pm:     { icon: '🧠', color: '#6366F1', bg: '#EEF2FF', label: 'AI & PM' },
-    cert_pmi_senior:     { icon: '🏅', color: '#B45309', bg: '#FFFBEB', label: 'PMI Senior' },
-    cert_cpmai:          { icon: '🤖', color: '#B45309', bg: '#FFFBEB', label: 'CPMAI™' },
-    cert_pmi_mid:        { icon: '📋', color: '#B45309', bg: '#FFFBEB', label: 'PMI Mid' },
-    cert_pmi_practitioner: { icon: '📜', color: '#B45309', bg: '#FFFBEB', label: 'PMI Practitioner' },
-    cert_pmi_entry:      { icon: '📝', color: '#B45309', bg: '#FFFBEB', label: 'PMI Entry' },
-    specialization:      { icon: '⚡', color: '#0891B2', bg: '#ECFEFF', label: 'Especialização' },
-    badge:               { icon: '🏷️', color: '#D97706', bg: '#FFFBEB', label: 'Badge' },
-    artifact:            { icon: '📄', color: '#059669', bg: '#ECFDF5', label: 'Artefato' },
-    showcase:            { icon: '🎤', color: '#DC2626', bg: '#FEF2F2', label: 'Showcase' },
-    bonus:               { icon: '⭐', color: '#D97706', bg: '#FFFBEB', label: 'Bônus' },
-  };
 
   const TYPE_LABELS: Record<string, string> = {
     participation: I.typeParticipation, completion: I.typeCompletion,
@@ -656,39 +606,93 @@ const SCORING_I18N = {
     return err.message || I.msgUnknownError;
   }
 
-  // ── XP LEVEL SYSTEM ──
-  function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } {
-    const levels = [
-      { min: 0,   max: 30,  name: I.levelExplorer, emoji: '🌱', next: I.levelPractitioner },
-      { min: 31,  max: 90,  name: I.levelPractitioner, emoji: '⚡', next: I.levelExpert },
-      { min: 91,  max: 200, name: I.levelExpert, emoji: '🔥', next: I.levelMaster },
-      { min: 201, max: 400, name: I.levelMaster, emoji: '💎', next: I.levelLegend },
-      { min: 401, max: 9999, name: I.levelLegend, emoji: '🏆', next: '' },
-    ];
-    const lvl = levels.find(l => pts >= l.min && pts <= l.max) || levels[0];
-    const range = lvl.max - lvl.min;
-    const progress = pts - lvl.min;
+  // ── SSOT CATALOG (#1087 wave 2) ──
+  async function ensureCatalog() {
+    if (!CATALOG && sb && MEMBER) {
+      try {
+        CATALOG = await getCatalog(sb);
+      } catch (e) {
+        console.warn('gamification catalog:', e);
+      }
+    }
+    return CATALOG;
+  }
+
+  const PILLAR_EMOJI: Record<string, string> = {
+    presenca: '📅', trilha: '🧭', certificacoes: '🏅', producao: '🏗️',
+    curadoria: '📚', champions: '🏆', protagonismo: '🎤',
+  };
+
+  // ── XP LEVEL SYSTEM — tiers come from the catalog (platform_settings SSOT).
+  // Returns null before the catalog loads (anon rows fall back to the RPC's
+  // server-computed level_name).
+  function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } | null {
+    const info = CATALOG ? getLevelInfo(CATALOG.level_thresholds || [], pts) : null;
+    if (!info) return null;
+    const names = I.levelNames || {};
     return {
-      name: lvl.name, emoji: lvl.emoji, next: lvl.next,
-      ptsToNext: lvl.next ? (lvl.max + 1 - pts) : 0,
-      pctInLevel: range > 0 ? Math.min(Math.round((progress / range) * 100), 100) : 100,
+      name: names[info.slug] || info.slug,
+      emoji: info.emoji || '',
+      next: info.nextSlug ? (names[info.nextSlug] || info.nextSlug) : '',
+      ptsToNext: info.ptsToNext,
+      pctInLevel: info.pctInLevel,
     };
   }
 
-  // ── ACHIEVEMENTS (computed from existing data) ──
-  const ACHIEVEMENT_DEFS = [
-    { id: 'first_points', icon: '🎯', name: I.achDefFirstPointsName, desc: I.achDefFirstPointsDesc, check: (pts: number, data: any) => pts > 0 },
-    { id: 'level_practitioner', icon: '⚡', name: I.achDefPractitionerName, desc: I.achDefPractitionerDesc, check: (pts: number) => pts >= 31 },
-    { id: 'level_expert', icon: '🔥', name: I.achDefExpertName, desc: I.achDefExpertDesc, check: (pts: number) => pts >= 91 },
-    { id: 'level_master', icon: '💎', name: I.achDefMasterName, desc: I.achDefMasterDesc, check: (pts: number) => pts >= 201 },
-    { id: 'level_legend', icon: '🏆', name: I.achDefLegendName, desc: I.achDefLegendDesc, check: (pts: number) => pts >= 401 },
-    { id: 'scholar', icon: '📚', name: I.achDefScholarName, desc: I.achDefScholarDesc, check: (_: number, d: any) => d.coursesCompleted >= 7 },
-    { id: 'publisher', icon: '📝', name: I.achDefPublisherName, desc: I.achDefPublisherDesc, check: (_: number, d: any) => d.artifactsPublished > 0 },
-    { id: 'consistent', icon: '🔥', name: I.achDefConsistentName, desc: I.achDefConsistentDesc, check: (_: number, d: any) => d.attendanceCount >= 5 },
-    { id: 'engaged', icon: '💪', name: I.achDefEngagedName, desc: I.achDefEngagedDesc, check: (_: number, d: any) => d.attendanceCount >= 10 },
-    { id: 'veteran', icon: '🌟', name: I.achDefVeteranName, desc: I.achDefVeteranDesc, check: (_: number, d: any) => d.cycleCount >= 2 },
-    { id: 'profile_complete', icon: '✨', name: I.achDefProfileCompleteName, desc: I.achDefProfileCompleteDesc, check: (_: number, d: any) => d.profileComplete },
-  ];
+  function renderLegends() {
+    if (!CATALOG) return;
+    const names = I.levelNames || {};
+    const lvlEl = document.getElementById('level-legend-chips');
+    if (lvlEl) {
+      lvlEl.innerHTML = (CATALOG.level_thresholds || []).map((tier: any) => `
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
+          <span class="text-lg">${escapeHtml(tier.emoji || '')}</span>
+          <div><strong>${escapeHtml(names[tier.slug] || tier.slug)}</strong><span class="text-[var(--text-muted)] ml-1">${Number(tier.min_points) || 0}${tier.max_points != null ? `–${Number(tier.max_points)}` : '+'} ${I.mpPtsLabel}</span></div>
+        </div>`).join('');
+      document.getElementById('level-legend-card')?.classList.remove('hidden');
+    }
+    const ptsEl = document.getElementById('points-legend-chips');
+    if (ptsEl) {
+      const palette = [
+        ['bg-blue-50', 'text-blue-600'], ['bg-purple-50', 'text-purple-600'],
+        ['bg-amber-50', 'text-amber-700'], ['bg-emerald-50', 'text-emerald-600'],
+        ['bg-cyan-50', 'text-cyan-600'], ['bg-red-50', 'text-red-600'],
+        ['bg-indigo-50', 'text-indigo-600'],
+      ];
+      ptsEl.innerHTML = rulesByPillar(CATALOG).map(({ pillar, rules }: any, i: number) => {
+        const [bg, txt] = palette[i % palette.length];
+        return `
+        <div class="flex items-center gap-2">
+          <span class="min-w-8 h-8 px-1 rounded-lg ${bg} ${txt} flex items-center justify-center font-bold text-[11px]">${pillarXpRange(rules)}</span>
+          <span class="text-[var(--text-secondary)]">${escapeHtml((I.pillarNames || {})[pillar] || pillar)}</span>
+        </div>`;
+      }).join('');
+      document.getElementById('points-legend-card')?.classList.remove('hidden');
+    }
+  }
+
+  // ── ACHIEVEMENTS (computed from existing data; level thresholds from the
+  // catalog — no repeated tier values, #1087 wave 2) ──
+  function buildAchievementDefs() {
+    const tiers: Record<string, number> = {};
+    (CATALOG?.level_thresholds || []).forEach((tier: any) => { tiers[tier.slug] = tier.min_points; });
+    const levelDesc = (key: string, slug: string) =>
+      String(key || '').replace('{n}', tiers[slug] != null ? String(tiers[slug]) : '?');
+    const levelCheck = (slug: string) => (pts: number) => tiers[slug] != null && pts >= tiers[slug];
+    return [
+      { id: 'first_points', icon: '🎯', name: I.achDefFirstPointsName, desc: I.achDefFirstPointsDesc, check: (pts: number, _d: any) => pts > 0 },
+      { id: 'level_practitioner', icon: '⚡', name: I.achDefPractitionerName, desc: levelDesc(I.achDefPractitionerDesc, 'practitioner'), check: levelCheck('practitioner') },
+      { id: 'level_expert', icon: '🔥', name: I.achDefExpertName, desc: levelDesc(I.achDefExpertDesc, 'expert'), check: levelCheck('expert') },
+      { id: 'level_master', icon: '💎', name: I.achDefMasterName, desc: levelDesc(I.achDefMasterDesc, 'master'), check: levelCheck('master') },
+      { id: 'level_legend', icon: '🏆', name: I.achDefLegendName, desc: levelDesc(I.achDefLegendDesc, 'legend'), check: levelCheck('legend') },
+      { id: 'scholar', icon: '📚', name: I.achDefScholarName, desc: I.achDefScholarDesc, check: (_: number, d: any) => d.coursesCompleted >= 7 },
+      { id: 'publisher', icon: '📝', name: I.achDefPublisherName, desc: I.achDefPublisherDesc, check: (_: number, d: any) => d.artifactsPublished > 0 },
+      { id: 'consistent', icon: '🔥', name: I.achDefConsistentName, desc: I.achDefConsistentDesc, check: (_: number, d: any) => d.attendanceCount >= 5 },
+      { id: 'engaged', icon: '💪', name: I.achDefEngagedName, desc: I.achDefEngagedDesc, check: (_: number, d: any) => d.attendanceCount >= 10 },
+      { id: 'veteran', icon: '🌟', name: I.achDefVeteranName, desc: I.achDefVeteranDesc, check: (_: number, d: any) => d.cycleCount >= 2 },
+      { id: 'profile_complete', icon: '✨', name: I.achDefProfileCompleteName, desc: I.achDefProfileCompleteDesc, check: (_: number, d: any) => d.profileComplete },
+    ];
+  }
 
   // ── TABS ──
   async function setLeaderboardMode(mode: 'cycle' | 'lifetime') {
@@ -780,7 +784,11 @@ const SCORING_I18N = {
       const rank = i + 1;
       const displayPoints = leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points;
       const pct = (displayPoints / maxPts * 100).toFixed(0);
+      // Catalog-driven level; anon rows fall back to the public RPC's level_name.
       const level = getLevel(displayPoints);
+      const levelBadge = level
+        ? `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${escapeHtml(level.emoji)} ${escapeHtml(level.name)}</span>`
+        : (m.level_name ? `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${escapeHtml(m.level_name)}</span>` : '');
       const isMe = MEMBER && m.member_id === MEMBER.id;
       const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
       const trail = trailProgressByMember.get(m.member_id) || { completed: 0, inProgress: 0, pct: 0 };
@@ -789,6 +797,13 @@ const SCORING_I18N = {
       const producaoPts = m.producao_points || 0;
       const curadoriaPts = m.curadoria_points || 0;
       const championsPts = m.champions_points || 0;
+      // #1087 wave 2 (G4): the champions chip drills into WHO awarded each
+      // champion (champions_awarded is org-readable by design — ADR-0081).
+      const championsChip = championsPts > 0
+        ? (m.member_id
+          ? `<button type="button" class="bg-transparent border-0 p-0 text-[11px] text-[var(--text-muted)] underline decoration-dotted cursor-pointer" data-action="champion-drill" data-member-id="${m.member_id}" title="${escapeHtml(I.lbChampionsDrillHint || '')}">🏆 ${championsPts}</button>`
+          : `🏆 ${championsPts}`)
+        : '';
       const breakdown = [
         `🧭 ${modeLabel}: ${displayPoints}`,
         leaderboardMode === 'lifetime' ? `📅 ${I.lbBreakdownCycle}: ${m.cycle_points}` : `♾️ ${I.lbBreakdownLifetime}: ${m.lifetime_points}`,
@@ -797,30 +812,75 @@ const SCORING_I18N = {
         showcasePts > 0 ? `🎤 ${showcasePts}` : '',
         producaoPts > 0 ? `🏗️ ${producaoPts}` : '',
         curadoriaPts > 0 ? `📋 ${curadoriaPts}` : '',
-        championsPts > 0 ? `🏆 ${championsPts}` : '',
+        championsChip,
       ].filter(Boolean).join(' · ');
 
       return `
-      <div class="flex items-center gap-3 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
-        <div class="w-8 text-center font-bold text-[13px] text-[var(--text-muted)] flex-shrink-0">${medal || rank}</div>
-        ${photo}
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[13px] font-semibold truncate">${safeMemberName.split(' ').slice(0, 3).join(' ')}</span>
-            <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${level.emoji} ${level.name}</span>
-            ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
+      <div data-lb-row="${m.member_id || i}">
+        <div class="flex items-center gap-3 py-3 border-b border-[var(--border-subtle)] ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
+          <div class="w-8 text-center font-bold text-[13px] text-[var(--text-muted)] flex-shrink-0">${medal || rank}</div>
+          ${photo}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[13px] font-semibold truncate">${safeMemberName.split(' ').slice(0, 3).join(' ')}</span>
+              ${levelBadge}
+              ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
+            </div>
+            <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}</div>
+            <div class="h-1.5 bg-[var(--surface-base)] rounded-full mt-1 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
+            </div>
           </div>
-          <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}</div>
-          <div class="h-1.5 bg-[var(--surface-base)] rounded-full mt-1 overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
+          <div class="text-right flex-shrink-0">
+            <div class="text-lg font-extrabold text-navy">${displayPoints}</div>
+            <div class="text-[10px] text-[var(--text-muted)]">${I.mpPtsLabel}</div>
           </div>
         </div>
-        <div class="text-right flex-shrink-0">
-          <div class="text-lg font-extrabold text-navy">${displayPoints}</div>
-          <div class="text-[10px] text-[var(--text-muted)]">${I.mpPtsLabel}</div>
-        </div>
+        <div class="champion-drill hidden pl-11 py-2 border-b border-[var(--border-subtle)]"></div>
       </div>`;
     }).join('');
+  }
+
+  // ── CHAMPION ATTRIBUTION DRILL (#1087 wave 2, G4) ──
+  function renderChampionAwards(awards: any[]): string {
+    if (!awards.length) return `<p class="text-[11px] text-[var(--text-muted)] m-0">${I.lbChampionsDrillEmpty}</p>`;
+    const surfaceLabels: Record<string, string> = {
+      general: I.champSurfaceGeneral, tribe: I.champSurfaceTribe, deliverable: I.champSurfaceDeliverable,
+    };
+    return `
+    <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] p-3 space-y-2">
+      <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">${I.lbChampionsDrillTitle}</div>
+      ${awards.map((a: any) => `
+      <div class="text-[11px]">
+        <div class="font-semibold text-[var(--text-primary)]">
+          🏅 ${escapeHtml(surfaceLabels[a.surface] || a.surface)} · +${a.points_awarded} XP
+          · ${new Date(a.created_at).toLocaleDateString(I.locale || 'pt-BR')}
+          ${a.awarded_by_name ? ` · ${I.mpGrantedBy.replace('{name}', escapeHtml(a.awarded_by_name))}` : ''}
+        </div>
+        ${(a.criteria_met || []).length ? `<div class="flex flex-wrap gap-1 mt-0.5">${(a.criteria_met || []).map((c: string) =>
+          `<span class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[10px]">${escapeHtml(criterionLabel(CATALOG, a.surface, c, I.dbLang || 'pt-BR'))}</span>`).join('')}</div>` : ''}
+        ${a.justification ? `<div class="text-[var(--text-muted)] mt-0.5">“${escapeHtml(a.justification)}”</div>` : ''}
+      </div>`).join('')}
+    </div>`;
+  }
+
+  async function toggleChampionDrill(btn: HTMLElement) {
+    const wrap = btn.closest('[data-lb-row]');
+    const panel = wrap?.querySelector('.champion-drill') as HTMLElement | null;
+    const memberId = btn.dataset.memberId;
+    if (!panel || !memberId) return;
+    const opening = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden');
+    if (!opening || panel.dataset.loaded) return;
+    panel.innerHTML = `<p class="text-[11px] text-[var(--text-muted)] m-0">${I.loading}</p>`;
+    try {
+      await ensureCatalog();
+      const awards = await fetchChampionAttribution(sb, memberId);
+      panel.dataset.loaded = '1';
+      panel.innerHTML = renderChampionAwards(awards);
+    } catch (e: any) {
+      panel.innerHTML = `<p class="text-[11px] text-crimson m-0">${escapeHtml(e?.message || I.msgUnknownError)}</p>`;
+    }
   }
 
   async function ensureLifetimePointsLoaded() {
@@ -999,6 +1059,7 @@ const SCORING_I18N = {
     setPanelMessage('achievements-list', I.loading, 'loading');
 
     try {
+      await ensureCatalog();
       if (!leaderboardData.length) {
         const { data: lbRows, error: lbError } = await withTimeout(sb.rpc('get_gamification_leaderboard'));
         if (lbError) throw lbError;
@@ -1038,12 +1099,15 @@ const SCORING_I18N = {
 
     const checkData = { attendanceCount: attendanceCount || 0, coursesCompleted, artifactsPublished, cycleCount, profileComplete };
 
+    // #1087 wave 2 (G6 minimum): criteria are always visible — locked badges
+    // show WHAT unlocks them; level thresholds interpolate from the catalog.
+    const defs = buildAchievementDefs();
     let earned = 0;
-    const total = ACHIEVEMENT_DEFS.length;
+    const total = defs.length;
 
       el.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        ${ACHIEVEMENT_DEFS.map(a => {
+        ${defs.map(a => {
           const unlocked = a.check(myPoints, checkData);
           if (unlocked) earned++;
           return `
@@ -1060,14 +1124,118 @@ const SCORING_I18N = {
       <div class="mt-4 text-center text-[.78rem] text-[var(--text-secondary)]">
         ${I.achLifetimeXP}: <strong>${myPoints}</strong> · ${I.achCurrentCycle}: <strong>${cyclePoints}</strong><br>
         ${earned} ${I.achOf} ${total} ${I.achUnlocked}
-      </div>`;
+      </div>
+      <p class="mt-2 text-center text-[.65rem] text-[var(--text-muted)]">${I.achCriteriaNote}</p>`;
     } catch (e: any) {
       console.error('gamification.loadAchievements failed', e);
       setPanelMessage('achievements-list', `${I.achErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
-  // ── MY POINTS ──
+  // ── MY POINTS (#1087 wave 2, G2: statement via get_my_points_statement —
+  // rule display names, actor/champion attribution, reversal flags, category
+  // filter + pagination; raw PostgREST reads replaced by the member-scoped RPC) ──
+  const mpState = {
+    scope: 'cycle' as 'cycle' | 'lifetime',
+    category: '',
+    offset: 0,
+    pageSize: 50,
+    totalCount: 0,
+    entries: [] as any[],
+  };
+
+  function mpCategoryOptions(): string {
+    if (!CATALOG) return '';
+    return rulesByPillar(CATALOG).map(({ pillar, rules }: any) =>
+      `<optgroup label="${escapeHtml((I.pillarNames || {})[pillar] || pillar)}">` +
+      rules.map((r: any) =>
+        `<option value="${escapeHtml(r.slug)}">${escapeHtml(localizeI18n(r.display_name_i18n, I.dbLang || 'pt-BR', r.slug))}</option>`,
+      ).join('') +
+      '</optgroup>').join('');
+  }
+
+  function renderStatementEntry(p: any): string {
+    const icon = PILLAR_EMOJI[p.pillar] || '⭐';
+    const name = localizeI18n(p.rule_display_name_i18n, I.dbLang || 'pt-BR', p.category || '');
+    const date = new Date(p.created_at).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
+    const neg = Number(p.points) < 0;
+    const granted = p.granted_by_name ? ` · ${I.mpGrantedBy.replace('{name}', escapeHtml(p.granted_by_name))}` : '';
+    const surface = String(p.category || '').replace('champion_', '');
+    const champ = p.champion ? `
+      <div class="mt-1 text-[10.5px] text-[var(--text-muted)]">
+        🏅 ${I.mpChampionBy.replace('{name}', escapeHtml(p.champion.awarded_by_name || '—'))}
+        ${(p.champion.criteria_met || []).length ? ` · ${I.mpChampionCriteria}: ${(p.champion.criteria_met || []).map((c: string) => escapeHtml(criterionLabel(CATALOG, surface, c, I.dbLang || 'pt-BR'))).join(', ')}` : ''}
+        ${p.champion.justification ? `<div class="italic">“${escapeHtml(p.champion.justification)}”</div>` : ''}
+      </div>` : '';
+    return `
+    <div class="flex items-start gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-b-0">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm bg-[var(--surface-base)] flex-shrink-0">${icon}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-medium">${escapeHtml(name)}${p.is_reversal ? ` <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-red-50 text-red-600 uppercase align-middle">${I.mpReversal}</span>` : ''}</div>
+        ${p.reason ? `<div class="text-[11px] text-[var(--text-muted)] truncate" title="${escapeHtml(p.reason)}">${escapeHtml(p.reason)}</div>` : ''}
+        <div class="text-[11px] text-[var(--text-muted)]">${date}${granted}</div>
+        ${champ}
+      </div>
+      <div class="font-bold text-sm flex-shrink-0 ${neg ? 'text-red-600' : 'text-emerald-600'}">${neg ? '' : '+'}${p.points}</div>
+    </div>`;
+  }
+
+  async function loadStatementPage(reset = false) {
+    const entriesEl = document.getElementById('mp-entries');
+    const footerEl = document.getElementById('mp-footer');
+    if (!entriesEl || !footerEl) return;
+    if (reset) {
+      mpState.offset = 0;
+      mpState.entries = [];
+      entriesEl.innerHTML = `<p class="text-[var(--text-muted)] text-sm text-center py-4">${I.loading}</p>`;
+    }
+    footerEl.innerHTML = '';
+    try {
+      const { data, error } = await withTimeout(sb.rpc('get_my_points_statement', {
+        p_scope: mpState.scope,
+        p_category: mpState.category || null,
+        p_limit: mpState.pageSize,
+        p_offset: mpState.offset,
+      }));
+      if (error) throw error;
+      const stmt = typeof data === 'string' ? JSON.parse(data) : data;
+      mpState.totalCount = Number(stmt?.total_count || 0);
+      mpState.entries = mpState.entries.concat(stmt?.entries || []);
+      mpState.offset = mpState.entries.length;
+      const totEl = document.getElementById('mp-filtered-total');
+      if (totEl) totEl.textContent = String(stmt?.total_points ?? 0);
+      if (!mpState.entries.length) {
+        entriesEl.innerHTML = `<p class="text-[var(--text-muted)] text-sm text-center py-4">${I.mpEmptyFiltered}</p>`;
+        return;
+      }
+      entriesEl.innerHTML = mpState.entries.map(renderStatementEntry).join('');
+      footerEl.innerHTML = `
+        <div class="text-[11px] text-[var(--text-muted)]">${I.mpShowingOf.replace('{shown}', String(mpState.entries.length)).replace('{total}', String(mpState.totalCount))}</div>
+        ${mpState.entries.length < mpState.totalCount ? `<button type="button" data-action="mp-load-more" class="mt-2 px-4 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[12px] font-semibold cursor-pointer hover:border-navy transition-colors">${I.mpLoadMore}</button>` : ''}`;
+    } catch (e: any) {
+      entriesEl.innerHTML = `<p class="text-crimson text-sm text-center py-4">${escapeHtml(e?.message || I.msgFailUnexpected)}</p>`;
+    }
+  }
+
+  function setMpScope(scope: 'cycle' | 'lifetime') {
+    mpState.scope = scope;
+    const cycleBtn = document.getElementById('mp-scope-cycle');
+    const lifeBtn = document.getElementById('mp-scope-lifetime');
+    if (cycleBtn && lifeBtn) {
+      const cycleOn = scope === 'cycle';
+      cycleBtn.classList.toggle('bg-navy', cycleOn);
+      cycleBtn.classList.toggle('bg-transparent', !cycleOn);
+      cycleBtn.classList.toggle('text-white', cycleOn);
+      cycleBtn.classList.toggle('text-[var(--text-secondary)]', !cycleOn);
+      lifeBtn.classList.toggle('bg-navy', !cycleOn);
+      lifeBtn.classList.toggle('bg-transparent', cycleOn);
+      lifeBtn.classList.toggle('text-white', !cycleOn);
+      lifeBtn.classList.toggle('text-[var(--text-secondary)]', cycleOn);
+    }
+    renderMpPillarTotals();
+    loadStatementPage(true);
+  }
+
   async function loadMyPoints() {
     if (!MEMBER) {
       setPanelMessage('mypoints-list', I.msgLoginPoints, 'empty');
@@ -1075,39 +1243,40 @@ const SCORING_I18N = {
     }
     setPanelMessage('mypoints-list', I.loading, 'loading');
     try {
-      const { data, error } = await withTimeout(
-        sb.from('gamification_points')
-          .select('*')
-          .eq('member_id', MEMBER.id)
-          .order('created_at', { ascending: false }),
-      );
-      if (error) throw error;
+      await ensureCatalog();
+      // Grounded totals: BOTH scopes come from the statement RPC (never client math).
+      // The Credly tier box still needs raw reasons (own rows, RLS-scoped).
+      const [lifeRes, cycleRes, credlyRes] = await Promise.all([
+        withTimeout(sb.rpc('get_my_points_statement', { p_scope: 'lifetime', p_limit: 1 })),
+        withTimeout(sb.rpc('get_my_points_statement', { p_scope: 'cycle', p_limit: 1 })),
+        withTimeout(sb.from('gamification_points').select('member_id, points, reason').eq('member_id', MEMBER.id).like('reason', 'Credly:%')),
+      ]);
+      if (lifeRes.error) throw lifeRes.error;
+      if (cycleRes.error) throw cycleRes.error;
+      const lifeStmt = typeof lifeRes.data === 'string' ? JSON.parse(lifeRes.data) : lifeRes.data;
+      const cycleStmt = typeof cycleRes.data === 'string' ? JSON.parse(cycleRes.data) : cycleRes.data;
+      const total = Number(lifeStmt?.total_points || 0);
+      const cyclePoints = Number(cycleStmt?.total_points || 0);
 
       const el = document.getElementById('mypoints-list')!;
-      if (!data?.length) {
+      if (!Number(lifeStmt?.total_count || 0)) {
         setPanelMessage('mypoints-list', I.mpNoPoints, 'empty', MEMBER ? { text: I.syncBtn, action: 'sync-points' } : undefined);
         return;
       }
 
-    const total = data.reduce((s: number, p: any) => s + p.points, 0);
-    // #503: this value renders under mpCurrentCycleLabel (:1093) — must be the CYCLE aggregate,
-    // not .total_points (lifetime). leaderboardData carries cycle_points from get_gamification_leaderboard.
-    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.cycle_points || 0;
-    const level = getLevel(total);
-      const myCredly = aggregateCredlyByMember(
-        (data || []).filter((p: any) => String(p.reason || '').startsWith('Credly:'))
-      )[MEMBER.id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
+      const level = getLevel(total);
+      const myCredly = aggregateCredlyByMember(credlyRes.data || [])[MEMBER.id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
 
       el.innerHTML = `
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
-        <div class="text-3xl mb-1">${level.emoji}</div>
+        ${level ? `<div class="text-3xl mb-1">${escapeHtml(level.emoji)}</div>` : ''}
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel} · <strong>${level.name}</strong></div>
+        <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel}${level ? ` · <strong>${escapeHtml(level.name)}</strong>` : ''}</div>
         <div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
-        ${level.next ? `<div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`}
-        <div class="w-40 h-2 bg-[var(--border-strong)] rounded-full mx-auto mt-2 overflow-hidden">
+        ${level ? (level.next ? `<div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`) : ''}
+        ${level ? `<div class="w-40 h-2 bg-[var(--border-strong)] rounded-full mx-auto mt-2 overflow-hidden">
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
-        </div>
+        </div>` : ''}
       </div>
       ${myCredly.total > 0 ? `
       <div class="mb-5 p-3 rounded-xl border border-amber-200 bg-amber-50/50">
@@ -1120,37 +1289,49 @@ const SCORING_I18N = {
           <span class="px-2 py-1 rounded bg-navy text-white font-semibold">${I.credlyTotalLabel}: ${myCredly.total} ${I.mpPtsLabel}</span>
         </div>
       </div>` : ''}
-    `;
-
-    // Cycle breakdown: group by category
-    const catTotals: Record<string, number> = {};
-    data.forEach((p: any) => { catTotals[p.category] = (catTotals[p.category] || 0) + p.points; });
-    const catKeys = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
-    if (catKeys.length > 0) {
-      el.innerHTML += '<div class="mb-4 p-3 bg-[var(--surface-base)] rounded-xl"><div class="text-[.72rem] font-bold text-[var(--text-secondary)] mb-2">' + (I.mpCycleBreakdown || 'Detalhamento') + '</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'
-        + catKeys.map((cat: string) => {
-          const meta = CATEGORY_META[cat] || CATEGORY_META.bonus;
-          return '<div class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-subtle)]"><span class="text-sm">' + meta.icon + '</span><div><div class="text-[.65rem] text-[var(--text-secondary)]">' + escapeHtml(meta.label || cat) + '</div><div class="text-sm font-bold" style="color:' + meta.color + '">' + catTotals[cat] + ' pts</div></div></div>';
-        }).join('') + '</div></div>';
-    }
-
-    el.innerHTML += data.map((p: any) => {
-      const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
-      const date = new Date(p.created_at).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
-      return `
-      <div class="flex items-center gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-b-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-medium truncate">${p.reason}</div>
-          <div class="text-[11px] text-[var(--text-muted)]">${date}</div>
+      <div id="mp-pillar-totals" class="flex flex-wrap gap-2 mb-4"></div>
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="inline-flex items-center gap-1.5 bg-[var(--surface-base)] rounded-full p-1 border border-[var(--border-default)]">
+          <button type="button" id="mp-scope-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold ${mpState.scope === 'cycle' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'} border-0 cursor-pointer" data-action="mp-set-scope" data-scope="cycle">${I.modeCycle}</button>
+          <button type="button" id="mp-scope-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold ${mpState.scope === 'lifetime' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'} border-0 cursor-pointer" data-action="mp-set-scope" data-scope="lifetime">${I.modeLifetime}</button>
         </div>
-        <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>
-      </div>`;
-      }).join('');
+        <label class="text-[11px] text-[var(--text-muted)]" for="mp-category">${I.mpFilterCategory}</label>
+        <select id="mp-category" class="text-[12px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-2 py-1.5 max-w-[220px]">
+          <option value="">${I.mpAllCategories}</option>
+          ${mpCategoryOptions()}
+        </select>
+        <span class="text-[11px] text-[var(--text-muted)] ml-auto">${I.mpFilteredTotal}: <strong id="mp-filtered-total">0</strong> ${I.mpPtsLabel}</span>
+      </div>
+      <div id="mp-entries"></div>
+      <div id="mp-footer" class="text-center mt-3"></div>`;
+
+      document.getElementById('mp-category')?.addEventListener('change', (e) => {
+        mpState.category = (e.target as HTMLSelectElement).value || '';
+        loadStatementPage(true);
+      });
+
+      renderMpPillarTotals();
+      await loadStatementPage(true);
     } catch (e: any) {
       console.error('gamification.loadMyPoints failed', e);
       setPanelMessage('mypoints-list', `${I.mpErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
+  }
+
+  // Per-pillar totals (informative chips) — rollup derives from rules.pillar
+  // server-side (get_member_xp_pillars, post-#1080 taxonomy fix).
+  async function renderMpPillarTotals() {
+    const host = document.getElementById('mp-pillar-totals');
+    if (!host || !MEMBER) return;
+    try {
+      const { data } = await sb.rpc('get_member_xp_pillars', { p_member_id: MEMBER.id, p_scope: mpState.scope });
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      const pillars = (parsed?.pillars || []).filter((p: any) => Number(p.total_pts) > 0);
+      host.innerHTML = pillars.map((p: any) => `
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)]">
+          ${PILLAR_EMOJI[p.pillar] || '⭐'} ${escapeHtml((I.pillarNames || {})[p.pillar] || p.pillar)}: <strong>${p.total_pts}</strong>
+        </span>`).join('');
+    } catch { host.innerHTML = ''; }
   }
 
   // ── MY CERTIFICATES ──
@@ -1453,7 +1634,7 @@ const SCORING_I18N = {
     loadLeaderboard();
   }
 
-  function setupUI() {
+  async function setupUI() {
     const canSync = hasPermission(MEMBER, 'gamification.sync');
     document.getElementById('trail-clarity-card')?.classList.remove('hidden');
     document.getElementById('tab-tribes')?.classList.remove('hidden');
@@ -1465,10 +1646,20 @@ const SCORING_I18N = {
       document.getElementById('tab-admin-certs')?.classList.remove('hidden');
       document.getElementById('tab-manage-certs')?.classList.remove('hidden');
     }
+    // #1087 wave 2: catalog loads BEFORE the first render so levels/legends
+    // derive from the SSOT (and the popover island receives the same fetch).
+    await ensureCatalog();
+    renderLegends();
     loadLeaderboard();
     loadMyTrailClarity();
     loadMembersDropdown();
     try { (window as any).__nucleoTrack?.('gamification_viewed', {}); } catch {}
+    // Deep-link (?tab=mypoints from the /profile XP cards — #1087 wave 2).
+    const wantTab = new URLSearchParams(location.search).get('tab');
+    if (wantTab && wantTab !== 'leaderboard') {
+      const btn = document.querySelector<HTMLElement>(`.gam-tab[data-tab="${CSS.escape(wantTab)}"]`);
+      if (btn && !btn.classList.contains('hidden')) switchGamTab(btn, wantTab);
+    }
   }
 
   // ── CENTRALIZED EVENT DELEGATION ──
@@ -1497,6 +1688,17 @@ const SCORING_I18N = {
         if (mode) setTribeMode(mode);
         break;
       }
+      case 'champion-drill':
+        toggleChampionDrill(target);
+        break;
+      case 'mp-set-scope': {
+        const scope = target.dataset.scope as 'cycle' | 'lifetime';
+        if (scope) setMpScope(scope);
+        break;
+      }
+      case 'mp-load-more':
+        loadStatementPage(false);
+        break;
       case 'issue-certificate':
         issueCertificate();
         break;
