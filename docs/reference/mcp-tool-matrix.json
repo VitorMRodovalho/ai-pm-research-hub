@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-06-29T22:14:12.841Z",
+  "generated_at": "2026-07-03T19:29:27.329Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 330,
-  "runtime_status": "skipped (--runtime not passed)",
+  "total": 333,
+  "runtime_status": "drift: 4 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status], 0 runtime-only []",
   "by_domain": {
-    "personal": 21,
+    "personal": 22,
     "events": 15,
-    "gamification": 13,
+    "gamification": 15,
     "board": 70,
     "tribe": 100,
     "comms": 13,
@@ -168,6 +168,45 @@
       "domain": "gamification",
       "rpcs": [
         "get_member_champions_history"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "get_gamification_rules_catalog",
+      "description": "SSOT catalog of how points are earned: active gamification rules (slug, pillar, base/bonus/cap/on-time points, trigger source, i18n display/description), champion criteria catalog (per surface), and level tier thresholds. UI and agents must derive ALL displayed point values from this catalog — never hardcode them (ADR-0081 Pattern 47). Use to answer 'how do I earn points?' / 'what is each level threshold?'.",
+      "domain": "gamification",
+      "rpcs": [
+        "get_gamification_rules_catalog"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "get_my_points_statement",
+      "description": "Your per-transaction points statement (auditable extrato). Member-scoped via auth.uid() — always the caller's own ledger, no member_id param. Each entry: points, category, rule pillar + display name, reason, granted_by actor (who credited it; null = system flow), champion attribution (awarder + justification + criteria) when applicable, and a reversal flag. Paginated + filterable. Use to answer 'why did I earn N points?' / 'who gave me this champion?'.",
+      "domain": "personal",
+      "rpcs": [
+        "get_my_points_statement"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
+    },
+    {
+      "name": "get_member_xp_pillars",
+      "description": "XP breakdown by pillar for a member (rules table per pillar with earned points/counts). Self-view always allowed; cross-member view requires view_pii (chapter-scoped callers cannot cross chapters) and respects the target's gamification opt-out. scope 'cycle' accepts an explicit cycle_code or defaults to the current cycle. Backs the /profile pillar drill-down.",
+      "domain": "gamification",
+      "rpcs": [
+        "get_member_xp_pillars"
       ],
       "tables": [],
       "canV4_actions": [],
@@ -2251,7 +2290,7 @@
     },
     {
       "name": "recalculate_cycle_rankings",
-      "description": "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.",
+      "description": "Recomputes SELECTION-process ranking snapshots (selection_ranking_snapshots) for a selection cycle — NOT the gamification leaderboard (which is always computed live from the points ledger; nothing to recalculate there). Use after late evaluation/interview score fixes in a selection cycle. Audit-logged with reason. Confirm gate.",
       "domain": "gamification",
       "rpcs": [
         "recalculate_cycle_rankings"
@@ -2381,7 +2420,7 @@
     },
     {
       "name": "verify_certificate",
-      "description": "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
+      "description": "Verifies a certificate's authenticity by its verification code. For a valid, currently-issued certificate returns metadata only: type, title, recipient (holder) name, issue date, issuing organization, and whether it was counter-signed (with date). Issuer and counter-signer individual names are never returned (LGPD minimization, #991); any non-issued code (missing, revoked, rejected, superseded) returns {valid:false} with no further detail. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.",
       "domain": "governance",
       "rpcs": [
         "verify_certificate"
@@ -4009,7 +4048,7 @@
     },
     {
       "name": "lock_document_version",
-      "description": "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.",
+      "description": "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority. #571 Camada 5: optionally classify the version as 'material' or 'editorial' (change_class) — Material change drives re-acceptance (Termo 15.4.4); change_class is frozen once locked.",
       "domain": "governance",
       "rpcs": [
         "lock_document_version"
@@ -4518,7 +4557,8 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent",
+      "drift": "static-only"
     },
     {
       "name": "search_nucleo_knowledge",
@@ -4533,7 +4573,8 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: "
+      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: ",
+      "drift": "static-only"
     },
     {
       "name": "get_board_or_initiative_context",
@@ -4550,7 +4591,8 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
+      "drift": "static-only"
     },
     {
       "name": "get_operational_status",
@@ -4570,7 +4612,8 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:",
+      "drift": "static-only"
     }
   ]
 }

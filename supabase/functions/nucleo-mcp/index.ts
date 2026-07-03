@@ -1150,6 +1150,56 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // ─── Transparency tools (#1087 wave 1 — SSOT catalog + member statement) ──────────
+  mcp.tool("get_gamification_rules_catalog", "SSOT catalog of how points are earned: active gamification rules (slug, pillar, base/bonus/cap/on-time points, trigger source, i18n display/description), champion criteria catalog (per surface), and level tier thresholds. UI and agents must derive ALL displayed point values from this catalog — never hardcode them (ADR-0081 Pattern 47). Use to answer 'how do I earn points?' / 'what is each level threshold?'.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_gamification_rules_catalog", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_gamification_rules_catalog");
+    if (error) { await logUsage(sb, member.id, "get_gamification_rules_catalog", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_gamification_rules_catalog", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_my_points_statement", "Your per-transaction points statement (auditable extrato). Member-scoped via auth.uid() — always the caller's own ledger, no member_id param. Each entry: points, category, rule pillar + display name, reason, granted_by actor (who credited it; null = system flow), champion attribution (awarder + justification + criteria) when applicable, and a reversal flag. Paginated + filterable. Use to answer 'why did I earn N points?' / 'who gave me this champion?'.", {
+    scope: z.string().optional().describe("'cycle' (default — current cycle window) | 'lifetime'"),
+    category: z.string().optional().describe("Filter by rule slug/category (e.g., 'attendance', 'champion_general'). Omit for all."),
+    limit: z.number().optional().describe("Page size. Default 50, clamped to [1,200]."),
+    offset: z.number().optional().describe("Pagination offset. Default 0.")
+  }, async (params: { scope?: string; category?: string; limit?: number; offset?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_points_statement", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_points_statement", {
+      p_scope: params.scope || 'cycle',
+      p_category: params.category ?? null,
+      p_limit: params.limit ?? 50,
+      p_offset: params.offset ?? 0,
+    });
+    if (error) { await logUsage(sb, member.id, "get_my_points_statement", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_points_statement", true, undefined, start);
+    return ok(data);
+  });
+
+  mcp.tool("get_member_xp_pillars", "XP breakdown by pillar for a member (rules table per pillar with earned points/counts). Self-view always allowed; cross-member view requires view_pii (chapter-scoped callers cannot cross chapters) and respects the target's gamification opt-out. scope 'cycle' accepts an explicit cycle_code or defaults to the current cycle. Backs the /profile pillar drill-down.", {
+    member_id: z.string().optional().describe("Member UUID. If omitted, returns the caller's own breakdown."),
+    cycle_code: z.string().optional().describe("Cycle code (e.g., 'cycle_3'). Only used when scope='cycle'; defaults to current cycle."),
+    scope: z.string().optional().describe("'lifetime' (default) | 'cycle'")
+  }, async (params: { member_id?: string; cycle_code?: string; scope?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_member_xp_pillars", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_member_xp_pillars", {
+      p_member_id: params.member_id ?? null,
+      p_cycle_code: params.cycle_code ?? null,
+      p_scope: params.scope || 'lifetime',
+    });
+    if (error) { await logUsage(sb, member.id, "get_member_xp_pillars", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_member_xp_pillars", false, data.error, start); return err(data.error + (data.detail ? ': ' + data.detail : '')); }
+    await logUsage(sb, member.id, "get_member_xp_pillars", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 7: get_meeting_notes (unified — reads from events.minutes_text)
   mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe."), limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { tribe_id?: number; limit?: number }) => {
     const start = Date.now();
@@ -3872,8 +3922,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL: recalculate_cycle_rankings — recompute leaderboard for a cycle (confirm gate)
-  mcp.tool("recalculate_cycle_rankings", "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.", {
+  // TOOL: recalculate_cycle_rankings — recompute SELECTION ranking snapshots (confirm gate)
+  mcp.tool("recalculate_cycle_rankings", "Recomputes SELECTION-process ranking snapshots (selection_ranking_snapshots) for a selection cycle — NOT the gamification leaderboard (which is always computed live from the points ledger; nothing to recalculate there). Use after late evaluation/interview score fixes in a selection cycle. Audit-logged with reason. Confirm gate.", {
     cycle_id: z.string().describe("Cycle UUID"),
     reason: z.string().optional().describe("Reason for recalculation (audit trail). Default: 'manual'."),
     confirm: z.boolean().optional().describe("Pass confirm=true to execute. Without confirm: preview.")

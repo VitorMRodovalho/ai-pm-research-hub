@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-07-01T12:49:18.541Z",
+  "generated_at": "2026-07-03T19:32:21.095Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 330,
+  "total": 333,
   "by_domain": {
-    "personal": 21,
+    "personal": 22,
     "tribe": 105,
     "board": 70,
     "events": 15,
     "governance": 23,
     "comms": 13,
     "partners": 11,
-    "gamification": 14,
+    "gamification": 16,
     "selection": 27,
     "knowledge": 12,
     "admin": 1,
     "health": 18
   },
   "by_permission": {
-    "read": 218,
+    "read": 221,
     "write": 103,
     "admin": 9
   },
@@ -141,6 +141,13 @@
       "domain": "personal",
       "permission": "read",
       "is_sensitive": true
+    },
+    {
+      "name": "get_my_points_statement",
+      "description": "Your per-transaction points statement (auditable extrato). Member-scoped via auth.uid() — always the caller's own ledger, no member_id param. Each entry: points, category, rule pillar + display name, reason, granted_by actor (who credited it; null = system flow), champion attribution (awarder + justification + criteria) when applicable, and a reversal flag. Paginated + filterable. Use to answer 'why did I earn N points?' / 'who gave me this champion?'.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
     },
     {
       "name": "get_my_profile",
@@ -1872,6 +1879,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_gamification_rules_catalog",
+      "description": "SSOT catalog of how points are earned: active gamification rules (slug, pillar, base/bonus/cap/on-time points, trigger source, i18n display/description), champion criteria catalog (per surface), and level tier thresholds. UI and agents must derive ALL displayed point values from this catalog — never hardcode them (ADR-0081 Pattern 47). Use to answer 'how do I earn points?' / 'what is each level threshold?'.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_initiative_gamification",
       "description": "Returns the gamification ranking for a standalone initiative (workgroup, study_group, committee, etc.) by initiative UUID. Caller must be an active participant of the initiative (any role) or hold the view_internal_analytics capability — otherwise returns {error: 'Unauthorized'} (#600 fail-closed gate). Tribe-backed initiatives delegate to get_tribe_gamification (own gate). Use list_initiatives to find UUIDs; for tribes prefer get_tribe_gamification with the tribe_id.",
       "domain": "gamification",
@@ -1888,6 +1902,13 @@
     {
       "name": "get_member_cycle_xp",
       "description": "Returns a member's per-cycle XP breakdown by source (attendance, learning, certs, badges, artifacts, courses, showcase, bonus). Use for individual coaching: 'where is my XP coming from this cycle?'",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_member_xp_pillars",
+      "description": "XP breakdown by pillar for a member (rules table per pillar with earned points/counts). Self-view always allowed; cross-member view requires view_pii (chapter-scoped callers cannot cross chapters) and respects the target's gamification opt-out. scope 'cycle' accepts an explicit cycle_code or defaults to the current cycle. Backs the /profile pillar drill-down.",
       "domain": "gamification",
       "permission": "read",
       "is_sensitive": false
@@ -1922,7 +1943,7 @@
     },
     {
       "name": "recalculate_cycle_rankings",
-      "description": "Recomputes cycle rankings + leaderboard from latest evidence (after late attendance fixes / point adjustments). Audit-logged with reason. Confirm gate.",
+      "description": "Recomputes SELECTION-process ranking snapshots (selection_ranking_snapshots) for a selection cycle — NOT the gamification leaderboard (which is always computed live from the points ledger; nothing to recalculate there). Use after late evaluation/interview score fixes in a selection cycle. Audit-logged with reason. Confirm gate.",
       "domain": "gamification",
       "permission": "write",
       "is_sensitive": false
