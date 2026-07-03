@@ -3061,6 +3061,8 @@ const enUS: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Community',
   'gamification.scoring.showcase': 'Showcase / Protagonist',
   'gamification.scoring.showcaseSub': 'Presentation at general meeting',
+  'gamification.scoring.talk': 'Talk / Webinar / Panel',
+  'gamification.scoring.talkSub': 'Speaker at a Núcleo event (webinar, panel or roundtable)',
   'gamification.scoring.deliverable': 'Deliverable (card) completed',
   'gamification.scoring.deliverableSub': 'Tribe WBS card · +10 if on time',
   'gamification.scoring.artifact': 'Rich minutes published',

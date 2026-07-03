@@ -3066,6 +3066,8 @@ const ptBR: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Comunidade',
   'gamification.scoring.showcase': 'Showcase / Protagonismo',
   'gamification.scoring.showcaseSub': 'Apresentação em reunião geral',
+  'gamification.scoring.talk': 'Palestra / Webinar / Mesa',
+  'gamification.scoring.talkSub': 'Palestrante em evento do Núcleo (webinar, painel ou mesa)',
   'gamification.scoring.deliverable': 'Entregável (card) concluído',
   'gamification.scoring.deliverableSub': 'Card WBS da tribo · +10 se no prazo',
   'gamification.scoring.artifact': 'Ata rica publicada',
