@@ -114,13 +114,19 @@ test('591a static: XP-por-pilar sits AFTER the trail/coaching narrative, before 
   assert.ok(byPillar < recognition, 'XP-por-pilar renders before Recognition');
 });
 
-test('591a static: champions_points has a single home in the drill-down (council dedup)', () => {
+test('591a static: champions_points VALUE renders exactly once in the drill-down (council dedup)', () => {
   // council (4/5 reviewers): champions was rendered twice (XP-por-pilar + Recognition).
-  // The Recognition champions StatCard was removed; champions now lives only in
-  // XP-por-pilar (its canonical XP-source home). Lock the single occurrence.
+  // The Recognition champions StatCard was removed; the VALUE now lives only in
+  // XP-por-pilar (its canonical XP-source home). #1087 wave 2 refined this pin:
+  // the champion-attribution section reads member.champions_points as a GUARD /
+  // effect dep (it renders WHO awarded, never the pillar total again), so the
+  // lock targets the value-rendering occurrence, not raw identifier mentions.
   const drill = tsx.slice(tsx.indexOf('function MemberDrillDown'));
-  const n = (drill.match(/member\.champions_points/g) || []).length;
-  assert.equal(n, 1, `champions_points should render exactly once in the drill-down, found ${n}`);
+  const valueRenders = (drill.match(/\['comp\.gamification\.champions', 'Champions', member\.champions_points\]/g) || []).length;
+  assert.equal(valueRenders, 1, `champions_points VALUE should render exactly once (XP-por-pilar), found ${valueRenders}`);
+  // The Recognition dedup stays locked: no standalone champions StatCard.
+  assert.ok(!/StatCard[\s\S]{0,80}label=\{t\('comp\.gamification\.champions'/.test(drill),
+    'no standalone champions StatCard may reappear (council dedup)');
 });
 
 // ── #591b enabler (instrumentation only — persistence deferred) ───────────────────────
