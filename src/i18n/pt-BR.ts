@@ -3042,6 +3042,7 @@ const ptBR: Record<string, string> = {
   'gamification.pointsLegend.attendance': 'Presença',
   'gamification.pointsLegend.course': 'Curso',
   'gamification.pointsLegend.artifact': 'Artefato',
+  'gamification.pointsLegend.deliverable': 'Entregável',
   'gamification.pointsLegend.profile': 'Perfil 100%',
   'gamification.pointsLegend.bonus': 'Bônus especial',
   // ── Scoring popover ──
@@ -3065,6 +3066,15 @@ const ptBR: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Comunidade',
   'gamification.scoring.showcase': 'Showcase / Protagonismo',
   'gamification.scoring.showcaseSub': 'Apresentação em reunião geral',
+  'gamification.scoring.deliverable': 'Entregável (card) concluído',
+  'gamification.scoring.deliverableSub': 'Card WBS da tribo · +10 se no prazo',
+  'gamification.scoring.artifact': 'Ata rica publicada',
+  'gamification.scoring.action': 'Ação/atividade resolvida',
+  'gamification.scoring.actionSub': 'Tarefa da reunião · +2 se no prazo',
+  'gamification.scoring.champion': 'Champion (reconhecimento)',
+  'gamification.scoring.championSub': 'Reunião geral / tribo / entregável',
+  'gamification.scoring.curation': 'Curadoria de documentos',
+  'gamification.scoring.curationSub': 'Publicar 30 · ratificar 25 · autorar 20 · travar 10 · resolver 5',
   'gamification.scoring.attendance': 'Presença em reunião',
   'gamification.scoring.goal': 'Meta 2026: 70% do time com trilha completa (6/6)',
   // ── Board rules popover ──

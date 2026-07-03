@@ -3037,6 +3037,7 @@ const esLATAM: Record<string, string> = {
   'gamification.pointsLegend.attendance': 'Asistencia',
   'gamification.pointsLegend.course': 'Curso',
   'gamification.pointsLegend.artifact': 'Artefacto',
+  'gamification.pointsLegend.deliverable': 'Entregable',
   'gamification.pointsLegend.profile': 'Perfil 100%',
   'gamification.pointsLegend.bonus': 'Bono especial',
   // ── Scoring popover ──
@@ -3060,6 +3061,15 @@ const esLATAM: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Comunidad',
   'gamification.scoring.showcase': 'Showcase / Protagonismo',
   'gamification.scoring.showcaseSub': 'Presentación en reunión general',
+  'gamification.scoring.deliverable': 'Entregable (card) completado',
+  'gamification.scoring.deliverableSub': 'Card WBS de la tribu · +10 si a tiempo',
+  'gamification.scoring.artifact': 'Acta enriquecida publicada',
+  'gamification.scoring.action': 'Acción/tarea resuelta',
+  'gamification.scoring.actionSub': 'Tarea de la reunión · +2 si a tiempo',
+  'gamification.scoring.champion': 'Champion (reconocimiento)',
+  'gamification.scoring.championSub': 'Reunión general / tribu / entregable',
+  'gamification.scoring.curation': 'Curaduría de documentos',
+  'gamification.scoring.curationSub': 'Publicar 30 · ratificar 25 · autorar 20 · bloquear 10 · resolver 5',
   'gamification.scoring.attendance': 'Asistencia a reunión',
   'gamification.scoring.goal': 'Meta 2026: 70% del equipo con ruta completa (6/6)',
   // ── Board rules popover ──

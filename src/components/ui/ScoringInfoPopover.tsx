@@ -22,6 +22,15 @@ interface Props {
     badge: string;
     showcase: string;
     showcaseSub: string;
+    deliverable: string;
+    deliverableSub: string;
+    artifact: string;
+    action: string;
+    actionSub: string;
+    champion: string;
+    championSub: string;
+    curation: string;
+    curationSub: string;
     attendance: string;
     goal: string;
   };
@@ -79,6 +88,26 @@ export default function ScoringInfoPopover({ i18n }: Props) {
         <div className={ROW}>
           <div><span className={LABEL}>🎤 {i18n.showcase}</span><div className={SUB}>{i18n.showcaseSub}</div></div>
           <span className={XP}>15–25 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>📦 {i18n.deliverable}</span><div className={SUB}>{i18n.deliverableSub}</div></div>
+          <span className={XP}>30 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>📝 {i18n.artifact}</span></div>
+          <span className={XP}>15 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>☑️ {i18n.action}</span><div className={SUB}>{i18n.actionSub}</div></div>
+          <span className={XP}>5 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>🏅 {i18n.champion}</span><div className={SUB}>{i18n.championSub}</div></div>
+          <span className={XP}>20–60 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>🔎 {i18n.curation}</span><div className={SUB}>{i18n.curationSub}</div></div>
+          <span className={XP}>5–30 XP</span>
         </div>
         <div className={`${ROW} border-b-0`}>
           <div><span className={LABEL}>✅ {i18n.attendance}</span></div>
