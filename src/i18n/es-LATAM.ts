@@ -6798,6 +6798,8 @@ const esLATAM: Record<string, string> = {
   'comp.agendaViva.confirmNoShow': '¿Marcar este bloque como no-show? El XP será revocado.',
   'comp.agendaViva.confirmCancelBlock': '¿Cancelar este bloque?',
   'comp.agendaViva.xpHint': 'El XP de protagonismo se acredita al confirmar, siempre que haya asistencia registrada.',
+  'comp.agendaViva.pastHint': 'Reunión finalizada — confirma a los protagonistas para acreditar su XP.',
+  'comp.agendaViva.statusNoShow': 'Ausente',
   'comp.affiliationQueue.loadError': 'Error al cargar la cola',
   'comp.affiliationQueue.empty': 'Ningún miembro pendiente de verificación.',
   'comp.affiliationQueue.intro': 'Verifique la afiliación PMI de los miembros: (1) membresía activa y (2) afiliación a un capítulo brasileño vigente. El dato de afiliación del VEP se muestra cuando está disponible; cuando el candidato mantiene la comunidad PMI privada o aún no está afiliado, complete manualmente.',

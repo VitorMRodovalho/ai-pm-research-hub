@@ -6798,6 +6798,8 @@ const enUS: Record<string, string> = {
   'comp.agendaViva.confirmNoShow': 'Mark this block as no-show? XP will be revoked.',
   'comp.agendaViva.confirmCancelBlock': 'Cancel this block?',
   'comp.agendaViva.xpHint': 'Spotlight XP is credited on confirmation, as long as attendance is registered.',
+  'comp.agendaViva.pastHint': 'Meeting ended — confirm the spotlights to credit their XP.',
+  'comp.agendaViva.statusNoShow': 'No-show',
   'comp.affiliationQueue.loadError': 'Failed to load the queue',
   'comp.affiliationQueue.empty': 'No members pending verification.',
   'comp.affiliationQueue.intro': 'Verify members\' PMI affiliation: (1) active membership and (2) an in-good-standing Brazilian chapter affiliation. VEP affiliation data is shown when available; when a candidate keeps their PMI community private or is not yet affiliated, fill it in manually.',

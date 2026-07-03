@@ -6805,6 +6805,8 @@ const ptBR: Record<string, string> = {
   'comp.agendaViva.confirmNoShow': 'Marcar este bloco como no-show? O XP será revogado.',
   'comp.agendaViva.confirmCancelBlock': 'Cancelar este bloco?',
   'comp.agendaViva.xpHint': 'O XP de protagonismo é creditado ao confirmar, desde que haja presença registrada.',
+  'comp.agendaViva.pastHint': 'Reunião encerrada — confirme os protagonistas para creditar o XP.',
+  'comp.agendaViva.statusNoShow': 'Faltou',
   'comp.affiliationQueue.loadError': 'Erro ao carregar a fila',
   'comp.affiliationQueue.empty': 'Nenhum membro pendente de verificação.',
   'comp.affiliationQueue.intro': 'Verifique a filiação PMI dos membros: (1) membresia ativa e (2) filiação a um capítulo brasileiro em dia. O dado de filiação do VEP é exibido quando disponível; quando o candidato mantém a comunidade PMI privada ou ainda não é filiado, preencha manualmente.',
