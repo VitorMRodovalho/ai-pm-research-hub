@@ -227,6 +227,11 @@ Champion = **reconhecimento atribuído manualmente por liderança** a membros qu
 
 **Opt-out LGPD (ADR-0050):** `members.gamification_opt_out` permite remover-se do leaderboard público sem perder histórico.
 
+**Invariantes do ledger (#1087, 2026-07-03):**
+- **Append-only para lógica de negócio** (Onda 3, mig `20260805000333`): nenhuma RPC de negócio deleta linhas de `gamification_points`. Revogações (`revoke_champion`, `revoke_agenda_block_xp`, `remove_event_showcase`) inserem **estorno** — pontos negativos espelhando o net, mesmo `ref_id`/categoria, `granted_by` = revogador. Rollups são SUM cru (net absorve); o extrato rotula `is_reversal = points < 0`. Guard: `tests/contracts/1087-wave3-ledger-append-only.test.mjs` + M7 repinado (revogado ⇒ projeção neta zero). Carve-out único: erasure LGPD (Art. 18).
+- **Atoria da concessão** (Onda 1, mig 332): `gamification_points.granted_by uuid NULL` (FK members, ON DELETE SET NULL); NULL = sistema/trigger. Forward-only, sem backfill.
+- **Superfície de agente (G7):** `get_my_xp_and_ranking`, `get_my_gamification_stats`, `get_champions_ranking`, `get_cpmai_leaderboard` não têm UI web por design — expostos como MCP tools (paridade web/agente). Não tratar como órfãos removíveis.
+
 ---
 
 ## Mapa consolidado: termo ↔ DB ↔ UX

@@ -216,6 +216,11 @@ const PROFILE_I18N = {
   legacyStateMapNote: t('profile.legacyStateMapNote', lang),
   privacyDisclaimer: t('profile.privacyDisclaimer', lang),
   readPrivacyPolicy: t('profile.readPrivacyPolicy', lang),
+  // #1087 wave 2 (G3): gamification leaderboard opt-out (ADR-0050)
+  gamOptOutLabel: t('profile.gamOptOutLabel', lang),
+  gamOptOutHint: t('profile.gamOptOutHint', lang),
+  gamOptOutSaved: t('profile.gamOptOutSaved', lang),
+  gamOptOutError: t('profile.gamOptOutError', lang),
   gpManagedFields: t('profile.gpManagedFields', lang),
   lgpdRightsTitle: t('profile.lgpdRightsTitle', lang),
   lgpdRightsSubtitle: t('profile.lgpdRightsSubtitle', lang),
@@ -965,7 +970,7 @@ const PROFILE_I18N = {
                 : `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`}
           </a>
 
-          <a href="${lp}/gamification" class="bg-emerald-50/60 rounded-xl p-3 no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
+          <a href="${lp}/gamification?tab=mypoints" class="bg-emerald-50/60 rounded-xl p-3 no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
             <div class="flex items-center gap-1.5 mb-2">
               <span class="text-base">⭐</span>
               <span class="text-[.68rem] font-bold text-[var(--text-secondary)] uppercase tracking-wide">${PROFILE_I18N.weekWeeklyXp}</span>
@@ -989,11 +994,11 @@ const PROFILE_I18N = {
 
     let cardsHtml = `
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div class="bg-[var(--surface-base)] rounded-xl p-3 text-center">
+        <a href="${lp}/gamification?tab=mypoints" class="bg-[var(--surface-base)] rounded-xl p-3 text-center no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
           <div class="text-lg font-black text-navy">${cycleXpData?.cycle_points ?? cycleStats.points}</div>
           <div class="text-[.65rem] text-[var(--text-muted)] font-semibold">${PROFILE_I18N.pointsLabel}</div>
           ${cycleXpData ? '<div class="text-[.55rem] text-[var(--text-muted)] mt-0.5">' + PROFILE_I18N.lifetimeXP + ': ' + cycleXpData.lifetime_points + '</div>' : ''}
-        </div>`;
+        </a>`;
 
     if (isOperational) {
       cardsHtml += `
@@ -1834,6 +1839,10 @@ const PROFILE_I18N = {
               <input type="checkbox" id="self-allow-precise-map" class="mt-0.5" ${m.allow_precise_location_in_public_map ? 'checked' : ''}>
               <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.allowPreciseLocationMapLabel}</span>
             </label>
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-gamification-optout" class="mt-0.5" ${m.gamification_opt_out ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.gamOptOutLabel} <span class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.gamOptOutHint}</span></span>
+            </label>
             ${m.allow_state_in_public_map ? `
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-allow-state-map" class="mt-0.5" checked>
@@ -2138,6 +2147,26 @@ const PROFILE_I18N = {
       (window as any).toast?.('Assinatura salva!', 'success');
       target.value = '';
     } catch (err: any) { (window as any).toast?.(err.message || 'Erro', 'error'); }
+  });
+
+  // ── #1087 wave 2 (G3): gamification leaderboard opt-out — saves immediately
+  // via the dedicated member-scoped RPC (ADR-0050), independent of save-self.
+  document.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id !== 'self-gamification-optout') return;
+    const optOut = !!target.checked;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { target.checked = !optOut; return; }
+    try {
+      const { error } = await sb.rpc('set_my_gamification_visibility', { p_opt_out: optOut });
+      // the RPC RAISEs on failure (surfaces as `error`); it never returns success:false
+      if (error) throw new Error(error.message || 'RPC failed');
+      if (currentMember) currentMember.gamification_opt_out = optOut;
+      (window as any).toast?.(PROFILE_I18N.gamOptOutSaved, 'success');
+    } catch (err: any) {
+      target.checked = !optOut;
+      (window as any).toast?.(`${PROFILE_I18N.gamOptOutError}${err?.message || ''}`, 'error');
+    }
   });
   document.addEventListener('click', async (e) => {
     if (!(e.target instanceof Element)) return;

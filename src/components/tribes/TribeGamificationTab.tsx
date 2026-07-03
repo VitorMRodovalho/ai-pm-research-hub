@@ -5,6 +5,10 @@ import {
 } from 'recharts';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { TOTAL_COURSES } from '../../data/trail';
+import {
+  getCatalog, fetchChampionAttribution, criterionLabel,
+  type ChampionAward, type GamificationCatalog,
+} from '../../lib/gamification-catalog';
 
 interface TribeGamificationTabProps {
   /** @deprecated Use initiativeId instead */
@@ -553,6 +557,32 @@ function AttendanceRatePill({ rate }: { rate: number }) {
 // ─── Per-member coaching drill-down (#425) ───
 function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: string) => string }) {
   const courses = member.trail_courses || [];
+  // #1087 wave 2 (G4): champion attribution — who awarded, criteria, justification.
+  // champions_awarded is org-readable by design (ADR-0081); criteria labels come
+  // from the shared rules catalog.
+  const [champAwards, setChampAwards] = useState<ChampionAward[] | null>(null);
+  const [champCatalog, setChampCatalog] = useState<GamificationCatalog | null>(null);
+  // client:load island — the guard covers the SSR render pass (location is browser-only).
+  const path = typeof location !== 'undefined' ? location.pathname : '';
+  const dbLang = path.startsWith('/en') ? 'en-US' : path.startsWith('/es') ? 'es-LATAM' : 'pt-BR';
+  useEffect(() => {
+    let alive = true;
+    if (!member.champions_points) { setChampAwards([]); return; }
+    (async () => {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) return;
+      try {
+        const [awards, catalog] = await Promise.all([
+          fetchChampionAttribution(sb, member.id),
+          getCatalog(sb).catch(() => null),
+        ]);
+        if (alive) { setChampAwards(awards); setChampCatalog(catalog); }
+      } catch {
+        if (alive) setChampAwards([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [member.id, member.champions_points]);
   const lastActivity = member.last_activity
     ? new Date(`${member.last_activity}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
     : null;
@@ -689,6 +719,44 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
               : t('comp.gamification.cpmaiNo', 'Nao certificado')}
           />
         </div>
+        {member.champions_points > 0 && (
+          <div className="mt-3">
+            <div className="text-[.68rem] font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">
+              {t('comp.gamification.champReceived', 'Champions recebidos')}
+            </div>
+            {champAwards === null && (
+              <p className="text-[.7rem] text-[var(--text-muted)] m-0">
+                {t('comp.gamification.champLoading', 'Carregando champions...')}
+              </p>
+            )}
+            {champAwards !== null && champAwards.length === 0 && (
+              <p className="text-[.7rem] text-[var(--text-muted)] m-0">
+                {t('comp.gamification.champNone', 'Nenhum champion ativo')}
+              </p>
+            )}
+            {(champAwards || []).map((a) => (
+              <div key={a.id} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg p-3 mb-2 text-[.72rem]">
+                <div className="font-semibold text-navy">
+                  🏅 {t(`comp.gamification.champSurface.${a.surface}`, a.surface)} · +{a.points_awarded} XP
+                  · {new Date(a.created_at).toLocaleDateString()}
+                  {a.awarded_by_name ? <> · {t('comp.gamification.champBy', 'por')} {a.awarded_by_name}</> : null}
+                </div>
+                {(a.criteria_met || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {a.criteria_met.map((c) => (
+                      <span key={c} className="px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] border border-[var(--border-subtle)] text-[.64rem]">
+                        {criterionLabel(champCatalog, a.surface, c, dbLang)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {a.justification && (
+                  <div className="text-[var(--text-muted)] mt-1">“{a.justification}”</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
