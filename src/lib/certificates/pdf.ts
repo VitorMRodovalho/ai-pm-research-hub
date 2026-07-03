@@ -112,6 +112,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     verifyCode: 'Código de verificação',
     issuedOn: 'Emitido em',
     verifyAt: 'Verifique em',
+    bodyExcellenceLifetime: 'recebeu o reconhecimento de Excelência (Hall da Lenda) pela trajetória acumulada de contribuições ao Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos ao longo dos ciclos.',
+    bodyConclusion: 'participou como pesquisador(a) voluntário(a) do Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos e concluiu o ciclo de pesquisa, contribuindo com as iniciativas colaborativas entre os capítulos do PMI no Brasil.',
   },
   'en-US': {
     participation: 'This certifies that',
@@ -141,6 +143,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     verifyCode: 'Verification code',
     issuedOn: 'Issued on',
     verifyAt: 'Verify at',
+    bodyExcellenceLifetime: 'received the Excellence recognition (Hall of Legends) for the accumulated trajectory of contributions to the AI & PM Study and Research Hub across cycles.',
+    bodyConclusion: 'served as a volunteer researcher at the AI & PM Study and Research Hub and completed the research cycle, contributing to the collaborative initiatives among PMI chapters in Brazil.',
   },
   'es-LATAM': {
     participation: 'Se certifica que',
@@ -170,6 +174,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     verifyCode: 'Código de verificación',
     issuedOn: 'Emitido el',
     verifyAt: 'Verifique en',
+    bodyExcellenceLifetime: 'recibió el reconocimiento de Excelencia (Salón de la Leyenda) por la trayectoria acumulada de contribuciones al Núcleo de Estudios e Investigación en IA y Gestión de Proyectos a lo largo de los ciclos.',
+    bodyConclusion: 'participó como investigador(a) voluntario(a) del Núcleo de Estudios e Investigación en IA y Gestión de Proyectos y concluyó el ciclo de investigación, contribuyendo con las iniciativas colaborativas entre los capítulos del PMI en Brasil.',
   },
 };
 
@@ -530,8 +536,15 @@ export function buildRecognitionHTML(certData: CertificateData): string {
 
   const ribbon = certData.title || tpl.title;
   const certifyThat = tpl[type] || tpl.participation;
-  const bodyKey = 'body' + type.charAt(0).toUpperCase() + type.slice(1);
-  const bodyText = (tpl[bodyKey] || tpl.bodyExcellence).replace('{role}', certData.function_role || '');
+  const isLifetime = /VITAL|LENDA/.test((certData.title || '').toUpperCase());
+  // Category-specific body (matches the approved mockup): cycle conclusion and lifetime
+  // champions get their own sentence; everyone else uses the type's default body.
+  const bodyDefault = tpl['body' + type.charAt(0).toUpperCase() + type.slice(1)] || tpl.bodyExcellence;
+  const bodyText = (
+    type === 'participation' ? tpl.bodyConclusion :
+    isLifetime ? tpl.bodyExcellenceLifetime :
+    bodyDefault
+  ).replace('{role}', certData.function_role || '');
 
   // description convention: line 1 = highlight/pill; remaining lines = recognized team
   const lines = (certData.description || '').split('\n').map(s => s.trim()).filter(Boolean);
@@ -540,7 +553,6 @@ export function buildRecognitionHTML(certData: CertificateData): string {
 
   const sealLabel = recoSealLabel(certData.title);
   const period = formatPeriod(certData.period_start, certData.period_end);
-  const isLifetime = /VITAL|LENDA/.test((certData.title || '').toUpperCase());
   const metaLine = period !== '—' ? period : (isLifetime ? tpl.lifetime : '');
 
   const code = certData.verification_code || '';
