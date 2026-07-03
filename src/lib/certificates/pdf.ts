@@ -3,8 +3,35 @@
  * Used by /gamification (member view) and /admin/certificates (chapter board view).
  */
 
-import { CANONICAL_HOST } from "../canonical";
+import { CANONICAL_HOST, CERT_VERIFY_HOST } from "../canonical";
 import { PMIGO_LOGO_DATA_URI } from "./pmigo-logo";
+import {
+  NUCLEO_LOGO_DATA_URI,
+  PMIGO_HOST_DATA_URI,
+  NIA_FACE_DATA_URI,
+  CHAPTERS_STRIP_DATA_URI,
+} from "./cert-assets";
+
+/**
+ * Recognition (Ciclo 3 redesign) — the landscape, print-friendly certificate for
+ * champions (excellence) and cycle-conclusion (participation). Design sign-off with
+ * Vitor 2026-07-03 (docs/certificates-proposal/): A4 landscape, light ground, NIA as
+ * a medallion seal, PMI-GO host + 15-chapter strip, dual GP signatures ("do Núcleo"),
+ * verify URL on the chapter host. Data mapping is intentionally centralized in
+ * `buildRecognitionHTML` so issuance can drive it via title (ribbon) + description
+ * (pill / team) with zero DB migration.
+ */
+const RECOGNITION_TYPES = new Set(["excellence", "participation", "contribution"]);
+
+/** Certificate types that render with the landscape recognition template. */
+export function isRecognitionCert(type: string | undefined): boolean {
+  return !!type && RECOGNITION_TYPES.has(type);
+}
+
+/** Page orientation for a cert type (drives @page + puppeteer/playwright pdf opts across all 3 renderers). */
+export function certOrientation(type: string | undefined): "portrait" | "landscape" {
+  return isRecognitionCert(type) ? "landscape" : "portrait";
+}
 
 /**
  * #1047 — Guard predicate evaluated in the headless page after `setContent` and
@@ -74,6 +101,17 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     footer: 'Iniciativa colaborativa entre capítulos PMI Brasil',
     contributions: 'Principais contribuições:',
     disclaimer: 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
+    recoSubtitle: 'DE RECONHECIMENTO',
+    hostLabel: 'CAPÍTULO-SEDE',
+    fedLine: 'iniciativa colaborativa entre os capítulos do PMI no Brasil, sediada no PMI Goiás',
+    chaptersLabel: 'CAPÍTULOS PMI DO BRASIL · INICIATIVA COLABORATIVA',
+    teamLabel: 'TIME RECONHECIDO',
+    lifetime: 'Reconhecimento vitalício',
+    roleGestor: 'Gestor do Núcleo',
+    roleCoGestor: 'Co-Gestor do Núcleo',
+    verifyCode: 'Código de verificação',
+    issuedOn: 'Emitido em',
+    verifyAt: 'Verifique em',
   },
   'en-US': {
     participation: 'This certifies that',
@@ -92,6 +130,17 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     footer: 'A collaborative initiative among PMI Brazil chapters',
     contributions: 'Key contributions:',
     disclaimer: 'PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of PMI, Inc.',
+    recoSubtitle: 'OF RECOGNITION',
+    hostLabel: 'HOST CHAPTER',
+    fedLine: 'a collaborative initiative among PMI chapters in Brazil, hosted by PMI Goiás',
+    chaptersLabel: 'PMI CHAPTERS OF BRAZIL · COLLABORATIVE INITIATIVE',
+    teamLabel: 'RECOGNIZED TEAM',
+    lifetime: 'Lifetime recognition',
+    roleGestor: 'Núcleo Manager',
+    roleCoGestor: 'Núcleo Co-Manager',
+    verifyCode: 'Verification code',
+    issuedOn: 'Issued on',
+    verifyAt: 'Verify at',
   },
   'es-LATAM': {
     participation: 'Se certifica que',
@@ -110,6 +159,17 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     footer: 'Iniciativa colaborativa entre capítulos PMI Brasil',
     contributions: 'Contribuciones principales:',
     disclaimer: 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.',
+    recoSubtitle: 'DE RECONOCIMIENTO',
+    hostLabel: 'CAPÍTULO SEDE',
+    fedLine: 'iniciativa colaborativa entre los capítulos del PMI en Brasil, con sede en PMI Goiás',
+    chaptersLabel: 'CAPÍTULOS PMI DE BRASIL · INICIATIVA COLABORATIVA',
+    teamLabel: 'EQUIPO RECONOCIDO',
+    lifetime: 'Reconocimiento vitalicio',
+    roleGestor: 'Gestor del Núcleo',
+    roleCoGestor: 'Co-Gestor del Núcleo',
+    verifyCode: 'Código de verificación',
+    issuedOn: 'Emitido el',
+    verifyAt: 'Verifique en',
   },
 };
 
@@ -431,15 +491,152 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   ${annexBlock}`;
 }
 
+/** Short badge label inside the NIA medallion seal, derived from the ribbon (title). */
+function recoSealLabel(title: string | undefined): string {
+  const t = (title || '').toUpperCase();
+  if (/VITAL|LENDA|LIFETIME/.test(t)) return 'LENDA';
+  if (/TRIBO|TRIBE|EQUIPO/.test(t)) return 'TRIBO';
+  if (/CONCLUS/.test(t)) return 'CONCLUSÃO';
+  const m = t.match(/CICLO\s*(\d+)/);
+  if (m) return 'CICLO ' + m[1];
+  return 'NÚCLEO';
+}
+
+/** dd/mm/yyyy (issuance date printed on the recognition cert). */
+function formatShortDate(date: string | undefined): string {
+  const dt = date
+    ? new Date(String(date).length === 10 ? String(date) + 'T12:00:00' : date)
+    : new Date();
+  if (isNaN(dt.getTime())) return '';
+  return `${dt.getDate().toString().padStart(2, '0')}/${(dt.getMonth() + 1)
+    .toString().padStart(2, '0')}/${dt.getFullYear()}`;
+}
+
+/**
+ * Landscape, print-friendly RECOGNITION certificate (Ciclo 3 redesign).
+ * DATA MAPPING (centralized here so issuance drives it with no DB migration):
+ *   - title       → the category ribbon headline (e.g. "TOP 5 DO CICLO 3 · RANKING INDIVIDUAL")
+ *   - description  → line 1 = the highlight pill ("1º lugar · … · 547 pontos");
+ *                    remaining lines = the recognized team (tribe certs)
+ *   - type         → body text (bodyExcellence / bodyParticipation) via the i18n dict
+ *   - seal label   → derived from the title (recoSealLabel)
+ *   - verify host  → CERT_VERIFY_HOST (chapter-institutional domain)
+ * Signatories are the two fixed Núcleo leads (Gestor + Co-Gestor). All strings i18n'd.
+ */
+export function buildRecognitionHTML(certData: CertificateData): string {
+  const lang = certData.language || 'pt-BR';
+  const tpl = TEMPLATES[lang] || TEMPLATES['pt-BR'];
+  const type = certData.type || 'excellence';
+
+  const ribbon = certData.title || tpl.title;
+  const certifyThat = tpl[type] || tpl.participation;
+  const bodyKey = 'body' + type.charAt(0).toUpperCase() + type.slice(1);
+  const bodyText = (tpl[bodyKey] || tpl.bodyExcellence).replace('{role}', certData.function_role || '');
+
+  // description convention: line 1 = highlight/pill; remaining lines = recognized team
+  const lines = (certData.description || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const pill = lines[0] || '';
+  const team = lines.slice(1).join(' · ');
+
+  const sealLabel = recoSealLabel(certData.title);
+  const period = formatPeriod(certData.period_start, certData.period_end);
+  const isLifetime = /VITAL|LENDA/.test((certData.title || '').toUpperCase());
+  const metaLine = period !== '—' ? period : (isLifetime ? tpl.lifetime : '');
+
+  const code = certData.verification_code || '';
+  const issued = formatShortDate(certData.signed_at || (certData as any).issued_at);
+  const verifyLine = `${tpl.verifyCode}: ${code || '—'} · ${tpl.issuedOn} ${issued} · ${tpl.verifyAt} ${CERT_VERIFY_HOST}/verify/${code}`;
+
+  const pillHtml = pill ? `<div class="rc-pill">${pill}</div>` : '';
+  const teamHtml = team ? `<div class="rc-teamlabel">${tpl.teamLabel}</div><div class="rc-team">${team}</div>` : '';
+  const metaHtml = metaLine ? `<div class="rc-meta">${metaLine}</div>` : '';
+
+  const css = `
+    .rc-page{position:relative;width:297mm;height:210mm;background:#FCFBF9;box-sizing:border-box;padding:14mm 18mm;overflow:hidden;page-break-after:always;font-family:Georgia,'Times New Roman','Liberation Serif',serif;color:#25313f}
+    .rc-frame{position:absolute;inset:8mm;border:1.4px solid #461DA3}
+    .rc-frame::after{content:"";position:absolute;inset:1.3mm;border:0.6px solid #b9a24e}
+    .rc-wm{position:absolute;width:110mm;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0.028;filter:grayscale(1)}
+    .rc-head{position:relative;display:flex;justify-content:space-between;align-items:flex-start;z-index:2}
+    .rc-nlogo{height:20mm;width:auto}
+    .rc-hostwrap{text-align:center}
+    .rc-eyebrow{font-family:Arial,Helvetica,sans-serif;font-size:7pt;letter-spacing:2.5px;color:#7a6a3e;margin-bottom:2mm}
+    .rc-host{height:13mm;width:auto}
+    .rc-fed{position:relative;z-index:2;text-align:center;margin-top:1mm;font-size:8.5pt;color:#6b7480;font-style:italic}
+    .rc-body{position:relative;z-index:2;text-align:center;margin-top:3mm}
+    .rc-ribbon{display:inline-block;background:#fff;border:1.2px solid #b9a24e;color:#1a365d;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:9.5pt;letter-spacing:1.5px;padding:2mm 7mm;border-radius:1mm}
+    .rc-title{font-size:30pt;font-weight:700;color:#1a365d;letter-spacing:9px;margin:5mm 0 0}
+    .rc-subtitle{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;letter-spacing:6px;color:#8792a0;margin-top:1mm}
+    .rc-que{font-size:12.5pt;font-style:italic;color:#6b7480;margin-top:5mm}
+    .rc-name{font-size:27pt;font-weight:700;color:#1a365d;margin-top:2mm}
+    .rc-pill{display:inline-block;margin-top:4mm;background:#F6F2FB;border:1.2px solid #461DA3;color:#2c2150;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:11pt;padding:2.2mm 7mm;border-radius:6mm}
+    .rc-text{max-width:172mm;margin:5mm auto 0;font-size:12.5pt;line-height:1.7;color:#3a4654}
+    .rc-teamlabel{font-family:Arial,Helvetica,sans-serif;font-size:8pt;letter-spacing:3px;color:#8792a0;margin-top:4mm}
+    .rc-team{font-size:11.5pt;color:#2c3644;margin-top:1mm}
+    .rc-meta{font-size:10pt;color:#8792a0;margin-top:4mm}
+    .rc-seal{position:absolute;right:22mm;top:43%;transform:translateY(-50%);z-index:2;width:34mm;text-align:center}
+    .rc-medal{width:30mm;height:30mm;margin:0 auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 38%,#fdfaf0,#f0e6c6);border:1.6px solid #b0892e;box-shadow:0 0 0 1.1mm #FCFBF9,0 0 0 1.5mm #d9c98f;display:flex;align-items:flex-end;justify-content:center}
+    .rc-nia{width:24mm;height:auto;margin-bottom:0.5mm}
+    .rc-ribbon2{display:inline-block;margin-top:2.4mm;background:#1a365d;color:#f3e6c4;font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;font-weight:700;letter-spacing:1.5px;padding:1.3mm 4.5mm;border-radius:1mm}
+    .rc-bottom{position:absolute;left:0;right:0;bottom:11mm;text-align:center;z-index:2}
+    .rc-signs{display:flex;justify-content:center;gap:44mm}
+    .rc-sig{text-align:center;width:70mm}
+    .rc-sigline{border-top:1px solid #4a5563;width:62mm;margin:0 auto 1.5mm}
+    .rc-signame{font-size:11.5pt;font-weight:700;color:#1a365d}
+    .rc-sigrole{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#7a8390}
+    .rc-chapband{margin-top:6mm}
+    .rc-chaplabel{font-family:Arial,Helvetica,sans-serif;font-size:6.5pt;letter-spacing:2.5px;color:#9aa2ac;margin-bottom:2mm}
+    .rc-chapstrip{height:9mm;width:auto;max-width:250mm}
+    .rc-verify{font-family:Arial,Helvetica,sans-serif;font-size:8pt;color:#8792a0;margin-top:4mm}
+    .rc-disc{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#b3bac3;margin-top:1mm}
+  `;
+
+  return `<style>${css}</style>
+  <div class="rc-page">
+    <div class="rc-frame"></div>
+    <img class="rc-wm" src="${NUCLEO_LOGO_DATA_URI}" alt="" />
+    <header class="rc-head">
+      <img class="rc-nlogo" src="${NUCLEO_LOGO_DATA_URI}" alt="Núcleo IA & GP" />
+      <div class="rc-hostwrap"><div class="rc-eyebrow">${tpl.hostLabel}</div><img class="rc-host" src="${PMIGO_HOST_DATA_URI}" alt="PMI Goiás" /></div>
+    </header>
+    <div class="rc-fed">${tpl.fedLine}</div>
+    <div class="rc-body">
+      <div class="rc-ribbon">★ ${ribbon}</div>
+      <h1 class="rc-title">${tpl.title}</h1>
+      <div class="rc-subtitle">${tpl.recoSubtitle}</div>
+      <div class="rc-que">${certifyThat}</div>
+      <div class="rc-name">${certData.member_name || ''}</div>
+      ${pillHtml}
+      <p class="rc-text">${bodyText}</p>
+      ${teamHtml}
+      ${metaHtml}
+    </div>
+    <div class="rc-seal"><div class="rc-medal"><img class="rc-nia" src="${NIA_FACE_DATA_URI}" alt="NIA" /></div><div class="rc-ribbon2">${sealLabel}</div></div>
+    <div class="rc-bottom">
+      <div class="rc-signs">
+        <div class="rc-sig"><div class="rc-sigline"></div><div class="rc-signame">Vitor Maia Rodovalho, PMP</div><div class="rc-sigrole">${tpl.roleGestor}</div></div>
+        <div class="rc-sig"><div class="rc-sigline"></div><div class="rc-signame">Fabricio R. C. Costa</div><div class="rc-sigrole">${tpl.roleCoGestor}</div></div>
+      </div>
+      <div class="rc-chapband"><div class="rc-chaplabel">${tpl.chaptersLabel}</div><img class="rc-chapstrip" src="${CHAPTERS_STRIP_DATA_URI}" alt="" /></div>
+      <div class="rc-verify">${verifyLine}</div>
+      <div class="rc-disc">${tpl.disclaimer}</div>
+    </div>
+  </div>`;
+}
+
 /**
  * Generate HTML for a single certificate (one A4 page).
  * Returns HTML string that can be inserted into a new window.
- * Delegates to buildVolunteerAgreementHTML for type=volunteer_agreement.
+ * Delegates to buildVolunteerAgreementHTML for type=volunteer_agreement,
+ * and to buildRecognitionHTML (landscape) for the Ciclo 3 recognition types.
  */
 export function buildCertificateHTML(certData: CertificateData): string {
   // Delegate to full legal template for volunteer_agreements
   if (certData.type === 'volunteer_agreement') {
     return buildVolunteerAgreementHTML(certData);
+  }
+  // Delegate to the landscape recognition template (champions + cycle conclusion)
+  if (isRecognitionCert(certData.type)) {
+    return buildRecognitionHTML(certData);
   }
   const lang = certData.language || 'pt-BR';
   const tpl = TEMPLATES[lang] || TEMPLATES['pt-BR'];
@@ -574,12 +771,18 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
  * Build the full HTML document wrapped with print CSS.
  * Uses a Blob URL so the browser shows the document title instead of "about:blank" in the print footer.
  */
-function buildPrintDocument(title: string, innerHtml: string): string {
+function buildPrintDocument(title: string, innerHtml: string, orientation: 'portrait' | 'landscape' = 'portrait'): string {
+  // Recognition certs are full-bleed A4 landscape (@page margin:0); the .rc-page div
+  // owns its own 297x210mm sizing so the portrait `.cert-page` print overrides below
+  // (width auto / padding 0) must NOT touch it — they are class-scoped to .cert-page.
+  const pageRule = orientation === 'landscape'
+    ? '@page{size:A4 landscape;margin:0}'
+    : '@page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}';
   return `<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
     <title>${title}</title>
     <style>
-      @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+      ${pageRule}
       @media print{
         html,body{margin:0 !important;padding:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
         .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important;max-width:none !important}
@@ -589,6 +792,7 @@ function buildPrintDocument(title: string, innerHtml: string): string {
       @media screen{
         body{margin:0;display:flex;flex-direction:column;align-items:center;background:#e5e7eb;padding:20px 0;font-family:Georgia,serif}
         .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
+        .rc-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
         .screen-only{display:block;max-width:595px;width:100%;margin:0 auto 16px;padding:12px 16px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-family:-apple-system,system-ui,sans-serif;font-size:12px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
         .screen-only strong{color:#451a03}
         .screen-only kbd{background:#fff;border:1px solid #ccc;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px}
@@ -635,7 +839,7 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
 
   const html = buildCertificateHTML(certData);
   const title = `${certData.verification_code || 'Certificate'} — ${certData.member_name}`;
-  const fullDoc = buildPrintDocument(title, html);
+  const fullDoc = buildPrintDocument(title, html, certOrientation(certData.type));
 
   // Use Blob URL instead of about:blank for a cleaner print header
   const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
@@ -673,7 +877,11 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
     catch (e) { console.warn('[pdf] skipping cert in bulk render', (cd as any)?.verification_code, e); return ''; }
   }).join('');
   const title = `Certificados em lote (${hydrated.length})`;
-  const fullDoc = buildPrintDocument(title, allHtml);
+  // A print document has ONE @page orientation. When every cert in the batch is a
+  // recognition cert, render the batch landscape; otherwise keep portrait (mixed
+  // batches fall back to portrait — the admin champions batch is all-excellence).
+  const landscape = hydrated.length > 0 && hydrated.every(cd => isRecognitionCert(cd.type));
+  const fullDoc = buildPrintDocument(title, allHtml, landscape ? 'landscape' : 'portrait');
 
   const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
