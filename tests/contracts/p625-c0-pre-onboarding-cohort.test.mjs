@@ -52,8 +52,13 @@ const MIG_160_PATH = 'supabase/migrations/20260805000160_625_c1b_admin_list_memb
 // volta a ter um JOIN engagement_kinds, mas para labels do catálogo + term_status, NÃO para
 // a regra de coorte inline. A captura canônica mais recente passa a ser a 181.
 const MIG_181_PATH = 'supabase/migrations/20260805000181_p625_c2_admin_list_members_v4.sql';
-const LATEST_CAPTURE_PATH = existsSync(MIG_181_PATH)
-  ? MIG_181_PATH
+// #727 (mig 329): admin_list_members re-definido body-only para expor country/state (filtros
+// estado/país client-side). Assinatura/coorte inalteradas; a captura canônica mais recente passa
+// a ser a 329.
+const MIG_329_PATH = 'supabase/migrations/20260805000329_727_admin_list_members_geo.sql';
+const LATEST_CAPTURE_PATH = existsSync(MIG_329_PATH)
+  ? MIG_329_PATH
+  : existsSync(MIG_181_PATH) ? MIG_181_PATH
   : existsSync(MIG_160_PATH) ? MIG_160_PATH : MIG_148_PATH;
 const FN_BODY_LATEST = existsSync(LATEST_CAPTURE_PATH)
   ? ((readFileSync(LATEST_CAPTURE_PATH, 'utf8')
