@@ -16,7 +16,7 @@ interface Block {
   format_slug: string;
   title: string;
   duration_min: number;
-  status: 'reserved' | 'confirmed';
+  status: 'reserved' | 'confirmed' | 'no_show';
   sort_order: number;
   external_guest: boolean;
   owner_first_name: string;
@@ -28,6 +28,7 @@ interface EventRow {
   id: string;
   date: string;
   time_start: string | null;
+  is_past?: boolean;
   capacity_used_min: number;
   capacity_remaining_min: number;
   blocks: Block[];
@@ -53,7 +54,10 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
     if (!sb) { setTimeout(load, 300); return; }
     setError(false);
     const [{ data: agenda, error: err }, { data: fmtRows }] = await Promise.all([
-      sb.rpc('get_geral_agenda_viva', { p_limit_events: 2 }),
+      // #1071: 'both' so a General Meeting that already started/ended stays reachable —
+      // the coordinator can still confirm/no-show its protagonists (and credit XP) after
+      // the fact. Past 'reserved' blocks are admin-only in get_geral_agenda_viva.
+      sb.rpc('get_geral_agenda_viva', { p_limit_events: 2, p_window: 'both' }),
       sb.from('agenda_block_formats').select('slug, label_i18n').eq('active', true),
     ]);
     if (err) { setError(true); setLoading(false); return; }
@@ -161,8 +165,20 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
             <section key={ev.id} className="rounded-xl border border-[var(--border)] overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[var(--bg-subtle)]">
                 <div>
-                  <div className="font-semibold capitalize">{fmtDate(ev.date)}</div>
-                  <div className="text-xs text-[var(--text-muted)]">{ev.capacity_used_min}/90 {t('comp.agendaViva.min', 'min')}</div>
+                  <div className="font-semibold capitalize flex items-center gap-2">
+                    {fmtDate(ev.date)}
+                    {ev.is_past && (
+                      <span className="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                        {t('comp.agendaViva.concludedBadge', 'Concluída')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    {ev.capacity_used_min}/90 {t('comp.agendaViva.min', 'min')}
+                    {ev.is_past && ev.blocks.some((b) => b.status === 'reserved') && (
+                      <span className="ml-2 text-amber-600">{t('comp.agendaViva.pastHint', 'Reunião encerrada — confirme os protagonistas para creditar o XP.')}</span>
+                    )}
+                  </div>
                 </div>
                 {ev.blocks.some((b) => b.status === 'reserved') && (
                   <button onClick={() => confirmAll(ev)} disabled={busy === `all-${ev.id}`}
@@ -189,6 +205,7 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium truncate">{b.title}</span>
                           {b.status === 'confirmed' && <span className="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{t('comp.agendaViva.statusConfirmed', 'Confirmado')}</span>}
+                          {b.status === 'no_show' && <span className="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{t('comp.agendaViva.statusNoShow', 'Faltou')}</span>}
                           {b.external_guest && <span className="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-orange/15 text-orange">{t('comp.agendaViva.guestBadge', 'Convidado externo')}</span>}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
@@ -202,7 +219,9 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {b.status === 'reserved' ? (
+                        {b.status !== 'confirmed' ? (
+                          // reserved OR no_show → confirm (crediting XP if attendance present);
+                          // confirming a no_show is the reversal path.
                           <button onClick={() => confirmBlock(b)} disabled={busy === b.id} title={t('comp.agendaViva.confirmCta', 'Confirmar')}
                             className="p-1.5 rounded hover:bg-emerald-50 text-emerald-600 disabled:opacity-50">
                             {busy === b.id ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
