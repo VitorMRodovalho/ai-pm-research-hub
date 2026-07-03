@@ -295,7 +295,6 @@ export default function MemberListIsland() {
   // #625 C0: 'Ativos' = operating actives only; the cycle-N pre-onboarding cohort counts apart.
   const active = allMembers.filter(m => m.member_status === 'active' && !m.is_pre_onboarding).length;
   const preOnboarding = allMembers.filter(m => m.is_pre_onboarding).length;
-  const observers = allMembers.filter(m => m.member_status === 'observer').length;
   const alumni = allMembers.filter(m => m.member_status === 'alumni').length;
   const noAuth = allMembers.filter(m => !m.auth_id).length;
   const noTribe = allMembers.filter(m => !m.tribe_id && m.member_status === 'active' && !m.is_pre_onboarding).length;
@@ -582,12 +581,14 @@ export default function MemberListIsland() {
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Stat cards */}
-      <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 mb-6">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
         {[
           { label: t('comp.memberList.total', 'Total'), value: total, icon: <Users size={16} /> },
           { label: t('comp.memberList.active', 'Ativos'), value: active, color: 'text-emerald-500' },
           { label: t('comp.memberList.preOnboarding', 'Pré-onboarding'), value: preOnboarding, color: 'text-orange-500' },
-          { label: 'Observers', value: observers, color: 'text-blue-500' },
+          // #1028-B: 'Observers' summary card retired — observer is non-creatable (guarded
+          // at the DB layer), so the count is permanently 0. The status filter option +
+          // badge stay for viewing historical rows.
           { label: 'Alumni', value: alumni, color: 'text-slate-500' },
           { label: t('comp.memberList.noTribe', 'Sem tribo'), value: noTribe, color: 'text-amber-500' },
           { label: t('comp.memberList.noLogin', 'Sem login'), value: noAuth, color: 'text-slate-400' },
