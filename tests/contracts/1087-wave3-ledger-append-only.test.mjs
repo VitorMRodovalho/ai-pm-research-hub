@@ -99,6 +99,10 @@ test('wave3 static: xp pillar drill does not count estorno rows as earned', () =
 });
 
 // ── OFFLINE: no latest-captured function body deletes from the ledger ─────────────
+// Scope note: the scan is FUNCTION-BODY-only by design — the invariant governs RPC
+// business logic. A raw one-shot `DELETE FROM gamification_points` statement in a
+// migration (outside any function body) is a data operation, governed by review and
+// the Q-C/Phase C gates, not by this scan.
 test('wave3 offline: latest capture of every migration-defined function is ledger-append-only', () => {
   const latest = loadLatestBodies();
   assert.ok(latest.size > 100, `sanity: parsed a real catalog (got ${latest.size} functions)`);

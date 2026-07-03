@@ -24,6 +24,12 @@
 --     como "earned" — pts continua SUM cru (net).
 --   * higiene de grants: remove_event_showcase tinha EXECUTE para anon/PUBLIC
 --     (inócuo — a função gateia via auth.uid — mas fora do padrão; revogado).
+--
+-- Rollback: re-deploy dos corpos anteriores (revoke_champion ← 20260646000000_p161_
+-- champion_rpcs_phase2.sql · revoke_agenda_block_xp ← 20260805000179_700_agenda_viva_
+-- foundation_slice3.sql · remove_event_showcase ← 20260516080000_phase_b_batch17_
+-- remove_event_showcase_v4.sql · get_member_xp_pillars ← 20260805000289) + decidir o
+-- destino das linhas de estorno já inseridas (não são auto-removidas).
 
 -- ── 1. revoke_champion: estorno em vez de DELETE ─────────────────────────────────
 
@@ -50,7 +56,9 @@ BEGIN
     RETURN jsonb_build_object('error','reason_required','detail','provide >=10 char reason');
   END IF;
 
-  SELECT * INTO v_champ FROM champions_awarded WHERE id = p_champion_id;
+  -- FOR UPDATE serializa revogações concorrentes: a segunda vê status='revoked' e sai
+  -- em already_revoked (sem sobrescrever revoked_by nem tentar estorno em dobro).
+  SELECT * INTO v_champ FROM champions_awarded WHERE id = p_champion_id FOR UPDATE;
   IF v_champ.id IS NULL THEN
     RETURN jsonb_build_object('error','champion_not_found');
   END IF;
@@ -83,7 +91,7 @@ BEGIN
     SELECT gp.member_id, gp.organization_id, gp.category, SUM(gp.points) AS pts
     FROM gamification_points gp
     WHERE gp.ref_id = p_champion_id
-      AND gp.category LIKE 'champion_%'
+      AND gp.category LIKE 'champion\_%'
     GROUP BY gp.member_id, gp.organization_id, gp.category
     HAVING SUM(gp.points) <> 0
   ), reversal AS (
@@ -97,6 +105,8 @@ BEGIN
     INTO v_reversal_rows, v_reversal_points
   FROM reversal;
 
+  -- points_removed = nº de LINHAS de estorno inseridas (compat com a API pré-333,
+  -- que devolvia linhas deletadas); o valor em pontos está em reversal_points.
   RETURN jsonb_build_object(
     'success', true,
     'champion_id', p_champion_id,
@@ -186,7 +196,11 @@ BEGIN
     RETURN jsonb_build_object('error', 'Unauthorized');
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM event_showcases WHERE id = p_showcase_id) THEN
+  -- FOR UPDATE serializa remoções concorrentes: sem o lock, dois callers computariam
+  -- o mesmo net no mesmo snapshot e inseririam estorno em DOBRO (net negativo).
+  -- A segunda chamada bloqueia aqui e, pós-commit da primeira, vê a row deletada e sai.
+  PERFORM 1 FROM event_showcases WHERE id = p_showcase_id FOR UPDATE;
+  IF NOT FOUND THEN
     RETURN jsonb_build_object('error', 'Showcase not found');
   END IF;
 
