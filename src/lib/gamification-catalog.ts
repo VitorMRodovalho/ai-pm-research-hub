@@ -96,7 +96,8 @@ export function ruleXpRange(rule: CatalogRule): string {
 
 /** Min–max base_points range across a pillar's rules (points-legend chips). */
 export function pillarXpRange(rules: CatalogRule[]): string {
-  const pts = rules.map((r) => r.base_points ?? 0);
+  const pts = rules.map((r) => Number(r.base_points) || 0);
+  if (!pts.length) return '0';
   const min = Math.min(...pts);
   const max = Math.max(...pts);
   return min === max ? `+${max}` : `${min}–${max}`;
@@ -121,7 +122,8 @@ export function getLevelInfo(thresholds: LevelThreshold[], pts: number): LevelIn
   const tiers = (thresholds || []).slice().sort((a, b) => a.min_points - b.min_points);
   if (!tiers.length) return null;
   let idx = tiers.findIndex((t) => pts >= t.min_points && (t.max_points == null || pts <= t.max_points));
-  if (idx === -1) idx = 0;
+  // No exact match: above every closed range → highest tier; below the first → lowest.
+  if (idx === -1) idx = pts >= tiers[tiers.length - 1].min_points ? tiers.length - 1 : 0;
   const tier = tiers[idx];
   const next = tiers[idx + 1] || null;
   const range = tier.max_points != null ? tier.max_points - tier.min_points : 0;

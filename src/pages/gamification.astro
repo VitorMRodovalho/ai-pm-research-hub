@@ -646,8 +646,8 @@ const SCORING_I18N = {
     if (lvlEl) {
       lvlEl.innerHTML = (CATALOG.level_thresholds || []).map((tier: any) => `
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
-          <span class="text-lg">${tier.emoji || ''}</span>
-          <div><strong>${escapeHtml(names[tier.slug] || tier.slug)}</strong><span class="text-[var(--text-muted)] ml-1">${tier.min_points}${tier.max_points != null ? `–${tier.max_points}` : '+'} ${I.mpPtsLabel}</span></div>
+          <span class="text-lg">${escapeHtml(tier.emoji || '')}</span>
+          <div><strong>${escapeHtml(names[tier.slug] || tier.slug)}</strong><span class="text-[var(--text-muted)] ml-1">${Number(tier.min_points) || 0}${tier.max_points != null ? `–${Number(tier.max_points)}` : '+'} ${I.mpPtsLabel}</span></div>
         </div>`).join('');
       document.getElementById('level-legend-card')?.classList.remove('hidden');
     }
@@ -787,7 +787,7 @@ const SCORING_I18N = {
       // Catalog-driven level; anon rows fall back to the public RPC's level_name.
       const level = getLevel(displayPoints);
       const levelBadge = level
-        ? `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${level.emoji} ${level.name}</span>`
+        ? `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${escapeHtml(level.emoji)} ${escapeHtml(level.name)}</span>`
         : (m.level_name ? `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${escapeHtml(m.level_name)}</span>` : '');
       const isMe = MEMBER && m.member_id === MEMBER.id;
       const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
@@ -1269,9 +1269,9 @@ const SCORING_I18N = {
 
       el.innerHTML = `
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
-        ${level ? `<div class="text-3xl mb-1">${level.emoji}</div>` : ''}
+        ${level ? `<div class="text-3xl mb-1">${escapeHtml(level.emoji)}</div>` : ''}
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel}${level ? ` · <strong>${level.name}</strong>` : ''}</div>
+        <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel}${level ? ` · <strong>${escapeHtml(level.name)}</strong>` : ''}</div>
         <div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
         ${level ? (level.next ? `<div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`) : ''}
         ${level ? `<div class="w-40 h-2 bg-[var(--border-strong)] rounded-full mx-auto mt-2 overflow-hidden">
