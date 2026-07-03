@@ -4979,6 +4979,7 @@ const ptBR: Record<string, string> = {
   'showcase.type.prompt_week': 'Prompt da Semana',
   'showcase.type.quick_insight': 'Insight Rápido',
   'showcase.type.awareness': 'Sensibilização',
+  'showcase.type.talk': 'Palestra / Webinar / Mesa',
 
   // ── event detail / roster modal showcase form ──
   'eventDetail.addShowcase': 'Adicionar Showcase',

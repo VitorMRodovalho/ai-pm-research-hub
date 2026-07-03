@@ -4973,6 +4973,7 @@ const enUS: Record<string, string> = {
   'showcase.type.prompt_week': 'Prompt of the Week',
   'showcase.type.quick_insight': 'Quick Insight',
   'showcase.type.awareness': 'Awareness',
+  'showcase.type.talk': 'Talk / Webinar / Panel',
 
   // ── event detail / roster modal showcase form ──
   'eventDetail.addShowcase': 'Add Showcase',
