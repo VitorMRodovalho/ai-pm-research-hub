@@ -37,6 +37,7 @@ import {
   buildCertificateHTML,
   hydrateCertData,
   IMAGES_LOADED_PREDICATE,
+  certOrientation,
   type CertificateData,
 } from '../src/lib/certificates/pdf.ts';
 
@@ -78,12 +79,15 @@ const BUCKET = 'certificates';
  * Same @page CSS as src/lib/certificates/pdf.ts buildPrintDocument(), minus the
  * screen-only "Dica para gerar PDF limpo" banner (we're not invoking a print dialog).
  */
-function buildBackfillDocument(title: string, innerHtml: string): string {
+function buildBackfillDocument(title: string, innerHtml: string, orientation: 'portrait' | 'landscape' = 'portrait'): string {
+  const pageRule = orientation === 'landscape'
+    ? '@page{size:A4 landscape;margin:0}'
+    : '@page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}';
   return `<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
     <title>${title}</title>
     <style>
-      @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+      ${pageRule}
       html,body{margin:0 !important;padding:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important;max-width:none !important}
       body{font-family:Georgia,serif}
@@ -178,7 +182,7 @@ async function buildCertData(cert: CertRow): Promise<CertificateData> {
   return certData;
 }
 
-async function renderPdf(browser: Browser, html: string, title: string): Promise<Buffer> {
+async function renderPdf(browser: Browser, html: string, title: string, orientation: 'portrait' | 'landscape' = 'portrait'): Promise<Buffer> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   // Note: this renderer uses playwright's `networkidle` (≤2 idle connections) while the
@@ -195,12 +199,9 @@ async function renderPdf(browser: Browser, html: string, title: string): Promise
   } catch {
     throw new Error('images_not_loaded: one or more <img> failed to decode before render (#1047)');
   }
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' },
-    printBackground: true,
-    preferCSSPageSize: false,
-  });
+  const pdfBuffer = orientation === 'landscape'
+    ? await page.pdf({ format: 'A4', landscape: true, margin: { top: '0', right: '0', bottom: '0', left: '0' }, printBackground: true, preferCSSPageSize: false })
+    : await page.pdf({ format: 'A4', margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' }, printBackground: true, preferCSSPageSize: false });
   await ctx.close();
   return Buffer.from(pdfBuffer);
 }
@@ -245,8 +246,9 @@ async function main() {
         const certData = await buildCertData(cert);
         const innerHtml = buildCertificateHTML(certData);
         const title = `${vc} — ${certData.member_name}`;
-        const fullDoc = buildBackfillDocument(title, innerHtml);
-        const pdfBuffer = await renderPdf(browser, fullDoc, title);
+        const orientation = certOrientation(certData.type);
+        const fullDoc = buildBackfillDocument(title, innerHtml, orientation);
+        const pdfBuffer = await renderPdf(browser, fullDoc, title, orientation);
 
         const storagePath = `${cert.member_id}/${vc}.pdf`;
 
