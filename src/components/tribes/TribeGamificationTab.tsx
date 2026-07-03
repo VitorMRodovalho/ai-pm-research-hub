@@ -562,8 +562,9 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
   // from the shared rules catalog.
   const [champAwards, setChampAwards] = useState<ChampionAward[] | null>(null);
   const [champCatalog, setChampCatalog] = useState<GamificationCatalog | null>(null);
-  const dbLang = typeof location !== 'undefined' && location.pathname.startsWith('/en') ? 'en-US'
-    : typeof location !== 'undefined' && location.pathname.startsWith('/es') ? 'es-LATAM' : 'pt-BR';
+  // client:load island — the guard covers the SSR render pass (location is browser-only).
+  const path = typeof location !== 'undefined' ? location.pathname : '';
+  const dbLang = path.startsWith('/en') ? 'en-US' : path.startsWith('/es') ? 'es-LATAM' : 'pt-BR';
   useEffect(() => {
     let alive = true;
     if (!member.champions_points) { setChampAwards([]); return; }

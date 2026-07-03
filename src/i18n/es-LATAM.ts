@@ -3040,6 +3040,7 @@ const esLATAM: Record<string, string> = {
   'gamification.scoring.loading': 'Cargando reglas…',
   'gamification.scoring.onTimeBonus': '+{n} a tiempo',
   'gamification.scoring.perCriterion': '+{n} por criterio',
+  'gamification.scoring.governance': 'Modelo canónico registrado en el Manual §3.9 (CR-054); los valores mostrados provienen del catálogo vivo de reglas.',
   // ── #1087 wave 2 — pilares, extracto, atribución de champion, opt-out ──
   'gamification.pillar.presenca': 'Asistencia',
   'gamification.pillar.trilha': 'Ruta',

@@ -70,7 +70,11 @@ describe('p700 slice 3 — Agenda Viva gamification + confirm/XP', () => {
       assert.ok(gates >= 3, `expected manage_event gate on the 3 coordination RPCs; got ${gates}`);
     });
 
-    it('revoke flips status to no_show and deletes the protagonismo ledger row', () => {
+    it('revoke flips status to no_show and (historically) deleted the protagonismo ledger row', () => {
+      // HISTORICAL PIN on the slice-3 migration file only. The live revoke_agenda_block_xp was
+      // SUPERSEDED by 20260805000333 (#1087 Onda 3): the ledger is append-only and revoke now
+      // INSERTS an estorno row instead of deleting. The live invariant is pinned by
+      // tests/contracts/1087-wave3-ledger-append-only.test.mjs — do not "fix" prod to satisfy this.
       assert.match(MIGRATION_SQL, /DELETE FROM public\.gamification_points[\s\S]*category = 'agenda_block_protagonismo'/);
       assert.match(MIGRATION_SQL, /SET status = 'no_show', confirmed_at = NULL/);
     });
