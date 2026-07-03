@@ -3040,6 +3040,7 @@ const enUS: Record<string, string> = {
   'gamification.scoring.loading': 'Loading rules…',
   'gamification.scoring.onTimeBonus': '+{n} on time',
   'gamification.scoring.perCriterion': '+{n} per criterion',
+  'gamification.scoring.governance': 'Canonical model recorded in Manual §3.9 (CR-054); the values shown come from the live rules catalog.',
   // ── #1087 wave 2 — pillars, statement, champion attribution, opt-out ──
   'gamification.pillar.presenca': 'Attendance',
   'gamification.pillar.trilha': 'Trail',

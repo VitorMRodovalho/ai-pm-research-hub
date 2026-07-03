@@ -75,6 +75,9 @@ export function parseMigration(filename, sql) {
       args: normalizeArgs(args),
       bodyHash: md5(normalizeBody(body)),
       bodyLen: body.length,
+      // raw body text — consumed by content-level invariant tests (e.g. the
+      // 1087-wave3 ledger append-only scan); hash-only consumers ignore it.
+      body,
       file: filename,
     });
   }

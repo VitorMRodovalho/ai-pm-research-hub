@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import InfoPopover from './InfoPopover';
 import {
-  localizeI18n, ruleXpRange, rulesByPillar,
+  localizeI18n, ruleXpRange, rulesByPillar, PILLAR_EMOJI,
   type GamificationCatalog,
 } from '../../lib/gamification-catalog';
 
@@ -18,14 +18,10 @@ interface Props {
     loading: string;
     onTimeBonus: string;      // '+{n} no prazo'
     perCriterion: string;     // '+{n} por critério'
+    governance: string;       // canonical-model note (Manual §3.9 / CR-054)
     pillars: Record<string, string>;
   };
 }
-
-const PILLAR_EMOJI: Record<string, string> = {
-  presenca: '📅', trilha: '🧭', certificacoes: '🏅', producao: '🏗️',
-  curadoria: '📚', champions: '🏆', protagonismo: '🎤',
-};
 
 export default function ScoringInfoPopover({ lang, i18n }: Props) {
   const [catalog, setCatalog] = useState<GamificationCatalog | null>(
@@ -84,6 +80,12 @@ export default function ScoringInfoPopover({ lang, i18n }: Props) {
       </div>
       <div className="mt-3 pt-2 border-t border-[var(--border-default)] text-[11px] text-[var(--text-muted)] font-medium">
         {i18n.goal}
+      </div>
+      {/* #1087 Onda 3 (G8): the member-facing surface names its governance record —
+          the values above come from the live catalog, the model is ratified in
+          Manual §3.9 via CR-054. No point values are ever duplicated here. */}
+      <div className="mt-1.5 text-[10px] text-[var(--text-muted)]">
+        {i18n.governance}
       </div>
     </InfoPopover>
   );
