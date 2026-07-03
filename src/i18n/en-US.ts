@@ -3037,6 +3037,7 @@ const enUS: Record<string, string> = {
   'gamification.pointsLegend.attendance': 'Attendance',
   'gamification.pointsLegend.course': 'Course',
   'gamification.pointsLegend.artifact': 'Artifact',
+  'gamification.pointsLegend.deliverable': 'Deliverable',
   'gamification.pointsLegend.profile': '100% Profile',
   'gamification.pointsLegend.bonus': 'Special bonus',
   // ── Scoring popover ──
@@ -3060,6 +3061,15 @@ const enUS: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Community',
   'gamification.scoring.showcase': 'Showcase / Protagonist',
   'gamification.scoring.showcaseSub': 'Presentation at general meeting',
+  'gamification.scoring.deliverable': 'Deliverable (card) completed',
+  'gamification.scoring.deliverableSub': 'Tribe WBS card · +10 if on time',
+  'gamification.scoring.artifact': 'Rich minutes published',
+  'gamification.scoring.action': 'Action/task resolved',
+  'gamification.scoring.actionSub': 'Meeting task · +2 if on time',
+  'gamification.scoring.champion': 'Champion (recognition)',
+  'gamification.scoring.championSub': 'General / tribe / deliverable',
+  'gamification.scoring.curation': 'Document curation',
+  'gamification.scoring.curationSub': 'Publish 30 · ratify 25 · author 20 · lock 10 · resolve 5',
   'gamification.scoring.attendance': 'Meeting attendance',
   'gamification.scoring.goal': '2026 Goal: 70% of team with trail complete (6/6)',
   // ── Board rules popover ──
