@@ -4974,6 +4974,7 @@ const esLATAM: Record<string, string> = {
   'showcase.type.prompt_week': 'Prompt de la Semana',
   'showcase.type.quick_insight': 'Insight Rápido',
   'showcase.type.awareness': 'Sensibilización',
+  'showcase.type.talk': 'Charla / Webinar / Mesa',
 
   // ── event detail / roster modal showcase form ──
   'eventDetail.addShowcase': 'Agregar Showcase',

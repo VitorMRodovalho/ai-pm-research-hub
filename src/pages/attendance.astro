@@ -2279,14 +2279,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   /* ── Showcase logic in roster modal ── */
   const SHOWCASE_EMOJI: Record<string, string> = {
-    case_study: '🎓', tool_review: '🔧', prompt_week: '💡', quick_insight: '⚡', awareness: '🌍',
+    case_study: '🎓', tool_review: '🔧', prompt_week: '💡', quick_insight: '⚡', awareness: '🌍', talk: '🎤',
   };
   const SHOWCASE_LABELS: Record<string, string> = {
     case_study: 'Case de Sucesso', tool_review: 'Review de Ferramenta', prompt_week: 'Prompt da Semana',
-    quick_insight: 'Insight Rápido', awareness: 'Sensibilização',
+    quick_insight: 'Insight Rápido', awareness: 'Sensibilização', talk: 'Palestra / Webinar / Mesa',
   };
   const SHOWCASE_XP: Record<string, number> = {
-    case_study: 25, tool_review: 20, prompt_week: 20, quick_insight: 15, awareness: 15,
+    case_study: 25, tool_review: 20, prompt_week: 20, quick_insight: 15, awareness: 15, talk: 25,
   };
 
   async function loadShowcases(eventId: string) {
