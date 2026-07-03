@@ -3061,6 +3061,8 @@ const esLATAM: Record<string, string> = {
   'gamification.scoring.badge': 'Badge / Comunidad',
   'gamification.scoring.showcase': 'Showcase / Protagonismo',
   'gamification.scoring.showcaseSub': 'Presentación en reunión general',
+  'gamification.scoring.talk': 'Charla / Webinar / Mesa',
+  'gamification.scoring.talkSub': 'Ponente en evento del Núcleo (webinar, panel o mesa)',
   'gamification.scoring.deliverable': 'Entregable (card) completado',
   'gamification.scoring.deliverableSub': 'Card WBS de la tribu · +10 si a tiempo',
   'gamification.scoring.artifact': 'Acta enriquecida publicada',

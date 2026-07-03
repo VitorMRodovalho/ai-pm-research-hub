@@ -22,6 +22,8 @@ interface Props {
     badge: string;
     showcase: string;
     showcaseSub: string;
+    talk: string;
+    talkSub: string;
     deliverable: string;
     deliverableSub: string;
     artifact: string;
@@ -88,6 +90,10 @@ export default function ScoringInfoPopover({ i18n }: Props) {
         <div className={ROW}>
           <div><span className={LABEL}>🎤 {i18n.showcase}</span><div className={SUB}>{i18n.showcaseSub}</div></div>
           <span className={XP}>15–25 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>🎙️ {i18n.talk}</span><div className={SUB}>{i18n.talkSub}</div></div>
+          <span className={XP}>25 XP</span>
         </div>
         <div className={ROW}>
           <div><span className={LABEL}>📦 {i18n.deliverable}</span><div className={SUB}>{i18n.deliverableSub}</div></div>
