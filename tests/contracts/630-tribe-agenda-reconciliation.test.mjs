@@ -96,22 +96,26 @@ test('#630 live: confirmed tribes have seven linked weekly tribe events through 
     .lte('date', '2026-07-31');
   assert.ifError(e2);
 
+  // Monday-anchored week key for an ISO date — collapses each event to the Mon–Sun
+  // week it falls in.
+  const weekKey = (iso) => {
+    const d = new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); // rewind to Monday
+    return d.toISOString().slice(0, 10);
+  };
   for (const [tribeId, spec] of expected) {
-    const rows = (events ?? []).filter((event) => {
-      const eventDate = new Date(`${event.date}T12:00:00Z`);
-      return byInitiative.get(event.initiative_id) === tribeId
-        && eventDate.getUTCDay() === spec.day;
-    });
-    // #803 (BUG-630.A): assert the seeded weekly cadence by counting DISTINCT
-    // dates on the expected weekday in ANY status. A legitimately cancelled
-    // instance keeps its row, so it still counts as a planned slot. The window
-    // holds exactly `spec.count` occurrences of the weekday, so `>= spec.count`
-    // distinct dates proves full coverage with no gap — and stays green through
-    // legitimate cancellations/reschedules, unlike the old "exactly N active" gate.
-    const distinctDates = new Set(rows.map((event) => event.date));
+    const rows = (events ?? []).filter((event) => byInitiative.get(event.initiative_id) === tribeId);
+    // #1065 (was #803/BUG-630.A): assert the weekly cadence by counting DISTINCT
+    // Mon-anchored WEEKS covered — not distinct dates on one fixed weekday. A weekly
+    // occurrence legitimately rescheduled to another weekday within the same week
+    // (e.g. tribe 6's 2026-06-24 Wed slot held Fri 2026-06-26 — same recurrence
+    // series/link/time) still covers that week. The invariant is "one meeting per
+    // week, no gap", not "always on weekday N"; a cross-week move leaves a real gap
+    // and still fails. `spec.day` is retained as the nominal cadence anchor.
+    const distinctWeeks = new Set(rows.map((event) => weekKey(event.date)));
     assert.ok(
-      distinctDates.size >= spec.count,
-      `tribe ${tribeId} weekly grid: expected >= ${spec.count} distinct weekday-${spec.day} slots, got ${distinctDates.size}`,
+      distinctWeeks.size >= spec.count,
+      `tribe ${tribeId} weekly grid: expected >= ${spec.count} distinct weekly slots (day-${spec.day} cadence), got ${distinctWeeks.size}`,
     );
     assert.ok(rows.every((event) => event.type === 'tribo'), `tribe ${tribeId} all events type=tribo`);
     assert.ok(rows.every((event) => event.initiative_id), `tribe ${tribeId} all events linked to initiative`);
