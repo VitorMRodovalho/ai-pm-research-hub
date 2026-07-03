@@ -199,6 +199,7 @@ const SCORING_I18N = {
   loading: t('gamification.scoring.loading', lang),
   onTimeBonus: t('gamification.scoring.onTimeBonus', lang),
   perCriterion: t('gamification.scoring.perCriterion', lang),
+  governance: t('gamification.scoring.governance', lang),
   pillars: PILLAR_I18N,
 };
 ---
@@ -512,7 +513,7 @@ const SCORING_I18N = {
   import { hasPermission } from '../lib/permissions';
   import {
     getCatalog, getLevelInfo, pillarXpRange, rulesByPillar, localizeI18n,
-    fetchChampionAttribution, criterionLabel,
+    fetchChampionAttribution, criterionLabel, PILLAR_EMOJI,
   } from '../lib/gamification-catalog';
 
   const I = (typeof window !== 'undefined' && (window as any).__GAMIFICATION_I18N) || {};
@@ -617,11 +618,6 @@ const SCORING_I18N = {
     }
     return CATALOG;
   }
-
-  const PILLAR_EMOJI: Record<string, string> = {
-    presenca: '📅', trilha: '🧭', certificacoes: '🏅', producao: '🏗️',
-    curadoria: '📚', champions: '🏆', protagonismo: '🎤',
-  };
 
   // ── XP LEVEL SYSTEM — tiers come from the catalog (platform_settings SSOT).
   // Returns null before the catalog loads (anon rows fall back to the RPC's

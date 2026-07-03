@@ -2158,8 +2158,9 @@ const PROFILE_I18N = {
     const sb = (window as any).navGetSb?.();
     if (!sb) { target.checked = !optOut; return; }
     try {
-      const { data, error } = await sb.rpc('set_my_gamification_visibility', { p_opt_out: optOut });
-      if (error || data?.success === false) throw new Error(error?.message || 'RPC failed');
+      const { error } = await sb.rpc('set_my_gamification_visibility', { p_opt_out: optOut });
+      // the RPC RAISEs on failure (surfaces as `error`); it never returns success:false
+      if (error) throw new Error(error.message || 'RPC failed');
       if (currentMember) currentMember.gamification_opt_out = optOut;
       (window as any).toast?.(PROFILE_I18N.gamOptOutSaved, 'success');
     } catch (err: any) {

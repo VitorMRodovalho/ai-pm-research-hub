@@ -3045,6 +3045,7 @@ const ptBR: Record<string, string> = {
   'gamification.scoring.loading': 'Carregando regras…',
   'gamification.scoring.onTimeBonus': '+{n} no prazo',
   'gamification.scoring.perCriterion': '+{n} por critério',
+  'gamification.scoring.governance': 'Modelo canônico registrado no Manual §3.9 (CR-054); os valores exibidos vêm do catálogo vivo de regras.',
   // ── #1087 wave 2 — pilares, extrato, atribuição de champion, opt-out ──
   'gamification.pillar.presenca': 'Presença',
   'gamification.pillar.trilha': 'Trilha',

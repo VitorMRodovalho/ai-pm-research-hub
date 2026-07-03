@@ -48,6 +48,12 @@ export interface LevelInfo {
   max: number | null;
 }
 
+/** Pillar emoji chrome — single copy (consumed by ScoringInfoPopover + gamification.astro). */
+export const PILLAR_EMOJI: Record<string, string> = {
+  presenca: '📅', trilha: '🧭', certificacoes: '🏅', producao: '🏗️',
+  curadoria: '📚', champions: '🏆', protagonismo: '🎤',
+};
+
 /**
  * Fetch the rules catalog once per page (member-only RPC — callers must only
  * invoke after the member session is confirmed). Cached promise on window so

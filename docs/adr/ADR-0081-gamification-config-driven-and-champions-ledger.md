@@ -80,14 +80,14 @@ champions_awarded (
 )
 ```
 
-**Auditoria preservada na revogação:** `status='revoked'` mantém a row + reason + by + at; XP correspondente é DELETEd de `gamification_points` (não compõe XP a partir de Champion revogado). Justificativa textual obrigatória (≥50 chars) força reflexão antes do grant.
+**Auditoria preservada na revogação:** `status='revoked'` mantém a row + reason + by + at; XP correspondente é DELETEd de `gamification_points` (não compõe XP a partir de Champion revogado). Justificativa textual obrigatória (≥50 chars) força reflexão antes do grant. **[SUPERSEDIDO em parte, 2026-07-03 — #1087 Onda 3 (ver Addendum): o DELETE do XP derivado virou ESTORNO append-only (mig `20260805000333`); o ranking continua não inflado porque o net soma zero.]**
 
 ### Componente 3 — 4 RPCs de Champion
 
 | RPC | Resp | Auth | Notas |
 |---|---|---|---|
 | `award_champion(recipient, surface, context_kind, context_id, criteria[], justification)` | jsonb com `champion_id`, `points_awarded`, `soft_cap_warning`, `rule_slug` | V4 `award_champion` (org-scope para general; initiative-scope para tribe/deliverable) | Valida elegibilidade (presence em event para general/tribe; assigned_member_id para deliverable; created_by para artifact). Anti-inflação 3-camada (ver Componente 4). Forward-only rule lookup. |
-| `revoke_champion(champion_id, reason)` | jsonb com `points_removed`, `revoked_within_window`, `by_platform_admin` | original awarder dentro de 7d OU `manage_platform` anytime | Soft-row + DELETE XP. Reason obrigatório (≥10 chars). |
+| `revoke_champion(champion_id, reason)` | jsonb com `points_removed`, `revoked_within_window`, `by_platform_admin` | original awarder dentro de 7d OU `manage_platform` anytime | Soft-row + **estorno append-only** no ledger (desde mig `20260805000333`, #1087 Onda 3 — antes: DELETE). Reason obrigatório (≥10 chars). |
 | `get_champions_ranking(scope_kind, scope_id, cycle_code, limit)` | jsonb com `ranking[]` + `cycle_*` | authenticated within org | Scope ∈ {global, initiative}. Respeita LGPD opt-out (`gamification_opt_out`). NULL-safe cycle_end (ADR-0062 pattern). |
 | `get_member_champions_history(member_id)` | jsonb com `totals` + `history[]` | self always; cross-member exige `view_pii` OR target not opted out | Audit-load-bearing — surfaceada em /profile/me + /admin/gamification. |
 
@@ -236,7 +236,7 @@ Justificativa PM: aceita recomendação por consistência com `effective_from` s
 
 42. **Config-driven exige FK alinhamento downstream** — introduzir `<feature>_rules` table sem migrar constraints downstream para FK composta gera bug invisível até o primeiro INSERT do tipo novo. Smoke happy path para CADA categoria seedada antes de declarar feature done. (Aprendido em p161 Fase 2, hotfix 20260647.)
 
-43. **Soft revocation + delete derived XP** — Champion (ou qualquer reconhecimento manual com pontuação) deve preservar audit row em `status='revoked'` mas DELETE da pontuação derivada. Compromisso entre "auditoria nunca apaga" e "ranking não pode ser inflado por reconhecimento revogado". Aplicável a futuros tipos de manual award.
+43. **Soft revocation + delete derived XP** — Champion (ou qualquer reconhecimento manual com pontuação) deve preservar audit row em `status='revoked'` mas DELETE da pontuação derivada. Compromisso entre "auditoria nunca apaga" e "ranking não pode ser inflado por reconhecimento revogado". Aplicável a futuros tipos de manual award. **[EVOLUÍDO 2026-07-03, #1087 Onda 3: o compromisso passou a ser resolvido com ESTORNO (linha negativa espelhando o net), não DELETE — "auditoria nunca apaga" agora vale também para a pontuação derivada; o ranking segue não inflado porque SUM neta zero. Ver Addendum.]**
 
 44. **Anti-farm via resolver-pays-not-commenter** — gamification em ações com 2 atores (comentário + resolução) deve pagar ao closer, não ao opener. Inverte incentivo de "criar muito" para "fechar com qualidade". Aplicável a: issues, threads de discussão, action items, etc.
 
@@ -353,5 +353,18 @@ pre-config-driven shape:
 - V4 Authority Model (`can_by_member`, `engagement_kind_permissions`, scope=organization vs initiative)
 - `src/pages/admin/gamification.astro` (admin page shipped p161 — read-only rules table + grant modal + revoke 7d window)
 - MCP tools v2.69.0/289: `award_champion`, `revoke_champion`, `get_champions_ranking`, `get_member_champions_history`
+
+---
+
+## Addendum 2026-07-03 — #1087 Onda 3: ledger append-only (estorno em vez de DELETE)
+
+Migration `20260805000333_1087_wave3_ledger_append_only.sql`:
+
+- **Invariante nova:** nenhuma RPC de lógica de negócio deleta linhas de `gamification_points`. As três funções que deletavam — `revoke_champion`, `revoke_agenda_block_xp`, `remove_event_showcase` — passaram a inserir **estorno**: linha de pontos negativos espelhando o net por (member, org, categoria), mesmo `ref_id`, `granted_by` = quem revogou, `reason` prefixado "Estorno". Guard `HAVING SUM(points) <> 0` torna a reversão idempotente e net-zero-exata.
+- **Rollups absorvem por construção** (todos são SUM cru); `get_my_points_statement` rotula `is_reversal = points < 0` (UI da Onda 2 já renderiza). `get_member_xp_pillars.earned_count` ganhou `FILTER (WHERE points > 0)` — estorno não conta como "earned".
+- **Bug latente corrigido:** o DELETE antigo de `remove_event_showcase` casava só `category = 'showcase'` (bare, legado 2026-04); a escrita atual usa `showcase_<type>` (p165) → remoção deixava XP órfão. O estorno casa `LIKE 'showcase%'` via `ref_id`.
+- **Enforcement:** `tests/contracts/1087-wave3-ledger-append-only.test.mjs` (scan offline das capturas mais recentes + amarração viva via Phase C) + repin do M7 (`p277-419-m7-champions-parity.test.mjs`: revogado ⇒ projeção existe e neta zero). Carve-out único documentado: erasure LGPD (Art. 18) — direito do titular, não lógica de negócio.
+- **Atoria (Onda 1, mig 332):** `gamification_points.granted_by uuid NULL` (FK members ON DELETE SET NULL; NULL = sistema/trigger), forward-only.
+- **G7 (RPCs "órfãos"):** `get_my_xp_and_ranking`, `get_my_gamification_stats`, `get_champions_ranking`, `get_cpmai_leaderboard` não têm UI web por design — são superfície de agente via MCP (paridade web/agente). Não remover.
 
 Assisted-By: Claude (Anthropic) <noreply@anthropic.com>
