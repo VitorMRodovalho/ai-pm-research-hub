@@ -22,6 +22,9 @@ interface MemberRow {
   tribe_id: number | null;
   tribe_name: string | null;
   chapter: string;
+  /* #727 (#625 follow-up): member geo — surfaced for client-side estado/país filters. */
+  country: string | null;
+  state: string | null;
   auth_id: string | null;
   last_seen_at: string | null;
   total_sessions: number;
@@ -114,22 +117,72 @@ function timeAgo(dateStr: string): string {
   return `${days}d`;
 }
 
-/* #625 F1 — affiliation farol from the latest verification surfaced by admin_list_members.
-   green = verified & active (not expiring); amber = active but expiring ≤30d; red = inactive
-   or expired; neutral = never verified. Clickable chip opens the verify modal. */
-function affiliationFarol(m: MemberRow, t: (key: string, fallback?: string) => string): { emoji: string; label: string; cls: string } {
-  if (!m.affiliation_last_verified_at) {
-    return { emoji: '⚪', label: t('comp.memberList.affUnverified', 'Filiação não verificada'), cls: 'bg-slate-100 text-slate-500' };
-  }
-  if (m.affiliation_active === false) {
-    return { emoji: '🔴', label: t('comp.memberList.affInactive', 'Filiação PMI inativa'), cls: 'bg-rose-50 text-rose-700' };
-  }
+/* #625 F1 / #727 — coarse affiliation-status bucket from the latest verification surfaced by
+   admin_list_members. neutral = never verified; red = inactive OR expired; amber = expiring ≤30d;
+   green = verified & active. This is the SINGLE source of the farol thresholds: both the display
+   chip (affiliationFarol) AND the #727 status filter derive from it — no logic replicated. */
+type AffiliationKey = 'neutral' | 'red' | 'amber' | 'green';
+function affiliationStatusKey(m: MemberRow): AffiliationKey {
+  if (!m.affiliation_last_verified_at) return 'neutral';
+  if (m.affiliation_active === false) return 'red';
   if (m.affiliation_expires_on) {
     const days = Math.ceil((new Date(m.affiliation_expires_on).getTime() - Date.now()) / 86400000);
-    if (days < 0) return { emoji: '🔴', label: t('comp.memberList.affExpired', 'Filiação vencida'), cls: 'bg-rose-50 text-rose-700' };
-    if (days <= 30) return { emoji: '🟡', label: t('comp.memberList.affExpiring', 'Filiação vence em breve'), cls: 'bg-amber-50 text-amber-700' };
+    if (days < 0) return 'red';
+    if (days <= 30) return 'amber';
   }
-  return { emoji: '🟢', label: t('comp.memberList.affVerified', 'Filiação PMI verificada'), cls: 'bg-emerald-50 text-emerald-700' };
+  return 'green';
+}
+
+/* #625 F1 — display chip for the affiliation farol. Reuses affiliationStatusKey for the bucket;
+   only the red sub-label (inactive vs expired) is refined here for the tooltip. Clickable chip
+   opens the verify modal. */
+function affiliationFarol(m: MemberRow, t: (key: string, fallback?: string) => string): { emoji: string; label: string; cls: string } {
+  switch (affiliationStatusKey(m)) {
+    case 'neutral':
+      return { emoji: '⚪', label: t('comp.memberList.affUnverified', 'Filiação não verificada'), cls: 'bg-slate-100 text-slate-500' };
+    case 'red':
+      return m.affiliation_active === false
+        ? { emoji: '🔴', label: t('comp.memberList.affInactive', 'Filiação PMI inativa'), cls: 'bg-rose-50 text-rose-700' }
+        : { emoji: '🔴', label: t('comp.memberList.affExpired', 'Filiação vencida'), cls: 'bg-rose-50 text-rose-700' };
+    case 'amber':
+      return { emoji: '🟡', label: t('comp.memberList.affExpiring', 'Filiação vence em breve'), cls: 'bg-amber-50 text-amber-700' };
+    default:
+      return { emoji: '🟢', label: t('comp.memberList.affVerified', 'Filiação PMI verificada'), cls: 'bg-emerald-50 text-emerald-700' };
+  }
+}
+
+/* #727 — geo normalization for the client-side estado/país filters. members.country/state are
+   free-text and dirty ('Brazil' vs 'Brasil'; 'GO' vs 'Goiás'); the filter dedups on a canonical
+   key so the same place is a single option, and the display label is the canonical form. */
+const BR_UF_BY_NAME: Record<string, string> = {
+  acre: 'AC', alagoas: 'AL', amapa: 'AP', amazonas: 'AM', bahia: 'BA', ceara: 'CE',
+  'distrito federal': 'DF', 'espirito santo': 'ES', goias: 'GO', maranhao: 'MA',
+  'mato grosso': 'MT', 'mato grosso do sul': 'MS', 'minas gerais': 'MG', para: 'PA',
+  paraiba: 'PB', parana: 'PR', pernambuco: 'PE', piaui: 'PI', 'rio de janeiro': 'RJ',
+  'rio grande do norte': 'RN', 'rio grande do sul': 'RS', rondonia: 'RO', roraima: 'RR',
+  'santa catarina': 'SC', 'sao paulo': 'SP', sergipe: 'SE', tocantins: 'TO',
+};
+const COUNTRY_CANON: Record<string, string> = {
+  brazil: 'Brasil', brasil: 'Brasil', br: 'Brasil',
+  'estados unidos': 'Estados Unidos', 'united states': 'Estados Unidos',
+  usa: 'Estados Unidos', us: 'Estados Unidos', eua: 'Estados Unidos',
+  portugal: 'Portugal',
+};
+function stripAccents(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function normState(raw: string | null): string | null {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+  const key = stripAccents(trimmed).toLowerCase();
+  if (BR_UF_BY_NAME[key]) return BR_UF_BY_NAME[key];
+  if (trimmed.length === 2) return trimmed.toUpperCase();
+  return trimmed;
+}
+function normCountry(raw: string | null): string | null {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+  return COUNTRY_CANON[stripAccents(trimmed).toLowerCase()] || trimmed;
 }
 
 /* #625 C2 (D2=B1) — volunteer-term farol. amber = member has an active engagement that
@@ -199,6 +252,10 @@ export default function MemberListIsland() {
   const [initiativeFilter, setInitiativeFilter] = useState('');
   const [chapterFilter, setChapterFilter] = useState('');
   const [cycleFilter, setCycleFilter] = useState('');
+  // #727: client-side geo + affiliation-status filters (over the loaded cohort; not RPC params).
+  const [stateFilter, setStateFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [affiliationFilter, setAffiliationFilter] = useState('');
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   // Resolved once: PT-BR canonical, en/es from the catalog (D1=C). Cheap; reads localStorage/URL.
   const [locale] = useState<Locale>(() => getEffectiveLocale() as Locale);
@@ -329,6 +386,13 @@ export default function MemberListIsland() {
     .map(c => [c.cycle_code, c.cycle_label]))
     .entries()].sort((a, b) => cycleOrder(a[0]) - cycleOrder(b[0]));
 
+  // #727: geo filter options — client-side over the loaded cohort, normalized + deduped so the
+  // same place ('GO'/'Goiás', 'Brazil'/'Brasil') collapses to one canonical option.
+  const stateOptions = [...new Set((allMembers.length ? allMembers : members)
+    .map(m => normState(m.state)).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b));
+  const countryOptions = [...new Set((allMembers.length ? allMembers : members)
+    .map(m => normCountry(m.country)).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b));
+
   // Open edit modal
   const openEdit = (m: MemberRow) => {
     setEditMember(m);
@@ -423,9 +487,20 @@ export default function MemberListIsland() {
   // the raw array would silently enqueue hidden pre-onboarding rows into bulk operations.
   const visibleMembers = statusFilter === 'active' ? members.filter(m => !m.is_pre_onboarding) : members;
 
+  // #727: client-side filters (designation + geo + affiliation) applied on top of the partitioned
+  // view. Selection AND the rendered rows both read displayedMembers, so "select all" never enqueues
+  // hidden rows.
+  const displayedMembers = visibleMembers.filter(m => {
+    if (designationFilter && !(m.designations || []).includes(designationFilter)) return false;
+    if (stateFilter && normState(m.state) !== stateFilter) return false;
+    if (countryFilter && normCountry(m.country) !== countryFilter) return false;
+    if (affiliationFilter && affiliationStatusKey(m) !== affiliationFilter) return false;
+    return true;
+  });
+
   const toggleSelectAll = () => {
-    if (selectedIds.size === visibleMembers.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(visibleMembers.map(m => m.id)));
+    if (selectedIds.size === displayedMembers.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(displayedMembers.map(m => m.id)));
   };
 
   const handleBulkAllocate = async () => {
@@ -643,6 +718,25 @@ export default function MemberListIsland() {
           <option value="">{t('comp.memberList.allCycles', 'Todos os ciclos')}</option>
           {cycleOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
         </select>
+        {/* #727 (#625 follow-up): estado / país / situação de filiação PMI — client-side */}
+        <select value={stateFilter} onChange={e => setStateFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allStates', 'Todos os estados')}</option>
+          {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allCountries', 'Todos os países')}</option>
+          {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={affiliationFilter} onChange={e => setAffiliationFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">{t('comp.memberList.allAffiliations', 'Toda filiação')}</option>
+          <option value="green">🟢 {t('comp.memberList.affVerified', 'Filiação PMI verificada')}</option>
+          <option value="amber">🟡 {t('comp.memberList.affExpiring', 'Filiação vence em breve')}</option>
+          <option value="red">🔴 {t('comp.memberList.affFilterRed', 'Filiação inativa/vencida')}</option>
+          <option value="neutral">⚪ {t('comp.memberList.affUnverified', 'Filiação não verificada')}</option>
+        </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
           <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
@@ -696,7 +790,7 @@ export default function MemberListIsland() {
             <thead>
               <tr className="bg-[var(--surface-section-cool)] text-[var(--text-muted)] text-[.7rem] uppercase tracking-wider">
                 <th className="px-3 py-2 text-left w-10">
-                  <input type="checkbox" checked={selectedIds.size === visibleMembers.length && visibleMembers.length > 0} onChange={toggleSelectAll} className="accent-teal-500" />
+                  <input type="checkbox" checked={selectedIds.size === displayedMembers.length && displayedMembers.length > 0} onChange={toggleSelectAll} className="accent-teal-500" />
                 </th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thMember', 'Membro')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.memberList.thRoleDesig', 'Papel / Designações')}</th>
@@ -710,7 +804,7 @@ export default function MemberListIsland() {
               </tr>
             </thead>
             <tbody>
-              {(designationFilter ? visibleMembers.filter(m => (m.designations || []).includes(designationFilter)) : visibleMembers).map(m => (
+              {displayedMembers.map(m => (
                 <tr key={m.id} className="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors">
                   <td className="px-3 py-2">
                     <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} className="accent-teal-500" />
@@ -802,7 +896,7 @@ export default function MemberListIsland() {
               ))}
             </tbody>
           </table>
-          {members.length === 0 && !loading && (
+          {displayedMembers.length === 0 && !loading && (
             <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.memberList.noMembers', 'Nenhum membro encontrado.')}</div>
           )}
         </div>
