@@ -6856,6 +6856,20 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.attestCheckbox': 'I acknowledge and agree.',
   'comp.affiliationQueue.attesting': 'Recording…',
   'comp.affiliationQueue.attestConfirm': 'Confirm and access',
+  'comp.affiliationQueue.searchPh': 'Search by name or email',
+  'comp.affiliationQueue.filterChapterAll': 'All chapters',
+  'comp.affiliationQueue.filterVepAll': 'All VEP',
+  'comp.affiliationQueue.sort_attention': 'Needs attention',
+  'comp.affiliationQueue.sort_name': 'Name',
+  'comp.affiliationQueue.sort_expiry': 'Expiry',
+  'comp.affiliationQueue.sort_sync': 'Last sync',
+  'comp.affiliationQueue.expandHint': 'View PMI identity',
+  'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.panelSince': 'Member since',
+  'comp.affiliationQueue.panelUntil': 'Member until',
+  'comp.affiliationQueue.panelVolunteer': 'PMI service records',
+  'comp.affiliationQueue.panelLastSync': 'Last VEP sync',
+  'comp.affiliationQueue.panelNoProfile': 'No VEP enrichment — verify manually.',
 };
 
 export default enUS;
