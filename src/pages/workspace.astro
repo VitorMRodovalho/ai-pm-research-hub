@@ -6,6 +6,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import KpiDashboard from '../components/workspace/KpiDashboard';
 import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
 import AttendanceForm from '../components/workspace/AttendanceForm';
+import MyMeetingsIsland from '../components/workspace/MyMeetingsIsland';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import MyCardsWidget from '../components/workspace/MyCardsWidget';
@@ -214,6 +215,11 @@ const WK = {
       <!-- ═══ Attendance Form (manager/leader only) ═══ -->
       <section id="wk-attendance-form" class="hidden">
         <AttendanceForm client:load />
+      </section>
+
+      <!-- ═══ My Meetings — member self-service (#105, all members) ═══ -->
+      <section id="wk-my-meetings" class="hidden">
+        <MyMeetingsIsland client:load />
       </section>
 
       <!-- ═══ Attendance Dashboard ═══ -->
@@ -727,6 +733,7 @@ const WK = {
       // ── Show KPI + Attendance sections ──
       document.getElementById('wk-dropout-risk')?.classList.remove('hidden');
       document.getElementById('wk-kpis')?.classList.remove('hidden');
+      document.getElementById('wk-my-meetings')?.classList.remove('hidden');  // #105 all-members
       document.getElementById('wk-attendance')?.classList.remove('hidden');
 
       // Show AttendanceForm for GP/leader
