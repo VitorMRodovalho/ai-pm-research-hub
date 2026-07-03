@@ -8,8 +8,13 @@
 //
 // Authority is function-anchored (PM 2026-06-12): access follows the office, never a name. The
 // server RPCs are the real boundary; this UI is convenience + the just-in-time attestation gate.
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter } from 'lucide-react';
+//
+// #996 — enriched journey: (F-A) per-row PMI identity panel (pmi_profile from the queue RPC) and
+// (F-C) chapter / VEP-status filters + name-email search + sort (attention default) on top of the
+// #1041 expiry column/farol. Migrate from "verify everything by hand" → "review the auto-derived
+// and confirm exceptions" without loosening the write boundary (SPEC_996_FILIACAO_JOURNEY.md).
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
+import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { brChapters, soonestBrExpiry, type PmiMembershipEntry } from '../../lib/affiliation-chapters';
 
@@ -19,6 +24,15 @@ interface LatestVerification {
   membership_expires_on: string | null;
   method: string | null;
   chapter_verified: string | null;
+}
+// #996 F-A — PMI identity from the latest VEP-enriched application (same Phase B source the
+// seleção PMI tab uses). Null when the member has no enriched application (fill in manually).
+interface PmiProfile {
+  pmi_id: string | null;
+  member_since: string | null;
+  member_until: string | null;
+  volunteer_count: number | null;
+  last_sync: string | null;
 }
 interface QueueRow {
   member_id: string;
@@ -31,6 +45,7 @@ interface QueueRow {
   vep_status_raw: string | null;
   vep_last_seen_at: string | null;
   pmi_memberships: PmiMembershipEntry[] | null;
+  pmi_profile: PmiProfile | null;
   latest_verification: LatestVerification | null;
 }
 
@@ -40,6 +55,15 @@ function toDateInput(raw: string | null | undefined): string {
   const ts = Date.parse(raw);
   if (Number.isNaN(ts)) return '';
   return new Date(ts).toISOString().slice(0, 10);
+}
+
+/* Human-readable date/datetime for the identity panel; '—' if absent/unparseable. */
+function fmtDate(raw: string | null | undefined, withTime = false): string {
+  if (!raw) return '—';
+  const ts = Date.parse(raw);
+  if (Number.isNaN(ts)) return String(raw);
+  const d = new Date(ts);
+  return withTime ? d.toLocaleString('pt-BR') : d.toLocaleDateString('pt-BR');
 }
 
 interface Farol { emoji: string; label: string; cls: string; provisional: boolean; key: 'expired' | 'soon' | 'ok' | 'unverified'; }
@@ -73,6 +97,23 @@ const VEP_CLS: Record<string, string> = {
   OfferExtended: 'bg-amber-50 text-amber-700',
 };
 
+type SortKey = 'attention' | 'name' | 'expiry' | 'sync';
+
+/** #996 "precisa atenção" default ordering: pré-onboarding → vencida → vence em breve → não verificada → resto. */
+function attentionRank(r: QueueRow, t: (k: string, f?: string) => string): number {
+  if (r.is_pre_onboarding) return 0;
+  const k = farol(r, t).key;
+  return k === 'expired' ? 1 : k === 'soon' ? 2 : k === 'unverified' ? 3 : 4;
+}
+
+/** Best-known last VEP sync timestamp for the "sync" sort (panel value, else the queue's vep_last_seen_at). */
+function lastSyncTs(r: QueueRow): number {
+  const raw = r.pmi_profile?.last_sync || r.vep_last_seen_at;
+  if (!raw) return -Infinity;
+  const ts = Date.parse(raw);
+  return Number.isNaN(ts) ? -Infinity : ts;
+}
+
 export default function AffiliationQueueIsland() {
   const t = usePageI18n();
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
@@ -81,9 +122,13 @@ export default function AffiliationQueueIsland() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'pre' | 'all'>('pre');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [bulkVerifying, setBulkVerifying] = useState(false);
-  const [sortExpiry, setSortExpiry] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('attention');
   const [statusFilter, setStatusFilter] = useState<'all' | 'action' | 'unverified'>('all');
+  const [chapterFilter, setChapterFilter] = useState<string>('all');
+  const [vepFilter, setVepFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
   // ── load the queue (retry until Nav publishes the authed client) ──
   const fetchQueue = useCallback(async () => {
@@ -164,7 +209,7 @@ export default function AffiliationQueueIsland() {
     setVMember(r);
     setVActive(r.latest_verification?.membership_active !== false);
     setVChapter(br[0]?.name ? `${br[0].name}, Brazil Chapter` : (r.chapter || ''));
-    setVExpires(r.latest_verification?.membership_expires_on || toDateInput(br[0]?.expiry));
+    setVExpires(r.latest_verification?.membership_expires_on || toDateInput(br[0]?.expiry) || toDateInput(r.pmi_profile?.member_until));
     setVObs('');
   };
 
@@ -217,24 +262,50 @@ export default function AffiliationQueueIsland() {
 
   const toggle = (id: string) =>
     setSelectedIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleExpand = (id: string) =>
+    setExpandedIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const preCount = rows.filter(r => r.is_pre_onboarding).length;
+
+  // #996 F-C — filter option lists derived from the loaded cohort.
+  const chapterOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach(r => brChapters(r.pmi_memberships).forEach(c => set.add(c.name)));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const vepOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach(r => { if (r.vep_status_raw) set.add(r.vep_status_raw); });
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
   const visible = useMemo(() => {
     let list = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding) : rows.slice();
     if (statusFilter === 'action') list = list.filter(r => { const k = farol(r, t).key; return k === 'expired' || k === 'soon'; });
     else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
-    if (sortExpiry) {
-      list = list.slice().sort((a, b) => {
+    if (chapterFilter !== 'all') list = list.filter(r => brChapters(r.pmi_memberships).some(c => c.name === chapterFilter));
+    if (vepFilter !== 'all') list = list.filter(r => (r.vep_status_raw || '—') === vepFilter);
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q));
+
+    list = list.slice().sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name);
+      if (sortKey === 'sync') return lastSyncTs(b) - lastSyncTs(a); // most-recent sync first
+      if (sortKey === 'expiry') {
         const da = soonestBrExpiry(a.pmi_memberships).days;
         const db = soonestBrExpiry(b.pmi_memberships).days;
-        if (da === null && db === null) return 0;
+        if (da === null && db === null) return a.name.localeCompare(b.name);
         if (da === null) return 1;   // rows without a dated BR chapter sink to the bottom
         if (db === null) return -1;
         return da - db;              // soonest / already-expired first
-      });
-    }
+      }
+      // 'attention' (default)
+      const ra = attentionRank(a, t), rb = attentionRank(b, t);
+      return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
+    });
     return list;
-  }, [rows, tab, statusFilter, sortExpiry, t]);
+  }, [rows, tab, statusFilter, chapterFilter, vepFilter, search, sortKey, t]);
+
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
     setSelectedIds(s => {
@@ -270,7 +341,41 @@ export default function AffiliationQueueIsland() {
         </button>
       </div>
 
-      {/* status filter */}
+      {/* filters + controls (#996 F-C) */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* search */}
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder={t('comp.affiliationQueue.searchPh', 'Buscar por nome ou email')}
+            className="pl-7 pr-3 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] w-56" />
+        </div>
+        {/* chapter filter */}
+        <select value={chapterFilter} onChange={e => setChapterFilter(e.target.value)}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterChapterAll', 'Todos os capítulos')}</option>
+          {chapterOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        {/* VEP status filter */}
+        <select value={vepFilter} onChange={e => setVepFilter(e.target.value)}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterVepAll', 'Todos VEP')}</option>
+          {vepOptions.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {/* sort */}
+        <div className="flex items-center gap-1 text-[12px] text-[var(--text-muted)]">
+          <ArrowUpDown size={13} />
+          <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)}
+            className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+            <option value="attention">{t('comp.affiliationQueue.sort_attention', 'Precisa atenção')}</option>
+            <option value="name">{t('comp.affiliationQueue.sort_name', 'Nome')}</option>
+            <option value="expiry">{t('comp.affiliationQueue.sort_expiry', 'Vencimento')}</option>
+            <option value="sync">{t('comp.affiliationQueue.sort_sync', 'Última sync')}</option>
+          </select>
+        </div>
+      </div>
+
+      {/* status filter (farol) */}
       <div className="flex items-center gap-1.5 mb-4 text-[12px]">
         <Filter size={13} className="text-[var(--text-muted)]" />
         {(['all', 'action', 'unverified'] as const).map(fk => (
@@ -303,9 +408,9 @@ export default function AffiliationQueueIsland() {
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thMember', 'Membro')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thChapter', 'Capítulo / Filiação PMI')}</th>
                 <th className="px-3 py-2 text-left">
-                  <button onClick={() => setSortExpiry(s => !s)} className="inline-flex items-center gap-1 cursor-pointer uppercase tracking-wider hover:text-[var(--text-secondary)]" title={t('comp.affiliationQueue.sortExpiryHint', 'Ordenar por vencimento (vencidas/vencendo primeiro)')}>
+                  <button onClick={() => setSortKey(s => s === 'expiry' ? 'attention' : 'expiry')} className="inline-flex items-center gap-1 cursor-pointer uppercase tracking-wider hover:text-[var(--text-secondary)]" title={t('comp.affiliationQueue.sortExpiryHint', 'Ordenar por vencimento (vencidas/vencendo primeiro)')}>
                     {t('comp.affiliationQueue.thExpiry', 'Vencimento')}
-                    <ArrowUpDown size={11} className={sortExpiry ? 'text-teal-600' : 'opacity-40'} />
+                    <ArrowUpDown size={11} className={sortKey === 'expiry' ? 'text-teal-600' : 'opacity-40'} />
                   </button>
                 </th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thVep', 'VEP')}</th>
@@ -317,16 +422,27 @@ export default function AffiliationQueueIsland() {
               {visible.map(r => {
                 const f = farol(r, t);
                 const br = brChapters(r.pmi_memberships);
+                const expanded = expandedIds.has(r.member_id);
+                const p = r.pmi_profile;
                 return (
-                  <tr key={r.member_id} className="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)]">
+                  <Fragment key={r.member_id}>
+                  <tr className="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)]">
                     <td className="px-3 py-2"><input type="checkbox" checked={selectedIds.has(r.member_id)} onChange={() => toggle(r.member_id)} className="accent-teal-500" /></td>
                     <td className="px-3 py-2">
-                      <div className="font-medium text-[var(--text-primary)] flex items-center gap-1.5">
-                        {r.name}
-                        {r.is_pre_onboarding && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-semibold">{t('comp.affiliationQueue.preBadge', 'pré')}</span>}
-                        {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
+                      <div className="flex items-start gap-1.5">
+                        <button onClick={() => toggleExpand(r.member_id)} title={t('comp.affiliationQueue.expandHint', 'Ver identidade PMI')}
+                          className="mt-0.5 text-[var(--text-muted)] hover:text-teal-600 cursor-pointer border-0 bg-transparent p-0" aria-expanded={expanded}>
+                          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </button>
+                        <div>
+                          <div className="font-medium text-[var(--text-primary)] flex items-center gap-1.5">
+                            {r.name}
+                            {r.is_pre_onboarding && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-semibold">{t('comp.affiliationQueue.preBadge', 'pré')}</span>}
+                            {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
+                          </div>
+                          <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
+                        </div>
                       </div>
-                      <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
                     </td>
                     <td className="px-3 py-2">
                       {br.length > 0 ? (
@@ -383,6 +499,41 @@ export default function AffiliationQueueIsland() {
                       </button>
                     </td>
                   </tr>
+                  {/* #996 F-A — PMI identity panel (expand per row) */}
+                  {expanded && (
+                    <tr className="border-t border-[var(--border-default)] bg-[var(--surface-section-cool)]">
+                      <td></td>
+                      <td colSpan={6} className="px-3 py-3">
+                        {p ? (
+                          <div className="flex flex-wrap gap-x-8 gap-y-2 text-[12px]">
+                            <div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1"><IdCard size={11} /> {t('comp.affiliationQueue.panelPmiId', 'PMI ID')}</div>
+                              <div className="font-medium text-[var(--text-primary)]">{p.pmi_id || '—'}</div>
+                            </div>
+                            <div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelSince', 'Membro desde')}</div>
+                              <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.member_since)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelUntil', 'Membro até')}</div>
+                              <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.member_until)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelVolunteer', 'Registros de serviço PMI')}</div>
+                              <div className="font-medium text-[var(--text-primary)]">{p.volunteer_count ?? '—'}</div>
+                            </div>
+                            <div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelLastSync', 'Última sincronização VEP')}</div>
+                              <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.last_sync || r.vep_last_seen_at, true)}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[12px] text-amber-600 flex items-center gap-1"><Info size={12} /> {t('comp.affiliationQueue.panelNoProfile', 'Sem enriquecimento VEP — verifique manualmente.')}</div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
