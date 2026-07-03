@@ -27,6 +27,7 @@ import {
   buildCertificateHTML,
   hydrateCertData,
   IMAGES_LOADED_PREDICATE,
+  certOrientation,
   type CertificateData,
 } from '../../../../lib/certificates/pdf';
 
@@ -50,12 +51,15 @@ interface CertRow {
   content_snapshot: Record<string, any> | null;
 }
 
-function buildPrintDocument(title: string, innerHtml: string, lang: string): string {
+function buildPrintDocument(title: string, innerHtml: string, lang: string, orientation: 'portrait' | 'landscape' = 'portrait'): string {
+  const pageRule = orientation === 'landscape'
+    ? '@page{size:A4 landscape;margin:0}'
+    : '@page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}';
   return `<!DOCTYPE html><html lang="${lang}"><head>
     <meta charset="UTF-8">
     <title>${title.replace(/</g, '&lt;')}</title>
     <style>
-      @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+      ${pageRule}
       html,body{margin:0 !important;padding:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important;max-width:none !important}
       body{font-family:Georgia,serif}
@@ -210,7 +214,8 @@ export const POST: APIRoute = async ({ params, request }) => {
     );
   }
   const title = `${cert.verification_code} — ${certData.member_name}`;
-  const fullDoc = buildPrintDocument(title, innerHtml, certData.language ?? 'pt-BR');
+  const orientation = certOrientation(certData.type);
+  const fullDoc = buildPrintDocument(title, innerHtml, certData.language ?? 'pt-BR', orientation);
 
   // 5. Render PDF via CF Browser Rendering binding
   const browserBinding = (cfEnv as any)?.BROWSER;
@@ -233,12 +238,9 @@ export const POST: APIRoute = async ({ params, request }) => {
     // the cert keeps pdf_url NULL, recoverable via backfill. The logo is now an inlined
     // data URI (always decodes); this guard covers the remaining remote issuer signature.
     await page.waitForFunction(IMAGES_LOADED_PREDICATE, { timeout: 10000 });
-    pdfBytes = await page.pdf({
-      format: 'A4',
-      margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' },
-      printBackground: true,
-      preferCSSPageSize: false,
-    });
+    pdfBytes = orientation === 'landscape'
+      ? await page.pdf({ format: 'A4', landscape: true, margin: { top: '0', right: '0', bottom: '0', left: '0' }, printBackground: true, preferCSSPageSize: false })
+      : await page.pdf({ format: 'A4', margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' }, printBackground: true, preferCSSPageSize: false });
   } catch (e: any) {
     return new Response(
       JSON.stringify({ error: 'render_failed', detail: e?.message ?? String(e), cert_id: cert.id }),

@@ -40,3 +40,20 @@ export const CANONICAL_HOST = "nucleoia.vitormr.dev";
 
 /** Canonical origin, e.g. `https://nucleoia.vitormr.dev`. Use for absolute URLs. */
 export const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CERTIFICATE VERIFICATION HOST — the institutional (chapter) domain PRINTED on
+// certificates, decoupled from CANONICAL_HOST on purpose.
+//
+// WHY separate: a recognition certificate is a chapter-institutional artifact; it
+// should carry the PMI Goiás domain (`nucleoia.pmigo.org.br`), not the platform's
+// operational canonical host (which also identifies the OAuth issuer / MCP base and
+// is only flipped via the gated checklist above). `nucleoia.pmigo.org.br` already
+// resolves and 30x-redirects to CANONICAL_HOST/verify, so a printed link lands on
+// the same verify page. Declared HERE (not hardcoded in pdf.ts) so the
+// canonical-host-centralization contract test stays green — this is the sanctioned
+// place for public-host literals.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Host printed on certificate PDFs for the verification link (chapter-institutional). */
+export const CERT_VERIFY_HOST = "nucleoia.pmigo.org.br";
