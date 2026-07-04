@@ -62,6 +62,7 @@ function getFallbackCycles(): Cycle[] {
     { cycle_code: 'pilot',   cycle_label: 'Piloto 2024',      cycle_abbr: 'P24', cycle_start: '2024-03-01', cycle_end: '2024-12-31', cycle_color: '#F59E0B', sort_order: 1, is_current: false },
     { cycle_code: 'cycle_1', cycle_label: 'Ciclo 1 (2025/1)', cycle_abbr: 'C1',  cycle_start: '2025-01-01', cycle_end: '2025-06-30', cycle_color: '#3B82F6', sort_order: 2, is_current: false },
     { cycle_code: 'cycle_2', cycle_label: 'Ciclo 2 (2025/2)', cycle_abbr: 'C2',  cycle_start: '2025-07-01', cycle_end: '2025-12-31', cycle_color: '#8B5CF6', sort_order: 3, is_current: false },
-    { cycle_code: 'cycle_3', cycle_label: 'Ciclo 3 (2026/1)', cycle_abbr: 'C3',  cycle_start: '2026-01-01', cycle_end: null,          cycle_color: '#10B981', sort_order: 4, is_current: true },
+    { cycle_code: 'cycle_3', cycle_label: 'Ciclo 3 (2026/1)', cycle_abbr: 'C3',  cycle_start: '2026-01-01', cycle_end: '2026-07-08',  cycle_color: '#10B981', sort_order: 4, is_current: false },
+    { cycle_code: 'cycle_4', cycle_label: 'Ciclo 4 (2026/2)', cycle_abbr: 'C4',  cycle_start: '2026-07-09', cycle_end: null,          cycle_color: '#06B6D4', sort_order: 5, is_current: true },
   ];
 }

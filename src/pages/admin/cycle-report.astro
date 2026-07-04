@@ -191,7 +191,7 @@ const CR_I18N = {
     errorLoadingCycle: 'Falha ao gerar relatório do ciclo.',
     colCycle: 'Ciclo', colMembers: 'Membros', colChapters: 'Capítulos',
     colTribes: 'Tribos', colEvents: 'Eventos', colGrowth: 'Crescimento',
-    milestonesTitle: 'Marcos do Ciclo 3',
+    milestonesTitle: 'Marcos do Ciclo 4',
     milestoneNewChapters: '🏛 {n} novos capítulos integrados ({names})',
     milestonePlatform: '🚀 Plataforma {version} em produção',
     milestoneGovernance: '📋 Governança digital: manual versionável, CRs com aprovação por quorum SHA-256',
@@ -305,7 +305,7 @@ const CR_I18N = {
 
     // Timeline table
     const timelineRows = cycles.map((c: any) => {
-      const isC3 = c.cycle_code === 'cycle_3';
+      const isC3 = c.cycle_code === 'cycle_4';
       const bold = isC3 ? 'font-bold text-navy' : '';
       return `<tr class="border-t border-[var(--border-subtle)] ${isC3 ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}">
         <td class="px-3 py-2 ${bold}">${c.cycle_label}</td>

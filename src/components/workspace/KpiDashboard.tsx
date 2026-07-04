@@ -97,7 +97,7 @@ export default function KpiDashboard() {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-          🎯 KPIs do Ciclo 3
+          🎯 KPIs do Ciclo 4
         </h3>
         <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-[var(--surface-base)] text-[var(--text-secondary)]">
           {data.cycle_pct}% do ciclo decorrido

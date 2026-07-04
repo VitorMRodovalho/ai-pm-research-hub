@@ -89,7 +89,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const config = cfg?.value || {};
     const defaultChapters = chapters.map(c => c.display_code).join(' · ');
 
-    (document.getElementById('cfg-title') as HTMLInputElement).value = config.title || 'Relatório Executivo — Ciclo 3 (2026/1)';
+    (document.getElementById('cfg-title') as HTMLInputElement).value = config.title || 'Relatório Executivo — Ciclo 4 (2026/2)';
     (document.getElementById('cfg-subtitle') as HTMLInputElement).value = config.subtitle || 'Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos';
     (document.getElementById('cfg-chapters') as HTMLInputElement).value = config.chapters || defaultChapters;
     (document.getElementById('cfg-notes') as HTMLTextAreaElement).value = config.gp_notes || '';
