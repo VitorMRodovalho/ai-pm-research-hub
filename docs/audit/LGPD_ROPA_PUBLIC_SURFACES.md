@@ -605,6 +605,29 @@ documentando:
 **Cadência**: trimestral, alinhada com sponsor touchpoint (PMI-GO).
 **Próxima revisão**: 2026-07-26 (próximo trimestre Q3).
 
+## G. Eventos com convidados externos (1)
+
+Tratamento novo (2026-07): coleta ativa de PII de **não-membros** para inscrição/presença/certificado
+em eventos abertos do Núcleo. Primeira instância: Aftershow Núcleo IA & GP, 16/07/2026 (Airmeet).
+Entrada criada ANTES da abertura das inscrições (aceite do issue #1009; decisões GP 2026-07-03).
+
+### G.1 Inscrição de convidados externos — Aftershow 16/07/2026 (Airmeet)
+
+| Campo ROPA | Valor |
+|---|---|
+| **Categoria de dado** | PII direta: nome, e-mail; opcional: capítulo PMI de origem. Registro de presença (tempo de sala via Airmeet). |
+| **Base legal** | Art. 7, I (**consentimento** ativo no ato da inscrição — não-membros não têm contrato com PMI-GO/Núcleo; checkbox obrigatório no formulário) |
+| **Finalidade** | Inscrição no evento, controle de presença e emissão de certificado de participação |
+| **Operadora / transferência** | **Airmeet** (formulário nativo + lista de participantes) — transferência internacional Arts. 33–36; citar DPA/SCC da Airmeet se existente, senão consentimento específico Art. 33 VIII no texto do formulário |
+| **Titulares** | Convidados externos (não-membros) inscritos no evento |
+| **Destinatários** | Organização do evento (GP/Co-GP + produção); dado NÃO entra em superfícies públicas |
+| **Retenção** | **1 ano a contar do evento** (16/07/2027) — cobre reemissão/contestação de certificado; depois, deleção |
+| **Deleção** | Mecanismo **separado** do cron de membros (anonymize 5y não se aplica — convidados não têm `members` row): batch pós-retenção executado/verificado pelo DPO; convidado pode solicitar antes via canal Art. 18 |
+| **Certificado** | Caminho para não-membros ancorado em `persons` (tabela dedicada, dev a especificar — `certificates.member_id` é NOT NULL e não serve); verificação pública por código preservada |
+| **Notas** | Aviso de privacidade condensado na página do evento + texto de consentimento no formulário (PT/EN/ES, mobile-first). Gravação/uso de imagem: consentimento informado no ato (cross-ref #729). |
+
+---
+
 **Triggers para revisão antecipada**:
 - Nova superfície adicionada ao schema com anon SELECT
 - Mudança em LGPD ou regulamentação aplicável
