@@ -37,6 +37,14 @@ const L: Record<string, Record<string, string>> = {
   'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones' },
 };
 
+// Steps that carry a bespoke CTA below. Any other step (e.g. the #1103 role-scoped
+// leader steps — leader_refine_theme/roadmap/capture_video/review_tribe) falls through
+// to the generic "visit tribe + mark done" affordance, so no step is ever a dead-end.
+const BESPOKE_CTA_STEPS = new Set([
+  'code_of_conduct', 'complete_profile', 'meet_tribe', 'start_trail',
+  'volunteer_term', 'first_meeting', 'vep_acceptance',
+]);
+
 // #766 H1 — the static "first days" 3-beat roadmap that used to live here was promoted to a
 // persistent, stateful island: src/components/onboarding/PostPromotionJourney.tsx. It lives
 // OUTSIDE this card so it survives onboarding completion (this card vanishes at allComplete),
@@ -252,6 +260,20 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                         className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
                         ✓ {l.markDone}
                       </button>
+                    )}
+                    {/* #1103: generic fallback for role-scoped leader steps (no bespoke CTA) */}
+                    {!BESPOKE_CTA_STEPS.has(s.step_id) && (
+                      <>
+                        {member?.tribe_id && (
+                          <a href={`${lp}/tribe/${member.tribe_id}`} className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">
+                            🔬 {l.visitTribe}
+                          </a>
+                        )}
+                        <button onClick={() => completeStep(s.step_id)}
+                          className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                          ✓ {l.markDone}
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
