@@ -3,10 +3,12 @@ import { useState, useRef, useEffect, type ReactNode } from 'react';
 interface InfoPopoverProps {
   trigger?: ReactNode;
   title: string;
+  /** Horizontal anchor of the panel relative to the trigger (default 'left'). */
+  align?: 'left' | 'right';
   children: ReactNode;
 }
 
-export default function InfoPopover({ trigger, title, children }: InfoPopoverProps) {
+export default function InfoPopover({ trigger, title, align = 'left', children }: InfoPopoverProps) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -53,9 +55,9 @@ export default function InfoPopover({ trigger, title, children }: InfoPopoverPro
           ref={popoverRef}
           role="dialog"
           aria-label={title}
-          className="absolute left-0 top-full mt-2 z-50 w-[340px] max-w-[90vw]
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-50 w-[340px] max-w-[90vw]
             bg-[var(--surface-card)] border border-[var(--border-default)]
-            rounded-xl shadow-lg shadow-black/10 overflow-hidden"
+            rounded-xl shadow-lg shadow-black/10 overflow-hidden`}
         >
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             <span className="text-[13px] font-bold text-[var(--text-primary)]">{title}</span>

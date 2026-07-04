@@ -13,6 +13,7 @@
 import { QUADRANTS } from '../../data/quadrants';
 import { t, type Lang } from '../../i18n/utils';
 import VerticalsSection from './VerticalsSection.tsx';
+import InfoPopover from '../ui/InfoPopover.tsx';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
@@ -45,6 +46,18 @@ const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
         <div class="relative p-7 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)]
                     hover:-translate-y-px hover:shadow-md transition-all duration-200"
              style={`border-left: 4px solid ${COLORS[q.color]}`}>
+          <div class="absolute top-4 right-4">
+            <InfoPopover client:visible title={t(q.titleKey, lang)} align="right">
+              <div>
+                <p class="font-semibold text-[var(--text-primary)]">{t(q.infoPilarKey, lang)}</p>
+                <p class="mt-1.5">{t(q.infoIntroKey, lang)}</p>
+                <p class="mt-2.5 font-semibold text-[var(--text-primary)]">{t(q.infoThemeKey, lang)}</p>
+                <ul class="mt-1.5 list-disc pl-4 space-y-1.5">
+                  {q.infoTopicKeys.map((k) => <li>{t(k, lang)}</li>)}
+                </ul>
+              </div>
+            </InfoPopover>
+          </div>
           <div class="text-[.65rem] font-extrabold tracking-[.2em] uppercase mb-1"
                style={`color: ${COLORS[q.color]}`}>
             {t(q.labelKey, lang)}
