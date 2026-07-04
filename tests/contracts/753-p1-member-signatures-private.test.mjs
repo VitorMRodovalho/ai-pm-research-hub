@@ -39,11 +39,20 @@ test('migration makes member-signatures private + adds owner-OR-issuer SELECT po
 });
 
 test('hydrateCertData (covers client cert + server puppeteer route) signs the issuer signature', () => {
+  // REPINNED (PR #1092): the signed-URL plumbing moved from the inline "Issuer
+  // signature" block into the shared resolveMemberSignatureUrl helper (now also
+  // consumed by the recognition co-signature). The invariant is unchanged —
+  // private member-signatures bucket resolves to a short-TTL SIGNED URL, never
+  // a raw public URL — it just lives in ONE place.
   const src = read('src/lib/certificates/pdf.ts');
-  const block = src.match(/Issuer signature[\s\S]*?\n  }/)[0];
-  assert.match(block, /createSignedUrl\(/, 'issuer signature must resolve to a signed URL');
-  assert.match(block, /from\('member-signatures'\)\.createSignedUrl/, 'sign against the member-signatures bucket');
-  assert.doesNotMatch(block, /certData\.signature_url = issuer\.signature_url\b/,
+  const helper = src.match(/async function resolveMemberSignatureUrl[\s\S]*?\n\}/)[0];
+  assert.match(helper, /createSignedUrl\(/, 'signature must resolve to a signed URL');
+  assert.match(helper, /from\('member-signatures'\)\.createSignedUrl/, 'sign against the member-signatures bucket');
+  assert.doesNotMatch(helper, /return raw\b/, 'must not return the raw public URL directly');
+  // hydrate must route the issuer signature through the helper
+  assert.match(src, /certData\.signature_url = await resolveMemberSignatureUrl\(sb, certData\.issued_by\)/,
+    'issuer signature resolves via the shared helper');
+  assert.doesNotMatch(src, /certData\.signature_url = issuer\.signature_url\b/,
     'must not assign the raw public URL directly anymore');
 });
 
