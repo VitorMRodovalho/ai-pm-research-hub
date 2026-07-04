@@ -601,7 +601,7 @@ export function buildRecognitionHTML(certData: CertificateData): string {
     .rc-bottom{position:absolute;left:0;right:0;bottom:11mm;text-align:center;z-index:2}
     .rc-signs{display:flex;justify-content:center;gap:44mm}
     .rc-sig{text-align:center;width:70mm}
-    .rc-sigimg{display:block;max-height:12mm;max-width:50mm;margin:0 auto;position:relative;bottom:-1.5mm}
+    .rc-sigimg{display:block;max-height:12mm;max-width:50mm;margin:0 auto 0.6mm}
     .rc-sigline{border-top:1px solid #4a5563;width:62mm;margin:0 auto 1.5mm}
     .rc-signame{font-size:11.5pt;font-weight:700;color:#1a365d}
     .rc-sigrole{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#7a8390}
@@ -722,6 +722,30 @@ async function resolveMemberSignatureUrl(sb: any, memberId: string): Promise<str
 }
 
 export async function hydrateCertData(certData: CertificateData, sb: any): Promise<CertificateData> {
+  // Identity backfill — the CLIENT print path (certificates.astro blob view) passes a
+  // thin payload (member_name: '', no issued_by), so the browser render used to drop
+  // the member name AND the issuer signature while the server renders carried both
+  // (owner report 2026-07-03). One consolidated cert-row fetch feeds member name,
+  // issuer signature and the counter-signer, so every renderer shows the SAME cert.
+  let certRow: { member_id?: string; issued_by?: string; counter_signed_by?: string } | null = null;
+  const needsRow = !certData.member_name || !certData.issued_by || (isRecognitionCert(certData.type) && !certData.co_signature_url);
+  if (sb && needsRow && (certData.verification_code || certData.id)) {
+    try {
+      const keyCol = certData.verification_code ? 'verification_code' : 'id';
+      const { data: row } = await sb
+        .from('certificates')
+        .select('member_id, issued_by, counter_signed_by')
+        .eq(keyCol, keyCol === 'verification_code' ? certData.verification_code : certData.id)
+        .maybeSingle();
+      certRow = row || null;
+      if (certRow?.issued_by && !certData.issued_by) certData.issued_by = certRow.issued_by;
+      if (certRow?.member_id && !certData.member_name) {
+        const { data: m } = await sb.from('public_members').select('name').eq('id', certRow.member_id).single();
+        if (m?.name) certData.member_name = m.name;
+      }
+    } catch {}
+  }
+
   // Issuer signature (GP) — see resolveMemberSignatureUrl.
   if (certData.issued_by && !certData.signature_url && sb) {
     certData.signature_url = await resolveMemberSignatureUrl(sb, certData.issued_by);
@@ -730,20 +754,8 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
   // Recognition certs (Ciclo 3 mockup): dual signatures. The co-image belongs to the
   // member who ACTUALLY counter-signed (certificates.counter_signed_by) — resolved only
   // when that act exists; an un-counter-signed cert renders the plain line + name.
-  if (isRecognitionCert(certData.type) && !certData.co_signature_url && sb) {
-    try {
-      const keyCol = certData.verification_code ? 'verification_code' : certData.id ? 'id' : null;
-      if (keyCol) {
-        const { data: row } = await sb
-          .from('certificates')
-          .select('counter_signed_by')
-          .eq(keyCol, keyCol === 'verification_code' ? certData.verification_code : certData.id)
-          .maybeSingle();
-        if (row?.counter_signed_by) {
-          certData.co_signature_url = await resolveMemberSignatureUrl(sb, row.counter_signed_by);
-        }
-      }
-    } catch {}
+  if (isRecognitionCert(certData.type) && !certData.co_signature_url && sb && certRow?.counter_signed_by) {
+    certData.co_signature_url = await resolveMemberSignatureUrl(sb, certRow.counter_signed_by);
   }
 
   // For volunteer_agreement: load full legal template + extra fields

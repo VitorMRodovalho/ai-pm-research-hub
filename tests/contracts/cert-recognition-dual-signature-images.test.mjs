@@ -33,7 +33,9 @@ test('recognition template renders both signature slots with conditional images'
 });
 
 test('co-signature resolves from counter_signed_by via the shared helper', () => {
-  assert.match(SRC, /select\('counter_signed_by'\)/,
+  assert.match(SRC, /select\('member_id, issued_by, counter_signed_by'\)/,
+    'identity backfill + co-signer come from ONE consolidated certificates-row fetch');
+  assert.match(SRC, /certRow\?\.counter_signed_by/,
     'co-signer identity comes from certificates.counter_signed_by (a real counter-sign act)');
   assert.match(SRC, /async function resolveMemberSignatureUrl\(/, 'shared resolver exists');
   const calls = (SRC.match(/resolveMemberSignatureUrl\(sb,/g) || []).length;
