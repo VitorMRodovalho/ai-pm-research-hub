@@ -1,5 +1,11 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 320 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// MCP server v2.80.0 — /mcp 323 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// #1099/#1094 (2026-07-04): comms publishing on-ramp — +3 tools (schedule_comms_post,
+//   cancel_scheduled_comms_post, list_scheduled_comms_posts) wrapping the mig-334 RPC trio over
+//   comms_scheduled_posts (gate manage_comms; the queue the publish-scheduled cron drains through
+//   publish-instagram / publish-linkedin — the latter gains DOCUMENT post_type in the same PR).
+//   Closes the "conteúdo → fila → rede" gap: fork_idea_to_channel records briefs, this schedules.
+//   320 -> 323. Count-only (no version bump). /health 314 -> 317; tests + manifest regenerated.
 // #459 (2026-06-07): governance clause-body read — +1 tool (get_governance_document_body, wraps the
 //   canonical get_governance_document_reader RPC + EF-side Markdown/section-anchor enrichment via
 //   ./governance-html.mjs; legal guard-rails: public/active_members channel ceiling, ratification
@@ -2010,6 +2016,71 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     });
     if (error) { await logUsage(sb, member.id, "fork_idea_to_channel", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "fork_idea_to_channel", true, undefined, start);
+    return ok(data);
+  });
+
+  // schedule_comms_post — #1099 on-ramp "conteúdo → fila → rede": enfileira post datado
+  // em comms_scheduled_posts; o cron publish-scheduled drena e publica via publish-instagram
+  // / publish-linkedin. Fecha o gap do fork_idea_to_channel (que só grava brief).
+  mcp.tool("schedule_comms_post", "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). Gate: manage_comms.", {
+    channel: z.enum(["instagram", "linkedin"]).describe("Canal de publicação"),
+    media_type: z.enum(["IMAGE", "CAROUSEL", "REELS", "STORIES", "TEXT", "VIDEO", "ARTICLE", "DOCUMENT"]).describe("Tipo de mídia (precisa ser suportado pelo canal)"),
+    payload: z.record(z.string(), z.any()).describe("Corpo do publisher do canal (caption/text, image_url/video_url/document_url/children/title...)"),
+    scheduled_at: z.string().describe("Quando publicar (ISO 8601 com timezone, ex. 2026-07-06T13:00:00Z). O drain roda a cada 15min"),
+    label: z.string().optional().describe("Rótulo humano, ex. 'carousel:cycle3_encerramento'"),
+    idea_id: z.string().optional().describe("UUID da publication_idea de origem (proveniência; exige stage approved/published)")
+  }, async (params: { channel: string; media_type: string; payload: Record<string, unknown>; scheduled_at: string; label?: string; idea_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "schedule_comms_post", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "schedule_comms_post", false, "Unauthorized", start); return err("Unauthorized: manage_comms required"); }
+    if (params.idea_id && !isUUID(params.idea_id)) { await logUsage(sb, member.id, "schedule_comms_post", false, "invalid idea_id", start); return err("idea_id must be a UUID"); }
+    const { data, error } = await sb.rpc("schedule_comms_post", {
+      p_channel: params.channel,
+      p_media_type: params.media_type,
+      p_payload: params.payload,
+      p_scheduled_at: params.scheduled_at,
+      p_label: params.label ?? null,
+      p_idea_id: params.idea_id ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "schedule_comms_post", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "schedule_comms_post", true, undefined, start, "execute", data);
+    return ok(data);
+  });
+
+  // cancel_scheduled_comms_post — undo do agendamento (só pending)
+  mcp.tool("cancel_scheduled_comms_post", "Cancela um post agendado ainda pending na fila comms_scheduled_posts (pending → canceled). Posts já published/failed não são canceláveis daqui. Gate: manage_comms.", {
+    id: z.string().describe("UUID do row na fila (retornado por schedule_comms_post / list_scheduled_comms_posts)")
+  }, async (params: { id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "cancel_scheduled_comms_post", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "cancel_scheduled_comms_post", false, "Unauthorized", start); return err("Unauthorized: manage_comms required"); }
+    if (!isUUID(params.id)) { await logUsage(sb, member.id, "cancel_scheduled_comms_post", false, "invalid id", start); return err("id must be a UUID"); }
+    const { data, error } = await sb.rpc("cancel_scheduled_comms_post", { p_id: params.id });
+    if (error) { await logUsage(sb, member.id, "cancel_scheduled_comms_post", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "cancel_scheduled_comms_post", true, undefined, start, "execute", data);
+    return ok(data);
+  });
+
+  // list_scheduled_comms_posts — visibilidade da fila (status/erros/permalinks)
+  mcp.tool("list_scheduled_comms_posts", "Lista a fila comms_scheduled_posts (posts agendados/publicados/falhos por canal), com attempts, error e permalink. include_payload=true inclui o corpo completo. Gate: manage_comms.", {
+    channel: z.enum(["instagram", "linkedin"]).optional().describe("Filtrar por canal"),
+    status: z.enum(["pending", "publishing", "published", "failed", "canceled"]).optional().describe("Filtrar por status"),
+    limit: z.number().optional().describe("Máx de rows (default 50, teto 200)"),
+    include_payload: z.boolean().optional().describe("Incluir o payload completo de cada row (default false)")
+  }, async (params: { channel?: string; status?: string; limit?: number; include_payload?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_scheduled_comms_posts", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_scheduled_comms_posts", {
+      p_channel: params.channel ?? null,
+      p_status: params.status ?? null,
+      p_limit: params.limit ?? null,
+      p_include_payload: params.include_payload ?? false
+    });
+    if (error) { await logUsage(sb, member.id, "list_scheduled_comms_posts", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_scheduled_comms_posts", true, undefined, start);
     return ok(data);
   });
 
@@ -8135,7 +8206,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 314 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 317 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",
