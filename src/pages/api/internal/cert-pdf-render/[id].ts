@@ -51,6 +51,25 @@ interface CertRow {
   content_snapshot: Record<string, any> | null;
 }
 
+// #1098 — external event guest certificate (event_guest_certificates, persons-anchored).
+// Both tables have uuid PKs, so this endpoint resolves the id in certificates first
+// and falls back to the guest table; each table's autogen trigger posts the same URL.
+interface GuestCertRow {
+  id: string;
+  person_id: string;
+  event_id: string;
+  verification_code: string | null;
+  type: string;
+  pdf_url: string | null;
+  issued_by: string | null;
+  counter_signed_by: string | null;
+  language: string | null;
+  title: string | null;
+  description: string | null;
+  content_snapshot: Record<string, any> | null;
+  issued_at: string | null;
+}
+
 function buildPrintDocument(title: string, innerHtml: string, lang: string, orientation: 'portrait' | 'landscape' = 'portrait'): string {
   const pageRule = orientation === 'landscape'
     ? '@page{size:A4 landscape;margin:0}'
@@ -115,6 +134,36 @@ async function buildCertData(cert: CertRow, sb: any): Promise<CertificateData> {
   return certData;
 }
 
+async function buildGuestCertData(guest: GuestCertRow, sb: any): Promise<CertificateData> {
+  // content_snapshot is frozen at issuance (issue_event_guest_certificate);
+  // persons/events lookups are only fallbacks for legacy or hand-inserted rows.
+  const snap = guest.content_snapshot ?? {};
+  let guestName: string | undefined = snap.guest_name;
+  if (!guestName) {
+    const { data: p } = await sb.from('persons').select('name').eq('id', guest.person_id).maybeSingle();
+    guestName = p?.name ?? '(nome indisponível)';
+  }
+  let eventTitle: string | undefined = snap.event_title;
+  if (!eventTitle) {
+    const { data: e } = await sb.from('events').select('title').eq('id', guest.event_id).maybeSingle();
+    eventTitle = e?.title ?? undefined;
+  }
+  const certData: CertificateData = {
+    member_name: guestName!,
+    type: guest.type,
+    title: guest.title || undefined,
+    event_title: eventTitle,
+    verification_code: guest.verification_code || undefined,
+    issued_by: guest.issued_by || undefined,
+    counter_signed_by: guest.counter_signed_by || undefined,
+    description: guest.description || undefined,
+    language: guest.language || 'pt-BR',
+    signed_at: guest.issued_at || undefined,
+  };
+  await hydrateCertData(certData, sb);
+  return certData;
+}
+
 export const POST: APIRoute = async ({ params, request }) => {
   // 1. Auth: Bearer shared secret
   const expectedSecret = (cfEnv as any)?.CERT_PDF_INTERNAL_SECRET as string | undefined;
@@ -158,7 +207,8 @@ export const POST: APIRoute = async ({ params, request }) => {
     auth: { persistSession: false },
   });
 
-  // 3. Fetch cert + idempotency guard
+  // 3. Fetch cert + idempotency guard — certificates first, then the #1098
+  // event_guest_certificates fallback (both autogen triggers post this same URL).
   const { data: cert, error: certErr } = await sb
     .from('certificates')
     .select('id, member_id, verification_code, type, pdf_url, issued_by, language, function_role, title, description, period_start, period_end, content_snapshot')
@@ -171,21 +221,39 @@ export const POST: APIRoute = async ({ params, request }) => {
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }
+
+  let guest: GuestCertRow | null = null;
   if (!cert) {
+    const { data: g, error: guestErr } = await sb
+      .from('event_guest_certificates')
+      .select('id, person_id, event_id, verification_code, type, pdf_url, issued_by, counter_signed_by, language, title, description, content_snapshot, issued_at')
+      .eq('id', certId)
+      .maybeSingle();
+    if (guestErr) {
+      return new Response(
+        JSON.stringify({ error: 'cert_lookup_failed', detail: guestErr.message }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    guest = (g as GuestCertRow | null) ?? null;
+  }
+
+  const row = (cert ?? guest) as CertRow | GuestCertRow | null;
+  if (!row) {
     return new Response(
       JSON.stringify({ error: 'cert_not_found', cert_id: certId }),
       { status: 404, headers: { 'Content-Type': 'application/json' } },
     );
   }
-  if (cert.pdf_url) {
+  if (row.pdf_url) {
     return new Response(
-      JSON.stringify({ ok: true, skip: 'pdf_already_set', cert_id: cert.id, pdf_url: cert.pdf_url }),
+      JSON.stringify({ ok: true, skip: 'pdf_already_set', cert_id: row.id, pdf_url: row.pdf_url }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   }
-  if (!cert.verification_code) {
+  if (!row.verification_code) {
     return new Response(
-      JSON.stringify({ error: 'verification_code_missing', cert_id: cert.id }),
+      JSON.stringify({ error: 'verification_code_missing', cert_id: row.id }),
       { status: 422, headers: { 'Content-Type': 'application/json' } },
     );
   }
@@ -193,7 +261,9 @@ export const POST: APIRoute = async ({ params, request }) => {
   // 4. Build certData + HTML (mirrors backfill script + browser-print pipeline)
   let certData: CertificateData;
   try {
-    certData = await buildCertData(cert as CertRow, sb);
+    certData = cert
+      ? await buildCertData(cert as CertRow, sb)
+      : await buildGuestCertData(guest as GuestCertRow, sb);
   } catch (e: any) {
     return new Response(
       JSON.stringify({ error: 'hydrate_failed', detail: e?.message ?? String(e) }),
@@ -209,11 +279,11 @@ export const POST: APIRoute = async ({ params, request }) => {
     innerHtml = buildCertificateHTML(certData);
   } catch (e: any) {
     return new Response(
-      JSON.stringify({ error: 'build_failed', detail: e?.message ?? String(e), cert_id: cert.id }),
+      JSON.stringify({ error: 'build_failed', detail: e?.message ?? String(e), cert_id: row.id }),
       { status: 422, headers: { 'Content-Type': 'application/json' } },
     );
   }
-  const title = `${cert.verification_code} — ${certData.member_name}`;
+  const title = `${row.verification_code} — ${certData.member_name}`;
   const orientation = certOrientation(certData.type);
   const fullDoc = buildPrintDocument(title, innerHtml, certData.language ?? 'pt-BR', orientation);
 
@@ -243,7 +313,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       : await page.pdf({ format: 'A4', margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' }, printBackground: true, preferCSSPageSize: false });
   } catch (e: any) {
     return new Response(
-      JSON.stringify({ error: 'render_failed', detail: e?.message ?? String(e), cert_id: cert.id }),
+      JSON.stringify({ error: 'render_failed', detail: e?.message ?? String(e), cert_id: row.id }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   } finally {
@@ -252,8 +322,11 @@ export const POST: APIRoute = async ({ params, request }) => {
     }
   }
 
-  // 6. Upload to storage
-  const storagePath = `${cert.member_id}/${cert.verification_code}.pdf`;
+  // 6. Upload to storage — guest certs live under guests/<person_id>/ so the
+  // ROPA G.1 retention purge can target the prefix without touching member PDFs.
+  const storagePath = cert
+    ? `${(cert as CertRow).member_id}/${row.verification_code}.pdf`
+    : `guests/${(guest as GuestCertRow).person_id}/${row.verification_code}.pdf`;
   const { error: upErr } = await sb.storage
     .from(BUCKET)
     .upload(storagePath, pdfBytes, {
@@ -263,22 +336,23 @@ export const POST: APIRoute = async ({ params, request }) => {
     });
   if (upErr) {
     return new Response(
-      JSON.stringify({ error: 'upload_failed', detail: upErr.message, cert_id: cert.id }),
+      JSON.stringify({ error: 'upload_failed', detail: upErr.message, cert_id: row.id }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
   // 7. UPDATE pdf_url — only if still NULL (race-safe; concurrent renders would
   // both succeed at upload step due to upsert, but only first UPDATE flips).
+  const targetTable = cert ? 'certificates' : 'event_guest_certificates';
   const { error: updErr, data: updData } = await sb
-    .from('certificates')
+    .from(targetTable)
     .update({ pdf_url: storagePath })
-    .eq('id', cert.id)
+    .eq('id', row.id)
     .is('pdf_url', null)
     .select('id, pdf_url');
   if (updErr) {
     return new Response(
-      JSON.stringify({ error: 'pdf_url_update_failed', detail: updErr.message, cert_id: cert.id }),
+      JSON.stringify({ error: 'pdf_url_update_failed', detail: updErr.message, cert_id: row.id }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }
@@ -288,11 +362,12 @@ export const POST: APIRoute = async ({ params, request }) => {
   return new Response(
     JSON.stringify({
       ok: true,
-      cert_id: cert.id,
-      verification_code: cert.verification_code,
+      cert_id: row.id,
+      verification_code: row.verification_code,
       pdf_url: storagePath,
       bytes: pdfBytes.byteLength,
       race_winner: wasRaceWinner,
+      kind: cert ? 'member' : 'event_guest',
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   );

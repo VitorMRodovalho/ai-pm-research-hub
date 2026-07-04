@@ -28,6 +28,12 @@
  *
  *   # Force re-upload even if pdf_url already set
  *   node scripts/backfill-cert-pdfs.ts --force
+ *
+ *   # #1098 — event GUEST certificates (event_guest_certificates, persons-anchored):
+ *   # same flags, sourced from the guest table; storage path guests/<person_id>/<code>.pdf.
+ *   # This is the recovery lane when the autogen 429s on a post-event batch (C3 lesson).
+ *   node scripts/backfill-cert-pdfs.ts --guests
+ *   node scripts/backfill-cert-pdfs.ts --guests --cert CERT-EVT-2026-ABC123 --out-dir /tmp/cert-pdfs-debug
  */
 import { createClient } from '@supabase/supabase-js';
 import { chromium, type Browser } from 'playwright';
@@ -65,6 +71,7 @@ const FORCE = flag('--force');
 const CERT_FILTER = arg('--cert');
 const TYPE_FILTER = arg('--type'); // #1047 — scope a --force re-render to one cert type (e.g. volunteer_agreement)
 const OUT_DIR = arg('--out-dir');
+const GUESTS = flag('--guests'); // #1098 — source event_guest_certificates instead of certificates
 
 if (OUT_DIR) mkdirSync(OUT_DIR, { recursive: true });
 
@@ -109,6 +116,73 @@ interface CertRow {
   period_start: string | null;
   period_end: string | null;
   content_snapshot: Record<string, any> | null;
+}
+
+// #1098 — external event guest certificate (persons-anchored sibling table).
+interface GuestCertRow {
+  id: string;
+  person_id: string;
+  event_id: string;
+  verification_code: string | null;
+  type: string;
+  pdf_url: string | null;
+  issued_by: string | null;
+  counter_signed_by: string | null;
+  language: string | null;
+  title: string | null;
+  description: string | null;
+  content_snapshot: Record<string, any> | null;
+  issued_at: string | null;
+}
+
+async function fetchGuestCerts(): Promise<GuestCertRow[]> {
+  let q = sb
+    .from('event_guest_certificates')
+    .select('id, person_id, event_id, verification_code, type, pdf_url, issued_by, counter_signed_by, language, title, description, content_snapshot, issued_at')
+    .order('issued_at', { ascending: true });
+
+  if (CERT_FILTER) {
+    q = q.eq('verification_code', CERT_FILTER);
+  } else if (!FORCE) {
+    q = q.is('pdf_url', null);
+  }
+
+  const { data, error } = await q;
+  if (error) throw error;
+  let rows = (data ?? []) as GuestCertRow[];
+  if (LIMIT) rows = rows.slice(0, LIMIT);
+  return rows;
+}
+
+// Mirrors buildGuestCertData in src/pages/api/internal/cert-pdf-render/[id].ts —
+// snapshot first, persons/events lookups as fallback; counter_signed_by passed
+// directly so hydrateCertData resolves the co-signature without a certificates row.
+async function buildGuestCertData(guest: GuestCertRow): Promise<CertificateData> {
+  const snap = guest.content_snapshot ?? {};
+  let guestName: string | undefined = snap.guest_name;
+  if (!guestName) {
+    const { data: p } = await sb.from('persons').select('name').eq('id', guest.person_id).maybeSingle();
+    guestName = p?.name ?? '(nome indisponível)';
+  }
+  let eventTitle: string | undefined = snap.event_title;
+  if (!eventTitle) {
+    const { data: e } = await sb.from('events').select('title').eq('id', guest.event_id).maybeSingle();
+    eventTitle = e?.title ?? undefined;
+  }
+  const certData: CertificateData = {
+    member_name: guestName!,
+    type: guest.type,
+    title: guest.title || undefined,
+    event_title: eventTitle,
+    verification_code: guest.verification_code || undefined,
+    issued_by: guest.issued_by || undefined,
+    counter_signed_by: guest.counter_signed_by || undefined,
+    description: guest.description || undefined,
+    language: guest.language || 'pt-BR',
+    signed_at: guest.issued_at || undefined,
+  };
+  await hydrateCertData(certData, sb);
+  return certData;
 }
 
 async function fetchCerts(): Promise<CertRow[]> {
@@ -219,9 +293,9 @@ async function uploadPdf(storagePath: string, pdfBuffer: Buffer): Promise<void> 
 
 async function main() {
   console.log('[backfill-cert-pdfs] start');
-  console.log(`  dry_run=${DRY_RUN}  force=${FORCE}  limit=${LIMIT ?? 'all'}  cert=${CERT_FILTER ?? '<all-null-pdf_url>'}  type=${TYPE_FILTER ?? '<any>'}  out_dir=${OUT_DIR ?? '<none>'}`);
+  console.log(`  dry_run=${DRY_RUN}  force=${FORCE}  limit=${LIMIT ?? 'all'}  cert=${CERT_FILTER ?? '<all-null-pdf_url>'}  type=${TYPE_FILTER ?? '<any>'}  out_dir=${OUT_DIR ?? '<none>'}  guests=${GUESTS}`);
 
-  const certs = await fetchCerts();
+  const certs: (CertRow | GuestCertRow)[] = GUESTS ? await fetchGuestCerts() : await fetchCerts();
   console.log(`[backfill-cert-pdfs] fetched ${certs.length} cert(s) to process`);
 
   if (!certs.length) {
@@ -243,14 +317,18 @@ async function main() {
         continue;
       }
       try {
-        const certData = await buildCertData(cert);
+        const certData = GUESTS
+          ? await buildGuestCertData(cert as GuestCertRow)
+          : await buildCertData(cert as CertRow);
         const innerHtml = buildCertificateHTML(certData);
         const title = `${vc} — ${certData.member_name}`;
         const orientation = certOrientation(certData.type);
         const fullDoc = buildBackfillDocument(title, innerHtml, orientation);
         const pdfBuffer = await renderPdf(browser, fullDoc, title, orientation);
 
-        const storagePath = `${cert.member_id}/${vc}.pdf`;
+        const storagePath = GUESTS
+          ? `guests/${(cert as GuestCertRow).person_id}/${vc}.pdf`
+          : `${(cert as CertRow).member_id}/${vc}.pdf`;
 
         if (OUT_DIR) {
           const localPath = resolve(OUT_DIR, `${vc}.pdf`);
@@ -263,7 +341,7 @@ async function main() {
         } else {
           await uploadPdf(storagePath, pdfBuffer);
           const { error: updErr } = await sb
-            .from('certificates')
+            .from(GUESTS ? 'event_guest_certificates' : 'certificates')
             .update({ pdf_url: storagePath })
             .eq('id', cert.id);
           if (updErr) throw new Error(`UPDATE pdf_url failed: ${updErr.message}`);
