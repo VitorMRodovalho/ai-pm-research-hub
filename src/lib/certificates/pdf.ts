@@ -63,6 +63,10 @@ export interface CertificateData {
   description?: string;
   issued_by?: string;
   signature_url?: string;
+  // Recognition certs (Ciclo 3 redesign): the co-manager counter-signature image.
+  // Resolved by hydrateCertData from certificates.counter_signed_by — the image is
+  // the record of a real counter-sign act, never a decorative default.
+  co_signature_url?: string;
   // Volunteer agreement specific
   member_email?: string;
   member_pmi_id?: string;
@@ -562,6 +566,11 @@ export function buildRecognitionHTML(certData: CertificateData): string {
   const pillHtml = pill ? `<div class="rc-pill">${pill}</div>` : '';
   const teamHtml = team ? `<div class="rc-teamlabel">${tpl.teamLabel}</div><div class="rc-team">${team}</div>` : '';
   const metaHtml = metaLine ? `<div class="rc-meta">${metaLine}</div>` : '';
+  // Dual handwriting images (approved mockup): issuer (GP) + counter-signer (Co-GP).
+  // Absent URL degrades to the plain line+name — never a broken <img> (the #1047
+  // render guard would otherwise hold the PDF hostage on a dead src).
+  const gpSigImg = certData.signature_url ? `<img class="rc-sigimg" src="${certData.signature_url}" alt="" />` : '';
+  const coGpSigImg = certData.co_signature_url ? `<img class="rc-sigimg" src="${certData.co_signature_url}" alt="" />` : '';
 
   const css = `
     .rc-page{position:relative;width:297mm;height:210mm;background:#FCFBF9;box-sizing:border-box;padding:14mm 18mm;overflow:hidden;page-break-after:always;font-family:Georgia,'Times New Roman','Liberation Serif',serif;color:#25313f}
@@ -592,6 +601,7 @@ export function buildRecognitionHTML(certData: CertificateData): string {
     .rc-bottom{position:absolute;left:0;right:0;bottom:11mm;text-align:center;z-index:2}
     .rc-signs{display:flex;justify-content:center;gap:44mm}
     .rc-sig{text-align:center;width:70mm}
+    .rc-sigimg{display:block;max-height:12mm;max-width:50mm;margin:0 auto;position:relative;bottom:-1.5mm}
     .rc-sigline{border-top:1px solid #4a5563;width:62mm;margin:0 auto 1.5mm}
     .rc-signame{font-size:11.5pt;font-weight:700;color:#1a365d}
     .rc-sigrole{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;color:#7a8390}
@@ -625,8 +635,8 @@ export function buildRecognitionHTML(certData: CertificateData): string {
     <div class="rc-seal"><div class="rc-medal"><img class="rc-nia" src="${NIA_FACE_DATA_URI}" alt="NIA" /></div><div class="rc-ribbon2">${sealLabel}</div></div>
     <div class="rc-bottom">
       <div class="rc-signs">
-        <div class="rc-sig"><div class="rc-sigline"></div><div class="rc-signame">Vitor Maia Rodovalho, PMP</div><div class="rc-sigrole">${tpl.roleGestor}</div></div>
-        <div class="rc-sig"><div class="rc-sigline"></div><div class="rc-signame">Fabricio R. C. Costa</div><div class="rc-sigrole">${tpl.roleCoGestor}</div></div>
+        <div class="rc-sig">${gpSigImg}<div class="rc-sigline"></div><div class="rc-signame">Vitor Maia Rodovalho, PMP</div><div class="rc-sigrole">${tpl.roleGestor}</div></div>
+        <div class="rc-sig">${coGpSigImg}<div class="rc-sigline"></div><div class="rc-signame">Fabricio R. C. Costa</div><div class="rc-sigrole">${tpl.roleCoGestor}</div></div>
       </div>
       <div class="rc-chapband"><div class="rc-chaplabel">${tpl.chaptersLabel}</div><img class="rc-chapstrip" src="${CHAPTERS_STRIP_DATA_URI}" alt="" /></div>
       <div class="rc-verify">${verifyLine}</div>
@@ -689,20 +699,49 @@ export function buildCertificateHTML(certData: CertificateData): string {
  * For volunteer_agreement: fetches template_content from governance_documents
  * and member/counter_signer details from certificates + members tables.
  */
+/**
+ * Resolve a member's handwriting signature to a short-TTL SIGNED URL — #753 P1:
+ * member-signatures is a PRIVATE bucket; the stored value (a public-URL string
+ * carrying the path, or a bare path) must become self-authorizing because the
+ * <img> fetch is anonymous in both the client browser-print and the server-side
+ * puppeteer networkidle0 render. RLS lets any authenticated caller read the
+ * signature via public_members; service_role (server) bypasses RLS.
+ */
+async function resolveMemberSignatureUrl(sb: any, memberId: string): Promise<string | undefined> {
+  try {
+    const { data: row } = await sb.from('public_members').select('signature_url').eq('id', memberId).single();
+    const raw = row?.signature_url as string | undefined;
+    if (!raw) return undefined;
+    const after = raw.split('/member-signatures/')[1];
+    const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
+    const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
+    return signed?.signedUrl || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function hydrateCertData(certData: CertificateData, sb: any): Promise<CertificateData> {
-  // Issuer signature — #753 P1: member-signatures is a PRIVATE bucket; resolve the stored value (a public-URL
-  // string carrying the path, or a bare path) to a short-TTL SIGNED URL. The <img> fetch is anonymous in both
-  // the client browser-print and the server-side puppeteer networkidle0 render, so it needs a self-authorizing
-  // signed URL. RLS lets any authenticated caller sign the GP/issuer signature; service_role (server) bypasses RLS.
+  // Issuer signature (GP) — see resolveMemberSignatureUrl.
   if (certData.issued_by && !certData.signature_url && sb) {
+    certData.signature_url = await resolveMemberSignatureUrl(sb, certData.issued_by);
+  }
+
+  // Recognition certs (Ciclo 3 mockup): dual signatures. The co-image belongs to the
+  // member who ACTUALLY counter-signed (certificates.counter_signed_by) — resolved only
+  // when that act exists; an un-counter-signed cert renders the plain line + name.
+  if (isRecognitionCert(certData.type) && !certData.co_signature_url && sb) {
     try {
-      const { data: issuer } = await sb.from('public_members').select('signature_url').eq('id', certData.issued_by).single();
-      const raw = issuer?.signature_url as string | undefined;
-      if (raw) {
-        const after = raw.split('/member-signatures/')[1];
-        const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
-        const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
-        if (signed?.signedUrl) certData.signature_url = signed.signedUrl;
+      const keyCol = certData.verification_code ? 'verification_code' : certData.id ? 'id' : null;
+      if (keyCol) {
+        const { data: row } = await sb
+          .from('certificates')
+          .select('counter_signed_by')
+          .eq(keyCol, keyCol === 'verification_code' ? certData.verification_code : certData.id)
+          .maybeSingle();
+        if (row?.counter_signed_by) {
+          certData.co_signature_url = await resolveMemberSignatureUrl(sb, row.counter_signed_by);
+        }
       }
     } catch {}
   }
