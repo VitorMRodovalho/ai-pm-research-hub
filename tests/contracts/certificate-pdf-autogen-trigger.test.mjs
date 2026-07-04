@@ -132,7 +132,9 @@ describe('p225 #281 — certificate PDF autogen trigger pipeline', () => {
 
   test('endpoint guards idempotency (skip when pdf_url already set)', () => {
     const ts = readFileSync(ENDPOINT_PATH, 'utf8');
-    assert.match(ts, /if \(cert\.pdf_url\) \{/, 'must check cert.pdf_url before render');
+    // #1098: the idempotency guard now runs on the resolved row (member OR guest) —
+    // the invariant is unchanged: pdf_url is checked BEFORE any render happens.
+    assert.match(ts, /if \((?:cert|row)\.pdf_url\) \{/, 'must check pdf_url before render');
     assert.match(ts, /pdf_already_set/, 'must return skip marker for already-set pdf_url');
     assert.match(ts, /\.is\('pdf_url', null\)/, 'UPDATE must filter WHERE pdf_url IS NULL (race-safe)');
   });
@@ -142,10 +144,19 @@ describe('p225 #281 — certificate PDF autogen trigger pipeline', () => {
     assert.match(ts, /from\(['"]certificates['"]\)/, 'must use certificates bucket');
     assert.match(ts, /upsert: true/, 'must use upsert=true for re-renders');
     assert.match(ts, /contentType: 'application\/pdf'/, 'contentType must match bucket allowed_mime');
+    // #1098 loosened the source expression (the row may be a GuestCertRow, so the
+    // member branch reads `(cert as CertRow).member_id` and the shared code segment
+    // comes from `row.verification_code`); the INVARIANT stays: member PDFs at
+    // <member_id>/<code>.pdf, guest PDFs segregated under guests/<person_id>/.
     assert.match(
       ts,
-      /\$\{cert\.member_id\}\/\$\{cert\.verification_code\}\.pdf/,
+      /\$\{\s*(?:\(\s*cert as CertRow\s*\)|cert)\.member_id\s*\}\/\$\{\s*(?:cert|row)\.verification_code\s*\}\.pdf/,
       'storage path must follow <member_id>/<verification_code>.pdf convention from backfill',
+    );
+    assert.match(
+      ts,
+      /`guests\/\$\{\s*\(\s*guest as GuestCertRow\s*\)\.person_id\s*\}\/\$\{\s*row\.verification_code\s*\}\.pdf`/,
+      'guest storage path must be guests/<person_id>/<verification_code>.pdf (#1098)',
     );
   });
 
