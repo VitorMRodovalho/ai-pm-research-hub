@@ -143,6 +143,10 @@ async function buildContainer(
       children: childIds.join(','),
       caption,
     }, token)
+    // The carousel parent container must reach FINISHED before media_publish, else
+    // Graph returns 9007/2207027 "Media ID is not available" (same trap the STORIES
+    // branch documents; hit live on the first CAROUSEL publish, 2026-07-04).
+    await waitForContainer(id, token)
     return id
   }
 
