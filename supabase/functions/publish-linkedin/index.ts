@@ -14,7 +14,8 @@
 // returned asset URN in the post. We fetch image_url/video_url (public comms-media
 // bucket) and relay the bytes.
 //
-// Post types (payload.post_type): TEXT, IMAGE, VIDEO, ARTICLE (link). LinkedIn
+// Post types (payload.post_type): TEXT, IMAGE, VIDEO, ARTICLE (link), DOCUMENT
+// (PDF → LinkedIn's native swipeable document/carousel post, #1099). LinkedIn
 // linkifies bare URLs in the commentary, so TEXT with a URL gives a clickable CTA
 // (unlike IG's "link in bio"); ARTICLE renders a rich link card.
 //
@@ -31,15 +32,16 @@ const LINKEDIN_API = 'https://api.linkedin.com/rest'
 // Keep in lockstep with sync-comms-metrics' LINKEDIN_VERSION (versioned API moniker).
 const LINKEDIN_VERSION = '202606'
 
-type PostType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'ARTICLE'
+type PostType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'ARTICLE' | 'DOCUMENT'
 
 interface PublishPayload {
   post_type?: PostType
   text?: string             // commentary (URLs are auto-linkified by LinkedIn)
   image_url?: string        // public URL to fetch + upload
   video_url?: string        // public URL to fetch + upload
+  document_url?: string     // DOCUMENT: public PDF URL to fetch + upload
   alt_text?: string         // image alt text
-  title?: string            // video title / article title
+  title?: string            // video title / article title / document title (required for DOCUMENT)
   article_url?: string      // ARTICLE: the link to render as a card
   article_description?: string
   dry_run?: boolean
@@ -69,7 +71,13 @@ function liHeaders(token: string): Record<string, string> {
 
 async function fetchMediaBytes(url: string): Promise<Uint8Array> {
   const res = await fetch(url)
-  if (!res.ok) throw new Error(`fetch media ${url} -> ${res.status}`)
+  // error carries only the origin: the message lands in comms_scheduled_posts.error,
+  // and a full URL could leak signed query params (pre-signed Storage URLs etc.)
+  if (!res.ok) {
+    let origin = '<invalid-url>'
+    try { origin = new URL(url).origin } catch { /* keep placeholder */ }
+    throw new Error(`fetch media ${origin} -> ${res.status}`)
+  }
   return new Uint8Array(await res.arrayBuffer())
 }
 
@@ -94,6 +102,33 @@ async function uploadImage(orgUrn: string, token: string, imageUrl: string): Pro
   })
   if (!putRes.ok) throw new Error(`image upload PUT ${putRes.status}`)
   return imageUrn
+}
+
+// Document (PDF): initializeUpload -> PUT bytes -> return the document URN.
+// Same shape as images (single PUT, no finalize); LinkedIn renders the PDF as a
+// native swipeable document post (the platform-native "carousel").
+async function uploadDocument(orgUrn: string, token: string, documentUrl: string): Promise<string> {
+  const initRes = await fetch(`${LINKEDIN_API}/documents?action=initializeUpload`, {
+    method: 'POST',
+    headers: liHeaders(token),
+    body: JSON.stringify({ initializeUploadRequest: { owner: orgUrn } }),
+  })
+  const initData = await initRes.json().catch(() => ({}))
+  if (!initRes.ok) throw new Error(`document initializeUpload ${initRes.status}: ${JSON.stringify(initData).slice(0, 300)}`)
+  const uploadUrl = initData?.value?.uploadUrl
+  const documentUrn = initData?.value?.document
+  if (!uploadUrl || !documentUrn) throw new Error('document initializeUpload missing uploadUrl/document')
+
+  const bytes = await fetchMediaBytes(documentUrl)
+  // Unlike the images endpoint, the documents PUT REJECTS uploads without an explicit
+  // Content-Type (400) — verified live 2026-07-04 (400 without, 201 with).
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/pdf' },
+    body: bytes,
+  })
+  if (!putRes.ok) throw new Error(`document upload PUT ${putRes.status}`)
+  return documentUrn
 }
 
 // Video: initializeUpload -> PUT each part (capturing ETags) -> finalizeUpload ->
@@ -165,6 +200,11 @@ async function createPost(
     if (!p.video_url) throw new Error('VIDEO requires video_url')
     const videoUrn = await uploadVideo(orgUrn, token, p.video_url)
     body.content = { media: { id: videoUrn, title: p.title ?? '' } }
+  } else if (pt === 'DOCUMENT') {
+    if (!p.document_url) throw new Error('DOCUMENT requires document_url')
+    if (!p.title) throw new Error('DOCUMENT requires title (LinkedIn renders it on the card)')
+    const documentUrn = await uploadDocument(orgUrn, token, p.document_url)
+    body.content = { media: { id: documentUrn, title: p.title } }
   } else if (pt === 'ARTICLE') {
     if (!p.article_url) throw new Error('ARTICLE requires article_url')
     body.content = {
@@ -231,6 +271,8 @@ Deno.serve(async (req) => {
   if (pt === 'IMAGE' && !payload.image_url) return json({ success: false, error: 'IMAGE requires image_url' }, 400)
   if (pt === 'VIDEO' && !payload.video_url) return json({ success: false, error: 'VIDEO requires video_url' }, 400)
   if (pt === 'ARTICLE' && !payload.article_url) return json({ success: false, error: 'ARTICLE requires article_url' }, 400)
+  if (pt === 'DOCUMENT' && !payload.document_url) return json({ success: false, error: 'DOCUMENT requires document_url' }, 400)
+  if (pt === 'DOCUMENT' && !payload.title) return json({ success: false, error: 'DOCUMENT requires title' }, 400)
   if (pt === 'TEXT' && !payload.text) return json({ success: false, error: 'TEXT requires text' }, 400)
 
   if (payload.dry_run) {
