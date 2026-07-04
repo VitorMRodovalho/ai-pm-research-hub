@@ -118,8 +118,11 @@ test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort 37 + ~76% gl
   // Drift-tolerant band (p277 PR11): the operational cohort + global engagement drift with the roster
   // (live 2026-05-31: cohort 35, rate 0.7991; were 37 / ~0.76 at PR5a ship — 2 members lost operational_role).
   // DB-gated exact-count baselines must not red CI on normal attrition.
-  assert.ok(Number(data.cohort_n) >= 30 && Number(data.cohort_n) <= 45, `operational cohort ~mid-30s (got ${data.cohort_n})`);
+  // 2026-07-04 (virada C3→C4): lower bound 0.70→0.60 — 5 líderes C4 aprovados entraram na coorte
+  // operacional antes do kickoff (onboarding antecipado, exceção #1004) com 0 presenças, diluindo a
+  // média (live 0.6937). A média volta a subir conforme a coorte C4 acumula presenças.
+  assert.ok(Number(data.cohort_n) >= 30 && Number(data.cohort_n) <= 50, `operational cohort ~30s-40s (got ${data.cohort_n})`);
   const rate = Number(data.avg_rate);
-  assert.ok(rate >= 0.70 && rate <= 0.90, `global engagement high-70s/low-80s (got ${rate})`);
+  assert.ok(rate >= 0.60 && rate <= 0.90, `global engagement band (got ${rate})`);
   assert.ok(Number(data.at_risk_count) >= 0, 'at_risk_count numeric');
 });
