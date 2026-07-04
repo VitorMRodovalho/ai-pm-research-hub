@@ -21,7 +21,7 @@ import {
  * `buildRecognitionHTML` so issuance can drive it via title (ribbon) + description
  * (pill / team) with zero DB migration.
  */
-const RECOGNITION_TYPES = new Set(["excellence", "participation", "contribution"]);
+const RECOGNITION_TYPES = new Set(["excellence", "participation", "contribution", "event_participation"]);
 
 /** Certificate types that render with the landscape recognition template. */
 export function isRecognitionCert(type: string | undefined): boolean {
@@ -63,6 +63,11 @@ export interface CertificateData {
   description?: string;
   issued_by?: string;
   signature_url?: string;
+  // #1098 event guest certs (event_guest_certificates): the counter-signer member id,
+  // passed directly because the certificates-table lookup inside hydrateCertData
+  // cannot resolve a guest cert; and the event title for the {event} body placeholder.
+  counter_signed_by?: string;
+  event_title?: string;
   // Recognition certs (Ciclo 3 redesign): the co-manager counter-signature image.
   // Resolved by hydrateCertData from certificates.counter_signed_by — the image is
   // the record of a real counter-sign act, never a decorative default.
@@ -94,6 +99,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     completion: 'Certificamos que',
     excellence: 'Certificamos que',
     volunteer_agreement: 'Declaramos que',
+    event_participation: 'Certificamos que',
+    bodyEventParticipation: 'participou do {event}, promovido pelo Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos, iniciativa colaborativa entre capítulos do PMI no Brasil.',
     bodyParticipation: 'participou como pesquisador(a) voluntário(a) do Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos, uma iniciativa colaborativa entre capítulos do PMI no Brasil.',
     bodyContribution: 'contribuiu como voluntário(a) do Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos, desempenhando a função de {role}.',
     bodyCompletion: 'concluiu a Trilha PMI de Inteligência Artificial, demonstrando domínio nos fundamentos de IA aplicada ao Gerenciamento de Projetos.',
@@ -125,6 +132,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     completion: 'This certifies that',
     excellence: 'This certifies that',
     volunteer_agreement: 'This declares that',
+    event_participation: 'This certifies that',
+    bodyEventParticipation: 'attended {event}, hosted by the AI & PM Study and Research Hub, a collaborative initiative among PMI chapters in Brazil.',
     bodyParticipation: 'served as a volunteer researcher at the AI & PM Study and Research Hub, a collaborative initiative among PMI chapters in Brazil.',
     bodyContribution: 'contributed as a volunteer to the AI & PM Study and Research Hub, serving as {role}.',
     bodyCompletion: 'completed the PMI AI Trail, demonstrating proficiency in AI fundamentals applied to Project Management.',
@@ -156,6 +165,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     completion: 'Se certifica que',
     excellence: 'Se certifica que',
     volunteer_agreement: 'Se declara que',
+    event_participation: 'Se certifica que',
+    bodyEventParticipation: 'participó en {event}, promovido por el Hub de Estudios e Investigación en Inteligencia Artificial y Gestión de Proyectos, una iniciativa colaborativa entre capítulos del PMI en Brasil.',
     bodyParticipation: 'participó como investigador(a) voluntario(a) del Hub de Estudios e Investigación en Inteligencia Artificial y Gestión de Proyectos, una iniciativa colaborativa entre capítulos del PMI en Brasil.',
     bodyContribution: 'contribuyó como voluntario(a) del Hub de Estudios e Investigación en IA y Gestión de Proyectos, desempeñando la función de {role}.',
     bodyCompletion: 'completó la Ruta PMI de Inteligencia Artificial, demostrando dominio en los fundamentos de IA aplicada a la Gestión de Proyectos.',
@@ -507,6 +518,7 @@ function recoSealLabel(title: string | undefined): string {
   if (/VITAL|LENDA|LIFETIME/.test(t)) return 'LENDA';
   if (/TRIBO|TRIBE|EQUIPO/.test(t)) return 'TRIBO';
   if (/CONCLUS/.test(t)) return 'CONCLUSÃO';
+  if (/AFTERSHOW|EVENTO|EVENT|COMMUNITY DAY/.test(t)) return 'EVENTO';
   const m = t.match(/CICLO\s*(\d+)/);
   if (m) return 'CICLO ' + m[1];
   return 'NÚCLEO';
@@ -545,10 +557,12 @@ export function buildRecognitionHTML(certData: CertificateData): string {
   // champions get their own sentence; everyone else uses the type's default body.
   const bodyDefault = tpl['body' + type.charAt(0).toUpperCase() + type.slice(1)] || tpl.bodyExcellence;
   const bodyText = (
+    type === 'event_participation' ? (tpl.bodyEventParticipation || tpl.bodyParticipation) :
     type === 'participation' ? tpl.bodyConclusion :
     isLifetime ? tpl.bodyExcellenceLifetime :
     bodyDefault
-  ).replace('{role}', certData.function_role || '');
+  ).replace('{role}', certData.function_role || '')
+   .replace('{event}', certData.event_title || certData.title || '');
 
   // description convention: line 1 = highlight/pill; remaining lines = recognized team
   const lines = (certData.description || '').split('\n').map(s => s.trim()).filter(Boolean);
@@ -754,8 +768,15 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
   // Recognition certs (Ciclo 3 mockup): dual signatures. The co-image belongs to the
   // member who ACTUALLY counter-signed (certificates.counter_signed_by) — resolved only
   // when that act exists; an un-counter-signed cert renders the plain line + name.
-  if (isRecognitionCert(certData.type) && !certData.co_signature_url && sb && certRow?.counter_signed_by) {
-    certData.co_signature_url = await resolveMemberSignatureUrl(sb, certRow.counter_signed_by);
+  if (isRecognitionCert(certData.type) && !certData.co_signature_url && sb) {
+    // Member certs keep resolving ONLY from the DB row (the image is the record of a
+    // real counter-sign act); the direct-field fallback exists solely for guest certs,
+    // which have no certificates row for the lookup above to find.
+    const coSigner = certRow?.counter_signed_by
+      || (certData.type === 'event_participation' ? certData.counter_signed_by : undefined);
+    if (coSigner) {
+      certData.co_signature_url = await resolveMemberSignatureUrl(sb, coSigner);
+    }
   }
 
   // For volunteer_agreement: load full legal template + extra fields

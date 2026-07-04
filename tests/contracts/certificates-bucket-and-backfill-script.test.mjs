@@ -84,10 +84,17 @@ test('backfill script uses <member_id>/<verification_code>.pdf storage path conv
   // Convention is required so future member-owned RLS policy (Option C) can extract member_id
   // via storage.foldername(name)[1] and compare to auth.uid() → members.id.
   const body = readFileSync(SCRIPT, 'utf8');
-  const pathPattern = /\$\{\s*cert\.member_id\s*\}\s*\/\s*\$\{[^}]*\}\s*\.pdf/;
+  // #1098 loosened the source expression (the loop row is now CertRow | GuestCertRow,
+  // so the member branch reads `(cert as CertRow).member_id`); the INVARIANT stays
+  // path = <member_id>/<code>.pdf with member_id as the FIRST path segment.
+  const pathPattern = /`\$\{\s*(?:\(\s*cert as CertRow\s*\)|cert)\.member_id\s*\}\s*\/\s*\$\{[^}]*\}\s*\.pdf`/;
   assert.match(body, pathPattern,
     'backfill script must build storage path as <member_id>/<verification_code>.pdf ' +
     '— required for future member-owned RLS in Option C (path[0] = member_id)');
+  // #1098: guest PDFs must NOT share that namespace — they live under guests/<person_id>/
+  // so the ROPA G.1 retention purge can target the prefix without touching member PDFs.
+  assert.match(body, /`guests\/\$\{\s*\(\s*cert as GuestCertRow\s*\)\.person_id\s*\}\/\$\{[^}]*\}\.pdf`/,
+    'guest storage path must be guests/<person_id>/<verification_code>.pdf');
 });
 
 test('backfill script is idempotent (default mode skips certs with pdf_url already set)', () => {
