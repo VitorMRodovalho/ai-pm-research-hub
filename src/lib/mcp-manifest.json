@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-07-03T19:32:21.095Z",
+  "generated_at": "2026-07-04T13:11:32.260Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 333,
+  "total": 336,
   "by_domain": {
     "personal": 22,
     "tribe": 105,
     "board": 70,
     "events": 15,
     "governance": 23,
-    "comms": 13,
+    "comms": 16,
     "partners": 11,
     "gamification": 16,
     "selection": 27,
@@ -17,8 +17,8 @@
     "health": 18
   },
   "by_permission": {
-    "read": 221,
-    "write": 103,
+    "read": 222,
+    "write": 105,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -1725,6 +1725,13 @@
       "is_sensitive": false
     },
     {
+      "name": "list_scheduled_comms_posts",
+      "description": "Lista a fila comms_scheduled_posts (posts agendados/publicados/falhos por canal), com attempts, error e permalink. include_payload=true inclui o corpo completo. Gate: manage_comms.",
+      "domain": "comms",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_tribe_webinars",
       "description": "Returns webinars for your tribe or chapter.",
       "domain": "comms",
@@ -1736,6 +1743,13 @@
       "description": "Lista webinar proposals. Membros veem apenas próprias; comitê (manage_event/manage_member) vê todas. Filter por status opcional.",
       "domain": "comms",
       "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "cancel_scheduled_comms_post",
+      "description": "Cancela um post agendado ainda pending na fila comms_scheduled_posts (pending → canceled). Posts já published/failed não são canceláveis daqui. Gate: manage_comms.",
+      "domain": "comms",
+      "permission": "write",
       "is_sensitive": false
     },
     {
@@ -1755,6 +1769,13 @@
     {
       "name": "review_webinar_proposal",
       "description": "Comitê review de proposal: approve | reject | mark_review. Requer manage_event. rejection_reason obrigatório quando decision=reject.",
+      "domain": "comms",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "schedule_comms_post",
+      "description": "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). Gate: manage_comms.",
       "domain": "comms",
       "permission": "write",
       "is_sensitive": false
