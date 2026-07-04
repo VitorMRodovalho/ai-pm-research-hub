@@ -127,9 +127,13 @@ WHERE r->>'renews_signal' IN ('lapsing','unknown');
    gives the per-volunteer service-end + renews flag so the exit decision no longer needs a manual
    cross-join; treat `unknown` as "verify", not "exit".
 2. **Exit:** for each genuinely-lapsed member (2c operational-role orphan, or a retained-cycle
-   engagement whose agreement `period_end` has passed and was not renewed) → `offboard_member`
-   after per-member governance sign-off. **Never bulk.** (Access-flip is offboarding-based;
-   there is no direct `members` UPDATE — ADR/Camada-5 invariant.)
+   engagement whose agreement `period_end` has passed and was not renewed) → `admin_offboard_member`
+   with the **correct `reason_category`** (e.g. `end_of_cycle` for a natural turn), after per-member
+   governance sign-off. **Never bulk.** Do NOT use the `offboard_member` wrapper — it hardcodes
+   `reason_category => 'other'`, which erases the audit meaning that drives `re_engagement_pipeline`
+   eligibility + the LGPD anonymization guard (ADR-0116 §6). Proven live 2026-07-03 (the C3 tribe-7
+   voluntary exit recorded `'other'` and needed a governed post-hoc correction — freeze doc §2.3b).
+   (Access-flip is offboarding-based; there is no direct `members` UPDATE — ADR/Camada-5 invariant.)
 3. **Enter gap:** for each entering member not loginable, trigger the account-claim / auth invite
    so they can access on day 9.
 4. Confirm the entering cohort's `onboarding_progress` exists and the cycle's `onboarding_steps`

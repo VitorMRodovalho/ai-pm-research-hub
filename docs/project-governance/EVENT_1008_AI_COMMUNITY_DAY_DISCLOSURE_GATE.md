@@ -179,7 +179,7 @@ run/obtain INPI check; legal sign-off. This doc delivers drafts + gate; it does 
 
 ```markdown
 ## Decision: Enquadramento Aftershow Núcleo IA & GP vs. AI Community Day (PMI Global) — issue #1008
-**Date:** 2026-07-01  **Decided by:** [pendente ratificação PM]  **Status:** Proposed
+**Date:** 2026-07-01 (proposta) · **2026-07-03 (ratificada)**  **Decided by:** PM/GP (Vitor)  **Status:** Accepted — Gate A hard cutoff **2026-07-09 EOD** (sem resposta escrita → fallback Track-0-only permanente); registrada em `docs/council/decisions/2026-07-03-1008-aftershow-disclosure-gate.md`
 **Path impact:** preserva A (condicional a gate); reforça C (sinal de comunidade sem espera)
 
 ### Decision
