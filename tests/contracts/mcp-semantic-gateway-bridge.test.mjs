@@ -228,16 +228,15 @@ test('worker proxy preserves OAuth 401 + WWW-Authenticate gate', () => {
   assert.match(PROXY, /resource_metadata="\$\{BASE\}\/\.well-known\/oauth-protected-resource"/, 'expected resource_metadata pointer to OAuth metadata endpoint');
 });
 
-test('worker proxy preserves auto-refresh (delegated to shared lib/mcp-refresh post-#580)', () => {
+test('worker proxy does NOT refresh server-side (single-refresher model, #1053)', () => {
   const PROXY = readFileSync(PROXY_PATH, 'utf8');
-  // Post-#580 the auto-refresh helpers (decodeJwtPayload + tryAutoRefresh + the KV key
-  // prefix) live in src/lib/mcp-refresh.ts — a single source shared by both proxies so the
-  // "always re-store the rotated refresh token" fix can't diverge. semantic.ts imports +
-  // calls them rather than inlining the logic.
-  assert.match(PROXY, /import\s*\{[^}]*\btryAutoRefresh\b[^}]*\}\s*from\s*['"]\.\.\/\.\.\/lib\/mcp-refresh['"]/, 'expected tryAutoRefresh import from shared ../../lib/mcp-refresh');
-  assert.match(PROXY, /decodeJwtPayload\(/, 'expected decodeJwtPayload call');
-  assert.match(PROXY, /tryAutoRefresh\(/, 'expected tryAutoRefresh call');
-  // The mcp_refresh: KV key prefix invariant now lives in the shared module.
+  // #1053: the proxy-side refresh was removed — it raced Claude's own refresh over the
+  // same rotating Supabase refresh token → ~1h re-login. Claude is the sole refresher
+  // (via /oauth/token). The proxy only decodes the JWT `sub` for rate limiting.
+  assert.doesNotMatch(PROXY, /tryAutoRefresh\(/, 'proxy must NOT call tryAutoRefresh (#1053)');
+  assert.match(PROXY, /decodeJwtPayload\(/, 'still decodes the JWT for rate-limit keying');
+  // The shared refresh helpers + KV key prefix stay in the module (used by /oauth/token,
+  // and unit-tested), just not wired into the proxy anymore.
   const REFRESH_LIB = readFileSync(resolve(process.cwd(), 'src/lib/mcp-refresh.ts'), 'utf8');
   assert.match(REFRESH_LIB, /mcp_refresh:/, 'expected mcp_refresh KV key prefix in shared lib/mcp-refresh');
 });

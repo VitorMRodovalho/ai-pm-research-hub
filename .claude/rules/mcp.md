@@ -144,12 +144,28 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - GET /mcp → 406 (native transport returns Not Acceptable when no session)
 - Transport handles: initialize, tools/list, tool/call, notifications, SSE streams
 
-## Auto-Refresh (server-side token renewal)
-- Worker proxy (`src/pages/mcp.ts`) decodes JWT `exp` before forwarding upstream
-- If expired or expiring within 5 minutes, looks up `mcp_refresh:{sub}` from KV
-- Calls Supabase Auth API directly (`/auth/v1/token?grant_type=refresh_token`)
-- Forwards request with new access_token — transparent to MCP host
-- KV keys: `mcp_refresh:{user_id}` with 30-day TTL (set at token issuance + refresh)
-- Token endpoint (`/oauth/token`) stores refresh_token in KV on both `authorization_code` and `refresh_token` grants
-- Supabase JWT TTL is 3600s (1h) — auto-refresh compensates
-- Best practice: never depend on MCP hosts to implement refresh — do it server-side
+## Token refresh — single-refresher model (#1053, 2026-07-05)
+**The client (Claude) is the SOLE refresher. The proxies do NOT refresh server-side.**
+- Claude refreshes its own token (proactively ~5 min before expiry + reactively on 401)
+  by calling `/oauth/token` with `grant_type=refresh_token` (`src/pages/oauth/token.ts`).
+  That endpoint exchanges against Supabase Auth, returns the rotated token to Claude,
+  AND re-stores it in KV `mcp_refresh:{sub}` — so the single rotation chain stays in sync.
+- `token.ts` also stores the refresh_token in KV on the `authorization_code` grant.
+- Supabase JWT TTL is 3600s (1h). KV key `mcp_refresh:{user_id}`, 30-day TTL.
+
+### Why the proxies must NEVER refresh (the #1053 bug)
+The proxies (`src/pages/mcp.ts`, `src/pages/mcp/semantic.ts`) used to auto-refresh
+server-side (`tryAutoRefresh`) on any expiring request. That was a **second refresher**
+racing Claude over the SAME rotating Supabase refresh token: whoever refreshed first
+rotated R→R' and invalidated the other's copy. When the proxy won, Claude's next
+refresh 400'd ("already used") → `token.ts` returned `invalid_grant` → **Claude
+re-logged-in every ~1h**. #580's KV re-store could not fix it (keeps the *server*
+copy fresh; no channel pushes R' back to Claude). Fix = remove the proxy refresh.
+- `tryAutoRefresh` / `isExpiringSoon` remain in `src/lib/mcp-refresh.ts` (unit-tested)
+  but are **deprecated for proxy use** — do NOT re-wire them into the proxies.
+- Guarded by `tests/contracts/1053-mcp-single-refresher.test.mjs`.
+- Diagnostic note: `kvLog` in both proxies + `token.ts` is a **no-op** (KV free-tier
+  write protection) — there is no `token-refresh-fail`/`auto-refresh-*` telemetry to
+  read; classify refresh issues from code + a live `/oauth/token` smoke, not KV logs.
+- Dashboard (owner-only, Auth → Sessions): keep refresh-token rotation as-is; ensure
+  no aggressive session/inactivity timeout (would re-login even with a perfect flow).

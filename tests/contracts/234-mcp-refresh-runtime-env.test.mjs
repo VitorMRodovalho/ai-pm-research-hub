@@ -42,11 +42,17 @@ test('#234: fallback config supplies URL but requires anon key binding', () => {
   assert.equal(cfg.anonKey, '');
 });
 
-test('#234: MCP proxies and token endpoint use shared runtime resolver', () => {
-  for (const rel of ['src/pages/mcp.ts', 'src/pages/mcp/semantic.ts', 'src/pages/oauth/token.ts']) {
+test('#234 / #1053: token endpoint is the sole server-side refresher and uses the runtime resolver', () => {
+  // #1053 removed the proxy-side refreshers (dual-refresher collision → ~1h re-login),
+  // so /oauth/token is the ONLY server-side refresh path. It must still read Worker
+  // runtime env; the proxies must no longer resolve auth config at all.
+  const tokenSrc = read('src/pages/oauth/token.ts');
+  assert.match(tokenSrc, /resolveSupabaseAuthConfig\(env as any, import\.meta\.env\)/, 'token.ts must read Worker runtime env');
+  assert.doesNotMatch(tokenSrc, /anonKey:\s*import\.meta\.env\.PUBLIC_SUPABASE_ANON_KEY\s*\|\|\s*''/, 'token.ts must not pass empty anonKey');
+
+  for (const rel of ['src/pages/mcp.ts', 'src/pages/mcp/semantic.ts']) {
     const src = read(rel);
-    assert.match(src, /resolveSupabaseAuthConfig\(env as any, import\.meta\.env\)/, `${rel} must read Worker runtime env`);
-    assert.doesNotMatch(src, /anonKey:\s*import\.meta\.env\.PUBLIC_SUPABASE_ANON_KEY\s*\|\|\s*''/, `${rel} must not pass empty anonKey`);
+    assert.doesNotMatch(src, /resolveSupabaseAuthConfig/, `${rel} must not resolve auth config — single-refresher model (#1053)`);
   }
 });
 
