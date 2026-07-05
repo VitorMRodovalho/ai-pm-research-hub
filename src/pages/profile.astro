@@ -230,6 +230,14 @@ const PROFILE_I18N = {
   lgpdPolicyDesc: t('profile.lgpdPolicyDesc', lang),
   lgpdDeleteTitle: t('profile.lgpdDeleteTitle', lang),
   lgpdDeleteDesc: t('profile.lgpdDeleteDesc', lang),
+  // #1051: self-service MCP client revocation
+  mcpSessionsTitle: t('profile.mcpSessionsTitle', lang),
+  mcpSessionsDesc: t('profile.mcpSessionsDesc', lang),
+  mcpDisconnectBtn: t('profile.mcpDisconnectBtn', lang),
+  mcpDisconnectWarn: t('profile.mcpDisconnectWarn', lang),
+  mcpDisconnectConfirm: t('profile.mcpDisconnectConfirm', lang),
+  toastMcpDisconnected: t('profile.toastMcpDisconnected', lang),
+  toastMcpDisconnectError: t('profile.toastMcpDisconnectError', lang),
   deleteConfirmPrompt: t('profile.deleteConfirmPrompt', lang),
   deleteConfirmKeyword: t('profile.deleteConfirmKeyword', lang),
   toastSupabaseDown: t('profile.toastSupabaseDown', lang),
@@ -1946,6 +1954,20 @@ const PROFILE_I18N = {
         </div>
       </div>
 
+      <!-- Card: MCP Sessions (#1051 — self-service revocation via global signout) -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-2">🔌 ${PROFILE_I18N.mcpSessionsTitle}</h2>
+        <p class="text-[.75rem] text-[var(--text-muted)] mb-4">${PROFILE_I18N.mcpSessionsDesc}</p>
+        <button data-action="disconnect-mcp"
+          class="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800 text-left cursor-pointer hover:border-red-500 transition-colors w-full">
+          <span class="text-xl">🔌</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-[.78rem] font-bold text-red-700 dark:text-red-400">${PROFILE_I18N.mcpDisconnectBtn}</div>
+            <div class="text-[.65rem] text-red-600 dark:text-red-400">${PROFILE_I18N.mcpDisconnectWarn}</div>
+          </div>
+        </button>
+      </div>
+
       <!-- Card: Notification Preferences -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.notifPrefsTitle}</h2>
@@ -2415,6 +2437,28 @@ const PROFILE_I18N = {
     }
   }
 
+  // #1051: revoke MCP client access self-service. The MCP client (Claude) holds a COPY
+  // of the browser's GoTrue session token — /oauth/consent hands it the browser's
+  // getSession() access+refresh (consent.astro:222-233). So MCP == the browser session:
+  // there is no separate MCP session to target, and a global signout — which revokes
+  // ALL the user's refresh tokens — is the only way to cut it (owner decision 2026-07-05).
+  // This is the effective cut: post-#1053 nothing reads KV mcp_refresh:{sub}, so deleting
+  // it would revoke nothing. Global scope also ends this browser session (by design) →
+  // redirect to home so the user re-authenticates.
+  async function disconnectMcpClients() {
+    if (!confirm(PROFILE_I18N.mcpDisconnectConfirm || 'Desconectar todos os clientes MCP?')) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { (window as any).toast?.(PROFILE_I18N.toastSupabaseDown || 'Supabase indisponível', 'error'); return; }
+    try {
+      const { error } = await sb.auth.signOut({ scope: 'global' });
+      if (error) throw error;
+      (window as any).toast?.(PROFILE_I18N.toastMcpDisconnected || 'Clientes MCP desconectados. Redirecionando…', 'success');
+      setTimeout(() => { location.href = ((window as any).__LANG_PREFIX || '') + '/'; }, 1500);
+    } catch (err: any) {
+      (window as any).toast?.(err?.message || PROFILE_I18N.toastMcpDisconnectError || 'Erro ao desconectar clientes MCP', 'error');
+    }
+  }
+
   async function exportMyData() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { (window as any).toast?.(PROFILE_I18N.toastSupabaseDown || 'Supabase indisponível', 'error'); return; }
@@ -2489,6 +2533,9 @@ const PROFILE_I18N = {
           break;
         case 'delete-my-data':
           deleteMyPersonalData();
+          break;
+        case 'disconnect-mcp':
+          disconnectMcpClients();
           break;
         case 'link-provider': {
           const provider = (target as HTMLElement).dataset.provider;
