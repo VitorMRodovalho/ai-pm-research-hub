@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000073_p277_419_m3_pr6_member_detail_reliability_typescope.sql');
@@ -109,10 +110,11 @@ test('m3 PR6 DB: get_member_detail auth gate intact (unauthenticated rejected)',
 
 test('m3 PR6 DB: type-scoped primitives resolve + sane shape', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data: rate, error: e1 } = await sb.rpc('get_attendance_rate', { p_member_id: '622ab18b-a8b4-46ff-b151-7bbd34394ed3' });
+  const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  const { data: rate, error: e1 } = await sb.rpc('get_attendance_rate', { p_member_id: '622ab18b-a8b4-46ff-b151-7bbd34394ed3', p_cycle_start: cs });
   assert.ok(!e1, e1?.message);
   assert.ok(rate === null || (Number(rate) >= 0 && Number(rate) <= 1), `rate is a 0..1 fraction (got ${rate})`);
-  const { data: rel, error: e2 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global' });
+  const { data: rel, error: e2 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!e2, e2?.message);
   assert.ok(Number(rel.present_total) >= 0 && Number(rel.absent_total) >= 0 && Number(rel.excused_total) >= 0, 'recorded counts present');
   assert.ok(Number(rel.avg_rate) > 0.9 && Number(rel.avg_rate) <= 1, 'global reliability avg ~0.99');

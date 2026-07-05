@@ -15,6 +15,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   governance_cr_new: 'Novo Change Request',
   volunteer_agreement_signed: 'Termo de Voluntariado assinado',
   certificate_ready: 'Certificado disponivel',
+  certificate_issued: 'Certificado emitido',
   attendance_detractor: 'Alerta de presenca',
   webinar_status_confirmed: 'Webinar confirmado',
   webinar_status_completed: 'Webinar realizado',

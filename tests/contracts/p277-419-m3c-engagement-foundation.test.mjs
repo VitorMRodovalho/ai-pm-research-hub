@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000066_p277_419_m3c_engagement_foundation.sql');
@@ -73,9 +74,10 @@ test('m3c PR1: LGPD — all four REVOKE anon/authenticated + GRANT service_role;
 // ── DB-gated ──────────────────────────────────────────────────────────────────
 test('m3c PR1 DB: engagement global is a sane fraction with a real cohort; structurally ≤ reliability', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const eng = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global' });
+  const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  const eng = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!eng.error, eng.error?.message);
-  const rel = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global' });
+  const rel = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!rel.error, rel.error?.message);
   const e = eng.data, r = rel.data;
   assert.ok(e.cohort_n > 0, 'engagement cohort is non-empty');

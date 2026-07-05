@@ -31,6 +31,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { pointsCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000327_fix_cycle_xp_bucket_taxonomy.sql');
@@ -102,9 +103,10 @@ test('#1080 behavioural: pillar buckets partition cycle_points; showcase_* route
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
     // Replicate the RPC's exact bucket math against the live ledger (service role bypasses RLS).
-    const { data: cyc } = await sb.from('cycles').select('cycle_start').eq('is_current', true).limit(1);
-    const cycleStart = cyc?.[0]?.cycle_start;
-    assert.ok(cycleStart, 'current cycle start resolved');
+    // Ground on the most recent cycle that actually has ledger rows: at a cycle boundary the current
+    // cycle can be empty / start in the future (C3→C4 turnover, cycle_start 2026-07-09), zeroing the
+    // window (#1123). The partition invariant is cycle-independent; it just needs a populated window.
+    const cycleStart = await pointsCycleStart(sb);
 
     const { data: rules } = await sb.from('gamification_rules').select('slug,pillar,organization_id');
     const pillarBySlugOrg = new Map((rules || []).map((r) => [`${r.organization_id}:${r.slug}`, r.pillar]));

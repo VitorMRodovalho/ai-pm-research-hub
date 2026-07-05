@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000088_p277_419_roster_participants_only.sql');
@@ -98,7 +99,8 @@ test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   // Roberto's get_member_tribe stays NULL (his tribe-8 engagement is kind=observer) → he is NOT pulled into
   // the tribe-8 attendance cohort. tribe-8 engagement cohort_n stays 5 (unchanged by the roster revision).
-  const { data: t8eng } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'tribe', p_scope_id: 8 });
+  const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  const { data: t8eng } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'tribe', p_scope_id: 8, p_cycle_start: cs });
   assert.equal(Number(t8eng.cohort_n), 5, 'metric-3 tribe-8 cohort_n = 5 (unchanged — reads operational_role + get_member_tribe, not the roster)');
 });
 
