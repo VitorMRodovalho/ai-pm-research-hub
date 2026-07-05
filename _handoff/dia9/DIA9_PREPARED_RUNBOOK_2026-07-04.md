@@ -32,7 +32,14 @@ TODAS abertas (`cycle_end` NULL) → fechar todas com `cycle_end='2026-07-08'`.
   com timestamp do dia — buscar `version LIKE '20260709%'` após apply).
 - Follow-up institucional: #1104 (`admin_roll_cycle_membership`).
 
-### 4. Exit Débora (`a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7`, líder T2)
+> 🔴 **DECISÃO OWNER 2026-07-05 — NÃO ANTECIPAR os passos 4 e 5.** A virada operacional (flip +
+> roll-forward + #1101) foi puxada p/ 05/07, mas o **exit da Débora e o arquivamento da T2 ficam
+> para o DIA 9, até ~18h BSB (antes do kickoff 19h).** O time da Débora (Gerson/Guilherme/Gustavo)
+> deve ser **comunicado DENTRO do kickoff** de que poderá escolher outras tribos (janela `select_tribe`
+> até 17/07). Manter T2 ativa com a Débora como líder até lá. NÃO offboard, NÃO `is_active=false`
+> na tribo, NÃO limpar `members.tribe_id` dos 3 antes do DIA 9.
+
+### 4. Exit Débora (`a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7`, líder T2) — **DIA 9, pós-comunicação no kickoff**
 `admin_offboard_member(p_new_status=>'alumni', p_reason_category=>'end_of_cycle')` — **sem
 `p_reassign_to`** (T2 arquiva, não há sucessor). NÃO revogar Drive antes do offboard.
 (Ela está na coorte dos 31 mas FORA do roll-forward — a migration exclui o id dela.)
