@@ -6,13 +6,12 @@ import {
   GENERAL_LIMIT_PER_MIN,
   DESTRUCTIVE_LIMIT_PER_MIN,
 } from '../lib/mcp-rate-limit';
-// #580 — shared server-side refresh helpers (single source for both proxies + token.ts)
-import {
-  decodeJwtPayload,
-  isExpiringSoon,
-  resolveSupabaseAuthConfig,
-  tryAutoRefresh,
-} from '../lib/mcp-refresh';
+// #1053 — single-refresher model: the proxy no longer refreshes server-side. It
+// used to race Claude's own client-side refresh over the SAME rotating Supabase
+// refresh token and invalidate it → forced re-login each ~1h token cycle. Claude
+// is now the sole refresher (via /oauth/token, which keeps the KV mcp_refresh:{sub}
+// copy in sync). We import decodeJwtPayload only to read `sub` for the rate limit.
+import { decodeJwtPayload } from '../lib/mcp-refresh';
 import { CANONICAL_ORIGIN } from '../lib/canonical';
 
 async function kvLog(_endpoint: string, _data: any) {
@@ -61,26 +60,15 @@ export const ALL: APIRoute = async ({ request }) => {
     });
   }
 
-  // ── Auto-refresh: check if JWT is expired and refresh transparently ──
-  let activeToken = authHeader.replace(/^Bearer\s+/i, '');
+  // #1053 — NO server-side refresh here. Forward the bearer as-is; Claude refreshes
+  // its own token (proactively ~5 min before expiry, reactively on 401) through
+  // /oauth/token. A second refresher in the proxy rotated the shared Supabase
+  // refresh token behind Claude's back, so Claude's next refresh 400'd
+  // ("already used") → re-login each token cycle. `payload` is decoded only to key
+  // the per-member rate limit below.
+  const activeToken = authHeader.replace(/^Bearer\s+/i, '');
   const kv = (env as any).SESSION;
   const payload = decodeJwtPayload(activeToken);
-
-  // Refresh if expired or will expire within 5 minutes
-  if (kv && payload?.sub && payload?.exp && isExpiringSoon(payload.exp)) {
-    await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp });
-    const supabaseAuth = resolveSupabaseAuthConfig(env as any, import.meta.env);
-    const newToken = await tryAutoRefresh(payload.sub, kv, {
-      anonKey: supabaseAuth.anonKey,
-      supabaseUrl: supabaseAuth.url,
-    });
-    if (newToken) {
-      activeToken = newToken;
-      await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
-    } else {
-      await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
-    }
-  }
 
   // ── ADR-0018 W2: rate limit per-member (100/min general + 10/min destructive) ──
   // Fail-open on KV errors; the RPC layer canV4 gate remains the authority guard.

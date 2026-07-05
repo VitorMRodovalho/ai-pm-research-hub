@@ -99,6 +99,11 @@ export function decodeJwtPayload(token: string): { sub?: string; exp?: number } 
  * True if a token with the given `exp` (epoch seconds) is already expired or will
  * expire within `skewSeconds` (default 300 = 5 min) — the proactive-refresh
  * window. Equivalent to the prior inline `payload.exp - 300 < now` check.
+ *
+ * DEPRECATED for proxy use (#1053): the Worker proxies no longer refresh
+ * server-side (it collided with Claude's own refresh over the shared rotating
+ * Supabase refresh token → ~1h re-login). Retained + unit-tested for reference;
+ * do NOT re-wire into src/pages/mcp*.ts — a guard test (1053-…) blocks it.
  */
 export function isExpiringSoon(exp: number, skewSeconds = 300, nowSeconds?: number): boolean {
   const now = nowSeconds ?? Math.floor(Date.now() / 1000);
@@ -110,6 +115,13 @@ export function isExpiringSoon(exp: number, skewSeconds = 300, nowSeconds?: numb
  * `mcp_refresh:{sub}`. Returns the new access_token, or null when there is no
  * stored token / the refresh failed.
  *
+ * DEPRECATED for proxy use (#1053): no longer called by the Worker proxies. Doing
+ * a server-side refresh here rotated the shared Supabase refresh token behind
+ * Claude's back, invalidating Claude's own copy → forced re-login each ~1h token
+ * cycle. Claude is now the sole refresher (via /oauth/token). Retained + unit-
+ * tested for reference; do NOT re-wire into the proxies (guarded by 1053-… test).
+ *
+
  * CONTRACT (#580): this function NEVER throws — every KV/network/parse failure
  * resolves to null so the caller (the Worker proxy) falls open to the original
  * token rather than crashing the request into a 500/502. A transient blip must

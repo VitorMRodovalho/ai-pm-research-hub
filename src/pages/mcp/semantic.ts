@@ -12,13 +12,11 @@ import {
   GENERAL_LIMIT_PER_MIN,
   DESTRUCTIVE_LIMIT_PER_MIN,
 } from '../../lib/mcp-rate-limit';
-// #580 — shared server-side refresh helpers (single source for both proxies + token.ts)
-import {
-  decodeJwtPayload,
-  isExpiringSoon,
-  resolveSupabaseAuthConfig,
-  tryAutoRefresh,
-} from '../../lib/mcp-refresh';
+// #1053 — single-refresher model: this proxy no longer refreshes server-side (see
+// src/pages/mcp.ts for the rationale — it raced Claude's own refresh over the same
+// rotating Supabase refresh token → forced re-login each ~1h). Claude refreshes via
+// /oauth/token. decodeJwtPayload is imported only to read `sub` for the rate limit.
+import { decodeJwtPayload } from '../../lib/mcp-refresh';
 import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 async function kvLog(_endpoint: string, _data: any) {
@@ -64,24 +62,12 @@ export const ALL: APIRoute = async ({ request }) => {
     });
   }
 
-  let activeToken = authHeader.replace(/^Bearer\s+/i, '');
+  // #1053 — NO server-side refresh (see mcp.ts). Forward the bearer as-is; Claude
+  // is the sole refresher via /oauth/token. `payload` is decoded only to key the
+  // per-member rate limit below.
+  const activeToken = authHeader.replace(/^Bearer\s+/i, '');
   const kv = (env as any).SESSION;
   const payload = decodeJwtPayload(activeToken);
-
-  if (kv && payload?.sub && payload?.exp && isExpiringSoon(payload.exp)) {
-    await kvLog("mcp-semantic-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp });
-    const supabaseAuth = resolveSupabaseAuthConfig(env as any, import.meta.env);
-    const newToken = await tryAutoRefresh(payload.sub, kv, {
-      anonKey: supabaseAuth.anonKey,
-      supabaseUrl: supabaseAuth.url,
-    });
-    if (newToken) {
-      activeToken = newToken;
-      await kvLog("mcp-semantic-auto-refresh-ok", { sub: payload.sub });
-    } else {
-      await kvLog("mcp-semantic-auto-refresh-fail", { sub: payload.sub });
-    }
-  }
 
   // ADR-0018 W2: rate limit per-member (semantic surface is read-only so destructive cap unused)
   if (kv && payload?.sub) {
