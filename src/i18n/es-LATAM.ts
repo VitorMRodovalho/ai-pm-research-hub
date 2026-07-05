@@ -3049,6 +3049,23 @@ const esLATAM: Record<string, string> = {
   'data.tribe8.d3': 'Webinar práctico (pilar tecnológico)',
   'data.tribe8.d4': 'Pruebas prácticas + versión 1.0 para el mercado',
   'data.tribe8.meetings': 'Martes y Jueves, 20h30 BRT',
+  // ── Ciclo 4 — nuevas tribus (#1116) ──
+  'data.tribe9.name': 'IA en Proyectos & Industria de la Construcción',
+  'data.tribe9.quadrantLabel': 'C2 — Gestión de Proyectos de IA',
+  'data.tribe9.desc': 'La metodología CPMAI aplicada a proyectos de IA — del Entendimiento del Negocio a la Operacionalización — con profundidad vertical en la industria de la construcción: casos reales, forecasting predictivo, automatización documental y agentes en los flujos de diseño, ingeniería y construcción.',
+  'data.tribe9.meetings': 'Por definir',
+  'data.tribe10.name': 'Gobernanza Asistida',
+  'data.tribe10.quadrantLabel': 'C2 — Gestión de Proyectos de IA',
+  'data.tribe10.desc': 'Agentes de IA como copilotos de PMO e Ingeniería para producir entregables con método — trazables, reproducibles y con control de calidad. De la generación improvisada a la metodológica, en el espíritu del ciclo de vida del CPMAI.',
+  'data.tribe10.meetings': 'Por definir',
+  'data.tribe11.name': 'PMO Inteligente',
+  'data.tribe11.quadrantLabel': 'C2 — Gestión de Proyectos de IA',
+  'data.tribe11.desc': 'El PMO como capacidad organizacional inteligente: agentes y simuladores de decisión, servicios y outcomes de PMO, y gobernanza de valor conectando iniciativas de IA a la estrategia. Anclado en el PMO Practice Guide y el PMI M.O.R.E.',
+  'data.tribe11.meetings': 'Por definir',
+  'data.tribe12.name': 'Productividad Aumentada',
+  'data.tribe12.quadrantLabel': 'C1 — Practicante Aumentado',
+  'data.tribe12.desc': 'Uso aplicado de IA generativa en el flujo del gerente de proyectos: prompts para cronogramas, riesgos y planes de comunicación; automatización de actas, informes de estado y análisis de documentos. El pilar del "first mover" — más tiempo en estrategia, menos en tarea manual.',
+  'data.tribe12.meetings': 'Por definir',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sincronizar Puntos',

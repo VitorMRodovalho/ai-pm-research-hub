@@ -3049,6 +3049,23 @@ const enUS: Record<string, string> = {
   'data.tribe8.d3': 'Practical webinar (technological pillar)',
   'data.tribe8.d4': 'Practical tests + market v1.0',
   'data.tribe8.meetings': 'Tuesdays and Thursdays, 8:30PM BRT',
+  // ── Cycle 4 — new tribes (#1116) ──
+  'data.tribe9.name': 'AI in Projects & the Construction Industry',
+  'data.tribe9.quadrantLabel': 'Q2 — AI Project Management',
+  'data.tribe9.desc': 'The CPMAI methodology applied to AI projects — from Business Understanding to Operationalization — with vertical depth in the construction industry: real cases, predictive forecasting, document automation, and AI agents across design, engineering, and construction workflows.',
+  'data.tribe9.meetings': 'To be defined',
+  'data.tribe10.name': 'Assisted Governance',
+  'data.tribe10.quadrantLabel': 'Q2 — AI Project Management',
+  'data.tribe10.desc': 'AI agents as copilots for PMO and Engineering to produce deliverables with method — traceable, reproducible, and quality-controlled. From improvised to methodical generation, in the spirit of the CPMAI lifecycle.',
+  'data.tribe10.meetings': 'To be defined',
+  'data.tribe11.name': 'Intelligent PMO',
+  'data.tribe11.quadrantLabel': 'Q2 — AI Project Management',
+  'data.tribe11.desc': 'The PMO as an intelligent organizational capability: decision agents and simulators, PMO services and outcomes, and value governance connecting AI initiatives to strategy. Anchored in the PMO Practice Guide and PMI M.O.R.E.',
+  'data.tribe11.meetings': 'To be defined',
+  'data.tribe12.name': 'Augmented Productivity',
+  'data.tribe12.quadrantLabel': 'Q1 — The Augmented Practitioner',
+  'data.tribe12.desc': 'Applied use of generative AI in the project manager workflow: prompts for schedules, risks, and communication plans; automation of minutes, status reports, and document analysis. The "first mover" pillar — more time on strategy, less on manual work.',
+  'data.tribe12.meetings': 'To be defined',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sync Points',

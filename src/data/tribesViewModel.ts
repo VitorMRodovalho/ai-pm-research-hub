@@ -40,13 +40,12 @@ export function buildTribesViewModel(lang: Lang): TribesViewModel {
   });
 
   const tribes = resolveTribes(lang).filter((tribe) => {
+    // #1116: video + deliverables are optional — newly-formed C4 tribes (9/10/11/12)
+    // have no explainer video or fixed deliverables yet, but must still render.
     const valid =
       hasText(tribe.name) &&
       hasText(tribe.description) &&
-      Array.isArray(tribe.deliverables) &&
-      tribe.deliverables.length > 0 &&
-      hasText(tribe.meetingSchedule) &&
-      hasText(tribe.videoUrl);
+      hasText(tribe.meetingSchedule);
     if (!valid) warnings.push(`Tribe payload incomplete for T${String(tribe.id).padStart(2, '0')}`);
     return valid;
   });

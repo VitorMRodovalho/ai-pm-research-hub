@@ -3054,6 +3054,23 @@ const ptBR: Record<string, string> = {
   'data.tribe8.d3': 'Webinar prático (pilar tecnológico)',
   'data.tribe8.d4': 'Testes práticos + versão 1.0 para o mercado',
   'data.tribe8.meetings': 'Terças e Quintas, 20h30',
+  // ── Ciclo 4 — novas tribos (#1116) ──
+  'data.tribe9.name': 'IA em Projetos & Indústria da Construção',
+  'data.tribe9.quadrantLabel': 'Q2 — Gestão de Projetos de IA',
+  'data.tribe9.desc': 'Metodologia CPMAI aplicada a projetos de IA — do Entendimento do Negócio à Operacionalização — com profundidade vertical na indústria da construção: casos reais, forecasting preditivo, automação documental e agentes nos fluxos de design, engenharia e construção.',
+  'data.tribe9.meetings': 'A definir',
+  'data.tribe10.name': 'Governança Assistida',
+  'data.tribe10.quadrantLabel': 'Q2 — Gestão de Projetos de IA',
+  'data.tribe10.desc': 'Agentes de IA como copilotos de PMO e Engenharia para produzir entregáveis com método — rastreáveis, reprodutíveis e com controle de qualidade. Da geração improvisada à geração metodológica, no espírito do ciclo de vida do CPMAI.',
+  'data.tribe10.meetings': 'A definir',
+  'data.tribe11.name': 'PMO Inteligente',
+  'data.tribe11.quadrantLabel': 'Q2 — Gestão de Projetos de IA',
+  'data.tribe11.desc': 'O PMO como capacidade organizacional inteligente: agentes e simuladores de decisão, serviços e outcomes de PMO, e governança de valor conectando iniciativas de IA à estratégia. Ancorado no PMO Practice Guide e no PMI M.O.R.E.',
+  'data.tribe11.meetings': 'A definir',
+  'data.tribe12.name': 'Produtividade Aumentada',
+  'data.tribe12.quadrantLabel': 'Q1 — Praticante Aumentado',
+  'data.tribe12.desc': 'Uso aplicado de IA generativa no fluxo do gerente de projetos: prompts para cronogramas, riscos e planos de comunicação; automação de atas, relatórios de status e análise de documentos. O pilar do "first mover" — mais tempo em estratégia, menos em tarefa manual.',
+  'data.tribe12.meetings': 'A definir',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sincronizar Pontos',

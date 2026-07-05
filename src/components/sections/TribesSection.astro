@@ -207,25 +207,29 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                   <div class="pb-5 pt-3 border-t border-[var(--border-subtle)]">
                     <p id={`td-${tr.id}`} class="text-[.88rem] text-[var(--text-secondary)] mb-3">{tr.description}</p>
 
-                    <div class="mb-3">
-                      <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
-                      <ul class="mt-1.5 ml-5 text-[.84rem] text-[var(--text-secondary)] list-disc">
-                        {(tr.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
-                      </ul>
-                    </div>
+                    {(tr.deliverables?.length ?? 0) > 0 && (
+                      <div class="mb-3">
+                        <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
+                        <ul class="mt-1.5 ml-5 text-[.84rem] text-[var(--text-secondary)] list-disc">
+                          {(tr.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
+                        </ul>
+                      </div>
+                    )}
 
                     <p class="text-[.82rem] mb-3" id={`ms-${tr.id}`}>
                       <strong>{t('tribes.meetings', lang)}</strong> <span class="text-[var(--text-muted)]">{tr.meetingSchedule || t('tribes.loading', lang)}</span>
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
-                      <a href={tr.videoUrl} target="_blank" rel="noopener"
-                         class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
-                                rounded-xl no-underline text-[.82rem] font-semibold
-                                hover:opacity-85 transition-opacity"
-                         data-stop-propagation>
-                        ▶ {t('tribes.video', lang)} ({tr.videoDuration})
-                      </a>
+                      {tr.videoUrl && (
+                        <a href={tr.videoUrl} target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
+                                  rounded-xl no-underline text-[.82rem] font-semibold
+                                  hover:opacity-85 transition-opacity"
+                           data-stop-propagation>
+                          ▶ {t('tribes.video', lang)} ({tr.videoDuration})
+                        </a>
+                      )}
                       <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
                                      text-[.82rem] font-semibold text-white bg-teal
                                      hover:bg-teal/80 transition-all cursor-pointer border-0
