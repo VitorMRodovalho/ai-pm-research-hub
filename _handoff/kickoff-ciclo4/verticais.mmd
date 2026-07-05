@@ -1,0 +1,30 @@
+flowchart TB
+  N["Núcleo IA & GP"]:::core
+
+  N --> Q["Eixo 1 · Quadrantes<br/>(o quê)"]:::axis
+  N --> V["Eixo 2 · Verticais<br/>(para quem)"]:::axis
+
+  Q --> Q1["Q1 · Praticante Aumentado"]:::q
+  Q --> Q2["Q2 · Gestão de Projetos de IA"]:::q
+  Q --> Q3["Q3 · Liderança Organizacional"]:::q
+  Q --> Q4["Q4 · Futuro e Responsabilidade"]:::q
+
+  V --> VC["Construção<br/>(embaixador: Fabrício + Henrique)"]:::v
+  V --> VP["PMO"]:::v
+  V --> VE["ESG / Sustentabilidade<br/>(Felipe · PMI-MG)"]:::v
+  V --> VA["Ágil / Negócio"]:::v
+
+  VC --> TC["Tribos de construção<br/>(temas dos quadrantes, foco setorial)"]:::t
+  VP --> TP["Tribos de PMO"]:::t
+  VE --> TE["Tribos de ESG"]:::t
+  VA --> TA["Tribos de ágil"]:::t
+
+  NOTE["Cada vertical conecta o Núcleo a uma subinstituição do PMI<br/>(embaixadores, certificação própria, parcerias institucionais)."]:::note
+  V -.-> NOTE
+
+  classDef core fill:#0B2A4A,color:#fff,font-weight:bold;
+  classDef axis fill:#12507a,color:#fff;
+  classDef q fill:#e8f0f7,color:#0B2A4A;
+  classDef v fill:#1f7a4d,color:#fff;
+  classDef t fill:#eaf5ee,color:#134e34;
+  classDef note fill:#fff6e6,color:#7a5a12,font-style:italic;

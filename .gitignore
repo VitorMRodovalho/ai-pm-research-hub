@@ -50,6 +50,8 @@ docs/project-governance/DATA_INGESTION_POLICY.md
 # Diagnosis screenshots: scraped from prod UI, contain member PII (names/photos:
 # CPMAI mural, team gallery, tribe leaders). NEVER commit to the PUBLIC repo. See #816.
 docs/strategy/diagnosis/screenshots/
+# Scratch playwright capture scripts (throwaway one-off diagnosis tooling). Kept local.
+docs/strategy/diagnosis/_*.mjs
 
 # Data Science: local-only analysis scripts and sensitive inputs
 scripts/data_science/
