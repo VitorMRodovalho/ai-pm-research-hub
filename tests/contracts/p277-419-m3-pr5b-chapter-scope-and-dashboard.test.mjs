@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000072_p277_419_m3_pr5b_chapter_scope_and_dashboard.sql');
@@ -97,7 +98,8 @@ test('m3 PR5b FE: ChapterDashboard chart + card consume engagement object + reli
 // ── DB-gated ──────────────────────────────────────────────────────────────────
 test('m3 PR5b DB: chapter scope returns the member_status=active cohort engagement', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO' });
+  const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!error, error?.message);
   // Drift-tolerant band (p277 PR11): PMI-GO active chapter cohort drifts w/ roster (live 2026-05-31: 19, was 20).
   assert.ok(Number(data.cohort_n) >= 12 && Number(data.cohort_n) <= 28, `PMI-GO active chapter cohort (got ${data.cohort_n})`);
@@ -110,12 +112,13 @@ test('m3 PR5b DB: chapter scope returns the member_status=active cohort engageme
 
 test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no ambiguous overload)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data: rel, error: e1 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO' });
+  const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  const { data: rel, error: e1 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!e1, e1?.message);
   assert.ok(Number(rel.avg_rate) > 0.9, 'PMI-GO reliability ~0.99');
   assert.ok(['present_total', 'absent_total', 'excused_total'].every((k) => Object.prototype.hasOwnProperty.call(rel, k)), 'raw counts present');
-  // 1-arg global call must still resolve unambiguously to the 4-arg fn
-  const { data: g, error: e2 } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global' });
+  // global call must still resolve unambiguously to the 4-arg fn (cohort is window-scoped → ground it)
+  const { data: g, error: e2 } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!e2, e2?.message);
   // Drift-tolerant band (p277 PR11): global cohort drifts w/ roster (live 2026-05-31: 35, was 37); the point of
   // this assertion is that the 1-arg call still resolves to the 4-arg fn (no ambiguous overload), cohort non-broken.

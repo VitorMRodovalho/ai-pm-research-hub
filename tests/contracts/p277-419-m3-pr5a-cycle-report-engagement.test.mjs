@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000071_p277_419_m3_pr5a_cycle_report_attendance_engagement.sql');
@@ -112,7 +113,9 @@ test('m3 PR5a DB: exec_cycle_report auth gate intact (unauthenticated service-ro
 
 test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort 37 + ~76% global', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global' });
+  // Ground on the most recent populated cycle — the current cycle's window is empty at a boundary (#1123).
+  const cs = await attendanceCycleStart(sb);
+  const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!error, error?.message);
   assert.ok(data && Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count key present');
   // Drift-tolerant band (p277 PR11): the operational cohort + global engagement drift with the roster
