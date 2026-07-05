@@ -54,6 +54,17 @@ const TRIBE_I18N = {
   openLink: t('tribe.openLink', lang),
   dateLocale: t('tribe.dateLocale', lang),
   error: t('tribe.error', lang),
+  roadmapTitle: t('tribe.roadmap.title', lang),
+  roadmapDesc: t('tribe.roadmap.desc', lang),
+  roadmapH6: t('tribe.roadmap.h6', lang),
+  roadmapH12: t('tribe.roadmap.h12', lang),
+  roadmapH18: t('tribe.roadmap.h18', lang),
+  roadmapEmpty: t('tribe.roadmap.empty', lang),
+  roadmapEdit: t('tribe.roadmap.edit', lang),
+  roadmapModalTitle: t('tribe.roadmap.modalTitle', lang),
+  roadmapHint: t('tribe.roadmap.hint', lang),
+  roadmapSaved: t('tribe.roadmap.saved', lang),
+  roadmapSaveError: t('tribe.roadmap.saveError', lang),
   tribeName: staticFallback?.name || '',
   tribeDesc: staticFallback?.description || '',
   quadrantLabel: staticFallback?.quadrantLabel || '',
@@ -319,6 +330,33 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       </div>
     </div>
   </div>
+  <!-- Roadmap Authoring Modal (#1113) — one artefact per line, per horizon -->
+  <div id="roadmap-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40" data-action="close-roadmap-modal"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--surface-elevated)] rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto border border-[var(--border-default)]">
+      <h2 class="text-lg font-extrabold text-navy mb-1">{t('tribe.roadmap.modalTitle', lang)}</h2>
+      <p class="text-[13px] text-[var(--text-secondary)] mb-4">{t('tribe.roadmap.hint', lang)}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label for="roadmap-h6" class="text-[13px] font-semibold text-[var(--text-secondary)] mb-1 block">{t('tribe.roadmap.h6', lang)}</label>
+          <textarea id="roadmap-h6" rows="7" class="w-full px-3 py-2 border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+        </div>
+        <div>
+          <label for="roadmap-h12" class="text-[13px] font-semibold text-[var(--text-secondary)] mb-1 block">{t('tribe.roadmap.h12', lang)}</label>
+          <textarea id="roadmap-h12" rows="7" class="w-full px-3 py-2 border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+        </div>
+        <div>
+          <label for="roadmap-h18" class="text-[13px] font-semibold text-[var(--text-secondary)] mb-1 block">{t('tribe.roadmap.h18', lang)}</label>
+          <textarea id="roadmap-h18" rows="7" class="w-full px-3 py-2 border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" data-action="close-roadmap-modal" class="px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] border border-[var(--border-default)] rounded-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-all">{t('tribe.modal.cancel', lang)}</button>
+        <button type="button" data-action="save-roadmap" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">{t('tribe.modal.save', lang)}</button>
+      </div>
+    </div>
+  </div>
+
   <PresentationLayer context="tribe" tribeId={tribeId} lang={lang} />
 </BaseLayout>
 
@@ -961,6 +999,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             </div>
           </div>
         </div>
+        <div id="tribe-roadmap-section" class="scroll-mt-24"></div>
         <div>
           <h2 class="text-xl font-semibold text-navy mb-4">${escapeHtml(I18N.sharedRefs || 'Referências Compartilhadas')}</h2>
           <p class="text-[13px] text-[var(--text-secondary)] mb-4">Materiais de estudo, rascunhos públicos e recursos curados pela comunidade.</p>
@@ -983,6 +1022,114 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
         </div>
       </div>`;
+  }
+
+  // ── Roadmap (#1113): read + author initiatives.metadata.roadmap {h6,h12,h18} ──
+  let _roadmap: { h6: any[]; h12: any[]; h18: any[] } = { h6: [], h12: [], h18: [] };
+
+  function roadmapItemsHtml(items: any[]): string {
+    if (!Array.isArray(items) || !items.length) {
+      return `<div class="py-4 text-center text-[var(--text-muted)] text-xs">${escapeHtml(I18N.roadmapEmpty || 'Nenhum artefato planejado ainda.')}</div>`;
+    }
+    return items.map((it: any) => {
+      const title = typeof it === 'string' ? it : (it?.title || '');
+      if (!title) return '';
+      return `<div class="flex items-start gap-2 py-2 border-b border-[var(--border-subtle)] last:border-0"><span class="text-navy mt-0.5">•</span><span class="text-sm text-[var(--text-primary)]">${escapeHtml(title)}</span></div>`;
+    }).join('');
+  }
+
+  function renderRoadmap() {
+    const el = document.getElementById('tribe-roadmap-section');
+    if (!el) return;
+    const canAuthor = isLeaderOfThisTribeV4();
+    const editBtn = canAuthor
+      ? `<button data-action="open-roadmap-modal" class="px-3 py-1.5 bg-navy text-white rounded-lg text-xs font-semibold cursor-pointer border-0 hover:opacity-90 transition-all shrink-0">${escapeHtml(I18N.roadmapEdit || 'Editar roadmap')}</button>`
+      : '';
+    const col = (label: string, items: any[]) => `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
+          <span class="text-lg">🗺️</span>
+          <h3 class="text-sm font-bold text-navy">${escapeHtml(label)}</h3>
+        </div>
+        <div class="px-5 py-2 max-h-[260px] overflow-y-auto">${roadmapItemsHtml(items)}</div>
+      </div>`;
+    el.innerHTML = `
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-xl font-semibold text-navy">${escapeHtml(I18N.roadmapTitle || 'Roadmap da tribo')}</h2>
+          <p class="text-[13px] text-[var(--text-secondary)] mt-1">${escapeHtml(I18N.roadmapDesc || '')}</p>
+        </div>
+        ${editBtn}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        ${col(I18N.roadmapH6 || '6 meses', _roadmap.h6)}
+        ${col(I18N.roadmapH12 || '12 meses', _roadmap.h12)}
+        ${col(I18N.roadmapH18 || '18 meses', _roadmap.h18)}
+      </div>`;
+  }
+
+  async function loadRoadmap() {
+    if (!sb || !INITIATIVE_ID) return;
+    try {
+      const { data, error } = await sb.rpc('get_initiative_roadmap', { p_initiative_id: INITIATIVE_ID });
+      if (error) throw new Error(error.message);
+      const rm = (data && (data as any).roadmap) || {};
+      _roadmap = {
+        h6: Array.isArray(rm.h6) ? rm.h6 : [],
+        h12: Array.isArray(rm.h12) ? rm.h12 : [],
+        h18: Array.isArray(rm.h18) ? rm.h18 : [],
+      };
+    } catch (e) {
+      console.warn('Roadmap load failed:', e);
+      _roadmap = { h6: [], h12: [], h18: [] };
+    }
+    renderRoadmap();
+  }
+
+  function itemsToText(items: any[]): string {
+    return (Array.isArray(items) ? items : [])
+      .map((it: any) => (typeof it === 'string' ? it : (it?.title || '')))
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  function textToItems(text: string): any[] {
+    return String(text || '')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((title) => ({ title }));
+  }
+
+  function openRoadmapModal() {
+    const modal = document.getElementById('roadmap-modal');
+    if (!modal) return;
+    (document.getElementById('roadmap-h6') as HTMLTextAreaElement).value = itemsToText(_roadmap.h6);
+    (document.getElementById('roadmap-h12') as HTMLTextAreaElement).value = itemsToText(_roadmap.h12);
+    (document.getElementById('roadmap-h18') as HTMLTextAreaElement).value = itemsToText(_roadmap.h18);
+    modal.classList.remove('hidden');
+  }
+
+  function closeRoadmapModal() {
+    document.getElementById('roadmap-modal')?.classList.add('hidden');
+  }
+
+  async function saveRoadmap() {
+    if (!sb || !INITIATIVE_ID) return;
+    const payload = {
+      h6: textToItems((document.getElementById('roadmap-h6') as HTMLTextAreaElement)?.value || ''),
+      h12: textToItems((document.getElementById('roadmap-h12') as HTMLTextAreaElement)?.value || ''),
+      h18: textToItems((document.getElementById('roadmap-h18') as HTMLTextAreaElement)?.value || ''),
+    };
+    const { error } = await sb.rpc('set_initiative_roadmap', { p_initiative_id: INITIATIVE_ID, p_roadmap: payload });
+    if (error) {
+      console.error('set_initiative_roadmap error:', error);
+      (window as any).toast?.(I18N.roadmapSaveError, 'error');
+      return;
+    }
+    (window as any).toast?.(I18N.roadmapSaved, 'success');
+    closeRoadmapModal();
+    await loadRoadmap();
   }
 
   // ── Tribe Selection Híbrida PR3: leader's join-request queue ──
@@ -1564,6 +1711,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         closeDeliverableModal();
       }
 
+      if (action === 'open-roadmap-modal') {
+        openRoadmapModal();
+      }
+
+      if (action === 'close-roadmap-modal') {
+        closeRoadmapModal();
+      }
+
+      if (action === 'save-roadmap') {
+        saveRoadmap();
+      }
+
       if (action === 'send-broadcast') {
         sendBroadcast();
       }
@@ -2075,6 +2234,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       // Geral: Radar Global first (uses innerHTML), then Events Timeline (prepends), then Stats (prepends)
       await loadRadarGlobal();
+      loadRoadmap();
       loadEventsTimeline();
       loadTribeStats();
 
