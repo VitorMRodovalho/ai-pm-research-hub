@@ -31,7 +31,7 @@ interface ReportConfig {
 }
 
 const DEFAULT_CONFIG: ReportConfig = {
-  title: 'Relatório Executivo — Ciclo 3 (2026/1)',
+  title: 'Relatório Executivo — Ciclo 4 (2026/2)',
   subtitle: 'Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos',
   chapters: '', // populated dynamically from loadChapters() at boot; admin override via site_config wins
   gp_notes: '',
