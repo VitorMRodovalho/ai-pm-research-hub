@@ -42,7 +42,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const WHISPER_MAX_BYTES = 25 * 1024 * 1024; // 25 MB OpenAI limit
-const FETCH_TIMEOUT_MS = 60_000;
 const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 
 // Interview rubric guide-lines reused for video pillars where they match.
@@ -359,7 +358,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { application_id, pillar, force, triggered_by } = body ?? {};
+  const { application_id, pillar, triggered_by } = body ?? {};
   if (!application_id) return json({ error: "missing_application_id" }, 400);
 
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -368,7 +367,7 @@ Deno.serve(async (req: Request) => {
   // Return 200 immediately so pg_net doesn't time out (default 5s). Slow work runs in background.
   // @ts-ignore EdgeRuntime is provided by Supabase Edge Functions runtime
   if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
-    // @ts-ignore
+    // @ts-ignore -- EdgeRuntime is a Supabase runtime global absent from Deno lib types
     EdgeRuntime.waitUntil(processVideosBackground(sb, application_id, pillar ?? null, triggeredBy));
   } else {
     // Local dev fallback: fire-and-forget without waitUntil (Deno still completes pending promises)

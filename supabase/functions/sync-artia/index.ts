@@ -4,7 +4,6 @@ import { corsHeaders } from '../_shared/cors.ts'
 // ── Artia GraphQL API ──
 const ARTIA_GQL = 'https://api.artia.com/graphql'
 const ARTIA_ACCOUNT_ID = 6345833
-const ARTIA_PROJECT_ID = 6391775
 
 // PMI-GO organization (V4 multi-tenant scope; sync-artia is single-tenant today)
 // EF runs as service_role → auth.uid()=NULL → DEFAULT auth_org()=NULL.
@@ -209,7 +208,7 @@ async function runDiscoveryMode(sb: any, token: string): Promise<any> {
       }
       summary.queries_succeeded++
       await persistDump('projects_list', data?.data?.showProject, { project_id: projId, project_name: proj.title, source_query: showProjectQuery, notes: 'showProject detail' })
-    } catch (e) {
+    } catch (_e) {
       summary.queries_failed++
     }
 
@@ -246,7 +245,7 @@ async function runDiscoveryMode(sb: any, token: string): Promise<any> {
           await persistDump('activities_sample', { folder_id: folderId, folder_title: folder.title, activities: list }, { source_query: variant.q, notes: `${list.length} activities in folder "${folder.title}" via ${variant.name}` })
           break
         }
-      } catch (e) {
+      } catch (_e) {
         summary.queries_failed++
       }
     }
@@ -388,7 +387,6 @@ Deno.serve(async (req) => {
     if (mode === 'cron-daily') {
       const NUCLEO_PROJECT_ID = 6391775
       const FOLDER_ATAS_TRIBOS = 6516561 // 04.04 - Atas de Tribos Semanais
-      const FOLDER_ATAS_PLENARIAS = 6516560 // 04.03 - Atas Plenárias Mensais
       const token = await getArtiaToken()
       const result: any = { updateProject: null, atas_tribos: null, atas_plenarias: null, errors: [] }
 
@@ -478,11 +476,9 @@ Deno.serve(async (req) => {
 
     // ── Cron-monthly mode (Phase C.3): generates Status Report + syncs program_risks ──
     if (mode === 'cron-monthly') {
-      const STATUS_REPORT_FOLDER = 6516559 // 04.02 - Status Reports Mensais 2026
       const token = await getArtiaToken()
       const result: any = { status_report: null, risks_synced: [], errors: [] }
 
-      const escapeStr = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ')
 
       // 1. Compute prior month metrics
       const today = new Date()
@@ -536,7 +532,7 @@ Deno.serve(async (req) => {
       for (const risk of risksData || []) {
         const pct = risk.status === 'mitigado' || risk.status === 'encerrado' ? 100
                   : risk.status === 'em_tratamento' ? 50 : 0
-        const statusId = risk.status === 'mitigado' || risk.status === 'encerrado' ? ARTIA_STATUS.ENCERRADO
+        const _statusId = risk.status === 'mitigado' || risk.status === 'encerrado' ? ARTIA_STATUS.ENCERRADO
                        : risk.status === 'em_tratamento' ? ARTIA_STATUS.ANDAMENTO : ARTIA_STATUS.A_INICIAR
         const title = `${risk.risk_code}: ${risk.risk_title}`
         const desc = `[${(risk.probability || 'n/a').toUpperCase()} prob × ${(risk.impact || 'n/a').toUpperCase()} impacto] Status: ${risk.status}. Tratamento: ${risk.treatment}. Sync: ${new Date().toISOString().split('T')[0]}.`
@@ -1248,7 +1244,6 @@ Deno.serve(async (req) => {
     results.hours_meetings = { current: totalHours, pct: Math.round((totalHours / 90) * 100), synced: false }
 
     // 9. Impact hours
-    const { data: impactData } = await sb.rpc('get_public_platform_stats')
     // Calculate from attendance
     // Impact hours: only count actual present (not excused)
     const { data: impactRaw } = await sb.rpc('get_impact_hours_excluding_excused')

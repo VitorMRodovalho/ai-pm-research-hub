@@ -112,14 +112,14 @@ Deno.serve(async (req) => {
 
     // Load member emails
     const memberIds = recipients.filter(r => r.member_id).map(r => r.member_id)
-    let memberMap: Record<string, { email: string; name: string; tribe_name: string; chapter: string }> = {}
+    const memberMap: Record<string, { email: string; name: string; tribe_name: string; chapter: string }> = {}
     if (memberIds.length > 0) {
       const { data: members, error: memErr } = await sb.from('members')
         .select('id, email, name, tribe_id')
         .in('id', memberIds)
       if (memErr) console.error('[campaign] members query error:', memErr.message)
       const tribeIds = [...new Set((members || []).filter(m => m.tribe_id).map(m => m.tribe_id))]
-      let tribeMap: Record<number, { name: string; chapter: string }> = {}
+      const tribeMap: Record<number, { name: string; chapter: string }> = {}
       if (tribeIds.length > 0) {
         const { data: tribes } = await sb.from('tribes').select('id, name, chapter').in('id', tribeIds)
         for (const t of (tribes || [])) tribeMap[t.id] = { name: t.name, chapter: t.chapter || '' }
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
 
     const platformUrl = 'https://nucleoia.vitormr.dev'
     let delivered = 0
-    let errors: string[] = []
+    const errors: string[] = []
 
     for (const r of recipients) {
       if (r.unsubscribed) continue

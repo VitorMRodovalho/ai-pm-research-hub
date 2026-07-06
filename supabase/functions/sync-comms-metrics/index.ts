@@ -138,42 +138,6 @@ function buildRunKey(input?: string): string {
   return `${RUN_KEY_PREFIX}_${new Date().toISOString()}`
 }
 
-async function fetchRowsFromEndpoint(defaultSource: string): Promise<{ rows: RawMetric[]; source: string }> {
-  const sourceUrl = Deno.env.get('COMMS_METRICS_SOURCE_URL')
-  if (!sourceUrl) {
-    throw new Error('COMMS_METRICS_SOURCE_URL is not configured')
-  }
-
-  const token = Deno.env.get('COMMS_METRICS_SOURCE_TOKEN')
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort('timeout'), 20_000)
-
-  try {
-    const headers: HeadersInit = { 'Accept': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-
-    const resp = await fetchWithRetry(sourceUrl, {
-      method: 'GET',
-      headers,
-      signal: controller.signal,
-    }, 2)
-
-    if (!resp.ok) throw new Error(`Source fetch failed: ${resp.status}`)
-
-    const json = await resp.json()
-    if (Array.isArray(json)) return { rows: json, source: defaultSource }
-    if (json && Array.isArray(json.rows)) {
-      const src = typeof json.source === 'string' && json.source.trim()
-        ? json.source.trim().toLowerCase()
-        : defaultSource
-      return { rows: json.rows, source: src }
-    }
-
-    throw new Error('Source payload must be an array or object with rows[]')
-  } finally {
-    clearTimeout(timeout)
-  }
-}
 
 async function logRun(
   sb: ReturnType<typeof createClient>,
