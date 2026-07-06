@@ -1,0 +1,36 @@
+# #1106 step-1 — type-check + lint the Supabase Edge Functions (Deno).
+# Closes the biggest hole in the verification net: supabase/functions/** is excluded
+# from the app's TypeScript strict build (tsconfig exclude) and had NO deno check/lint
+# in CI — yet nucleo-mcp/index.ts is the ~300-tool authority gate.
+#
+# MEASUREMENT MODE (initial): both steps are continue-on-error so this never blocks a
+# merge while we quantify the pre-existing drift. Once the baseline is known we tighten
+# (make lint blocking if clean; gate check on changed files or via a ratcheting baseline).
+name: Deno EF Check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deno-ef-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: deno lint (measure)
+        continue-on-error: true
+        run: deno lint supabase/functions/
+
+      - name: deno check (measure)
+        continue-on-error: true
+        run: deno check supabase/functions/**/*.ts
