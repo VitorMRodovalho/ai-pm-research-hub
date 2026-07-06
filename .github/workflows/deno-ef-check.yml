@@ -27,10 +27,14 @@ jobs:
         with:
           deno-version: v2.x
 
+      # CLI flags (not a committed deno.json) so this CI config never touches how the
+      # Supabase bundler deploys the functions. `no-explicit-any` is excluded: the
+      # pervasive `any` in the RPC-dispatch code is the step-2 refactor's job, not a
+      # correctness signal — excluding it keeps the high-signal lint rules useful now.
       - name: deno lint (measure)
         continue-on-error: true
-        run: deno lint supabase/functions/
+        run: deno lint --rules-exclude=no-explicit-any supabase/functions/
 
       - name: deno check (measure)
         continue-on-error: true
-        run: deno check supabase/functions/**/*.ts
+        run: deno check --node-modules-dir=auto "supabase/functions/**/*.ts"
