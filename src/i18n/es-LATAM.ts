@@ -6961,6 +6961,25 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.panelVolunteer': 'Registros de servicio PMI',
   'comp.affiliationQueue.panelLastSync': 'Última sincronización VEP',
   'comp.affiliationQueue.panelNoProfile': 'Sin enriquecimiento VEP — verifique manualmente.',
+  // #1129 — cohorte + validez del término de voluntariado
+  'comp.affiliationQueue.thCohort': 'Cohorte',
+  'comp.affiliationQueue.cohort_current_selection': 'Selección actual',
+  'comp.affiliationQueue.cohort_carryover': 'Carryover',
+  'comp.affiliationQueue.cohort_non_selection': 'No-selección',
+  'comp.affiliationQueue.cohortHint_current_selection': 'Aprobado(a) en la selección del ciclo actual',
+  'comp.affiliationQueue.cohortHint_carryover': 'Continuidad de un ciclo anterior, aún activo(a)',
+  'comp.affiliationQueue.cohortHint_non_selection': 'Vínculo no originado en una selección (board, ponente, patrocinador…)',
+  'comp.affiliationQueue.filterCohortAll': 'Todas las cohortes',
+  'comp.affiliationQueue.role_leader': 'Líder',
+  'comp.affiliationQueue.role_researcher': 'Investigador(a)',
+  'comp.affiliationQueue.thTerm': 'Término del voluntariado',
+  'comp.affiliationQueue.term_valid': 'Vigente',
+  'comp.affiliationQueue.term_expiring': 'Por vencer',
+  'comp.affiliationQueue.term_expired': 'Vencido',
+  'comp.affiliationQueue.term_none': 'Sin término',
+  'comp.affiliationQueue.filterTermAll': 'Todos los términos',
+  'comp.affiliationQueue.termNone': 'Sin término activo',
+  'comp.affiliationQueue.hiddenSubsetHint': '{n} de la selección actual esperan verificación fuera del pre-onboarding',
 };
 
 export default esLATAM;
