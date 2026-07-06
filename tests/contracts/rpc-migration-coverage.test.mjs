@@ -299,11 +299,11 @@ function extractLocalMigrationVersions() {
 }
 
 function buildCreateTableMatcher(name) {
-  // CREATE TABLE [IF NOT EXISTS] ["public".]"name" — case-insensitive,
-  // tolerates IF NOT EXISTS clause and quoted identifiers.
+  // CREATE [UNLOGGED] TABLE [IF NOT EXISTS] ["public".]"name" — case-insensitive,
+  // tolerates the UNLOGGED persistence keyword, IF NOT EXISTS, and quoted identifiers.
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(
-    `\\bCREATE\\s+TABLE\\s+(IF\\s+NOT\\s+EXISTS\\s+)?"?(public\\.)?"?${escaped}"?\\s*\\(`,
+    `\\bCREATE\\s+(UNLOGGED\\s+)?TABLE\\s+(IF\\s+NOT\\s+EXISTS\\s+)?"?(public\\.)?"?${escaped}"?\\s*\\(`,
     'i'
   );
 }
@@ -317,9 +317,9 @@ function buildDropTableMatcher(name) {
 }
 
 function extractCreateTableNames(sql) {
-  // Extract all CREATE TABLE [IF NOT EXISTS] [public.]name from the concat'd SQL.
+  // Extract all CREATE [UNLOGGED] TABLE [IF NOT EXISTS] [public.]name from the concat'd SQL.
   // Returns Set of table names (deduped).
-  const regex = /\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(?:public\.)?"?([a-z_][a-z0-9_]*)"?\s*\(/gi;
+  const regex = /\bCREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(?:public\.)?"?([a-z_][a-z0-9_]*)"?\s*\(/gi;
   const out = new Set();
   let m;
   while ((m = regex.exec(sql)) !== null) {

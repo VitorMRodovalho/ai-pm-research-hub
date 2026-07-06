@@ -71,8 +71,10 @@ DECLARE
   v_member_name text;
   guest record;
 BEGIN
+  -- #991 oracle-free contract: a throttled caller must be INDISTINGUISHABLE from a
+  -- not-found result (no status/discriminant key at all). Collapse to valid=false.
   IF NOT public.rl_check_and_bump('verify_certificate', 30, 60) THEN
-    RETURN jsonb_build_object('valid', false, 'error', 'rate_limited');
+    RETURN jsonb_build_object('valid', false);
   END IF;
 
   SELECT c.* INTO cert
