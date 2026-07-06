@@ -6962,6 +6962,25 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.panelVolunteer': 'PMI service records',
   'comp.affiliationQueue.panelLastSync': 'Last VEP sync',
   'comp.affiliationQueue.panelNoProfile': 'No VEP enrichment — verify manually.',
+  // #1129 — cohort + volunteer-term validity
+  'comp.affiliationQueue.thCohort': 'Cohort',
+  'comp.affiliationQueue.cohort_current_selection': 'Current selection',
+  'comp.affiliationQueue.cohort_carryover': 'Carryover',
+  'comp.affiliationQueue.cohort_non_selection': 'Non-selection',
+  'comp.affiliationQueue.cohortHint_current_selection': 'Approved in the current-cycle selection',
+  'comp.affiliationQueue.cohortHint_carryover': 'Carried over from a prior cycle, still active',
+  'comp.affiliationQueue.cohortHint_non_selection': 'Not originated from a selection (board, speaker, sponsor…)',
+  'comp.affiliationQueue.filterCohortAll': 'All cohorts',
+  'comp.affiliationQueue.role_leader': 'Leader',
+  'comp.affiliationQueue.role_researcher': 'Researcher',
+  'comp.affiliationQueue.thTerm': 'Volunteer term',
+  'comp.affiliationQueue.term_valid': 'Valid',
+  'comp.affiliationQueue.term_expiring': 'Expiring',
+  'comp.affiliationQueue.term_expired': 'Expired',
+  'comp.affiliationQueue.term_none': 'No term',
+  'comp.affiliationQueue.filterTermAll': 'All terms',
+  'comp.affiliationQueue.termNone': 'No active term',
+  'comp.affiliationQueue.hiddenSubsetHint': '{n} from the current selection await verification outside pre-onboarding',
 };
 
 export default enUS;
