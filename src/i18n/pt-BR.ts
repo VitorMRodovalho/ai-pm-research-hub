@@ -5,7 +5,7 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
-  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, 7 tribos temáticas. Plataforma open-source trilingue.',
+  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, {tribeCount} tribos temáticas. Plataforma open-source trilingue.',
   'meta.ogImageAlt': 'Núcleo IA & GP — Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gestão de Projetos, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
   'about.meta.description': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
@@ -26,6 +26,7 @@ const ptBR: Record<string, string> = {
   'nav.networking': 'Networking',
   'nav.rules': 'Regras',
   'nav.trail': 'Trilha PMI AI',
+  'nav.trailRanking': 'Ranking',
   'nav.team': 'Time',
   'nav.vision': 'Visão',
   'nav.resources': 'Recursos',
@@ -822,7 +823,7 @@ const ptBR: Record<string, string> = {
   'tribes.deadlineNotice': 'Após o prazo, não será possível trocar de tribo.',
   'tribes.deadlineNoticeClosed': 'Ciclo em curso. Novos pesquisadores entram continuamente via PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'A escolha será liberada quando o cronograma oficial do ciclo for publicado.',
-  'tribes.slots': 'Mín. 3 · Máx. 7 pesquisadores por tribo.',
+  'tribes.slots': 'Mín. {min} · Máx. {max} pesquisadores por tribo.',
   'tribes.loginPrompt': '⚡ Faça login para escolher',
   'tribes.deliverables': 'Entregáveis do Ciclo:',
   'tribes.meetings': '📅 Encontros:',

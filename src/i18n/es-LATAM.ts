@@ -5,7 +5,7 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const esLATAM: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Investigación Aplicada en IA y Gestión de Proyectos',
-  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos — 50+ investigadores, capítulos PMI Brasil, 7 tribus temáticas. Plataforma open-source trilingüe.',
+  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos — 50+ investigadores, capítulos PMI Brasil, {tribeCount} tribus temáticas. Plataforma open-source trilingüe.',
   'meta.ogImageAlt': 'Núcleo IA & GP — Núcleo de Estudios e Investigación en IA y Gestión de Proyectos, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'Sobre el Núcleo — IA & Gestión de Proyectos',
   'about.meta.description': 'Iniciativa colaborativa entre capítulos del PMI® en Brasil. 51+ investigadores, 8 tribus de investigación, plataforma digital propia.',
@@ -26,6 +26,7 @@ const esLATAM: Record<string, string> = {
   'nav.networking': 'Networking',
   'nav.rules': 'Reglas',
   'nav.trail': 'Ruta PMI AI',
+  'nav.trailRanking': 'Ranking',
   'nav.team': 'Equipo',
   'nav.vision': 'Visión',
   'nav.resources': 'Recursos',
@@ -822,7 +823,7 @@ const esLATAM: Record<string, string> = {
   'tribes.deadlineNotice': 'Después del plazo, no podrás cambiar de línea.',
   'tribes.deadlineNoticeClosed': 'Ciclo en curso. Nuevos investigadores se incorporan continuamente vía PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'La selección se abrirá cuando se publique el cronograma oficial del ciclo.',
-  'tribes.slots': 'Mín. 3 · Máx. 7 investigadores por línea.',
+  'tribes.slots': 'Mín. {min} · Máx. {max} investigadores por línea.',
   'tribes.loginPrompt': '⚡ Ingresa para elegir',
   'tribes.deliverables': 'Entregables del Ciclo:',
   'tribes.meetings': '📅 Reuniones:',

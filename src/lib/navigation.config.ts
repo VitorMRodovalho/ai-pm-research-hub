@@ -53,6 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Removidos: #quadrants (âncora interna redundante de #verticals), #breakout/networking (seção
   // não renderizada na home = link morto), #resources (zona de membro, fim da home). Adicionados:
   // #platform-stats, #capitulos, #join, #agenda. #trail usa ladder.label ("A escada"), não nav.trail.
+  // #1136: +tribes/rules/kpis/trail-ranking (member-zone, R5-demoted mas renderizadas no home público).
   { key: 'verticals',      labelKey: 'nav.verticals',     href: '/#verticals',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'platform-stats', labelKey: 'nav.platformStats', href: '/#platform-stats', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'trail',          labelKey: 'ladder.label',      href: '/#trail',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
@@ -61,6 +62,12 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'partners',       labelKey: 'nav.partners',      href: '/#partners',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'agenda',         labelKey: 'nav.agenda',        href: '/#agenda',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'team',           labelKey: 'nav.team',          href: '/#team',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  // #1136: member-zone anchors (rendered on the public home, R5 demoted) were drifting out of the
+  // curated nav — registered here in page order. #resources stays excluded on purpose (line ~53).
+  { key: 'tribes',         labelKey: 'nav.tribes',        href: '/#tribes',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'rules',          labelKey: 'nav.rules',         href: '/#rules',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'kpis',           labelKey: 'nav.kpis',          href: '/#kpis',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'trail-ranking',  labelKey: 'nav.trailRanking',  href: '/#trail-ranking',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'visitor', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (page self-gates own data; RLS/SECDEF is the boundary, not nav)

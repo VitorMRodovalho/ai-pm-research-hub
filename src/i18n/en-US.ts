@@ -5,7 +5,7 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const enUS: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
-  'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, PMI Brazil chapters, 7 thematic tribes. Open-source trilingual platform.',
+  'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, PMI Brazil chapters, {tribeCount} thematic tribes. Open-source trilingual platform.',
   'meta.ogImageAlt': 'Núcleo IA & GP — AI & PM Study and Research Hub, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'About — AI & Project Management Research Hub',
   'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
@@ -26,6 +26,7 @@ const enUS: Record<string, string> = {
   'nav.networking': 'Networking',
   'nav.rules': 'Rules',
   'nav.trail': 'PMI AI Trail',
+  'nav.trailRanking': 'Ranking',
   'nav.team': 'Team',
   'nav.vision': 'Vision',
   'nav.resources': 'Resources',
@@ -822,7 +823,7 @@ const enUS: Record<string, string> = {
   'tribes.deadlineNotice': 'After the deadline, you will not be able to switch streams.',
   'tribes.deadlineNoticeClosed': 'Cycle in progress. New researchers continuously onboarded via PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'Selection will open once the official cycle schedule is published.',
-  'tribes.slots': 'Min. 3 · Max. 7 researchers per stream.',
+  'tribes.slots': 'Min. {min} · Max. {max} researchers per stream.',
   'tribes.loginPrompt': '⚡ Sign in to choose',
   'tribes.deliverables': 'Cycle Deliverables:',
   'tribes.meetings': '📅 Meetings:',
