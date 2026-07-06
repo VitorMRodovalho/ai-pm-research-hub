@@ -477,7 +477,7 @@ Deno.serve(async (_req) => {
 
     if (!rkey) return new Response(JSON.stringify({ error: 'No RESEND_API_KEY' }), { status: 500 })
 
-    const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
+    const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
     // ADR-0022 W1: filter by delivery_mode = 'transactional_immediate' instead of
     // type IN CRITICAL_TYPES. Catalog drives routing; EF stays type-agnostic.

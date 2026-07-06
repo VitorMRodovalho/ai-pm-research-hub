@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { classifyBadge, PMI_TRAIL_KEYWORDS } from '../_shared/classify-badge.ts'
 
@@ -82,7 +82,7 @@ function analyzeBadges(badges: CredlyBadge[]) {
 }
 
 async function upsertCredlyPoints(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   memberId: string,
   badge: { name: string; points: number; issued_at: string; category: string },
 ) {
@@ -127,7 +127,7 @@ async function upsertCredlyPoints(
 }
 
 async function syncTrailProgressFromCredly(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   memberId: string,
   pmiTrail: { code: string; issued_at: string }[],
 ) {
@@ -192,7 +192,7 @@ async function syncTrailProgressFromCredly(
 }
 
 async function processMember(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   member: { id: string; credly_url: string },
 ): Promise<{ success: boolean; member_id: string; error?: string; total_points?: number }> {
   const username = extractUsername(member.credly_url)
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const isServiceRole = token === serviceRoleKey
 
-    const sb = createClient(supabaseUrl, serviceRoleKey)
+    const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey)
 
     // Admin-only: verify caller has tier >= admin (batch operation)
     if (!isServiceRole) {

@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { classifyBadge, PMI_TRAIL_KEYWORDS } from '../_shared/classify-badge.ts'
 
 // Retry with exponential backoff for external API calls
@@ -64,7 +64,7 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
 }
 
 async function upsertCredlyPoints(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   memberId: string,
   badge: { name: string; points: number; issued_at: string; category: string },
 ) {
@@ -109,7 +109,7 @@ async function upsertCredlyPoints(
 }
 
 async function syncTrailProgressFromCredly(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   memberId: string,
   pmiTrail: { code: string; issued_at: string }[],
 ) {
@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
 
   try {
     const { member_id, credly_url } = await req.json()
-    const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const sb = createClient<any, "public", any>(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     // Resolve username
     let username: string | null = credly_url ? extractUsername(credly_url) : null

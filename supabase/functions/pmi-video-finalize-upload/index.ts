@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   if (!token || !pillar || !drive_file_id) return json({ error: "missing required fields" }, 400);
   if (!Number.isInteger(question_index) || question_index < 1 || question_index > 10) return json({ error: "invalid question_index" }, 400);
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // RPC enforces: token + scope + source_type='pmi_application' + storage_consistency CHECK
   const { data, error } = await sb.rpc("register_video_screening", {

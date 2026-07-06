@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
-    const sb = createClient(url, srk)
+    const sb = createClient<any, "public", any>(url, srk)
 
     // CLI/automated invocation via dedicated secret in x-cli-secret header
     const cliSecret = req.headers.get('x-cli-secret') ?? ''
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       const tk = ah.replace(/^Bearer\s+/i, '').trim()
       if (!tk) return json({ error: 'No token' }, 401)
 
-      const uc = createClient(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
+      const uc = createClient<any, "public", any>(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
       const ur = await uc.auth.getUser()
       if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
 

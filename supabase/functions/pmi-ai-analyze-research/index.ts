@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
   const { application_id } = body ?? {};
   if (!application_id) return json({ error: "missing application_id" }, 400);
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const t0 = Date.now();
   let runId: string | null = null;
 

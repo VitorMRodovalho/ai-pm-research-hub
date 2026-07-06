@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     return json({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const sb = createClient(supabaseUrl, serviceKey!)
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceKey!)
 
   // 1) reclaim rows stuck in 'publishing' (a prior run died mid-flight) back to pending.
   await sb

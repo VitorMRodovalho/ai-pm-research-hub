@@ -20,7 +20,7 @@
  *       (_trg_purge_ai_analysis_on_consent_revocation) + retenção via cycle_decision_date.
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { isServiceRoleToken } from "../_shared/service-auth.ts";
 import { extractText, getDocumentProxy } from "npm:unpdf@1.6.2";
 
@@ -98,7 +98,7 @@ async function fetchResume(url: string): Promise<{ bytes: Uint8Array; contentTyp
 // writes PDFs to selection-resumes/cycle-{cycle_code}/{vep_app_id}.pdf. service_role
 // has read access — no signed URL needed for server-side fetch.
 async function fetchResumeFromStorage(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   path: string
 ): Promise<{ bytes: Uint8Array; contentType: string }> {
   const { data, error } = await sb.storage.from("selection-resumes").download(path);
@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
     ? triggered_by
     : "service_role_call";
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const t0 = Date.now();
   let logId: string | null = null;
 

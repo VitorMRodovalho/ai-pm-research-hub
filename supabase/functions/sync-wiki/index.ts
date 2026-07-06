@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
   if (event === 'ping') return json({ ok: true, message: 'pong' })
   if (event !== 'push') return json({ error: `Unsupported event: ${event}` }, 400)
 
-  let payload: Record<string, unknown>
+  let payload: Record<string, any>
   try {
     payload = JSON.parse(rawBody)
   } catch {
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
   const ghToken = Deno.env.get('GITHUB_TOKEN')
   if (!ghToken) return json({ error: 'GITHUB_TOKEN not configured' }, 500)
 
-  const sb = createClient(
+  const sb = createClient<any, "public", any>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )

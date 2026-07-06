@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
   const isServiceRole = token === serviceRoleKey
 
-  const sb = createClient(supabaseUrl, serviceRoleKey)
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey)
 
   let callerMemberId: string | null = null
 

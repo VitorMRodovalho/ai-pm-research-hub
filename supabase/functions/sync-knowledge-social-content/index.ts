@@ -44,11 +44,11 @@ Deno.serve(async (req) => {
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
 
-    const uc = createClient(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
+    const uc = createClient<any, "public", any>(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
     const ur = await uc.auth.getUser()
     if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
 
-    const sb = createClient(url, srk)
+    const sb = createClient<any, "public", any>(url, srk)
 
     const cr = await sb.from('members')
       .select('id, is_superadmin, operational_role')

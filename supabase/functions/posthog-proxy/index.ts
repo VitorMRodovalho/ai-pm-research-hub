@@ -30,7 +30,7 @@ function isAllowedQuery(q: string): q is AllowedQuery {
 }
 
 async function verifyAdmin(authHeader: string): Promise<boolean> {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: { user }, error } = await supabase.auth.getUser();

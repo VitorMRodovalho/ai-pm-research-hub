@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     if (typeof body?.limit === "number" && body.limit > 0) limit = Math.min(Math.floor(body.limit), MAX_LIMIT);
   } catch { /* default limit */ }
 
-  const sb = createClient(supabaseUrl, serviceRoleKey);
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey);
 
   try {
     const { data: claimed, error: claimErr } = await sb.rpc("_ots_claim_unstamped_assets", { p_limit: limit });
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         failed++;
         const msg = extractError(e);
         // best-effort error mark (status flips to 'error' on the 5th attempt); never throws the whole batch
-        await sb.rpc("_ots_mark_error", { p_asset_id: a.id, p_error: msg.slice(0, 500) }).catch(() => {});
+        await sb.rpc("_ots_mark_error", { p_asset_id: a.id, p_error: msg.slice(0, 500) }).then(() => {}, () => {});
         results.push({ id: a.id, status: "error", error: msg });
       }
     }

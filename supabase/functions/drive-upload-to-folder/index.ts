@@ -36,7 +36,7 @@ interface OAuthCreds {
 }
 
 async function getOAuthCreds(): Promise<{ available: boolean; creds?: OAuthCreds; error?: string }> {
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) return { available: false, error: `Vault read error: ${error.message}` };
   if (!data || typeof data !== "string" || data.length === 0) {

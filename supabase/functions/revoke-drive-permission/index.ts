@@ -27,7 +27,7 @@ const VAULT_KEY = "google_drive_service_account_json";
 const WRITE_SCOPE = "https://www.googleapis.com/auth/drive";
 
 async function getServiceAccountKey(): Promise<{ available: boolean; key?: any; error?: string }> {
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) return { available: false, error: `Vault read error: ${error.message}` };
   if (!data || typeof data !== "string" || data.length === 0) {
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
   const auditId = body.audit_id?.trim();
   if (!auditId) return new Response(JSON.stringify({ error: "audit_id required" }), { status: 400 });
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: row, error: rowErr } = await sb.rpc("get_drive_revocation_row", { p_audit_id: auditId });
   if (rowErr) return new Response(JSON.stringify({ error: "rpc_error", detail: rowErr.message }), { status: 500 });

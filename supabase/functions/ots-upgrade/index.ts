@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     if (typeof body?.limit === "number" && body.limit > 0) limit = Math.min(Math.floor(body.limit), MAX_LIMIT);
   } catch { /* default */ }
 
-  const sb = createClient(supabaseUrl, serviceRoleKey);
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey);
 
   try {
     const { data: pendingRows, error: listErr } = await sb.rpc("_ots_list_pending", { p_limit: limit });
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         errors++;
         const msg = extractError(e);
-        await sb.rpc("_ots_mark_error", { p_asset_id: row.id, p_error: msg.slice(0, 500) }).catch(() => {});
+        await sb.rpc("_ots_mark_error", { p_asset_id: row.id, p_error: msg.slice(0, 500) }).then(() => {}, () => {});
         results.push({ id: row.id, status: "error", error: msg });
       }
     }

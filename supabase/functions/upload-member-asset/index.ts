@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   if (!authHeader.startsWith("Bearer ")) return json({ error: "missing bearer token" }, 401);
 
   // 1) authenticate the caller (their own JWT)
-  const userClient = createClient(SUPABASE_URL, ANON, {
+  const userClient = createClient<any, "public", any>(SUPABASE_URL, ANON, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   if (!cfg.mimes.includes(file.type)) return json({ error: "unsupported type", got: file.type, allowed: cfg.mimes }, 415);
 
   // 3) resolve the caller's OWN member record (service role) — path is always the caller's
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
+  const admin = createClient<any, "public", any>(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: member, error: mErr } = await admin
     .from("members").select("id,email").eq("auth_id", user.id).maybeSingle();
   if (mErr) return json({ error: "member lookup failed", detail: mErr.message }, 500);

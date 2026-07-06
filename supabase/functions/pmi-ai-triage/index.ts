@@ -298,12 +298,12 @@ Deno.serve(async (req) => {
   if (!isServiceRole) {
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     if (!SUPABASE_ANON_KEY) return json({ error: "anon_key_missing" }, 503);
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const userClient = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: ah } },
     });
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) return json({ error: "unauthorized" }, 401);
-    const sbSrv = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const sbSrv = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: memberRow } = await sbSrv.from("members").select("id").eq("auth_id", userData.user.id).maybeSingle();
     if (!memberRow?.id) return json({ error: "member_not_found" }, 403);
     const { data: canRes } = await sbSrv.rpc("can_by_member", {
@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
   const { application_id, triggered_by } = body ?? {};
   if (!application_id) return json({ error: "missing application_id" }, 400);
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const t0 = Date.now();
   let logId: string | null = null;
   const triggeredBy = typeof triggered_by === "string" && triggered_by.length > 0

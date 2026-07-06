@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     const token = (body?.token ?? '').toString()
     if (!token || token.length < 16) return json({ error: 'Missing or short token' }, 400)
 
-    const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
+    const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
     // Pull pending row
     const { data: pending, error: pErr } = await sb

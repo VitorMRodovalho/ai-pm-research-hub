@@ -1,16 +1,18 @@
-# #1106 step-1 — type-check + lint the Supabase Edge Functions (Deno).
+# #1106 — type-check + lint the Supabase Edge Functions (Deno).
 # Closes the biggest hole in the verification net: supabase/functions/** is excluded
 # from the app's TypeScript strict build (tsconfig exclude) and had NO deno check/lint
 # in CI — yet nucleo-mcp/index.ts is the ~300-tool authority gate.
 #
-# GATE STATE (owner decision 2026-07-06):
-#  - `deno lint` is BLOCKING (repo is clean at 0 problems, with two idiom-false-positive
-#    rules excluded: no-explicit-any and no-import-prefix — the pervasive `any` reduction
-#    and the npm:/jsr: inline specifiers are the step-2 refactor's job, not correctness).
-#  - `deno check` is REPORT-ONLY (continue-on-error): the never-type-checked
-#    nucleo-mcp/index.ts carries ~1836 pre-existing type errors that only the step-2
-#    modularization can retire. This step gives visibility + ratchets down over time; it
-#    is NOT a merge gate until that refactor lands (or a changed-files variant is added).
+# GATE STATE (step-2, 2026-07-06 — both checks now BLOCKING):
+#  - `deno lint` is BLOCKING (clean at 0 problems, with two idiom-false-positive rules
+#    excluded: no-explicit-any and no-import-prefix — pervasive `any` and the npm:/jsr:
+#    inline specifiers are Supabase-EF idiom, not correctness).
+#  - `deno check` is BLOCKING. Step-2 root-caused the ~1836 "errors" as the untyped
+#    Supabase client (createClient without a Database generic → rpc() data:never +
+#    args:undefined). Typing every client as <any,"public",any> (+ a handful of genuine
+#    residual casts) took the whole supabase/functions/** glob to 0 type errors — WITHOUT
+#    the registerTools() modularization, which does not affect the type-error count
+#    (organizational only; deferred). The net is now fully closed; keep it at 0.
 name: Deno EF Check
 
 on:
@@ -39,6 +41,5 @@ jobs:
       - name: deno lint (BLOCKING)
         run: deno lint --rules-exclude=no-explicit-any,no-import-prefix supabase/functions/
 
-      - name: deno check (report-only)
-        continue-on-error: true
+      - name: deno check (BLOCKING)
         run: deno check --node-modules-dir=auto "supabase/functions/**/*.ts"

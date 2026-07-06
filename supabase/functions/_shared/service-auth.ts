@@ -31,7 +31,7 @@ export async function isServiceRoleToken(
   if (injected && token === injected) return true;
 
   try {
-    const probe = createClient(supabaseUrl, token, {
+    const probe = createClient<any, "public", any>(supabaseUrl, token, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data, error } = await probe.rpc("current_caller_role");

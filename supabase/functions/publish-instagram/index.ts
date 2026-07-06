@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
     return json({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const sb = createClient(supabaseUrl, serviceKey!)
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceKey!)
   const payload: PublishPayload = await req.json().catch(() => ({}))
 
   // Load the Instagram channel credential (same row the metrics cron reads).
