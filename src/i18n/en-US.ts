@@ -551,6 +551,7 @@ const enUS: Record<string, string> = {
   'buddy.pool.offered': 'Offer sent',
   // Tribe Selection Híbrida PR3 — leader's join-request queue
   'tribe.requests.title': 'Join requests',
+  'tribe.requests.pendingBadge': '{n} pending join request(s)',
   'tribe.requests.subtitle': 'Researchers asking to join this tribe.',
   'tribe.requests.accept': 'Accept',
   'tribe.requests.decline': 'Decline',

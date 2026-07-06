@@ -122,6 +122,7 @@ const TRIBE_I18N = {
   reqDeclineConfirm: t('tribe.requests.declineConfirm', lang),
   reqCancel: t('tribe.requests.cancel', lang),
   reqProcessing: t('tribe.requests.processing', lang),
+  reqPendingBadge: t('tribe.requests.pendingBadge', lang),
   lgpdMask: t('tribe.lgpdMask', lang),
   lgpdTooltip: t('tribe.lgpdTooltip', lang),
   broadcastTab: t('tribe.broadcastTab', lang),
@@ -246,7 +247,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
               data-tab="board" data-action="switch-tab">{TRIBE_I18N.boardTab}</button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
-              data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}</button>
+              data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}<span id="members-req-badge" role="status" class="hidden ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold align-middle"></span></button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
               data-tab="gamification" data-action="switch-tab">🏆 {t('tribe.gamificationTab', lang)}</button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
@@ -1136,6 +1137,23 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   // Leader/GP-only section atop the Members tab. The server RPC enforces the real authority
   // (Caminho-3: GP or volunteer/leader of THIS tribe); isLeaderOfThisTribeV4() is the display gate.
   // Returns '' for non-leaders, RPC errors, or an empty queue (so the section never shows blank).
+  // #1139 Item 2: mirror the leader's pending-request count onto the Membros tab, so it is visible
+  // from any tab (the queue itself only renders inside the Membros panel). Called on load (via
+  // tribeRequestsSectionHtml during renderMembers) and after each review.
+  function syncMembersReqBadge(count: number) {
+    const badge = document.getElementById('members-req-badge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.setAttribute('aria-label', (I18N.reqPendingBadge || '{n}').replace('{n}', String(count)));
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+      badge.removeAttribute('aria-label');
+      badge.textContent = '';
+    }
+  }
+
   async function tribeRequestsSectionHtml(): Promise<string> {
     if (!isLeaderOfThisTribeV4()) return '';
     const sb = getSb();
@@ -1146,6 +1164,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       if (error) return '';
       rows = Array.isArray(data) ? data : [];
     } catch (_) { return ''; }
+    syncMembersReqBadge(rows.length);
     if (rows.length === 0) return '';
     const relDate = (iso: string): string => {
       try {
@@ -1225,6 +1244,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const willEmpty = list ? list.children.length <= 1 : true;
       const nextBtn = (card.nextElementSibling as HTMLElement | null)?.querySelector('button') as HTMLElement | null;
       card.remove();
+      syncMembersReqBadge(list ? list.children.length : 0); // keep the Membros-tab badge in sync
       const section = document.getElementById('tribe-requests-section');
       if (willEmpty) {
         section?.remove(); // toast's own live region announces the result

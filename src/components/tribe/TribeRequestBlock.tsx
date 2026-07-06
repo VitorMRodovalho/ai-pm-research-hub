@@ -41,6 +41,9 @@ interface PendingRequest {
 }
 interface Context {
   eligible: boolean;
+  // #1139: when eligible=false, the server names WHY so we render an explicit empty-state (never blank).
+  ineligible_reason?: 'no_member' | 'inactive' | 'has_tribe' | 'pending_term' | 'ineligible' | null;
+  current_tribe_title?: string | null;
   pending: PendingRequest | null;
   tribes: TribeOption[];
 }
@@ -63,6 +66,12 @@ interface Copy {
   pendingYourMessage: string;
   emptyTitle: string;
   emptyBody: string;
+  // #1139 ineligibility empty-states
+  termTitle: string;
+  termBody: string;
+  termCta: string;
+  hasTribeTitle: string;
+  hasTribeBody: (title: string | null) => string;
   toastSent: string;
   toastError: string;
 }
@@ -86,6 +95,13 @@ const COPY: Record<string, Copy> = {
     pendingYourMessage: 'Sua mensagem',
     emptyTitle: 'Nenhuma tribo disponível',
     emptyBody: 'Não há tribos abertas para ingresso no momento. Fale com a coordenação do Núcleo.',
+    termTitle: 'Assine seu termo de voluntário',
+    termBody: 'Para escolher uma tribo de pesquisa, você precisa primeiro assinar o Termo de Adesão ao Serviço Voluntário. Assim que ele estiver assinado, a escolha de tribo aparece aqui.',
+    termCta: 'Assinar termo de voluntário',
+    hasTribeTitle: 'Você já participa de uma tribo',
+    hasTribeBody: (title) => title
+      ? `Você já faz parte da tribo ${title}. Para trocar de tribo, fale com a coordenação do Núcleo.`
+      : 'Você já participa de uma tribo de pesquisa. Para trocar de tribo, fale com a coordenação do Núcleo.',
     toastSent: 'Pedido enviado! O líder da tribo vai revisar.',
     toastError: 'Não foi possível enviar. Tente novamente.',
   },
@@ -107,6 +123,13 @@ const COPY: Record<string, Copy> = {
     pendingYourMessage: 'Your message',
     emptyTitle: 'No tribes available',
     emptyBody: 'There are no tribes open to join right now. Contact the Núcleo coordination.',
+    termTitle: 'Sign your volunteer term',
+    termBody: 'To choose a research tribe, you first need to sign the Volunteer Service Agreement. Once it is signed, tribe selection will appear here.',
+    termCta: 'Sign volunteer term',
+    hasTribeTitle: 'You are already in a tribe',
+    hasTribeBody: (title) => title
+      ? `You are already part of the ${title} tribe. To switch tribes, contact the Núcleo coordination.`
+      : 'You are already part of a research tribe. To switch tribes, contact the Núcleo coordination.',
     toastSent: 'Request sent! The tribe leader will review it.',
     toastError: 'Could not send. Please try again.',
   },
@@ -128,6 +151,13 @@ const COPY: Record<string, Copy> = {
     pendingYourMessage: 'Tu mensaje',
     emptyTitle: 'No hay tribus disponibles',
     emptyBody: 'No hay tribus abiertas para unirse en este momento. Contacta a la coordinación del Núcleo.',
+    termTitle: 'Firma tu término de voluntariado',
+    termBody: 'Para elegir una tribu de investigación, primero debes firmar el Término de Adhesión al Servicio Voluntario. Una vez firmado, la elección de tribu aparecerá aquí.',
+    termCta: 'Firmar término de voluntariado',
+    hasTribeTitle: 'Ya participas en una tribu',
+    hasTribeBody: (title) => title
+      ? `Ya formas parte de la tribu ${title}. Para cambiar de tribu, contacta a la coordinación del Núcleo.`
+      : 'Ya participas en una tribu de investigación. Para cambiar de tribu, contacta a la coordinación del Núcleo.',
     toastSent: '¡Solicitud enviada! El líder de la tribu la revisará.',
     toastError: 'No se pudo enviar. Inténtalo de nuevo.',
   },
@@ -218,8 +248,39 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     );
   }
 
-  // Not eligible (has a tribe, guest, not termed, …) — render nothing.
-  if (!ctx.eligible) return null;
+  // Not eligible — render an explicit empty-state naming the reason + next step, never a blank block.
+  // #1139: the dominant case at the C4 kickoff is `pending_term` (37 researchers without a signed term).
+  if (!ctx.eligible) {
+    if (ctx.ineligible_reason === 'pending_term') {
+      const langPrefix = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+      return (
+        <section role="region" aria-label={copy.ariaLabel} className="mb-6">
+          <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 p-5">
+            <h2 className="text-base font-extrabold text-navy dark:text-amber-200">{copy.termTitle}</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.termBody}</p>
+            <a
+              href={`${langPrefix}/volunteer-agreement`}
+              className="mt-3 inline-flex items-center min-h-[44px] px-4 rounded-lg bg-navy text-white text-sm font-bold no-underline hover:opacity-90"
+            >
+              {copy.termCta}
+            </a>
+          </div>
+        </section>
+      );
+    }
+    if (ctx.ineligible_reason === 'has_tribe') {
+      return (
+        <section role="region" aria-label={copy.ariaLabel} className="mb-6">
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+            <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.hasTribeTitle}</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.hasTribeBody(ctx.current_tribe_title || null)}</p>
+          </div>
+        </section>
+      );
+    }
+    // inactive / no_member / unknown — the member is not expecting a picker; stay quiet (no noise).
+    return null;
+  }
 
   // Eligible but zero selectable tribes = platform-config gap, not a normal state: don't go blank.
   if (!ctx.tribes || ctx.tribes.length === 0) {
