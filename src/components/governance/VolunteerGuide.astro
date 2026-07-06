@@ -1,0 +1,136 @@
+---
+/**
+ * VolunteerGuide - seção didática de apoio ao Termo de Adesão, exibida abaixo do
+ * glossário canônico em /governance/glossario.
+ *
+ * Conteúdo (keep/grant, fluxo Path A/B, FAQ) vem de src/data/volunteer-guide.ts,
+ * em pt-BR por design (coerente com o glossário §13, que é servido em português
+ * em todos os locales). Apenas o chrome é localizado via i18n `glossario.guide.*`.
+ *
+ * Não é fonte legal: em divergência, prevalece o Termo/Política (Cl. 13.5).
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { keepItems, grantItems, flow, faq } from '../../data/volunteer-guide';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+// Nota de idioma só nos locales não-pt (o conteúdo do guia é pt-BR por design,
+// como o glossário §13 acima). Em pt-BR não faz sentido exibir.
+const showLangNote = lang !== 'pt-BR';
+---
+
+<section class="volunteer-guide space-y-8" aria-labelledby="guide-heading">
+  <div class="text-center space-y-2 pt-4 border-t border-[var(--border-default)]">
+    <h2 id="guide-heading" class="text-xl md:text-2xl font-extrabold text-navy">
+      {t('glossario.guide.sectionTitle', lang)}
+    </h2>
+    <p class="text-sm text-[var(--text-muted)] max-w-2xl mx-auto">{t('glossario.guide.sectionIntro', lang)}</p>
+    {showLangNote && (
+      <p class="text-[11px] text-amber-800 italic">{t('glossario.guide.langNote', lang)}</p>
+    )}
+  </div>
+
+  <div class="rounded-xl border-l-4 border-navy bg-[var(--surface-hover)] px-4 py-3 text-[12px] text-[var(--text-secondary)]">
+    {t('glossario.guide.disclaimer', lang)}
+  </div>
+
+  <!-- Você mantém × concede -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
+      <h3 class="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">{t('glossario.guide.keepTitle', lang)}</h3>
+      <ul class="space-y-2.5">
+        {keepItems.map((it) => (
+          <li class="flex gap-2.5 text-[14px] text-[var(--text-primary)]">
+            <span class="mt-1.5 h-1.5 w-1.5 flex-none rounded-sm bg-emerald-600"></span>
+            <span><span set:html={it.text} /> <span class="text-[var(--text-muted)] text-[12px]">{it.ref}</span></span>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
+      <h3 class="text-sm font-bold uppercase tracking-wide text-navy mb-3">{t('glossario.guide.grantTitle', lang)}</h3>
+      <ul class="space-y-2.5">
+        {grantItems.map((it) => (
+          <li class="flex gap-2.5 text-[14px] text-[var(--text-primary)]">
+            <span class="mt-1.5 h-1.5 w-1.5 flex-none rounded-sm bg-navy"></span>
+            <span><span set:html={it.text} /> <span class="text-[var(--text-muted)] text-[12px]">{it.ref}</span></span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Fluxograma Path A / Path B -->
+  <div class="space-y-1">
+    <h3 class="text-base font-bold text-[var(--text-primary)]">{t('glossario.guide.flowTitle', lang)}</h3>
+    <p class="text-[13px] text-[var(--text-muted)] mb-3">{t('glossario.guide.flowSub', lang)}</p>
+    <div class="flex flex-col items-center">
+      <div class="w-full max-w-[560px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-4 py-3 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-bold text-[var(--text-muted)] mb-0.5">{t('glossario.guide.flowStart', lang)}</p>
+        <p class="text-[14px] text-[var(--text-primary)]" set:html={flow.start} />
+      </div>
+      <div class="h-5 w-px bg-[var(--border-default)]"></div>
+      <div class="w-full max-w-[560px] rounded-lg border-2 border-navy bg-navy/5 px-4 py-3 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-bold text-navy mb-0.5">{t('glossario.guide.flowDecision', lang)}</p>
+        <p class="text-[14px] text-[var(--text-primary)]" set:html={flow.decision} />
+      </div>
+      <div class="h-4 w-px bg-[var(--border-default)]"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        {flow.branches.map((b, i) => (
+          <div class={`rounded-xl border p-4 ${i === 0 ? 'border-emerald-300 bg-emerald-50' : 'border-amber-300 bg-amber-50'}`}>
+            <span class={`inline-block text-[11px] font-bold tracking-wide px-2.5 py-0.5 rounded-full text-white mb-2 ${i === 0 ? 'bg-emerald-600' : 'bg-amber-600'}`}>{b.answer}</span>
+            <div class="flex items-baseline gap-2">
+              <span class={`text-lg font-extrabold ${i === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>{b.path}</span>
+              <span class="text-[12px] font-semibold text-[var(--text-muted)]">{b.when}</span>
+            </div>
+            <p class="text-[13px] text-[var(--text-muted)] mt-1">{b.intro}</p>
+            <ul class="list-disc pl-4 mt-2.5 space-y-1.5 text-[13px] text-[var(--text-primary)]">
+              {b.steps.map((s) => <li>{s}</li>)}
+            </ul>
+            <p class={`mt-2.5 text-[12.5px] font-semibold ${i === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>{b.result}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div>
+    <h3 class="text-base font-bold text-[var(--text-primary)] mb-3">{t('glossario.guide.faqTitle', lang)}</h3>
+    <div class="space-y-2">
+      {faq.map((item) => (
+        <details class="vg-faq rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)]">
+          <summary class="cursor-pointer select-none px-4 py-3 pr-10 font-semibold text-[15px] text-[var(--text-primary)] relative">
+            {item.q}
+          </summary>
+          <div class="px-4 pb-4 text-[14px] text-[var(--text-secondary)]">
+            <span set:html={item.a} />
+            <span class="block mt-2 text-[12px] text-[var(--text-muted)] italic">{item.ref}</span>
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .vg-faq summary { list-style: none; }
+  .vg-faq summary::-webkit-details-marker { display: none; }
+  .vg-faq summary::after {
+    content: "+"; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 1.25rem; font-weight: 400; color: var(--navy, #1C5FA8); line-height: 1;
+  }
+  .vg-faq[open] summary::after { content: "\2212"; }
+  .vg-faq[open] summary { color: var(--navy, #1C5FA8); }
+  @media print {
+    .volunteer-guide details { border: 1px solid #ccc; }
+  }
+</style>
+
+<script>
+  // Abre todas as FAQs ao imprimir (details fechado não imprime o conteúdo)
+  const items = Array.from(document.querySelectorAll('.vg-faq')) as HTMLDetailsElement[];
+  let restore: boolean[] = [];
+  window.addEventListener('beforeprint', () => { restore = items.map(d => d.open); items.forEach(d => d.open = true); });
+  window.addEventListener('afterprint', () => { items.forEach((d, i) => d.open = restore[i]); });
+</script>

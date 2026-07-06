@@ -6661,6 +6661,17 @@ const esLATAM: Record<string, string> = {
   'glossario.fullPolicy': 'Política de Publicación y Propiedad Intelectual completa:',
   'glossario.restrictedAccess': 'acceso restringido a curadores vía plataforma',
   'glossario.footer': 'Núcleo IA & GP — proyecto voluntario interinstitucional con sede en PMI Goiás (PMI-GO).',
+  'glossario.guide.sectionTitle': 'Guía rápida del voluntario',
+  'glossario.guide.sectionIntro': 'Un resumen en lenguaje simple de lo que aceptas al unirte al Núcleo, para decidir con tranquilidad sin descifrar el texto jurídico.',
+  'glossario.guide.langNote': 'El contenido de la guía se mantiene en portugués original, como el glosario canónico de arriba (los instrumentos de gobernanza se firman en portugués).',
+  'glossario.guide.disclaimer': 'Esta guía es informativa y no sustituye el texto legal. En caso de divergencia, prevalecen el Término de Adhesión al Servicio Voluntario y la Política de Gobernanza de Propiedad Intelectual.',
+  'glossario.guide.keepTitle': 'Tú mantienes',
+  'glossario.guide.grantTitle': 'Tú concedes',
+  'glossario.guide.flowTitle': 'Quiero publicar en una revista o editorial. ¿Y ahora?',
+  'glossario.guide.flowSub': 'Avisa al Gerente de Proyecto con 15 días de anticipación. El camino depende de la licencia que exija el destino.',
+  'glossario.guide.flowStart': 'Punto de partida',
+  'glossario.guide.flowDecision': 'La pregunta que decide',
+  'glossario.guide.faqTitle': 'Preguntas frecuentes',
 
   // ── Settings: Notifications (ADR-0022 W2/W3) ──
   'settings.notifications.metaTitle': 'Preferencias de Notificación — Núcleo IA',
