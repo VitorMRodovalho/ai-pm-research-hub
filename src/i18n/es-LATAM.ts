@@ -551,6 +551,7 @@ const esLATAM: Record<string, string> = {
   'buddy.pool.offered': 'Oferta enviada',
   // Tribe Selection Híbrida PR3 — leader's join-request queue
   'tribe.requests.title': 'Solicitudes de ingreso',
+  'tribe.requests.pendingBadge': '{n} solicitud(es) de ingreso pendiente(s)',
   'tribe.requests.subtitle': 'Investigadores que piden entrar en esta tribu.',
   'tribe.requests.accept': 'Aceptar',
   'tribe.requests.decline': 'Rechazar',

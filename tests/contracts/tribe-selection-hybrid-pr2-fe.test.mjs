@@ -111,3 +111,45 @@ test('DB: get_my_tribe_request_context returns { eligible, pending, tribes }', {
     assert.ok(typeof t.tribe_id === 'number' && typeof t.title === 'string', 'tribe option shape');
   }
 });
+
+// ── (D) #1139: ineligibility empty-states (reason + next step, never a blank block) ──
+const MIG_1139 = read('supabase/migrations/20260805000347_1139_tribe_journey_hardening.sql');
+const TRIBE_PAGE = read('src/pages/tribe/[id].astro');
+
+test('#1139 migration: get_my_tribe_request_context surfaces ineligible_reason + current_tribe_title', () => {
+  assert.ok(MIG_1139, 'mig 347 exists');
+  assert.match(MIG_1139, /'ineligible_reason'/);
+  assert.match(MIG_1139, /'current_tribe_title'/);
+  assert.match(MIG_1139, /'pending_term'/); // the dominant kickoff case (unsigned volunteer term)
+  assert.match(MIG_1139, /member_is_pre_onboarding/);
+});
+
+test('#1139 migration: request_tribe_assignment deep-links the leader notification to the Membros tab', () => {
+  assert.match(MIG_1139, /'\/tribe\/' \|\| p_tribe_id::text \|\| '\?tab=members'/);
+});
+
+test('#1139 FE: TribeRequestBlock renders pending_term + has_tribe empty-states with a sign-term CTA', () => {
+  assert.match(BLOCK, /ineligible_reason === 'pending_term'/);
+  assert.match(BLOCK, /\/volunteer-agreement/); // actionable next step for the unsigned-term cohort
+  assert.match(BLOCK, /ineligible_reason === 'has_tribe'/);
+});
+
+test('#1139 FE: Membros-tab pending-request badge + sync helper live on the tribe page', () => {
+  assert.match(TRIBE_PAGE, /members-req-badge/);
+  assert.match(TRIBE_PAGE, /function syncMembersReqBadge/);
+  assert.match(TRIBE_PAGE, /tribe\.requests\.pendingBadge/);
+});
+
+test('#1139 i18n: tribe.requests.pendingBadge exists in all 3 dictionaries', () => {
+  for (const f of ['pt-BR', 'en-US', 'es-LATAM']) {
+    assert.match(read(`src/i18n/${f}.ts`), /'tribe\.requests\.pendingBadge'/, `${f} has pendingBadge`);
+  }
+});
+
+test('DB: get_my_tribe_request_context now includes ineligible_reason (no_member for service_role)', { skip: !dbGated && skipMsg }, async () => {
+  const supa = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await supa.rpc('get_my_tribe_request_context');
+  assert.equal(error, null, error ? `rpc failed: ${error.message}` : '');
+  assert.ok('ineligible_reason' in data && 'current_tribe_title' in data, 'has the new reason keys');
+  assert.equal(data.ineligible_reason, 'no_member', 'service_role (no member) -> no_member reason');
+});

@@ -551,6 +551,7 @@ const ptBR: Record<string, string> = {
   'buddy.pool.offered': 'Oferta enviada',
   // Tribe Selection Híbrida PR3 — leader's join-request queue
   'tribe.requests.title': 'Pedidos de entrada',
+  'tribe.requests.pendingBadge': '{n} pedido(s) de entrada pendente(s)',
   'tribe.requests.subtitle': 'Pesquisadores pedindo para entrar nesta tribo.',
   'tribe.requests.accept': 'Aceitar',
   'tribe.requests.decline': 'Recusar',
