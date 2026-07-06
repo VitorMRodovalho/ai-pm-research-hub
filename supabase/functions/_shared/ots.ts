@@ -370,7 +370,7 @@ export async function stamp(
       const resp = await fetch(`${cal.replace(/\/$/, "")}/digest`, {
         method: "POST",
         headers: { "Accept": "application/vnd.opentimestamps.v1", "Content-Type": "application/x-www-form-urlencoded" },
-        body: S,
+        body: S as BodyInit,
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

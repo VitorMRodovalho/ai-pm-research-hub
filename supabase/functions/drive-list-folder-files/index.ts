@@ -34,7 +34,7 @@ interface DriveFile {
 }
 
 async function getServiceAccountKey(): Promise<{ available: boolean; key?: any; error?: string }> {
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   // Use SECDEF RPC helper — vault.decrypted_secrets não é acessível direto via JS client
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) {

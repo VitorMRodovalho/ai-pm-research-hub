@@ -35,7 +35,7 @@
 // on selection_applications). ai_processing_log has a hardcoded org_id default so
 // is unaffected — asymmetric design preserved intentionally.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -75,7 +75,7 @@ function json(body: unknown, status = 200) {
 // pmi-video-test-transcribe, drive-upload-to-folder, etc). Service account JWT was
 // initial attempt but the SA email doesn't have access to candidate-uploaded folders;
 // OAuth user-delegated does, since the upload itself happened with these credentials.
-async function getDriveAccessToken(sb: ReturnType<typeof createClient>): Promise<string> {
+async function getDriveAccessToken(sb: SupabaseClient<any, "public", any>): Promise<string> {
   const credsStr = await getVaultSecret(sb, "google_drive_oauth_credentials");
   if (!credsStr) throw new Error("google_drive_oauth_credentials not in vault");
   const creds = JSON.parse(credsStr) as { client_id: string; client_secret: string; refresh_token: string };
@@ -130,7 +130,7 @@ async function driveGetThumbnailBytes(fileId: string, accessToken: string): Prom
 
 async function whisperTranscribe(videoBytes: Uint8Array, mime: string, openaiKey: string): Promise<string> {
   const form = new FormData();
-  form.append("file", new Blob([videoBytes], { type: mime }), `video.${mime.split("/")[1] ?? "mp4"}`);
+  form.append("file", new Blob([videoBytes as BlobPart], { type: mime }), `video.${mime.split("/")[1] ?? "mp4"}`);
   form.append("model", "whisper-1");
   form.append("language", "pt"); // PT-BR primary; Whisper auto-detects but seeding helps
   form.append("response_format", "text");
@@ -197,7 +197,7 @@ async function claudeAnalyzePillar(args: {
   };
 }
 
-async function getVaultSecret(sb: ReturnType<typeof createClient>, name: string): Promise<string | null> {
+async function getVaultSecret(sb: SupabaseClient<any, "public", any>, name: string): Promise<string | null> {
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: name });
   if (error) {
     console.warn(`vault_secret_${name}_failed:`, error.message);
@@ -211,7 +211,7 @@ async function getVaultSecret(sb: ReturnType<typeof createClient>, name: string)
 // but Whisper+Drive download is 10-30s per pillar). EdgeRuntime.waitUntil keeps the
 // runtime alive until the work finishes (Deno Edge Functions supports it).
 async function processVideosBackground(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   application_id: string,
   pillar: string | null,
   triggeredBy: string,
@@ -361,7 +361,7 @@ Deno.serve(async (req: Request) => {
   const { application_id, pillar, triggered_by } = body ?? {};
   if (!application_id) return json({ error: "missing_application_id" }, 400);
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const triggeredBy = typeof triggered_by === "string" ? triggered_by : "service_role";
 
   // Return 200 immediately so pg_net doesn't time out (default 5s). Slow work runs in background.

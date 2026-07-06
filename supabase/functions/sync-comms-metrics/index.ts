@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 // Retry with exponential backoff for external API calls
@@ -140,7 +140,7 @@ function buildRunKey(input?: string): string {
 
 
 async function logRun(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   payload: {
     run_key: string
     source: string
@@ -616,7 +616,7 @@ function isTokenExpiringSoon(cfg: ChannelConfig): boolean {
 // secrets. No-op for non-LinkedIn channels. Returns the (possibly updated) cfg;
 // on any failure leaves the stored token untouched (downstream flags expiry).
 async function maybeRefreshLinkedInToken(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   cfg: ChannelConfig,
   force = false,
 ): Promise<ChannelConfig> {
@@ -694,7 +694,7 @@ async function maybeRefreshLinkedInToken(
 // ─── Per-channel sync orchestrator ───
 
 async function syncFromChannelConfigs(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient<any, "public", any>,
   triggeredBy: string,
   dryRun: boolean,
   filterChannels?: string[],
@@ -878,7 +878,7 @@ Deno.serve(async (req) => {
     return unauthorizedResponse()
   }
 
-  const sb = createClient(
+  const sb = createClient<any, "public", any>(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )

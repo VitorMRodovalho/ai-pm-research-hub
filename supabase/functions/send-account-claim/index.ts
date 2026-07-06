@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     const token = (body?.token ?? '').toString()
     if (!token || token.length < 16) return json({ error: 'Missing or short token' }, 400)
 
-    const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
+    const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
     const { data: pending, error: pErr } = await sb
       .from('email_verification_pending')

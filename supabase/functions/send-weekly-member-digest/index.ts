@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     if (!url || !srk) return json({ error: 'missing env' }, 500)
 
-    const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
+    const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
     const { data, error } = await sb.rpc('generate_weekly_member_digest_cron')
     if (error) return json({ error: 'orchestrator_failed', detail: error.message }, 500)

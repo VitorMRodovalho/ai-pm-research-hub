@@ -20,7 +20,7 @@ const VAULT_KEY = "google_drive_service_account_json";
 export const DRIVE_WRITE_SCOPE = "https://www.googleapis.com/auth/drive";
 
 export async function getServiceAccountKey(): Promise<{ available: boolean; key?: any; error?: string }> {
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) return { available: false, error: `Vault read error: ${error.message}` };
   if (!data || typeof data !== "string" || data.length === 0) {

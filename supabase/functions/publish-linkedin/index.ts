@@ -98,7 +98,7 @@ async function uploadImage(orgUrn: string, token: string, imageUrl: string): Pro
   const putRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: { 'Authorization': `Bearer ${token}` },
-    body: bytes,
+    body: bytes as BodyInit,
   })
   if (!putRes.ok) throw new Error(`image upload PUT ${putRes.status}`)
   return imageUrn
@@ -125,7 +125,7 @@ async function uploadDocument(orgUrn: string, token: string, documentUrl: string
   const putRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/pdf' },
-    body: bytes,
+    body: bytes as BodyInit,
   })
   if (!putRes.ok) throw new Error(`document upload PUT ${putRes.status}`)
   return documentUrn
@@ -160,7 +160,7 @@ async function uploadVideo(orgUrn: string, token: string, videoUrl: string): Pro
     const putRes = await fetch(ins.uploadUrl, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` },
-      body: part,
+      body: part as BodyInit,
     })
     if (!putRes.ok) throw new Error(`video upload PUT ${putRes.status}`)
     const etag = putRes.headers.get('etag') ?? putRes.headers.get('ETag')
@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
     return json({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const sb = createClient(supabaseUrl, serviceKey)
+  const sb = createClient<any, "public", any>(supabaseUrl, serviceKey)
   const payload: PublishPayload = await req.json().catch(() => ({}))
 
   // Load the LinkedIn channel credential (same row the metrics cron reads).

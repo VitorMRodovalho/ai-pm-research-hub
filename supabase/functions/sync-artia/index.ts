@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const sb = createClient(
+    const sb = createClient<any, "public", any>(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )

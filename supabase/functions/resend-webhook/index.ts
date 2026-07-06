@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
       return json({ error: 'Missing resend_id or event_type' }, 400)
     }
 
-    const data = (payload.data || {}) as Record<string, unknown>
+    const data = (payload.data || {}) as Record<string, any>
 
-    const sb = createClient(
+    const sb = createClient<any, "public", any>(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )

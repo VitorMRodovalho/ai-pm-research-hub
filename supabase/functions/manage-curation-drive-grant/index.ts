@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "action must be 'grant' or 'revoke'" }), { status: 400 });
   }
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: row, error: rowErr } = await sb.rpc("get_curation_grant_row", { p_grant_id: grantId });
   if (rowErr) return new Response(JSON.stringify({ error: "rpc_error", detail: rowErr.message }), { status: 500 });

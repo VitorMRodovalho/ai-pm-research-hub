@@ -174,7 +174,7 @@
 import { Hono } from "jsr:@hono/hono@4.12.9";
 import { McpServer } from "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { z } from "npm:zod@4.3.6";
 import {
   htmlToMarkdown,
@@ -189,8 +189,16 @@ const app = new Hono().basePath("/nucleo-mcp");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Permissive client type. This EF has no generated `Database` types, so the default
+// createClient generic resolves rpc() data to `never` and its args to `undefined` —
+// which produced 1757 spurious deno-check errors (1483 TS2339 + 271 TS2345). Typing the
+// client as <any,"public",any> makes rpc()/from() permissive (runtime-erased, no behavior
+// change) and is what actually closes the type-check hole. Modularizing registerTools()
+// does NOT affect this count. #1106 step-2.
+type Sb = SupabaseClient<any, "public", any>;
+
 function createAuthenticatedClient(token?: string) {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return createClient<any, "public", any>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: token ? { Authorization: `Bearer ${token}` } : {} },
   });
 }
@@ -203,7 +211,7 @@ function ok(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
-async function getMember(sb: ReturnType<typeof createClient>) {
+async function getMember(sb: Sb) {
   const { data, error } = await sb.rpc("get_my_member_record");
   if (error || !data) return null;
   if (Array.isArray(data)) return data.length > 0 ? data[0] : null;
@@ -213,7 +221,7 @@ async function getMember(sb: ReturnType<typeof createClient>) {
 
 // V4: Authority gate via engagement-derived can() (ADR-0007)
 // Replaces legacy canWrite/canWriteBoard with DB-driven permissions
-async function canV4(sb: ReturnType<typeof createClient>, memberId: string, action: string, resourceType?: string, resourceId?: string): Promise<boolean> {
+async function canV4(sb: Sb, memberId: string, action: string, resourceType?: string, resourceId?: string): Promise<boolean> {
   const { data, error } = await sb.rpc("can_by_member", {
     p_member_id: memberId,
     p_action: action,
@@ -230,12 +238,12 @@ function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v);
 const NO_TRIBE_HINT = "No tribe assigned. Pass tribe_id parameter (1-8) to specify which tribe. Use list_boards or get_portfolio_overview for board IDs.";
 
 // V4: resolve legacy tribe_id → initiative UUID for _by_initiative RPCs
-async function resolveInitiativeId(sb: ReturnType<typeof createClient>, tribeId: number): Promise<string | null> {
+async function resolveInitiativeId(sb: Sb, tribeId: number): Promise<string | null> {
   const { data } = await sb.from("initiatives").select("id").eq("legacy_tribe_id", tribeId).single();
   return data?.id || null;
 }
 
-async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number, resultKind?: "preview" | "execute", responseSummary?: unknown) {
+async function logUsage(sb: Sb, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number, resultKind?: "preview" | "execute", responseSummary?: unknown) {
   try {
     const execMs = startTime ? Date.now() - startTime : null;
     await sb.rpc("log_mcp_usage", { p_auth_user_id: null, p_member_id: memberId, p_tool_name: toolName, p_success: success, p_error_message: errorMsg || null, p_execution_ms: execMs, p_result_kind: resultKind || "execute", p_response_summary: responseSummary ?? null });
@@ -244,7 +252,7 @@ async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | 
 
 // --- Knowledge Layer: Prompts + Resources ---
 
-function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+function registerKnowledge(mcp: McpServer, sb: Sb) {
 
   // Dynamic prompt — adapts to authenticated member's role and permissions
   mcp.registerPrompt(
@@ -967,7 +975,7 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
 
 // --- Register MCP tools (runtime source of truth: MCP tools/list + /health; never hardcode the count here) ---
 
-function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+function registerTools(mcp: McpServer, sb: Sb) {
 
   // ===== READ TOOLS (1-10, 16-19, 20-23) =====
 
@@ -1552,7 +1560,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // get_recurrence_stockout (#415) — recurring series running out of future occurrences
   mcp.tool("get_recurrence_stockout", "Lists recurring event series running out of future occurrences (recently active, last date within the horizon, no events beyond it). Returns estimated cadence, last date, next expected date, and suggested next dates to resupply. Requires manage_event.", {
     horizon_days: z.number().int().optional().describe("Days ahead within which a series counts as low-on-buffer. Default: 30")
-  }, async (params) => {
+  }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_recurrence_stockout", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2656,7 +2664,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
         .optional()
         .describe("Optional initiative kind filter: 'research_tribe' (default) | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all' (cross-kind). Omit for research_tribe."),
     },
-    async (params) => {
+    async (params: any) => {
       const start = Date.now();
       const member = await getMember(sb);
       if (!member) { await logUsage(sb, null, "get_tribes_comparison", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -7299,7 +7307,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     }
 
     // Service-role client for reading app data + writing log (bypasses RLS after canV4 gate above)
-    const sbSrv = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const sbSrv = createClient<any, "public", any>(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: app, error: appErr } = await sbSrv
       .from("selection_applications")
       .select("id, applicant_name, role_applied, motivation_letter, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, ai_analysis, ai_triage_score, ai_triage_reasoning, ai_triage_confidence")
@@ -7666,7 +7674,7 @@ function buildSemanticError(args: { tool: string; semantic_domain: string; code:
   };
 }
 
-function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
   // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
   mcp.tool(
@@ -7809,7 +7817,7 @@ function registerSemanticTools(mcp: McpServer, sb: ReturnType<typeof createClien
       const sources = (params.sources && params.sources.length > 0) ? params.sources : ["hub", "wiki", "knowledge_assets"] as const;
       const limit = Math.min(Math.max(params.limit_per_source ?? 5, 1), 10);
 
-      const tasks: Promise<{ source: string; data: any[]; error: string | null }>[] = [];
+      const tasks: PromiseLike<{ source: string; data: any[]; error: string | null }>[] = [];
       if (sources.includes("hub")) {
         tasks.push(
           sb.rpc("search_hub_resources", { p_query: query, p_asset_type: null, p_limit: limit })

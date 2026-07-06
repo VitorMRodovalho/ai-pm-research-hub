@@ -18,7 +18,7 @@
  *       PM. Worker dedicado (ai-interview-drafter) será criado em phase futura
  *       que sim atualiza o DB.
  */
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { isServiceRoleToken } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -31,7 +31,7 @@ const json = (d: unknown, s = 200) =>
 
 interface OAuthCreds { client_id: string; client_secret: string; refresh_token: string; }
 
-async function getDriveAccessToken(sb: ReturnType<typeof createClient>): Promise<string> {
+async function getDriveAccessToken(sb: SupabaseClient<any, "public", any>): Promise<string> {
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error || !data) throw new Error(`Vault read failed: ${error?.message ?? "no data"}`);
   const creds = JSON.parse(data as string) as OAuthCreds;
@@ -94,7 +94,7 @@ async function uploadToGeminiFileAPI(bytes: Uint8Array, mimeType: string, displa
       "X-Goog-Upload-Offset": "0",
       "X-Goog-Upload-Command": "upload, finalize",
     },
-    body: bytes,
+    body: bytes as BodyInit,
   });
   if (!upRes.ok) throw new Error(`Gemini upload bytes: ${upRes.status} ${await upRes.text()}`);
   const uploaded = await upRes.json();
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
   const { video_screening_id } = body ?? {};
   if (!video_screening_id) return json({ error: "missing video_screening_id" }, 400);
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: vs, error: vsErr } = await sb
     .from("pmi_video_screenings")

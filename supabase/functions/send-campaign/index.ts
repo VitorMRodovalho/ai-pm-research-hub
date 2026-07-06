@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
 
-    const sb = createClient(url, srk)
+    const sb = createClient<any, "public", any>(url, srk)
     // Service-role gate (#738): exact env-key match, else PostgREST verifies the
     // JWT signature via current_caller_role() (accepts the vault service_role_key
     // pg_net sends, rejects forgeries). A non-service token still falls through to

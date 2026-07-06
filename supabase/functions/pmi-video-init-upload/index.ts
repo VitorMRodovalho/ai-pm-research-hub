@@ -27,7 +27,7 @@
  *     max_size_bytes: number
  *   }
  */
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -51,7 +51,7 @@ const MAX_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
 
 interface OAuthCreds { client_id: string; client_secret: string; refresh_token: string; }
 
-async function getOAuthCreds(sb: ReturnType<typeof createClient>): Promise<{ available: boolean; creds?: OAuthCreds; error?: string }> {
+async function getOAuthCreds(sb: SupabaseClient<any, "public", any>): Promise<{ available: boolean; creds?: OAuthCreds; error?: string }> {
   const { data, error } = await sb.rpc("_get_vault_secret", { p_name: VAULT_KEY });
   if (error) return { available: false, error: `Vault read error: ${error.message}` };
   if (!data || typeof data !== "string" || data.length === 0) return { available: false, error: `Vault key '${VAULT_KEY}' not seeded` };
@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     }, 503);
   }
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Validate token
   const { data: tokenRow, error: tokErr } = await sb
