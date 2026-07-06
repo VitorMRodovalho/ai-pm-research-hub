@@ -185,6 +185,13 @@ export const TRIBES: Tribe[] = [
   },
 ];
 
+/**
+ * #1136: número de tribos ativas exibidas no home público. Derivado do array TRIBES
+ * (tribo 3 pausada já está fora), consumido por meta.description via interpolação —
+ * a copy não pode carregar a contagem hardcoded (anti-drift, Pattern 47 no frontend).
+ */
+export const ACTIVE_TRIBE_COUNT = TRIBES.length;
+
 /** Resolve a tribe's i18n keys to actual strings for the given lang */
 export function resolveTribe(tribe: Tribe, lang: Lang): ResolvedTribe {
   return {

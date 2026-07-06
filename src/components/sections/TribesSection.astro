@@ -128,7 +128,8 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         {selectionNotice}
       </span>
       <br>
-      {t('tribes.slots', lang)}
+      {/* #1136: slots derivam do SSOT (MIN_SLOTS/MAX_SLOTS em data/tribes), não de literal na copy */}
+      {t('tribes.slots', lang).replace('{min}', String(MIN_SLOTS)).replace('{max}', String(MAX_SLOTS))}
       <span id="loginPrompt" class="block mt-2 font-semibold text-orange">
         {t('tribes.loginPrompt', lang)}
       </span>
