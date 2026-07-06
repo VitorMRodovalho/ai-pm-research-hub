@@ -35,7 +35,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAULT_KEY = "google_drive_service_account_json";
 const PARENT_FOLDER_ID = "1PFLzCa8dwjFNhc_y3TPOnkN9O7jfbqnA";
-const SHARED_DRIVE_ID = "0ABRgwbztNXgDUk9PVA";
 const READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const MAX_FILES_PER_EMAIL = 1000;

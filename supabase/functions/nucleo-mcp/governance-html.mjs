@@ -104,7 +104,7 @@ function inlineToMd(s) {
   let out = String(s);
   // links: <a href="url">text</a>
   out = out.replace(/<a\b[^>]*?href\s*=\s*["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi,
-    (m, href, text) => `[${inlineTextOnly(text)}](${href})`);
+    (_m, href, text) => `[${inlineTextOnly(text)}](${href})`);
   // images: <img src ... alt ...>
   out = out.replace(/<img\b[^>]*>/gi, (m) => {
     const src = (m.match(/src\s*=\s*["']([^"']*)["']/i) || [])[1] || '';
@@ -112,15 +112,15 @@ function inlineToMd(s) {
     return src ? `![${alt}](${src})` : '';
   });
   // bold then italic then inline code
-  out = out.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (m, t, c) => {
+  out = out.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_m, _t, c) => {
     const inner = inlineTextOnly(c);
     return inner ? `**${inner}**` : '';
   });
-  out = out.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (m, t, c) => {
+  out = out.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_m, _t, c) => {
     const inner = inlineTextOnly(c);
     return inner ? `*${inner}*` : '';
   });
-  out = out.replace(/<code\b[^>]*>([\s\S]*?)<\/code>/gi, (m, c) => `\`${inlineTextOnly(c)}\``);
+  out = out.replace(/<code\b[^>]*>([\s\S]*?)<\/code>/gi, (_m, c) => `\`${inlineTextOnly(c)}\``);
   // line breaks → soft newline (a "  \n" hard break would be stripped by the trailing-space
   // cleanup below; a soft \n keeps the parts on separate source lines, which is what an LLM reads)
   out = out.replace(/<br\s*\/?>/gi, '\n');
@@ -275,8 +275,8 @@ export function htmlToMarkdown(html) {
     codeBlocks.push('```\n' + decodeEntities(c.replace(/<[^>]+>/g, '')).replace(/\s+$/, '') + '\n```');
     return `\n\n${token}\n\n`;
   };
-  s = s.replace(/<pre\b[^>]*>\s*<code\b[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi, (m, c) => stashCode(c));
-  s = s.replace(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi, (m, c) => stashCode(c));
+  s = s.replace(/<pre\b[^>]*>\s*<code\b[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi, (_m, c) => stashCode(c));
+  s = s.replace(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi, (_m, c) => stashCode(c));
 
   // Lists — balanced + recursive so nested <ul>/<ol> indent instead of flattening
   // (before paragraphs; TipTap wraps li content in <p>). Each rendered block is stashed
@@ -286,13 +286,13 @@ export function htmlToMarkdown(html) {
   s = replaceTopLevelLists(s, listBlocks);
 
   // Headings.
-  s = s.replace(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (m, lvl, c) => {
+  s = s.replace(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (_m, lvl, c) => {
     const text = inlineToMd(c);
     return text ? `\n\n${'#'.repeat(Number(lvl))} ${text}\n\n` : '';
   });
 
   // Blockquote.
-  s = s.replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, (m, c) => {
+  s = s.replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, (_m, c) => {
     const text = inlineToMd(c.replace(/<\/?p\b[^>]*>/gi, '\n')).trim();
     const quoted = text.split('\n').map((l) => `> ${l.trim()}`.replace(/\s+$/, '')).join('\n');
     return `\n\n${quoted}\n\n`;
@@ -302,7 +302,7 @@ export function htmlToMarkdown(html) {
   s = s.replace(/<hr\s*\/?>/gi, '\n\n---\n\n');
 
   // Paragraphs.
-  s = s.replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, (m, c) => {
+  s = s.replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, (_m, c) => {
     const text = inlineToMd(c);
     return text ? `\n\n${text}\n\n` : '';
   });

@@ -454,7 +454,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
       description: "Lista todas as 76 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
-    async () => ({
+    () => ({
       contents: [{
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.11.0)
@@ -579,7 +579,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
       title: "Workflow do avaliador (Cycle B2)",
       description: "Receita passo-a-passo do workflow de avaliação de candidatos: fila → detalhe → submit com confirm gate. Use quando você é avaliador e nunca operou o flow antes."
     },
-    async () => ({
+    () => ({
       messages: [{
         role: "user" as const,
         content: { type: "text" as const, text: `# Workflow do avaliador — Cycle B2 (Pareto)
@@ -642,7 +642,7 @@ Use \`prompt:nucleo-guide\` para ver TODA a personalização do seu papel.`
       title: "Workflow do owner de iniciativa (convocação + aprovação)",
       description: "Receita do owner: convidar membros, triagem de pedidos self-service, aprovar/recusar, auditar engagements ativos. Cobre invitations + W5 lifecycle."
     },
-    async () => ({
+    () => ({
       messages: [{
         role: "user" as const,
         content: { type: "text" as const, text: `# Workflow do owner — convocação + aprovação + audit
@@ -733,7 +733,7 @@ Eles usam \`withdraw_from_initiative\` (W5). Você verá no list_initiative_enga
       title: "Workflow do candidato (descobrir, pedir, responder, sair)",
       description: "Receita do membro/candidato: descobrir iniciativas abertas, pedir entrada, responder convites, sair com self-service withdraw."
     },
-    async () => ({
+    () => ({
       messages: [{
         role: "user" as const,
         content: { type: "text" as const, text: `# Workflow do candidato — entrar e sair de iniciativas
@@ -837,7 +837,7 @@ Use \`prompt:nucleo-guide\` para ver seu perfil completo.`
       description: "Perguntas frequentes do avaliador de candidaturas (#87 selection workflow). Read-only.",
       mimeType: "text/markdown"
     },
-    async () => ({
+    () => ({
       contents: [{
         uri: "nucleo://faq/evaluator",
         text: `# FAQ — Avaliador de candidaturas
@@ -891,7 +891,7 @@ Trigger calcula desvio padrão da nota agregada por critério. Se sua nota está
       description: "Perguntas frequentes do owner/coordinator de iniciativa (#88 invitation lifecycle). Read-only.",
       mimeType: "text/markdown"
     },
-    async () => ({
+    () => ({
       contents: [{
         uri: "nucleo://faq/owner",
         text: `# FAQ — Owner / coordinator de iniciativa
@@ -1485,7 +1485,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_chapter_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
-    let chapter = params.chapter || member.chapter;
+    const chapter = params.chapter || member.chapter;
     if (!chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "No chapter", start); return err("No chapter assigned. Specify: GO, CE, DF, MG, RS."); }
     const isPrivileged = (await canV4(sb, member.id, 'manage_member')) || (await canV4(sb, member.id, 'view_partner')); // FU-1: read gate
     if (!isPrivileged && chapter !== member.chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "Cross-chapter denied", start); return err("You can only view your own chapter."); }

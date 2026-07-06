@@ -3,9 +3,14 @@
 # from the app's TypeScript strict build (tsconfig exclude) and had NO deno check/lint
 # in CI — yet nucleo-mcp/index.ts is the ~300-tool authority gate.
 #
-# MEASUREMENT MODE (initial): both steps are continue-on-error so this never blocks a
-# merge while we quantify the pre-existing drift. Once the baseline is known we tighten
-# (make lint blocking if clean; gate check on changed files or via a ratcheting baseline).
+# GATE STATE (owner decision 2026-07-06):
+#  - `deno lint` is BLOCKING (repo is clean at 0 problems, with two idiom-false-positive
+#    rules excluded: no-explicit-any and no-import-prefix — the pervasive `any` reduction
+#    and the npm:/jsr: inline specifiers are the step-2 refactor's job, not correctness).
+#  - `deno check` is REPORT-ONLY (continue-on-error): the never-type-checked
+#    nucleo-mcp/index.ts carries ~1836 pre-existing type errors that only the step-2
+#    modularization can retire. This step gives visibility + ratchets down over time; it
+#    is NOT a merge gate until that refactor lands (or a changed-files variant is added).
 name: Deno EF Check
 
 on:
@@ -28,13 +33,11 @@ jobs:
           deno-version: v2.x
 
       # CLI flags (not a committed deno.json) so this CI config never touches how the
-      # Supabase bundler deploys the functions. `no-explicit-any` is excluded: the
-      # pervasive `any` in the RPC-dispatch code is the step-2 refactor's job, not a
-      # correctness signal — excluding it keeps the high-signal lint rules useful now.
-      - name: deno lint (measure)
-        continue-on-error: true
-        run: deno lint --rules-exclude=no-explicit-any supabase/functions/
+      # Supabase bundler deploys the functions. no-explicit-any + no-import-prefix are
+      # excluded (idiom false-positives for Supabase EFs — see header).
+      - name: deno lint (BLOCKING)
+        run: deno lint --rules-exclude=no-explicit-any,no-import-prefix supabase/functions/
 
-      - name: deno check (measure)
+      - name: deno check (report-only)
         continue-on-error: true
         run: deno check --node-modules-dir=auto "supabase/functions/**/*.ts"

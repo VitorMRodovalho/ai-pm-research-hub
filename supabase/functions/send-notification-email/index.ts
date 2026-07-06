@@ -468,7 +468,7 @@ function buildHtml(notification: any, recipientEmail?: string): string {
     </div>`
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (_req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL') ?? ''
     const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

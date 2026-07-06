@@ -14,21 +14,6 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
   throw new Error(`Failed after ${maxRetries} retries: ${url}`);
 }
 
-function buildDynamicSignature(sender: Record<string, any>, cycleName: string): string {
-  const name = sender.name || 'Gerencia do Projeto'
-  const phone = sender.phone || ''
-  const linkedin = sender.linkedin_url || ''
-  const role = sender.operational_role === 'manager' ? 'Gerente de Projeto'
-    : sender.operational_role === 'deputy_manager' ? 'Vice-Gerente de Projeto'
-    : sender.is_superadmin ? 'Superadmin' : 'Gerencia do Projeto'
-
-  let sig = 'Atenciosamente,\n' + name
-  if (phone) sig += '\n' + phone
-  if (linkedin) sig += ' | ' + linkedin
-  sig += '\n' + role + ' do Nucleo IA & GP'
-  if (cycleName) sig += ' (' + cycleName + ')'
-  return sig
-}
 
 function buildSignatureHtml(sender: Record<string, any>, cycleName: string): string {
   const name = sender.name || 'Gerencia do Projeto'
@@ -119,7 +104,7 @@ Deno.serve(async (req) => {
     const cliSecret = req.headers.get('x-cli-secret') ?? ''
     const expectedCliSecret = Deno.env.get('ONBOARDING_CLI_SECRET') ?? ''
     let callerId: string | null = null
-    let callerName = 'Sistema (Automated)'
+    let _callerName = 'Sistema (Automated)'
 
     let senderData: Record<string, any> = {}
 
@@ -127,7 +112,7 @@ Deno.serve(async (req) => {
       const gp = await sb.from('members').select('id, name, phone, linkedin_url, operational_role, is_superadmin')
         .eq('is_superadmin', true).limit(1).single()
       callerId = gp.data?.id ?? null
-      callerName = gp.data?.name ?? 'GP Automatico'
+      _callerName = gp.data?.name ?? 'GP Automatico'
       senderData = gp.data || {}
     } else {
       const ah = req.headers.get('Authorization') ?? ''
@@ -148,7 +133,7 @@ Deno.serve(async (req) => {
       if (!isAdmin) return json({ error: 'Admin access required' }, 403)
 
       callerId = cr.data.id
-      callerName = cr.data.name || 'Admin'
+      _callerName = cr.data.name || 'Admin'
       senderData = cr.data
     }
 
