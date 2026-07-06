@@ -7,6 +7,8 @@ import {
   MCP_REFRESH_TTL_SECONDS,
   resolveSupabaseAuthConfig,
 } from '../../lib/mcp-refresh';
+// #1050 — per-IP throttle on the token endpoint (brute-force/flood dampening).
+import { checkIpRateLimit, clientIpFrom } from '../../lib/ip-rate-limit';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled (free tier 1k writes/day protection).
@@ -48,6 +50,20 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'server_error', detail: 'KV binding unavailable' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // #1050 — throttle token grants per client IP (30/min). Covers both the
+    // authorization_code and refresh_token grants. Fail-open (see ip-rate-limit.ts).
+    const rl = await checkIpRateLimit(kv, clientIpFrom(request), 'oauth_token', 30);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: 'rate_limited', error_description: 'Too many token requests — retry shortly' }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(rl.retryAfter ?? 60),
+          'Access-Control-Allow-Origin': '*',
+        },
       });
     }
 

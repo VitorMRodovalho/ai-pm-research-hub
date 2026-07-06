@@ -23,6 +23,7 @@ import type { APIRoute } from 'astro';
 import { env as cfEnv } from 'cloudflare:workers';
 import { createClient } from '@supabase/supabase-js';
 import puppeteer from '@cloudflare/puppeteer';
+import { timingSafeEqual } from '../../../../lib/timing-safe-equal';
 import {
   buildCertificateHTML,
   hydrateCertData,
@@ -175,7 +176,8 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
 
   const auth = request.headers.get('Authorization') ?? '';
-  if (auth !== `Bearer ${expectedSecret}`) {
+  // #1050 — constant-time compare so the Bearer secret can't be recovered byte-by-byte via timing.
+  if (!(await timingSafeEqual(auth, `Bearer ${expectedSecret}`))) {
     return new Response(
       JSON.stringify({ error: 'unauthorized' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
