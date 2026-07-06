@@ -14,10 +14,11 @@
 name: Deno EF Check
 
 on:
+  # Runs on EVERY PR (no paths filter) so the required `deno` status check always
+  # reports. A path-filtered required check hangs any PR that doesn't touch the filtered
+  # paths ("Expected — waiting for status"), deadlocking unrelated PRs. The job is fast
+  # (~30s) and `deno lint` is clean on main, so it passes on PRs that don't touch EFs.
   pull_request:
-    paths:
-      - 'supabase/functions/**'
-      - '.github/workflows/deno-ef-check.yml'
   workflow_dispatch:
 
 permissions:
