@@ -55,7 +55,13 @@ const csrfMiddleware = defineMiddleware((context, next) => {
     return next();
   }
 
-  // Check origin matches host for non-bypassed POST routes
+  // Check origin matches host for non-bypassed POST routes.
+  // #1050 — the no-Origin passthrough below is INTENTIONAL: legitimate server-to-server
+  // and non-browser clients (MCP hosts, OAuth token exchanges, webhooks) don't send an
+  // Origin header, and browsers reliably do on cross-site POSTs. Do NOT "harden" this by
+  // requiring Origin or falling back to Referer — that would break those clients and
+  // Referer is spoofable/strippable (weaker signal). CSRF for browser flows is covered
+  // by this same-origin check when Origin IS present.
   const origin = context.request.headers.get("origin");
   if (origin) {
     try {

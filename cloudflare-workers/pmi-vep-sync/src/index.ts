@@ -56,6 +56,7 @@ import {
   mapServiceHistory
 } from './script-mapper';
 import { syncResumesParallel, type ResumeSyncResult } from './resume-sync';
+import { timingSafeEqual } from './timing-safe-equal';
 
 const WORKER_NAME = 'pmi-vep-sync';
 const ALLOWED_ORIGIN = 'https://volunteer.pmi.org';
@@ -164,7 +165,8 @@ export default {
 async function handleIngest(req: Request, env: Env): Promise<Response> {
   // Auth
   const secret = req.headers.get('x-ingest-secret');
-  if (!secret || secret !== env.INGEST_SHARED_SECRET) {
+  // #1050 — constant-time compare so the shared secret can't be recovered byte-by-byte via timing.
+  if (!secret || !(await timingSafeEqual(secret, env.INGEST_SHARED_SECRET))) {
     return jsonResponse({ error: 'unauthorized' }, 401);
   }
 
