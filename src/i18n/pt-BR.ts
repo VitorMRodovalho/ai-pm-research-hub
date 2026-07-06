@@ -6968,6 +6968,25 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.panelVolunteer': 'Registros de serviço PMI',
   'comp.affiliationQueue.panelLastSync': 'Última sincronização VEP',
   'comp.affiliationQueue.panelNoProfile': 'Sem enriquecimento VEP — verifique manualmente.',
+  // #1129 — coorte + validade do termo de voluntariado
+  'comp.affiliationQueue.thCohort': 'Coorte',
+  'comp.affiliationQueue.cohort_current_selection': 'Seleção atual',
+  'comp.affiliationQueue.cohort_carryover': 'Carryover',
+  'comp.affiliationQueue.cohort_non_selection': 'Não-seleção',
+  'comp.affiliationQueue.cohortHint_current_selection': 'Aprovado(a) na seleção do ciclo corrente',
+  'comp.affiliationQueue.cohortHint_carryover': 'Continuidade de ciclo anterior, ainda ativo(a)',
+  'comp.affiliationQueue.cohortHint_non_selection': 'Vínculo não originado em seleção (board, palestrante, patrocinador…)',
+  'comp.affiliationQueue.filterCohortAll': 'Todas as coortes',
+  'comp.affiliationQueue.role_leader': 'Líder',
+  'comp.affiliationQueue.role_researcher': 'Pesquisador(a)',
+  'comp.affiliationQueue.thTerm': 'Termo de voluntariado',
+  'comp.affiliationQueue.term_valid': 'Vigente',
+  'comp.affiliationQueue.term_expiring': 'Vencendo',
+  'comp.affiliationQueue.term_expired': 'Vencido',
+  'comp.affiliationQueue.term_none': 'Sem termo',
+  'comp.affiliationQueue.filterTermAll': 'Todos os termos',
+  'comp.affiliationQueue.termNone': 'Sem termo ativo',
+  'comp.affiliationQueue.hiddenSubsetHint': '{n} da seleção atual aguardam verificação fora do pré-onboarding',
 };
 
 export default ptBR;

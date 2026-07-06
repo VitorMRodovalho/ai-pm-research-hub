@@ -34,6 +34,11 @@ interface PmiProfile {
   volunteer_count: number | null;
   last_sync: string | null;
 }
+// #1129 — cohort derived reliably from engagement/selection → cycle (never members.cycles).
+type CohortClass = 'current_selection' | 'carryover' | 'non_selection';
+// #1129 — volunteer-term validity vs CURRENT_DATE (server-side, 180d "expiring" window).
+type TermStatus = 'valid' | 'expiring' | 'expired' | 'none';
+
 interface QueueRow {
   member_id: string;
   name: string;
@@ -47,6 +52,12 @@ interface QueueRow {
   pmi_memberships: PmiMembershipEntry[] | null;
   pmi_profile: PmiProfile | null;
   latest_verification: LatestVerification | null;
+  // #1129 cohort + term (server-derived)
+  cohort_class: CohortClass;
+  cohort_cycle_code: string | null;
+  cohort_role: string | null;
+  term_end_date: string | null;
+  term_status: TermStatus;
 }
 
 /* "31 Jul 2026" (VEP) -> "2026-07-31" for the <input type=date>; '' if unparseable. */
@@ -97,6 +108,30 @@ const VEP_CLS: Record<string, string> = {
   OfferExtended: 'bg-amber-50 text-amber-700',
 };
 
+/** #1129 — cohort badge presentation (label + tooltip + class). */
+function cohortMeta(cls: CohortClass, t: (k: string, f?: string) => string): { label: string; hint: string; cls: string } {
+  const map: Record<CohortClass, string> = {
+    current_selection: 'bg-teal-50 text-teal-700',
+    carryover: 'bg-indigo-50 text-indigo-700',
+    non_selection: 'bg-slate-100 text-slate-600',
+  };
+  return {
+    label: t(`comp.affiliationQueue.cohort_${cls}`, cls),
+    hint: t(`comp.affiliationQueue.cohortHint_${cls}`, ''),
+    cls: map[cls] || 'bg-slate-100 text-slate-600',
+  };
+}
+
+/** #1129 — volunteer-term validity badge (emoji + label + class). */
+function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { emoji: string; label: string; cls: string } {
+  switch (status) {
+    case 'expired':  return { emoji: '🔴', label: t('comp.affiliationQueue.term_expired', 'Vencido'), cls: 'bg-rose-50 text-rose-700' };
+    case 'expiring': return { emoji: '🟡', label: t('comp.affiliationQueue.term_expiring', 'Vencendo'), cls: 'bg-amber-50 text-amber-700' };
+    case 'valid':    return { emoji: '🟢', label: t('comp.affiliationQueue.term_valid', 'Vigente'), cls: 'bg-emerald-50 text-emerald-700' };
+    default:         return { emoji: '⚪', label: t('comp.affiliationQueue.term_none', 'Sem termo'), cls: 'bg-slate-100 text-slate-500' };
+  }
+}
+
 type SortKey = 'attention' | 'name' | 'expiry' | 'sync';
 
 /** #996 "precisa atenção" default ordering: pré-onboarding → vencida → vence em breve → não verificada → resto. */
@@ -120,7 +155,10 @@ export default function AffiliationQueueIsland() {
 
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'pre' | 'all'>('pre');
+  // #1129 — default to 'all' so the queue never silently hides the current-selection members who
+  // are past pre-onboarding (10/45 were invisible under the old 'pre' default). Attention-sort still
+  // floats pre-onboarding rows to the top, so nothing urgent is lost.
+  const [tab, setTab] = useState<'pre' | 'all'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [bulkVerifying, setBulkVerifying] = useState(false);
@@ -128,6 +166,8 @@ export default function AffiliationQueueIsland() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'action' | 'unverified'>('all');
   const [chapterFilter, setChapterFilter] = useState<string>('all');
   const [vepFilter, setVepFilter] = useState<string>('all');
+  const [cohortFilter, setCohortFilter] = useState<'all' | CohortClass>('all'); // #1129
+  const [termFilter, setTermFilter] = useState<'all' | TermStatus>('all');       // #1129
   const [search, setSearch] = useState('');
 
   // ── load the queue (retry until Nav publishes the authed client) ──
@@ -266,6 +306,8 @@ export default function AffiliationQueueIsland() {
     setExpandedIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const preCount = rows.filter(r => r.is_pre_onboarding).length;
+  // #1129 — current-selection members past pre-onboarding (the subset the old 'pre' default hid).
+  const hiddenCurrentSel = rows.filter(r => r.cohort_class === 'current_selection' && !r.is_pre_onboarding).length;
 
   // #996 F-C — filter option lists derived from the loaded cohort.
   const chapterOptions = useMemo(() => {
@@ -283,6 +325,8 @@ export default function AffiliationQueueIsland() {
     let list = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding) : rows.slice();
     if (statusFilter === 'action') list = list.filter(r => { const k = farol(r, t).key; return k === 'expired' || k === 'soon'; });
     else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
+    if (cohortFilter !== 'all') list = list.filter(r => r.cohort_class === cohortFilter);   // #1129
+    if (termFilter !== 'all') list = list.filter(r => r.term_status === termFilter);         // #1129
     if (chapterFilter !== 'all') list = list.filter(r => brChapters(r.pmi_memberships).some(c => c.name === chapterFilter));
     if (vepFilter !== 'all') list = list.filter(r => (r.vep_status_raw || '—') === vepFilter);
     const q = search.trim().toLowerCase();
@@ -304,7 +348,7 @@ export default function AffiliationQueueIsland() {
       return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
     });
     return list;
-  }, [rows, tab, statusFilter, chapterFilter, vepFilter, search, sortKey, t]);
+  }, [rows, tab, statusFilter, cohortFilter, termFilter, chapterFilter, vepFilter, search, sortKey, t]);
 
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
@@ -341,6 +385,14 @@ export default function AffiliationQueueIsland() {
         </button>
       </div>
 
+      {/* #1129 — hidden-subset hint: current-selection members past pre-onboarding (invisible under the old 'pre' default) */}
+      {tab === 'pre' && hiddenCurrentSel > 0 && (
+        <div className="mb-3 flex items-center gap-1.5 text-[12px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+          <Info size={13} className="flex-shrink-0" />
+          <span>{t('comp.affiliationQueue.hiddenSubsetHint', '{n} da seleção atual aguardam verificação fora do pré-onboarding').replace('{n}', String(hiddenCurrentSel))}</span>
+        </div>
+      )}
+
       {/* filters + controls (#996 F-C) */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {/* search */}
@@ -355,6 +407,23 @@ export default function AffiliationQueueIsland() {
           className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
           <option value="all">{t('comp.affiliationQueue.filterChapterAll', 'Todos os capítulos')}</option>
           {chapterOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        {/* #1129 cohort filter */}
+        <select value={cohortFilter} onChange={e => setCohortFilter(e.target.value as 'all' | CohortClass)}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterCohortAll', 'Todas as coortes')}</option>
+          <option value="current_selection">{t('comp.affiliationQueue.cohort_current_selection', 'Seleção atual')}</option>
+          <option value="carryover">{t('comp.affiliationQueue.cohort_carryover', 'Carryover')}</option>
+          <option value="non_selection">{t('comp.affiliationQueue.cohort_non_selection', 'Não-seleção')}</option>
+        </select>
+        {/* #1129 term validity filter */}
+        <select value={termFilter} onChange={e => setTermFilter(e.target.value as 'all' | TermStatus)}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterTermAll', 'Todos os termos')}</option>
+          <option value="expired">{t('comp.affiliationQueue.term_expired', 'Vencido')}</option>
+          <option value="expiring">{t('comp.affiliationQueue.term_expiring', 'Vencendo')}</option>
+          <option value="valid">{t('comp.affiliationQueue.term_valid', 'Vigente')}</option>
+          <option value="none">{t('comp.affiliationQueue.term_none', 'Sem termo')}</option>
         </select>
         {/* VEP status filter */}
         <select value={vepFilter} onChange={e => setVepFilter(e.target.value)}
@@ -406,6 +475,7 @@ export default function AffiliationQueueIsland() {
               <tr className="bg-[var(--surface-section-cool)] text-[var(--text-muted)] text-[.65rem] uppercase tracking-wider">
                 <th className="px-3 py-2 w-10"><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="accent-teal-500" aria-label={t('comp.affiliationQueue.selectAll', 'Selecionar todos')} /></th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thMember', 'Membro')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thCohort', 'Coorte')}</th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thChapter', 'Capítulo / Filiação PMI')}</th>
                 <th className="px-3 py-2 text-left">
                   <button onClick={() => setSortKey(s => s === 'expiry' ? 'attention' : 'expiry')} className="inline-flex items-center gap-1 cursor-pointer uppercase tracking-wider hover:text-[var(--text-secondary)]" title={t('comp.affiliationQueue.sortExpiryHint', 'Ordenar por vencimento (vencidas/vencendo primeiro)')}>
@@ -413,6 +483,7 @@ export default function AffiliationQueueIsland() {
                     <ArrowUpDown size={11} className={sortKey === 'expiry' ? 'text-teal-600' : 'opacity-40'} />
                   </button>
                 </th>
+                <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thTerm', 'Termo de voluntariado')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thVep', 'VEP')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thStatus', 'Status')}</th>
                 <th className="px-3 py-2 text-center w-24">{t('comp.affiliationQueue.thActions', 'Ações')}</th>
@@ -443,6 +514,24 @@ export default function AffiliationQueueIsland() {
                           <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const cm = cohortMeta(r.cohort_class, t);
+                        const roleLabel = r.cohort_role === 'leader' ? t('comp.affiliationQueue.role_leader', 'Líder')
+                          : r.cohort_role === 'researcher' ? t('comp.affiliationQueue.role_researcher', 'Pesquisador(a)')
+                          : r.cohort_role;
+                        return (
+                          <div className="space-y-0.5">
+                            <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold ${cm.cls}`} title={cm.hint}>{cm.label}</span>
+                            {(r.cohort_cycle_code || roleLabel) && (
+                              <div className="text-[10px] text-[var(--text-muted)]">
+                                {r.cohort_cycle_code || ''}{r.cohort_cycle_code && roleLabel ? ' · ' : ''}{roleLabel || ''}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2">
                       {br.length > 0 ? (
@@ -481,6 +570,21 @@ export default function AffiliationQueueIsland() {
                         );
                       })()}
                     </td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const tm = termMeta(r.term_status, t);
+                        return (
+                          <div className="space-y-0.5">
+                            <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold ${tm.cls}`}>{tm.emoji} {tm.label}</span>
+                            {r.term_end_date && (
+                              <div className={`text-[10px] flex items-center gap-0.5 ${r.term_status === 'expired' ? 'text-rose-600' : r.term_status === 'expiring' ? 'text-amber-600' : 'text-[var(--text-muted)]'}`}>
+                                <CalendarClock size={10} /> {fmtDate(r.term_end_date)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2 text-center">
                       {r.vep_status_raw
                         ? <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${VEP_CLS[r.vep_status_raw] || 'bg-slate-100 text-slate-600'}`}>{r.vep_status_raw}</span>
@@ -503,7 +607,7 @@ export default function AffiliationQueueIsland() {
                   {expanded && (
                     <tr className="border-t border-[var(--border-default)] bg-[var(--surface-section-cool)]">
                       <td></td>
-                      <td colSpan={6} className="px-3 py-3">
+                      <td colSpan={8} className="px-3 py-3">
                         {p ? (
                           <div className="flex flex-wrap gap-x-8 gap-y-2 text-[12px]">
                             <div>
