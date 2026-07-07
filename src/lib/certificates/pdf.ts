@@ -5,6 +5,7 @@
 
 import { CANONICAL_HOST, CERT_VERIFY_HOST } from "../canonical";
 import { PMIGO_LOGO_DATA_URI } from "./pmigo-logo";
+import { applyResidencyConditionals } from "./conditional-clauses";
 import {
   NUCLEO_LOGO_DATA_URI,
   PMIGO_HOST_DATA_URI,
@@ -416,8 +417,14 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   // truth), rendered as-is (governance content is admin-authored and chain-approved). The
   // legacy slot path (already-signed certs whose snapshot has clauseN but no html_body) keeps
   // its "Termos da Adesão" heading + <ol> so #648 immutability is preserved verbatim.
+  // #1156 (F3 de #1153): Clause 14 (Transferência Internacional de Dados) is CONDITIONAL per
+  // the .docx V2 — it applies only to volunteers resident in the EEA/EEE or the UK. Render-time
+  // decision on the frozen body: a non-EEE/UK volunteer's instrument omits it; the immutable
+  // snapshot keeps the full superset. Derived from the (snapshotted) member_country, so it is
+  // stable across re-renders. No-op for BR/legacy bodies without the clause.
+  const scopedBody = applyResidencyConditionals(approvedBody, certData.member_country);
   const legalSection = hasApprovedBody
-    ? `<div class="gov-approved-body" style="font-size:11px;line-height:1.6;text-align:justify">${approvedBody.replace(/\{chapterName\}/g, chapterInline)}</div>`
+    ? `<div class="gov-approved-body" style="font-size:11px;line-height:1.6;text-align:justify">${scopedBody.replace(/\{chapterName\}/g, chapterInline)}</div>`
     : `<h3 style="font-weight:bold;color:#000;font-size:13px;margin:18px 0 10px">Termos da Adesão do Programa de Voluntariado:</h3>
 
     <ol style="list-style:none;padding:0;margin:0">${clausesHtml}</ol>`;

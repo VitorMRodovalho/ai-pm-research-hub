@@ -89,8 +89,13 @@ describe('#1153 pdf.ts — caminho Direção 1 + guarda #648 (estático)', () =>
     assert.match(PDF, /const hasApprovedBody = approvedBody\.length > 0/);
     assert.match(PDF, /const legalSection = hasApprovedBody/,
       'a seção legal deve escolher o corpo aprovado quando presente');
-    assert.ok(PDF.includes('approvedBody.replace(/\\{chapterName\\}/g, chapterInline)'),
-      'o corpo aprovado deve ter {chapterName} defensivamente resolvido no render');
+    // #1156 (F3): the {chapterName} resolution now runs on `scopedBody` (the approved body
+    // after residency-conditional scoping), which derives from approvedBody. Behavior preserved:
+    // the approved body still has {chapterName} defensively resolved at render.
+    assert.ok(PDF.includes('scopedBody.replace(/\\{chapterName\\}/g, chapterInline)'),
+      'o corpo aprovado (scopedBody) deve ter {chapterName} defensivamente resolvido no render');
+    assert.match(PDF, /const scopedBody = applyResidencyConditionals\(approvedBody, certData\.member_country\)/,
+      'scopedBody deve derivar de approvedBody via applyResidencyConditionals (F3)');
     assert.ok(PDF.includes('const chapterInline') && PDF.includes('cn.match(/\\(([^)]+)\\)\\s*$/)'),
       'chapterInline deve derivar a forma curta (parentético) do SSOT, sem hardcode');
   });
