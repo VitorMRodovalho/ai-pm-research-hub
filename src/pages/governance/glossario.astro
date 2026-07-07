@@ -20,7 +20,6 @@ import { createClient } from '@supabase/supabase-js';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
-const dateLocale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es-419';
 
 const sbAnon = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -38,24 +37,13 @@ function extractGlossarySection(html: string | null): string {
 
 const latest = glossaryData?.latest;
 const currentLocked = glossaryData?.current_locked;
-const history = glossaryData?.history || [];
 
 const latestGlossaryHtml = extractGlossarySection(latest?.content_html);
 const currentGlossaryHtml = extractGlossarySection(currentLocked?.content_html);
 
-// Espelho público: só versões lacradas (a RPC não retorna mais drafts) e rótulo
-// público limpo (public_label, sem sedimento interno de sessão/ADR/contribuidor).
+// Espelho público: só versões lacradas. #1161 — sem rótulo/histórico de versão na página
+// (confundia novos membros no pré-onboarding); só o conteúdo §13 renderiza e auto-atualiza.
 const displayHtml = currentGlossaryHtml || latestGlossaryHtml;
-const displayLabel = currentLocked?.public_label || latest?.public_label || 'v0';
-const displayIsLocked = !!currentLocked;
-const displayDate = currentLocked?.locked_at || latest?.date;
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString(dateLocale, { day: '2-digit', month: 'long', year: 'numeric' });
-  } catch { return iso; }
-}
 ---
 
 <BaseLayout title={t('glossario.metaTitle', lang)} activePage="governance" lang={lang}>
@@ -76,6 +64,9 @@ function fmtDate(iso: string | null | undefined): string {
       {t('glossario.banner', lang)}
     </div>
 
+    {/* #1161 — guia + FAQ do voluntário no topo (pré-onboarding); definições abaixo. */}
+    <VolunteerGuide lang={lang} />
+
     {!displayHtml && (
       <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-8 text-center">
         <p class="text-sm text-[var(--text-secondary)]">
@@ -84,45 +75,18 @@ function fmtDate(iso: string | null | undefined): string {
       </div>
     )}
 
+    {/* #1161 — sem o header "Versão vX"/status (confundia novos membros); definições apenas. */}
     {displayHtml && (
       <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-6">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-default)] flex-wrap gap-2">
-          <div>
-            <h2 class="text-lg font-bold text-[var(--text-primary)]">{t('glossario.versionLabel', lang)} {displayLabel}</h2>
-            <p class="text-[11px] text-[var(--text-muted)] mt-0.5">
-              {displayIsLocked ? t('glossario.statusLocked', lang) : t('glossario.statusDraft', lang)}
-              {t('glossario.lockedOn', lang)}{fmtDate(displayDate)}
-            </p>
-          </div>
-        </div>
-
         <article
           class="prose prose-sm max-w-none text-[var(--text-primary)]"
           set:html={displayHtml}
         />
-
       </section>
     )}
 
-    {history.length > 1 && (
-      <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] p-4">
-        <h3 class="text-[13px] font-bold text-[var(--text-primary)] mb-2">{t('glossario.history', lang)}</h3>
-        <ul class="text-[11px] text-[var(--text-secondary)] space-y-1">
-          {history.map((v: any) => (
-            <li class="flex items-center gap-2">
-              <span class="font-mono text-[10px]">{v.public_label}</span>
-              <span>·</span>
-              <span>{v.is_locked ? t('glossario.lockedShort', lang) : t('glossario.draftShort', lang)}</span>
-              {v.is_current && <span class="text-green-700 font-semibold">{t('glossario.currentTag', lang)}</span>}
-              <span>·</span>
-              <span>{fmtDate(v.date)}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-    )}
-
-    <VolunteerGuide lang={lang} />
+    {/* #1161 — histórico de versões ("v2.7 Lacrada (vigente)…") removido: confundia
+        novos membros no pré-onboarding. Rastreabilidade preservada pelo link à Política no rodapé. */}
 
     <footer class="text-center pt-6 border-t border-[var(--border-default)]">
       <p class="text-[11px] text-[var(--text-muted)]">
