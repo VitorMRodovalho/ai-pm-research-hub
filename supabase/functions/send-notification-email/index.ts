@@ -25,6 +25,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   ip_ratification_chain_approved: 'Cadeia de aprovacao concluida',
   ip_ratification_awaiting_members: 'Aguardando sua ratificacao',
   weekly_card_digest_member: 'Seu resumo semanal de atividades',
+  volunteer_term_signed_digest: 'Termos de Voluntariado assinados',
   weekly_member_digest: 'Seu resumo semanal — Núcleo IA',
   weekly_tribe_digest_leader: 'Resumo semanal — Núcleo IA',
 }
@@ -32,6 +33,9 @@ const TYPE_SUBJECTS: Record<string, string> = {
 // Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
 const DIGEST_TYPES = new Set([
   'weekly_card_digest_member',
+  // PR-2 email audit: daily aggregate of term signings — body is a \n-delimited list,
+  // rendered via formatDigestBody (preserves line breaks) with the digest opt-out block.
+  'volunteer_term_signed_digest',
 ])
 
 // ADR-0022 W2/W3: digest types with JSON body (from RPC). Rendered via
