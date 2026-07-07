@@ -12,6 +12,8 @@ interface MemberRow {
   signed: boolean;
   signed_at: string | null;
   verification_code: string | null;
+  // PMI affiliation signal (not an eligibility gate — see get_volunteer_agreement_status; #1129 defers a hard validity gate)
+  pmi_id_verified: boolean;
   cycle_code: string | null;
   cycle_start: string | null;
   cycle_end: string | null;
@@ -45,6 +47,7 @@ interface Summary {
   total_eligible: number;
   signed: number;
   unsigned: number;
+  not_verified: number;
   pct: number;
 }
 
@@ -102,6 +105,11 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Erro ao executar a ação.',
     rejectConfirmCountersigned: 'O termo de {name} já foi contra-assinado (ato bilateral). Rejeitá-lo é um distrato formal e não pode ser desfeito. Continuar?',
     rejectedBadgeAria: 'Termo rejeitado — aguarda reassinatura do voluntário',
+    contextEligible: 'voluntários com engagement ativo no ciclo (elegíveis a assinar)',
+    contextUnverified: 'com filiação PMI não verificada',
+    affiliationBadge: 'filiação?',
+    affiliationBadgeTitle: 'Filiação PMI não verificada — acompanhar (não bloqueia a assinatura)',
+    filterUnverified: 'Filiação não verificada',
   },
   'en-US': {
     title: 'Volunteer Agreement',
@@ -149,6 +157,11 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Error performing the action.',
     rejectConfirmCountersigned: "{name}'s agreement was already counter-signed (bilateral act). Rejecting it is a formal rescission and cannot be undone. Continue?",
     rejectedBadgeAria: 'Agreement rejected — awaiting the volunteer to re-sign',
+    contextEligible: 'volunteers with an active engagement this cycle (eligible to sign)',
+    contextUnverified: 'with unverified PMI affiliation',
+    affiliationBadge: 'affiliation?',
+    affiliationBadgeTitle: 'Unverified PMI affiliation — follow up (does not block signing)',
+    filterUnverified: 'Unverified affiliation',
   },
   'es-LATAM': {
     title: 'Acuerdo de Voluntariado',
@@ -196,6 +209,11 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Error al ejecutar la acción.',
     rejectConfirmCountersigned: 'El término de {name} ya fue contra-firmado (acto bilateral). Rechazarlo es una rescisión formal y no se puede deshacer. ¿Continuar?',
     rejectedBadgeAria: 'Término rechazado — esperando que el voluntario vuelva a firmar',
+    contextEligible: 'voluntarios con engagement activo en el ciclo (elegibles para firmar)',
+    contextUnverified: 'con afiliación PMI no verificada',
+    affiliationBadge: 'afiliación?',
+    affiliationBadgeTitle: 'Afiliación PMI no verificada — dar seguimiento (no bloquea la firma)',
+    filterUnverified: 'Afiliación no verificada',
   },
 };
 
@@ -234,6 +252,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [authorized, setAuthorized] = useState(false);
   const [filter, setFilter] = useState<'all' | 'signed' | 'pending'>('all');
   const [chapterFilter, setChapterFilter] = useState<string>('');
+  const [unverifiedOnly, setUnverifiedOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
@@ -266,6 +285,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     if (filter === 'signed' && !m.signed) return false;
     if (filter === 'pending' && m.signed) return false;
     if (chapterFilter && m.chapter !== chapterFilter) return false;
+    if (unverifiedOnly && m.pmi_id_verified) return false;
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.email.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -383,9 +403,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Context: who is counted */}
+      {/* Context: who is counted (derived from the live eligible set — no hardcoded totals) */}
       <div className="text-[10px] text-[var(--text-muted)] bg-[var(--surface-section-cool)] rounded-lg px-3 py-1.5">
-        {summary.total_eligible} voluntários operacionais de 52 membros ativos (sponsors, liaisons e observers isentos)
+        {summary.total_eligible} {t.contextEligible}
+        {summary.not_verified > 0 && (
+          <> · <span className="text-amber-600 dark:text-amber-400">{summary.not_verified} {t.contextUnverified}</span></>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -609,6 +632,20 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
             {uniqueChapters.map(ch => <option key={ch} value={ch}>{ch}</option>)}
           </select>
 
+          {summary.not_verified > 0 && (
+            <button
+              onClick={() => setUnverifiedOnly(v => !v)}
+              title={t.affiliationBadgeTitle}
+              className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
+                unverifiedOnly
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'border-amber-300 text-amber-700 dark:text-amber-400 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20'
+              }`}
+            >
+              ⚠ {t.filterUnverified} ({summary.not_verified})
+            </button>
+          )}
+
           <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
             {(['all', 'signed', 'pending'] as const).map(f => (
               <button
@@ -661,6 +698,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                 <tr key={m.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
                   <td className="px-4 py-2 font-medium text-[var(--text-primary)]">
                     <a href={`/admin/members/${m.id}`} className="text-navy hover:underline no-underline">{m.name}</a>
+                    {!m.pmi_id_verified && (
+                      <span
+                        title={t.affiliationBadgeTitle}
+                        className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-amber-100 text-amber-700 align-middle"
+                      >⚠ {t.affiliationBadge}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.chapter || '—'}</td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.role}</td>

@@ -28,8 +28,8 @@
       "rationale": "Operational alert (cron failure, capacity issue, etc.) — must page admins now."
     },
     "certificate_ready": {
-      "delivery_mode": "transactional_immediate",
-      "rationale": "Counter-signed certificate ready for download — recipient expects within minutes."
+      "delivery_mode": "suppress",
+      "rationale": "#1169: redundant with certificate_issued (every ready-cert already fired an issued email; measured 0 ready-without-issued over 60d). Kept in-app to kill the duplicate per-batch email; the issued notification carries the single email."
     },
     "member_offboarded": {
       "delivery_mode": "transactional_immediate",
