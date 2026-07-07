@@ -10,18 +10,61 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <main class="space-y-6">
     <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.certificates.title', lang)}</h1>
 
-    <!-- Volunteer Agreement Panel -->
-    <VolunteerAgreementPanel client:load lang={lang} />
+    <!-- Tabs: separate Volunteer Agreements from cycle/recognition Certificates (#1173 follow-up) -->
+    <div class="flex gap-1 border-b border-[var(--border-default)]">
+      <button data-cert-tab="termos" class="cert-tab-btn px-4 py-2 text-sm font-semibold border-0 bg-transparent cursor-pointer -mb-px border-b-2 border-navy text-navy">
+        {t('admin.certificates.tabTerms', lang)}
+      </button>
+      <button data-cert-tab="certificados" class="cert-tab-btn px-4 py-2 text-sm font-semibold border-0 bg-transparent cursor-pointer -mb-px border-b-2 border-transparent text-[var(--text-muted)]">
+        {t('admin.certificates.tabCerts', lang)}
+      </button>
+    </div>
 
-    <div id="admin-pending-agreements" class="space-y-3"></div>
-    <div id="admin-certs-pending" class="space-y-3"></div>
-    <div id="admin-certs-signed" class="space-y-3"></div>
-    <div id="admin-certs-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">...</div>
+    <!-- Tab: Volunteer Agreements -->
+    <section data-cert-panel="termos" class="space-y-6">
+      <VolunteerAgreementPanel client:load lang={lang} />
+      <div id="admin-pending-agreements" class="space-y-3"></div>
+    </section>
+
+    <!-- Tab: Certificates (cycle completion + recognition; terms excluded) -->
+    <section data-cert-panel="certificados" class="space-y-6 hidden">
+      <p class="text-[11px] text-[var(--text-muted)] bg-[var(--surface-section-cool)] rounded-lg px-3 py-1.5">{t('admin.certificates.certsTabHint', lang)}</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="certs-filter-type" class="text-[11px] px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)]">
+          <option value="">{t('admin.certificates.filterAllTypes', lang)}</option>
+        </select>
+        <select id="certs-filter-cycle" class="text-[11px] px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)]">
+          <option value="">{t('admin.certificates.filterAllCycles', lang)}</option>
+        </select>
+      </div>
+      <div id="admin-certs-pending" class="space-y-3"></div>
+      <div id="admin-certs-signed" class="space-y-3"></div>
+      <div id="admin-certs-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">...</div>
+    </section>
   </main>
 </AdminLayout>
 
 <script is:inline define:vars={{ lang }}>
   window.__adminCertsLang = lang;
+</script>
+
+<script is:inline>
+  // Tab switching: Volunteer Agreements vs Certificates.
+  (function () {
+    const btns = document.querySelectorAll('[data-cert-tab]');
+    const panels = document.querySelectorAll('[data-cert-panel]');
+    btns.forEach((btn) => btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-cert-tab');
+      panels.forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-cert-panel') !== tab));
+      btns.forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('border-navy', active);
+        b.classList.toggle('text-navy', active);
+        b.classList.toggle('border-transparent', !active);
+        b.classList.toggle('text-[var(--text-muted)]', !active);
+      });
+    }));
+  })();
 </script>
 
 <script>
@@ -226,41 +269,45 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           </div>`;
       }
 
-      // All signed (via get_all_certificates — includes volunteer_agreements via include flag)
+      // Signed CERTIFICATES only (cycle completion + recognition). Volunteer agreements are
+      // excluded here — they live in their own tab (VolunteerAgreementPanel). This kills the old
+      // mixed flat list. Filterable by type + cycle (dropdowns populated from the data).
       const { data: allData } = await sb.rpc('get_all_certificates', {
         p_status_filter: 'issued',
         p_search: null,
-        p_include_volunteer_agreements: true,
+        p_include_volunteer_agreements: false,
       });
       const allCerts = allData?.certificates || [];
       (window as any).__adminSignedCerts = allCerts;
 
-      if (allCerts.length > 0) {
-        const countTerms = allCerts.filter((c: any) => c.type === 'volunteer_agreement').length;
-        const countCerts = allCerts.length - countTerms;
+      const typeSel = document.getElementById('certs-filter-type') as HTMLSelectElement | null;
+      const cycleSel = document.getElementById('certs-filter-cycle') as HTMLSelectElement | null;
+      const uniqTypes = [...new Set(allCerts.map((c: any) => c.type).filter(Boolean))].sort();
+      const uniqCycles = [...new Set(allCerts.map((c: any) => c.cycle).filter((v: any) => v !== null && v !== undefined))].sort((a: any, b: any) => b - a);
+      if (typeSel) uniqTypes.forEach((ty: any) => { const o = document.createElement('option'); o.value = ty; o.textContent = ty; typeSel.appendChild(o); });
+      if (cycleSel) uniqCycles.forEach((cy: any) => { const o = document.createElement('option'); o.value = String(cy); o.textContent = String(cy); cycleSel.appendChild(o); });
+
+      const renderSigned = () => {
+        const ty = typeSel?.value || '';
+        const cy = cycleSel?.value || '';
+        const certs = allCerts.filter((c: any) => (!ty || c.type === ty) && (!cy || String(c.cycle) === cy));
+        if (certs.length === 0) {
+          signedEl.innerHTML = `<div class="text-center py-8 text-[var(--text-muted)] text-sm">${t('admin.certificates.noneSigned', lang)}</div>`;
+          return;
+        }
         signedEl.innerHTML = `
           <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
             <div class="px-5 py-3 border-b border-[var(--border-default)] flex items-center justify-between flex-wrap gap-2">
               <h3 class="text-sm font-bold text-[var(--text-primary)]">
-                ${t('admin.certificates.signedHeader', lang)} (${allCerts.length})
-                <span class="text-[10px] font-normal text-[var(--text-muted)] ml-2">${countTerms} ${t('admin.certificates.signedTermsCount', lang)} · ${countCerts} ${t('admin.certificates.signedCertsCount', lang)}</span>
+                ${t('admin.certificates.signedHeader', lang)} (${certs.length})
               </h3>
-              <div class="flex gap-2">
-                <button id="bulk-download-terms" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[11px] font-semibold border-0 cursor-pointer hover:opacity-90">
-                  📦 ${t('admin.certificates.bulkDownloadTerms', lang)}
-                </button>
-                <button id="bulk-download-all" class="px-3 py-1.5 rounded-lg border border-navy text-navy text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5">
-                  📦 ${t('admin.certificates.bulkDownloadAll', lang)}
-                </button>
-              </div>
+              <button id="bulk-download-all" class="px-3 py-1.5 rounded-lg border border-navy text-navy text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5">
+                📦 ${t('admin.certificates.bulkDownloadAll', lang)}
+              </button>
             </div>
             <div class="divide-y divide-[var(--border-subtle)]">
-              ${allCerts.map((c: any) => {
-                const typeBadge = c.type === 'volunteer_agreement'
-                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">TERMO</span>'
-                  : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">CERT</span>';
-                // 2-wave signature status: volunteer signed (always, since it's in "Assinados" section)
-                // + check if director counter-signed
+              ${certs.map((c: any) => {
+                const typeBadge = `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">${esc(String(c.type || '').toUpperCase())}</span>`;
                 const signedBadge = c.counter_signed_at
                   ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700" title="${t('admin.certificates.completeTitle', lang)}">✓✓ ${t('admin.certificates.completeBadge', lang)}</span>`
                   : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="${t('admin.certificates.awaitingDirectorTitle', lang)}">✍️ ${t('admin.certificates.awaitingDirector', lang)}</span>`;
@@ -285,9 +332,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
               }).join('')}
             </div>
           </div>`;
-      } else {
-        signedEl.innerHTML = `<div class="text-center py-8 text-[var(--text-muted)] text-sm">${t('admin.certificates.noneSigned', lang)}</div>`;
-      }
+      };
+      renderSigned();
+      typeSel?.addEventListener('change', renderSigned);
+      cycleSel?.addEventListener('change', renderSigned);
 
     } catch (e) {
       console.error('Admin certs load failed:', e);
