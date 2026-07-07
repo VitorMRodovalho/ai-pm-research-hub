@@ -87,6 +87,10 @@ export interface CertificateData {
   counter_signed_at?: string;
   counter_signed_by_name?: string;
   template_content?: any; // full template from governance_documents
+  // #1153 Direção 1: the approved chain-version HTML body (document_versions.content_html),
+  // snapshotted immutably at signing into content_snapshot.html_body. When present, the signed
+  // instrument renders from this single source of truth instead of the legacy clauseN slots.
+  template_html_body?: string;
   template_version?: string; // #648: version label of the PINNED template, for the footer
   chapter_cnpj?: string;
   chapter_name?: string;
@@ -325,17 +329,30 @@ function formatPeriod(start: string | undefined, end: string | undefined): strin
  */
 export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const c = certData.template_content || {};
-  // #648 — fail LOUD instead of silently rendering blank clauses. A signed term must
-  // never re-render without its agreed text. hydrateCertData resolves `c` from the
-  // immutable per-cert clause snapshot (or the pinned template version); if it is
-  // missing/empty the document cannot be faithfully reconstructed, so we refuse rather
+  // #1153 Direção 1: prefer the approved chain-version HTML body (single source of truth,
+  // frozen at signing). When present, the signed instrument renders from it instead of the
+  // legacy clauseN slots.
+  const approvedBody = (typeof certData.template_html_body === 'string' && certData.template_html_body.trim())
+    ? certData.template_html_body.trim() : '';
+  const hasApprovedBody = approvedBody.length > 0;
+  // #648 — fail LOUD instead of silently rendering blank clauses. A signed term must never
+  // re-render without its agreed text. hydrateCertData resolves the body from the immutable
+  // per-cert snapshot (the approved HTML body #1153, or the legacy clause slots #648). If
+  // NEITHER resolves, the document cannot be faithfully reconstructed, so we refuse rather
   // than emit a blank legal instrument (the download path serves the frozen PDF first).
-  if (!c || typeof c !== 'object' || Array.isArray(c) || !(c as any).clause1) {
+  if (!hasApprovedBody && (!c || typeof c !== 'object' || Array.isArray(c) || !(c as any).clause1)) {
     throw new Error(
       `volunteer_agreement_template_unavailable: missing clause snapshot for cert ` +
       `${certData.verification_code || '(unknown)'} — refusing to render a blank signed term (#648)`
     );
   }
+  // Defensive {chapterName} resolution (the RPC already resolves it at snapshot time; this
+  // covers any legacy/edge body). Mirrors the SQL: short parenthetical form of the legal name.
+  const chapterInline = (() => {
+    const cn = certData.chapter_name || 'PMI Goiás';
+    const m = cn.match(/\(([^)]+)\)\s*$/);
+    return m ? m[1] : cn;
+  })();
   const SUB_KEYS: Record<string, string[]> = {
     clause1: ['clause1a', 'clause1b', 'clause1c'],
     clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
@@ -349,14 +366,19 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const phoneLine = formatPhone(certData.member_phone);
   const birthLine = formatBirthDate(certData.member_birth_date);
 
-  // Header with PMI-GO logo (same reference as the example PDF)
-  const headerBlock = `
+  // Header with PMI-GO logo (same reference as the example PDF).
+  const logoBlock = `
     <div style="margin-bottom:20px">
       <img src="${PMIGO_LOGO_DATA_URI}" alt="PMI Goiás" style="height:52px;width:auto;display:block" />
-    </div>
+    </div>`;
+  // The legacy slot path keeps its own chrome title; the Direção 1 approved body carries its
+  // own document title (<h2>Termo de Adesão…</h2>), so the chrome h1 is dropped there to avoid
+  // a duplicate heading.
+  const titleH1 = hasApprovedBody ? '' : `
     <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
       TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
     </h1>`;
+  const headerBlock = `${logoBlock}${titleH1}`;
 
   const memberDataBlock = `
     <div style="font-size:11px;line-height:1.8;margin:8px 0 14px 20px">
@@ -389,6 +411,16 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       <b style="color:#333">${i + 1}.</b> ${text}${subsHtml}
     </li>`;
   }).join('');
+
+  // #1153 Direção 1: the legal body is the approved chain-version HTML (single source of
+  // truth), rendered as-is (governance content is admin-authored and chain-approved). The
+  // legacy slot path (already-signed certs whose snapshot has clauseN but no html_body) keeps
+  // its "Termos da Adesão" heading + <ol> so #648 immutability is preserved verbatim.
+  const legalSection = hasApprovedBody
+    ? `<div class="gov-approved-body" style="font-size:11px;line-height:1.6;text-align:justify">${approvedBody.replace(/\{chapterName\}/g, chapterInline)}</div>`
+    : `<h3 style="font-weight:bold;color:#000;font-size:13px;margin:18px 0 10px">Termos da Adesão do Programa de Voluntariado:</h3>
+
+    <ol style="list-style:none;padding:0;margin:0">${clausesHtml}</ol>`;
 
   const signedDate = certData.signed_at ? formatLongDate(certData.signed_at) : formatLongDate(new Date().toISOString());
   const counterSignedDate = certData.counter_signed_at ? formatLongDate(certData.counter_signed_at) : null;
@@ -498,9 +530,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       <b>Período de atuação:</b> ${formatPeriod(certData.period_start, certData.period_end)}
     </p>
 
-    <h3 style="font-weight:bold;color:#000;font-size:13px;margin:18px 0 10px">Termos da Adesão do Programa de Voluntariado:</h3>
-
-    <ol style="list-style:none;padding:0;margin:0">${clausesHtml}</ol>
+    ${legalSection}
 
     ${signatureBlock}
 
@@ -826,7 +856,11 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
           //       of its current lifecycle status.
           // If neither resolves, template_content stays undefined and
           // buildVolunteerAgreementHTML throws rather than emit a blank instrument.
-          certData.template_version = certData.template_version || snap.template_version;
+          certData.template_version = certData.template_version || snap.body_version_label || snap.template_version;
+          // #1153 Direção 1: the frozen approved HTML body is the single source of truth for
+          // the signed instrument. Resolved from the immutable snapshot only (never a live
+          // template query — that would reintroduce the #648 drift the guard forbids).
+          certData.template_html_body = certData.template_html_body || snap.html_body;
           const snapClauses = snap.clauses;
           if (snapClauses && typeof snapClauses === 'object' && !Array.isArray(snapClauses) && snapClauses.clause1) {
             certData.template_content = snapClauses;
