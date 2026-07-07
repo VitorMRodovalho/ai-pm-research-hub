@@ -91,6 +91,8 @@ const L: Record<string, Record<string, string>> = {
     actions: 'Ações',
     reject: 'Rejeitar',
     reissue: 'Re-emitir',
+    counterSign: 'Contra-assinar',
+    counterSignConfirm: 'Contra-assinar o Termo de {name}? Isso conclui a assinatura pela diretoria e libera o certificado ao voluntário.',
     rejectPrompt: 'Motivo da rejeição do termo (o voluntário será notificado para reassinar):',
     rejectPromptCountersigned: 'Atenção: este termo já foi contra-assinado (ato bilateral). Rejeitá-lo equivale a um distrato formal. Motivo:',
     reissuePrompt: 'Motivo da reemissão (o termo atual será substituído e o voluntário deverá reassinar):',
@@ -136,6 +138,8 @@ const L: Record<string, Record<string, string>> = {
     actions: 'Actions',
     reject: 'Reject',
     reissue: 'Reissue',
+    counterSign: 'Counter-sign',
+    counterSignConfirm: 'Counter-sign {name}’s Agreement? This completes the board signature and releases the certificate to the volunteer.',
     rejectPrompt: 'Reason for rejecting the agreement (the volunteer will be asked to re-sign):',
     rejectPromptCountersigned: 'Warning: this agreement was already counter-signed (bilateral act). Rejecting it amounts to a formal rescission. Reason:',
     reissuePrompt: 'Reason for reissuing (the current agreement will be superseded and the volunteer must re-sign):',
@@ -181,6 +185,8 @@ const L: Record<string, Record<string, string>> = {
     actions: 'Acciones',
     reject: 'Rechazar',
     reissue: 'Reemitir',
+    counterSign: 'Contrafirmar',
+    counterSignConfirm: 'Contrafirmar el Acuerdo de {name}? Esto completa la firma de la directiva y libera el certificado al voluntario.',
     rejectPrompt: 'Motivo del rechazo del término (el voluntario será notificado para volver a firmar):',
     rejectPromptCountersigned: 'Atención: este término ya fue contra-firmado (acto bilateral). Rechazarlo equivale a una rescisión formal. Motivo:',
     reissuePrompt: 'Motivo de la reemisión (el término actual será reemplazado y el voluntario deberá volver a firmar):',
@@ -223,6 +229,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [template, setTemplate] = useState<TemplateData | null>(null);
   const [showTemplate, setShowTemplate] = useState(false);
   const [isManager, setIsManager] = useState(false);
+  const [canCounterSign, setCanCounterSign] = useState(false);
   const [callerChapter, setCallerChapter] = useState<string>('');
   const [authorized, setAuthorized] = useState(false);
   const [filter, setFilter] = useState<'all' | 'signed' | 'pending'>('all');
@@ -246,6 +253,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
       setFocalPoints(d.focal_points || []);
       setTemplate(d.template || null);
       setIsManager(d.is_manager || false);
+      setCanCounterSign(d.can_counter_sign || false);
       setCallerChapter(d.caller_chapter || '');
     }
   }, []);
@@ -317,6 +325,29 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     setActing(m.id);
     try {
       const { data, error } = await sb.rpc('reject_certificate', { p_certificate_id: m.agreement_cert_id, p_reason: reason.trim() });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      (window as any).toast?.(t.actionSuccess, 'success');
+      await load();
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setActing(null);
+    }
+  };
+
+  // Counter-sign a member's issued term (board signature, 2nd wave). Authority is enforced by
+  // counter_sign_certificate (manage_member OR chapter_board of the contracting chapter); the
+  // button only renders when get_volunteer_agreement_status returned can_counter_sign=true, so
+  // the two stay in lock-step. Mirrors the working call in admin/certificates.astro (omits p_signed_ip).
+  const counterSignAgreement = async (m: MemberRow) => {
+    if (!m.agreement_cert_id) return;
+    if (!window.confirm(t.counterSignConfirm.replace('{name}', m.name))) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    setActing(m.id);
+    try {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 500) : null;
+      const { data, error } = await sb.rpc('counter_sign_certificate', { p_certificate_id: m.agreement_cert_id, p_signed_user_agent: ua });
       if (error || data?.error) throw new Error(data?.error || error?.message);
       (window as any).toast?.(t.actionSuccess, 'success');
       await load();
@@ -678,6 +709,15 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                   <td className="px-3 py-2 text-right whitespace-nowrap">
                     {m.agreement_status === 'issued' ? (
                       <div className="inline-flex gap-1.5">
+                        {canCounterSign && m.signed && !m.counter_signed && (
+                          <button
+                            onClick={() => counterSignAgreement(m)}
+                            disabled={acting === m.id}
+                            className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold border-0 cursor-pointer hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            ✍️ {t.counterSign}
+                          </button>
+                        )}
                         <button
                           onClick={() => rejectAgreement(m)}
                           disabled={acting === m.id}
