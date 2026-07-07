@@ -61,6 +61,8 @@ test('#632 mig147 DB: the unlocked-draft admin SELECT policy is live', { skip: d
     .select('id, locked_at, version_label')
     .eq('version_label', 'draft-rev-juridica-2026-06-07');
   assert.ifError(e2);
-  assert.equal(rows.length, 9, 'all 9 revised-package drafts present');
-  assert.ok(rows.every(r => r.locked_at === null), 'all 9 remain unlocked (gated for legal review)');
+  // #1153 Onda 1: the volunteer_term_template's draft-rev-juridica-2026-06-07 (v8) was superseded
+  // by v9 (docx V2, locked into the Onda 1 chain) and discarded, so the package is down to 8 here.
+  assert.equal(rows.length, 8, 'the 8 still-pending revised-package drafts present (Termo advanced to v9 in #1153 Onda 1)');
+  assert.ok(rows.every(r => r.locked_at === null), 'all remaining drafts stay unlocked (gated for legal review)');
 });

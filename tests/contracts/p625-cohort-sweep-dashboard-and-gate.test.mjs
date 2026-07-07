@@ -35,7 +35,9 @@ const MIG_GATE = readFileSync(MIG_GATE_PATH, 'utf8');
 // Gate Matrix v3) re-captured it verbatim + added committee_majority/partner_consultation. The live
 // md5 drift check + branch reproductions below track this canonical body (which still contains the
 // #625 branch verbatim). Repoint when _can_sign_gate is next re-captured.
-const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000303_975_pr3_camada5_material_ratification_chain.sql';
+// Repointed to mig 353 (#1152): president_go dropped the voluntariado_director carve-out
+// (now legal_signer-only). The #625 volunteers_in_role_active branch is preserved verbatim.
+const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000353_1152_president_go_drop_voluntariado_director_carveout.sql';
 const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
 // get_admin_dashboard's CANONICAL capture moved to #932 Part 2 (mig 321), which re-captured it
 // verbatim + added the confidential-exclusion predicate on the two deliverables counts (the #625
@@ -124,7 +126,7 @@ describe('p625-sweep — DB-gated (skip without env)', () => {
     const fn = (data ?? []).find((f) => f.proname === '_can_sign_gate');
     assert.ok(fn, '_can_sign_gate exists live');
     assert.equal(fn.is_secdef, true);
-    assert.equal(fn.body_md5, await md5Norm(GATE_BODY), 'live _can_sign_gate drifted from its latest canonical capture (mig 303, #975 PR-3)');
+    assert.equal(fn.body_md5, await md5Norm(GATE_BODY), 'live _can_sign_gate drifted from its latest canonical capture (mig 353, #1152)');
   });
 
   it('both migrations registered once (no wall-clock shadow row)', { skip: !sb }, async () => {
