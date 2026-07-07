@@ -55,9 +55,6 @@ BEGIN
    WHERE doc_type = 'volunteer_term_template' AND status = 'active' AND id <> p_doc_id;
   GET DIAGNOSTICS v_deactivated = ROW_COUNT;
 
-  -- Resolve the ratified (approved) chain for the version being activated and stamp coherence:
-  -- the doc carries the ratified chain, the chain is marked activated. Without this the doc
-  -- violates V_status_chain_coherence (current_ratified_chain_id must be NOT NULL when active).
   SELECT ac.id INTO v_chain_id
   FROM approval_chains ac
   WHERE ac.document_id = p_doc_id
