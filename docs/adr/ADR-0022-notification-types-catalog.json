@@ -12,8 +12,12 @@
   },
   "types": {
     "volunteer_agreement_signed": {
+      "delivery_mode": "suppress",
+      "rationale": "PR-2 email audit (2026-07-07): leadership signing alert is now in-app only (bell). The per-signing 1-a-1 email fanned out to 13 wrong recipients (boards of the signer's home chapter + all sede directors). Replaced by volunteer_term_signed_digest — one daily aggregate email to GP + the sede voluntariado director."
+    },
+    "volunteer_term_signed_digest": {
       "delivery_mode": "transactional_immediate",
-      "rationale": "Confirmation that volunteer signed the term — receipt is timely + carries verification code."
+      "rationale": "PR-2 email audit (2026-07-07): once-a-day aggregate of the last 24h of term signings, emitted by _volunteer_term_signed_digest_cron (daily 21:00 UTC) to GP (manage_platform) + the sede voluntariado director. transactional_immediate so the jobid-9 cron delivers the single daily email per recipient (the aggregation, not the cadence, is what bounds Resend quota)."
     },
     "ip_ratification_gate_pending": {
       "delivery_mode": "transactional_immediate",
