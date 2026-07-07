@@ -43,7 +43,7 @@ export const CSP =
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com https://i.ytimg.com; " +
-  "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com; " +
+  "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com https://viacep.com.br; " +
   "frame-src https://calendar.google.com; " +
   "object-src 'none'; " +
   "frame-ancestors 'none'; " +
