@@ -517,7 +517,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ${headerBlock}
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
-      <b>Termo de Compromisso de Voluntário com o ${certData.chapter_name || 'PMI Goiás'}</b> que fazem entre si a <b>${certData.chapter_name || 'Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)'}</b>, inscrito no CNPJ/MF sob o nº ${certData.chapter_cnpj || '06.065.645/0001-99'} e:
+      <b>Termo de Adesão ao Serviço Voluntário com o ${chapterInline}</b> que fazem entre si a <b>${certData.chapter_name || 'Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)'}</b>, inscrito no CNPJ/MF sob o nº ${certData.chapter_cnpj || '06.065.645/0001-99'} e:
     </p>
 
     ${memberDataBlock}
