@@ -84,16 +84,22 @@ test('approve_selection_application upserts member via lower(email) lookup', () 
 
 test('approve_selection_application uses selection_cycles.close_date, not nonexistent end_date', () => {
   const body = findFunctionBody('approve_selection_application');
-  assert.ok(/SELECT\s+sc\.close_date,\s*sc\.contracting_chapter[\s\S]+?FROM public\.selection_cycles sc/.test(body),
-    'must read selection_cycles.close_date and contracting_chapter');
+  // #1197: contracting_chapter is no longer read — it must not feed member affiliation.
+  assert.ok(/SELECT\s+sc\.close_date[\s\S]+?FROM public\.selection_cycles sc/.test(body),
+    'must read selection_cycles.close_date');
   assert.ok(!/sc\.end_date/.test(body),
     'must not reference nonexistent selection_cycles.end_date');
 });
 
 test('approve_selection_application has safe member.chapter fallback for null imported chapters', () => {
   const body = findFunctionBody('approve_selection_application');
-  assert.ok(/v_member_chapter\s*:=\s*COALESCE\([\s\S]+?NULLIF\(trim\(v_app\.chapter\), ''\)[\s\S]+?NULLIF\(trim\(v_cycle_contracting_chapter\), ''\)[\s\S]+?'Nao informado'/.test(body),
-    'must derive v_member_chapter from application chapter, cycle contracting_chapter, then fallback');
+  // #1197: chapter derives from the applicant's declaration only; no declared chapter ->
+  // canonical 'Outro'. The cycle's contracting chapter (a legal/contract concept) must never
+  // leak into members.chapter — that provisioning path tripped invariant U live on 2026-07-08.
+  assert.ok(/v_member_chapter\s*:=\s*COALESCE\(\s*NULLIF\(trim\(v_app\.chapter\), ''\),\s*'Outro'\s*\)/.test(body),
+    'must derive v_member_chapter from the application declaration with Outro fallback');
+  assert.ok(!/v_cycle_contracting_chapter/.test(body),
+    'contracting chapter must not feed member affiliation (#1197)');
   assert.ok(/v_app\.applicant_name,\s*v_app\.email,\s*v_app\.pmi_id,\s*v_member_chapter/.test(body),
     'member INSERT must use v_member_chapter instead of raw nullable v_app.chapter');
 });

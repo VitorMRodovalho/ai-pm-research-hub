@@ -73,7 +73,7 @@ test('1197: members.chapter column default stays Outro (canonical no-chapter val
   // registry-chaptered member without a primary affiliation slipped through provisioning.
   const rows = await rest('/rest/v1/rpc/check_schema_invariants');
   const u = (Array.isArray(rows) ? rows : []).find(
-    (r) => r.invariant === 'U_active_person_has_primary_chapter_affiliation',
+    (r) => r.invariant_name === 'U_active_person_has_primary_chapter_affiliation',
   );
   assert.ok(u, 'invariant U present in suite');
   assert.equal(Number(u.violation_count), 0, 'invariant U must have 0 violations');
