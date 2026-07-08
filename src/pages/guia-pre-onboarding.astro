@@ -1,0 +1,119 @@
+---
+/**
+ * /guia-pre-onboarding — Guia público do Pré-Onboarding
+ *
+ * Página estática, acessível a anon/Visitante, linkável nos grupos de WhatsApp
+ * de cada ciclo. Consolida a jornada canônica (aprovado → membro ativo) e o FAQ
+ * com as dúvidas reais recorrentes dos candidatos (origem: pré-onboarding C4).
+ *
+ * Conteúdo em pt-BR por design (mesma regra de /governance/glossario +
+ * volunteer-guide.ts); apenas o chrome é localizado via i18n `guiaPre.*`.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../i18n/utils';
+import { journey, preFaq } from '../data/pre-onboarding-guide';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const showLangNote = lang !== 'pt-BR';
+---
+
+<BaseLayout title={t('guiaPre.metaTitle', lang)} activePage="help" lang={lang}>
+  <div class="max-w-[900px] mx-auto px-4 py-10 space-y-10">
+    <header class="text-center space-y-2">
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy">
+        {t('guiaPre.title', lang)}
+      </h1>
+      <p class="text-sm text-[var(--text-muted)] max-w-2xl mx-auto">
+        {t('guiaPre.subtitle', lang)}
+      </p>
+      {showLangNote && (
+        <p class="text-[11px] text-amber-800 italic">{t('guiaPre.langNote', lang)}</p>
+      )}
+    </header>
+
+    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900">
+      {t('guiaPre.banner', lang)}
+    </div>
+
+    <!-- Jornada passo a passo -->
+    <section aria-labelledby="journey-heading" class="space-y-4">
+      <div class="space-y-1">
+        <h2 id="journey-heading" class="text-xl font-extrabold text-navy">{t('guiaPre.journeyTitle', lang)}</h2>
+        <p class="text-[13px] text-[var(--text-muted)]">{t('guiaPre.journeySub', lang)}</p>
+      </div>
+      <ol class="space-y-3">
+        {journey.map((step, i) => (
+          <li class="flex gap-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
+            <span class="flex-none h-9 w-9 rounded-full bg-navy text-white font-extrabold text-[15px] flex items-center justify-center" aria-hidden="true">{i + 1}</span>
+            <div class="min-w-0 space-y-1.5">
+              <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                <h3 class="text-[15.5px] font-bold text-[var(--text-primary)]">{step.title}</h3>
+                <span class="text-[12px] font-semibold text-[var(--text-muted)]">{step.where}</span>
+              </div>
+              <p class="text-[14px] text-[var(--text-secondary)]" set:html={step.detail} />
+              {step.link && (
+                <a href={step.link.href} class="inline-block text-[13px] font-semibold text-navy underline hover:no-underline" rel="noopener">
+                  {step.link.label} →
+                </a>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- FAQ -->
+    <section aria-labelledby="prefaq-heading" class="space-y-4">
+      <div class="space-y-1 pt-4 border-t border-[var(--border-default)]">
+        <h2 id="prefaq-heading" class="text-xl font-extrabold text-navy">{t('guiaPre.faqTitle', lang)}</h2>
+        <p class="text-[13px] text-[var(--text-muted)]">{t('guiaPre.faqSub', lang)}</p>
+      </div>
+      <div class="space-y-2">
+        {preFaq.map((item) => (
+          <details class="pg-faq rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)]">
+            <summary class="cursor-pointer select-none px-4 py-3 pr-10 font-semibold text-[15px] text-[var(--text-primary)] relative">
+              {item.q}
+            </summary>
+            <div class="px-4 pb-4 text-[14px] text-[var(--text-secondary)]">
+              <span set:html={item.a} />
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <footer class="text-center pt-6 border-t border-[var(--border-default)] space-y-2">
+      <p class="text-[12px] text-[var(--text-muted)]">
+        {t('guiaPre.moreHelp', lang)}{' '}
+        <a href={`${langPrefix}/governance/glossario`} class="underline hover:text-navy">{t('guiaPre.linkGlossario', lang)}</a>
+        {' · '}
+        <a href={`${langPrefix}/reunioes-gerais`} class="underline hover:text-navy">{t('guiaPre.linkAgenda', lang)}</a>
+      </p>
+      <p class="text-[10px] text-[var(--text-muted)] italic">
+        {t('guiaPre.footer', lang)}
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  .pg-faq summary { list-style: none; }
+  .pg-faq summary::-webkit-details-marker { display: none; }
+  .pg-faq summary::after {
+    content: "+"; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 1.25rem; font-weight: 400; color: var(--navy, #1C5FA8); line-height: 1;
+  }
+  .pg-faq[open] summary::after { content: "\2212"; }
+  .pg-faq[open] summary { color: var(--navy, #1C5FA8); }
+  @media print {
+    .pg-faq { border: 1px solid #ccc; }
+  }
+</style>
+
+<script>
+  // Abre todas as FAQs ao imprimir (details fechado não imprime o conteúdo)
+  const items = Array.from(document.querySelectorAll('.pg-faq')) as HTMLDetailsElement[];
+  let restore: boolean[] = [];
+  window.addEventListener('beforeprint', () => { restore = items.map(d => d.open); items.forEach(d => d.open = true); });
+  window.addEventListener('afterprint', () => { items.forEach((d, i) => d.open = restore[i]); });
+</script>

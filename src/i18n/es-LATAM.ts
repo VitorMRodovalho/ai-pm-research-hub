@@ -6646,6 +6646,21 @@ const esLATAM: Record<string, string> = {
   'meStatus.nextStep.waitlist': 'Estás en lista de espera. Si se abren cupos, te contactaremos.',
   'meStatus.evaluationsBlindNote': 'Durante la fase de evaluación ves solo la cantidad de evaluaciones enviadas — sin identificación de evaluadores (anti-sesgo).',
 
+  // ── Guia do Pré-Onboarding (/guia-pre-onboarding) ──
+  'guiaPre.metaTitle': 'Guía de Pre-Onboarding · Núcleo IA & GP',
+  'guiaPre.title': 'Guía de Pre-Onboarding',
+  'guiaPre.subtitle': 'De la aprobación a tu primera tribu: el paso a paso de la jornada y las respuestas a las dudas más comunes de los nuevos voluntarios.',
+  'guiaPre.langNote': 'El contenido de esta guía se mantiene en portugués (pt-BR), idioma oficial de comunicación del programa.',
+  'guiaPre.banner': 'Guía viva: se actualiza con las dudas de cada ciclo. ¿No encontraste tu respuesta? Pregunta en el grupo de onboarding de tu ciclo o usa el Centro de Ayuda de la plataforma.',
+  'guiaPre.journeyTitle': 'La jornada en 6 pasos',
+  'guiaPre.journeySub': 'Sigue el orden: cada paso desbloquea el siguiente.',
+  'guiaPre.faqTitle': 'Preguntas frecuentes',
+  'guiaPre.faqSub': 'Recopiladas de los grupos de pre-onboarding: si te lo preguntaste, alguien ya lo preguntó.',
+  'guiaPre.moreHelp': 'Más material:',
+  'guiaPre.linkGlossario': 'Guía del voluntario + glosario',
+  'guiaPre.linkAgenda': 'Agenda de reuniones generales',
+  'guiaPre.footer': 'Esta guía es material de apoyo y no sustituye el Término de Voluntariado ni las políticas del programa.',
+
   // ── Glossario (Política IP §13 mirror) ──
   'glossario.metaTitle': 'Glosario — Núcleo IA & GP',
   'glossario.title': 'Glosario Canónico',
