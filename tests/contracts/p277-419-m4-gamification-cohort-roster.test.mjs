@@ -162,8 +162,10 @@ test('M4-gam DB: native forks KILLED — Mesa=4, LATAM=3, Grupo=3 (== get_initia
 test('M4-gam DB: only tribe-8 changed — other tribes stable (drift-tolerant baselines)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   // tribe-6 6→5: offboarding legítimo de membro em 2026-06-11 (alumni, ROI & Portfólio)
-  // tribe-2 5→4: offboarding legítimo de Ricardo França em 2026-07-04 (alumni, external_priority)
-  const expect = { 1: 4, 2: 4, 6: 5 };
+  // tribe-2 REMOVIDA da baseline em 2026-07-08: T2 arquivada no DIA 9 (líder → alumni,
+  // #1124) e o roster drena conforme os 3 órfãos re-selecionam tribo até 17/07 — não há
+  // valor estável para pinar (histórico: 5→4 com o offboard do Ricardo em 04/07).
+  const expect = { 1: 4, 6: 5 };
   for (const [tid, n] of Object.entries(expect)) {
     const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: Number(tid) });
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
