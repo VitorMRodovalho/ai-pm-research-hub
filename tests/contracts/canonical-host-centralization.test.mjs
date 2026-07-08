@@ -66,12 +66,14 @@ test('canonical-host: no other file under src/ hardcodes the host literal', () =
 });
 
 // ── Critical-path files actually import from the SSOT (not a stale copy) ──────────
+// #1210: the two .well-known OAuth discovery routes intentionally left this
+// list — they derive issuer/resource from the REQUEST origin (url.origin) so
+// the same metadata serves the canonical host and the institutional alias.
+// The host-literal ratchet above still covers them (no hardcoded hosts).
 const CRITICAL = [
   ['src/middleware.ts', /from ["']\.\/lib\/canonical["']/],
   ['src/pages/mcp.ts', /from ["']\.\.\/lib\/canonical["']/],
   ['src/pages/mcp/semantic.ts', /from ["']\.\.\/\.\.\/lib\/canonical["']/],
-  ['src/pages/.well-known/oauth-authorization-server.ts', /from ["']\.\.\/\.\.\/lib\/canonical["']/],
-  ['src/pages/.well-known/oauth-protected-resource.ts', /from ["']\.\.\/\.\.\/lib\/canonical["']/],
   ['src/lib/certificates/pdf.ts', /from ["']\.\.\/canonical["']/],
 ];
 
@@ -93,10 +95,12 @@ test('astro.config.mjs: site comes from CANONICAL_ORIGIN, not a literal', () => 
 });
 
 // ── The OAuth issuer/resource identifiers stay absolute (origin, not bare host) ───
-test('canonical-host: OAuth metadata uses the origin (scheme + host)', () => {
+// #1210: identifiers now derive from the request origin (alias-ready) instead of
+// the pinned canonical constant. RFC 8414 §3.3 still holds: the issuer equals the
+// origin the metadata is fetched from.
+test('canonical-host: OAuth metadata derives issuer/resource from the request origin', () => {
   const as = read('src/pages/.well-known/oauth-authorization-server.ts');
   const pr = read('src/pages/.well-known/oauth-protected-resource.ts');
-  // issuer/resource must resolve to https://<host>, which CANONICAL_ORIGIN provides
-  assert.match(as, /const BASE = CANONICAL_ORIGIN/, 'authz-server BASE = origin');
-  assert.match(pr, /const BASE = CANONICAL_ORIGIN/, 'protected-resource BASE = origin');
+  assert.match(as, /url\.origin/, 'authz-server derives from url.origin');
+  assert.match(pr, /url\.origin/, 'protected-resource derives from url.origin');
 });

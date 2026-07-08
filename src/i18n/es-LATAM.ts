@@ -2818,7 +2818,7 @@ const esLATAM: Record<string, string> = {
   'oauth.error': 'Error',
   'oauth.success': 'Autorizado con éxito',
   'oauth.redirecting': 'Redirigiendo de vuelta a su aplicación de IA...',
-  'oauth.missingState': 'Parámetro mcp_state ausente. Abra esta página desde el flujo OAuth de su asistente de IA.',
+  'oauth.missingState': 'Parámetro de autorización ausente. Abra esta página desde el flujo OAuth de su asistente de IA.',
   'oauth.loginError': 'Error al iniciar sesión.',
   'oauth.codeError': 'Error al generar código de autorización.',
   'oauth.sessionExpired': 'Sesión expirada. Inicie sesión nuevamente.',

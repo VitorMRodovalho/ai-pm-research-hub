@@ -1,6 +1,16 @@
 ---
 // src/pages/oauth/consent.astro
-// OAuth consent page — user logs in via Supabase Auth then approves MCP access
+// OAuth consent page — user logs in via Supabase Auth then approves MCP access.
+//
+// #1210 — this is the Authorization Path of Supabase Auth's NATIVE OAuth 2.1
+// server (dashboard: Authentication → OAuth Server → /oauth/consent). GoTrue
+// validates the client's request and redirects here with ?authorization_id=;
+// the page authenticates the member (browser session) and settles the request
+// via supabase.auth.oauth.{getAuthorizationDetails,approveAuthorization,
+// denyAuthorization}. Tokens for the MCP client are minted by GoTrue in a
+// DEDICATED client-scoped session — the browser session is only the approver
+// identity, never copied to the client (the pre-#1210 flow copied it, making
+// browser and connector race over one rotating refresh token → re-login ~1h).
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -49,6 +59,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <span class="text-2xl">&#x1F916;</span>
           </div>
           <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">{t('oauth.authorizeTitle', lang)}</h1>
+          <p id="client-name" class="text-sm font-semibold text-[var(--text-primary)] hidden"></p>
           <p class="text-sm text-[var(--text-secondary)]">
             {t('oauth.authorizeDesc', lang)}
           </p>
@@ -140,14 +151,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
 
     const params = new URLSearchParams(window.location.search);
-    const mcpState = params.get('mcp_state');
-    const oauthData = params.get('oauth_data') || sessionStorage.getItem('mcp_oauth_data') || '';
+    // #1210 — native GoTrue OAuth server hands us ?authorization_id=. Persist it
+    // across the social-login redirect (mirrors the old oauth_data handling).
+    const authorizationId = params.get('authorization_id') || sessionStorage.getItem('mcp_authorization_id') || '';
+    if (params.get('authorization_id')) sessionStorage.setItem('mcp_authorization_id', params.get('authorization_id'));
 
-    // Persist oauth_data across social login redirect
-    if (oauthData) sessionStorage.setItem('mcp_oauth_data', oauthData);
-
-    if (!mcpState) {
-      showError(document.getElementById('i18n-missingState')?.textContent || 'Missing mcp_state parameter. Open this page via your AI assistant\'s OAuth flow.');
+    if (!authorizationId) {
+      showError(document.getElementById('i18n-missingState')?.textContent || 'Missing authorization parameter. Open this page via your AI assistant\'s OAuth flow.');
     }
 
     // Social login handlers
@@ -156,9 +166,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const isEmbedded = window.opener || window !== window.top || navigator.userAgent.includes('Claude');
 
     async function loginWith(provider) {
-      if (!mcpState) return;
+      if (!authorizationId) return;
 
-      const redirectTo = window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData);
+      const redirectTo = window.location.origin + '/oauth/consent?authorization_id=' + encodeURIComponent(authorizationId);
 
       // For Google in embedded contexts (or if popup fails), use same-window redirect
       // This avoids Google's disallowed_useragent block on nested popups
@@ -200,7 +210,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           if (session) {
             clearInterval(pollInterval);
             if (authWindow && !authWindow.closed) authWindow.close();
-            showConsent();
+            await loadAuthorizationDetails();
           }
         } catch {}
       }, 1000);
@@ -212,11 +222,32 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     document.getElementById('btn-azure')?.addEventListener('click', () => loginWith('azure'));
     document.getElementById('btn-linkedin')?.addEventListener('click', () => loginWith('linkedin_oidc'));
 
-    // Approve handler
-    document.getElementById('approve-btn')?.addEventListener('click', async () => {
-      const btn = document.getElementById('approve-btn');
-      btn.disabled = true;
-      btn.textContent = document.getElementById('i18n-authorizing')?.textContent || 'Authorizing...';
+    // Load the authorization request from GoTrue and route the UI. Returns via
+    // redirect_url when the user has previously consented to this client.
+    async function loadAuthorizationDetails() {
+      const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+      if (error) {
+        showError(error.message || document.getElementById('i18n-codeError')?.textContent || 'Error loading authorization request.');
+        return;
+      }
+      if ('authorization_id' in data) {
+        const clientName = data.client?.name || data.client?.client_name;
+        const clientEl = document.getElementById('client-name');
+        if (clientName && clientEl) {
+          clientEl.textContent = clientName;
+          clientEl.classList.remove('hidden');
+        }
+        showConsent();
+      } else if (data.redirect_url) {
+        // Already consented — return straight to the client.
+        sessionStorage.removeItem('mcp_authorization_id');
+        window.location.href = data.redirect_url;
+      }
+    }
+
+    async function settle(decision) {
+      const btn = document.getElementById(decision === 'approve' ? 'approve-btn' : 'deny-btn');
+      if (btn) btn.disabled = true;
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -225,42 +256,45 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           return;
         }
 
-        const res = await fetch('/oauth/exchange', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            oauth_data: oauthData,
-          }),
-        });
+        const { data, error } = decision === 'approve'
+          ? await supabase.auth.oauth.approveAuthorization(authorizationId)
+          : await supabase.auth.oauth.denyAuthorization(authorizationId);
 
-        const data = await res.json();
-        if (data.redirect_url) {
+        if (error || !data?.redirect_url) {
+          showError(error?.message || document.getElementById('i18n-codeError')?.textContent || 'Error generating authorization code.');
+          return;
+        }
+
+        sessionStorage.removeItem('mcp_authorization_id');
+        if (decision === 'approve') {
           showSuccess();
-          setTimeout(() => {
-            window.location.href = data.redirect_url;
-          }, 500);
+          setTimeout(() => { window.location.href = data.redirect_url; }, 500);
         } else {
-          showError(data.error || document.getElementById('i18n-codeError')?.textContent || 'Error generating authorization code.');
+          window.location.href = data.redirect_url;
         }
       } catch (e) {
         showError('Erro: ' + e.message);
       }
+    }
+
+    // Approve handler
+    document.getElementById('approve-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('approve-btn');
+      btn.textContent = document.getElementById('i18n-authorizing')?.textContent || 'Authorizing...';
+      await settle('approve');
     });
 
-    // Deny handler
-    document.getElementById('deny-btn')?.addEventListener('click', () => {
-      showError(document.getElementById('i18n-accessDenied')?.textContent || 'Access denied. You can close this window.');
-    });
+    // Deny handler — settles the request at GoTrue (client receives
+    // error=access_denied) instead of dead-ending in this window.
+    document.getElementById('deny-btn')?.addEventListener('click', () => settle('deny'));
 
     // Init — check if already logged in
     async function init() {
-      if (!mcpState) return;
+      if (!authorizationId) return;
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        showConsent();
+        await loadAuthorizationDetails();
       } else {
         showLogin();
       }

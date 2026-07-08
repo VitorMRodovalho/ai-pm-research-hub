@@ -42,13 +42,19 @@ test('#234: fallback config supplies URL but requires anon key binding', () => {
   assert.equal(cfg.anonKey, '');
 });
 
-test('#234 / #1053: token endpoint is the sole server-side refresher and uses the runtime resolver', () => {
-  // #1053 removed the proxy-side refreshers (dual-refresher collision → ~1h re-login),
-  // so /oauth/token is the ONLY server-side refresh path. It must still read Worker
-  // runtime env; the proxies must no longer resolve auth config at all.
+test('#234 / #1053 / #1210: discovery + authorize passthrough use the runtime resolver; no server-side refresher remains', () => {
+  // #1053 removed the proxy-side refreshers (dual-refresher collision → ~1h re-login).
+  // #1210 retired the Worker token endpoint entirely (token issuance = Supabase
+  // native OAuth server). The runtime-env resolver invariant now lives in the
+  // routes that must know the Supabase URL: the AS metadata + the authorize
+  // compat passthrough.
+  for (const rel of ['src/pages/.well-known/oauth-authorization-server.ts', 'src/pages/oauth/authorize.ts']) {
+    const src = read(rel);
+    assert.match(src, /resolveSupabaseAuthConfig\(env as any, import\.meta\.env\)/, `${rel} must read Worker runtime env`);
+  }
+
   const tokenSrc = read('src/pages/oauth/token.ts');
-  assert.match(tokenSrc, /resolveSupabaseAuthConfig\(env as any, import\.meta\.env\)/, 'token.ts must read Worker runtime env');
-  assert.doesNotMatch(tokenSrc, /anonKey:\s*import\.meta\.env\.PUBLIC_SUPABASE_ANON_KEY\s*\|\|\s*''/, 'token.ts must not pass empty anonKey');
+  assert.doesNotMatch(tokenSrc, /resolveSupabaseAuthConfig/, 'token.ts stub must not resolve auth config (#1210 — no server-side token work)');
 
   for (const rel of ['src/pages/mcp.ts', 'src/pages/mcp/semantic.ts']) {
     const src = read(rel);

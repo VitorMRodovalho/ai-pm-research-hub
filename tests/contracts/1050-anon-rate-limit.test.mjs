@@ -73,15 +73,16 @@ test('ip-rate-limit lib: keys by IP+action, reads cf-connecting-ip, fail-open', 
   assert.match(IPRL, /if \(!kv \|\| !ip\) return \{ allowed: true/);
 });
 
-test('token endpoint throttles both grants (30/min/IP) with a 429 + Retry-After', () => {
-  assert.match(TOKEN, /import \{ checkIpRateLimit, clientIpFrom \} from '\.\.\/\.\.\/lib\/ip-rate-limit'/);
-  assert.match(TOKEN, /checkIpRateLimit\(kv, clientIpFrom\(request\), 'oauth_token', 30\)/);
-  assert.match(TOKEN, /status: 429/);
-  assert.match(TOKEN, /'Retry-After'/);
-  // placed before grant branching so it covers authorization_code AND refresh_token
-  const rlIdx = TOKEN.indexOf("'oauth_token'");
-  const grantIdx = TOKEN.indexOf("grant_type === 'refresh_token'");
-  assert.ok(rlIdx > -1 && grantIdx > -1 && rlIdx < grantIdx, 'throttle runs before grant handling');
+test('token endpoint is a retired stub — throttle concern moved to GoTrue (#1210)', () => {
+  // Pre-#1210 the Worker token route needed its own KV IP throttle (30/min).
+  // #1210 moved token issuance to Supabase's native OAuth server, whose
+  // endpoints carry GoTrue's built-in per-IP rate limits (dashboard: Auth →
+  // Rate Limits). The stub does no KV or upstream work, so a local throttle
+  // would protect nothing — but it must STAY a stub (constant-cost 400).
+  assert.doesNotMatch(TOKEN, /grant_type/, 'stub must not process grants');
+  assert.doesNotMatch(TOKEN, /kv\.(get|put|delete)/i, 'stub must not touch KV');
+  assert.match(TOKEN, /status: 400/);
+  assert.match(TOKEN, /invalid_grant/);
 });
 
 // ── Drive-by: constant-time secret compares ──────────────────────────────────────

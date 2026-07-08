@@ -244,12 +244,13 @@ test('shared tryAutoRefresh always re-stores (|| fallback), never gates the put 
   assert.equal(/if\s*\(\s*data\.refresh_token\s*\)/.test(src), false, 'put must not be gated on data.refresh_token');
 });
 
-test('token.ts logs (does not swallow) refresh-store failures', () => {
+test('token.ts is a retired stub with no refresh-store surface at all (#1210)', () => {
+  // Pre-#1210 this test pinned the no-swallow logging around the KV refresh
+  // store. #1210 moved token issuance to Supabase's native OAuth server, so the
+  // hardened surface this guarded no longer exists — the stub must not have
+  // grown it back.
   const src = SRC('pages/oauth/token.ts');
-  assert.equal(/catch\s*\{\s*\}/.test(src), false, 'no empty catch {} may remain around the refresh store');
-  assert.ok(src.includes('token-refresh-store-error'), 'must log KV-store failures');
-  assert.ok(src.includes('token-refresh-store-skip'), 'must log jwt-decode-no-sub skips');
-  assert.match(src, /decodeJwtPayload/);
-  assert.match(src, /MCP_REFRESH_TTL_SECONDS/);
-  assert.match(src, /resolveSupabaseAuthConfig/);
+  assert.doesNotMatch(src, /mcp_refresh/, 'stub must not store refresh tokens');
+  assert.doesNotMatch(src, /decodeJwtPayload/, 'stub has no JWT to decode');
+  assert.doesNotMatch(src, /MCP_REFRESH_TTL_SECONDS/, 'stub must not reference the KV TTL');
 });

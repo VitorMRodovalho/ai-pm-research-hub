@@ -1,50 +1,36 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-
-async function kvLog(_endpoint: string, _data: any) {
-  // No-op: KV debug logs disabled (free tier 1k writes/day protection).
-}
+import { resolveSupabaseAuthConfig } from '../../lib/mcp-refresh';
 
 /**
- * OAuth 2.1 Authorization endpoint.
- * Redirects to consent page with all OAuth params encoded in the URL.
+ * OAuth 2.1 Authorization endpoint — COMPAT PASSTHROUGH (#1210).
+ *
+ * Token issuance moved to Supabase Auth's native OAuth 2.1 server; fresh
+ * discovery sends clients straight to `/auth/v1/oauth/authorize`. This route
+ * survives only for clients holding CACHED pre-#1210 metadata: it forwards the
+ * request (same query string) to the native endpoint, where client_id,
+ * redirect_uri and PKCE are validated against the registered OAuth app.
+ * GoTrue then redirects the user to our consent page with ?authorization_id=.
  */
-export const GET: APIRoute = async ({ request }) => {
-  const url = new URL(request.url);
-  const state = url.searchParams.get('state') || '';
-  await kvLog("authorize", { method: request.method, params: Object.fromEntries(url.searchParams), userAgent: request.headers.get("user-agent") });
-  const redirectUri = url.searchParams.get('redirect_uri') || '';
-  const codeChallenge = url.searchParams.get('code_challenge') || '';
-  const codeChallengeMethod = url.searchParams.get('code_challenge_method') || 'S256';
-  const clientId = url.searchParams.get('client_id') || '';
+const GOTRUE_SCOPES = new Set(['openid', 'email', 'profile', 'phone']);
 
-  if (!redirectUri || !codeChallenge) {
-    return new Response(JSON.stringify({ error: 'invalid_request', error_description: 'redirect_uri and code_challenge required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+export const GET: APIRoute = ({ url }) => {
+  const supabaseUrl = resolveSupabaseAuthConfig(env as any, import.meta.env).url;
+  const target = new URL(`${supabaseUrl}/auth/v1/oauth/authorize`);
+  url.searchParams.forEach((value, key) => target.searchParams.set(key, value));
+
+  // Pre-#1210 metadata advertised custom scopes (mcp:tools, offline_access) that
+  // GoTrue rejects. Keep only scopes it supports; drop the param entirely when
+  // none survive (GoTrue then applies its default: email).
+  const scope = target.searchParams.get('scope');
+  if (scope) {
+    const kept = scope.split(/\s+/).filter((s) => GOTRUE_SCOPES.has(s));
+    if (kept.length) target.searchParams.set('scope', kept.join(' '));
+    else target.searchParams.delete('scope');
   }
-
-  // Encode OAuth params as base64 for the consent page
-  const oauthData = btoa(JSON.stringify({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    code_challenge: codeChallenge,
-    code_challenge_method: codeChallengeMethod,
-    state,
-  }));
-
-  const consentUrl = new URL('/oauth/consent', url.origin);
-  consentUrl.searchParams.set('mcp_state', state);
-  consentUrl.searchParams.set('oauth_data', oauthData);
-
-  // Propagate language from Accept-Language header
-  const acceptLang = request.headers.get('accept-language') || '';
-  if (acceptLang.startsWith('es')) consentUrl.searchParams.set('lang', 'es');
-  else if (acceptLang.startsWith('en')) consentUrl.searchParams.set('lang', 'en');
 
   return new Response(null, {
     status: 302,
-    headers: { 'Location': consentUrl.toString() },
+    headers: { 'Location': target.toString() },
   });
 };

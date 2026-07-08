@@ -156,7 +156,7 @@ node scripts/audit-mcp-tool-matrix.mjs --runtime
 - **Row Level Security (RLS)** enforced on every query — you only see data your role permits
 - **No personal data exposed** — emails, phones are excluded from tool responses
 - **Write guards** — only tribe leaders, GP, and deputy can use write tools
-- **Access tokens expire** in 1 hour; OAuth clients should use refresh tokens. Claude.ai refreshes through `/oauth/token`, and the `/mcp` proxy also attempts server-side refresh via KV for continuity.
+- **Access tokens expire** in 1 hour; OAuth clients refresh directly against Supabase Auth's native OAuth 2.1 token endpoint on a client-scoped session (#1210) — independent of the member's browser session, so neither invalidates the other.
 
 ## Troubleshooting
 

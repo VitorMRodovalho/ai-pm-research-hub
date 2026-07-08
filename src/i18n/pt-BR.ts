@@ -2823,7 +2823,7 @@ const ptBR: Record<string, string> = {
   'oauth.error': 'Erro',
   'oauth.success': 'Autorizado com sucesso',
   'oauth.redirecting': 'Redirecionando de volta ao seu aplicativo de IA...',
-  'oauth.missingState': 'Parâmetro mcp_state ausente. Abra esta página pelo fluxo OAuth do seu assistente de IA.',
+  'oauth.missingState': 'Parâmetro de autorização ausente. Abra esta página pelo fluxo OAuth do seu assistente de IA.',
   'oauth.loginError': 'Erro ao iniciar login.',
   'oauth.codeError': 'Erro ao gerar código de autorização.',
   'oauth.sessionExpired': 'Sessão expirada. Faça login novamente.',
