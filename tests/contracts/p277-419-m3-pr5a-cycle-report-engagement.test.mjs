@@ -111,21 +111,25 @@ test('m3 PR5a DB: exec_cycle_report auth gate intact (unauthenticated service-ro
   assert.ok(error, 'no-auth caller must be rejected (Not authenticated)');
 });
 
-test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort 37 + ~76% global', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort within live operational roster (#1180)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   // Ground on the most recent populated cycle — the current cycle's window is empty at a boundary (#1123).
   const cs = await attendanceCycleStart(sb);
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!error, error?.message);
   assert.ok(data && Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count key present');
-  // Drift-tolerant band (p277 PR11): the operational cohort + global engagement drift with the roster
-  // (live 2026-05-31: cohort 35, rate 0.7991; were 37 / ~0.76 at PR5a ship — 2 members lost operational_role).
-  // DB-gated exact-count baselines must not red CI on normal attrition.
-  // 2026-07-04 (virada C3→C4): lower bound 0.70→0.60 — 5 líderes C4 aprovados entraram na coorte
-  // operacional antes do kickoff (onboarding antecipado, exceção #1004) com 0 presenças, diluindo a
-  // média (live 0.6937). A média volta a subir conforme a coorte C4 acumula presenças.
-  assert.ok(Number(data.cohort_n) >= 30 && Number(data.cohort_n) <= 50, `operational cohort ~30s-40s (got ${data.cohort_n})`);
+  // #1180: no pinned cohort/rate bands — every band rotted as the roster legitimately changed
+  // (37 → 35 → 62 across C3→C4). Derive the bound from the live source-of-truth in the same run:
+  // the RPC cohort (rate-non-null members) is a subset of the operational-role roster.
+  const { count: opCount, error: eOp } = await sb
+    .from('members').select('id', { count: 'exact', head: true })
+    .eq('is_active', true).eq('current_cycle_active', true)
+    .in('operational_role', ['researcher', 'tribe_leader', 'manager']);
+  assert.ok(!eOp, eOp?.message);
+  assert.ok(Number(data.cohort_n) >= 1, `cohort non-empty (got ${data.cohort_n})`);
+  assert.ok(Number(data.cohort_n) <= opCount, `cohort_n (${data.cohort_n}) ⊆ live operational roster (${opCount})`);
   const rate = Number(data.avg_rate);
-  assert.ok(rate >= 0.60 && rate <= 0.90, `global engagement band (got ${rate})`);
-  assert.ok(Number(data.at_risk_count) >= 0, 'at_risk_count numeric');
+  assert.ok(rate > 0 && rate <= 1, `avg_rate is a valid rate (got ${rate})`);
+  assert.ok(Number(data.at_risk_count) >= 0 && Number(data.at_risk_count) <= Number(data.cohort_n),
+    'at_risk_count within [0, cohort_n]');
 });

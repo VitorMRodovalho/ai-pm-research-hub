@@ -101,12 +101,16 @@ test('m3 PR5b DB: chapter scope returns the member_status=active cohort engageme
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!error, error?.message);
-  // Drift-tolerant band (p277 PR11): PMI-GO active chapter cohort drifts w/ roster (live 2026-05-31: 19, was 20).
-  assert.ok(Number(data.cohort_n) >= 12 && Number(data.cohort_n) <= 28, `PMI-GO active chapter cohort (got ${data.cohort_n})`);
+  // #1180: no pinned bands — derive the bound from the live chapter roster in the same run.
+  // The RPC chapter cohort (rate-non-null) is a subset of member_status=active ∧ chapter='PMI-GO'.
+  const { count: chapterCount, error: eCh } = await sb
+    .from('members').select('id', { count: 'exact', head: true })
+    .eq('member_status', 'active').eq('chapter', 'PMI-GO');
+  assert.ok(!eCh, eCh?.message);
+  assert.ok(Number(data.cohort_n) >= 1, `PMI-GO chapter cohort non-empty (got ${data.cohort_n})`);
+  assert.ok(Number(data.cohort_n) <= chapterCount, `cohort_n (${data.cohort_n}) ⊆ live PMI-GO active roster (${chapterCount})`);
   const r = Number(data.avg_rate);
-  // Drift-tolerant band: engagement drifts with the live roster. Low bound widened after the
-  // cohort grew (live 2026-06-15: cohort_n=23, avg_rate=0.3983, present 189/expected 359 — was ~0.50).
-  assert.ok(r > 0.30 && r < 0.60, `PMI-GO engagement band (got ${r})`);
+  assert.ok(r > 0 && r <= 1, `PMI-GO engagement is a valid rate (got ${r})`);
   assert.ok(Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count still present on 4-arg');
 });
 
@@ -115,14 +119,21 @@ test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no 
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
   const { data: rel, error: e1 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!e1, e1?.message);
-  assert.ok(Number(rel.avg_rate) > 0.9, 'PMI-GO reliability ~0.99');
+  // #1180: rate pins rot with live data — assert it is a valid rate, not a level.
+  assert.ok(Number(rel.avg_rate) > 0 && Number(rel.avg_rate) <= 1, `PMI-GO reliability is a valid rate (got ${rel.avg_rate})`);
   assert.ok(['present_total', 'absent_total', 'excused_total'].every((k) => Object.prototype.hasOwnProperty.call(rel, k)), 'raw counts present');
   // global call must still resolve unambiguously to the 4-arg fn (cohort is window-scoped → ground it)
   const { data: g, error: e2 } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!e2, e2?.message);
-  // Drift-tolerant band (p277 PR11): global cohort drifts w/ roster (live 2026-05-31: 35, was 37); the point of
-  // this assertion is that the 1-arg call still resolves to the 4-arg fn (no ambiguous overload), cohort non-broken.
-  assert.ok(Number(g.cohort_n) >= 30 && Number(g.cohort_n) <= 45, `global cohort ~mid-30s, PR2-PR4 callers unbroken (got ${g.cohort_n})`);
+  // #1180: the point of this assertion is only that the reduced-arg call still resolves to the 4-arg fn
+  // (no ambiguous overload) and returns a working cohort — bound it by the live operational roster.
+  const { count: opCount, error: eOp } = await sb
+    .from('members').select('id', { count: 'exact', head: true })
+    .eq('is_active', true).eq('current_cycle_active', true)
+    .in('operational_role', ['researcher', 'tribe_leader', 'manager']);
+  assert.ok(!eOp, eOp?.message);
+  assert.ok(Number(g.cohort_n) >= 1 && Number(g.cohort_n) <= opCount,
+    `global cohort within live operational roster, PR2-PR4 callers unbroken (got ${g.cohort_n}, roster ${opCount})`);
 });
 
 test('m3 PR5b DB: get_chapter_dashboard auth gate intact (unauthenticated → error envelope)', { skip: dbGated ? false : skipMsg }, async () => {

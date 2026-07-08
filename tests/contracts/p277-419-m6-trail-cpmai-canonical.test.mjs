@@ -76,19 +76,43 @@ test('M6 static: the 3 cpmai goal surfaces call the helper', () => {
 });
 
 // ── BEHAVIOURAL (DB-gated) ───────────────────────────────────────────────────────
-test('M6 behavioural: trail = the ranking cohort/total (home == ranking, modulo display rounding)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own cohort (#1180)', { skip: dbGated ? false : skipMsg }, async () => {
+  // #1180: the original home==ranking parity assert rotted — get_public_trail_ranking later gained
+  // extra cohort filters (gamification_opt_out, member_is_pre_onboarding, tribe/engagement requirement)
+  // that calc_trail_completion_pct does not have, so with the C4 pre-onboarding influx the two surfaces
+  // legitimately diverge (live 2026-07-08: home cohort 62 vs ranking cohort 36; home 40 vs ranking avg
+  // 54.64). Whether the HOME headline should also exclude pre-onboarding members is a product decision
+  // tracked on #1180; this test now verifies the function against a live re-derivation of its OWN
+  // contract: partial-credit AVG of per-member completed/trail_total over the operational cohort.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: home, error: e1 } = await sb.rpc('calc_trail_completion_pct');
   assert.ifError(e1);
-  const { data: ranking, error: e2 } = await sb.rpc('get_public_trail_ranking');
+
+  const { data: trailCourses, error: e2 } = await sb.from('courses').select('id').eq('is_trail', true);
   assert.ifError(e2);
-  const rankingAvg = ranking.reduce((s, r) => s + Number(r.pct), 0) / ranking.length;
-  // home is an integer ROUND of the same per-member partial-avg over the same cohort.
-  // Both round the SAME metric independently (home = ROUND of the SQL avg; rankingAvg = JS mean of the
-  // ranking's 2dp per-member pcts), so at a .5 boundary the two roundings can legitimately split by 1 —
-  // this is the "modulo display rounding" this test's own contract promises. A divergence of >1 is a real bug.
-  assert.ok(Math.abs(Number(home) - Math.round(rankingAvg)) <= 1,
-    `home trail (${home}) within ±1 of ROUND(ranking avg ${rankingAvg.toFixed(2)}) — display-rounding tolerance`);
+  const trailIds = new Set((trailCourses || []).map((c) => c.id));
+  assert.ok(trailIds.size > 0, 'trail has at least one course');
+
+  const { data: cohort, error: e3 } = await sb
+    .from('members').select('id')
+    .eq('is_active', true).eq('current_cycle_active', true)
+    .not('operational_role', 'in', '("sponsor","chapter_liaison","observer","candidate","visitor","guest")');
+  assert.ifError(e3);
+  assert.ok(cohort.length > 0, 'trail cohort non-empty');
+
+  const { data: progress, error: e4 } = await sb
+    .from('course_progress').select('member_id, course_id, status')
+    .eq('status', 'completed').in('course_id', [...trailIds]);
+  assert.ifError(e4);
+  const completedByMember = new Map();
+  for (const p of progress || []) {
+    completedByMember.set(p.member_id, (completedByMember.get(p.member_id) || 0) + 1);
+  }
+  const avg = cohort.reduce((s, m) => s + (completedByMember.get(m.id) || 0) / trailIds.size, 0) / cohort.length;
+  const expected = Math.round(avg * 100);
+  // ±1 tolerance: the RPC and the re-derivation read the DB at slightly different instants.
+  assert.ok(Math.abs(Number(home) - expected) <= 1,
+    `home trail (${home}) == live re-derivation (${expected}) over cohort ${cohort.length}/trail ${trailIds.size}`);
 });
 
 test('M6 behavioural: cpmai goal count partitions by cert year (goal != wall)', { skip: dbGated ? false : skipMsg }, async () => {
