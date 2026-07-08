@@ -412,3 +412,69 @@ Surfaces the 3c-i lifecycle to the frontends; pure read-surface + copy changes (
   "returned → re-sign" when a rejected term exists.
 - Reissue (`superseded`) is not banner-surfaced member-side (the cert is hidden); the reissue notification +
   the fresh sign form carry the signal. i18n added to all 3 dicts.
+
+## Amendment: #1175 Waves 2-4 (registry-driven resolver, 15-partner status, service-history contract) (2026-07-08)
+
+Issue #1175 (Joao Leite index case) extended this ADR's SSOT in three directions. All
+counts below were re-grounded live on 2026-07-08.
+
+### F2: name resolution becomes registry-driven (mig `20260805000364`)
+
+- **`chapter_registry.vep_name_aliases`** (text[]) is the SSOT for PMI Community name
+  variants that do NOT follow the `"<State>, Brazil Chapter"` convention (the index
+  case: `"Amazônia Chapter"`, both spellings, which the suffix-gated parser silently
+  dropped, leaving the member with 0 affiliations).
+- **`resolve_br_chapter_code(text)`** (SQL, STABLE) is the single resolver: exact alias
+  match first, then the `"<State>, Brazil Chapter"` convention with states read from the
+  registry itself. Non-BR names resolve to NULL by design (this ADR is BR-only).
+- The **worker** (`pmi-vep-sync`) feeds `buildBrChapterMatcher` from a fetch of
+  `chapter_registry` (per-isolate cache, TTL 5 min); the old hardcoded
+  `parseBrChapterCode` map is demoted to a fetch-failure fallback.
+- `parse_vep_chapters()` (selection side) delegates to the same resolver; the hardcoded
+  ILIKE state chain was removed.
+- Backfill from archived snapshots brought `member_chapter_affiliations` to 115 rows
+  (live count 2026-07-08); the index case now carries AM as a provisional primary.
+
+### D2: partner model covers the 15 announced chapters with explicit status (mig `20260805000365`)
+
+- The binary 5-partner list is retired. **`partner_chapters.partnership_status`**
+  (`'signed'` | `'announced_at_risk'`, CHECK-constrained) now covers all 15 BR registry
+  chapters announced at CBGPL: live state 2026-07-08 is 15 active partners, 5 signed
+  (GO, DF, MG, RS, CE) and 10 announced_at_risk (agreement pending legal review of the
+  IP Policy; `partnership_start` stays NULL until signature).
+- Selection-tag semantics live in ONE helper, `apply_partner_chapter_tags()`:
+  `no_partner_chapter` means no partner AT ALL (outside the 15-chapter journey);
+  `partner_chapter_at_risk` means a partner exists but none of the member's chapters
+  has a signed agreement. `admin_update_application` and `finalize_decisions` delegate
+  to the helper.
+- Security note (integration finding, mig `20260805000368`): the helper's EXECUTE had
+  to be revoked `FROM PUBLIC` as well; a per-role revoke alone is void because PUBLIC
+  inheritance re-grants it (GC-097 lesson: every SECDEF REVOKE must include
+  `FROM PUBLIC`).
+- UI surfacing of the at-risk status (entry-chapter card, affiliation verification
+  screen) is a deliberate follow-up; the data model already supports it.
+
+### Wave 4: import chain hardening (#1175 F7, 2026-07-08)
+
+- **Service-history contract fixed.** Since 2026-05-12 the browser script emitted
+  `payload.serviceHistory[]` rows keyed by `applicantId` (with `title`/`roleTitle`)
+  while the worker's `mapServiceHistory` matched on `applicationId` and read
+  `roleName`; the filter never matched and every import inserted 0 rows silently
+  (`selection_application_service_history` froze at 41 rows). The Wave 4 script emits
+  `applicationId` + `roleName`; the worker keeps a fallback match by `applicantId` so
+  archived pre-Wave-4 enriched exports (e.g. the 296 rows of 2026-07-07) remain
+  importable.
+- **Collection minimization (LGPD).** The script now ships a default allowlist of the
+  Nucleo's opportunities (64966/64967/66470); auto-discovered vacancies outside it
+  require an explicit confirmation modal BEFORE any candidate data is downloaded, and
+  exclusions are recorded in `meta.excludedOpportunityIds`. The generated JSON carries
+  a minimization note in `meta.lgpd`. The worker gate is unchanged:
+  `vep_opportunities.is_active=true` (unknown opportunity -> skip
+  `opportunity_not_active`), guarded by
+  `tests/contracts/1175-wave4-vep-ingest-unknown-opportunity-skip.test.mjs`.
+- **Phase A "unauthorized" noise removed.** The script no longer auto-POSTs to
+  `/ingest` when the shared secret is the `<placeholder>`; the recorded
+  `ingestResult: {error: "unauthorized"}` inside exported JSONs (surfaced by the admin
+  UI as a Phase A warning, #224) came from that placeholder POST, not from the import
+  itself.
+- Operational procedure: `docs/runbooks/RUNBOOK_VEP_IMPORT.md`.

@@ -249,9 +249,20 @@ export function mapServiceHistory(
   if (app.profilePrivate === true) return [];
   if (!allHistory || !Array.isArray(allHistory) || allHistory.length === 0) return [];
 
-  const myRows = allHistory.filter(h =>
-    String(h.applicationId) === String(app.applicationId)
+  let myRows = allHistory.filter(h =>
+    h.applicationId != null && String(h.applicationId) === String(app.applicationId)
   );
+  // #1175 Wave 4: exports pré-Wave-4 do script (p131 e anteriores) emitiam as
+  // rows de history SEM applicationId (só applicantId) — mismatch que resultou
+  // em 0 inserts silenciosos desde 2026-05-12. Fallback por applicantId mantém
+  // os JSONs enriched arquivados importáveis (ex.: 296 rows do export 07/07).
+  if (myRows.length === 0 && app.applicantId != null) {
+    myRows = allHistory.filter(h =>
+      h.applicationId == null &&
+      h.applicantId != null &&
+      String(h.applicantId) === String(app.applicantId)
+    );
+  }
   if (myRows.length === 0) return [];
 
   const capturedAt = app.pmiDataFetchedAt ?? new Date().toISOString();
@@ -261,12 +272,18 @@ export function mapServiceHistory(
     .map(h => ({
       application_id: dbApplicationId,
       chapter_name: h.chapterName.trim(),
-      role_name: h.roleName?.trim() ?? null,
+      // Wave 4: roleName é o contrato; roleTitle/title cobrem exports legados.
+      role_name: pickRoleName(h),
       start_date: h.startDate ? h.startDate.slice(0, 10) : null,
       end_date: h.endDate ? h.endDate.slice(0, 10) : null,
       source: 'pmi_community' as const,
       captured_at: capturedAt
     }));
+}
+
+function pickRoleName(h: ScriptServiceHistoryRow): string | null {
+  const role = h.roleName ?? h.roleTitle ?? h.title ?? null;
+  return typeof role === 'string' && role.trim().length > 0 ? role.trim() : null;
 }
 
 /**
