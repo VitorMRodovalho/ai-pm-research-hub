@@ -6942,6 +6942,7 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.thActions': 'Acciones',
   'comp.affiliationQueue.preBadge': 'pre',
   'comp.affiliationQueue.noDetail': 'Afiliación no pública/no enriquecida — verificar manualmente',
+  'comp.affiliationQueue.ssotVerified': 'Afiliación registrada en el registro de capítulos (verificada)',
   'comp.affiliationQueue.verify': 'Verificar',
   'comp.affiliationQueue.noVep': 'sin VEP',
   'comp.affiliationQueue.notFound': 'no encontrado(s)',

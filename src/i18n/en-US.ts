@@ -6942,6 +6942,7 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.thActions': 'Actions',
   'comp.affiliationQueue.preBadge': 'pre',
   'comp.affiliationQueue.noDetail': 'Affiliation not public/not enriched — verify manually',
+  'comp.affiliationQueue.ssotVerified': 'Affiliation on the chapter registry (verified)',
   'comp.affiliationQueue.verify': 'Verify',
   'comp.affiliationQueue.noVep': 'no VEP',
   'comp.affiliationQueue.notFound': 'not found',

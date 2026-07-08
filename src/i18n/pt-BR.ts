@@ -6949,6 +6949,7 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.thActions': 'Ações',
   'comp.affiliationQueue.preBadge': 'pré',
   'comp.affiliationQueue.noDetail': 'Filiação não pública/não enriquecida — verificar manualmente',
+  'comp.affiliationQueue.ssotVerified': 'Filiação registrada no cadastro de capítulos (verificada)',
   'comp.affiliationQueue.verify': 'Verificar',
   'comp.affiliationQueue.noVep': 'sem VEP',
   'comp.affiliationQueue.notFound': 'não encontrado(s)',

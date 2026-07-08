@@ -24,11 +24,42 @@ export interface BrChapter {
   expiry: string | null;
   expired: boolean;
   soon: boolean;
+  /** #1192 — registry chapter_code when the entry came from the SSOT read-through */
+  code?: string;
+  /** #1192 — true when the entry is an SSOT row with verified_at (not a raw parse) */
+  verified?: boolean;
+  /** original PMI membership chapterName (modal prefill fidelity) */
+  raw?: string | null;
+}
+
+/**
+ * #1192 — one SSOT read-through entry from get_affiliation_verification_queue's
+ * 'chapter_affiliations' (member_chapter_affiliations × chapter_registry, resolved
+ * server-side by resolve_br_chapter_code — the ONE resolver; the client never
+ * re-parses names to decide anything). source='vep_raw' marks a raw membership name
+ * that resolves via the registry but has no SSOT row yet (provisional).
+ */
+export interface ChapterAffiliation {
+  chapter_code: string;
+  chapter_label: string;
+  source: string;
+  verified_at: string | null;
+  is_primary: boolean;
+  raw_name: string | null;
+  expiry: string | null;
 }
 
 /** Normalize either membership shape to a { chapterName, expiryDate } object. */
 function normalizeMembership(m: PmiMembershipEntry): PmiMembership {
   return typeof m === 'string' ? { chapterName: m, expiryDate: null } : m;
+}
+
+/** expired / soon(≤30d) window for a raw PMI expiry string; both false when unparseable. */
+function expiryFlags(expiry: string | null | undefined, now: number): { expired: boolean; soon: boolean } {
+  const ts = expiry ? Date.parse(expiry) : NaN;
+  if (Number.isNaN(ts)) return { expired: false, soon: false };
+  const days = Math.ceil((ts - now) / 86400000);
+  return { expired: days < 0, soon: days >= 0 && days <= 30 };
 }
 
 /**
@@ -48,16 +79,39 @@ export function brChapters(
     .filter((m) => typeof m?.chapterName === 'string' && /brazil chapter/i.test(m.chapterName))
     .map((m) => {
       const short = m.chapterName.replace(/,?\s*Brazil Chapter$/i, '').trim();
-      const ts = m.expiryDate ? Date.parse(m.expiryDate) : NaN;
-      let expired = false;
-      let soon = false;
-      if (!Number.isNaN(ts)) {
-        const days = Math.ceil((ts - now) / 86400000);
-        expired = days < 0;
-        soon = days >= 0 && days <= 30;
-      }
-      return { name: short, expiry: m.expiryDate || null, expired, soon };
+      const { expired, soon } = expiryFlags(m.expiryDate, now);
+      return { name: short, expiry: m.expiryDate || null, expired, soon, raw: m.chapterName };
     });
+}
+
+/**
+ * #1192 — the member's BR chapters for display/filtering, SSOT-first: when the queue RPC
+ * delivered chapter_affiliations (read-through of member_chapter_affiliations, resolved by
+ * resolve_br_chapter_code server-side), those win — this is what fixes "Amazônia Chapter"
+ * (registry alias, no "Brazil Chapter" suffix) falling into the amber "verificar
+ * manualmente" branch. The raw brChapters() parse remains ONLY as display fallback for a
+ * row with no resolvable data on either side; it never overrides the SSOT.
+ */
+export function unifiedBrChapters(
+  affiliations: ChapterAffiliation[] | null | undefined,
+  memberships: PmiMembershipEntry[] | null | undefined,
+  now: number = Date.now(),
+): BrChapter[] {
+  if (Array.isArray(affiliations) && affiliations.length > 0) {
+    return affiliations.map((a) => {
+      const { expired, soon } = expiryFlags(a.expiry, now);
+      return {
+        name: a.chapter_label,
+        code: a.chapter_code,
+        verified: a.source !== 'vep_raw' && !!a.verified_at,
+        expiry: a.expiry || null,
+        expired,
+        soon,
+        raw: a.raw_name || null,
+      };
+    });
+  }
+  return brChapters(memberships, now);
 }
 
 export type ExpiryStatus = 'expired' | 'soon' | 'ok' | 'none';
@@ -83,9 +137,26 @@ export function soonestBrExpiry(
   memberships: PmiMembershipEntry[] | null | undefined,
   now: number = Date.now(),
 ): ExpirySummary {
+  return summarizeSoonest(brChapters(memberships, now), now);
+}
+
+/**
+ * #1192 — soonest-expiry triage over the SSOT-first unified chapter list, so an
+ * alias-resolved affiliation (e.g. AM via "Amazônia Chapter") feeds the Vencimento column
+ * and the provisional farol exactly like a "<State>, Brazil Chapter" one.
+ */
+export function soonestChapterExpiry(
+  affiliations: ChapterAffiliation[] | null | undefined,
+  memberships: PmiMembershipEntry[] | null | undefined,
+  now: number = Date.now(),
+): ExpirySummary {
+  return summarizeSoonest(unifiedBrChapters(affiliations, memberships, now), now);
+}
+
+function summarizeSoonest(chapters: BrChapter[], now: number): ExpirySummary {
   let best: string | null = null;
   let bestTs = Infinity;
-  for (const c of brChapters(memberships, now)) {
+  for (const c of chapters) {
     if (!c.expiry) continue;
     const ts = Date.parse(c.expiry);
     if (!Number.isNaN(ts) && ts < bestTs) { bestTs = ts; best = c.expiry; }
