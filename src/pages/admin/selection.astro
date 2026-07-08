@@ -5514,7 +5514,7 @@ const SEL_I18N = {
         <div>welcome dispatched: <strong>${d.welcome_dispatched ?? 0}</strong></div>
         <div>service_history rows: <strong>${d.service_history_inserted ?? 0}</strong></div>
         <div>phase_b processed: <strong>${d.phase_b_processed ?? 0}</strong></div>
-        <div>pmi_chapter_memberships: <strong>${d.pmi_chapter_memberships_upserted ?? 0}</strong></div>
+        <div title="#1175 — afiliações de capítulo (member_chapter_affiliations) upsertadas via RPC one-primary a partir do snapshot pmi_memberships. Substitui o rótulo legado de um contador que o worker não emite desde #441.">chapter_affiliations: <strong>${d.chapter_affiliations_upserted ?? 0}</strong></div>
         <div title="p195 Opção B+ — PDFs baixados do Azure SAS e replicados no bucket selection-resumes (sustentável vs Azure 24h expiry)">📦 resumes sincronizados: <strong>${d.resumes_synced ?? 0}</strong></div>
         <div title="p195 — resumes que falharam download/upload (link Azure pode estar expirado entre Phase A export e este Apply). Re-importe o JSON com link fresco se ${(d.resumes_failed ?? 0) > 0 ? 'crítico' : 'persistir'}.">${(d.resumes_failed ?? 0) > 0 ? '⚠️' : '✓'} resumes falhos: <strong>${d.resumes_failed ?? 0}</strong></div>
         <div title="p195 BUG-195.B — apps cuja application_date caía em ciclo fechado diferente do open atual; Worker auto-redirecionou para o ciclo semanticamente correto.">🔀 cycle redirects: <strong>${d.applications_cycle_redirected ?? 0}</strong></div>
