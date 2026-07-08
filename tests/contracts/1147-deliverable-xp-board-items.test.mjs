@@ -40,8 +40,10 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
-// The 18-card backfill cohort (status='done' on tribe boards at the 2026-07-06 snapshot,
-// reconstructed via board_lifecycle_events new_status='done' + DIA-9 archive updated_at).
+// The backfill cohort: 18 cards done at the 2026-07-06 snapshot (PM decision 08/07 afternoon)
+// + 20 ever-done cards outside the snapshot (auto_archive_done_cards hid them; PM extended the
+// retroactive to ALL pre-fix completions on 08/07 evening). Reconstructed via
+// board_lifecycle_events new_status='done' ∪ current status, tribe boards, assignee present.
 const BACKFILL_REFS = [
   '7cc6f269-4f1a-4043-af16-c4a3729e3e43',
   '5b753c84-e125-4bcc-9185-5106b7154c55',
@@ -61,6 +63,27 @@ const BACKFILL_REFS = [
   '5c095ab8-6b52-4d80-a32e-5c27eec6d3f1',
   'd70efc66-b80c-44d8-aa10-7c8faa878edb',
   'c562b766-727d-4231-ba11-d5827beb6f25',
+  // extension (PM 08/07 evening): ever-done outside the snapshot
+  '54119833-d4da-44bf-af05-ec1b04827f30',
+  '01e6199a-01aa-413c-9f17-69a7c4ca05be',
+  '57b85b8f-fa8d-4321-99e7-d3b106626c82',
+  '3417a886-d3aa-48ba-bd3e-85280c1440f5',
+  '8c06f098-173f-480c-8eba-bd0272ccfdc0',
+  '51cdcb41-c799-4e47-831f-c98f1262e67f',
+  '2aa2a097-f71f-4bd3-937d-fcf672f41a35',
+  'bb938651-36eb-409a-bb11-a022d296bebc',
+  'd1d16366-e701-470d-896a-98a6622106d6',
+  '365a58a0-e6b7-4061-910f-fa2230f19685',
+  '9089a357-6278-4169-81fb-ceebb45119f1',
+  'c9a14b49-bedc-4527-8f40-beabdced7283',
+  '37bec787-855a-410d-aa3e-f7c76dfdae1f',
+  '4c62fb53-c1bc-4ac0-8221-dd373b6d8790',
+  '94093421-8433-4424-9094-6f67038fc63c',
+  '6c1fa111-543f-4016-b26d-8f736846ae84',
+  'd131a116-8018-49ca-9bd0-941b60c88f8d',
+  'ebf780d1-8c68-4b5f-927c-599cdbf1d1a8',
+  'b68a0ba2-4c53-49ef-b592-8def2044b067',
+  'b27808ad-cfb4-4399-a512-7adbb534b898',
 ];
 
 // ── STATIC: the XP trigger moved to board_items with the ratified scope ─────────
@@ -140,7 +163,7 @@ test('#1147 behavioural: every done portfolio card on a tribe board has a delive
     }
   });
 
-test('#1147 behavioural: the 18 backfilled snapshot cards are paid, 30 pts base, inside the C3 window',
+test('#1147 behavioural: all 38 backfilled cards are paid, 30 pts base, inside the C3 window',
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
     const { data: pts, error } = await sb
