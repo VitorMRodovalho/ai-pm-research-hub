@@ -85,6 +85,28 @@ export const KNOWLEDGE_AI_PM_KEYWORDS = [
   'ai-driven project manager',
 ]
 
+// ── Category → points (#1149, SSOT alignment) ──────────────────────────────
+// SINGLE pricing table in code. Every value MUST equal gamification_rules.base_points
+// for the same slug — locked by tests/contracts/1149-credly-ssot.test.mjs (DB-gated).
+// The sync classifies; gamification_rules prices. If a rule is repriced in the DB,
+// update here too or the contract test fails (no silent drift).
+export const CATEGORY_POINTS: Record<string, number> = {
+  trail: 20,
+  course: 15,
+  cert_cpmai: 45,
+  cert_pmi_senior: 50,
+  cert_pmi_mid: 40,
+  cert_pmi_practitioner: 35,
+  cert_pmi_entry: 30,
+  specialization: 25,
+  knowledge_ai_pm: 20,
+  badge: 10,
+}
+
+function classified(category: string): { category: string; points: number } {
+  return { category, points: CATEGORY_POINTS[category] }
+}
+
 /**
  * Classify a Credly badge into one of 10 W143-aligned categories.
  * Returns { category, points } based on keyword matching.
@@ -93,55 +115,86 @@ export const KNOWLEDGE_AI_PM_KEYWORDS = [
 export function classifyBadge(name: string, slug: string): { category: string; points: number } {
   const combined = (name + ' ' + slug).toLowerCase()
 
-  // PMI AI Trail courses → trail (20 XP)
+  // PMI AI Trail courses → trail
   for (const trail of PMI_TRAIL_KEYWORDS) {
     if (trail.keywords.every(kw => combined.includes(kw))) {
-      return { category: 'trail', points: 20 }
+      return classified('trail')
     }
   }
 
-  // Non-trail PMI courses → course (15 XP)
+  // Non-trail PMI courses → course
   for (const course of PMI_NONTRIAL_KEYWORDS) {
     if (course.keywords.every(kw => combined.includes(kw))) {
-      return { category: 'course', points: 15 }
+      return classified('course')
     }
   }
 
-  // cert_cpmai (45 XP) — check BEFORE cert_pmi_senior since 'cpmai' overlaps
+  // cert_cpmai — check BEFORE cert_pmi_senior since 'cpmai' overlaps
   if (CERT_CPMAI_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'cert_cpmai', points: 45 }
+    return classified('cert_cpmai')
   }
 
-  // cert_pmi_senior (50 XP)
   if (CERT_PMI_SENIOR_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'cert_pmi_senior', points: 50 }
+    return classified('cert_pmi_senior')
   }
 
-  // cert_pmi_mid (40 XP)
   if (CERT_PMI_MID_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'cert_pmi_mid', points: 40 }
+    return classified('cert_pmi_mid')
   }
 
-  // cert_pmi_practitioner (35 XP) — check BEFORE cert_pmi_entry (DASSM contains DASM)
+  // cert_pmi_practitioner — check BEFORE cert_pmi_entry (DASSM contains DASM)
   if (CERT_PMI_PRACTITIONER_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'cert_pmi_practitioner', points: 35 }
+    return classified('cert_pmi_practitioner')
   }
 
-  // cert_pmi_entry (30 XP)
   if (CERT_PMI_ENTRY_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'cert_pmi_entry', points: 30 }
+    return classified('cert_pmi_entry')
   }
 
-  // specialization (25 XP)
   if (SPECIALIZATION_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'specialization', points: 25 }
+    return classified('specialization')
   }
 
-  // knowledge_ai_pm (20 XP)
   if (KNOWLEDGE_AI_PM_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { category: 'knowledge_ai_pm', points: 20 }
+    return classified('knowledge_ai_pm')
   }
 
-  // Fallback: generic badge (10 XP)
-  return { category: 'badge', points: 10 }
+  // Fallback: generic badge
+  return classified('badge')
+}
+
+// ── CPMAI family collapse (#1149 P1) ────────────────────────────────────────
+// PMI's CPMAI credential family (v7 / +E / PLUS / PMI-CPMAI) represents ONE
+// certification: PMI officially replaced "CPMAI v7" with "PMI-CPMAI" on
+// 2025-09-30 (rebrand, no re-exam); +E is an optional add-on exam; PLUS is
+// co-issued with v7. Policy (Vitor, 2026-07-06): one cert_cpmai XP credit per
+// person — keep the PMI-CPMAI-branded badge as canonical, else the most
+// recently issued. Display surfaces (members.credly_badges) still list every
+// badge the person holds; only the XP credit collapses.
+
+const CPMAI_CANONICAL_MARKERS = [
+  'pmi-cpmai', 'pmi certified professional in managing ai',
+]
+
+export function isCanonicalCpmaiName(name: string, slug = ''): boolean {
+  const combined = (name + ' ' + slug).toLowerCase()
+  return CPMAI_CANONICAL_MARKERS.some(kw => combined.includes(kw))
+}
+
+/**
+ * From the cert_cpmai-classified badges of ONE member, pick the single badge
+ * whose XP credit survives. Prefer the PMI-CPMAI-branded badge (current
+ * official credential), else the most recent issued_at (tiebreak: name, for
+ * determinism). Returns null for an empty family.
+ */
+export function selectCanonicalCpmai<T extends { name: string; slug?: string; issued_at?: string }>(
+  family: T[],
+): T | null {
+  if (!family.length) return null
+  const branded = family.filter(b => isCanonicalCpmaiName(b.name, b.slug || ''))
+  const pool = branded.length ? branded : family
+  return [...pool].sort((a, b) =>
+    (Date.parse(b.issued_at || '') || 0) - (Date.parse(a.issued_at || '') || 0)
+    || a.name.localeCompare(b.name),
+  )[0]
 }

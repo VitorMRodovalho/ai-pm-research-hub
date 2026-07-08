@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { classifyBadge, PMI_TRAIL_KEYWORDS } from '../_shared/classify-badge.ts'
+import { classifyBadge, PMI_TRAIL_KEYWORDS, selectCanonicalCpmai } from '../_shared/classify-badge.ts'
 
 interface CredlyBadge {
   badge_template: { name: string; vanity_slug?: string }
@@ -210,8 +210,25 @@ async function processMember(
     cpmai_certified_at: result.cpmai[0]?.issued_at || null,
   }).eq('id', member.id)
 
+  // #1149 P1: CPMAI family collapse — the v7/+E/PLUS/PMI-CPMAI badges are ONE certification;
+  // exactly one cert_cpmai XP credit per member (canonical = PMI-CPMAI brand, else most recent).
+  // Display (credly_badges jsonb above) still lists every badge; only the XP credit collapses.
+  const cpmaiCanonical = selectCanonicalCpmai(result.all.filter(b => b.category === 'cert_cpmai'))
+
   for (const badge of result.all) {
+    if (badge.category === 'cert_cpmai' && badge !== cpmaiCanonical) continue // superseded family sibling
     await upsertCredlyPoints(sb, member.id, badge)
+  }
+
+  // Self-heal: drop any previously-paid XP rows for superseded family siblings.
+  if (cpmaiCanonical) {
+    const { error: familyDedupError } = await sb.from('gamification_points')
+      .delete()
+      .eq('member_id', member.id)
+      .eq('category', 'cert_cpmai')
+      .like('reason', 'Credly: %')
+      .neq('reason', `Credly: ${cpmaiCanonical.name}`)
+    if (familyDedupError) throw familyDedupError
   }
 
   for (const trail of result.pmiTrail) {
