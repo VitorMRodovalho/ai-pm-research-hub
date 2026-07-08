@@ -20,10 +20,17 @@ const sbAnonForStats = createClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
 let leadersCount = 8;
+// #1214: tribe slot cap derives from the SSOT (platform_settings.max_researchers_per_tribe
+// via get_homepage_stats — same source as the select_tribe server gate). MAX_SLOTS is a
+// fallback for RPC failure only.
+let maxSlots = MAX_SLOTS;
 try {
   const { data } = await sbAnonForStats.rpc('get_homepage_stats');
   if (data && typeof data.active_leaders === 'number' && data.active_leaders > 0) {
     leadersCount = data.active_leaders;
+  }
+  if (data && typeof data.max_researchers_per_tribe === 'number' && data.max_researchers_per_tribe > 0) {
+    maxSlots = data.max_researchers_per_tribe;
   }
 } catch {}
 const tribesLabel = t('tribes.label', lang).replace('{n}', String(leadersCount));
@@ -128,8 +135,8 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         {selectionNotice}
       </span>
       <br>
-      {/* #1136: slots derivam do SSOT (MIN_SLOTS/MAX_SLOTS em data/tribes), não de literal na copy */}
-      {t('tribes.slots', lang).replace('{min}', String(MIN_SLOTS)).replace('{max}', String(MAX_SLOTS))}
+      {/* #1136/#1214: slots derivam do SSOT (platform_settings via get_homepage_stats), não de literal na copy */}
+      {t('tribes.slots', lang).replace('{min}', String(MIN_SLOTS)).replace('{max}', String(maxSlots))}
       <span id="loginPrompt" class="block mt-2 font-semibold text-orange">
         {t('tribes.loginPrompt', lang)}
       </span>
@@ -190,13 +197,13 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
                   <div class="flex-shrink-0 text-center">
                     <div class="flex gap-[3px] mb-0.5" id={`sl-${tr.id}`}>
-                      {Array.from({ length: MAX_SLOTS }).map((_, i) => (
+                      {Array.from({ length: maxSlots }).map((_, i) => (
                         <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"
                              style={i < (initialCounts[tr.id] || 0) ? 'background:#70AD47;border-color:#70AD47' : ''}></div>
                       ))}
                     </div>
                     <div class="text-[.68rem] text-[var(--text-secondary)] font-semibold" id={`st-${tr.id}`}>
-                      {initialCounts[tr.id] || 0}/{MAX_SLOTS}
+                      {initialCounts[tr.id] || 0}/{maxSlots}
                     </div>
                   </div>
                 </button>
@@ -265,10 +272,11 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
   </div>
 </section>
 
-<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, hasSelectionDeadline: !!TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS, TRIBE_IDS }}>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, hasSelectionDeadline: !!TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS: maxSlots, MIN_SLOTS, TRIBE_IDS }}>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
-  // MAX_SLOTS, MIN_SLOTS from data/tribes via define:vars (single source of truth)
+  // MAX_SLOTS = maxSlots resolved at SSR from get_homepage_stats (#1214: SSOT =
+  // platform_settings.max_researchers_per_tribe; data/tribes MAX_SLOTS is fallback only)
 
   const DEADLINE = hasSelectionDeadline ? new Date(tribeSelectionDeadline) : null;
 
