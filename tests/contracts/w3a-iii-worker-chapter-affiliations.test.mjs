@@ -99,8 +99,23 @@ describe('w3a-iii — worker write path (db.ts)', () => {
     assert.match(DB, /db\.rpc\('upsert_chapter_affiliation'/);
     assert.match(DB, /p_source: 'pmi_vep'/);
     assert.match(DB, /p_is_primary: false/);
-    // imports the BR mapper
-    assert.match(DB, /import \{ parseBrChapterCode \} from '\.\/mapper'/);
+    // #1175 F2: imports the registry-driven matcher AND the static fallback
+    assert.match(DB, /parseBrChapterCode,?\s*\n\s*buildBrChapterMatcher/);
+  });
+
+  it('#1175 F2: resolution is chapter_registry-driven with static fallback', () => {
+    // db.ts fetches the SSOT rows and builds the matcher (per-isolate cached)
+    assert.match(DB, /export async function getBrChapterMatcher\(/);
+    assert.match(DB, /from\('chapter_registry'\)/);
+    assert.match(DB, /select\('chapter_code, state, vep_name_aliases'\)/);
+    // registry fetch failure falls back to the static map (never drops an ingest)
+    assert.match(DB, /return parseBrChapterCode/);
+    // upsert path resolves via the matcher, not the hardcoded map
+    assert.match(DB, /const matcher = await getBrChapterMatcher\(db\)/);
+    assert.match(DB, /const code = matcher\(name\)/);
+    // mapper exports the pure builder (alias-first, then "<State>, Brazil Chapter")
+    assert.match(MAPPER, /export function buildBrChapterMatcher\(/);
+    assert.match(MAPPER, /vep_name_aliases/);
   });
 
   it('tolerates the real runtime shape (array of name strings) and the declared object shape', () => {

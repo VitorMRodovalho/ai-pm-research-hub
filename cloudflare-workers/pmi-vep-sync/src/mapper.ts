@@ -137,8 +137,61 @@ function parseChapterFromMembership(ms: string): string | null {
 }
 
 /**
+ * #1175 F2 — chapter_registry rows that drive BR-chapter name resolution.
+ * Mirrors the SQL resolver resolve_br_chapter_code() (migration 20260805000364):
+ * both sides derive from the same SSOT (Pattern 47), so a new alias or chapter is
+ * config in the registry, not code.
+ */
+export interface ChapterMatcherRow {
+  chapter_code: string;
+  state: string | null;
+  vep_name_aliases: string[] | null;
+}
+
+export type BrChapterMatcher = (name: string | null | undefined) => string | null;
+
+/** Case- and diacritic-insensitive normalization for name matching. */
+function foldName(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+/**
+ * #1175 F2 — build the membership-name → registry-code matcher from live
+ * chapter_registry rows. Resolution order (same as resolve_br_chapter_code):
+ *   1. exact vep_name_aliases match ("Amazônia Chapter" → AM);
+ *   2. "<State>, Brazil Chapter" with the state name coming from the registry.
+ * Anything else (non-BR: "PMI Global", "Washington, DC Chapter") → null, because
+ * member_chapter_affiliations FKs chapter_registry, which is BR-only (ADR-0104).
+ */
+export function buildBrChapterMatcher(rows: ChapterMatcherRow[]): BrChapterMatcher {
+  const aliasToCode = new Map<string, string>();
+  const stateNeedles: Array<{ needle: string; code: string }> = [];
+  for (const r of rows) {
+    for (const a of r.vep_name_aliases ?? []) aliasToCode.set(foldName(a), r.chapter_code);
+    if (r.state) stateNeedles.push({ needle: foldName(r.state), code: r.chapter_code });
+  }
+  return (name) => {
+    if (!name) return null;
+    const n = foldName(name);
+    const byAlias = aliasToCode.get(n);
+    if (byAlias) return byAlias;
+    if (!/,\s*brazil chapter$/.test(n)) return null;
+    for (const s of stateNeedles) {
+      if (n.includes(s.needle)) return s.code;
+    }
+    return null;
+  };
+}
+
+/**
  * Wave 3a-iii (#740 / ADR-0104) — map a SINGLE PMI membership name (e.g.
  * "Minas Gerais, Brazil Chapter") to a bare chapter_registry code ("MG").
+ *
+ * #1175 F2: DEMOTED to static fallback. The primary path is buildBrChapterMatcher()
+ * fed by live chapter_registry rows (db.ts getBrChapterMatcher); this hardcoded map
+ * only backstops a registry fetch failure so an ingest never drops affiliations. It
+ * misses aliases ("Amazônia Chapter") by construction — do not extend it, extend
+ * chapter_registry.vep_name_aliases instead.
  *
  * Returns null for anything that is not an eligible BR chapter:
  *   - non-BR ("PMI Global", "Washington, DC Chapter", "Angola Chapter") — the FACT

@@ -12,6 +12,8 @@ interface MemberRow {
   signed: boolean;
   signed_at: string | null;
   verification_code: string | null;
+  // PMI affiliation signal (not an eligibility gate — see get_volunteer_agreement_status; #1129 defers a hard validity gate)
+  pmi_id_verified: boolean;
   cycle_code: string | null;
   cycle_start: string | null;
   cycle_end: string | null;
@@ -25,6 +27,9 @@ interface MemberRow {
   // cert this cycle; agreement_status ∈ issued|rejected|null (superseded/revoked are excluded).
   agreement_cert_id: string | null;
   agreement_status: string | null;
+  // PR-B: signed term's template version (governance_documents.version — SSOT), for the version filter
+  agreement_template_id: string | null;
+  agreement_version: string | null;
 }
 
 interface TemplateData {
@@ -45,6 +50,7 @@ interface Summary {
   total_eligible: number;
   signed: number;
   unsigned: number;
+  not_verified: number;
   pct: number;
 }
 
@@ -102,6 +108,17 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Erro ao executar a ação.',
     rejectConfirmCountersigned: 'O termo de {name} já foi contra-assinado (ato bilateral). Rejeitá-lo é um distrato formal e não pode ser desfeito. Continuar?',
     rejectedBadgeAria: 'Termo rejeitado — aguarda reassinatura do voluntário',
+    contextEligible: 'voluntários com engagement ativo no ciclo (elegíveis a assinar)',
+    contextUnverified: 'com filiação PMI não verificada',
+    affiliationBadge: 'filiação?',
+    affiliationBadgeTitle: 'Filiação PMI não verificada — acompanhar (não bloqueia a assinatura)',
+    filterUnverified: 'Filiação não verificada',
+    versionAll: 'Todas as versões',
+    cohortAll: 'Todos os ciclos',
+    bulkButton: 'Contra-assinar selecionados',
+    bulkConfirm: 'Contra-assinar {n} termo(s) selecionado(s)? Cada um será contra-assinado pela diretoria (ato bilateral) e liberado ao voluntário.',
+    bulkResult: '{ok} contra-assinado(s), {failed} falha(s).',
+    selectAllPending: 'Selecionar pendentes na visão',
   },
   'en-US': {
     title: 'Volunteer Agreement',
@@ -149,6 +166,17 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Error performing the action.',
     rejectConfirmCountersigned: "{name}'s agreement was already counter-signed (bilateral act). Rejecting it is a formal rescission and cannot be undone. Continue?",
     rejectedBadgeAria: 'Agreement rejected — awaiting the volunteer to re-sign',
+    contextEligible: 'volunteers with an active engagement this cycle (eligible to sign)',
+    contextUnverified: 'with unverified PMI affiliation',
+    affiliationBadge: 'affiliation?',
+    affiliationBadgeTitle: 'Unverified PMI affiliation — follow up (does not block signing)',
+    filterUnverified: 'Unverified affiliation',
+    versionAll: 'All versions',
+    cohortAll: 'All cycles',
+    bulkButton: 'Counter-sign selected',
+    bulkConfirm: 'Counter-sign {n} selected agreement(s)? Each is counter-signed by the board (bilateral act) and released to the volunteer.',
+    bulkResult: '{ok} counter-signed, {failed} failed.',
+    selectAllPending: 'Select pending in view',
   },
   'es-LATAM': {
     title: 'Acuerdo de Voluntariado',
@@ -196,6 +224,17 @@ const L: Record<string, Record<string, string>> = {
     actionError: 'Error al ejecutar la acción.',
     rejectConfirmCountersigned: 'El término de {name} ya fue contra-firmado (acto bilateral). Rechazarlo es una rescisión formal y no se puede deshacer. ¿Continuar?',
     rejectedBadgeAria: 'Término rechazado — esperando que el voluntario vuelva a firmar',
+    contextEligible: 'voluntarios con engagement activo en el ciclo (elegibles para firmar)',
+    contextUnverified: 'con afiliación PMI no verificada',
+    affiliationBadge: 'afiliación?',
+    affiliationBadgeTitle: 'Afiliación PMI no verificada — dar seguimiento (no bloquea la firma)',
+    filterUnverified: 'Afiliación no verificada',
+    versionAll: 'Todas las versiones',
+    cohortAll: 'Todos los ciclos',
+    bulkButton: 'Contrafirmar seleccionados',
+    bulkConfirm: '¿Contrafirmar {n} término(s) seleccionado(s)? Cada uno es contrafirmado por la directiva (acto bilateral) y liberado al voluntario.',
+    bulkResult: '{ok} contrafirmado(s), {failed} fallo(s).',
+    selectAllPending: 'Seleccionar pendientes en vista',
   },
 };
 
@@ -234,9 +273,14 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [authorized, setAuthorized] = useState(false);
   const [filter, setFilter] = useState<'all' | 'signed' | 'pending'>('all');
   const [chapterFilter, setChapterFilter] = useState<string>('');
+  const [unverifiedOnly, setUnverifiedOnly] = useState(false);
+  const [versionFilter, setVersionFilter] = useState<string>('');
+  const [cohortFilter, setCohortFilter] = useState<string>('');
   const [search, setSearch] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActing, setBulkActing] = useState(false);
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
@@ -266,11 +310,46 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     if (filter === 'signed' && !m.signed) return false;
     if (filter === 'pending' && m.signed) return false;
     if (chapterFilter && m.chapter !== chapterFilter) return false;
+    if (unverifiedOnly && m.pmi_id_verified) return false;
+    if (versionFilter && (m.agreement_template_id || '') !== versionFilter) return false;
+    if (cohortFilter && (m.cycle_code || '') !== cohortFilter) return false;
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.email.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const uniqueChapters = [...new Set(members.map(m => m.chapter).filter(Boolean))].sort();
+  // Version filter options: distinct (template_id -> label) among signed terms (SSOT label, no hardcode).
+  const versionOptions = [...new Map(
+    members.filter(m => m.agreement_template_id).map(m => [m.agreement_template_id!, m.agreement_version || m.agreement_template_id!])
+  ).entries()];
+  const uniqueCohorts = [...new Set(members.map(m => m.cycle_code).filter(Boolean) as string[])].sort().reverse();
+
+  // A row is eligible for BULK counter-sign only where the single-cert gate would also pass:
+  // caller can counter-sign, volunteer already signed, not yet counter-signed, term still issued.
+  const canBulkSelect = (m: MemberRow): boolean =>
+    canCounterSign && m.signed && !m.counter_signed && m.agreement_status === 'issued' && !!m.agreement_cert_id;
+  const bulkEligibleInView = filtered.filter(canBulkSelect);
+  const selectedInView = bulkEligibleInView.filter(m => selectedIds.has(m.agreement_cert_id!));
+  const allInViewSelected = bulkEligibleInView.length > 0 && selectedInView.length === bulkEligibleInView.length;
+
+  const toggleSelect = (certId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(certId)) next.delete(certId); else next.add(certId);
+      return next;
+    });
+  };
+  const toggleSelectAllInView = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allInViewSelected) {
+        bulkEligibleInView.forEach(m => next.delete(m.agreement_cert_id!));
+      } else {
+        bulkEligibleInView.forEach(m => next.add(m.agreement_cert_id!));
+      }
+      return next;
+    });
+  };
 
   const exportCsv = () => {
     const header = 'Nome,Email,Capítulo,Papel,Status,Assinado em,Código\n';
@@ -358,6 +437,32 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     }
   };
 
+  // PR-B: counter-sign a batch of selected terms in one call. bulk_counter_sign_certificates
+  // delegates to counter_sign_certificate per id, so authority is enforced identically per cert.
+  // The confirm names the exact count (bilateral governance act — no blind "sign all").
+  const bulkCounterSign = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    if (!window.confirm(t.bulkConfirm.replace('{n}', String(ids.length)))) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    setBulkActing(true);
+    try {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 500) : null;
+      const { data, error } = await sb.rpc('bulk_counter_sign_certificates', { p_certificate_ids: ids, p_signed_user_agent: ua });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const ok = data?.ok ?? 0;
+      const failed = data?.failed ?? 0;
+      (window as any).toast?.(t.bulkResult.replace('{ok}', String(ok)).replace('{failed}', String(failed)), failed > 0 ? 'info' : 'success');
+      setSelectedIds(new Set());
+      await load();
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setBulkActing(false);
+    }
+  };
+
   // W3c-ii (B8): reissue — supersede the current issued term and require the member to re-sign.
   // manage_member only (RPC-gated); button is hidden for chapter_board (isManager === false).
   const reissueAgreement = async (m: MemberRow) => {
@@ -383,9 +488,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Context: who is counted */}
+      {/* Context: who is counted (derived from the live eligible set — no hardcoded totals) */}
       <div className="text-[10px] text-[var(--text-muted)] bg-[var(--surface-section-cool)] rounded-lg px-3 py-1.5">
-        {summary.total_eligible} voluntários operacionais de 52 membros ativos (sponsors, liaisons e observers isentos)
+        {summary.total_eligible} {t.contextEligible}
+        {summary.not_verified > 0 && (
+          <> · <span className="text-amber-600 dark:text-amber-400">{summary.not_verified} {t.contextUnverified}</span></>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -609,6 +717,43 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
             {uniqueChapters.map(ch => <option key={ch} value={ch}>{ch}</option>)}
           </select>
 
+          {uniqueCohorts.length > 1 && (
+            <select
+              value={cohortFilter}
+              onChange={e => setCohortFilter(e.target.value)}
+              className="text-[11px] px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)]"
+            >
+              <option value="">{t.cohortAll}</option>
+              {uniqueCohorts.map(cc => <option key={cc} value={cc}>{cc.replace('_', ' ')}</option>)}
+            </select>
+          )}
+
+          {versionOptions.length > 1 && (
+            <select
+              value={versionFilter}
+              onChange={e => setVersionFilter(e.target.value)}
+              className="text-[11px] px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] max-w-[180px]"
+              title={t.versionAll}
+            >
+              <option value="">{t.versionAll}</option>
+              {versionOptions.map(([tid, label]) => <option key={tid} value={tid}>{label}</option>)}
+            </select>
+          )}
+
+          {summary.not_verified > 0 && (
+            <button
+              onClick={() => setUnverifiedOnly(v => !v)}
+              title={t.affiliationBadgeTitle}
+              className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
+                unverifiedOnly
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'border-amber-300 text-amber-700 dark:text-amber-400 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20'
+              }`}
+            >
+              ⚠ {t.filterUnverified} ({summary.not_verified})
+            </button>
+          )}
+
           <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
             {(['all', 'signed', 'pending'] as const).map(f => (
               <button
@@ -641,11 +786,30 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
           )}
         </div>
 
+        {/* PR-B: bulk counter-sign action bar — only when the caller can counter-sign and there
+            are terms awaiting the director in the current view. */}
+        {canCounterSign && bulkEligibleInView.length > 0 && (
+          <div className="px-4 py-2 border-b border-[var(--border-subtle)] bg-emerald-50/60 dark:bg-emerald-900/10 flex items-center gap-3 flex-wrap">
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-secondary)] cursor-pointer">
+              <input type="checkbox" checked={allInViewSelected} onChange={toggleSelectAllInView} className="cursor-pointer" />
+              {t.selectAllPending} ({bulkEligibleInView.length})
+            </label>
+            <button
+              onClick={bulkCounterSign}
+              disabled={selectedIds.size === 0 || bulkActing}
+              className="ml-auto px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-semibold border-0 cursor-pointer hover:bg-emerald-700 disabled:opacity-50"
+            >
+              ✍️ {t.bulkButton} ({selectedIds.size})
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
               <tr className="text-[var(--text-muted)] border-b border-[var(--border-subtle)] bg-[var(--surface-section-cool)]">
+                {canCounterSign && <th className="px-2 py-2 w-8"></th>}
                 <th className="text-left px-4 py-2 font-semibold">{t.name}</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.chapter}</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.role}</th>
@@ -658,9 +822,28 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
             </thead>
             <tbody>
               {filtered.map(m => (
-                <tr key={m.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+                <tr key={m.id} className={`border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] ${m.agreement_cert_id && selectedIds.has(m.agreement_cert_id) ? 'bg-emerald-50/40 dark:bg-emerald-900/10' : ''}`}>
+                  {canCounterSign && (
+                    <td className="px-2 py-2 text-center">
+                      {canBulkSelect(m) && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(m.agreement_cert_id!)}
+                          onChange={() => toggleSelect(m.agreement_cert_id!)}
+                          className="cursor-pointer"
+                          aria-label={`${t.counterSign}: ${m.name}`}
+                        />
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-2 font-medium text-[var(--text-primary)]">
                     <a href={`/admin/members/${m.id}`} className="text-navy hover:underline no-underline">{m.name}</a>
+                    {!m.pmi_id_verified && (
+                      <span
+                        title={t.affiliationBadgeTitle}
+                        className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-amber-100 text-amber-700 align-middle"
+                      >⚠ {t.affiliationBadge}</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.chapter || '—'}</td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.role}</td>
@@ -743,7 +926,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-[var(--text-muted)]">{t.noData}</td>
+                  <td colSpan={canCounterSign ? 9 : 8} className="px-4 py-6 text-center text-[var(--text-muted)]">{t.noData}</td>
                 </tr>
               )}
             </tbody>

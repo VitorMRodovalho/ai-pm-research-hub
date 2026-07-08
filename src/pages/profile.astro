@@ -1784,7 +1784,7 @@ const PROFILE_I18N = {
           <div id="self-cep-wrapper" class="mb-4 ${(m.country || '').toLowerCase().includes('brasil') || (m.country || '').toLowerCase().includes('brazil') ? '' : 'hidden'}">
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
               CEP
-              <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(opcional — preenche endereço automaticamente)</span>
+              <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(opcional — só preenche o endereço automaticamente; o CEP não é armazenado)</span>
             </label>
             <div class="flex items-center gap-2">
               <input type="text" id="self-cep" placeholder="00000-000" maxlength="9" inputmode="numeric"
@@ -2276,7 +2276,6 @@ const PROFILE_I18N = {
     } else if (currentMember.credly_url) {
       credlyToSave = currentMember.credly_url;
     }
-    const shareWaEl = document.getElementById('self-share-wa') as HTMLInputElement | null;
     const nameVal = (document.getElementById('self-name') as HTMLInputElement)?.value.trim();
     if (nameVal && nameVal.length < 2) {
       (window as any).toast?.('Nome precisa ter pelo menos 2 caracteres', 'error');
@@ -2293,8 +2292,9 @@ const PROFILE_I18N = {
     if (credlyToSave !== (currentMember.credly_url || null)) fields.credly_url = credlyToSave;
     const pmiId = (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null;
     if (pmiId !== (currentMember.pmi_id || null)) fields.pmi_id = pmiId;
-    const shareWa = shareWaEl?.checked ?? false;
-    if (shareWa !== currentMember.share_whatsapp) fields.share_whatsapp = shareWa;
+    // #1175 F3: share_whatsapp binds ONLY to #self-share-whatsapp (privacy block below).
+    // A ghost binding read the nonexistent #self-share-wa (always false) and clobbered the
+    // saved true value on every subsequent save — "marquei, salvou, voltou desmarcado".
     const stateVal = (document.getElementById('self-state') as HTMLSelectElement)?.value.trim() || null;
     if (stateVal !== (currentMember.state || null)) fields.state = stateVal;
     const countryVal = (document.getElementById('self-country') as HTMLInputElement)?.value.trim() || null;

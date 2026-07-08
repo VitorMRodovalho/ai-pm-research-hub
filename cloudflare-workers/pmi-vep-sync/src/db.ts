@@ -5,7 +5,12 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Env, CronRunMetrics } from './types';
-import { parseBrChapterCode } from './mapper';
+import {
+  parseBrChapterCode,
+  buildBrChapterMatcher,
+  type BrChapterMatcher,
+  type ChapterMatcherRow
+} from './mapper';
 
 export function createDbClient(env: Env): SupabaseClient {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -678,8 +683,9 @@ export async function findPersonIdByEmail(
  * Wave 3a-iii (#740 / ADR-0104) — populate member_chapter_affiliations from the
  * reliable pmi_memberships snapshot for a resolved person.
  *
- * For each BR ("<State>, Brazil Chapter") membership we resolve the chapter_registry
- * code and call the SECURITY DEFINER RPC upsert_chapter_affiliation with
+ * For each BR membership ("<State>, Brazil Chapter" or a chapter_registry
+ * vep_name_aliases entry, #1175 F2) we resolve the chapter_registry code and call
+ * the SECURITY DEFINER RPC upsert_chapter_affiliation with
  * is_primary=false: the worker asserts which chapters a person belongs to (FACT), it
  * never decides the headline. The RPC owns the one-primary invariant (it preserves the
  * legacy backfill / the future entry_chapter choice, and only promotes a provisional
@@ -690,6 +696,38 @@ export async function findPersonIdByEmail(
  * array of plain name strings, as actually stored in selection_applications.pmi_memberships)
  * and the declared { chapterName } object shape. Returns the count of affiliations upserted.
  */
+// #1175 F2 — per-isolate cache of the registry-driven matcher. Chapter data changes
+// rarely; a short TTL keeps a long-lived isolate from serving a stale alias set while
+// avoiding one registry query per application within a single ingest run.
+const MATCHER_TTL_MS = 5 * 60 * 1000;
+let matcherCache: { at: number; fn: BrChapterMatcher } | null = null;
+
+/**
+ * #1175 F2 — resolve membership names via chapter_registry (state + vep_name_aliases),
+ * the same SSOT the SQL resolver resolve_br_chapter_code() reads. Falls back to the
+ * static parseBrChapterCode map if the registry fetch fails, so an ingest never drops
+ * affiliations on a transient read error (the fallback misses aliases, by design).
+ */
+export async function getBrChapterMatcher(db: SupabaseClient): Promise<BrChapterMatcher> {
+  const now = Date.now();
+  if (matcherCache && now - matcherCache.at < MATCHER_TTL_MS) return matcherCache.fn;
+
+  const { data, error } = await db
+    .from('chapter_registry')
+    .select('chapter_code, state, vep_name_aliases')
+    .eq('is_active', true)
+    .eq('country', 'BR');
+
+  if (error || !Array.isArray(data) || data.length === 0) {
+    console.warn(`[pmi-vep-sync] chapter_registry fetch failed (${error?.message ?? 'empty'}); using static fallback matcher`);
+    return parseBrChapterCode;
+  }
+
+  const fn = buildBrChapterMatcher(data as ChapterMatcherRow[]);
+  matcherCache = { at: now, fn };
+  return fn;
+}
+
 export async function upsertChapterAffiliations(
   db: SupabaseClient,
   personId: string,
@@ -697,13 +735,14 @@ export async function upsertChapterAffiliations(
 ): Promise<number> {
   if (!Array.isArray(memberships) || memberships.length === 0) return 0;
 
+  const matcher = await getBrChapterMatcher(db);
   const codes = new Set<string>();
   for (const m of memberships) {
     const name =
       typeof m === 'string'
         ? m
         : (m && typeof m === 'object' ? ((m as any).chapterName ?? null) : null);
-    const code = parseBrChapterCode(name);
+    const code = matcher(name);
     if (code) codes.add(code);
   }
   if (codes.size === 0) return 0;
