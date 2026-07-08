@@ -13,16 +13,18 @@
  * full re-login, each ~1h token cycle. The #580 KV re-store could not fix it: it
  * kept the SERVER copy fresh, but there is no channel to push R' back to Claude.
  *
- * Fix: remove the proxy-side refresh entirely. Claude is the sole refresher (it
- * refreshes reactively on 401 + proactively before expiry, per the official
- * connector behaviour), through /oauth/token — which keeps the KV mcp_refresh:{sub}
- * copy in sync on the single rotation chain.
+ * Fix (#1053): remove the proxy-side refresh entirely — Claude became the sole
+ * refresher through /oauth/token. #1210 finished the job: even that endpoint was
+ * retired, because the consent flow still COPIED the browser session's refresh
+ * token to Claude (browser↔Claude = the same two-holders collision). Token
+ * issuance now lives in Supabase's native OAuth 2.1 server with client-scoped
+ * sessions; the Worker performs zero token work.
  *
- * This test LOCKS that model: the proxies must not refresh server-side, and
- * /oauth/token must keep implementing the refresh_token grant.
+ * This test LOCKS both layers: the proxies must not refresh server-side, and
+ * the Worker token route must never grow grant handling back.
  *
- * Cross-ref: #1053, #234, #580, src/lib/mcp-refresh.ts (helpers retained but
- * deprecated for proxy use).
+ * Cross-ref: #1053, #1210, #234, #580, src/lib/mcp-refresh.ts (helpers retained
+ * for reference, unit-tested, unused by routes).
  */
 
 import test from 'node:test';
@@ -53,12 +55,17 @@ test('#1053: proxies still forward the bearer as-is (no token mutation before up
   }
 });
 
-test('#1053: /oauth/token remains the sole server-side refresher (refresh_token grant intact)', () => {
+test('#1053 → #1210: the Worker performs NO token issuance or refresh at all', () => {
+  // #1210 evolved the single-refresher model to its terminal form: token issuance
+  // moved to Supabase Auth's native OAuth 2.1 server (client-scoped sessions), so
+  // the browser↔Claude collision over one shared rotating refresh token is gone
+  // by design. The Worker token route is a retired stub — it must never again
+  // exchange codes, refresh tokens, or touch the KV refresh copy.
   const src = read('src/pages/oauth/token.ts');
-  assert.match(src, /grant_type === 'refresh_token'/, 'token.ts must still handle the refresh_token grant');
-  assert.match(src, /grant_type=refresh_token/, 'token.ts must still call the Supabase refresh endpoint');
-  // It keeps the KV copy in sync on rotation so the single chain stays consistent.
-  assert.match(src, /mcp_refresh:\$\{refreshPayload\.sub\}/, 'token.ts must re-store the rotated refresh token in KV');
+  assert.doesNotMatch(src, /grant_type === 'refresh_token'/, 'token.ts must not implement the refresh grant (#1210)');
+  assert.doesNotMatch(src, /grant_type=refresh_token/, 'token.ts must not call the Supabase session-refresh endpoint (#1210)');
+  assert.doesNotMatch(src, /mcp_refresh/, 'token.ts must not touch the KV refresh copy (#1210)');
+  assert.match(src, /invalid_grant/, 'stub must answer a clean OAuth invalid_grant so stale clients re-auth');
 });
 
 test('#1053: rate limiting still keys off the decoded JWT sub in both proxies', () => {

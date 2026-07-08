@@ -130,12 +130,32 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - NEVER skip the canV4 check for write tools
 - Legacy `canWrite`/`canWriteBoard`/`WRITE_ROLES`/`BOARD_ROLES` removed in cutover 2026-04-13
 
-## OAuth Flow (all in Workers, NOT in EF)
-- Discovery: /.well-known/oauth-{authorization-server,protected-resource}
-- Register: /oauth/register (DCR, returns fixed client_id)
-- Authorize: /oauth/authorize → /oauth/consent (login + approve)
-- Exchange: /oauth/exchange (generates code in KV)
-- Token: /oauth/token (PKCE verify, returns JWT)
+## OAuth Flow — Supabase NATIVE OAuth 2.1 server (#1210, 2026-07-08)
+Token issuance lives in GoTrue's native OAuth server (dashboard: Authentication →
+OAuth Server, enabled, authorization path `/oauth/consent`; OAuth app "Nucleo IA
+MCP" `8636c0d0-…`, public + PKCE, claude.ai/claude.com redirect URIs). Each OAuth
+client gets a DEDICATED client-scoped session/refresh chain — the browser session
+is only the approver identity on the consent page.
+
+- Discovery: /.well-known/oauth-{authorization-server,protected-resource} — Worker
+  routes, ORIGIN-AWARE (issuer/resource = request origin; alias-ready). The AS
+  metadata is hybrid: authorize/token → `https://<ref>.supabase.co/auth/v1/oauth/*`,
+  registration → our shim.
+- Register: /oauth/register (DCR shim, returns the fixed pre-registered client_id —
+  keeps Supabase dynamic registration OFF)
+- Authorize: GoTrue `/auth/v1/oauth/authorize` validates client_id/redirect_uri/PKCE
+  → redirects to Site URL + `/oauth/consent?authorization_id=…`
+- Consent: `src/pages/oauth/consent.astro` — login (browser session) + settle via
+  `supabase.auth.oauth.{getAuthorizationDetails,approveAuthorization,denyAuthorization}`
+- Token + refresh: GoTrue `/auth/v1/oauth/token` (code exchange + rotation). The
+  Worker `/oauth/token` is a RETIRED STUB (400 invalid_grant → stale clients re-auth);
+  `/oauth/exchange` is deleted.
+- Scopes: GoTrue supports only openid/email/profile/phone (default email). NEVER
+  advertise custom scopes in metadata. Access tokens are standard Supabase JWTs
+  (+ `client_id` claim) — RLS/EF surface unchanged.
+- Per-client revocation: `supabase.auth.oauth.revokeGrant(clientId)` / grants list
+  via `listGrants` (closes the #1051 self-service gap).
+- Guarded by `tests/contracts/1210-mcp-native-oauth.test.mjs`.
 
 ## Streamable HTTP (native transport)
 - `WebStandardStreamableHTTPServerTransport` handles all protocol details
@@ -144,14 +164,16 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - GET /mcp → 406 (native transport returns Not Acceptable when no session)
 - Transport handles: initialize, tools/list, tool/call, notifications, SSE streams
 
-## Token refresh — single-refresher model (#1053, 2026-07-05)
-**The client (Claude) is the SOLE refresher. The proxies do NOT refresh server-side.**
-- Claude refreshes its own token (proactively ~5 min before expiry + reactively on 401)
-  by calling `/oauth/token` with `grant_type=refresh_token` (`src/pages/oauth/token.ts`).
-  That endpoint exchanges against Supabase Auth, returns the rotated token to Claude,
-  AND re-stores it in KV `mcp_refresh:{sub}` — so the single rotation chain stays in sync.
-- `token.ts` also stores the refresh_token in KV on the `authorization_code` grant.
-- Supabase JWT TTL is 3600s (1h). KV key `mcp_refresh:{user_id}`, 30-day TTL.
+## Token refresh — history: #1053 single-refresher → #1210 native server
+**Current model (#1210): NOTHING in the Worker issues or refreshes tokens.** Claude
+refreshes directly against GoTrue's `/auth/v1/oauth/token` on its own client-scoped
+chain; the browser session rotates independently. The #1053 model below is retained
+as history because it explains the failure class (two holders of one rotating chain).
+
+#1053 (2026-07-05, superseded by #1210): Claude was the sole refresher THROUGH our
+`/oauth/token`, which kept a KV copy (`mcp_refresh:{sub}`, 30-day TTL) in sync. That
+still shared ONE chain with the BROWSER session (consent copied it) — the residual
+collision #1210 eliminated. KV refresh entries are dead; left to expire by TTL.
 
 ### Why the proxies must NEVER refresh (the #1053 bug)
 The proxies (`src/pages/mcp.ts`, `src/pages/mcp/semantic.ts`) used to auto-refresh

@@ -2818,7 +2818,7 @@ const enUS: Record<string, string> = {
   'oauth.error': 'Error',
   'oauth.success': 'Successfully authorized',
   'oauth.redirecting': 'Redirecting back to your AI application...',
-  'oauth.missingState': 'Missing mcp_state parameter. Open this page via your AI assistant\'s OAuth flow.',
+  'oauth.missingState': 'Missing authorization parameter. Open this page via your AI assistant\'s OAuth flow.',
   'oauth.loginError': 'Error starting login.',
   'oauth.codeError': 'Error generating authorization code.',
   'oauth.sessionExpired': 'Session expired. Please log in again.',
