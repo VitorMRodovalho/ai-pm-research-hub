@@ -326,10 +326,15 @@ export interface ScriptApplication {
 // =====================================================================
 
 export interface ScriptServiceHistoryRow {
-  applicationId: number | string;        // FK to current application
+  // Wave 4 (#1175 F7): o script passa a emitir applicationId + roleName.
+  // Exports pré-Wave-4 (p131 e anteriores) só carregavam applicantId +
+  // title/roleTitle — o mapper faz fallback (ver mapServiceHistory).
+  applicationId?: number | string;       // FK to current application (Wave 4+)
   applicantId?: number | string;
   chapterName: string;
-  roleName?: string | null;
+  roleName?: string | null;              // contrato Wave 4+
+  roleTitle?: string | null;             // legado pré-Wave-4
+  title?: string | null;                 // legado pré-Wave-4
   startDate?: string | null;             // YYYY-MM-DD
   endDate?: string | null;
 }
