@@ -48,8 +48,10 @@ test('P2: tribes.slots interpola {min}/{max} e não carrega o cap hardcoded', ()
       `tribes.slots em ${lang} deve usar {min}/{max}, tem: "${m[1]}"`);
     assert.doesNotMatch(m[1], /\b(7|10|6|3)\b/, `tribes.slots em ${lang} tem número hardcoded: "${m[1]}"`);
   }
-  assert.match(tribesSection, /t\('tribes\.slots'[^)]*\)[\s\S]{0,80}?\.replace\('\{min\}',\s*String\(MIN_SLOTS\)\)[\s\S]{0,60}?\.replace\('\{max\}',\s*String\(MAX_SLOTS\)\)/,
-    'TribesSection deve interpolar tribes.slots com MIN_SLOTS/MAX_SLOTS');
+  // #1214: {max} passou a interpolar maxSlots (resolvido do SSOT via get_homepage_stats
+  // no SSR, com MAX_SLOTS de data/tribes como fallback) — ver 1214-tribe-capacity-ssot.
+  assert.match(tribesSection, /t\('tribes\.slots'[^)]*\)[\s\S]{0,80}?\.replace\('\{min\}',\s*String\(MIN_SLOTS\)\)[\s\S]{0,60}?\.replace\('\{max\}',\s*String\(maxSlots\)\)/,
+    'TribesSection deve interpolar tribes.slots com MIN_SLOTS/maxSlots (SSOT #1214)');
 });
 
 test('P2: meta.description interpola {tribeCount} derivado do SSOT', () => {

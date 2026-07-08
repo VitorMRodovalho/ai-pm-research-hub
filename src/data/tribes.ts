@@ -33,7 +33,14 @@ export interface ResolvedTribe {
   videoDuration: string;
 }
 
-export const MAX_SLOTS = 10;
+/**
+ * #1214: FALLBACK only — the SSOT for tribe capacity is
+ * `platform_settings.max_researchers_per_tribe` (exposed via `get_homepage_stats`,
+ * same source as the `select_tribe` server gate). TribesSection derives the live
+ * value at SSR and only falls back to this constant if the RPC fails, so it must
+ * mirror the ratified cap (contract test: 1214-tribe-capacity-ssot).
+ */
+export const MAX_SLOTS = 7;
 export const MIN_SLOTS = 3;
 
 export const TRIBES: Tribe[] = [
