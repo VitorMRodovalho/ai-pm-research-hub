@@ -6646,6 +6646,21 @@ const enUS: Record<string, string> = {
   'meStatus.nextStep.waitlist': 'You are on the waitlist. If spots open, we will reach out.',
   'meStatus.evaluationsBlindNote': 'During the evaluation phase you see only the count of submitted evaluations — without evaluator identification (anti-bias).',
 
+  // ── Guia do Pré-Onboarding (/guia-pre-onboarding) ──
+  'guiaPre.metaTitle': 'Pre-Onboarding Guide · Núcleo IA & GP',
+  'guiaPre.title': 'Pre-Onboarding Guide',
+  'guiaPre.subtitle': 'From approval to your first tribe: the step-by-step journey and answers to the most common questions from new volunteers.',
+  'guiaPre.langNote': 'This guide\'s content is maintained in Portuguese (pt-BR), the official communication language of the program.',
+  'guiaPre.banner': 'Living guide: updated with each cycle\'s questions. Didn\'t find your answer? Ask in your cycle\'s onboarding group or use the platform\'s Help Center.',
+  'guiaPre.journeyTitle': 'The journey in 6 steps',
+  'guiaPre.journeySub': 'Follow in order: each step unlocks the next.',
+  'guiaPre.faqTitle': 'Frequently asked questions',
+  'guiaPre.faqSub': 'Collected from the pre-onboarding groups: if you wondered, someone already asked.',
+  'guiaPre.moreHelp': 'More material:',
+  'guiaPre.linkGlossario': 'Volunteer guide + glossary',
+  'guiaPre.linkAgenda': 'General meetings agenda',
+  'guiaPre.footer': 'This guide is support material and does not replace the Volunteer Agreement or the program\'s policies.',
+
   // ── Glossario (Política IP §13 mirror) ──
   'glossario.metaTitle': 'Glossary — Núcleo IA & GP',
   'glossario.title': 'Canonical Glossary',
