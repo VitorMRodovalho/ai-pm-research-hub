@@ -1,13 +1,19 @@
 /**
- * Contract test for #999 — verify_member_affiliations_bulk must persist the VEP-enriched
- * membership expiry (selection_applications.service_latest_end_date) into
- * membership_expires_on for the vep_sync branch, so the renewal radar can fire. The pre-fix
- * body hard-coded membership_expires_on = NULL and never selected service_latest_end_date.
+ * Contract test for #999 + #1175 F1 — verify_member_affiliations_bulk (vep_sync branch).
  *
- * Static migration-body guard (offline, hard-fails without the fix). Non-no-op: the
- * assertions below fail against the pre-fix body (which had the NULL hard-code and no
- * service_latest_end_date reference). A behavioral DB-aware assertion is intentionally
- * omitted — exercising the write path would mutate live member/verification data.
+ * #999 established that the bulk verify must persist a real expiry into
+ * membership_expires_on (the pre-#999 body hard-coded NULL). #1175 F1 then fixed WHICH
+ * expiry: the #999 body persisted service_latest_end_date (end of the VOLUNTEER SERVICE)
+ * and derived membership_active from vep_status_raw = 'Active' — the status of the VEP
+ * CANDIDATURA, not of the PMI membership (same conflation class as #1130). Measured
+ * impact 2026-07-08: 10/68 falsely marked "filiação inativa", 7 with provably current
+ * membership. F1 derives both membership_active and membership_expires_on from the
+ * pmi_memberships snapshot ([{chapterName, expiryDate}]) on the SAME matched row, and
+ * routes no-evidence members to the no_vep bucket instead of fabricating "inactive".
+ *
+ * Static migration-body guard (offline, hard-fails without the fix). A behavioral
+ * DB-aware assertion is intentionally omitted — exercising the write path would mutate
+ * live member/verification data.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,27 +44,48 @@ test('#999 bulk vep_sync branch selects service_latest_end_date from the matched
   );
 });
 
-test('#999 the enriched expiry is persisted for vep_sync (no longer a hard-coded NULL)', () => {
+test('#999/#1175 a real expiry is persisted for vep_sync (no longer a hard-coded NULL)', () => {
   const body = latestFunctionBody('verify_member_affiliations_bulk');
   assert.ok(body);
-  // The vep_sync branch must persist the date via a CASE keyed on the method.
+  // #1175 F1: the persisted expiry is the MEMBERSHIP expiry (max pmi_memberships
+  // expiryDate), not service_latest_end_date (end of the volunteer service, the #999 slip).
   assert.ok(
-    /CASE\s+WHEN\s+p_method\s*=\s*'vep_sync'\s+THEN\s+r\.service_end/i.test(body),
-    "membership_expires_on must be CASE WHEN p_method='vep_sync' THEN r.service_end (not a hard NULL)",
+    /CASE\s+WHEN\s+p_method\s*=\s*'vep_sync'\s+THEN\s+v_max_expiry/i.test(body),
+    "membership_expires_on must be CASE WHEN p_method='vep_sync' THEN v_max_expiry (the membership expiry from pmi_memberships)",
   );
-  // The pre-fix INSERT wrote `..., v_active, NULL, p_method, ...` — that exact NULL-in-the-
-  // expiry-slot must be gone.
+  // The pre-#999 INSERT wrote `..., v_active, NULL, p_method, ...` — that exact NULL-in-the-
+  // expiry-slot must stay gone.
   assert.ok(
     !/v_active,\s*NULL,\s*p_method/.test(body),
-    'the pre-fix hard-coded NULL expiry slot must be replaced',
+    'the pre-#999 hard-coded NULL expiry slot must not return',
   );
 });
 
-test('#999 active/inactive stays VEP-authoritative (unchanged consistency guard)', () => {
+test('#1175 F1: vep_sync derives membership_active from membership EVIDENCE, never from the application status', () => {
+  const body = latestFunctionBody('verify_member_affiliations_bulk');
+  assert.ok(body);
+  // max parseable expiryDate from the pmi_memberships snapshot...
+  assert.ok(
+    /max\(to_date\(x\.elem->>'expiryDate',\s*'DD Mon YYYY'\)\)/.test(body),
+    'v_max_expiry must aggregate pmi_memberships expiryDate',
+  );
+  // ...compared to today decides active/inactive
+  assert.ok(
+    /v_active\s*:=\s*\(v_max_expiry\s*>=\s*CURRENT_DATE\)/.test(body),
+    'membership_active must derive from the membership expiry, not vep_status_raw (#1130 conflation class)',
+  );
+  // no evidence -> no_vep bucket (manual verification), never fabricated inactive
+  assert.ok(
+    /IF\s+v_max_expiry\s+IS\s+NULL\s+THEN[\s\S]*?v_no_vep\s*:=\s*array_append\(v_no_vep,\s*r\.id\)/.test(body),
+    'members without membership evidence must go to no_vep, not be marked inactive',
+  );
+});
+
+test('#1175 F1: sede_manual/self_attested branch keeps the previous derivation (separate follow-up)', () => {
   const body = latestFunctionBody('verify_member_affiliations_bulk');
   assert.ok(body);
   assert.ok(
     /v_active\s*:=\s*\(r\.vep_status\s*=\s*'Active'\)/.test(body),
-    'membership_active must still derive from vep_status = Active (the date only feeds the radar)',
+    'the non-vep_sync ELSE branch is intentionally unchanged by #1175 F1',
   );
 });
