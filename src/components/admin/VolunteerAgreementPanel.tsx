@@ -27,7 +27,8 @@ interface MemberRow {
   // cert this cycle; agreement_status ∈ issued|rejected|null (superseded/revoked are excluded).
   agreement_cert_id: string | null;
   agreement_status: string | null;
-  // PR-B: signed term's template version (governance_documents.version — SSOT), for the version filter
+  // PR-B: signed term's template version, for the version filter. governance_documents.version is a
+  // cache of the ratified version_label, stamped by activate_volunteer_term_version (#1187).
   agreement_template_id: string | null;
   agreement_version: string | null;
 }
