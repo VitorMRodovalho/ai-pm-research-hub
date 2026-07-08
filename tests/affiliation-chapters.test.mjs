@@ -8,7 +8,7 @@
 // returned [] (→ warning); post-fix it returns the chapter. Non-no-op.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { brChapters, soonestBrExpiry } from '../src/lib/affiliation-chapters.ts';
+import { brChapters, soonestBrExpiry, unifiedBrChapters, soonestChapterExpiry } from '../src/lib/affiliation-chapters.ts';
 
 // Fixed clock so expired/soon windows are deterministic.
 const NOW = Date.parse('2026-07-01T00:00:00Z');
@@ -84,4 +84,63 @@ test('#1041 soonestBrExpiry classifies expired / soon / ok / none', () => {
 test('#1041 soonestBrExpiry days sign: negative when expired', () => {
   const s = soonestBrExpiry([{ chapterName: 'Goiás, Brazil Chapter', expiryDate: '01 Jun 2026' }], NOW);
   assert.ok(s.expired && s.days < 0, 'expired chapter has negative days');
+});
+
+// ── #1192 unifiedBrChapters — SSOT read-through first, raw parse as fallback only ──
+// Index case (grounded live 2026-07-08): "PMI Amazônia Chapter" carries no "Brazil Chapter"
+// suffix, so the raw parser returns [] and the row fell to the amber "verificar manualmente"
+// branch even though member_chapter_affiliations held the verified AM row (source pmi_vep).
+const JOAO_AFFILIATIONS = [{
+  chapter_code: 'AM',
+  chapter_label: 'Amazonas',
+  source: 'pmi_vep',
+  verified_at: '2026-07-08T03:59:39.578858+00:00',
+  is_primary: true,
+  raw_name: 'Amazônia Chapter',
+  expiry: '28 Feb 2027',
+}];
+const JOAO_RAW = ['PMI Global', { chapterName: 'Amazônia Chapter', expiryDate: '28 Feb 2027' }];
+
+test('#1192 SSOT affiliation wins even when the raw name has no "Brazil Chapter" suffix (the bug)', () => {
+  // Pre-fix behaviour: the island called brChapters(raw) → [] → amber warning.
+  assert.deepEqual(brChapters(JOAO_RAW, NOW), [], 'raw parser alone cannot resolve the alias (why the SSOT must win)');
+  const r = unifiedBrChapters(JOAO_AFFILIATIONS, JOAO_RAW, NOW);
+  assert.equal(r.length, 1, 'non-empty ⇒ the cell never falls to the manual-verify branch');
+  assert.equal(r[0].name, 'Amazonas', 'display label comes from chapter_registry.state');
+  assert.equal(r[0].code, 'AM', 'registry code drives the chapter filter');
+  assert.equal(r[0].verified, true, 'SSOT row with verified_at is marked verified');
+  assert.equal(r[0].expiry, '28 Feb 2027', 'expiry paired from the raw membership server-side');
+  assert.equal(r[0].raw, 'Amazônia Chapter', 'original PMI name kept for the modal prefill');
+});
+
+test('#1192 raw parse is the fallback when there is no SSOT row', () => {
+  const r = unifiedBrChapters([], ['Pernambuco, Brazil Chapter'], NOW);
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, 'Pernambuco');
+  assert.equal(r[0].code, undefined, 'fallback entries carry no registry code');
+  const rNull = unifiedBrChapters(null, ['Pernambuco, Brazil Chapter'], NOW);
+  assert.equal(rNull.length, 1, 'null affiliations (pre-#1192 payload) behaves like []');
+});
+
+test('#1192 warning branch only when NEITHER side has data', () => {
+  assert.deepEqual(unifiedBrChapters([], ['PMI Global'], NOW), [], 'non-BR raw only → empty → warning');
+  assert.deepEqual(unifiedBrChapters(null, null, NOW), [], 'nothing at all → empty → warning');
+});
+
+test('#1192 provisional vep_raw entries are not marked verified', () => {
+  const r = unifiedBrChapters([{
+    chapter_code: 'GO', chapter_label: 'Goiás', source: 'vep_raw',
+    verified_at: null, is_primary: false, raw_name: 'Goiás, Brazil Chapter', expiry: null,
+  }], [], NOW);
+  assert.equal(r[0].verified, false);
+  assert.equal(r[0].code, 'GO', 'still filterable by registry code');
+});
+
+test('#1192 soonestChapterExpiry feeds Vencimento/farol from the SSOT list (alias case)', () => {
+  const s = soonestChapterExpiry(JOAO_AFFILIATIONS, JOAO_RAW, NOW);
+  assert.equal(s.expiry, '28 Feb 2027');
+  assert.equal(s.status, 'ok');
+  // Fallback parity: without affiliations it behaves exactly like soonestBrExpiry.
+  const rawOnly = [{ chapterName: 'Goiás, Brazil Chapter', expiryDate: '15 Jul 2026' }];
+  assert.equal(soonestChapterExpiry(null, rawOnly, NOW).status, soonestBrExpiry(rawOnly, NOW).status);
 });

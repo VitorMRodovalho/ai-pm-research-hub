@@ -16,7 +16,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
 import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
-import { brChapters, soonestBrExpiry, type PmiMembershipEntry } from '../../lib/affiliation-chapters';
+import { unifiedBrChapters, soonestChapterExpiry, type PmiMembershipEntry, type ChapterAffiliation } from '../../lib/affiliation-chapters';
 
 interface LatestVerification {
   created_at: string;
@@ -50,6 +50,8 @@ interface QueueRow {
   vep_status_raw: string | null;
   vep_last_seen_at: string | null;
   pmi_memberships: PmiMembershipEntry[] | null;
+  // #1192 — SSOT read-through (member_chapter_affiliations × chapter_registry, resolved server-side)
+  chapter_affiliations: ChapterAffiliation[] | null;
   pmi_profile: PmiProfile | null;
   latest_verification: LatestVerification | null;
   // #1129 cohort + term (server-derived)
@@ -82,7 +84,8 @@ interface Farol { emoji: string; label: string; cls: string; provisional: boolea
 /**
  * Verification farol. A GP-recorded verification (append-only latest_verification) is
  * AUTHORITATIVE. #1041 — when none exists yet, derive a PROVISIONAL status from the enriched
- * VEP expiry (soonestBrExpiry) so the GP triages at a glance and opens the modal only to confirm.
+ * VEP expiry (soonestChapterExpiry, SSOT-first #1192) so the GP triages at a glance and opens the
+ * modal only to confirm.
  */
 function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
   const v = r.latest_verification;
@@ -95,7 +98,7 @@ function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
     }
     return { emoji: '🟢', label: t('comp.affiliationQueue.affVerified', 'Verificada'), cls: 'bg-emerald-50 text-emerald-700', provisional: false, key: 'ok' };
   }
-  const s = soonestBrExpiry(r.pmi_memberships);
+  const s = soonestChapterExpiry(r.chapter_affiliations, r.pmi_memberships);
   if (s.status === 'expired') return { emoji: '🔴', label: t('comp.affiliationQueue.affExpiredVep', 'Vencida (VEP)'), cls: 'bg-rose-50 text-rose-700', provisional: true, key: 'expired' };
   if (s.status === 'soon') return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiringVep', 'Vence em breve (VEP)'), cls: 'bg-amber-50 text-amber-700', provisional: true, key: 'soon' };
   if (s.status === 'ok') return { emoji: '🟢', label: t('comp.affiliationQueue.affActiveVep', 'Ativa (VEP)'), cls: 'bg-emerald-50 text-emerald-700', provisional: true, key: 'ok' };
@@ -131,6 +134,9 @@ function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { e
     default:         return { emoji: '⚪', label: t('comp.affiliationQueue.term_none', 'Sem termo'), cls: 'bg-slate-100 text-slate-500' };
   }
 }
+
+// #1192 — chapter-filter option row read straight from chapter_registry (the SSOT).
+interface RegistryChapter { chapter_code: string; state: string; }
 
 type SortKey = 'attention' | 'name' | 'expiry' | 'sync';
 
@@ -169,6 +175,24 @@ export default function AffiliationQueueIsland() {
   const [cohortFilter, setCohortFilter] = useState<'all' | CohortClass>('all'); // #1129
   const [termFilter, setTermFilter] = useState<'all' | TermStatus>('all');       // #1129
   const [search, setSearch] = useState('');
+  const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
+
+  // #1192 — chapter filter options come from chapter_registry (RLS: read-all for authenticated),
+  // NOT from whatever the loaded rows happen to parse to (the old 5-of-15 bug).
+  useEffect(() => {
+    let cancelled = false;
+    const boot = () => {
+      const sb = getSb();
+      if (!sb) { if (!cancelled) setTimeout(boot, 400); return; }
+      sb.from('chapter_registry')
+        .select('chapter_code,state')
+        .eq('country', 'BR').eq('is_active', true)
+        .order('display_order')
+        .then(({ data }: any) => { if (!cancelled && Array.isArray(data)) setRegistry(data); });
+    };
+    boot();
+    return () => { cancelled = true; };
+  }, [getSb]);
 
   // ── load the queue (retry until Nav publishes the authed client) ──
   const fetchQueue = useCallback(async () => {
@@ -245,10 +269,11 @@ export default function AffiliationQueueIsland() {
   const [vSaving, setVSaving] = useState(false);
 
   const openVerify = (r: QueueRow) => {
-    const br = brChapters(r.pmi_memberships);
+    const br = unifiedBrChapters(r.chapter_affiliations, r.pmi_memberships);
     setVMember(r);
     setVActive(r.latest_verification?.membership_active !== false);
-    setVChapter(br[0]?.name ? `${br[0].name}, Brazil Chapter` : (r.chapter || ''));
+    // Prefer the actual PMI membership name (raw) when known — e.g. "Amazônia Chapter" (AM alias).
+    setVChapter(br[0] ? (br[0].raw || `${br[0].name}, Brazil Chapter`) : (r.chapter || ''));
     setVExpires(r.latest_verification?.membership_expires_on || toDateInput(br[0]?.expiry) || toDateInput(r.pmi_profile?.member_until));
     setVObs('');
   };
@@ -309,12 +334,8 @@ export default function AffiliationQueueIsland() {
   // #1129 — current-selection members past pre-onboarding (the subset the old 'pre' default hid).
   const hiddenCurrentSel = rows.filter(r => r.cohort_class === 'current_selection' && !r.is_pre_onboarding).length;
 
-  // #996 F-C — filter option lists derived from the loaded cohort.
-  const chapterOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach(r => brChapters(r.pmi_memberships).forEach(c => set.add(c.name)));
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [rows]);
+  // #996 F-C — VEP option list derived from the loaded cohort. The CHAPTER options, by contrast,
+  // come from chapter_registry (`registry` state above, #1192) — never from the loaded rows.
   const vepOptions = useMemo(() => {
     const set = new Set<string>();
     rows.forEach(r => { if (r.vep_status_raw) set.add(r.vep_status_raw); });
@@ -327,7 +348,8 @@ export default function AffiliationQueueIsland() {
     else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
     if (cohortFilter !== 'all') list = list.filter(r => r.cohort_class === cohortFilter);   // #1129
     if (termFilter !== 'all') list = list.filter(r => r.term_status === termFilter);         // #1129
-    if (chapterFilter !== 'all') list = list.filter(r => brChapters(r.pmi_memberships).some(c => c.name === chapterFilter));
+    // #1192 — chapter filter matches on the registry chapter_code delivered by the SSOT read-through.
+    if (chapterFilter !== 'all') list = list.filter(r => unifiedBrChapters(r.chapter_affiliations, r.pmi_memberships).some(c => c.code === chapterFilter));
     if (vepFilter !== 'all') list = list.filter(r => (r.vep_status_raw || '—') === vepFilter);
     const q = search.trim().toLowerCase();
     if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q));
@@ -336,8 +358,8 @@ export default function AffiliationQueueIsland() {
       if (sortKey === 'name') return a.name.localeCompare(b.name);
       if (sortKey === 'sync') return lastSyncTs(b) - lastSyncTs(a); // most-recent sync first
       if (sortKey === 'expiry') {
-        const da = soonestBrExpiry(a.pmi_memberships).days;
-        const db = soonestBrExpiry(b.pmi_memberships).days;
+        const da = soonestChapterExpiry(a.chapter_affiliations, a.pmi_memberships).days;
+        const db = soonestChapterExpiry(b.chapter_affiliations, b.pmi_memberships).days;
         if (da === null && db === null) return a.name.localeCompare(b.name);
         if (da === null) return 1;   // rows without a dated BR chapter sink to the bottom
         if (db === null) return -1;
@@ -406,7 +428,7 @@ export default function AffiliationQueueIsland() {
         <select value={chapterFilter} onChange={e => setChapterFilter(e.target.value)}
           className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
           <option value="all">{t('comp.affiliationQueue.filterChapterAll', 'Todos os capítulos')}</option>
-          {chapterOptions.map(c => <option key={c} value={c}>{c}</option>)}
+          {registry.map(c => <option key={c.chapter_code} value={c.chapter_code}>{c.state}</option>)}
         </select>
         {/* #1129 cohort filter */}
         <select value={cohortFilter} onChange={e => setCohortFilter(e.target.value as 'all' | CohortClass)}
@@ -492,7 +514,8 @@ export default function AffiliationQueueIsland() {
             <tbody>
               {visible.map(r => {
                 const f = farol(r, t);
-                const br = brChapters(r.pmi_memberships);
+                // #1192 — SSOT-first; raw parse is display fallback only. Empty ⇒ neither side has data.
+                const br = unifiedBrChapters(r.chapter_affiliations, r.pmi_memberships);
                 const expanded = expandedIds.has(r.member_id);
                 const p = r.pmi_profile;
                 return (
@@ -539,6 +562,7 @@ export default function AffiliationQueueIsland() {
                           {br.map((c, i) => (
                             <div key={i} className="text-[12px] flex items-center gap-1">
                               <span className="font-medium text-[var(--text-primary)]">{c.name}</span>
+                              {c.verified && <span title={t('comp.affiliationQueue.ssotVerified', 'Filiação registrada no cadastro de capítulos (verificada)')} className="inline-flex"><BadgeCheck size={11} className="text-teal-600" /></span>}
                               {c.expiry && (
                                 <span className={`inline-flex items-center gap-0.5 text-[10px] ${c.expired ? 'text-rose-600' : c.soon ? 'text-amber-600' : 'text-[var(--text-muted)]'}`}>
                                   <CalendarClock size={10} /> {c.expiry}
@@ -556,7 +580,7 @@ export default function AffiliationQueueIsland() {
                     </td>
                     <td className="px-3 py-2">
                       {(() => {
-                        const s = soonestBrExpiry(r.pmi_memberships);
+                        const s = soonestChapterExpiry(r.chapter_affiliations, r.pmi_memberships);
                         if (!s.expiry) return <span className="text-[12px] text-[var(--text-muted)]">—</span>;
                         const cls = s.expired ? 'text-rose-600' : s.soon ? 'text-amber-600' : 'text-[var(--text-secondary)]';
                         const rel = s.expired
