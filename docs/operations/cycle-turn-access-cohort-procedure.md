@@ -129,10 +129,13 @@ WHERE r->>'renews_signal' IN ('lapsing','unknown');
 2. **Exit:** for each genuinely-lapsed member (2c operational-role orphan, or a retained-cycle
    engagement whose agreement `period_end` has passed and was not renewed) → `admin_offboard_member`
    with the **correct `reason_category`** (e.g. `end_of_cycle` for a natural turn), after per-member
-   governance sign-off. **Never bulk.** Do NOT use the `offboard_member` wrapper — it hardcodes
-   `reason_category => 'other'`, which erases the audit meaning that drives `re_engagement_pipeline`
-   eligibility + the LGPD anonymization guard (ADR-0116 §6). Proven live 2026-07-03 (the C3 tribe-7
-   voluntary exit recorded `'other'` and needed a governed post-hoc correction — freeze doc §2.3b).
+   governance sign-off. **Never bulk.** The category drives `re_engagement_pipeline` eligibility + the
+   LGPD anonymization guard (ADR-0116 §6). Until 2026-07-08 it was lost on EVERY path (the record was
+   written by `trg_offboarding_stub`, whose inference lands on `'other'` when a free-text detail is
+   passed — not a wrapper hardcode as first diagnosed): proven live 2026-07-03 (C3 tribe-7 exit) and
+   again 2026-07-08 (tribe-2 leader), both corrected post-hoc — freeze doc §2.3b/§5. **Fixed by mig
+   `20260805000375` (#1200)**: `admin_offboard_member` now writes the record itself with the
+   FK-validated caller category. Keep using the direct RPC (native trail, no MCP layer).
    (Access-flip is offboarding-based; there is no direct `members` UPDATE — ADR/Camada-5 invariant.)
 3. **Enter gap:** for each entering member not loginable, trigger the account-claim / auth invite
    so they can access on day 9.

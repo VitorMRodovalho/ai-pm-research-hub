@@ -148,17 +148,21 @@ transition at this turn.
    ```
    admin_offboard_member(
      p_member_id      => <uuid>,
-     p_new_status     => 'alumni' | 'observer' | 'inactive',   -- only these 3 are valid
+     p_new_status     => 'alumni' | 'inactive',                 -- only these 2 are valid ('observer' retired, #1022-C)
      p_reason_category => 'end_of_cycle',                        -- correct category, see below
      p_reason_detail  => '<free text>',
      p_reassign_to    => <uuid or NULL>                          -- reassign that member's open board_items
    )
    ```
-   - **Why `admin_offboard_member` and not `offboard_member`:** `offboard_member` is a thin wrapper that calls
-     `admin_offboard_member` with `reason_category => 'other'` **hardcoded**. The council requires the *correct*
-     `reason_category` (it drives `re_engagement_pipeline` eligibility + the LGPD anonymization guard, ADR-0116
-     §6), so the wrapper is unusable for a governed turn. The §2.3b item-2 execution proved the failure mode
-     live (recorded `'other'`, corrected post-hoc). The procedure doc's §3 step 2 is corrected in this same PR.
+   - **Why `admin_offboard_member` and not `offboard_member`:** the correct `reason_category` drives
+     `re_engagement_pipeline` eligibility + the LGPD anonymization guard (ADR-0116 §6). Until 2026-07-08 BOTH
+     paths lost it: the record was written by `trg_offboarding_stub`, which infers the category from
+     `members.status_change_reason` and lands on `'other'` whenever a free-text detail is passed (the wrapper
+     propagates the parameter correctly — the earlier "wrapper hardcodes 'other'" reading was wrong). The
+     §2.3b executions proved the failure mode live twice (both recorded `'other'`, corrected post-hoc).
+     **Fixed structurally 2026-07-08 (mig `20260805000375`, #1200):** `admin_offboard_member` now writes
+     `member_offboarding_records` itself with the FK-validated caller category. The direct RPC remains the
+     prescribed path for governed turns (native trail, no MCP layer).
    - **`reason_category` for a natural cycle turn = `end_of_cycle`** (`preserves_return_eligibility=true` → auto-
      emits an `alumni_recognition` certificate when `p_new_status='alumni'`). Voluntary capacity exits use the
      matching personal code (e.g. `personal_workload`). Other codes: `reacceptance_lapse` /
@@ -199,7 +203,25 @@ Re-run the audit AFTER the turn and confirm planned == real, in both directions.
 | Approver (GP/Presidência) | **Vitor Maia Rodovalho (GP)** — approved in-session (AskUserQuestion decisions) |
 | Approval timestamp | **2026-07-03** |
 | Executed by | GP + dev session (governed RPC/DML only) |
-| Reconciliation archived | pending — due 2026-07-09 → 2026-07-11 (§4) |
+| Reconciliation archived | pending — due 2026-07-09 → 2026-07-11 (§4); pre-check run 2026-07-08 (green, see execution note) |
+
+**Execution note (2026-07-08) — turn executed one day EARLY with owner authorization.** The owner revoked the
+05/07 no-anticipation decision in-session (explicit AskUserQuestion approval; the tribe-2 team had already been
+notified). Executed, all re-grounded live before applying (full report in #1124):
+- **§2.3b item 1** (tribe-2 leader → `alumni`): executed via MCP `offboard_member` preview→confirm — 2 active
+  engagements closed, `alumni_recognition` auto-emitted. The record initially carried `'other'` (the
+  trigger-inference failure described in §3 step 2) and was corrected same-day to `end_of_cycle` via governed
+  1-row UPDATE; the root cause is now fixed structurally (mig `20260805000375`, #1200).
+- **Tribe 2 archived**: `tribes id=2 is_active=false`, its initiative archived, `members.tribe_id` cleared on
+  7 rows (runbook predicted 4; live grounding found 3 additional stale pointers). Re-selection window open
+  until 17/07 (cap 7/tribe).
+- **§4 pre-check green**: exit reconciliation anchor ✓ (exactly 3 offboarding records since 03/07); leaks
+  2a = 0, 2c = 0; enter side 2d = 47 active engagements / 47 linked / 47 onboarding, 45 loginable (residual
+  gap = 2 pre-onboarding guests, #1014 — auth is created on first login).
+- **Cycle close bookkeeping**: batch `cycle3-2026-b2` → closed/announcement; 251 C3 cards archived (live count
+  08/07; the C2 precedent was 236/236). Schema invariants: 0 violations after each mutation.
+- **Residuals** (PM/GP, not dev): C3 `general` champion decision; Onda 1 certificates counter-signature
+  (#1169); #1003 remainder (C3 certificates, [LL] lessons, closing comms).
 
 ---
 
