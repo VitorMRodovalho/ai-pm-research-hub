@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { classifyBadge, PMI_TRAIL_KEYWORDS } from '../_shared/classify-badge.ts'
+import { classifyBadge, PMI_TRAIL_KEYWORDS, selectCanonicalCpmai } from '../_shared/classify-badge.ts'
 
 // Retry with exponential backoff for external API calls
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -250,8 +250,23 @@ Deno.serve(async (req) => {
       }).eq('id', member_id)
 
       // Award gamification points (with tier-based scoring)
+      // #1149 P1: CPMAI family collapse — one cert_cpmai XP credit per member
+      // (canonical = PMI-CPMAI brand, else most recent). Display keeps every badge.
+      const cpmaiCanonical = selectCanonicalCpmai(result.all.filter(b => b.category === 'cert_cpmai'))
       for (const badge of result.all) {
+        if (badge.category === 'cert_cpmai' && badge !== cpmaiCanonical) continue // superseded family sibling
         await upsertCredlyPoints(sb, member_id, badge)
+      }
+
+      // Self-heal: drop any previously-paid XP rows for superseded family siblings.
+      if (cpmaiCanonical) {
+        const { error: familyDedupError } = await sb.from('gamification_points')
+          .delete()
+          .eq('member_id', member_id)
+          .eq('category', 'cert_cpmai')
+          .like('reason', 'Credly: %')
+          .neq('reason', `Credly: ${cpmaiCanonical.name}`)
+        if (familyDedupError) throw familyDedupError
       }
 
       // Remove old manual course points that Credly now covers
