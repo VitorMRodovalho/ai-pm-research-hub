@@ -2,6 +2,7 @@
 
 **Status:** active since 2026-05-21 (p209 close, WATCH-207.D resolution path C — Híbrido)
 **Threshold:** **2 bypass events / 7-day window** before mandatory pause + audit
+**Metric (ADR-0122, 2026-07-08):** bypass event = `--admin` merge OR push to main with NO merged PR associated (direct association + rewrite-proof `(#N)` subject fallback). PR-backed squash-merges are listed informationally and do NOT count. Context: the W28 "73 events" alert (#1142) was 69 false positives from the 2026-07-04 history-rewrite orphaning commit↔PR associations; the real count was 4.
 **Audit cron:** `.github/workflows/bypass-audit-weekly.yml` (Mondays 10:00 UTC, opens issue with previous week's bypass count + breakdown)
 
 ## Background

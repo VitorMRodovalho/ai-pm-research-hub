@@ -1,8 +1,9 @@
 name: Bypass Audit (weekly)
 
 # Tripwire automation per .claude/rules/bypass-protocol.md (Option C — Híbrido).
-# Lists --admin merges + direct pushes to main from last 7 days.
-# If >2: labels output issue with 'requires-review' for PM reflection.
+# Metric (ADR-0122): bypass = --admin merges + pushes to main with NO merged PR.
+# PR-backed pushes (squash merges) are listed informationally, not counted.
+# If counted total >2: labels output issue with 'requires-review' for PM reflection.
 
 on:
   schedule:
@@ -65,26 +66,62 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SINCE: ${{ steps.window.outputs.since }}
         run: |
-          # List commits on main from last 7 days that are NOT merge commits (direct push pattern)
-          # Heuristic: parent count == 1 (merges have 2 parents in --first-parent view)
-          DIRECT_LINES=""
-          DIRECT_COUNT=0
+          # Classify every non-merge commit on main (parent count == 1) into two buckets
+          # (ADR-0122): PR-BACKED (squash merge of a merged PR - informational, NO threshold)
+          # vs NO-PR (true direct push - the bypass signal, thresholded).
+          #
+          # PR association is checked two ways, because a history rewrite (force-push) remaps
+          # main's SHAs and orphans the commit<->PR association on GitHub's side (root cause of
+          # the W28 2026 false-positive blowup, issue #1142 - 73 flagged, 4 real):
+          #   1. GET /commits/{sha}/pulls (authoritative when history is intact)
+          #   2. Fallback: trailing "(#N)" squash reference in the subject, verified against a
+          #      MERGED pull request via the API (rewrite-proof)
+          # An association-check API error marks the commit "(association check failed)" and
+          # counts it in the NO-PR bucket - fail loud toward review, never silently skip.
+          NOPR_LINES=""
+          NOPR_COUNT=0
+          WITHPR_LINES=""
+          WITHPR_COUNT=0
 
-          for SHA in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&since=$SINCE&per_page=100" --jq '.[] | select(.parents | length == 1) | .sha'); do
-            # Skip if this commit is on any PR (would be a squash merge commit)
-            PR_FOR_COMMIT=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at)] | length' 2>/dev/null || echo 0)
-            if [ "$PR_FOR_COMMIT" = "0" ]; then
-              MSG=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.message' | head -1)
-              AUTHOR=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.author.name')
-              DIRECT_LINES="$DIRECT_LINES- \`${SHA:0:8}\` ($AUTHOR) — $MSG\n"
-              DIRECT_COUNT=$((DIRECT_COUNT + 1))
+          for SHA in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&since=$SINCE&per_page=100" --paginate --jq '.[] | select(.parents | length == 1) | .sha'); do
+            MSG=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.message' | head -1)
+            AUTHOR=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq '.commit.author.name')
+
+            # 1) direct commit<->PR association
+            ASSOC=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '[.[] | select(.merged_at)] | first | .number // empty' 2>/dev/null) || ASSOC="__ERR__"
+            if [ "$ASSOC" != "__ERR__" ] && [ -n "$ASSOC" ]; then
+              WITHPR_LINES="$WITHPR_LINES- \`${SHA:0:8}\` (PR #$ASSOC) ($AUTHOR) - $MSG\n"
+              WITHPR_COUNT=$((WITHPR_COUNT + 1))
+              continue
             fi
+
+            # 2) fallback: trailing (#N) squash reference, verified as a MERGED PR
+            PRNUM=$(printf '%s' "$MSG" | grep -oE '\(#[0-9]+\)' | tail -1 | tr -d '(#)')
+            if [ -n "$PRNUM" ]; then
+              MERGED_AT=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PRNUM" --jq '.merged_at // empty' 2>/dev/null || echo "")
+              if [ -n "$MERGED_AT" ]; then
+                WITHPR_LINES="$WITHPR_LINES- \`${SHA:0:8}\` (PR #$PRNUM via subject ref) ($AUTHOR) - $MSG\n"
+                WITHPR_COUNT=$((WITHPR_COUNT + 1))
+                continue
+              fi
+            fi
+
+            NOTE=""
+            if [ "$ASSOC" = "__ERR__" ]; then NOTE=" **(association check failed)**"; fi
+            NOPR_LINES="$NOPR_LINES- \`${SHA:0:8}\` ($AUTHOR) - $MSG$NOTE\n"
+            NOPR_COUNT=$((NOPR_COUNT + 1))
           done
 
-          echo "count=$DIRECT_COUNT" >> $GITHUB_OUTPUT
+          echo "count=$NOPR_COUNT" >> $GITHUB_OUTPUT
+          echo "withpr_count=$WITHPR_COUNT" >> $GITHUB_OUTPUT
           {
             echo 'commits<<BYPASS_EOF'
-            echo -e "$DIRECT_LINES"
+            echo -e "$NOPR_LINES"
+            echo 'BYPASS_EOF'
+          } >> $GITHUB_OUTPUT
+          {
+            echo 'withpr_commits<<BYPASS_EOF'
+            echo -e "$WITHPR_LINES"
             echo 'BYPASS_EOF'
           } >> $GITHUB_OUTPUT
 
@@ -95,6 +132,8 @@ jobs:
           DIRECT_COUNT: ${{ steps.direct_pushes.outputs.count }}
           WEEK: ${{ steps.window.outputs.week_label }}
         run: |
+          # Threshold counts ONLY real bypass events: --admin merges + pushes with NO merged PR.
+          # PR-backed pushes (squash merges) are informational (ADR-0122).
           TOTAL=$((ADMIN_COUNT + DIRECT_COUNT))
           THRESHOLD=2
 
@@ -133,20 +172,29 @@ jobs:
           ADMIN_PRS: ${{ steps.admin_merges.outputs.prs }}
           DIRECT_COUNT: ${{ steps.direct_pushes.outputs.count }}
           DIRECT_COMMITS: ${{ steps.direct_pushes.outputs.commits }}
+          WITHPR_COUNT: ${{ steps.direct_pushes.outputs.withpr_count }}
+          WITHPR_COMMITS: ${{ steps.direct_pushes.outputs.withpr_commits }}
         run: |
           cat <<EOF > /tmp/issue-body.md
           ## Week $WEEK — Bypass Audit
 
           **Status:** $STATUS
-          **Total events:** $TOTAL (threshold: 2)
+          **Total bypass events:** $TOTAL (threshold: 2 = --admin merges + pushes without PR)
 
           ### --admin PR merges ($ADMIN_COUNT)
 
           $ADMIN_PRS
 
-          ### Direct pushes to main ($DIRECT_COUNT)
+          ### Direct pushes to main WITHOUT a merged PR ($DIRECT_COUNT) - counted
 
           $DIRECT_COMMITS
+
+          <details>
+          <summary>PR-backed pushes ($WITHPR_COUNT) - informational, not counted (ADR-0122)</summary>
+
+          $WITHPR_COMMITS
+
+          </details>
 
           ### Action required
 
@@ -155,9 +203,10 @@ jobs:
           ### Reference
 
           - Protocol: \`.claude/rules/bypass-protocol.md\`
+          - Metric definition: \`docs/adr/ADR-0122-bypass-audit-metric-no-pr-pushes.md\`
           - Cron: \`.github/workflows/bypass-audit-weekly.yml\`
           - Origin: WATCH-207.D + WATCH-209.C (P162 log)
-          - Decision: p209 close — Option C Híbrido
+          - Decision: p209 close — Option C Híbrido · re-scoped by ADR-0122 (#1182/#1142)
 
           🤖 Generated by bypass-audit-weekly workflow
           EOF
