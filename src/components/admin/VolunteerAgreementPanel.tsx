@@ -27,6 +27,10 @@ interface MemberRow {
   // cert this cycle; agreement_status ∈ issued|rejected|null (superseded/revoked are excluded).
   agreement_cert_id: string | null;
   agreement_status: string | null;
+  // #1191: superseded cert this year + no issued cert ⇒ reissued, awaiting re-signature
+  // (≠ never signed; role cache stays guest by design until the re-signature).
+  reissue_pending: boolean;
+  reissued_at: string | null;
   // PR-B: signed term's template version, for the version filter. governance_documents.version is a
   // cache of the ratified version_label, stamped by activate_volunteer_term_version (#1187).
   agreement_template_id: string | null;
@@ -105,6 +109,9 @@ const L: Record<string, Record<string, string>> = {
     reissuePrompt: 'Motivo da reemissão (o termo atual será substituído e o voluntário deverá reassinar):',
     reasonRequired: 'Motivo é obrigatório.',
     stateRejected: '↩️ Rejeitado — reassinar',
+    stateReissuePending: '🔄 Reemitido — aguarda reassinatura',
+    reissuePendingTitle: 'Termo anterior reemitido em {date}. O voluntário já assinou antes; aguarda a reassinatura do termo reemitido.',
+    guestReissueTitle: 'Papel guest até a reassinatura (by design): sem termo vigente assinado não há autoridade. Ao reassinar, o novo termo captura papel e período do engagement e o papel promove sozinho.',
     actionSuccess: 'Ação registada com sucesso.',
     actionError: 'Erro ao executar a ação.',
     rejectConfirmCountersigned: 'O termo de {name} já foi contra-assinado (ato bilateral). Rejeitá-lo é um distrato formal e não pode ser desfeito. Continuar?',
@@ -163,6 +170,9 @@ const L: Record<string, Record<string, string>> = {
     reissuePrompt: 'Reason for reissuing (the current agreement will be superseded and the volunteer must re-sign):',
     reasonRequired: 'Reason is required.',
     stateRejected: '↩️ Rejected — re-sign',
+    stateReissuePending: '🔄 Reissued — awaiting re-signature',
+    reissuePendingTitle: 'Previous term reissued on {date}. The volunteer signed before; awaiting the re-signature of the reissued term.',
+    guestReissueTitle: 'Guest role until re-signature (by design): no signed term in force means no authority. Upon re-signing, the new term snapshots the engagement role and period and the role promotes on its own.',
     actionSuccess: 'Action recorded successfully.',
     actionError: 'Error performing the action.',
     rejectConfirmCountersigned: "{name}'s agreement was already counter-signed (bilateral act). Rejecting it is a formal rescission and cannot be undone. Continue?",
@@ -221,6 +231,9 @@ const L: Record<string, Record<string, string>> = {
     reissuePrompt: 'Motivo de la reemisión (el término actual será reemplazado y el voluntario deberá volver a firmar):',
     reasonRequired: 'El motivo es obligatorio.',
     stateRejected: '↩️ Rechazado — volver a firmar',
+    stateReissuePending: '🔄 Reemitido — espera nueva firma',
+    reissuePendingTitle: 'Término anterior reemitido el {date}. El voluntario ya firmó antes; se espera la nueva firma del término reemitido.',
+    guestReissueTitle: 'Rol guest hasta la nueva firma (by design): sin término vigente firmado no hay autoridad. Al volver a firmar, el nuevo término captura el rol y el período del engagement y el rol se promueve solo.',
     actionSuccess: 'Acción registrada con éxito.',
     actionError: 'Error al ejecutar la acción.',
     rejectConfirmCountersigned: 'El término de {name} ya fue contra-firmado (acto bilateral). Rechazarlo es una rescisión formal y no se puede deshacer. ¿Continuar?',
@@ -847,7 +860,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                     )}
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.chapter || '—'}</td>
-                  <td className="px-3 py-2 text-[var(--text-secondary)]">{m.role}</td>
+                  <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    {/* #1191: pre-re-signature guest is by design — explain instead of looking broken */}
+                    {m.reissue_pending && m.role === 'guest'
+                      ? <span title={t.guestReissueTitle} className="cursor-help border-b border-dashed border-[var(--text-muted)]">{m.role} ⓘ</span>
+                      : m.role}
+                  </td>
                   <td className="px-3 py-2 text-[var(--text-muted)] font-mono text-[9px]">{m.cycle_code?.replace('_', ' ') || '—'}</td>
                   <td className="px-3 py-2 text-[var(--text-muted)] text-[10px]">
                     {/* Use contract period from the signed cert (source of truth). Fallback to cycle_history. */}
@@ -868,8 +886,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                     {m.agreement_status === 'rejected' && (
                       <span role="status" aria-label={t.rejectedBadgeAria} className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-100 text-orange-700" title={t.rejectedBadgeAria}>{t.stateRejected}</span>
                     )}
+                    {/* #1191: reissued term awaiting re-signature ≠ never signed */}
+                    {m.agreement_status !== 'rejected' && !m.signed && m.reissue_pending && (
+                      <span role="status" className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700" title={t.reissuePendingTitle.replace('{date}', fmtDate(m.reissued_at))}>{t.stateReissuePending}</span>
+                    )}
                     {/* 2-wave signature badges */}
-                    {m.agreement_status !== 'rejected' && !m.signed && (
+                    {m.agreement_status !== 'rejected' && !m.signed && !m.reissue_pending && (
                       <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700" title="Voluntário não assinou">❌ Não assinado</span>
                     )}
                     {m.signed && !m.counter_signed && (
