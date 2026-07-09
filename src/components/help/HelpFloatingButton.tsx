@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { hasPermission, type MemberForPermission } from '../../lib/permissions';
+import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 // ── FAQ Data (trilingual per item) ──
 
@@ -45,9 +46,9 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'gamification', section: 'getting_started',
     question: { 'pt-BR': 'Como funciona a gamificação?', 'en-US': 'How does gamification work?', 'es-LATAM': '¿Cómo funciona la gamificación?' },
     answer: {
-      'pt-BR': 'Você ganha XP por: presença em reuniões (10 XP), certificações PMI (25-50 XP dependendo do nível), badges Credly da Trilha PMI (20 XP cada), e entregas concluídas. O ranking é visível para todos na página "Gamificação" no menu superior.',
-      'en-US': 'You earn XP for: meeting attendance (10 XP), PMI certifications (25-50 XP depending on level), PMI Trail Credly badges (20 XP each), and completed deliverables. The ranking is visible to everyone on the "Gamification" page in the top menu.',
-      'es-LATAM': 'Gana XP por: asistencia a reuniones (10 XP), certificaciones PMI (25-50 XP según nivel), insignias Credly de la Ruta PMI (20 XP cada una) y entregables completados. El ranking es visible para todos en la página "Gamificación" del menú superior.',
+      'pt-BR': 'Você ganha XP por: presença em reuniões (10 XP), certificações PMI (30-50 XP dependendo do nível), badges do Credly (10 XP cada), e entregas concluídas. O ranking é visível para todos na página "Gamificação" no menu superior.',
+      'en-US': 'You earn XP for: meeting attendance (10 XP), PMI certifications (30-50 XP depending on level), Credly badges (10 XP each), and completed deliverables. The ranking is visible to everyone on the "Gamification" page in the top menu.',
+      'es-LATAM': 'Gana XP por: asistencia a reuniones (10 XP), certificaciones PMI (30-50 XP según nivel), insignias del Credly (10 XP cada una) y entregables completados. El ranking es visible para todos en la página "Gamificación" del menú superior.',
     },
   },
   {
@@ -250,9 +251,9 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'wrong_tribe', section: 'troubleshooting',
     question: { 'pt-BR': 'Estou na tribo errada ou sem tribo', 'en-US': 'I\'m in the wrong tribe or have no tribe', 'es-LATAM': 'Estoy en la tribu equivocada o sin tribu' },
     answer: {
-      'pt-BR': 'A alocação de tribo é feita pelo GP. Se o Workspace mostra "Você ainda não está vinculado a uma tribo", entre em contato com o GP para ser alocado.',
-      'en-US': 'Tribe allocation is done by the GP. If the Workspace shows "You are not yet assigned to a tribe", contact the GP to be assigned.',
-      'es-LATAM': 'La asignación de tribu la realiza el GP. Si el Workspace muestra "Aún no está vinculado a una tribu", contacte al GP para ser asignado.',
+      'pt-BR': 'A escolha da tribo é liberada a partir do kickoff do ciclo e exige o Termo de Voluntariado assinado — até lá você aparece como Visitante e o seletor de tribos fica oculto. Com o termo assinado, escolha sua tribo no seletor da plataforma. Se parecer travado, confirme que o termo foi assinado ou fale com o GP.',
+      'en-US': 'Choosing your tribe opens from the cycle kickoff and requires the signed Volunteer Term — until then you appear as Visitor and the tribe picker stays hidden. Once the term is signed, pick your tribe in the platform selector. If it seems stuck, confirm the term was signed or contact the GP.',
+      'es-LATAM': 'La elección de tribu se habilita a partir del kickoff del ciclo y exige el Término de Voluntariado firmado — hasta entonces aparece como Visitante y el selector de tribus queda oculto. Con el término firmado, elija su tribu en el selector de la plataforma. Si parece trabado, confirme que el término fue firmado o contacte al GP.',
     },
   },
   {
@@ -292,6 +293,11 @@ const LABELS: Record<string, Record<string, string>> = {
   },
   privacy: { 'pt-BR': 'Política de Privacidade', 'en-US': 'Privacy Policy', 'es-LATAM': 'Política de Privacidad' },
   version: { 'pt-BR': 'Versão', 'en-US': 'Version', 'es-LATAM': 'Versión' },
+  resources: { 'pt-BR': 'Recursos', 'en-US': 'Resources', 'es-LATAM': 'Recursos' },
+  guiaPre: { 'pt-BR': 'Guia do pré-onboarding', 'en-US': 'Pre-onboarding guide', 'es-LATAM': 'Guía del pre-onboarding' },
+  glossario: { 'pt-BR': 'Glossário e guia do voluntário', 'en-US': 'Glossary & volunteer guide', 'es-LATAM': 'Glosario y guía del voluntario' },
+  agenda: { 'pt-BR': 'Agenda de reuniões', 'en-US': 'Meetings agenda', 'es-LATAM': 'Agenda de reuniones' },
+  mcp: { 'pt-BR': 'Endpoint MCP (assistentes de IA)', 'en-US': 'MCP endpoint (AI assistants)', 'es-LATAM': 'Endpoint MCP (asistentes de IA)' },
 };
 
 function resolveLocale(locale: string): string {
@@ -448,6 +454,21 @@ export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
 
               {/* Links */}
               <div className="border-t border-[var(--border-default)] pt-3 mt-3 space-y-1 text-[.8rem]">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 px-1">
+                  {LABELS.resources[lang]}
+                </div>
+                <a href={`${lp}/guia-pre-onboarding`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  🧭 {LABELS.guiaPre[lang]}
+                </a>
+                <a href={`${lp}/governance/glossario`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  📚 {LABELS.glossario[lang]}
+                </a>
+                <a href={`${lp}/reunioes-gerais`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  🗓️ {LABELS.agenda[lang]}
+                </a>
+                <a href={`${CANONICAL_ORIGIN}/mcp`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  🤖 {LABELS.mcp[lang]}
+                </a>
                 <a href={`${lp}/privacy`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   📜 {LABELS.privacy[lang]}
                 </a>
