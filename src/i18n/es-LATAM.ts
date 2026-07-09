@@ -828,6 +828,7 @@ const esLATAM: Record<string, string> = {
   'tribes.deliverables': 'Entregables del Ciclo:',
   'tribes.meetings': '📅 Reuniones:',
   'tribes.video': 'Video',
+  'tribes.kickoffRoom': 'Sala de dudas con el líder',
   'tribes.select': 'Elegir esta Línea',
   'tribes.selected': '✓ Seleccionada (haz clic para cambiar)',
   'tribes.full': 'Completa',
