@@ -3076,6 +3076,14 @@ const esLATAM: Record<string, string> = {
   'data.tribe12.quadrantLabel': 'C1 — Practicante Aumentado',
   'data.tribe12.desc': 'Uso aplicado de IA generativa en el flujo del gerente de proyectos: prompts para cronogramas, riesgos y planes de comunicación; automatización de actas, informes de estado y análisis de documentos. El pilar del "first mover" — más tiempo en estrategia, menos en tarea manual.',
   'data.tribe12.meetings': 'Por definir',
+  'data.tribe13.name': 'Datos en Proyectos de IA',
+  'data.tribe13.quadrantLabel': 'C2 — Gestión de Proyectos de IA',
+  'data.tribe13.desc': 'Gobernanza y calidad de datos como capa de ejecución de proyectos de IA: traduce la norma ANSI/PMI 26-007 y el dominio CPMAI "Identify Data Needs" en mecanismos, plantillas y herramientas prácticas — stewardship, linaje y Definition of Ready para datos. Fronteras: ética en T7, ROI en T6.',
+  'data.tribe13.meetings': 'Por definir',
+  'data.tribe14.name': 'Fluidez en IA',
+  'data.tribe14.quadrantLabel': 'C1 — Practicante Aumentado',
+  'data.tribe14.desc': 'Base "101" de fluidez en IA generativa que prepara a los investigadores antes de las tribus temáticas. Formato abierto de aprendizaje, sin entregable externo — el fundamento conceptual que sustenta el Radar y la Productividad Aumentada.',
+  'data.tribe14.meetings': 'Por definir',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sincronizar Puntos',
