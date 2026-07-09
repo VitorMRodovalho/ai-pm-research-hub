@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-07-04T13:11:32.292Z",
+  "generated_at": "2026-07-09T12:02:11.555Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 336,
+  "total": 337,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 22,
     "events": 15,
     "gamification": 15,
     "board": 70,
-    "tribe": 100,
+    "tribe": 101,
     "comms": 16,
     "knowledge": 12,
     "partners": 11,
@@ -402,6 +402,19 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "{ action: \"create_tribe_event\", status: \"created\", result: data }"
+    },
+    {
+      "name": "set_tribe_video",
+      "description": "Set (or clear) a tribe's intro/presentation video. Writes BOTH sources atomically — tribes.video_url/duration (the projection the picker reads) AND initiatives.metadata (V4 primitive) — so they never drift (#1229, kills the manual dual-write). Authority: the tribe's own leader OR manage_platform. Pass an empty url to clear the video. Reflects on the tribe picker on next load, no deploy needed.",
+      "domain": "tribe",
+      "rpcs": [
+        "set_tribe_video"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "data"
     },
     {
       "name": "get_comms_pending_webinars",

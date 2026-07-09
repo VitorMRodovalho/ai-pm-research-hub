@@ -515,7 +515,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 36 | get_wiki_page | path | Página completa da wiki |
 | 37 | get_decision_log | filter? | ADRs (decisões arquiteturais) |
 
-### Tier 2 — Líderes (14 escrita)
+### Tier 2 — Líderes (15 escrita)
 | # | Ferramenta | Parâmetros | Permissão | Descrição |
 |---|-----------|-----------|-----------|-----------|
 | 38 | create_board_card | title, description?, priority?, due_date?, tags?, board_id? | write_board | Criar card |
@@ -532,6 +532,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 49 | manage_partner | action, id?, name?, entity_type?, status?, contact_name?, contact_email?, notes?, chapter? | manage_partner | Criar/atualizar parceria |
 | 50 | submit_chapter_need | category, title, description? | manage_partner | Reportar necessidade do capítulo |
 | 51 | promote_to_leader_track | application_id, create_leader_app? | promote | Promover candidato p/ track líder |
+| 51b | set_tribe_video | tribe_id, url, duration? | leader(tribe) \\| manage_platform | Definir/limpar vídeo de intro da tribo (dual-write atômico #1229) |
 
 ### Tier 3 — GP/Admin (23 leitura)
 | # | Ferramenta | Parâmetros | Permissão | Descrição |
@@ -1438,6 +1439,22 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (error) { await logUsage(sb, member.id, "create_tribe_event", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "create_tribe_event", true, undefined, start);
     return ok({ action: "create_tribe_event", status: "created", result: data });
+  });
+
+  // TOOL: set_tribe_video (WRITE) — #1229 atomic dual-write of the tribe intro video
+  mcp.tool("set_tribe_video", "Set (or clear) a tribe's intro/presentation video. Writes BOTH sources atomically — tribes.video_url/duration (the projection the picker reads) AND initiatives.metadata (V4 primitive) — so they never drift (#1229, kills the manual dual-write). Authority: the tribe's own leader OR manage_platform. Pass an empty url to clear the video. Reflects on the tribe picker on next load, no deploy needed.", {
+    tribe_id: z.number().describe("Tribe ID (integer, e.g. 5 for Talentos & Upskilling)"),
+    url: z.string().describe("Video URL (http/https, e.g. a YouTube watch link). Empty string clears the video."),
+    duration: z.string().optional().describe("Human-readable duration label, e.g. '5min'. Optional; omitted/empty clears it.")
+  }, async (params: { tribe_id: number; url: string; duration?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "set_tribe_video", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("set_tribe_video", { p_tribe_id: params.tribe_id, p_url: params.url, p_duration: params.duration ?? null });
+    if (error) { await logUsage(sb, member.id, "set_tribe_video", false, error.message, start); return err(error.message); }
+    if (data && (data as any).error) { await logUsage(sb, member.id, "set_tribe_video", false, (data as any).error, start); return err((data as any).error); }
+    await logUsage(sb, member.id, "set_tribe_video", true, undefined, start);
+    return ok(data);
   });
 
   // TOOL 19: get_comms_pending_webinars
