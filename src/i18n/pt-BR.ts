@@ -828,6 +828,7 @@ const ptBR: Record<string, string> = {
   'tribes.deliverables': 'Entregáveis do Ciclo:',
   'tribes.meetings': '📅 Encontros:',
   'tribes.video': 'Vídeo',
+  'tribes.kickoffRoom': 'Sala de tira-dúvida com o líder',
   'tribes.select': 'Escolher esta Tribo',
   'tribes.selected': '✓ Selecionada (clique para trocar)',
   'tribes.full': 'Lotada',

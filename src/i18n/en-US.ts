@@ -828,6 +828,7 @@ const enUS: Record<string, string> = {
   'tribes.deliverables': 'Cycle Deliverables:',
   'tribes.meetings': '📅 Meetings:',
   'tribes.video': 'Video',
+  'tribes.kickoffRoom': 'Live Q&A room with the leader',
   'tribes.select': 'Choose This Stream',
   'tribes.selected': '✓ Selected (click to switch)',
   'tribes.full': 'Full',

@@ -44,8 +44,56 @@ const QUAD_COLORS: Record<string, string> = {
 
 const viewModel = buildTribesViewModel(lang);
 const safeQuadrants = viewModel.quadrants;
-const safeTribes = viewModel.tribes;
+let safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
+
+// #1227: leader LinkedIn + explainer video derive from the DB SSOT, not the static
+// tribes.ts. The SSOT is tribes.video_url/video_duration + tribes.leader_member_id →
+// members.linkedin_url, surfaced via the SECURITY DEFINER RPC get_tribe_picker_cards
+// (tribes is not anon-readable). The hardcoded tribes.ts values remain only as a fallback
+// if the RPC fails. This is what lights up the newly-formed C4 tribes (9-14), whose
+// leaderLinkedIn/videoUrl are empty in tribes.ts but present/fillable in the DB.
+try {
+  const { data: cards } = await sbAnonForStats.rpc('get_tribe_picker_cards');
+  if (Array.isArray(cards) && cards.length) {
+    const cardById = new Map<number, { leader_linkedin: string | null; video_url: string | null; video_duration: string | null }>(
+      cards.map((c: any) => [Number(c.tribe_id), c])
+    );
+    const pick = (dbVal: unknown, fallback: string): string =>
+      (typeof dbVal === 'string' && dbVal.trim().length > 0) ? dbVal : fallback;
+    safeTribes = safeTribes.map((tr) => {
+      const db = cardById.get(tr.id);
+      if (!db) return tr;
+      return {
+        ...tr,
+        leaderLinkedIn: pick(db.leader_linkedin, tr.leaderLinkedIn),
+        videoUrl: pick(db.video_url, tr.videoUrl),
+        videoDuration: pick(db.video_duration, tr.videoDuration),
+      };
+    });
+  }
+} catch {}
+
+// #1228: ephemeral kickoff Q&A rooms (Ciclo 4 kickoff, 2026-07-09 20h00 BRT). A per-tribe
+// Google Meet where the leader takes questions during the final 30 min. Deliberately a
+// date-gated hardcode with an EXPLICIT expiry — NOT a permanent field. Auto-hides after the
+// window closes (2026-07-11 00:00 BRT). Remove this block once the kickoff window passes.
+const KICKOFF_ROOMS_EXPIRY = new Date('2026-07-11T00:00:00-03:00');
+const KICKOFF_ROOMS: Record<number, string> = {
+  1: 'https://meet.google.com/xhd-dyym-ckc',
+  4: 'https://meet.google.com/cqs-jcko-zsf',
+  5: 'https://meet.google.com/fko-xbom-wyg',
+  6: 'https://meet.google.com/axp-fvig-oau',
+  7: 'https://meet.google.com/xhg-iwzp-jzr',
+  8: 'https://meet.google.com/zqf-jiju-ddt',
+  9: 'https://meet.google.com/mxi-crmn-vrb',
+  10: 'https://meet.google.com/bho-jayj-qvf',
+  11: 'https://meet.google.com/gea-mzor-chh',
+  12: 'https://meet.google.com/dvz-mfdg-ecs',
+  13: 'https://meet.google.com/rgj-mepi-yzz',
+  14: 'https://meet.google.com/faw-wkux-jgz',
+};
+const showKickoffRooms = new Date() < KICKOFF_ROOMS_EXPIRY;
 const parsedDeadline = typeof deadlineProp === 'string' && !Number.isNaN(new Date(deadlineProp).getTime())
   ? deadlineProp
   : null;
@@ -236,6 +284,15 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                                   hover:opacity-85 transition-opacity"
                            data-stop-propagation>
                           ▶ {t('tribes.video', lang)} ({tr.videoDuration})
+                        </a>
+                      )}
+                      {showKickoffRooms && KICKOFF_ROOMS[tr.id] && (
+                        <a href={KICKOFF_ROOMS[tr.id]} target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-1.5 bg-[#1a365d] text-white px-4 py-2
+                                  rounded-xl no-underline text-[.82rem] font-semibold
+                                  hover:opacity-85 transition-opacity"
+                           data-stop-propagation>
+                          🎥 {t('tribes.kickoffRoom', lang)}
                         </a>
                       )}
                       <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
