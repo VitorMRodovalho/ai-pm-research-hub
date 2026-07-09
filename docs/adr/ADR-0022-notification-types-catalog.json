@@ -35,6 +35,10 @@
       "delivery_mode": "transactional_immediate",
       "rationale": "Stakeholder fan-out on offboard — leadership awareness is time-sensitive."
     },
+    "entry_chapter_action_needed": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#1224 PR2 (2026-07-09): onboarding nudge to the small cohort whose PMI enrichment cannot resolve an entry chapter (profile_private / no_fetch / not_affiliated / ambiguous with no self-choice). The action is on the member's community.pmi.org profile, so it is one-time per cohort, low-volume (6 recipients for C4), and time-sensitive to onboarding — not digest material. Produced by nudge_entry_chapter_cohort with a 30-day per-recipient dedup guard; blast is dry-run-previewed and approved before firing."
+    },
     "attendance_detractor": {
       "delivery_mode": "suppress",
       "rationale": "Per-cycle detractor pattern — surfaced in admin dashboards. Email-spamming would amplify noise."
