@@ -478,3 +478,63 @@ counts below were re-grounded live on 2026-07-08.
   UI as a Phase A warning, #224) came from that placeholder POST, not from the import
   itself.
 - Operational procedure: `docs/runbooks/RUNBOOK_VEP_IMPORT.md`.
+
+## Amendment: #1224 entry-chapter derivation from PMI enrichment + PR3 sweep (2026-07-09)
+
+Issue #1224 added a derivation layer on top of this ADR's SSOT: at approval, the entry
+chapter is DERIVED from the PMI enrichment snapshot, not typed as free text nor chosen
+blindly. All counts below were re-grounded live on 2026-07-09 (project
+`ldrfrvwhxsmgaabwmaik`).
+
+### Correct SSOT reading (supersedes the "free text / pure self-declaration" mis-reads)
+
+The chapter SSOT for a candidate is the PMI enrichment stored on
+`selection_applications.pmi_memberships` (jsonb array of `{chapterName, expiryDate}`),
+fed by the `pmi-vep-sync` worker. Active membership is derived from `expiryDate >= today`;
+`membership_status` is a null-trap (NULL for the whole C4 cohort, 49/49) and must never be
+used. See memory `reference-chapter-ssot-pmi-memberships-enrichment`.
+
+### PR1 (mig `20260805000386`): classifier + approval derivation
+
+- **`classify_entry_chapter(pmi_memberships, community_profile_private, pmi_data_fetched_at)`**
+  (STABLE, pure) buckets a candidate into `resolved | ambiguous | profile_private | no_fetch |
+  not_affiliated`, reusing `resolve_br_chapter_code` (mig 364).
+- **`get_entry_chapter_diagnosis(p_cycle_id)`** (admin/service) reports the cohort.
+- **`approve_selection_application`** gained an additive block: it upserts each active BR
+  affiliation (`upsert_chapter_affiliation`, source `pmi_vep`, `is_primary=false`); exactly one
+  active BR sets `members.entry_chapter_code` (trigger T1 corrects `members.chapter`); more than
+  one routes to the self-declaration tiebreak (`set_my_entry_chapter`); zero leaves the honest
+  `'Outro'` fallback plus a diagnosis for the nudge.
+
+### PR2 (mig `20260805000387`): diagnostic nudge (in-app + email)
+
+`get_my_entry_chapter_diagnosis()` (self-scoped) drives a bucket-aware in-app nudge, and
+`nudge_entry_chapter_cohort(cycle, dry_run)` produces the blast (new type
+`entry_chapter_action_needed`, transactional). The nudge is DIAGNOSTIC (private -> make public;
+no profile -> create one at community.pmi.org; not affiliated -> regularize), never "pick a
+chapter". Blast sent 6/6 for C4 (4 not_affiliated + 2 profile_private).
+
+### PR3 (this amendment + backfill mig `20260805000389`): sweep cosmético + doc SSOT
+
+**`members.chapter='Outro'` is an honest fallback, audited, not a bug.** All 9 live members with
+`chapter='Outro'` have ZERO resolvable SSOT (no `member_chapter_affiliations` row): 3 are genuine
+C4 cases already nudged in PR2 (Hector, Thiago, plus Aaron/Angeline with no affiliation) and 6 are
+synthetic `__205_synthetic__` test members. There is no `'Outro'` to rewrite to a real chapter.
+This confirms and extends the invariant-U carve-out already documented in the Wave 3b-ii amendment
+(non-registry chapters fall through to legacy).
+
+**Governance-field backfill.** Members approved BEFORE PR1 have their `member_chapter_affiliations`
+(SSOT) and `members.chapter` correct, but `entry_chapter_code` was never stamped (the derivation is
+new). PR3 backfills `members.entry_chapter_code` for members with EXACTLY ONE affiliation
+(unambiguous, same rule as PR1). Members with more than one affiliation stay NULL by design (entry
+chapter is a choice, needs the tiebreak); members with zero affiliation stay NULL (honest 'Outro').
+
+- Live result: `entry_chapter_code IS NULL` went 77 -> 33 (44 rows filled). The 33 remaining are the
+  5 multi-affiliation ambiguous members plus members with no BR affiliation.
+- `members.chapter` changed for 0 members (verified: all 44 targets already had
+  `chapter = 'PMI-' || code`; trigger T1 recompute is a no-op). `check_schema_invariants()` = 0
+  violations before and after. The backfill is idempotent (`WHERE entry_chapter_code IS NULL`;
+  re-running touches 0 rows).
+- Out of scope: Paulo Alves de Oliveira Junior (C4 resolved, GO) has no `member_id` (application
+  email does not match a member row) and cannot be backfilled until that link is resolved; tracked
+  separately from #1224.
