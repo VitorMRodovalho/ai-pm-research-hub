@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-04T13:11:32.260Z",
+  "generated_at": "2026-07-09T12:01:02.386Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 336,
+  "total": 337,
   "by_domain": {
     "personal": 22,
-    "tribe": 105,
+    "tribe": 106,
     "board": 70,
     "events": 15,
     "governance": 23,
@@ -18,7 +18,7 @@
   },
   "by_permission": {
     "read": 222,
-    "write": 105,
+    "write": 106,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -894,6 +894,13 @@
     {
       "name": "review_initiative_request",
       "description": "Review a self-service join request as owner/coordinator (or admin). decision='approve' creates engagement with metadata.source=self_service_request_approved and review_authority audit. decision='decline' marks invitation declined with reviewer note. Owner-initiated invites use respond_to_initiative_invitation by invitee directly — this RPC is for self-service requests only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "set_tribe_video",
+      "description": "Set (or clear) a tribe's intro/presentation video. Writes BOTH sources atomically — tribes.video_url/duration (the projection the picker reads) AND initiatives.metadata (V4 primitive) — so they never drift (#1229, kills the manual dual-write). Authority: the tribe's own leader OR manage_platform. Pass an empty url to clear the video. Reflects on the tribe picker on next load, no deploy needed.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
