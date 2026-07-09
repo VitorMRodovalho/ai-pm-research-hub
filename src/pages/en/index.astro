@@ -8,6 +8,7 @@ import { getHomeSchedule } from '../../lib/schedule';
 import ModelSection from '../../components/sections/ModelSection.astro';
 import PartnersSection from '../../components/sections/PartnersSection.tsx';
 import TribesSection from '../../components/sections/TribesSection.astro';
+import OperationalArmsSection from '../../components/sections/OperationalArmsSection.astro';
 import KpiSection from '../../components/sections/KpiSection.astro';
 import WeeklyScheduleSection from '../../components/sections/WeeklyScheduleSection.astro';
 import RulesSection from '../../components/sections/RulesSection.astro';
@@ -44,6 +45,7 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
   <TeamSection lang={lang} />
   {/* ── MEMBER zone (bottom — demoted, kept): tribes → rules → KPI board → leaderboard + member links ── */}
   <TribesSection deadline={deadlineIso} lang={lang} />
+  <OperationalArmsSection lang={lang} />
   <RulesSection lang={lang} />
   <KpiSection lang={lang} />
   <TrailRankingSection lang={lang} />

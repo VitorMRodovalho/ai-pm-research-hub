@@ -72,9 +72,10 @@ test('m3c PR1: LGPD — all four REVOKE anon/authenticated + GRANT service_role;
 });
 
 // ── DB-gated ──────────────────────────────────────────────────────────────────
-test('m3c PR1 DB: engagement global is a sane fraction with a real cohort; structurally ≤ reliability', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3c PR1 DB: engagement global is a sane fraction with a real cohort; structurally ≤ reliability', { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const eng = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!eng.error, eng.error?.message);
   const rel = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global', p_cycle_start: cs });
