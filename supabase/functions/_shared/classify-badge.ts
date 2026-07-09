@@ -22,6 +22,13 @@ export const PMI_TRAIL_KEYWORDS = [
 export const PMI_NONTRIAL_KEYWORDS = [
   { keywords: ['citizen developer', 'cdba'], code: 'CDBA_INTRO' },
   { keywords: ['introduction', 'cognitive', 'cpmai'], code: 'CPMAI_INTRO' },
+  // #1209 (Tier 1/2 tuning — GP-approved 2026-07-08): PMI + adjacent PM courses that
+  // previously fell through to fallback 'badge' (10). Live dry-run over gamification_points
+  // confirmed exact match, zero collateral over the 380 already-recognized badges.
+  { keywords: ['pmi essentials'], code: 'PMI_ESSENTIALS' },
+  { keywords: ['m.o.r.e'], code: 'PMI_ESSENTIALS_MORE' }, // "PMI® Essentials: M.O.R.E." (® glues to 'PMI', so match the M.O.R.E. brand)
+  { keywords: ['citizen developer'], code: 'PMI_CD' },     // CD Business Architect / Practitioner Skills (carry no 'cdba' token)
+  { keywords: ['hybrid project management'], code: 'AGILE_HYBRID_PM' },
 ]
 
 // ── cert_cpmai (45 XP) — check BEFORE cert_pmi_senior since 'cpmai' overlaps ──
@@ -69,6 +76,10 @@ export const SPECIALIZATION_KEYWORDS = [
   'mta:', 'mcsa:', 'md-100',
   'ibm business automation',
   'remote work professional',
+  // #1209 (Tier 2 tuning — GP-approved 2026-07-08): PM/infra specializations previously in fallback 'badge'
+  'scaled professional scrum',
+  'green project manager', 'sustainable project professional',
+  'cloud essentials', 'well-architected',
 ]
 
 // ── knowledge_ai_pm (20 XP) ──
@@ -83,6 +94,8 @@ export const KNOWLEDGE_AI_PM_KEYWORDS = [
   'value stream management', 'agile coach',
   'ibm program manager', 'program manager capstone',
   'ai-driven project manager',
+  // #1209 (Tier 2 tuning — GP-approved 2026-07-08): data/design-thinking courses previously in fallback 'badge'
+  'data visualization', 'big data', 'design thinking',
 ]
 
 // ── Category → points (#1149, SSOT alignment) ──────────────────────────────
