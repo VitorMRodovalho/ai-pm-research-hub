@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { classifyBadge, PMI_TRAIL_KEYWORDS, selectCanonicalCpmai } from '../_shared/classify-badge.ts'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 
 interface CredlyBadge {
   badge_template: { name: string; vanity_slug?: string }
@@ -285,7 +286,10 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const token = authHeader.replace(/^Bearer\s+/i, '')
-    const isServiceRole = token === serviceRoleKey
+    // #1223: robust service-role check (PostgREST-verified) — a literal compare
+    // against the injected env key rejects the vault-stored key every pg_net cron
+    // sends, which diverged after the sb_secret_* key rotation. See _shared/service-auth.ts.
+    const isServiceRole = await isServiceRoleToken(supabaseUrl, token)
 
     const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey)
 
