@@ -184,5 +184,9 @@ export function buildGeoPins(
 export function pinDiameter(kind: 'country' | 'state' | 'continent', count: number): number {
   const base = kind === 'state' ? 15 : 20;
   const k = kind === 'state' ? 2.6 : 4.2;
-  return Math.round(base + k * Math.sqrt(Math.max(count, 1)));
+  // #1239: the count is rendered INSIDE the pin, so magnitude does not need to be
+  // encoded by area too. Cap the diameter so a large cohort (e.g. Brazil) stays a
+  // subtle hierarchy cue instead of ballooning and covering neighbouring pins.
+  const cap = kind === 'state' ? 30 : 38;
+  return Math.min(Math.round(base + k * Math.sqrt(Math.max(count, 1))), cap);
 }

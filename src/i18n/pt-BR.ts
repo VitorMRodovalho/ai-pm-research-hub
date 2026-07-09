@@ -34,7 +34,8 @@ const ptBR: Record<string, string> = {
   'nav.attendance': 'Presença',
   'nav.gamification': '🏆 Gamificação',
   'nav.reunioesGerais': '⭐ Reuniões Gerais',
-  'hero.cycleActive': 'Ciclo 4 em Andamento',
+  'hero.cycleActive': 'Ciclo {n} em Andamento',
+  'hero.cycleActiveFallback': 'Ciclo em Andamento',
   'hero.cycleTribes': 'tribos ativas',
   'hero.cycleMembers': 'pesquisadores',
   'tribe.lgpdMask': 'Dados protegidos por LGPD',
@@ -639,7 +640,8 @@ const ptBR: Record<string, string> = {
   'nav.menu': 'Menu',
 
   // ── Hero ──
-  'hero.badge': 'CICLO 3 · 2026',
+  'hero.badge': 'CICLO {n} · {year}',
+  'hero.badgeFallback': 'CICLO ATUAL',
   'hero.title.line1': 'Núcleo de Estudos e Pesquisa em',
   'hero.title.accent': 'Inteligência Artificial',
   'hero.title.line3': '& Gestão de Projetos',

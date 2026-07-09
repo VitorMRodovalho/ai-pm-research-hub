@@ -34,7 +34,8 @@ const esLATAM: Record<string, string> = {
   'nav.attendance': 'Asistencia',
   'nav.gamification': '🏆 Gamificación',
   'nav.reunioesGerais': '⭐ Reuniones Generales',
-  'hero.cycleActive': 'Ciclo 4 en Curso',
+  'hero.cycleActive': 'Ciclo {n} en Curso',
+  'hero.cycleActiveFallback': 'Ciclo en Curso',
   'hero.cycleTribes': 'tribus activas',
   'hero.cycleMembers': 'investigadores',
   'tribe.lgpdMask': 'Datos protegidos por LGPD',
@@ -639,7 +640,8 @@ const esLATAM: Record<string, string> = {
   'nav.menu': 'Menú',
 
   // ── Hero ──
-  'hero.badge': 'CICLO 3 · 2026',
+  'hero.badge': 'CICLO {n} · {year}',
+  'hero.badgeFallback': 'CICLO ACTUAL',
   'hero.title.line1': 'Núcleo de Estudios e Investigación en',
   'hero.title.accent': 'Inteligencia Artificial',
   'hero.title.line3': 'y Gestión de Proyectos',
