@@ -14,6 +14,9 @@
 --       panel + MCP get_operational_alerts), severity low.
 --   (d) detect_credly_unmapped_cron() + monthly cron ('credly-unmapped-monthly', day 1, 09:00 UTC) that
 --       notifies manage_platform holders when the fallback bucket is non-empty (25-day dedup = monthly).
+--   (e) _credly_health_rows() + get_credly_health() + two coverage/health alerts folded into
+--       detect_operational_alerts — surfaces active members missing a Credly link, links the sync can't
+--       read (404/private), and empty profiles. Automates the manual audit done 2026-07-08.
 --
 -- Grounded via execute_sql read-only (2026-07-08, this worktree):
 --   fallback bucket = 91 rows / 27 members / 910 XP.
@@ -24,8 +27,9 @@
 --   Design Thinking" ones, already knowledge_ai_pm → no change.
 --
 -- Rollback: revert the recredit is NOT auto-reversible (points changed); the observability side rolls back
--- via DROP FUNCTION get_credly_unmapped_badges/_credly_unmapped_rows/detect_credly_unmapped_cron +
--- cron.unschedule('credly-unmapped-monthly') + restore detect_operational_alerts without the #1209 block.
+-- via DROP FUNCTION get_credly_unmapped_badges/_credly_unmapped_rows/detect_credly_unmapped_cron/
+-- get_credly_health/_credly_health_rows + cron.unschedule('credly-unmapped-monthly') + restore
+-- detect_operational_alerts without the #1209 blocks.
 
 -- ── (a) Deterministic recredit — mirrors classify-badge.ts (#1209); prices from gamification_rules SSOT ──
 DO $$
@@ -125,6 +129,74 @@ END;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.get_credly_unmapped_badges() TO authenticated, service_role;
+
+-- ── (e) Credly coverage/health — surfaces the gaps this audit found by hand (2026-07-08):
+--   missing_link  = active researcher/leader/GP with NO credly_url cadastrado
+--   never_verified= has a link but the sync never succeeded (fetch 404 / private profile — e.g. Tiele)
+--   no_badges     = synced OK but the profile has 0 badges (empty/private — e.g. Marcela)
+CREATE OR REPLACE FUNCTION public._credly_health_rows()
+ RETURNS TABLE(kind text, member_id uuid, member_name text, papel text)
+ LANGUAGE sql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  SELECT 'missing_link'::text, m.id, m.name, m.operational_role
+  FROM public.members m
+  WHERE m.is_active = true
+    AND m.operational_role IN ('researcher','tribe_leader','manager','deputy_manager')
+    AND (m.credly_url IS NULL OR m.credly_url = '')
+  UNION ALL
+  SELECT 'never_verified'::text, m.id, m.name, m.operational_role
+  FROM public.members m
+  WHERE m.is_active = true AND m.credly_url IS NOT NULL AND m.credly_url <> ''
+    AND m.credly_verified_at IS NULL
+  UNION ALL
+  SELECT 'no_badges'::text, m.id, m.name, m.operational_role
+  FROM public.members m
+  WHERE m.is_active = true AND m.credly_url IS NOT NULL AND m.credly_url <> ''
+    AND m.credly_verified_at IS NOT NULL
+    AND (m.credly_badges IS NULL OR jsonb_typeof(m.credly_badges) <> 'array' OR jsonb_array_length(m.credly_badges) = 0);
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public._credly_health_rows() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public._credly_health_rows() TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_credly_health()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_caller_id uuid;
+  v_rows jsonb;
+BEGIN
+  SELECT id INTO v_caller_id FROM public.members WHERE auth_id = auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF NOT public.can_by_member(v_caller_id, 'manage_platform') THEN
+    RAISE EXCEPTION 'Unauthorized: requires manage_platform';
+  END IF;
+
+  SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.kind, r.member_name), '[]'::jsonb)
+  INTO v_rows
+  FROM public._credly_health_rows() r;
+
+  RETURN jsonb_build_object(
+    'gaps',           v_rows,
+    'missing_link',   (SELECT count(*) FROM public._credly_health_rows() WHERE kind='missing_link'),
+    'never_verified', (SELECT count(*) FROM public._credly_health_rows() WHERE kind='never_verified'),
+    'no_badges',      (SELECT count(*) FROM public._credly_health_rows() WHERE kind='no_badges'),
+    'note',           'missing_link = cobrar cadastro; never_verified = link 404/privado a corrigir; no_badges = perfil vazio (ação do membro).',
+    'checked_at',     now()
+  );
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.get_credly_health() TO authenticated, service_role;
 
 -- ── (d) monthly cron detector — notifies manage_platform when the fallback bucket is non-empty ──
 CREATE OR REPLACE FUNCTION public.detect_credly_unmapped_cron()
@@ -335,6 +407,30 @@ BEGIN
   INTO v_tmp
   FROM public._credly_unmapped_rows() u;
   IF v_tmp IS NOT NULL AND (v_tmp->>'distinct_badges')::int > 0 THEN
+    v_alerts := v_alerts || v_tmp;
+  END IF;
+
+  -- #1209 follow-up: coverage gap — active researchers/leaders/GP with NO Credly link cadastrado.
+  SELECT jsonb_build_object(
+    'severity', 'medium', 'type', 'credly_missing_link',
+    'count', count(*),
+    'message', count(*) || ' membro(s) ativo(s) (pesquisador/líder/GP) sem link Credly cadastrado — ver get_credly_health'
+  )
+  INTO v_tmp
+  FROM public._credly_health_rows() WHERE kind = 'missing_link';
+  IF v_tmp IS NOT NULL AND (v_tmp->>'count')::int > 0 THEN v_alerts := v_alerts || v_tmp; END IF;
+
+  -- #1209 follow-up: Credly link the sync can't read (404/private, e.g. Tiele) or empty profile (e.g. Marcela).
+  SELECT jsonb_build_object(
+    'severity', 'low', 'type', 'credly_sync_broken',
+    'never_verified', count(*) FILTER (WHERE kind='never_verified'),
+    'empty_profile',  count(*) FILTER (WHERE kind='no_badges'),
+    'message', (count(*) FILTER (WHERE kind='never_verified')) || ' link(s) Credly não-lidos (404/privado) + '
+               || (count(*) FILTER (WHERE kind='no_badges')) || ' perfil(s) Credly sem badges — ver get_credly_health'
+  )
+  INTO v_tmp
+  FROM public._credly_health_rows() WHERE kind IN ('never_verified','no_badges');
+  IF v_tmp IS NOT NULL AND ((v_tmp->>'never_verified')::int > 0 OR (v_tmp->>'empty_profile')::int > 0) THEN
     v_alerts := v_alerts || v_tmp;
   END IF;
 
