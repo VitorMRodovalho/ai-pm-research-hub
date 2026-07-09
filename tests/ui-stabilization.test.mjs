@@ -1056,7 +1056,7 @@ test('R5: public playlist moved to footer; ResourcesSection holds no deadline co
   assert.equal(resources.includes('formatPlaylistDeadline'), false);
   // O link público de webinars (playlist do YouTube) está no rodapé
   assert.equal(footer.includes("t('footer.webinars', lang)"), true);
-  assert.equal(footer.includes('PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc'), true);
+  assert.equal(footer.includes('PLRexyUb8O7bo'), true); // Ciclo 4 (era C3 PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc)
 });
 
 test('public home locale copy no longer hardcodes cycle 3 labels', () => {
