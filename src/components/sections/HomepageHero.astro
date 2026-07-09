@@ -1,9 +1,30 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// #1239: derive the hero cycle badge + status from the CURRENT cycle (was hardcoded 'CICLO 3 · 2026').
+// Mirrors ChaptersSection's anon RPC fetch; get_current_cycle is anon-EXECUTE granted.
+let cycleNum = '';
+let cycleYear = '';
+try {
+  const sbAnon = createClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+  const { data } = await sbAnon.rpc('get_current_cycle');
+  if (data) {
+    cycleNum = String((data as any).cycle_abbr ?? '').replace(/\D/g, '');
+    cycleYear = String((data as any).cycle_start ?? '').slice(0, 4);
+  }
+} catch { /* fall back to neutral i18n strings below */ }
+
+const heroBadge = cycleNum
+  ? t('hero.badge', lang).replace('{n}', cycleNum).replace('{year}', cycleYear)
+  : t('hero.badgeFallback', lang);
+const heroCycleActive = cycleNum
+  ? t('hero.cycleActive', lang).replace('{n}', cycleNum)
+  : t('hero.cycleActiveFallback', lang);
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -13,7 +34,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <!-- ═══ VISITOR HERO ═══ -->
   <div id="hero-visitor" class="relative z-10 text-center max-w-[900px] px-6 py-8">
     <div class="inline-block bg-orange/15 text-orange text-[.78rem] font-semibold px-5 py-1.5 rounded-full border border-orange/30 mb-6 tracking-wider uppercase">
-      {t('hero.badge', lang)}
+      {heroBadge}
     </div>
 
     <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-extrabold text-white leading-[1.15] mb-2">
@@ -61,7 +82,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     <!-- Cycle status -->
     <div class="inline-flex items-center gap-2 text-[.82rem] text-white/60">
       <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-      {t('hero.cycleActive', lang)}
+      {heroCycleActive}
     </div>
 
     <div class="flex flex-col items-center gap-1 mt-5">

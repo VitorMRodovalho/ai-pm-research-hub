@@ -34,7 +34,8 @@ const enUS: Record<string, string> = {
   'nav.attendance': 'Attendance',
   'nav.gamification': '🏆 Gamification',
   'nav.reunioesGerais': '⭐ General Meetings',
-  'hero.cycleActive': 'Cycle 4 In Progress',
+  'hero.cycleActive': 'Cycle {n} In Progress',
+  'hero.cycleActiveFallback': 'Cycle In Progress',
   'hero.cycleTribes': 'active tribes',
   'hero.cycleMembers': 'researchers',
   'tribe.lgpdMask': 'Data protected by LGPD',
@@ -639,7 +640,8 @@ const enUS: Record<string, string> = {
   'nav.menu': 'Menu',
 
   // ── Hero ──
-  'hero.badge': 'CYCLE 3 · 2026',
+  'hero.badge': 'CYCLE {n} · {year}',
+  'hero.badgeFallback': 'CURRENT CYCLE',
   'hero.title.line1': 'Study and Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
