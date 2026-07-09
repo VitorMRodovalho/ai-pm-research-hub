@@ -20,6 +20,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   webinar_status_confirmed: 'Webinar confirmado',
   webinar_status_completed: 'Webinar realizado',
   webinar_status_cancelled: 'Webinar cancelado',
+  entry_chapter_action_needed: 'Capitulo de entrada: acao necessaria',
   ip_ratification_gate_pending: 'Acao necessaria — ratificacao de documento',
   ip_ratification_gate_advanced: 'Gate satisfeito — cadeia avancou',
   ip_ratification_chain_approved: 'Cadeia de aprovacao concluida',
