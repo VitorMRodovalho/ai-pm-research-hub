@@ -111,10 +111,11 @@ test('m3 PR5a DB: exec_cycle_report auth gate intact (unauthenticated service-ro
   assert.ok(error, 'no-auth caller must be rejected (Not authenticated)');
 });
 
-test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort within live operational roster (#1180)', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort within live operational roster (#1180)', { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   // Ground on the most recent populated cycle — the current cycle's window is empty at a boundary (#1123).
   const cs = await attendanceCycleStart(sb);
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!error, error?.message);
   assert.ok(data && Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count key present');

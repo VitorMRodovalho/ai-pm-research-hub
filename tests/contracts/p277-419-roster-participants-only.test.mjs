@@ -95,11 +95,12 @@ test('roster participants-only DB: single-source propagation — get_tribe_stats
   assert.equal(Number(digest.aggregates.active_members), 5, 'weekly digest tribe-8 active_members = 5 (via primitive)');
 });
 
-test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe still kind-based (M4-F not applied)', { skip: svcGated ? false : skipMsg }, async () => {
+test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe still kind-based (M4-F not applied)', { skip: svcGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   // Roberto's get_member_tribe stays NULL (his tribe-8 engagement is kind=observer) → he is NOT pulled into
   // the tribe-8 attendance cohort. tribe-8 engagement cohort_n stays 5 (unchanged by the roster revision).
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data: t8eng } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'tribe', p_scope_id: 8, p_cycle_start: cs });
   assert.equal(Number(t8eng.cohort_n), 5, 'metric-3 tribe-8 cohort_n = 5 (unchanged — reads operational_role + get_member_tribe, not the roster)');
 });

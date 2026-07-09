@@ -48,7 +48,10 @@ export async function attendanceCycleStart(sb) {
     });
     return !!data && Number(data.cohort_n) > 0 && Number(data.present_total) > 0;
   });
-  assert.ok(start, 'no cycle window carries an operational attendance cohort — cannot ground a two-metric test');
+  // #1234: return null (NOT assert) when no cycle carries a cohort — the caller skips gracefully.
+  // During a cycle turnover (e.g. C3→C4 kickoff day) NO window has recorded attendance yet, and a
+  // hard assert here reddens CI on `main` for everyone until the new cycle fills. Ephemeral, not a
+  // regression — the two-metric shape is still covered by the static (non-DB) assertions.
   return start;
 }
 
@@ -64,6 +67,6 @@ export async function pointsCycleStart(sb) {
       .gte('created_at', cs);
     return Number(count) > 0;
   });
-  assert.ok(start, 'no cycle window carries gamification points');
+  // #1234: return null (NOT assert) when no cycle carries points — the caller skips gracefully.
   return start;
 }

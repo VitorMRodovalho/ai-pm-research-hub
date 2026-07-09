@@ -100,13 +100,14 @@ test('#1080 static: total/rank fields unchanged (bucket-only fix)', () => {
 
 // ── BEHAVIOURAL (DB-gated): buckets partition cycle_points; showcase_* routes correctly ──
 test('#1080 behavioural: pillar buckets partition cycle_points; showcase_* routes to showcase',
-  { skip: dbGated ? false : skipMsg }, async () => {
+  { skip: dbGated ? false : skipMsg }, async (t) => {
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
     // Replicate the RPC's exact bucket math against the live ledger (service role bypasses RLS).
     // Ground on the most recent cycle that actually has ledger rows: at a cycle boundary the current
     // cycle can be empty / start in the future (C3→C4 turnover, cycle_start 2026-07-09), zeroing the
     // window (#1123). The partition invariant is cycle-independent; it just needs a populated window.
     const cycleStart = await pointsCycleStart(sb);
+    if (!cycleStart) { t.skip('no populated points cohort — cycle turnover (#1234)'); return; }
 
     const { data: rules } = await sb.from('gamification_rules').select('slug,pillar,organization_id');
     const pillarBySlugOrg = new Map((rules || []).map((r) => [`${r.organization_id}:${r.slug}`, r.pillar]));

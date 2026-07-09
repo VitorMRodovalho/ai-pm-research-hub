@@ -108,9 +108,10 @@ test('m3 PR6 DB: get_member_detail auth gate intact (unauthenticated rejected)',
   assert.ok(error || (data && data.error), 'no-auth caller must be rejected (Forbidden)');
 });
 
-test('m3 PR6 DB: type-scoped primitives resolve + sane shape', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3 PR6 DB: type-scoped primitives resolve + sane shape', { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data: rate, error: e1 } = await sb.rpc('get_attendance_rate', { p_member_id: '622ab18b-a8b4-46ff-b151-7bbd34394ed3', p_cycle_start: cs });
   assert.ok(!e1, e1?.message);
   assert.ok(rate === null || (Number(rate) >= 0 && Number(rate) <= 1), `rate is a 0..1 fraction (got ${rate})`);

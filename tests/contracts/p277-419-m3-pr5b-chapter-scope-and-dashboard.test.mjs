@@ -96,9 +96,10 @@ test('m3 PR5b FE: ChapterDashboard chart + card consume engagement object + reli
 });
 
 // ── DB-gated ──────────────────────────────────────────────────────────────────
-test('m3 PR5b DB: chapter scope returns the member_status=active cohort engagement', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3 PR5b DB: chapter scope returns the member_status=active cohort engagement', { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data, error } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!error, error?.message);
   // #1180: no pinned bands — derive the bound from the live chapter roster in the same run.
@@ -114,9 +115,10 @@ test('m3 PR5b DB: chapter scope returns the member_status=active cohort engageme
   assert.ok(Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count still present on 4-arg');
 });
 
-test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no ambiguous overload)', { skip: dbGated ? false : skipMsg }, async () => {
+test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no ambiguous overload)', { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
+  if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data: rel, error: e1 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'chapter', p_chapter: 'PMI-GO', p_cycle_start: cs });
   assert.ok(!e1, e1?.message);
   // #1180: rate pins rot with live data — assert it is a valid rate, not a level.
