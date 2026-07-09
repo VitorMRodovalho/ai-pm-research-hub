@@ -3076,6 +3076,14 @@ const enUS: Record<string, string> = {
   'data.tribe12.quadrantLabel': 'Q1 — The Augmented Practitioner',
   'data.tribe12.desc': 'Applied use of generative AI in the project manager workflow: prompts for schedules, risks, and communication plans; automation of minutes, status reports, and document analysis. The "first mover" pillar — more time on strategy, less on manual work.',
   'data.tribe12.meetings': 'To be defined',
+  'data.tribe13.name': 'Data in AI Projects',
+  'data.tribe13.quadrantLabel': 'Q2 — AI Project Management',
+  'data.tribe13.desc': 'Data governance and quality as an execution layer of AI projects: translating the ANSI/PMI 26-007 standard and the CPMAI "Identify Data Needs" domain into practical mechanisms, templates, and tools — stewardship, lineage, and a Definition of Ready for data. Boundaries: ethics in T7, ROI in T6.',
+  'data.tribe13.meetings': 'To be defined',
+  'data.tribe14.name': 'AI Literacy',
+  'data.tribe14.quadrantLabel': 'Q1 — The Augmented Practitioner',
+  'data.tribe14.desc': 'A "101" foundation in generative AI literacy that prepares researchers before the thematic tribes. An open learning format with no external deliverable — the conceptual foundation underpinning Radar and Augmented Productivity.',
+  'data.tribe14.meetings': 'To be defined',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sync Points',
