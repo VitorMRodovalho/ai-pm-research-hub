@@ -847,6 +847,20 @@ const esLATAM: Record<string, string> = {
   'tribes.loading': 'Cargando...',
   'tribes.trailsUnavailable': 'Datos de líneas temporalmente no disponibles. Actualiza la página en un momento.',
 
+  // ── Brazos operativos (#1137) ──
+  'arms.label': 'Brazos Operativos',
+  'arms.title': 'Los frentes que mueven el Núcleo',
+  'arms.subtitle': 'Más allá de las tribus de investigación, frentes motores sostienen el Núcleo. Abiertos a quien quiera contribuir.',
+  'arms.leader': 'Liderazgo',
+  'arms.team': 'Equipo',
+  'arms.openings': 'Vacantes abiertas',
+  'arms.succession': 'Liderazgo hasta {date} · sucesión abierta',
+  'arms.cta': 'Quiero contribuir',
+  'arms.joinRequested': '¡Interés registrado! El liderazgo revisará tu solicitud.',
+  'arms.joinError': 'No se pudo registrar la solicitud. Inténtalo de nuevo.',
+  'arms.loginNeeded': 'Inicia sesión para postularte.',
+  'arms.alreadyMember': 'Ya participas en este frente.',
+
   // ── KPIs ──
   'kpis.label': '¿Qué es el Éxito?',
   'kpis.title': 'Metas 2026',

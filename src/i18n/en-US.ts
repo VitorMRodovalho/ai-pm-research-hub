@@ -847,6 +847,20 @@ const enUS: Record<string, string> = {
   'tribes.loading': 'Loading...',
   'tribes.trailsUnavailable': 'Trail data temporarily unavailable. Refresh the page in a moment.',
 
+  // ── Operational arms (#1137) ──
+  'arms.label': 'Operational Arms',
+  'arms.title': 'The forces that move the Núcleo',
+  'arms.subtitle': 'Beyond the research tribes, motor arms sustain the Núcleo. Open to anyone who wants to contribute.',
+  'arms.leader': 'Lead',
+  'arms.team': 'Team',
+  'arms.openings': 'Open positions',
+  'arms.succession': 'Lead through {date} · succession open',
+  'arms.cta': 'I want to contribute',
+  'arms.joinRequested': 'Interest recorded! The leadership will review your request.',
+  'arms.joinError': 'Could not record the request. Please try again.',
+  'arms.loginNeeded': 'Log in to apply.',
+  'arms.alreadyMember': 'You already take part in this arm.',
+
   // ── KPIs ──
   'kpis.label': 'What Does Success Look Like?',
   'kpis.title': '2026 Goals',

@@ -847,6 +847,20 @@ const ptBR: Record<string, string> = {
   'tribes.loading': 'Carregando...',
   'tribes.trailsUnavailable': 'Dados de trilhas indisponíveis temporariamente. Atualize a página em alguns instantes.',
 
+  // ── Braços operacionais (#1137) ──
+  'arms.label': 'Braços Operacionais',
+  'arms.title': 'Frentes que movem o Núcleo',
+  'arms.subtitle': 'Além das tribos de pesquisa, frentes motoras sustentam o Núcleo. Abertas a quem quer contribuir.',
+  'arms.leader': 'Liderança',
+  'arms.team': 'Time',
+  'arms.openings': 'Vagas abertas',
+  'arms.succession': 'Liderança até {date} · sucessão aberta',
+  'arms.cta': 'Quero contribuir',
+  'arms.joinRequested': 'Interesse registrado! A liderança vai revisar seu pedido.',
+  'arms.joinError': 'Não foi possível registrar o pedido. Tente novamente.',
+  'arms.loginNeeded': 'Faça login para se candidatar.',
+  'arms.alreadyMember': 'Você já participa desta frente.',
+
   // ── KPIs ──
   'kpis.label': 'O Que é Sucesso?',
   'kpis.title': 'Metas 2026',

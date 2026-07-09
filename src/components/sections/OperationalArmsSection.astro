@@ -1,0 +1,237 @@
+---
+/**
+ * OperationalArmsSection.astro — #1137 (opção a)
+ * Public landing band for the Núcleo's "operational arms" (motor workgroups), rendered BELOW
+ * the research-tribe quadrants (TribesSection). Display-layer only: the arms are kind='workgroup'
+ * initiatives (SSOT), NOT promoted into the research-tribe taxonomy. Curation is opt-in via
+ * metadata.landing_arm=true, surfaced by the SECURITY DEFINER RPC get_operational_arms() —
+ * anon-safe (only public_members-class data: name, photo, LinkedIn; no PII, no WhatsApp).
+ *
+ * CTA = request_to_join_initiative (existing RPC; independent of the #1138 self-service picker).
+ * The RPC requires a >= 50-char motivation, so the CTA opens an inline motivation form rather
+ * than firing a one-click join. Anon → open-auth.
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const i18nKey = lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt';
+
+interface ArmMember {
+  member_id: string; name: string; photo_url: string | null; linkedin_url: string | null; role?: string;
+}
+interface Arm {
+  initiative_id: string;
+  name_i18n: Record<string, string> | null;
+  title: string;
+  description: string | null;
+  leader: (ArmMember & { end_date: string | null }) | null;
+  team: ArmMember[] | null;
+  has_openings: boolean;
+}
+
+// SSR fetch from the SSOT RPC. Falls back to an empty band (section hidden) on failure.
+const sbAnon = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+let arms: Arm[] = [];
+try {
+  const { data } = await sbAnon.rpc('get_operational_arms');
+  if (Array.isArray(data)) arms = data as Arm[];
+} catch { /* section hides itself when arms is empty */ }
+
+const armName = (a: Arm): string => (a.name_i18n && a.name_i18n[i18nKey]) || a.title;
+
+function formatDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat(lang, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(d);
+}
+
+const ARMS_MSG = {
+  joinRequested: t('arms.joinRequested', lang),
+  joinError: t('arms.joinError', lang),
+  loginNeeded: t('arms.loginNeeded', lang),
+  alreadyMember: t('arms.alreadyMember', lang),
+};
+---
+
+{arms.length > 0 && (
+  <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="operational-arms">
+    <div class="max-w-[1200px] mx-auto">
+      <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">
+        {t('arms.label', lang)}
+      </div>
+      <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+        {t('arms.title', lang)}
+      </h2>
+      <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">
+        {t('arms.subtitle', lang)}
+      </p>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        {arms.map((arm) => {
+          const succession = arm.leader?.end_date
+            ? t('arms.succession', lang).replace('{date}', formatDate(arm.leader.end_date) || '')
+            : null;
+          return (
+            <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] p-5 flex flex-col">
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="text-[1.05rem] font-extrabold text-navy dark:text-teal">{armName(arm)}</h3>
+                {arm.has_openings && (
+                  <span class="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-green-100 text-green-700">
+                    ● {t('arms.openings', lang)}
+                  </span>
+                )}
+              </div>
+
+              {arm.description && (
+                <p class="text-[.88rem] text-[var(--text-secondary)] mb-4 leading-relaxed">
+                  {arm.description.split('\n')[0]}
+                </p>
+              )}
+
+              {/* Leader */}
+              {arm.leader && (
+                <div class="mb-3">
+                  <div class="text-[.68rem] font-bold tracking-wider uppercase text-[var(--text-muted)] mb-1.5">
+                    {t('arms.leader', lang)}
+                  </div>
+                  <div class="flex items-center gap-2.5">
+                    {arm.leader.photo_url
+                      ? <img src={arm.leader.photo_url} alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                      : <div class="w-9 h-9 rounded-full bg-teal/20 flex-shrink-0"></div>}
+                    <div class="min-w-0">
+                      <div class="text-[.88rem] font-semibold truncate">
+                        {arm.leader.name}
+                        {arm.leader.linkedin_url && (
+                          <a href={arm.leader.linkedin_url} target="_blank" rel="noopener" class="text-teal no-underline text-[.75rem] ml-1">🔗</a>
+                        )}
+                      </div>
+                      {succession && <div class="text-[.72rem] text-amber-700">{succession}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Team */}
+              {arm.team && arm.team.length > 0 && (
+                <div class="mb-4">
+                  <div class="text-[.68rem] font-bold tracking-wider uppercase text-[var(--text-muted)] mb-1.5">
+                    {t('arms.team', lang)}
+                  </div>
+                  <div class="flex flex-wrap gap-3">
+                    {arm.team.map((tm) => (
+                      <div class="flex items-center gap-2">
+                        {tm.photo_url
+                          ? <img src={tm.photo_url} alt="" class="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                          : <div class="w-7 h-7 rounded-full bg-teal/20 flex-shrink-0"></div>}
+                        <span class="text-[.82rem] text-[var(--text-secondary)]">
+                          {tm.name}
+                          {tm.linkedin_url && (
+                            <a href={tm.linkedin_url} target="_blank" rel="noopener" class="text-teal no-underline text-[.72rem] ml-1">🔗</a>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CTA + inline motivation form */}
+              <div class="mt-auto pt-2">
+                <button type="button"
+                        class="arm-cta w-full sm:w-auto px-4 py-2.5 rounded-xl text-[.82rem] font-semibold text-white bg-teal hover:bg-teal/80 transition-all cursor-pointer border-0"
+                        data-arm-id={arm.initiative_id}>
+                  {t('arms.cta', lang)}
+                </button>
+                <div class="arm-join-form hidden mt-3" data-arm-form={arm.initiative_id}>
+                  <textarea
+                    class="arm-join-msg w-full min-h-[80px] rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 text-[.85rem] resize-y"
+                    minlength="50"
+                    placeholder={t('arms.subtitle', lang)}></textarea>
+                  <div class="flex items-center gap-2 mt-2">
+                    <button type="button"
+                            class="arm-join-send px-4 py-2 rounded-xl text-[.82rem] font-semibold text-white bg-teal hover:bg-teal/80 cursor-pointer border-0 disabled:opacity-50"
+                            data-arm-send={arm.initiative_id} disabled>
+                      {t('arms.cta', lang)}
+                    </button>
+                    <span class="arm-join-count text-[.72rem] text-[var(--text-muted)]">0/50</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<script define:vars={{ ARMS_MSG }}>
+  // ── Operational-arm join (request_to_join_initiative; requires >= 50-char motivation) ──
+  function getSb() { return window.navGetSb?.(); }
+  function getMember() { return window.navGetMember?.(); }
+
+  document.querySelectorAll('.arm-cta').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-arm-id');
+      const member = getMember();
+      if (!member || !member.id) {
+        document.dispatchEvent(new CustomEvent('open-auth'));
+        window.toast?.(ARMS_MSG.loginNeeded, 'info');
+        return;
+      }
+      const form = document.querySelector(`[data-arm-form="${id}"]`);
+      if (form) form.classList.toggle('hidden');
+    });
+  });
+
+  document.querySelectorAll('[data-arm-form]').forEach((form) => {
+    const id = form.getAttribute('data-arm-form');
+    const msg = form.querySelector('.arm-join-msg');
+    const send = form.querySelector('.arm-join-send');
+    const count = form.querySelector('.arm-join-count');
+    if (!msg || !send) return;
+
+    msg.addEventListener('input', () => {
+      const len = msg.value.trim().length;
+      if (count) count.textContent = `${len}/50`;
+      send.disabled = len < 50;
+    });
+
+    send.addEventListener('click', async () => {
+      const sb = getSb();
+      if (!sb) return;
+      const text = msg.value.trim();
+      if (text.length < 50) return;
+      send.disabled = true;
+      try {
+        const { data, error } = await sb.rpc('request_to_join_initiative', {
+          p_initiative_id: id,
+          p_message: text,
+        });
+        if (error) {
+          const already = /already|já|existe|duplicate/i.test(error.message || '');
+          window.toast?.(already ? ARMS_MSG.alreadyMember : ARMS_MSG.joinError, 'error');
+          send.disabled = false;
+          return;
+        }
+        if (data && data.error) {
+          window.toast?.(ARMS_MSG.joinError, 'error');
+          send.disabled = false;
+          return;
+        }
+        window.toast?.(ARMS_MSG.joinRequested, 'success');
+        form.classList.add('hidden');
+        msg.value = '';
+      } catch (e) {
+        window.toast?.(ARMS_MSG.joinError, 'error');
+        send.disabled = false;
+      }
+    });
+  });
+</script>
