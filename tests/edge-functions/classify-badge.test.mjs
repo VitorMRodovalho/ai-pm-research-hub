@@ -224,3 +224,126 @@ test('classifyBadge: trail checked before knowledge_ai_pm (both match generative
   assert.equal(r.category, 'trail');
   assert.equal(r.points, 20);
 });
+
+// ── #1209 Tier 1/2 keyword tuning (GP-approved 2026-07-08) ──────────────────
+// Real Credly badge names (symbols kept verbatim) that previously fell through to
+// fallback 'badge'/10. Grounded against gamification_points: 15 rows / 10 members / +140 XP.
+
+// Promoted → course (15)
+test('classifyBadge #1209: PMI Essentials M.O.R.E. Maximizing → course', () => {
+  const r = classifyBadge('PMI Essentials M.O.R.E. Maximizing Project Success', '');
+  assert.equal(r.category, 'course');
+  assert.equal(r.points, 15);
+});
+
+test('classifyBadge #1209: "PMI® Essentials: M.O.R.E. In Action" → course (® glues to PMI, matched via M.O.R.E.)', () => {
+  const r = classifyBadge('PMI® Essentials: M.O.R.E. In Action', '');
+  assert.equal(r.category, 'course');
+  assert.equal(r.points, 15);
+});
+
+test('classifyBadge #1209: PMI Citizen Developer Business Architect → course', () => {
+  const r = classifyBadge('PMI Citizen Developer Business Architect', '');
+  assert.equal(r.category, 'course');
+  assert.equal(r.points, 15);
+});
+
+test('classifyBadge #1209: PMI Citizen Developer™ Practitioner Skills → course (not practitioner cert)', () => {
+  const r = classifyBadge('PMI Citizen Developer™ Practitioner Skills', '');
+  assert.equal(r.category, 'course');
+  assert.equal(r.points, 15);
+});
+
+test('classifyBadge #1209: Agile & Hybrid Project Management Strategies → course', () => {
+  const r = classifyBadge('Agile & Hybrid Project Management Strategies', '');
+  assert.equal(r.category, 'course');
+  assert.equal(r.points, 15);
+});
+
+// Promoted → specialization (25)
+test('classifyBadge #1209: Scaled Professional Scrum™ (SPS) → specialization', () => {
+  const r = classifyBadge('Scaled Professional Scrum™ (SPS)', '');
+  assert.equal(r.category, 'specialization');
+  assert.equal(r.points, 25);
+});
+
+test('classifyBadge #1209: Certified Green Project Manager – Basic™ → specialization', () => {
+  const r = classifyBadge('Certified Green Project Manager – Basic™', '');
+  assert.equal(r.category, 'specialization');
+  assert.equal(r.points, 25);
+});
+
+test('classifyBadge #1209: Certified Sustainable Project Professional (CSPP)™ → specialization', () => {
+  const r = classifyBadge('Certified Sustainable Project Professional (CSPP)™ for Practitioners', '');
+  assert.equal(r.category, 'specialization');
+  assert.equal(r.points, 25);
+});
+
+test('classifyBadge #1209: Cloud Essentials → specialization', () => {
+  const r = classifyBadge('Cloud Essentials', '');
+  assert.equal(r.category, 'specialization');
+  assert.equal(r.points, 25);
+});
+
+test('classifyBadge #1209: Collaborator - Well-Architected Framework → specialization', () => {
+  const r = classifyBadge('Collaborator - Well-Architected Framework (2022)', '');
+  assert.equal(r.category, 'specialization');
+  assert.equal(r.points, 25);
+});
+
+// Promoted → knowledge_ai_pm (20)
+test('classifyBadge #1209: Data Visualization with Python → knowledge_ai_pm', () => {
+  const r = classifyBadge('Data Visualization with Python', '');
+  assert.equal(r.category, 'knowledge_ai_pm');
+  assert.equal(r.points, 20);
+});
+
+test('classifyBadge #1209: Big Data Foundations - Level 1 → knowledge_ai_pm', () => {
+  const r = classifyBadge('Big Data Foundations - Level 1', '');
+  assert.equal(r.category, 'knowledge_ai_pm');
+  assert.equal(r.points, 20);
+});
+
+test('classifyBadge #1209: Design Thinking Professional Certificate - DTPC® → knowledge_ai_pm', () => {
+  const r = classifyBadge('Design Thinking Professional Certificate - DTPC® !', '');
+  assert.equal(r.category, 'knowledge_ai_pm');
+  assert.equal(r.points, 20);
+});
+
+// KEEP at badge/10 — participation/recognition + out-of-domain certs (núcleo = AI + PM).
+// These are the guard rails: the new keywords must NOT over-capture.
+test('classifyBadge #1209 guard: Lifelong Learning stays badge/10', () => {
+  const r = classifyBadge('Lifelong Learning', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
+
+test('classifyBadge #1209 guard: "Essentials for Projects" stays badge (not "pmi essentials")', () => {
+  const r = classifyBadge('Essentials for Projects', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
+
+test('classifyBadge #1209 guard: Oracle Java SE 5 (out-of-domain cert) stays badge/10', () => {
+  const r = classifyBadge('Oracle Certified Professional, Java SE 5 Programmer', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
+
+test('classifyBadge #1209 guard: DevOps Essentials Professional Certificate stays badge/10', () => {
+  const r = classifyBadge('DevOps Essentials Professional Certificate - DEPC® !', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
+
+test('classifyBadge #1209 guard: OneTrust Certified Privacy Professional stays badge/10', () => {
+  const r = classifyBadge('OneTrust Certified Privacy Professional', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
+
+test('classifyBadge #1209 guard: Product and Project Collaboration stays badge/10', () => {
+  const r = classifyBadge('Product and Project Collaboration', '');
+  assert.equal(r.category, 'badge');
+  assert.equal(r.points, 10);
+});
