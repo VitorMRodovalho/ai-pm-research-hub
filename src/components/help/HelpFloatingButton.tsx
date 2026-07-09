@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { hasPermission, type MemberForPermission } from '../../lib/permissions';
+import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 // ── FAQ Data (trilingual per item) ──
 
@@ -465,7 +466,7 @@ export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
                 <a href={`${lp}/reunioes-gerais`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   🗓️ {LABELS.agenda[lang]}
                 </a>
-                <a href="https://nucleoia.vitormr.dev/mcp" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                <a href={`${CANONICAL_ORIGIN}/mcp`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   🤖 {LABELS.mcp[lang]}
                 </a>
                 <a href={`${lp}/privacy`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
