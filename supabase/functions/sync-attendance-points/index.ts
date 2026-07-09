@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { POINTS_PER_ATTENDANCE, ATTENDANCE_CATEGORY } from '../_shared/attendance-xp.ts'
+import { isServiceRoleToken } from '../_shared/service-auth.ts'
 
 const CATEGORY = ATTENDANCE_CATEGORY
 // Keep batch size small to avoid PostgREST URL length limits on .in() queries
@@ -36,7 +37,10 @@ Deno.serve(async (req) => {
   const token = authHeader.replace(/^Bearer\s+/i, '')
   if (!token) return jsonResponse({ success: false, error: 'Unauthorized' }, 401)
 
-  const isServiceRole = token === serviceRoleKey
+  // #1223: robust service-role check (PostgREST-verified) — a literal compare
+  // against the injected env key rejects the vault-stored key every pg_net cron
+  // sends, which diverged after the sb_secret_* key rotation. See _shared/service-auth.ts.
+  const isServiceRole = await isServiceRoleToken(supabaseUrl, token)
 
   const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey)
 
