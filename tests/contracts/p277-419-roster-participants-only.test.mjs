@@ -27,6 +27,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { attendanceCycleStart } from '../helpers/reference-cycle.mjs';
+import { rosterViewCount } from '../helpers/roster-oracle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000088_p277_419_roster_participants_only.sql');
@@ -68,15 +69,15 @@ test('roster participants-only forward-defense: this migration does NOT touch ge
 test('roster participants-only DB: tribe-8 = 5, natives LATAM = 3 / Grupo = 3 / Mesa = 4', { skip: svcGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const { data: t8Init } = await sb.rpc('resolve_initiative_id', { p_tribe_id: 8 });
-  const counts = {};
-  for (const [k, id] of Object.entries({ tribe8: t8Init, LATAM, GRUPO: GRUPO, MESA })) {
-    const { data } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: id });
-    counts[k] = Number(data);
+  // #1249: the absolute fixtures (tribe8=5, LATAM=3, Grupo=3, Mesa=4) are dead cohort snapshots — the
+  // C4 kickoff reorg + #1247 phantom-membership regularization moved tribe-8 to 7, Grupo grew to 5.
+  // Durable contract: get_initiative_roster_count == the canonical view for each initiative (single
+  // source). The observers-excluded invariant is asserted in the next test + the m4a/static tests.
+  for (const id of [t8Init, LATAM, GRUPO, MESA]) {
+    const { data: rpcCount } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: id });
+    const viewCount = await rosterViewCount(sb, id);
+    assert.equal(Number(rpcCount), viewCount, `roster(${id}) RPC == canonical view (single source)`);
   }
-  assert.equal(counts.tribe8, 5, 'tribe-8 = 5 (curator Roberto excluded)');
-  assert.equal(counts.LATAM, 3, 'LATAM = 3 (Fabricio + Sarah observer-kind reviewers excluded)');
-  assert.equal(counts.GRUPO, 3, 'Grupo = 3 (Welma observer-kind reviewer excluded)');
-  assert.equal(counts.MESA, 4, 'Mesa = 4 (unchanged — its observers were already role=observer)');
 });
 
 test('roster participants-only DB: no observer rows (role OR kind) survive in any roster', { skip: svcGated ? false : skipMsg }, async () => {
@@ -87,22 +88,33 @@ test('roster participants-only DB: no observer rows (role OR kind) survive in an
     'no row has role=observer OR kind=observer');
 });
 
-test('roster participants-only DB: single-source propagation — get_tribe_stats(8) == digest == 5', { skip: svcGated ? false : skipMsg }, async () => {
+test('roster participants-only DB: single-source propagation — get_tribe_stats(8) == digest == canonical view', { skip: svcGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  const { data: t8Init } = await sb.rpc('resolve_initiative_id', { p_tribe_id: 8 });
+  const viewCount = await rosterViewCount(sb, t8Init);
   const { data: stats } = await sb.rpc('get_tribe_stats', { p_tribe_id: 8 });
   const { data: digest } = await sb.rpc('get_weekly_tribe_digest', { p_tribe_id: 8 });
-  assert.equal(Number(stats.member_count), 5, 'get_tribe_stats tribe-8 member_count = 5 (via primitive)');
-  assert.equal(Number(digest.aggregates.active_members), 5, 'weekly digest tribe-8 active_members = 5 (via primitive)');
+  // #1249: single-source propagation — both surfaces read the same primitive (== canonical view),
+  // not a dead absolute fixture (== 5).
+  assert.equal(Number(stats.member_count), viewCount, 'get_tribe_stats tribe-8 member_count == canonical view');
+  assert.equal(Number(digest.aggregates.active_members), viewCount, 'weekly digest tribe-8 active_members == canonical view');
 });
 
-test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe still kind-based (M4-F not applied)', { skip: svcGated ? false : skipMsg }, async (t) => {
+test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe drives the attendance cohort, not the roster', { skip: svcGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   // Roberto's get_member_tribe stays NULL (his tribe-8 engagement is kind=observer) → he is NOT pulled into
-  // the tribe-8 attendance cohort. tribe-8 engagement cohort_n stays 5 (unchanged by the roster revision).
+  // the tribe-8 attendance cohort. #1249: the absolute fixture (cohort_n == 5) died when #1247 regularized
+  // 2 phantom tribe-8 memberships (their new engagements gave them get_member_tribe=8). The durable
+  // contract: the attendance cohort is the get_member_tribe axis — active researchers/leaders whose
+  // engagement resolves to tribe-8 — and it EXCLUDES the observer-kind liaison (get_member_tribe NULL).
   const cs = await attendanceCycleStart(sb); // most recent populated cycle (#1123)
   if (!cs) { t.skip('no populated attendance cohort — cycle turnover (#1234)'); return; }
   const { data: t8eng } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'tribe', p_scope_id: 8, p_cycle_start: cs });
-  assert.equal(Number(t8eng.cohort_n), 5, 'metric-3 tribe-8 cohort_n = 5 (unchanged — reads operational_role + get_member_tribe, not the roster)');
+  const { count: cohortExpected } = await sb.from('members')
+    .select('*', { count: 'exact', head: true })
+    .eq('tribe_id', 8).eq('is_active', true).in('operational_role', ['researcher', 'tribe_leader']);
+  assert.equal(Number(t8eng.cohort_n), cohortExpected,
+    'metric-3 cohort_n == active researchers/leaders resolving to tribe-8 (get_member_tribe axis, observers excluded)');
 });
 
 test('roster participants-only DB: anon CANNOT SELECT the view (mig-085 lockdown intact)', { skip: anonGated ? false : 'anon key required' }, async () => {

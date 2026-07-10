@@ -60,8 +60,10 @@ test('M4-B behavioural: tribe-8 digest active_members == roster count (5, partic
   const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: 8 });
   const { data: rosterCount } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
 
-  assert.equal(active, Number(rosterCount), 'digest active_members == canonical roster count');
-  assert.equal(active, 5, 'tribe-8 active_members = 5 (participants-only, mig 088: observer-kind curator excluded; offboarded Maria also not counted)');
+  // #1249: the durable contract is single-source (digest == canonical roster count). The absolute
+  // fixture (== 5) died when the C4 cohort evolved (kickoff reorg + #1247 phantom-membership
+  // regularization); the participants-only invariant is defended structurally + by the roster tests.
+  assert.equal(active, Number(rosterCount), 'digest active_members == canonical roster count (single source)');
 
   // the rest of the digest still computes (a representative non-roster aggregate is present + numeric)
   assert.equal(typeof Number(digest.aggregates.cards_overdue_total), 'number', 'cards_overdue_total still computes');

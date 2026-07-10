@@ -844,8 +844,6 @@ const esLATAM: Record<string, string> = {
   'tribes.selectionRemoved': 'Selección removida',
   'tribes.tribeFull': '¡Línea completa!',
   'tribes.errorRemove': 'Error al remover',
-  'tribes.errorSelect': 'Error al seleccionar',
-  'tribes.selectedSuccess': '¡Línea {id} seleccionada! ✓',
   'tribes.loading': 'Cargando...',
   'tribes.trailsUnavailable': 'Datos de líneas temporalmente no disponibles. Actualiza la página en un momento.',
 

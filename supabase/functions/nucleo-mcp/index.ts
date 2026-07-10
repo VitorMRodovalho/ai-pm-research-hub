@@ -2147,8 +2147,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // ===== #87 CANDIDATO + COMMITTEE MCP JOURNEY (8 tools) =====
-  // 6 new RPCs + 2 wrappers around existing select_tribe/deselect_tribe RPCs
+  // ===== #87 CANDIDATO + COMMITTEE MCP JOURNEY =====
+  // 6 candidate/committee self-service RPCs. (The 2 legacy select_tribe/deselect_tribe
+  // wrappers that used to live here were retired in #1247 — see ADR-0123.)
 
   // update_my_application — patch own non-evaluator fields
   mcp.tool("update_my_application", "Atualiza campos do próprio application em ciclo ativo. Allowed: linkedin_url, resume_url, motivation_letter, areas_of_interest, leadership_experience, academic_background, non_pmi_experience, availability_declared, proposed_theme, credly_url, linkedin_relevant_posts, reason_for_applying, phone. Bloqueado durante evaluating/interviews/ranking phases.", {
@@ -2230,29 +2231,12 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // select_tribe — wraps existing RPC (Tier 1 candidato selecionado)
-  mcp.tool("select_tribe", "Seleciona/atualiza tribe preferida do caller (candidato selecionado). Wrap RPC existente.", {
-    tribe_id: z.number().describe("Tribe ID (1-8)")
-  }, async (params: { tribe_id: number }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "select_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("select_tribe", { p_tribe_id: params.tribe_id });
-    if (error) { await logUsage(sb, member.id, "select_tribe", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "select_tribe", true, undefined, start);
-    return ok(data);
-  });
-
-  // deselect_tribe — wraps existing RPC
-  mcp.tool("deselect_tribe", "Remove a seleção de tribe do caller. Wrap RPC existente.", {}, async () => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "deselect_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("deselect_tribe");
-    if (error) { await logUsage(sb, member.id, "deselect_tribe", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "deselect_tribe", true, undefined, start);
-    return ok(data);
-  });
+  // #1247: select_tribe / deselect_tribe MCP tools RETIRED. They wrapped the legacy
+  // select_tribe/deselect_tribe RPCs, which write members.tribe_id via tribe_selections
+  // WITHOUT creating an engagement — the exact path that produced 12 phantom C4
+  // memberships (tribe_id set, no V4 engagement) reconciled in the #1247 audit. The
+  // live self-service path is request_tribe_assignment → leader review_tribe_request
+  // → engagement (no MCP tool yet; gap tracked in #1138). See ADR-0123.
 
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {

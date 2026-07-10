@@ -22,6 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { rosterViewCount } from '../helpers/roster-oracle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000082_p277_419_m4a_initiative_roster_primitive.sql');
@@ -64,13 +65,14 @@ test('M4-A behavioural: tribe 8 roster = 5, EXCLUDES the observer-kind curator R
   assert.ifError(e0);
   const { data: count, error: e1 } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   assert.ifError(e1);
-  // mig 088 (PM 2026-06-01) revised the canonical roster to PARTICIPANTS-ONLY (added kind<>'observer'):
-  // the observer-kind curator Roberto no longer counts as a member. tribe-8 6 → 5.
-  assert.equal(count, 5, 'tribe-8 canonical roster = 5 (participants-only; observers excluded)');
 
   const { data: rows, error: e2 } = await sb
     .from('v_initiative_roster').select('name, role, kind').eq('initiative_id', initId);
   assert.ifError(e2);
+  // #1249: the absolute fixture (tribe-8 == 5) died when the C4 cohort evolved (kickoff reorg +
+  // #1247 phantom-membership regularization). The DURABLE contract is participants-only + single
+  // source: the helper count equals the canonical view rows, and NO observer (role OR kind) survives.
+  assert.equal(Number(count), await rosterViewCount(sb, initId), 'helper count == distinct person over the canonical view (single source)');
   assert.ok(!rows.some((r) => r.name === 'Roberto Macêdo'),
     'the observer-kind curator Roberto (role=curator/kind=observer) is EXCLUDED — observers are not participating members');
   assert.equal(rows.filter((r) => r.role === 'observer' || r.kind === 'observer').length, 0, 'no observer rows (role OR kind)');
@@ -82,7 +84,7 @@ test('M4-A behavioural: helper count == COUNT(DISTINCT person) over the view, pe
   const { data: count } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   const { data: rows } = await sb.from('v_initiative_roster').select('person_id').eq('initiative_id', initId);
   const distinct = new Set(rows.map((r) => r.person_id)).size;
-  assert.equal(Number(count), distinct, 'helper == distinct person over the view');
-  // 6→5 em 2026-06-11: offboarding legítimo (alumni, ROI & Portfólio)
-  assert.equal(Number(count), 5, 'tribe-6 canonical roster = 5');
+  // #1249: single-source contract (helper == distinct person over the view). The absolute tribe-6
+  // fixture (== 5) is a dead cohort snapshot, dropped when the C4 cohort evolved.
+  assert.equal(Number(count), distinct, 'helper == distinct person over the view (single source)');
 });

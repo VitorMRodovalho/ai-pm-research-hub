@@ -30,6 +30,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { rosterViewCount } from '../helpers/roster-oracle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000084_p277_419_m4c_exec_tribe_dashboard_roster.sql');
@@ -112,17 +113,20 @@ test('M4-C DB: tribe-8 canonical roster == 5 (participants-only, mig 088); the v
   assert.ifError(e0);
   const { data: roster, error: e1 } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   assert.ifError(e1);
-  assert.equal(Number(roster), 5, 'tribe-8 canonical roster = 5 (participants-only, mig 088: observer-kind curator Roberto excluded)');
+  const viewCount = await rosterViewCount(sb, initId);
+  // #1249: single-source contract (RPC == canonical view), not the dead absolute fixture (== 5).
+  assert.equal(Number(roster), viewCount, 'get_initiative_roster_count == canonical view (single source)');
 });
 
-test('M4-C DB: only tribe 8 changed — other tribes stable (drift-tolerant)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-C DB: get_initiative_roster_count agrees with the canonical view across tribes (single source)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  // canonical roster per tribe is what members.total now reads; assert the stable baselines hold
-  // tribe-6 6→5: offboarding legítimo de membro em 2026-06-11 (alumni, ROI & Portfólio)
-  const expect = { 1: 4, 6: 5 };
-  for (const [tid, n] of Object.entries(expect)) {
-    const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: Number(tid) });
+  // #1249: the migration-088 snapshot ({1:4,6:5}) was a dead cohort fixture — it broke at the C4
+  // kickoff (reorg + #1247 phantom-membership regularization). The durable invariant is that
+  // members.total (get_initiative_roster_count) reads the canonical view for EVERY tribe.
+  for (const tid of [1, 6, 8]) {
+    const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: tid });
+    const viewCount = await rosterViewCount(sb, initId);
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
-    assert.equal(Number(roster), n, `tribe ${tid} roster == ${n} (unchanged by PR4-C)`);
+    assert.equal(Number(roster), viewCount, `tribe ${tid} roster RPC == canonical view (single source)`);
   }
 });

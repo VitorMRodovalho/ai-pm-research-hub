@@ -32,6 +32,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { rosterViewCount } from '../helpers/roster-oracle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000089_p277_419_m4_gamification_cohort_roster.sql');
@@ -140,35 +141,38 @@ test('M4-gam DB: auth gate intact — no-auth caller gets in-band Unauthorized (
   assert.equal(di?.error, 'Unauthorized', 'get_initiative_gamification gate returns in-band Unauthorized for no-auth caller');
 });
 
-test('M4-gam DB: tribe-8 cohort == canonical roster == 5 (participants-only); the count get_tribe_gamification now returns', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-gam DB: tribe-8 cohort == canonical roster (single source)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: TRIBE8 });
   const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
-  assert.equal(Number(roster), 5, 'tribe-8 canonical roster = 5 (mig 088: observer-kind curator Roberto excluded)');
+  const viewCount = await rosterViewCount(sb, initId);
+  // #1249: single-source (RPC == canonical view), not the dead absolute fixture (== 5).
+  assert.equal(Number(roster), viewCount, 'tribe-8 roster RPC == canonical view (single source)');
 });
 
-test('M4-gam DB: native forks KILLED — Mesa=4, LATAM=3, Grupo=3 (== get_initiative_stats == roster)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-gam DB: native forks — get_initiative_stats.member_count == roster == canonical view (single source)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const expect = { [MESA]: 4, [LATAM]: 3, [GRUPO]: 3 };
-  for (const [id, n] of Object.entries(expect)) {
+  // #1249: the absolute fixtures (Mesa=4, LATAM=3, Grupo=3) are dead cohort snapshots — Grupo drifted
+  // to 5 as its study group grew. The durable contract: get_initiative_stats shares the roster, and
+  // both equal the canonical view. Observer-kind reviewers stay excluded (defended by the roster tests).
+  for (const id of [MESA, LATAM, GRUPO]) {
+    const viewCount = await rosterViewCount(sb, id);
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: id });
     const { data: stats } = await sb.rpc('get_initiative_stats', { p_initiative_id: id });
-    assert.equal(Number(roster), n, `roster(${id}) == ${n}`);
-    assert.equal(Number(stats.member_count), n,
-      `get_initiative_stats(${id}).member_count == ${n} — get_initiative_gamification now agrees (shares the roster)`);
+    assert.equal(Number(roster), viewCount, `roster(${id}) == canonical view`);
+    assert.equal(Number(stats.member_count), viewCount, `get_initiative_stats(${id}).member_count == canonical view (shares the roster)`);
   }
 });
 
-test('M4-gam DB: only tribe-8 changed — other tribes stable (drift-tolerant baselines)', { skip: dbGated ? false : skipMsg }, async () => {
+test('M4-gam DB: get_initiative_roster_count agrees with the canonical view across tribes (single source)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  // tribe-6 6→5: offboarding legítimo de membro em 2026-06-11 (alumni, ROI & Portfólio)
-  // tribe-2 REMOVIDA da baseline em 2026-07-08: T2 arquivada no DIA 9 (líder → alumni,
-  // #1124) e o roster drena conforme os 3 órfãos re-selecionam tribo até 17/07 — não há
-  // valor estável para pinar (histórico: 5→4 com o offboard do Ricardo em 04/07).
-  const expect = { 1: 4, 6: 5 };
-  for (const [tid, n] of Object.entries(expect)) {
-    const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: Number(tid) });
+  // #1249: the migration-088 snapshot ({1:4,6:5}) was a dead cohort fixture, broken at the C4 kickoff
+  // (reorg + #1247 phantom-membership regularization). Durable invariant: the roster helper reads the
+  // canonical view for every tribe.
+  for (const tid of [1, 6, 8]) {
+    const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: tid });
+    const viewCount = await rosterViewCount(sb, initId);
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
-    assert.equal(Number(roster), n, `tribe ${tid} roster == ${n} (unchanged)`);
+    assert.equal(Number(roster), viewCount, `tribe ${tid} roster RPC == canonical view (single source)`);
   }
 });

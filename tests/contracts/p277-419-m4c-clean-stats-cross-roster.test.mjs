@@ -31,6 +31,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { rosterViewCount } from '../helpers/roster-oracle.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000086_p277_419_m4c_clean_stats_cross_roster.sql');
@@ -122,7 +123,9 @@ test('M4-C-clean DB: get_tribe_stats(8).member_count == roster primitive == 5 (p
   const { data: initId } = await sb.rpc('resolve_initiative_id', { p_tribe_id: TRIBE8 });
   const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: initId });
   const { data: stats } = await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE8 });
-  assert.equal(Number(roster), 5, 'tribe-8 canonical roster = 5 (participants-only, mig 088: observer-kind curator excluded)');
+  const viewCount = await rosterViewCount(sb, initId);
+  // #1249: dead absolute fixture (== 5) removed; single-source instead (roster == view == stats).
+  assert.equal(Number(roster), viewCount, 'roster helper == canonical view (single source)');
   assert.equal(Number(stats.member_count), Number(roster), 'get_tribe_stats.member_count reads the primitive');
 });
 

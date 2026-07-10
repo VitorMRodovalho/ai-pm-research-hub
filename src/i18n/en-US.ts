@@ -844,8 +844,6 @@ const enUS: Record<string, string> = {
   'tribes.selectionRemoved': 'Selection removed',
   'tribes.tribeFull': 'Stream is full!',
   'tribes.errorRemove': 'Error removing',
-  'tribes.errorSelect': 'Error selecting',
-  'tribes.selectedSuccess': 'Stream {id} selected! ✓',
   'tribes.loading': 'Loading...',
   'tribes.trailsUnavailable': 'Trail data temporarily unavailable. Refresh the page in a moment.',
 
