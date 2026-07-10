@@ -117,11 +117,13 @@
 - **Teste:** pedido a D-2 → nudge disparado 1x; expiração → notificação GP; TTL de tribo = 7d, convite não-tribo permanece 72h.
 - **Rollback:** reverter corpo de `request_tribe_assignment`; `cron.unschedule` do nudge.
 
-### Wave 4 — Paridade MCP do fluxo híbrido (#1138 / D3) · *EF nucleo-mcp + manifest*
-- Expor como tools MCP (server `supabase/functions/nucleo-mcp/`): `request_tribe_assignment`, `review_tribe_request`, `list_tribe_pending_requests`, `get_my_tribe_request_context` (read), `cancel_tribe_request`, e um wrapper `leave_tribe` (resolve tribe→initiative e chama `withdraw_from_initiative`).
-- Atualizar `mcp-manifest.json`, regenerar a **MCP tool matrix**, bump do manifest count.
+### Wave 4 — Paridade MCP do fluxo híbrido (#1138 / D3) · *EF nucleo-mcp + manifest* — ✅ PR #1266 (verde, aguardando merge dev)
+> 6 tools expostas + EF deployada (health `/mcp tools=323`, runtime drift limpo). Sem SQL/i18n/rotas. Fecha o EPIC #1258.
+- Expor como tools MCP (server `supabase/functions/nucleo-mcp/`): `request_tribe_assignment`, `review_tribe_request`, `list_tribe_pending_requests`, `get_my_tribe_request_context` (read), `cancel_tribe_request`, e um wrapper `leave_tribe` (resolve tribe→initiative via `get_my_tribe_request_context.current_tribe_initiative_id` e chama `withdraw_from_initiative`; confirm gate ADR-0018 W1; único-voluntário → rota ao GP).
+- Autoridade self-gated por cada RPC (self-service p/ request/cancel/leave; Caminho-3 inline líder-GP p/ review/list) — sem `canV4` duplicado na EF.
+- Atualizar `mcp-manifest.json` (335→341), regenerar a **MCP tool matrix**, ratchet `/health` 317→323 (count-only, convenção #1099; 7 testes de contrato atualizados).
 - **Deploy EF** pelo Bash do Claude (tem Docker; o `!` do usuário falha — [[reference-ef-deploy-shell-separation-docker]]); verdade global = `functions list` version + smoke HTTP.
-- **Teste:** matriz MCP regenerada; smoke de cada tool via MCP autenticado.
+- **Teste:** matriz MCP regenerada; `initialize`/`tools/list`/`tools/call` smoke das 6; validação da camada RPC via impersonação jwt (campo `current_tribe_initiative_id` presente).
 
 ## 6. Invariantes & riscos
 
