@@ -19,6 +19,8 @@ import { useState, useEffect, useCallback } from 'react';
 // the future promoted-guest cohort. No localStorage dismiss: needing a tribe is not optional noise.
 
 const MIN_MESSAGE = 50;
+// #1256: withdraw_from_initiative enforces reason >= 10; mirror it client-side to gate the button.
+const LEAVE_MIN_REASON = 10;
 
 function formatDate(iso: string, lang: string): string {
   try {
@@ -45,6 +47,10 @@ interface Context {
   // #1139: when eligible=false, the server names WHY so we render an explicit empty-state (never blank).
   ineligible_reason?: 'no_member' | 'inactive' | 'has_tribe' | 'pending_term' | 'ineligible' | null;
   current_tribe_title?: string | null;
+  // #1256: present only in the has_tribe case, sourced from the caller's ACTIVE volunteer engagement.
+  // initiative_id null = legacy-only tribe_id with no engagement to withdraw from -> hide leave action.
+  current_tribe_id?: number | null;
+  current_tribe_initiative_id?: string | null;
   pending: PendingRequest | null;
   tribes: TribeOption[];
 }
@@ -80,6 +86,17 @@ interface Copy {
   termCta: string;
   hasTribeTitle: string;
   hasTribeBody: (title: string | null) => string;
+  // #1256: self-service leave (wrong tribe -> leave -> the picker reopens). Reason >= 10 (withdraw guard).
+  leaveTribeBody: (title: string | null) => string;
+  leaveTribe: string;
+  leaveConfirmPrompt: string;
+  leaveReasonLabel: string;
+  leaveReasonPlaceholder: string;
+  leaveReasonHint: (n: number) => string;
+  leaveConfirm: string;
+  leaving: string;
+  leaveBlockedSoleVolunteer: string;
+  toastLeft: string;
   toastSent: string;
   toastError: string;
 }
@@ -116,6 +133,18 @@ const COPY: Record<string, Copy> = {
     hasTribeBody: (title) => title
       ? `Você já faz parte da tribo ${title}. Para trocar de tribo, fale com a coordenação do Núcleo.`
       : 'Você já participa de uma tribo de pesquisa. Para trocar de tribo, fale com a coordenação do Núcleo.',
+    leaveTribeBody: (title) => title
+      ? `Você faz parte da tribo ${title}. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico e pontos permanecem com você.`
+      : 'Você participa de uma tribo de pesquisa. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico e pontos permanecem com você.',
+    leaveTribe: 'Sair da tribo',
+    leaveConfirmPrompt: 'Ao sair, você poderá escolher outra tribo em seguida. Conte o motivo:',
+    leaveReasonLabel: 'Motivo da saída',
+    leaveReasonPlaceholder: 'Ex.: escolhi a tribo errada e quero entrar em outra (mín. 10 caracteres).',
+    leaveReasonHint: (n) => (n > 0 ? `Faltam ${n} caractere${n === 1 ? '' : 's'}` : 'Pronto para sair'),
+    leaveConfirm: 'Sim, sair da tribo',
+    leaving: 'Saindo…',
+    leaveBlockedSoleVolunteer: 'Você é o único voluntário ativo desta tribo (ou é o líder), então não pode sair sozinho. Fale com a coordenação do Núcleo para fazer a transição.',
+    toastLeft: 'Você saiu da tribo. Agora escolha outra.',
     toastSent: 'Pedido enviado! O líder da tribo vai revisar.',
     toastError: 'Não foi possível enviar. Tente novamente.',
   },
@@ -150,6 +179,18 @@ const COPY: Record<string, Copy> = {
     hasTribeBody: (title) => title
       ? `You are already part of the ${title} tribe. To switch tribes, contact the Núcleo coordination.`
       : 'You are already part of a research tribe. To switch tribes, contact the Núcleo coordination.',
+    leaveTribeBody: (title) => title
+      ? `You are part of the ${title} tribe. Joined the wrong one? You can leave and pick another. Your history and points stay with you.`
+      : 'You are part of a research tribe. Joined the wrong one? You can leave and pick another. Your history and points stay with you.',
+    leaveTribe: 'Leave tribe',
+    leaveConfirmPrompt: 'After leaving, you can pick another tribe right away. Tell us why:',
+    leaveReasonLabel: 'Reason for leaving',
+    leaveReasonPlaceholder: 'e.g. I picked the wrong tribe and want to join another (min. 10 characters).',
+    leaveReasonHint: (n) => (n > 0 ? `${n} character${n === 1 ? '' : 's'} to go` : 'Ready to leave'),
+    leaveConfirm: 'Yes, leave tribe',
+    leaving: 'Leaving…',
+    leaveBlockedSoleVolunteer: 'You are the only active volunteer of this tribe (or you are the leader), so you cannot leave on your own. Contact the Núcleo coordination to make the transition.',
+    toastLeft: 'You left the tribe. Now pick another one.',
     toastSent: 'Request sent! The tribe leader will review it.',
     toastError: 'Could not send. Please try again.',
   },
@@ -184,6 +225,18 @@ const COPY: Record<string, Copy> = {
     hasTribeBody: (title) => title
       ? `Ya formas parte de la tribu ${title}. Para cambiar de tribu, contacta a la coordinación del Núcleo.`
       : 'Ya participas en una tribu de investigación. Para cambiar de tribu, contacta a la coordinación del Núcleo.',
+    leaveTribeBody: (title) => title
+      ? `Formas parte de la tribu ${title}. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial y puntos quedan contigo.`
+      : 'Participas en una tribu de investigación. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial y puntos quedan contigo.',
+    leaveTribe: 'Salir de la tribu',
+    leaveConfirmPrompt: 'Al salir, podrás elegir otra tribu enseguida. Cuéntanos el motivo:',
+    leaveReasonLabel: 'Motivo de la salida',
+    leaveReasonPlaceholder: 'Ej.: elegí la tribu equivocada y quiero entrar en otra (mín. 10 caracteres).',
+    leaveReasonHint: (n) => (n > 0 ? `Faltan ${n} carácter${n === 1 ? '' : 'es'}` : 'Listo para salir'),
+    leaveConfirm: 'Sí, salir de la tribu',
+    leaving: 'Saliendo…',
+    leaveBlockedSoleVolunteer: 'Eres el único voluntario activo de esta tribu (o eres el líder), así que no puedes salir por tu cuenta. Contacta a la coordinación del Núcleo para hacer la transición.',
+    toastLeft: 'Saliste de la tribu. Ahora elige otra.',
     toastSent: '¡Solicitud enviada! El líder de la tribu la revisará.',
     toastError: 'No se pudo enviar. Inténtalo de nuevo.',
   },
@@ -202,6 +255,11 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   // #1255: inline confirm + in-flight state for cancelling a pending request (no native dialog).
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // #1256: inline confirm + reason + in-flight + sole-volunteer block for leaving the current tribe.
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [leaveBlocked, setLeaveBlocked] = useState<string | null>(null);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -268,6 +326,39 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       setCancelling(false);
     }
   }, [getSb, ctx, cancelling, copy, load]);
+
+  // #1256: leave the current tribe (wrong-tribe fix) -> revokes the engagement, the bridge demotion
+  // trigger clears members.tribe_id, and the picker reopens on re-load. The sole-volunteer/leader
+  // safeguard (withdraw returns `remaining_of_kind`) is surfaced as a GP-routing message, not a toast.
+  const leaveReasonRemaining = Math.max(0, LEAVE_MIN_REASON - leaveReason.trim().length);
+  const leave = useCallback(async () => {
+    const sb = getSb();
+    const initiativeId = ctx?.current_tribe_initiative_id;
+    if (!sb || !initiativeId || leaving || leaveReason.trim().length < LEAVE_MIN_REASON) return;
+    setLeaving(true);
+    setLeaveBlocked(null);
+    try {
+      const { data, error } = await sb.rpc('withdraw_from_initiative', {
+        p_initiative_id: initiativeId,
+        p_reason: leaveReason.trim(),
+      });
+      if (error) throw new Error(error.message);
+      // sole-volunteer / leader safeguard: structured block, not a failure -> explain + route to GP.
+      if (data && typeof data.remaining_of_kind === 'number') {
+        setLeaveBlocked(copy.leaveBlockedSoleVolunteer);
+        return;
+      }
+      if (!data || data.ok !== true) throw new Error(data?.error || 'failed');
+      (window as any).toast?.(copy.toastLeft, 'success');
+      setConfirmingLeave(false);
+      setLeaveReason('');
+      await load(); // re-read -> tribe_id cleared, picker reappears
+    } catch {
+      (window as any).toast?.(copy.toastError, 'error');
+    } finally {
+      setLeaving(false);
+    }
+  }, [getSb, ctx, leaving, leaveReason, copy, load]);
 
   if (!ctx) return null; // loading / not hydrated
 
@@ -356,11 +447,69 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       );
     }
     if (ctx.ineligible_reason === 'has_tribe') {
+      // #1256: offer self-service leave only when there is an ACTIVE engagement to withdraw from.
+      // Legacy-only tribe_id (no initiative_id) falls back to the "contact coordination" message.
+      const canLeave = !!ctx.current_tribe_initiative_id;
       return (
         <section role="region" aria-label={copy.ariaLabel} className="mb-6">
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
             <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.hasTribeTitle}</h2>
-            <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.hasTribeBody(ctx.current_tribe_title || null)}</p>
+            {!canLeave ? (
+              <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.hasTribeBody(ctx.current_tribe_title || null)}</p>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.leaveTribeBody(ctx.current_tribe_title || null)}</p>
+                <div className="mt-3">
+                  {!confirmingLeave ? (
+                    <button
+                      type="button"
+                      onClick={() => { setConfirmingLeave(true); setLeaveBlocked(null); }}
+                      className="min-h-[44px] px-4 rounded-lg border border-[var(--border-subtle)] text-navy dark:text-teal text-sm font-bold cursor-pointer hover:bg-[var(--surface-hover)]"
+                    >
+                      {copy.leaveTribe}
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{copy.leaveConfirmPrompt}</p>
+                      <label htmlFor="leave-tribe-reason" className="sr-only">{copy.leaveReasonLabel}</label>
+                      <textarea
+                        id="leave-tribe-reason"
+                        value={leaveReason}
+                        onChange={(e) => setLeaveReason(e.target.value)}
+                        placeholder={copy.leaveReasonPlaceholder}
+                        rows={3}
+                        maxLength={500}
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-teal/50"
+                      />
+                      <p className="text-xs text-[var(--text-secondary)]" aria-live="polite">{copy.leaveReasonHint(leaveReasonRemaining)}</p>
+                      {leaveBlocked && (
+                        <p role="alert" className="text-sm font-semibold text-red-700 dark:text-red-300">{leaveBlocked}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={leave}
+                          disabled={leaving || leaveReason.trim().length < LEAVE_MIN_REASON}
+                          aria-disabled={leaving || leaveReason.trim().length < LEAVE_MIN_REASON}
+                          className="min-h-[44px] px-4 rounded-lg bg-red-600 text-white text-sm font-bold cursor-pointer hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {leaving ? copy.leaving : copy.leaveConfirm}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setConfirmingLeave(false); setLeaveBlocked(null); }}
+                          disabled={leaving}
+                          className="min-h-[44px] px-4 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm font-bold cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                        >
+                          {copy.cancelBack}
+                        </button>
+                      </div>
+                      <span role="status" aria-live="assertive" className="sr-only">{leaving ? copy.leaving : ''}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
       );
