@@ -33,6 +33,7 @@ interface TribeOption {
   title: string;
 }
 interface PendingRequest {
+  invitation_id: string; // #1255: needed to cancel this exact pending request
   tribe_id: number;
   title: string;
   message: string;
@@ -64,6 +65,13 @@ interface Copy {
   pendingExpires: (date: string) => string;
   pendingExpiryNote: string;
   pendingYourMessage: string;
+  // #1255: self-service cancel of a pending request (invitee re-picks a tribe)
+  cancelRequest: string;
+  cancelConfirmPrompt: string;
+  cancelConfirm: string;
+  cancelBack: string;
+  cancelling: string;
+  toastCancelled: string;
   emptyTitle: string;
   emptyBody: string;
   // #1139 ineligibility empty-states
@@ -93,6 +101,12 @@ const COPY: Record<string, Copy> = {
     pendingExpires: (date) => `Este pedido expira em ${date}.`,
     pendingExpiryNote: 'Se ninguém revisar até lá, o pedido expira e você poderá escolher uma tribo de novo.',
     pendingYourMessage: 'Sua mensagem',
+    cancelRequest: 'Escolher outra tribo',
+    cancelConfirmPrompt: 'Cancelar este pedido e escolher outra tribo?',
+    cancelConfirm: 'Sim, cancelar',
+    cancelBack: 'Voltar',
+    cancelling: 'Cancelando…',
+    toastCancelled: 'Pedido cancelado. Escolha uma tribo.',
     emptyTitle: 'Nenhuma tribo disponível',
     emptyBody: 'Não há tribos abertas para ingresso no momento. Fale com a coordenação do Núcleo.',
     termTitle: 'Assine seu termo de voluntário',
@@ -121,6 +135,12 @@ const COPY: Record<string, Copy> = {
     pendingExpires: (date) => `This request expires on ${date}.`,
     pendingExpiryNote: 'If no one reviews it by then, the request expires and you can pick a tribe again.',
     pendingYourMessage: 'Your message',
+    cancelRequest: 'Choose another tribe',
+    cancelConfirmPrompt: 'Cancel this request and choose another tribe?',
+    cancelConfirm: 'Yes, cancel',
+    cancelBack: 'Back',
+    cancelling: 'Cancelling…',
+    toastCancelled: 'Request cancelled. Choose a tribe.',
     emptyTitle: 'No tribes available',
     emptyBody: 'There are no tribes open to join right now. Contact the Núcleo coordination.',
     termTitle: 'Sign your volunteer term',
@@ -149,6 +169,12 @@ const COPY: Record<string, Copy> = {
     pendingExpires: (date) => `Esta solicitud expira el ${date}.`,
     pendingExpiryNote: 'Si nadie la revisa para entonces, la solicitud expira y podrás elegir una tribu de nuevo.',
     pendingYourMessage: 'Tu mensaje',
+    cancelRequest: 'Elegir otra tribu',
+    cancelConfirmPrompt: '¿Cancelar esta solicitud y elegir otra tribu?',
+    cancelConfirm: 'Sí, cancelar',
+    cancelBack: 'Volver',
+    cancelling: 'Cancelando…',
+    toastCancelled: 'Solicitud cancelada. Elige una tribu.',
     emptyTitle: 'No hay tribus disponibles',
     emptyBody: 'No hay tribus abiertas para unirse en este momento. Contacta a la coordinación del Núcleo.',
     termTitle: 'Firma tu término de voluntariado',
@@ -173,6 +199,9 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // #1255: inline confirm + in-flight state for cancelling a pending request (no native dialog).
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -218,6 +247,28 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     }
   }, [getSb, selected, message, submitting, copy, load]);
 
+  // #1255: cancel the pending self-request so the picker reopens (re-request is immediate; the
+  // wrong-tribe request never produced a contribution, so nothing material is lost).
+  const cancel = useCallback(async () => {
+    const sb = getSb();
+    const invitationId = ctx?.pending?.invitation_id;
+    if (!sb || !invitationId || cancelling) return;
+    setCancelling(true);
+    try {
+      const { data, error } = await sb.rpc('cancel_tribe_request', {
+        p_invitation_id: invitationId,
+      });
+      if (error || (data && data.ok === false)) throw new Error(error?.message || 'failed');
+      (window as any).toast?.(copy.toastCancelled, 'success');
+      setConfirmingCancel(false);
+      await load(); // re-read -> pending clears, picker reappears
+    } catch {
+      (window as any).toast?.(copy.toastError, 'error');
+    } finally {
+      setCancelling(false);
+    }
+  }, [getSb, ctx, cancelling, copy, load]);
+
   if (!ctx) return null; // loading / not hydrated
 
   // Pending state — the request was already sent, awaiting the leader.
@@ -240,6 +291,42 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
               <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{copy.pendingYourMessage}</p>
                 <p className="text-sm text-[var(--text-primary)] mt-1 whitespace-pre-wrap break-words">{ctx.pending.message}</p>
+              </div>
+              {/* #1255: self-service cancel — picked the wrong tribe? cancel + re-pick, no 72h wait. */}
+              <div className="mt-3">
+                {!confirmingCancel ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingCancel(true)}
+                    className="min-h-[44px] px-4 rounded-lg border border-amber-400/70 text-navy dark:text-amber-200 text-sm font-bold cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-900/30"
+                  >
+                    {copy.cancelRequest}
+                  </button>
+                ) : (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">{copy.cancelConfirmPrompt}</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={cancel}
+                        disabled={cancelling}
+                        aria-disabled={cancelling}
+                        className="min-h-[44px] px-4 rounded-lg bg-amber-600 text-white text-sm font-bold cursor-pointer hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {cancelling ? copy.cancelling : copy.cancelConfirm}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingCancel(false)}
+                        disabled={cancelling}
+                        className="min-h-[44px] px-4 rounded-lg border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm font-bold cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                      >
+                        {copy.cancelBack}
+                      </button>
+                    </div>
+                    <span role="status" aria-live="assertive" className="sr-only">{cancelling ? copy.cancelling : ''}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
