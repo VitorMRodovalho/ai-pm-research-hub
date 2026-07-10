@@ -844,8 +844,6 @@ const ptBR: Record<string, string> = {
   'tribes.selectionRemoved': 'Seleção removida',
   'tribes.tribeFull': 'Tribo lotada!',
   'tribes.errorRemove': 'Erro ao remover',
-  'tribes.errorSelect': 'Erro ao selecionar',
-  'tribes.selectedSuccess': 'Tribo {id} selecionada! ✓',
   'tribes.loading': 'Carregando...',
   'tribes.trailsUnavailable': 'Dados de trilhas indisponíveis temporariamente. Atualize a página em alguns instantes.',
 
