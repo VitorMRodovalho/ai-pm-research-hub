@@ -134,15 +134,26 @@ test('#1080 behavioural: pillar buckets partition cycle_points; showcase_* route
     }
 
     let checked = 0;
-    let showcaseCovered = false;
     for (const [mid, m] of agg) {
       const sum = m.presenca + m.trilha + m.cert + m.showcase + m.artifacts + m.bonus;
       assert.equal(sum, m.total, `buckets must sum to cycle_points for member ${mid}`);
-      if (m.showcase > 0) showcaseCovered = true;
       checked++;
     }
     assert.ok(checked > 0, 'at least one member with cycle XP was checked');
-    // Guards the regression: with the old bare-slug filter, granular showcase_* would land in bonus
-    // and no member would show showcase XP unless they had a legacy bare 'showcase' row.
-    assert.ok(showcaseCovered, 'at least one member routes producao showcase_* XP into cycle_showcase');
+
+    // #1249/#1123: the showcase_* routing regression is defended over the WHOLE ledger, not just the
+    // current cycle. A fresh cycle (C4) can carry zero showcase XP (data absence, not a routing bug),
+    // which used to red the assertion. Routing is cycle-independent, so re-aggregate showcase_* across
+    // all cycles; skip only if the platform has no showcase XP at all (nothing to defend).
+    const { data: allPts } = await sb.from('gamification_points').select('category,points,organization_id');
+    let showcaseTotal = 0, anyShowcaseCategory = false;
+    for (const p of allPts || []) {
+      if (!String(p.category).startsWith('showcase')) continue;
+      anyShowcaseCategory = true;
+      const pillar = pillarBySlugOrg.get(`${p.organization_id}:${p.category}`) ?? null;
+      // regression: with the old bare-slug filter, granular showcase_* resolved to pillar null → bonus.
+      if (pillar === 'producao') showcaseTotal += p.points;
+    }
+    if (!anyShowcaseCategory) { t.skip('no showcase_* XP in the ledger yet — routing regression not exercisable'); return; }
+    assert.ok(showcaseTotal > 0, 'showcase_* XP resolves to the producao pillar (routes to showcase, not bonus)');
   });
