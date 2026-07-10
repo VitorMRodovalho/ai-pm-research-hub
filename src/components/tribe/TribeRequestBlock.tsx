@@ -30,6 +30,15 @@ function formatDate(iso: string, lang: string): string {
   }
 }
 
+// Deadline carries a meaningful time (16/07 23:59 BRT), so render day + hour in the viewer's timezone.
+function formatDeadline(iso: string, lang: string): string {
+  try {
+    return new Date(iso).toLocaleString(lang, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
+
 interface TribeOption {
   tribe_id: number;
   title: string;
@@ -45,7 +54,10 @@ interface PendingRequest {
 interface Context {
   eligible: boolean;
   // #1139: when eligible=false, the server names WHY so we render an explicit empty-state (never blank).
-  ineligible_reason?: 'no_member' | 'inactive' | 'has_tribe' | 'pending_term' | 'ineligible' | null;
+  // 'window_closed' (deadline enforcement): the tribe-choice deadline passed; new requests are closed.
+  ineligible_reason?: 'no_member' | 'inactive' | 'has_tribe' | 'pending_term' | 'window_closed' | 'ineligible' | null;
+  // Deadline enforcement: ISO-8601 UTC or null (open window). Shown in the picker; drives window_closed.
+  deadline?: string | null;
   current_tribe_title?: string | null;
   // #1256: present only in the has_tribe case, sourced from the caller's ACTIVE volunteer engagement.
   // initiative_id null = legacy-only tribe_id with no engagement to withdraw from -> hide leave action.
@@ -59,6 +71,10 @@ interface Copy {
   ariaLabel: string;
   pickTitle: string;
   pickBody: string;
+  // Deadline enforcement: notice in the open picker + closed empty-state.
+  deadlineNotice: (date: string) => string;
+  windowClosedTitle: string;
+  windowClosedBody: string;
   tribeLegend: string;
   messageLabel: string;
   messagePlaceholder: string;
@@ -105,7 +121,10 @@ const COPY: Record<string, Copy> = {
   'pt-BR': {
     ariaLabel: 'Pedir para entrar em uma tribo',
     pickTitle: 'Escolha sua tribo de pesquisa',
-    pickBody: 'Você concluiu sua entrada no Núcleo. Escolha uma tribo e conte por que quer participar — o líder da tribo confirma seu ingresso.',
+    pickBody: 'Você concluiu sua entrada no Núcleo. Escolha uma tribo e conte por que quer participar. O líder da tribo confirma seu ingresso.',
+    deadlineNotice: (date) => `Prazo para escolher sua tribo: ${date}.`,
+    windowClosedTitle: 'O prazo para escolher tribo encerrou',
+    windowClosedBody: 'O período para pedir entrada em uma tribo terminou. Fale com a coordenação do Núcleo para entrar ou trocar de tribo.',
     tribeLegend: 'Tribos disponíveis',
     messageLabel: 'Por que você quer entrar nesta tribo?',
     messagePlaceholder: 'Conte sua motivação, experiência e o que pode contribuir (mín. 50 caracteres).',
@@ -151,7 +170,10 @@ const COPY: Record<string, Copy> = {
   'en-US': {
     ariaLabel: 'Request to join a tribe',
     pickTitle: 'Choose your research tribe',
-    pickBody: 'You have completed your onboarding. Pick a tribe and tell them why you want to join — the tribe leader confirms your entry.',
+    pickBody: 'You have completed your onboarding. Pick a tribe and tell them why you want to join. The tribe leader confirms your entry.',
+    deadlineNotice: (date) => `Deadline to choose your tribe: ${date}.`,
+    windowClosedTitle: 'Tribe selection is closed',
+    windowClosedBody: 'The window to request a tribe has ended. Contact the Núcleo coordination to join or switch tribes.',
     tribeLegend: 'Available tribes',
     messageLabel: 'Why do you want to join this tribe?',
     messagePlaceholder: 'Share your motivation, experience and what you can contribute (min. 50 characters).',
@@ -197,7 +219,10 @@ const COPY: Record<string, Copy> = {
   'es-LATAM': {
     ariaLabel: 'Solicitar ingreso a una tribu',
     pickTitle: 'Elige tu tribu de investigación',
-    pickBody: 'Completaste tu ingreso al Núcleo. Elige una tribu y cuenta por qué quieres participar — el líder de la tribu confirma tu ingreso.',
+    pickBody: 'Completaste tu ingreso al Núcleo. Elige una tribu y cuenta por qué quieres participar. El líder de la tribu confirma tu ingreso.',
+    deadlineNotice: (date) => `Plazo para elegir tu tribu: ${date}.`,
+    windowClosedTitle: 'El plazo para elegir tribu terminó',
+    windowClosedBody: 'El período para solicitar entrada a una tribu finalizó. Contacta a la coordinación del Núcleo para entrar o cambiar de tribu.',
     tribeLegend: 'Tribus disponibles',
     messageLabel: '¿Por qué quieres entrar en esta tribu?',
     messagePlaceholder: 'Cuenta tu motivación, experiencia y lo que puedes aportar (mín. 50 caracteres).',
@@ -446,6 +471,18 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
         </section>
       );
     }
+    if (ctx.ineligible_reason === 'window_closed') {
+      // Deadline enforcement: the tribe-choice window closed. Route to coordination (server also blocks
+      // the request RPC, so this is the honest state, not a soft-hide).
+      return (
+        <section role="region" aria-label={copy.ariaLabel} className="mb-6">
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+            <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.windowClosedTitle}</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.windowClosedBody}</p>
+          </div>
+        </section>
+      );
+    }
     if (ctx.ineligible_reason === 'has_tribe') {
       // #1256: offer self-service leave only when there is an ACTIVE engagement to withdraw from.
       // Legacy-only tribe_id (no initiative_id) falls back to the "contact coordination" message.
@@ -537,6 +574,9 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       <div className="rounded-2xl border border-teal/40 bg-teal/5 p-5">
         <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.pickTitle}</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.pickBody}</p>
+        {ctx.deadline && (
+          <p className="mt-2 text-xs font-semibold text-navy dark:text-teal">{copy.deadlineNotice(formatDeadline(ctx.deadline, lang))}</p>
+        )}
 
         <fieldset className="mt-4">
           <legend className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-2">{copy.tribeLegend}</legend>
