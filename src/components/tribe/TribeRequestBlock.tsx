@@ -131,11 +131,11 @@ const COPY: Record<string, Copy> = {
     termCta: 'Assinar termo de voluntário',
     hasTribeTitle: 'Você já participa de uma tribo',
     hasTribeBody: (title) => title
-      ? `Você já faz parte da tribo ${title}. Para trocar de tribo, fale com a coordenação do Núcleo.`
-      : 'Você já participa de uma tribo de pesquisa. Para trocar de tribo, fale com a coordenação do Núcleo.',
+      ? `Você já faz parte da tribo ${title}. Seu vínculo com esta tribo é anterior ao sistema atual de troca, por isso a mudança é feita pela coordenação. Fale com a coordenação do Núcleo para trocar.`
+      : 'Você já participa de uma tribo de pesquisa. Seu vínculo com esta tribo é anterior ao sistema atual de troca, por isso a mudança é feita pela coordenação. Fale com a coordenação do Núcleo para trocar.',
     leaveTribeBody: (title) => title
-      ? `Você faz parte da tribo ${title}. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico e pontos permanecem com você.`
-      : 'Você participa de uma tribo de pesquisa. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico e pontos permanecem com você.',
+      ? `Você faz parte da tribo ${title}. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico, seus pontos e os cards que você já criou continuam registrados no seu nome.`
+      : 'Você participa de uma tribo de pesquisa. Entrou na tribo errada? Você pode sair e escolher outra. Seu histórico, seus pontos e os cards que você já criou continuam registrados no seu nome.',
     leaveTribe: 'Sair da tribo',
     leaveConfirmPrompt: 'Ao sair, você poderá escolher outra tribo em seguida. Conte o motivo:',
     leaveReasonLabel: 'Motivo da saída',
@@ -143,7 +143,7 @@ const COPY: Record<string, Copy> = {
     leaveReasonHint: (n) => (n > 0 ? `Faltam ${n} caractere${n === 1 ? '' : 's'}` : 'Pronto para sair'),
     leaveConfirm: 'Sim, sair da tribo',
     leaving: 'Saindo…',
-    leaveBlockedSoleVolunteer: 'Você é o único voluntário ativo desta tribo (ou é o líder), então não pode sair sozinho. Fale com a coordenação do Núcleo para fazer a transição.',
+    leaveBlockedSoleVolunteer: 'Nesta tribo você é o único voluntário ativo (ou é o líder dela). Para a tribo não ficar sem responsável, essa saída é feita pela coordenação. Fale com a coordenação do Núcleo para fazer a transição.',
     toastLeft: 'Você saiu da tribo. Agora escolha outra.',
     toastSent: 'Pedido enviado! O líder da tribo vai revisar.',
     toastError: 'Não foi possível enviar. Tente novamente.',
@@ -177,11 +177,11 @@ const COPY: Record<string, Copy> = {
     termCta: 'Sign volunteer term',
     hasTribeTitle: 'You are already in a tribe',
     hasTribeBody: (title) => title
-      ? `You are already part of the ${title} tribe. To switch tribes, contact the Núcleo coordination.`
-      : 'You are already part of a research tribe. To switch tribes, contact the Núcleo coordination.',
+      ? `You are already part of the ${title} tribe. Your link to this tribe predates the current self-service switch, so the change is handled by the coordination. Contact the Núcleo coordination to switch.`
+      : 'You are already part of a research tribe. Your link to this tribe predates the current self-service switch, so the change is handled by the coordination. Contact the Núcleo coordination to switch.',
     leaveTribeBody: (title) => title
-      ? `You are part of the ${title} tribe. Joined the wrong one? You can leave and pick another. Your history and points stay with you.`
-      : 'You are part of a research tribe. Joined the wrong one? You can leave and pick another. Your history and points stay with you.',
+      ? `You are part of the ${title} tribe. Joined the wrong one? You can leave and pick another. Your history, points and the cards you created stay in your name.`
+      : 'You are part of a research tribe. Joined the wrong one? You can leave and pick another. Your history, points and the cards you created stay in your name.',
     leaveTribe: 'Leave tribe',
     leaveConfirmPrompt: 'After leaving, you can pick another tribe right away. Tell us why:',
     leaveReasonLabel: 'Reason for leaving',
@@ -189,7 +189,7 @@ const COPY: Record<string, Copy> = {
     leaveReasonHint: (n) => (n > 0 ? `${n} character${n === 1 ? '' : 's'} to go` : 'Ready to leave'),
     leaveConfirm: 'Yes, leave tribe',
     leaving: 'Leaving…',
-    leaveBlockedSoleVolunteer: 'You are the only active volunteer of this tribe (or you are the leader), so you cannot leave on your own. Contact the Núcleo coordination to make the transition.',
+    leaveBlockedSoleVolunteer: 'In this tribe you are the only active volunteer (or you are its leader). So the tribe is not left without anyone in charge, this exit is handled by the coordination. Contact the Núcleo coordination to make the transition.',
     toastLeft: 'You left the tribe. Now pick another one.',
     toastSent: 'Request sent! The tribe leader will review it.',
     toastError: 'Could not send. Please try again.',
@@ -223,11 +223,11 @@ const COPY: Record<string, Copy> = {
     termCta: 'Firmar término de voluntariado',
     hasTribeTitle: 'Ya participas en una tribu',
     hasTribeBody: (title) => title
-      ? `Ya formas parte de la tribu ${title}. Para cambiar de tribu, contacta a la coordinación del Núcleo.`
-      : 'Ya participas en una tribu de investigación. Para cambiar de tribu, contacta a la coordinación del Núcleo.',
+      ? `Ya formas parte de la tribu ${title}. Tu vínculo con esta tribu es anterior al sistema actual de cambio, por eso la coordinación se encarga. Contacta a la coordinación del Núcleo para cambiar.`
+      : 'Ya participas en una tribu de investigación. Tu vínculo con esta tribu es anterior al sistema actual de cambio, por eso la coordinación se encarga. Contacta a la coordinación del Núcleo para cambiar.',
     leaveTribeBody: (title) => title
-      ? `Formas parte de la tribu ${title}. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial y puntos quedan contigo.`
-      : 'Participas en una tribu de investigación. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial y puntos quedan contigo.',
+      ? `Formas parte de la tribu ${title}. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial, tus puntos y las tarjetas que creaste quedan registrados a tu nombre.`
+      : 'Participas en una tribu de investigación. ¿Entraste en la tribu equivocada? Puedes salir y elegir otra. Tu historial, tus puntos y las tarjetas que creaste quedan registrados a tu nombre.',
     leaveTribe: 'Salir de la tribu',
     leaveConfirmPrompt: 'Al salir, podrás elegir otra tribu enseguida. Cuéntanos el motivo:',
     leaveReasonLabel: 'Motivo de la salida',
@@ -235,7 +235,7 @@ const COPY: Record<string, Copy> = {
     leaveReasonHint: (n) => (n > 0 ? `Faltan ${n} carácter${n === 1 ? '' : 'es'}` : 'Listo para salir'),
     leaveConfirm: 'Sí, salir de la tribu',
     leaving: 'Saliendo…',
-    leaveBlockedSoleVolunteer: 'Eres el único voluntario activo de esta tribu (o eres el líder), así que no puedes salir por tu cuenta. Contacta a la coordinación del Núcleo para hacer la transición.',
+    leaveBlockedSoleVolunteer: 'En esta tribu eres el único voluntario activo (o eres su líder). Para que la tribu no quede sin responsable, esta salida la gestiona la coordinación. Contacta a la coordinación del Núcleo para hacer la transición.',
     toastLeft: 'Saliste de la tribu. Ahora elige otra.',
     toastSent: '¡Solicitud enviada! El líder de la tribu la revisará.',
     toastError: 'No se pudo enviar. Inténtalo de nuevo.',
