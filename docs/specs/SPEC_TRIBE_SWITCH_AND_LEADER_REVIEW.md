@@ -109,7 +109,8 @@
 - **Teste:** membro comum sai → `tribe_id` NULL, picker reaparece, AG/AH=0; único-voluntário → bloqueado com mensagem GP.
 - **Rollback:** reverter TSX/i18n + corpo de `get_my_tribe_request_context` (`...347`).
 
-### Wave 3 — Hardening da ponta do líder (F3 / D2) · *DB + cron*
+### Wave 3 — Hardening da ponta do líder (F3 / D2) · *DB + cron* — ✅ PR #1265 (verde, aguardando merge dev)
+> Migration `20260805000395`. Inclui o fix #1263 (troca atômica na admissão). FE inalterado (a UI já lê `expires_at` real). Nudge/fallback via `process_tribe_request_nudges()` + coluna `metadata` em `initiative_invitations` + cron `tribe-request-nudge-hourly`. Grant do nudge = REVOKE PUBLIC+anon+authenticated (default privileges do Supabase; #965).
 - **TTL 7d (só tribo):** setar `expires_at := now() + interval '7 days'` **explicitamente** no INSERT de `request_tribe_assignment` (NÃO alterar o default da tabela — afeta convites de líder→pesquisador legítimos de 72h). Ajustar o texto de expiração devolvido pela RPC + o `pendingExpiryNote` na UI.
 - **Nudge D-2:** cron novo (ou estender `expire-stale-invitations-hourly`) que, para pedido `pending` de `research_tribe` a ~2 dias da expiração sem review, notifica o(s) líder(es) (dedup 1x por pedido — flag em metadata).
 - **Fallback GP:** ao expirar sem ação, notificar o GP (`manage_member`) para triagem manual (não re-cria o pedido; só visibilidade).
