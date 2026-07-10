@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-10T02:58:33.572Z",
+  "generated_at": "2026-07-10T16:16:31.567Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 335,
+  "total": 341,
   "by_domain": {
-    "personal": 22,
-    "tribe": 104,
+    "personal": 23,
+    "tribe": 109,
     "board": 70,
     "events": 15,
     "governance": 23,
@@ -17,8 +17,8 @@
     "health": 18
   },
   "by_permission": {
-    "read": 220,
-    "write": 106,
+    "read": 224,
+    "write": 108,
     "admin": 9
   },
   "sensitive_count": 10,
@@ -173,6 +173,13 @@
     {
       "name": "get_my_tribe_members",
       "description": "Returns the list of active members in your tribe with their roles.",
+      "domain": "personal",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_my_tribe_request_context",
+      "description": "Returns YOUR tribe-journey state: eligible (can you request now) + ineligible_reason (no_member | inactive | has_tribe | pending_term | ineligible), your current pending request (if any, with invitation_id + expires_at), your current tribe (current_tribe_id + current_tribe_initiative_id when engaged), and the list of joinable tribes with capacity. Call this before request_tribe_assignment, cancel_tribe_request, or leave_tribe to know which action applies.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -472,6 +479,13 @@
       "is_sensitive": false
     },
     {
+      "name": "leave_tribe",
+      "description": "Leave YOUR current research tribe (self-service, to fix a wrong-tribe choice). Resolves your active tribe's initiative from get_my_tribe_request_context, then withdraws you (delegates to withdraw_from_initiative) — the bridge trigger clears members.tribe_id and re-opens the tribe picker so you can request a different tribe. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the tribe's only active volunteer (e.g. a leader) — that requires GP mediation, not self-service. Returns a preview unless confirm=true (ADR-0018 W1). Irreversible after confirm.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_ai_processing_log",
       "description": "ARM Onda 3 (ADR-0074): admin observability over ai_processing_log (LGPD Art. 37 audit). Filter by application_id, purpose (triage|briefing|qualitative|enrichment|other), status (running|completed|failed), limit 1-200. Returns rows with hashes truncated (12 chars). Auth: view_internal_analytics.",
       "domain": "tribe",
@@ -570,6 +584,13 @@
       "is_sensitive": false
     },
     {
+      "name": "list_tribe_pending_requests",
+      "description": "List the PENDING join requests for a tribe, for the leader (or GP) to review. Returns each request's invitation_id + requester + message + created_at + expires_at. Authority is enforced server-side: you must be the tribe's volunteer/leader OR hold GP manage_member. Feed each invitation_id to review_tribe_request to approve/decline.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "list_visitor_leads",
       "description": "List visitor leads with referrer/promoted/dismissed metadata. Filter by status (new/contacted/promoted/dismissed) and/or chapter_interest. Admin only (manage_member).",
       "domain": "tribe",
@@ -628,6 +649,13 @@
     {
       "name": "request_to_join_initiative",
       "description": "Request to join an initiative via self-service (Notion-style). Initiative must have join_policy='request_to_join' or 'open'. Message MUST be at least 50 characters describing your motivation. Owner of initiative will review and accept/decline. Default engagement kind inferred by initiative kind (study_group_participant, workgroup_member, committee_member, volunteer, observer).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "request_tribe_assignment",
+      "description": "Request to join a research tribe as a volunteer (self-service). Creates a PENDING request that the tribe leader (or GP) then approves/declines via review_tribe_request; the request auto-expires in 7 days. You may hold only ONE pending tribe request at a time — cancel the current one with cancel_tribe_request before requesting a different tribe. Requires the signed volunteer agreement + an eligible profile (call get_my_tribe_request_context first to see eligibility). tribe_id is the integer tribe number. Optional message introduces you to the leader.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -719,6 +747,13 @@
     {
       "name": "cancel_re_engagement",
       "description": "Admin cancellation: void a pipeline entry pre-response. Cannot cancel from terminal states (accepted/declined/already-cancelled).",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "cancel_tribe_request",
+      "description": "Cancel YOUR own pending tribe request (self-service). Only the invitee of a pending self-request for a research tribe may cancel it; it is marked declined (self_cancelled marker for analytics). After cancelling, you can request a different tribe. invitation_id comes from get_my_tribe_request_context (the pending.invitation_id field).",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -880,6 +915,13 @@
     {
       "name": "review_initiative_request",
       "description": "Review a self-service join request as owner/coordinator (or admin). decision='approve' creates engagement with metadata.source=self_service_request_approved and review_authority audit. decision='decline' marks invitation declined with reviewer note. Owner-initiated invites use respond_to_initiative_invitation by invitee directly — this RPC is for self-service requests only.",
+      "domain": "tribe",
+      "permission": "write",
+      "is_sensitive": false
+    },
+    {
+      "name": "review_tribe_request",
+      "description": "Approve or decline a pending tribe join request, as the tribe leader (or GP). decision='approve' creates the researcher's tribe engagement (and atomically off-boards any OTHER active tribe engagement they had — #1263 atomic switch); decision='decline' rejects it. Authority enforced server-side (tribe volunteer/leader OR GP manage_member). Capacity is enforced (leader + 7 researchers = 8 seats). invitation_id comes from list_tribe_pending_requests. Optional note is recorded on the decision.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false

@@ -1,5 +1,13 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 323 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// MCP server v2.80.0 — /mcp 329 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// #1138 (2026-07-10): Wave 4 tribe hybrid-journey MCP parity — +6 tools wrapping the live
+//   self-service tribe flow (request_tribe_assignment, get_my_tribe_request_context,
+//   cancel_tribe_request, list_tribe_pending_requests, review_tribe_request) + a leave_tribe
+//   wrapper (resolves current tribe→initiative via get_my_tribe_request_context, delegates to
+//   withdraw_from_initiative with an ADR-0018 W1 confirm gate; sole-volunteer safeguard →
+//   GP-routing message). Each RPC self-gates (self-service / Caminho-3 inline leader-GP).
+//   Closes the gap left by the #1247 select_tribe retirement (ADR-0123). 323 -> 329.
+//   Count-only (no version bump). /health 317 -> 323; tests + manifest/matrix regenerated.
 // #1099/#1094 (2026-07-04): comms publishing on-ramp — +3 tools (schedule_comms_post,
 //   cancel_scheduled_comms_post, list_scheduled_comms_posts) wrapping the mig-334 RPC trio over
 //   comms_scheduled_posts (gate manage_comms; the queue the publish-scheduled cron drains through
@@ -2236,7 +2244,150 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // WITHOUT creating an engagement — the exact path that produced 12 phantom C4
   // memberships (tribe_id set, no V4 engagement) reconciled in the #1247 audit. The
   // live self-service path is request_tribe_assignment → leader review_tribe_request
-  // → engagement (no MCP tool yet; gap tracked in #1138). See ADR-0123.
+  // → engagement, exposed as MCP tools below (Wave 4 / #1138). See ADR-0123.
+
+  // ===== #1138 / Wave 4 — TRIBE HYBRID JOURNEY MCP PARITY =====
+  // Exposes the live self-service tribe flow (researcher requests → leader/GP reviews
+  // → engagement) as MCP tools, closing the gap noted in the retired-select_tribe
+  // comment above. Each RPC enforces its own authority server-side: request/cancel are
+  // self-service (own pending request); review is gated by the Caminho-3 inline check
+  // (GP manage_member OR the tribe's volunteer/leader engagement); list is leader/GP.
+  // leave_tribe is a thin wrapper (ADR-0061 W5 + ADR-0018 W1 confirm gate) that resolves
+  // the caller's current tribe → initiative_id via get_my_tribe_request_context, then
+  // delegates to withdraw_from_initiative — surfacing the sole-volunteer safeguard
+  // (withdraw returns `remaining_of_kind`) as a GP-routing message, not a generic error.
+  // SPEC: docs/specs/SPEC_TRIBE_SWITCH_AND_LEADER_REVIEW.md §Wave 4.
+
+  // TOOL: request_tribe_assignment — researcher self-service join request (hybrid entry)
+  mcp.tool("request_tribe_assignment", "Request to join a research tribe as a volunteer (self-service). Creates a PENDING request that the tribe leader (or GP) then approves/declines via review_tribe_request; the request auto-expires in 7 days. You may hold only ONE pending tribe request at a time — cancel the current one with cancel_tribe_request before requesting a different tribe. Requires the signed volunteer agreement + an eligible profile (call get_my_tribe_request_context first to see eligibility). tribe_id is the integer tribe number. Optional message introduces you to the leader.", {
+    tribe_id: z.number().int().describe("Tribe number (integer id) to request to join"),
+    message: z.string().optional().describe("Optional short message to the tribe leader (motivation / context)")
+  }, async (params: { tribe_id: number; message?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "request_tribe_assignment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!Number.isInteger(params.tribe_id)) { await logUsage(sb, member.id, "request_tribe_assignment", false, "Invalid tribe_id", start); return err("tribe_id must be an integer"); }
+    const { data, error } = await sb.rpc("request_tribe_assignment", {
+      p_tribe_id: params.tribe_id,
+      p_message: params.message ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "request_tribe_assignment", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "request_tribe_assignment", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_my_tribe_request_context — researcher self-service journey state (read)
+  mcp.tool("get_my_tribe_request_context", "Returns YOUR tribe-journey state: eligible (can you request now) + ineligible_reason (no_member | inactive | has_tribe | pending_term | ineligible), your current pending request (if any, with invitation_id + expires_at), your current tribe (current_tribe_id + current_tribe_initiative_id when engaged), and the list of joinable tribes with capacity. Call this before request_tribe_assignment, cancel_tribe_request, or leave_tribe to know which action applies.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_tribe_request_context", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_tribe_request_context");
+    if (error) { await logUsage(sb, member.id, "get_my_tribe_request_context", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_tribe_request_context", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: cancel_tribe_request — researcher cancels own pending request (Wave 1 / F1)
+  mcp.tool("cancel_tribe_request", "Cancel YOUR own pending tribe request (self-service). Only the invitee of a pending self-request for a research tribe may cancel it; it is marked declined (self_cancelled marker for analytics). After cancelling, you can request a different tribe. invitation_id comes from get_my_tribe_request_context (the pending.invitation_id field).", {
+    invitation_id: z.string().describe("Invitation UUID of your pending request (from get_my_tribe_request_context.pending.invitation_id)")
+  }, async (params: { invitation_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "cancel_tribe_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.invitation_id)) { await logUsage(sb, member.id, "cancel_tribe_request", false, "Invalid UUID", start); return err("invitation_id must be a UUID"); }
+    const { data, error } = await sb.rpc("cancel_tribe_request", { p_invitation_id: params.invitation_id });
+    if (error) { await logUsage(sb, member.id, "cancel_tribe_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "cancel_tribe_request", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_tribe_pending_requests — leader/GP review queue (Wave 3 / F3)
+  mcp.tool("list_tribe_pending_requests", "List the PENDING join requests for a tribe, for the leader (or GP) to review. Returns each request's invitation_id + requester + message + created_at + expires_at. Authority is enforced server-side: you must be the tribe's volunteer/leader OR hold GP manage_member. Feed each invitation_id to review_tribe_request to approve/decline.", {
+    tribe_id: z.number().int().describe("Tribe number (integer id) whose pending requests to list")
+  }, async (params: { tribe_id: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_tribe_pending_requests", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!Number.isInteger(params.tribe_id)) { await logUsage(sb, member.id, "list_tribe_pending_requests", false, "Invalid tribe_id", start); return err("tribe_id must be an integer"); }
+    const { data, error } = await sb.rpc("list_tribe_pending_requests", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "list_tribe_pending_requests", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_tribe_pending_requests", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: review_tribe_request — leader/GP approves/declines a request (Wave 3 / F3 + #1263)
+  mcp.tool("review_tribe_request", "Approve or decline a pending tribe join request, as the tribe leader (or GP). decision='approve' creates the researcher's tribe engagement (and atomically off-boards any OTHER active tribe engagement they had — #1263 atomic switch); decision='decline' rejects it. Authority enforced server-side (tribe volunteer/leader OR GP manage_member). Capacity is enforced (leader + 7 researchers = 8 seats). invitation_id comes from list_tribe_pending_requests. Optional note is recorded on the decision.", {
+    invitation_id: z.string().describe("Invitation UUID of the pending request (from list_tribe_pending_requests)"),
+    decision: z.string().describe("'approve' or 'decline'"),
+    note: z.string().optional().describe("Optional note recorded on the decision (reason / welcome message)")
+  }, async (params: { invitation_id: string; decision: string; note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "review_tribe_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.invitation_id)) { await logUsage(sb, member.id, "review_tribe_request", false, "Invalid UUID", start); return err("invitation_id must be a UUID"); }
+    if (params.decision !== "approve" && params.decision !== "decline") {
+      await logUsage(sb, member.id, "review_tribe_request", false, "Invalid decision", start);
+      return err("decision must be 'approve' or 'decline'");
+    }
+    const { data, error } = await sb.rpc("review_tribe_request", {
+      p_invitation_id: params.invitation_id,
+      p_decision: params.decision,
+      p_note: params.note ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "review_tribe_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "review_tribe_request", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: leave_tribe — researcher self-service exit + re-open picker (Wave 2 / F2 wrapper)
+  mcp.tool("leave_tribe", "Leave YOUR current research tribe (self-service, to fix a wrong-tribe choice). Resolves your active tribe's initiative from get_my_tribe_request_context, then withdraws you (delegates to withdraw_from_initiative) — the bridge trigger clears members.tribe_id and re-opens the tribe picker so you can request a different tribe. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the tribe's only active volunteer (e.g. a leader) — that requires GP mediation, not self-service. Returns a preview unless confirm=true (ADR-0018 W1). Irreversible after confirm.", {
+    reason: z.string().describe("Reason for leaving (minimum 10 characters — recorded in engagement.revoke_reason for audit)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview of the tribe you would leave.")
+  }, async (params: { reason: string; confirm?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "leave_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!params.reason || params.reason.trim().length < 10) {
+      await logUsage(sb, member.id, "leave_tribe", false, "Reason too short", start);
+      return err("reason must be at least 10 characters");
+    }
+    // Resolve the caller's current tribe initiative from the journey context.
+    const { data: ctx, error: ctxErr } = await sb.rpc("get_my_tribe_request_context");
+    if (ctxErr) { await logUsage(sb, member.id, "leave_tribe", false, ctxErr.message, start); return err(ctxErr.message); }
+    const initiativeId = ctx?.current_tribe_initiative_id ?? null;
+    if (!initiativeId) {
+      await logUsage(sb, member.id, "leave_tribe", false, "No current tribe", start);
+      return err("You are not currently in a tribe (no active tribe engagement to leave). If you have a PENDING request, cancel it with cancel_tribe_request instead.");
+    }
+    if (params.confirm !== true) {
+      await logUsage(sb, member.id, "leave_tribe", true, undefined, start, "preview");
+      return ok({
+        action: "leave_tribe",
+        preview: true,
+        target: {
+          tribe_id: ctx?.current_tribe_id ?? null,
+          tribe_title: ctx?.current_tribe_title ?? null,
+          initiative_id: initiativeId,
+        },
+        reason: params.reason,
+        warning: "State-changing action — your tribe engagement will be revoked (status='offboarded') and the tribe picker re-opens. Sole-volunteer safeguard enforced server-side (leaders must be moved by the GP). Pass confirm=true in a follow-up call to execute.",
+        next_call: { reason: params.reason, confirm: true }
+      });
+    }
+    const { data, error } = await sb.rpc("withdraw_from_initiative", {
+      p_initiative_id: initiativeId,
+      p_reason: params.reason.trim()
+    });
+    if (error) { await logUsage(sb, member.id, "leave_tribe", false, error.message, start); return err(error.message); }
+    // Sole-volunteer / leader safeguard: structured block, not a failure — route to GP.
+    if (data && typeof data.remaining_of_kind === "number") {
+      await logUsage(sb, member.id, "leave_tribe", false, "Blocked: sole volunteer", start);
+      return err("You are the only active volunteer in this tribe (e.g. its leader), so self-service exit is blocked. Ask the GP (chapter coordination) to move you — leader/tribe moves are GP-mediated.");
+    }
+    if (data?.error) { await logUsage(sb, member.id, "leave_tribe", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "leave_tribe", true, undefined, start);
+    return ok(data);
+  });
 
   // TOOL 39: get_anomaly_report — Admin only
   mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
@@ -8215,7 +8366,7 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 317 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
   },
   transport: "native-streamable-http",
