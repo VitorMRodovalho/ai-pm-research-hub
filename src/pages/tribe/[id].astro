@@ -2108,12 +2108,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         // whatsapp_url/drive_url. The group link is served only via get_tribe_group_link.
         sb.from('tribes').select('id, name, quadrant, quadrant_name, leader_member_id, meeting_schedule, meeting_time_start, meeting_time_end, miro_url, meeting_link, notes, updated_at, updated_by, is_active, workstream_type, legacy_board_url, video_url, video_duration, name_i18n, quadrant_name_i18n, organization_id').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
+        // #1217: derive the roster from the engagement PRIMITIVE (get_initiative_roster_members ->
+        // v_initiative_roster), NOT the single-slot members.initiative_id cache. The fill-only cache
+        // drops a leader whose slot is held by a workgroup engagement (leader + workgroup = normal C4),
+        // making the leader vanish from their own tribe page. The RPC returns the same member-card shape.
+        // Legacy fallback (no resolved initiative) keeps the cache-based tribe_id query.
         INITIATIVE_ID
-          ? sb.from('public_members')
-              .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, initiative_id, share_whatsapp, current_cycle_active, is_active')
-              .eq('initiative_id', INITIATIVE_ID)
-              .eq('current_cycle_active', true)
-              .eq('is_active', true)
+          ? sb.rpc('get_initiative_roster_members', { p_initiative_id: INITIATIVE_ID })
           : sb.from('public_members')
               .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, initiative_id, share_whatsapp, current_cycle_active, is_active')
               .eq('tribe_id', TRIBE_ID)
