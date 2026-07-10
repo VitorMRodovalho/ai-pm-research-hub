@@ -40,7 +40,7 @@ export interface ResolvedTribe {
  * value at SSR and only falls back to this constant if the RPC fails, so it must
  * mirror the ratified cap (contract test: 1214-tribe-capacity-ssot).
  */
-export const MAX_SLOTS = 7;
+export const MAX_SLOTS = 8;
 export const MIN_SLOTS = 3;
 
 export const TRIBES: Tribe[] = [
