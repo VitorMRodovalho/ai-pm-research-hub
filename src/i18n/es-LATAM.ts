@@ -3040,12 +3040,12 @@ const esLATAM: Record<string, string> = {
 
   'data.tribe5.name': 'Talentos & Upskilling',
   'data.tribe5.quadrantLabel': 'C3 — Liderazgo Organizacional',
-  'data.tribe5.desc': 'La adopción de IA se aceleró, pero faltan criterios observables y evidencias claras de competencia. ¡Sin métricas, no hay evolución estructurada! Crearemos el MVP de Competencia en IA para GPs.',
-  'data.tribe5.d1': 'Taxonomía (estructura jerárquica de competencias)',
-  'data.tribe5.d2': 'Matriz + Rúbricas (Principiante/Intermedio/Avanzado)',
-  'data.tribe5.d3': 'Toolkit v1.0 (checklist + evidencias)',
-  'data.tribe5.d4': 'Artículo + Webinario',
-  'data.tribe5.meetings': 'Lunes, 20h BRT',
+  'data.tribe5.desc': 'Mientras el mercado gasta 93 centavos de cada dólar en tecnología y solo 7 en las personas (McKinsey, 2026), y el 84% de los fracasos en proyectos de IA se deben a brechas de liderazgo y cultura (IBM, 2026), nuestra misión es producir la evidencia científica que transforma a los gestores de proyectos en los líderes estratégicos de esos equipos híbridos.',
+  'data.tribe5.d1': 'Artículo de Mercado 1 (LinkedIn, ago/2026): “La Crisis de los 93 Céntimos”',
+  'data.tribe5.d2': 'Artículo de Mercado 2 (LinkedIn, sep/2026): “La Paradoja de la Autonomía”',
+  'data.tribe5.d3': 'Webinario Nacional (nov/2026) con invitado internacional',
+  'data.tribe5.d4': 'Artículo Científico Final (dic/2026), estándar editorial del PMJ',
+  'data.tribe5.meetings': 'Lunes, 18h BRT',
 
   'data.tribe6.name': 'ROI & Portafolio',
   'data.tribe6.quadrantLabel': 'C3 — Liderazgo Organizacional',
