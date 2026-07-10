@@ -1,6 +1,6 @@
 # ADR-0121 — Interim leader grant: autoridade de líder antes da assinatura do termo
 
-**Status:** Accepted (2026-07-05) — exceção de governança autorizada pelo owner
+**Status:** Accepted (2026-07-05); follow-ups 1-2 reconciliados e fechados em 2026-07-10 (ver "Reconciliação"). Exceção de governança autorizada pelo owner.
 **Relacionado:** ADR-0007 (`can()`/`can_by_member()` = source of truth de autoridade) · ADR-0006 (persons + engagements modelam identidade) · ADR-0005 (initiatives primitivo, tribes bridge) · #1103 (onboarding role-scoped: `get_my_onboarding` semeia por `operational_role`) · #1116 (roster de tribos no frontend — follow-up de descoberta).
 **Migration:** `20260805000341_interim_leader_grant_auth_engagements.sql`.
 
@@ -44,3 +44,13 @@ Efeito: trigger recomputa → `operational_role='tribe_leader'` → onboarding d
 - Desacopla **início do onboarding de líder** do gargalo do termo, sem forjar assinatura e sem quebrar invariantes (baseline 0 antes e depois; A3/AG/AH/P verdes).
 - Introduz uma superfície de autoridade nova (o flag) que **precisa de disciplina de ciclo de vida** — daí os follow-ups 1–2. Risco jurídico residual (líder operando pré-termo) é **exceção autorizada pelo owner**, com Angeline (legal) no loop; a revisão de segurança/legal do trilho é pós-hoc dado o bloqueio externo.
 - A view é `CREATE OR REPLACE` sem mudança de colunas ⇒ RLS/consumidores inalterados exceto pela semântica de `is_authoritative`.
+
+## Reconciliação (2026-07-10, #1117)
+
+Auditoria ao vivo do estado dos follow-ups (queries de leitura sobre `engagements`/`selection_applications`, nenhuma escrita nesta reconciliação). Os follow-ups 1 e 2 já haviam sido resolvidos por ondas anteriores; esta seção só os formaliza e fecha.
+
+- **Follow-up 1 (finalizar os 5 grants): RESOLVIDO.** A onda de ativação do termo + campanha de assinatura (07-08/07) percorreu o fluxo normal em todos os 5 líderes: cada engagement de líder passou a carregar `agreement_certificate_id` (cert real) e o flag `interim_grant` foi removido do metadata. Estado ao vivo em 2026-07-10: os 5 (Henrique/T9, Honorio/T10, João H/T11, Messias/T6, Jhonathan/T12) são `volunteer/leader/active` com cert presente e `metadata->>'interim_grant'` nulo. **Zero engagements no sistema retêm o flag `interim_grant`** (blast radius do trilho voltou a 0). A autoritatividade voltou a derivar do cert; o trilho interino deixou de ser exercido.
+- **Follow-up 2 (encerrar a engagement `volunteer/leader` do Fabricio na T6, `7e9eb067`): RESOLVIDO.** A engagement está `expired` (revoked_at 2026-07-05, end_date 2026-07-05) e o cache `members.tribe_id`/`initiative_id` do Fabricio foi limpo no data-fix do #1217 (08/07). Não há líder duplo: Messias é o único `volunteer/leader/active` da "ROI & Portfólio" (leader de registro via `leader_member_id`). Fabricio permanece co-GP + curador (engagements `co_gp` e `committee_member` ativos, intactos).
+- **Follow-up 3 (roster de descoberta no frontend, #1116): fora do escopo do #1117.** Segue como issue própria (família #1215/#1217; a página de tribo derivar o roster do primitivo em vez do cache single-slot é o fix estrutural rastreado em #1217).
+
+**Nota de ciclo de vida (candidato a guard, não implementado aqui):** o trilho interino segue disponível para coortes futuras (ex.: líderes C5 pré-termo). A disciplina de ciclo de vida pedida acima ("Consequências", 2º bullet) hoje é manual. Um detector periódico (invariante em `check_schema_invariants`, ex.: "`interim_grant=true` junto de `agreement_certificate_id` não-nulo é contradição da regra de reversão") institucionalizaria a honestidade do flag. Deferido como follow-up de baixo custo (não bloqueia o fechamento do #1117), candidato a acoplar à fatia de invariante do #1221.
