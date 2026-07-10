@@ -451,53 +451,14 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       window.toast?.(TRIBES_MSG.leadersAssigned, 'info');
       return;
     }
-    // R3: QA bypass — high management can select tribes past deadline
-    var canBypassSchedule = isHighMgmt(member);
-    if (!DEADLINE && !canBypassSchedule) {
-      window.toast?.(TRIBES_MSG.selectionUnavailable, 'error');
-      return;
-    }
-    if (DEADLINE && new Date() > DEADLINE && !canBypassSchedule) {
-      window.toast?.(TRIBES_MSG.selectionClosed, 'error');
-      return;
-    }
-
-    // Deselect if clicking current tribe
-    if (userTribe === id) {
-      try {
-        const { data } = await sb.rpc('deselect_tribe');
-        if (data?.success) {
-          userTribe = null;
-          window.toast?.(TRIBES_MSG.selectionRemoved, 'info');
-          await loadTribeCounts();
-        } else {
-          window.toast?.(data?.error || TRIBES_MSG.errorRemove, 'error');
-        }
-      } catch (e) {
-        window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
-      }
-      return;
-    }
-
-    // Select / switch
-    const count = tribeCounts[id] || 0;
-    if (count >= MAX_SLOTS) {
-      window.toast?.(TRIBES_MSG.tribeFull, 'error');
-      return;
-    }
-
-    try {
-      const { data } = await sb.rpc('select_tribe', { p_tribe_id: id });
-      if (data?.success) {
-        userTribe = id;
-        window.toast?.(TRIBES_MSG.selectedSuccess.replace('{id}', String(id)), 'success');
-        await loadTribeCounts();
-      } else {
-        window.toast?.(data?.error || TRIBES_MSG.errorSelect, 'error');
-      }
-    } catch (e) {
-      window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
-    }
+    // #1247: the landing picker used the LEGACY `select_tribe` RPC, which is
+    // frozen past the tribe selection deadline (mig 20260309010000). Months past
+    // that deadline every C4 researcher clicking "Escolher esta Tribo" got
+    // "Erro ao selecionar" at the kickoff. The live path is the hybrid flow in
+    // /workspace (request_tribe_assignment -> leader approval -> engagement), so
+    // route there instead of writing through the dead legacy RPC. Full journey
+    // audit tracked in #1247.
+    window.location.assign('/workspace');
   }
 
   // ── Bind select buttons ──
