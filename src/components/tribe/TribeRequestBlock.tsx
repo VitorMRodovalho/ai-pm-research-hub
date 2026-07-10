@@ -63,6 +63,10 @@ interface Context {
   // initiative_id null = legacy-only tribe_id with no engagement to withdraw from -> hide leave action.
   current_tribe_id?: number | null;
   current_tribe_initiative_id?: string | null;
+  // #1267: pre-check of the sole-volunteer/leader safeguard (mirrors withdraw's remaining_of_kind).
+  // false = the caller is the only active volunteer of the tribe -> self-leave is blocked; route to GP
+  // BEFORE the reason form. undefined/null (older backend / non-has_tribe) is treated as "not blocked".
+  can_self_leave?: boolean | null;
   pending: PendingRequest | null;
   tribes: TribeOption[];
 }
@@ -487,12 +491,19 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       // #1256: offer self-service leave only when there is an ACTIVE engagement to withdraw from.
       // Legacy-only tribe_id (no initiative_id) falls back to the "contact coordination" message.
       const canLeave = !!ctx.current_tribe_initiative_id;
+      // #1267: sole-volunteer/leader pre-check. Server says the withdraw would block (can_self_leave=false)
+      // -> show the GP-routing message in place of the button, so the reason form never appears. Strict
+      // === false so undefined/null (older backend) still allows the button; the withdraw RPC remains the
+      // authoritative gate (the leave() handler still catches remaining_of_kind as defense-in-depth).
+      const blockedSole = canLeave && ctx.can_self_leave === false;
       return (
         <section role="region" aria-label={copy.ariaLabel} className="mb-6">
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
             <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.hasTribeTitle}</h2>
             {!canLeave ? (
               <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.hasTribeBody(ctx.current_tribe_title || null)}</p>
+            ) : blockedSole ? (
+              <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.leaveBlockedSoleVolunteer}</p>
             ) : (
               <>
                 <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.leaveTribeBody(ctx.current_tribe_title || null)}</p>
