@@ -430,8 +430,12 @@ BEGIN
 END;
 $function$;
 
--- Cron-only detector: revoke the implicit PUBLIC EXECUTE bit (runs as the cron owner).
-REVOKE ALL ON FUNCTION public.process_tribe_request_nudges(boolean) FROM PUBLIC;
+-- Cron-only detector: revoke EXECUTE from PUBLIC + anon + authenticated (Supabase's default
+-- privileges grant EXECUTE to anon/authenticated EXPLICITLY on every new function, so REVOKE FROM
+-- PUBLIC alone is insufficient — #965 forward-defense). Keep service_role for parity with siblings;
+-- the cron runs as the function owner (postgres) regardless.
+REVOKE EXECUTE ON FUNCTION public.process_tribe_request_nudges(boolean) FROM PUBLIC, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.process_tribe_request_nudges(boolean) TO service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. Schedule the nudge cron (15 min after the hourly expire cron at :00, so a request that expires

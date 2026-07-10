@@ -106,10 +106,16 @@ test('#1257: GP fallback na expiração — fan-out por manager, dedup por metad
   );
 });
 
-test('#1257: process_tribe_request_nudges é cron-only (REVOKE do PUBLIC)', () => {
+test('#1257: process_tribe_request_nudges é cron-only (REVOKE PUBLIC+anon+authenticated, mantém service_role)', () => {
+  // Supabase concede EXECUTE a anon/authenticated EXPLICITAMENTE por default privileges; REVOKE só de
+  // PUBLIC não basta (#965 forward-defense) — revogar dos três e manter service_role.
   assert.match(
     sql,
-    /REVOKE ALL ON FUNCTION public\.process_tribe_request_nudges\(boolean\) FROM PUBLIC/,
+    /REVOKE EXECUTE ON FUNCTION public\.process_tribe_request_nudges\(boolean\) FROM PUBLIC, anon, authenticated/,
+  );
+  assert.match(
+    sql,
+    /GRANT\s+EXECUTE ON FUNCTION public\.process_tribe_request_nudges\(boolean\) TO service_role/,
   );
 });
 
