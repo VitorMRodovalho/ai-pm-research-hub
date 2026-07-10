@@ -89,6 +89,7 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
     'AF_open_interview_is_newest_row',
     'AG_tribe_engagement_has_tribe_id',
     'AH_research_tribe_single_active_engagement',
+    'AO_active_member_stale_tribe_id_after_leave',
   ];
 
   for (const name of expected) {
