@@ -42,6 +42,10 @@
     if (docLang === 'en' || docLang.startsWith('en')) pathLang = 'en';
     else if (docLang === 'es' || docLang.startsWith('es')) pathLang = 'es';
 
+    // #1287: localized, high-contrast dismiss affordance (opacity-40 ✕ read as non-dismissable
+    // by a mobile user at the C4 kickoff; dismiss already persists via localStorage #518).
+    const dismissLabel = pathLang === 'en' ? 'Dismiss' : pathLang === 'es' ? 'Cerrar' : 'Fechar';
+
     area.innerHTML = visible.map((a: any) => {
       const s = TYPE_STYLES[a.type] || TYPE_STYLES.info;
       // Translate common link_text values
@@ -62,7 +66,7 @@
           ${msg ? `<span class="ml-1 opacity-80">${escapeHtml(msg)}</span>` : ''}
           ${link}
         </div>
-        <button type="button" class="ann-dismiss flex-shrink-0 text-current opacity-40 hover:opacity-80 bg-transparent border-0 cursor-pointer text-base px-1" data-ann-id="${escapeHtml(String(a.id))}" title="Fechar">✕</button>
+        <button type="button" class="ann-dismiss flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-current opacity-70 hover:opacity-100 hover:bg-black/10 bg-transparent border-0 cursor-pointer text-base leading-none" data-ann-id="${escapeHtml(String(a.id))}" title="${escapeHtml(dismissLabel)}" aria-label="${escapeHtml(dismissLabel)}">✕</button>
       </div>`;
     }).join('');
 
