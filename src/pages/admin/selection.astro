@@ -132,6 +132,9 @@ const SEL_I18N = {
     loadingAi: t('admin.selection.modal.loadingAi', lang),
     loadingAudit: t('admin.selection.modal.loadingAudit', lang),
     loadingReturningContext: t('admin.selection.modal.loadingReturningContext', lang),
+    activeMemberBadge: t('admin.selection.modal.activeMemberBadge', lang),
+    activeMemberNote: t('admin.selection.modal.activeMemberNote', lang),
+    activeMemberCycles: t('admin.selection.modal.activeMemberCycles', lang),
     scheduleInterviewTitle: t('admin.selection.modal.scheduleInterviewTitle', lang),
     dateTimeLabel: t('admin.selection.modal.dateTimeLabel', lang),
     durationLabel: t('admin.selection.modal.durationLabel', lang),
@@ -698,6 +701,9 @@ const SEL_I18N = {
       loadingAi: 'Carregando análises IA...',
       loadingAudit: 'Carregando auditoria...',
       loadingReturningContext: 'Carregando histórico de saída anterior...',
+      activeMemberBadge: 'JÁ É MEMBRO ATIVO',
+      activeMemberNote: 'Re-candidatura de um voluntário atual — a decisão aqui não afeta o vínculo ativo.',
+      activeMemberCycles: 'Participou dos ciclos',
       scheduleInterviewTitle: 'Agendar Entrevista',
       dateTimeLabel: 'Data/Hora', durationLabel: 'Duração (min)',
       scheduleBtn: 'Agendar', scheduleViaExternal: 'Agendar via link externo →',
@@ -1977,7 +1983,7 @@ const SEL_I18N = {
             </div>
             ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
             ${phaseBSummary}
-            ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>` : ''}
+            <div id="returning-context-panel" data-app-id="${esc(row.id)}" class="hidden border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>
           </div>
           <div class="space-y-4">
             ${row.promotion_path === 'dual_track' && row.linked_application_id ? `
@@ -2088,10 +2094,11 @@ const SEL_I18N = {
       </div>
     `;
 
-    // #91 G4: lazy-load returning candidate offboarding context
-    if (row.is_returning_member) {
-      loadReturningContext(row.id);
-    }
+    // #91 G4 + #1316(C): always load — the panel now also surfaces "já é membro ativo" for
+    // applicants matched to an active member (the is_returning_member column is false for members
+    // admitted outside the selection flow, e.g. Ciclo 1 Goiás via 62106). The RPC self-decides the
+    // content; loadReturningContext hides the panel when there is nothing relevant to show.
+    loadReturningContext(row.id);
 
     // Modal tab switching
     body.querySelectorAll('.modal-tab-btn').forEach(btn => {
@@ -2863,14 +2870,39 @@ const SEL_I18N = {
       });
       if (error) throw error;
       if (!data || !data.found) {
-        panel.innerHTML = '<p class="text-[11px] text-[var(--text-muted)]">Sem histórico recuperável.</p>';
+        panel.classList.add('hidden');
+        panel.innerHTML = '';
         return;
       }
 
       const ctx = data.offboarding_context;
       const member = data.matched_member;
+      const alreadyActive = data.already_active_member === true;
+
+      // #1316(C): applicant is matched to a member who is ACTIVE right now. The notable fact is
+      // "já é membro ativo" (re-candidatura de voluntário atual), NOT a past exit — surface it
+      // prominently so a "rejeitado" no pipeline não seja lido como quebra.
+      if (alreadyActive && member) {
+        const cycles = Array.isArray(data.previous_cycles) ? data.previous_cycles.filter((c: any) => c != null) : [];
+        const cyclesLine = cycles.length
+          ? `<div class="text-[11px] text-emerald-900">${T.modal.activeMemberCycles}: <strong>${cycles.map((c: any) => esc(String(c))).join(', ')}</strong></div>`
+          : '';
+        panel.className = 'border border-emerald-200 bg-emerald-50 rounded-xl p-3';
+        panel.innerHTML = `<div class="space-y-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">${T.modal.activeMemberBadge}</span>
+            <h4 class="text-[12px] font-bold text-emerald-800">${esc(member.name || '')}${member.operational_role ? ' — ' + esc(member.operational_role) : ''}</h4>
+          </div>
+          <p class="text-[11px] text-emerald-900">${T.modal.activeMemberNote}</p>
+          ${cyclesLine}
+        </div>`;
+        panel.classList.remove('hidden');
+        return;
+      }
 
       if (!member) {
+        if (!data.is_returning_member) { panel.classList.add('hidden'); panel.innerHTML = ''; return; }
+        panel.classList.remove('hidden');
         panel.innerHTML = `<div class="space-y-1">
           <h4 class="text-[12px] font-bold text-blue-700">Candidato Retornante</h4>
           <p class="text-[11px] text-[var(--text-secondary)]">Membro anterior não localizado por email; flag baseada em ${data.application_count || 1} aplicação(ões) prévia(s).</p>
@@ -2879,12 +2911,15 @@ const SEL_I18N = {
       }
 
       if (!ctx) {
+        panel.classList.remove('hidden');
         panel.innerHTML = `<div class="space-y-1">
           <h4 class="text-[12px] font-bold text-blue-700">Candidato Retornante</h4>
           <p class="text-[11px] text-[var(--text-secondary)]">Membro encontrado (${esc(member.name || '')}, ${esc(member.member_status || '')}), mas sem registro estruturado de saída.</p>
         </div>`;
         return;
       }
+
+      panel.classList.remove('hidden');
 
       const offboardDate = ctx.offboarded_at ? new Date(ctx.offboarded_at).toLocaleDateString('pt-BR') : '—';
       const returnInterestBadge = ctx.return_interest === true
@@ -2920,6 +2955,7 @@ const SEL_I18N = {
         </div>
       `;
     } catch (e: any) {
+      panel.classList.remove('hidden');
       panel.innerHTML = `<p class="text-[11px] text-rose-700">Erro ao carregar histórico: ${esc(e.message || 'desconhecido')}</p>`;
     }
   }
