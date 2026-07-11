@@ -1604,6 +1604,7 @@ const enUS: Record<string, string> = {
   'attendance.checkin.tooEarly': 'Check-in opens 2h before the event.',
   'attendance.checkin.success': 'Attendance recorded!',
   'attendance.windowClosed': 'Check-in closed',
+  'attendance.confirmed': '✅ Attendance confirmed',
   'attendance.adminOverride': 'Register (Admin)',
   'attendance.deleteEvent': 'Cancel this meeting',
   'attendance.deleteConfirm': 'Are you sure you want to cancel this meeting?',

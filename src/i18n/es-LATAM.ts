@@ -1604,6 +1604,7 @@ const esLATAM: Record<string, string> = {
   'attendance.checkin.tooEarly': 'El check-in abre 2h antes del evento.',
   'attendance.checkin.success': 'Asistencia registrada!',
   'attendance.windowClosed': 'Check-in cerrado',
+  'attendance.confirmed': '✅ Asistencia confirmada',
   'attendance.adminOverride': 'Registrar (Admin)',
   'attendance.deleteEvent': 'Cancelar esta reunión',
   'attendance.deleteConfirm': '¿Está seguro que desea cancelar esta reunión?',

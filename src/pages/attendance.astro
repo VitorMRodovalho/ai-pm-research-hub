@@ -233,6 +233,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   feedbackCycleTotal: t('attendance.feedback.cycleTotal', lang),
   feedbackEvents: t('attendance.feedback.events', lang),
   windowClosed: t('attendance.windowClosed', lang),
+  attendanceConfirmed: t('attendance.confirmed', lang),
   adminOverride: t('attendance.adminOverride', lang),
   deleteEvent: t('attendance.deleteEvent', lang),
   deleteConfirm: t('attendance.deleteConfirm', lang),
@@ -920,7 +921,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           : (canAdminCheckin(ev)
             ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-amber-600 text-white border-0 cursor-pointer" data-action="admin-check-in" data-event-id="${ev.id}">${I18N.adminOverride || 'Register (Admin)'}</button>`
             : `<span class="px-2 py-1 rounded text-[10px] text-[var(--text-muted)] bg-[var(--surface-section-cool)]">${I18N.windowClosed || 'Check-in closed'}</span>`
-          )) : ''}
+          )) : `<span class="px-2 py-1 rounded text-[10px] font-semibold text-green-700 bg-green-50 border border-green-200">${I18N.attendanceConfirmed || '✅ Presença confirmada'}</span>`}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
         ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.cancelEventTitle || 'Cancelar esta reunião (preserva auditoria). Shift+click para EXCLUIR definitivamente.'}">🗑️</button>` : ''}
