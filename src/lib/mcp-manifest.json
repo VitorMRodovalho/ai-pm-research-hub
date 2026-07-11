@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-10T16:16:31.567Z",
+  "generated_at": "2026-07-11T15:20:19.914Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 341,
+  "total": 343,
   "by_domain": {
     "personal": 23,
     "tribe": 109,
     "board": 70,
-    "events": 15,
+    "events": 16,
     "governance": 23,
     "comms": 16,
     "partners": 11,
@@ -14,10 +14,10 @@
     "selection": 27,
     "knowledge": 12,
     "admin": 1,
-    "health": 18
+    "health": 19
   },
   "by_permission": {
-    "read": 224,
+    "read": 226,
     "write": 108,
     "admin": 9
   },
@@ -1459,6 +1459,13 @@
       "is_sensitive": false
     },
     {
+      "name": "get_cycle_attendance_overview",
+      "description": "GP/co-GP: presenças/faltas cross-membro filtrável por ciclo. Sem cycle_code = ciclo corrente (membros ativos); com cycle_code (ex.: 'cycle_3') = snapshot member_cycle_history. Retorna present/absent/excused/eligible + attendance_rate por membro. Authority: manage_member OR view_internal_analytics.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_event_attendance_health",
       "description": "Health monitor for stale events with zero attendance marked. Returns count + sample of events past 24h-14d that have NO attendance row. Used by GP/deputy to spot meetings that didn't happen (líder forgot to cancel) OR meetings where attendance forgot. Pattern 43 reuse.",
       "domain": "events",
@@ -2336,6 +2343,13 @@
     {
       "name": "get_extraction_health",
       "description": "Returns CV extraction pipeline health: backlog_eligible (apps with consent + resume_url + missing cv_extracted_text), 24h activity (completed_24h/failed_24h counts + last_success_at/last_failure_at), failure_samples_24h (top 3 errors for triage), cron stats (extract-cv-text-15min schedule + last_run_at + last_5_runs), and a green/yellow/red health_signal. Authority: view_internal_analytics. Use when triaging 'is CV extraction working?' or 'why are recent triages running without CV input?'.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "get_gp_cohort_health",
+      "description": "GP/co-GP: saúde da coorte do ciclo corrente. Retorna pendentes de aprovação do líder (self-service tribe requests) + coorte em risco (sem tribo / sem presença no kickoff / sem atividade voluntária), com resumo agregado. Authority: manage_member OR view_internal_analytics.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
