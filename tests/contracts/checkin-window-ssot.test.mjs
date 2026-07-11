@@ -38,9 +38,11 @@ function migrationSeed() {
   let seed = null;
   for (const f of files) {
     const src = read(join(dir, f));
-    if (!src.includes(SETTING_KEY)) continue;
-    // last INSERT/UPSERT wins (later migration supersedes)
-    const m = src.match(new RegExp(`'${SETTING_KEY.replace(/\./g, '\\.')}'\\s*,\\s*'(\\d+)'::jsonb`));
+    // Locate the literal key, then read the first '<digits>'::jsonb that follows it.
+    // String search (not a dynamic RegExp) keeps the SSOT key out of a regex source.
+    const idx = src.indexOf(`'${SETTING_KEY}'`);
+    if (idx === -1) continue;
+    const m = src.slice(idx).match(/'(\d+)'::jsonb/); // last migration touching the key wins
     if (m) seed = Number(m[1]);
   }
   return seed;
@@ -66,7 +68,7 @@ test('server gate reads the setting (register_own_presence uses get_platform_set
     .filter((s) => s.includes('CREATE OR REPLACE FUNCTION public.register_own_presence'))
     .pop();
   assert.ok(rpc, 'a migration must (re)define register_own_presence');
-  assert.match(rpc, new RegExp(`get_platform_setting\\('${SETTING_KEY.replace(/\./g, '\\.')}'\\)`),
+  assert.ok(rpc.includes(`get_platform_setting('${SETTING_KEY}')`),
     'register_own_presence must read the window from platform_settings (not a hardcoded interval)');
   assert.match(rpc, /make_interval\(hours\s*=>\s*v_window_hours\)/,
     'register_own_presence must build the window from the setting value');
