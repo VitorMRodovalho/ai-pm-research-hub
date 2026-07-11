@@ -538,3 +538,70 @@ chapter is a choice, needs the tiebreak); members with zero affiliation stay NUL
 - Out of scope: Paulo Alves de Oliveira Junior (C4 resolved, GO) has no `member_id` (application
   email does not match a member row) and cannot be backfilled until that link is resolved; tracked
   separately from #1224.
+
+## Amendment: #1316 Part D — Unified entry model (Cycle 1/2 Goiás+Ceará → PMI-GO sede) (2026-07-11)
+
+Part D of the #1316 VEP-governance epic asked to "unify Cycle 1 (Goiás) and Cycle 2
+(multi-chapter, including Ceará which was chapter-managed) under the PMI-GO *sede* + the
+volunteer term". The live diagnosis (execute_sql prod `ldrfrvwhxsmgaabwmaik`, 2026-07-11)
+found the model this ADR + ADR-0076 already establish is **sufficient**; Part D is therefore a
+**governance formalization plus a small data-provenance stamp**, not a new mechanism.
+
+### Decision (owner, 2026-07-11 AskUserQuestion) — origin and sede are independent axes
+
+- **`members.entry_chapter_code` = chapter of ORIGIN.** It is the member's governance choice of
+  entry chapter (varied: live distribution GO=29, CE=17, RS=15, MG=14, DF=6, PE/AM/RJ=3, SP=2,
+  PR=1, 37 NULL). It is **never** overwritten to `'GO'`. Collapsing origin into the sede would
+  erase the multi-chapter origin, empty the per-chapter dashboards (`get_chapter_*` filter on
+  `members.chapter`, which derives from `entry_chapter_code`), and violate this ADR's
+  "entry is a choice, not array-order" principle.
+- **The contracting *sede* is a single constant: PMI-GO.** It lives on
+  `chapter_registry.is_contracting_chapter` — live state 2026-07-11: **15 registry chapters,
+  exactly 1 contracting (PMI-GO)**. The Termo de Voluntariado always contracts with PMI-GO
+  (Wave 3a-ii C3 selects the contracting party `WHERE is_contracting_chapter=true`; the term
+  template hardcodes PMI-GO by design, #1048 / memory `pmigo-sede-volunteer-terms`).
+  Regardless of origin chapter, every Núcleo volunteer enters under PMI-GO as the single
+  operational/contracting sede. The Cycle-2 Ceará cohort (originally chapter-managed by PMI-CE)
+  is retroactively recognized under PMI-GO — which the schema already reflects (the CE-origin
+  Cycle-2 members carry `entry_chapter_code='CE'` yet their engagement + volunteer term sit
+  under PMI-GO).
+
+### No forced `entry_chapter_code` backfill (decision (b))
+
+The remaining `entry_chapter_code IS NULL` are **not mechanically resolvable** and stay NULL by
+design. Verified live 2026-07-11: among active non-alumni volunteer/researcher members with
+`entry_chapter_code IS NULL`, **zero have a single BR affiliation** — 2 have zero affiliation
+(honest `'Outro'` / private profile) and 4 are multi-chapter (ambiguous; need the member's own
+tiebreak — the #1224 nudge already drives this). Forcing GO would be exactly the array-order
+guess this ADR rejects. The `entry_chapter_code` NULL set is a member-choice / honest-Outro
+frontier, not a data gap.
+
+### Contracting party on legacy terms (immutable)
+
+The Cycle 1/2 cohort's issued volunteer-agreement certs pre-date Wave 3a-ii C3 (2026-06-16), so
+their `content_snapshot->>'contracting_chapter'` is NULL for all 17 (verified live). The
+contracting party was **always PMI-GO by template**; the snapshot simply did not record the
+field. Per this ADR, `content_snapshot` is immutable and is **never** retroactively rewritten —
+Part D documents the fact, it does not backfill the snapshot.
+
+### Data-provenance stamp (decision (b), light) — migration `20260805000424`
+
+A DATA-ONLY, additive, idempotent migration stamps `engagements.metadata.legacy_cohort`
+(`{cycle, vep_opportunity_id, source, sede:'PMI-GO', backfilled_by:'#1316_partD'}`) onto the
+engagements of legacy Cycle 1/2 members (from the `volunteer_applications` mirror) that never
+got a modern `selection_applications` row (`selection_application_id IS NULL`), so the entry
+cohort is readable without re-joining the mirror. Live scope: **4 engagements** (Luciana +
+Lorena + Cíntia = Cycle 1/62106; Marcos = Cycle 2/64967). The two column-scoped dual-write
+bridges (`trg_sync_tribe_id_from_engagement OF status,kind`;
+`trg_sync_member_initiative_from_engagement OF status,initiative_id`) do **not** fire on a
+metadata-only UPDATE (verified); `trg_sync_role_cache` recomputes idempotently (QA rolled-back:
+4/4 `operational_role` unchanged). The `selection_application_id` FK itself is **not**
+backfillable for these members — they have no modern `selection_applications` row to point at;
+the legacy cohort remains derivable from the mirror + the new provenance tag (and Part C's
+returning-context surfaces the "already an active member" signal).
+
+### Guard
+
+`tests/contracts/1316-partD-unified-entry-model.test.mjs` locks the single-sede invariant
+(exactly one `is_contracting_chapter`, and it is `GO`) and asserts every `legacy_cohort`-tagged
+engagement corresponds to a real Cycle 1/2 mirror row (relational, no absolute-count coupling).
