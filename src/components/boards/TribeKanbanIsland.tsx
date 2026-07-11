@@ -314,6 +314,10 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
   const [modalItem, setModalItem] = useState<BoardItem | null>(null);
   const [tribeData, setTribeData] = useState<any>(null);
   const [currentMember, setCurrentMember] = useState<any>(null);
+  // #1289: cross-board move targets — todos os boards VISIVEIS ao usuario (list_active_boards ja
+  // aplica rls_can_see_initiative / gate confidencial), nao so a tribo atual. O gate real de escrita
+  // vive no RPC move_item_to_board (origem+destino).
+  const [moveBoards, setMoveBoards] = useState<Array<{ id: string; board_name: string; item_count: number }>>([]);
   const BOARD_LANES = useMemo(() => buildLanes(BOARD_LANE_KEYS, t), [t]);
   const CURATION_LANES = useMemo(() => buildLanes(CURATION_LANE_KEYS, t), [t]);
   const ALL_LANES = useMemo(() => [...BOARD_LANES, ...CURATION_LANES], [BOARD_LANES, CURATION_LANES]);
@@ -433,6 +437,19 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
       setLoading(false);
     });
   }, []);
+
+  // #1289: carrega os boards de destino visiveis (list_active_boards ja aplica o gate confidencial).
+  // So quando pode editar e ha um board corrente (para excluir o proprio da lista).
+  useEffect(() => {
+    if (!canEdit || !boardId) return;
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    sb.rpc('list_active_boards')
+      .then(({ data }: any) => {
+        if (Array.isArray(data)) setMoveBoards(data.filter((b: any) => b.id !== boardId));
+      })
+      .catch(() => { /* non-critical */ });
+  }, [canEdit, boardId]);
 
   const boardLaneKeySet = new Set(BOARD_LANES.map((l) => l.key));
 
@@ -673,6 +690,24 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
     windowRef?.toast?.(t('comp.kanban.cardArchived', 'Card arquivado'), 'success');
   }
 
+  // #1289: mover o card do modal para outro board (Hub de Comunicacao, outra tribo/iniciativa).
+  // Destinos = boards visiveis (carregados abaixo); autoridade de escrita e checada no servidor
+  // por move_item_to_board (origem+destino) — o dropdown so oferece, o RPC decide.
+  async function moveModalToBoard(targetBoardId: string) {
+    if (!modalItem?.id || !targetBoardId) return;
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    const itemId = modalItem.id;
+    const { error } = await sb.rpc('move_item_to_board', { p_item_id: itemId, p_target_board_id: targetBoardId });
+    if (error) {
+      windowRef?.toast?.(error.message || t('comp.kanban.errorMoveBoard', 'Falha ao mover para outro board'), 'error');
+      return;
+    }
+    setItems((prev) => prev.filter((row) => row.id !== itemId));
+    setModalItem(null);
+    windowRef?.toast?.(t('comp.kanban.movedToBoard', 'Card movido para outro board'), 'success');
+  }
+
   if (loading) {
     return <div className="text-center py-10 text-[var(--text-muted)]">{i18n.loading || t('comp.kanban.loading', 'Carregando...')}</div>;
   }
@@ -886,6 +921,23 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
                     className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   />
                 </div>
+                {canEdit && moveBoards.length > 0 ? (
+                  <div>
+                    <label className="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1">
+                      {t('comp.kanban.moveToBoard', 'Mover para outro board')}
+                    </label>
+                    <select
+                      value=""
+                      onChange={(e) => { if (e.target.value) moveModalToBoard(e.target.value); }}
+                      className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
+                    >
+                      <option value="">{t('comp.kanban.moveToBoardHint', 'Selecione o board de destino')}</option>
+                      {moveBoards.map((b) => (
+                        <option key={b.id} value={b.id}>{b.board_name} ({b.item_count})</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
                 {canEdit ? (
                   <button
                     type="button"
