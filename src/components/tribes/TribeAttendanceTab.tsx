@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { AttendanceCell } from '../attendance/AttendanceCell';
 import { getTribePermissions } from '../../lib/tribePermissions';
+import { SELF_CHECKIN_WINDOW_HOURS } from '../../lib/attendance-window';
 import type { CellStatus } from '../attendance/types';
 
 /* ------------------------------------------------------------------ */
@@ -302,7 +303,7 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
   const isWithinCheckInWindow = (eventDate: string): boolean => {
     const eventTs = new Date(eventDate + 'T12:00:00').getTime();
     const now = Date.now();
-    return now >= eventTs - 2 * 60 * 60 * 1000 && now <= eventTs + 48 * 60 * 60 * 1000;
+    return now >= eventTs - 2 * 60 * 60 * 1000 && now <= eventTs + SELF_CHECKIN_WINDOW_HOURS * 60 * 60 * 1000;
   };
 
   /* ---- data loading ---- */

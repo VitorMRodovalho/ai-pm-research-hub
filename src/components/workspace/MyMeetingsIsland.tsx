@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { CalendarDays, CheckCircle2, Clock, History, Loader2, Lock } from 'lucide-react';
+import { SELF_CHECKIN_WINDOW_HOURS, withCheckinHours } from '../../lib/attendance-window';
 
 /* #105 — member self-service "minhas reuniões" widget (discoverability, handoff 2026-04-25 Item 6).
    Three tabs derived client-side from get_my_meetings (member-scoped: own tribe + general events,
@@ -11,10 +12,8 @@ import { CalendarDays, CheckCircle2, Clock, History, Loader2, Lock } from 'lucid
 
    Self-mark reuses register_own_presence (the same RPC as the workspace check-in banner) so the
    widget HONOURS the canonical self-check-in policy: a member may self-check-in only within the
-   48h window after an event (audience-gated). Rows past that window are shown as "prazo expirado
+   self-check-in window after an event (audience-gated). Rows past that window are shown as "prazo expirado
    · solicite ao gestor" instead of a dead button — no policy bypass. */
-
-const CHECKIN_WINDOW_H = 48;
 
 function getSb() { return (window as any).navGetSb?.(); }
 
@@ -46,11 +45,11 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/* Mirrors register_own_presence: checkable while now < event-midnight + 48h (these are past
+/* Mirrors register_own_presence: checkable while now < event-midnight + the self-check-in window (these are past
    events, so the 2h-before lower bound is always satisfied). */
 function withinCheckinWindow(dateStr: string): boolean {
   const eventMidnight = new Date(dateStr + 'T00:00:00').getTime();
-  return Date.now() < eventMidnight + CHECKIN_WINDOW_H * 3600000;
+  return Date.now() < eventMidnight + SELF_CHECKIN_WINDOW_HOURS * 3600000;
 }
 
 export default function MyMeetingsIsland() {
@@ -183,7 +182,7 @@ export default function MyMeetingsIsland() {
                         {marking === m.event_id ? t('comp.myMeetings.marking', 'Marcando...') : t('comp.myMeetings.markPresent', 'Marcar presença')}
                       </button>
                     ) : (
-                      <span className="flex-shrink-0 text-[10px] text-[var(--text-muted)] flex items-center gap-1" title={t('comp.myMeetings.expiredHint', 'O prazo de 48h para auto check-in expirou. Solicite ao gestor.')}>
+                      <span className="flex-shrink-0 text-[10px] text-[var(--text-muted)] flex items-center gap-1" title={withCheckinHours(t('comp.myMeetings.expiredHint', 'O prazo de {hours}h para auto check-in expirou. Solicite ao gestor.'))}>
                         <Lock size={11} /> {t('comp.myMeetings.expired', 'Prazo expirado — solicite ao gestor')}
                       </span>
                     )
