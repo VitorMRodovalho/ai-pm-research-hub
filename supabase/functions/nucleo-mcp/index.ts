@@ -3239,6 +3239,32 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
+  // TOOL: get_gp_cohort_health (#1290/#1291 — GP/co-GP cohort visibility)
+  mcp.tool("get_gp_cohort_health", "GP/co-GP: saúde da coorte do ciclo corrente. Retorna pendentes de aprovação do líder (self-service tribe requests) + coorte em risco (sem tribo / sem presença no kickoff / sem atividade voluntária), com resumo agregado. Authority: manage_member OR view_internal_analytics.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_gp_cohort_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'view_internal_analytics'))) { await logUsage(sb, member.id, "get_gp_cohort_health", false, "Unauthorized", start); return err("Unauthorized: requires manage_member or view_internal_analytics."); }
+    const { data, error } = await sb.rpc("get_gp_cohort_health");
+    if (error) { await logUsage(sb, member.id, "get_gp_cohort_health", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_gp_cohort_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_cycle_attendance_overview (#1286 — GP/co-GP attendance by cycle)
+  mcp.tool("get_cycle_attendance_overview", "GP/co-GP: presenças/faltas cross-membro filtrável por ciclo. Sem cycle_code = ciclo corrente (membros ativos); com cycle_code (ex.: 'cycle_3') = snapshot member_cycle_history. Retorna present/absent/excused/eligible + attendance_rate por membro. Authority: manage_member OR view_internal_analytics.", {
+    cycle_code: z.string().optional().describe("Código do ciclo (ex.: 'cycle_3', 'cycle_4'). Default: ciclo corrente.")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cycle_attendance_overview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'view_internal_analytics'))) { await logUsage(sb, member.id, "get_cycle_attendance_overview", false, "Unauthorized", start); return err("Unauthorized: requires manage_member or view_internal_analytics."); }
+    const { data, error } = await sb.rpc("get_cycle_attendance_overview", { p_cycle_code: params.cycle_code ?? null });
+    if (error) { await logUsage(sb, member.id, "get_cycle_attendance_overview", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_cycle_attendance_overview", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOLS: Drive offboarding revocation cascade (#209 / ADR-0107) — manage_member (GP).
   mcp.tool("list_drive_revocation_pending", "Lista permissões Google Drive de ex-membros (offboarded) detectadas pelo scan semanal, aguardando revisão/revogação. Mostra arquivo, e-mail/role da permissão, status e erro do Google (quando falha). Authority: manage_member (GP). Default status=pending_revoke; passe status='all' para todos.", {
     status: z.string().optional().describe("pending_revoke|approved|revoked|failed|already_absent|skipped|all. Default: pending_revoke"),
