@@ -116,6 +116,14 @@
     // Se OPPORTUNITY_IDS for setado manualmente, vale como confirmação
     // explícita (sem modal), mas vagas fora da allowlist geram warning.
     NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470],
+    // #1316 — vagas HISTÓRICAS/FECHADAS do Núcleo que a auto-descoberta NÃO lista
+    // (só lista as opportunities correntes do recruiter por partyID + posting date).
+    // Ex.: 62106 = Ciclo 1 Goiás, porta de entrada de toda a coorte Goiás — o dado
+    // real de contrato (datas/extensões) e a reconciliação de coorte vivem nela.
+    // São vagas do PRÓPRIO Núcleo → contam como allowlisted (sem gate LGPD do modal)
+    // e são SEMPRE forçadas na varredura. Se o recruiter não tiver acesso, o fetch
+    // por bucket apenas loga "sem dados" e segue.
+    NUCLEO_HISTORICAL_OPPORTUNITY_IDS: [62106],
 
     // Worker /ingest endpoint (deixa em branco para apenas baixar files)
     NUCLEO_INGEST_URL: 'https://pmi-vep-sync.ai-pm-research-hub.workers.dev/ingest',
@@ -658,10 +666,27 @@
       }
     }
   }
+  // ===== 1a) #1316 — GOVERNANÇA: força vagas históricas/fechadas do Núcleo =====
+  // A auto-descoberta só enxerga as opportunities correntes do recruiter, então vagas
+  // fechadas de ciclos antigos (ex. 62106 = Ciclo 1 Goiás) nunca aparecem. Força-as aqui.
+  const historicalIds = (CONFIG.NUCLEO_HISTORICAL_OPPORTUNITY_IDS || []).map(String);
+  for (const hid of historicalIds) {
+    if (!opportunityIds.map(String).includes(hid)) {
+      opportunityIds.push(hid);
+      opportunityRows.push({ opportunityId: hid, name: `(histórico/governança ${hid})`, status: 'historical-forced' });
+      console.log(`🏛️ [#1316] opportunity histórica forçada p/ governança: ${hid}`);
+    }
+  }
+
   // ===== 1b) Wave 4 W1 — ALLOWLIST GATE (minimização LGPD) =====
   // Vagas fora da allowlist do Núcleo só entram com confirmação explícita.
   // Default (cancelar/fechar o modal) = varrer SÓ a allowlist.
-  const allowlistSet = new Set((CONFIG.NUCLEO_OPPORTUNITY_ALLOWLIST || []).map(String));
+  // #1316: as históricas do Núcleo contam como allowlisted (são do próprio Núcleo) —
+  // nunca são barradas pelo modal nem removidas da varredura.
+  const allowlistSet = new Set([
+    ...(CONFIG.NUCLEO_OPPORTUNITY_ALLOWLIST || []).map(String),
+    ...historicalIds,
+  ]);
   const excludedOpportunities = [];
   if (allowlistSet.size) {
     const unknownIds = opportunityIds.filter(id => !allowlistSet.has(String(id)));
