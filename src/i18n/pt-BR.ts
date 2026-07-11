@@ -1608,6 +1608,7 @@ const ptBR: Record<string, string> = {
   'attendance.checkin.tooEarly': 'O check-in abre 2h antes do evento.',
   'attendance.checkin.success': 'Presença registrada!',
   'attendance.windowClosed': 'Check-in encerrado',
+  'attendance.confirmed': '✅ Presença confirmada',
   'attendance.adminOverride': 'Registrar (Admin)',
   'attendance.deleteEvent': 'Cancelar esta reunião',
   'attendance.deleteConfirm': 'Tem certeza que deseja cancelar esta reunião?',
