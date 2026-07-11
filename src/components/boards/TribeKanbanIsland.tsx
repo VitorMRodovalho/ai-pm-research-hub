@@ -932,9 +932,10 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
                       className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                     >
                       <option value="">{t('comp.kanban.moveToBoardHint', 'Selecione o board de destino')}</option>
-                      {moveBoards.map((b) => (
-                        <option key={b.id} value={b.id}>{b.board_name} ({b.item_count})</option>
-                      ))}
+                      {moveBoards.map((b) => {
+                        const label = `${b.board_name} (${b.item_count})`;
+                        return <option key={b.id} value={b.id}>{label}</option>;
+                      })}
                     </select>
                   </div>
                 ) : null}
