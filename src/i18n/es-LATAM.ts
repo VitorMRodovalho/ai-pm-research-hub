@@ -3622,6 +3622,8 @@ const esLATAM: Record<string, string> = {
   'admin.webinars.statConfirmed': 'Confirmados',
   'admin.webinars.statCompleted': 'Realizados',
   'admin.webinars.statTotalAttendees': 'Total asistentes',
+  'admin.webinars.statNeedsReview': 'Pendiente de estado',
+  'admin.webinars.cardNeedsReview': 'Pasó la fecha y sigue sin estado final — marque Realizado o Cancelado',
   'admin.webinars.actionConfirm': 'Confirmar webinar',
   'admin.webinars.actionCreateSession': 'Crear sesión Attendance',
   'admin.webinars.actionAddMeetingLink': 'Agregar link de la reunión',

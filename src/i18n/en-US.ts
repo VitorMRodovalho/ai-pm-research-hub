@@ -3622,6 +3622,8 @@ const enUS: Record<string, string> = {
   'admin.webinars.statConfirmed': 'Confirmed',
   'admin.webinars.statCompleted': 'Held',
   'admin.webinars.statTotalAttendees': 'Total attendees',
+  'admin.webinars.statNeedsReview': 'Awaiting status',
+  'admin.webinars.cardNeedsReview': 'Past its date with no final status — mark Completed or Cancelled',
   'admin.webinars.actionConfirm': 'Confirm webinar',
   'admin.webinars.actionCreateSession': 'Create Attendance session',
   'admin.webinars.actionAddMeetingLink': 'Add meeting link',

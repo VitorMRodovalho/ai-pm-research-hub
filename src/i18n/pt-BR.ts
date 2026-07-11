@@ -3627,6 +3627,8 @@ const ptBR: Record<string, string> = {
   'admin.webinars.statConfirmed': 'Confirmados',
   'admin.webinars.statCompleted': 'Realizados',
   'admin.webinars.statTotalAttendees': 'Total presentes',
+  'admin.webinars.statNeedsReview': 'Aguardando status',
+  'admin.webinars.cardNeedsReview': 'Passou da data e segue sem status final — marque Concluído ou Cancelado',
   'admin.webinars.actionConfirm': 'Confirmar webinar',
   'admin.webinars.actionCreateSession': 'Criar sessão Attendance',
   'admin.webinars.actionAddMeetingLink': 'Adicionar link da reunião',
