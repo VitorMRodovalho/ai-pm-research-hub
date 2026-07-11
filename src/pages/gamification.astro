@@ -1920,11 +1920,11 @@ const SCORING_I18N = {
       try {
         const sb = (window as any).navGetSb?.();
         if (sb) {
-          const { data: issuer } = await sb.from('public_members').select('signature_url').eq('id', certData.issued_by).single();
-          const raw = issuer?.signature_url as string | undefined;
-          if (raw) {
-            const after = raw.split('/member-signatures/')[1];
-            const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
+          const { data: raw } = await sb.rpc('get_signer_signature_url', { p_signer_id: certData.issued_by });
+          const sig = raw as string | undefined;
+          if (sig) {
+            const after = sig.split('/member-signatures/')[1];
+            const sigPath = after ? decodeURIComponent(after.split('?')[0]) : sig.replace(/^\/+/, '');
             const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
             if (signed?.signedUrl) certData.signature_url = signed.signedUrl;
           }

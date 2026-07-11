@@ -755,16 +755,17 @@ export function buildCertificateHTML(certData: CertificateData): string {
  * member-signatures is a PRIVATE bucket; the stored value (a public-URL string
  * carrying the path, or a bare path) must become self-authorizing because the
  * <img> fetch is anonymous in both the client browser-print and the server-side
- * puppeteer networkidle0 render. RLS lets any authenticated caller read the
- * signature via public_members; service_role (server) bypasses RLS.
+ * puppeteer networkidle0 render. The path is resolved via the gated
+ * get_signer_signature_url RPC (signer-scoped, #1052 — signature_url was removed
+ * from public_members because its storage path embeds the member's email), then signed.
  */
 async function resolveMemberSignatureUrl(sb: any, memberId: string): Promise<string | undefined> {
   try {
-    const { data: row } = await sb.from('public_members').select('signature_url').eq('id', memberId).single();
-    const raw = row?.signature_url as string | undefined;
-    if (!raw) return undefined;
-    const after = raw.split('/member-signatures/')[1];
-    const sigPath = after ? decodeURIComponent(after.split('?')[0]) : raw.replace(/^\/+/, '');
+    const { data: raw } = await sb.rpc('get_signer_signature_url', { p_signer_id: memberId });
+    const sig = raw as string | undefined;
+    if (!sig) return undefined;
+    const after = sig.split('/member-signatures/')[1];
+    const sigPath = after ? decodeURIComponent(after.split('?')[0]) : sig.replace(/^\/+/, '');
     const { data: signed } = await sb.storage.from('member-signatures').createSignedUrl(sigPath, 600);
     return signed?.signedUrl || undefined;
   } catch {
