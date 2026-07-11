@@ -11,6 +11,7 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { buildPageI18n } from '../i18n/pageI18n';
 import AttendanceGridTab from '../components/attendance/AttendanceGridTab';
 import EventMinutesIsland from '../components/events/EventMinutesIsland';
+import { SELF_CHECKIN_WINDOW_HOURS } from '../lib/attendance-window';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -227,7 +228,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   rankingNoData: t('attendance.ranking.noData', lang),
   rankingNoDataHint: t('attendance.ranking.noDataHint', lang),
   bulkSuccess: t('attendance.modal.bulkSuccess', lang),
-  checkinWindowExpired: t('attendance.checkin.windowExpired', lang),
+  checkinWindowExpired: t('attendance.checkin.windowExpired', lang).replace('{hours}', String(SELF_CHECKIN_WINDOW_HOURS)),
   checkinTooEarly: t('attendance.checkin.tooEarly', lang),
   feedbackCycleTotal: t('attendance.feedback.cycleTotal', lang),
   feedbackEvents: t('attendance.feedback.events', lang),
@@ -278,6 +279,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { isRegisteredMember } from '../lib/routing';
   import { buildWebinarCommsHref, getAttendanceEditAssistantCopy, getAttendanceHandoffCopy } from '../lib/webinars/context-aids';
+  import { SELF_CHECKIN_WINDOW_HOURS } from '../lib/attendance-window';
   import { marked } from 'marked';
 
   const I18N = (window as any).__ATTENDANCE_I18N || {
@@ -717,13 +719,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     if (!ev?.date) return false;
     const now = Date.now();
     // When time_start is missing (legacy events / loosely scheduled), treat as all-day:
-    // window opens at start of day, closes 48h after end of day. Prior fallback to '23:59'
-    // delayed self-checkin until 21:59 local — locked researchers out of meetings happening
-    // earlier in the day (T2 live bug 2026-05-11).
+    // window opens at start of day, closes SELF_CHECKIN_WINDOW_HOURS after end of day. Prior
+    // fallback to '23:59' delayed self-checkin until 21:59 local — locked researchers out of
+    // meetings happening earlier in the day (T2 live bug 2026-05-11).
     if (!ev.time_start) {
       const dayStart = new Date(ev.date + 'T00:00:00').getTime();
       const dayEnd = new Date(ev.date + 'T23:59:59').getTime();
-      return now >= dayStart && now <= dayEnd + 48 * 60 * 60 * 1000;
+      return now >= dayStart && now <= dayEnd + SELF_CHECKIN_WINDOW_HOURS * 60 * 60 * 1000;
     }
     // Compute scheduled END = date + time_start + duration
     const [h, m] = String(ev.time_start).split(':').map(Number);
@@ -731,11 +733,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     evEnd.setHours(h, m + (ev.duration_minutes || 60), 0);
     // Scheduled START = end - duration
     const evStart = evEnd.getTime() - (ev.duration_minutes || 60) * 60 * 1000;
-    // Self check-in window: 2h before scheduled start until 48h after scheduled end.
-    // Per spec: researchers self-register within 48h; tribe_leader/GP get unlimited
-    // override via "Register (Admin)" button (canAdminCheckin) for cases beyond this.
+    // Self check-in window: 2h before scheduled start until SELF_CHECKIN_WINDOW_HOURS after
+    // scheduled end. Per spec: researchers self-register within that window; tribe_leader/GP get
+    // unlimited override via "Register (Admin)" button (canAdminCheckin) for cases beyond this.
     const windowOpen = evStart - 2 * 60 * 60 * 1000;
-    const windowClose = evEnd.getTime() + 48 * 60 * 60 * 1000;
+    const windowClose = evEnd.getTime() + SELF_CHECKIN_WINDOW_HOURS * 60 * 60 * 1000;
     return now >= windowOpen && now <= windowClose;
   }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAttendance } from '../../hooks/useAttendance';
 import { AttendanceCell } from './AttendanceCell';
 import { getTribePermissions } from '../../lib/tribePermissions';
+import { SELF_CHECKIN_WINDOW_HOURS } from '../../lib/attendance-window';
 import type { AttendanceEvent } from './types';
 
 interface MemberContext {
@@ -53,8 +54,8 @@ function isWithinCheckInWindow(eventDate: string): boolean {
   const eventTs = new Date(eventDate + 'T12:00:00').getTime();
   const now = Date.now();
   const twoHoursBefore = eventTs - 2 * 60 * 60 * 1000;
-  const fortyEightAfter = eventTs + 48 * 60 * 60 * 1000;
-  return now >= twoHoursBefore && now <= fortyEightAfter;
+  const windowClose = eventTs + SELF_CHECKIN_WINDOW_HOURS * 60 * 60 * 1000;
+  return now >= twoHoursBefore && now <= windowClose;
 }
 
 export function AttendanceGrid({ supabase, currentMember, tribeId, initiativeId, t }: AttendanceGridProps) {
