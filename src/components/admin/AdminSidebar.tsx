@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 } from 'lucide-react';
 import { hasPermission as checkPermission, type Permission } from '../../lib/permissions';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, CalendarClock,
+  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -67,6 +67,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
       { href: '/admin/members/drive-teardown', label: { 'pt-BR': 'Teardown de Drive', 'en-US': 'Drive Teardown', 'es-LATAM': 'Teardown de Drive' }, icon: 'HardDrive', permission: 'admin.members.manage' },
+      { href: '/admin/cohort-health', label: { 'pt-BR': 'Saúde da Coorte', 'en-US': 'Cohort Health', 'es-LATAM': 'Salud de la Cohorte' }, icon: 'HeartPulse', permission: ['admin.members.manage', 'admin.analytics'] },
     ],
   },
   {
