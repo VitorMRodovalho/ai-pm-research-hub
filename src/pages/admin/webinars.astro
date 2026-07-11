@@ -16,6 +16,8 @@ const WEBINARS_I18N = {
   statConfirmed: t('admin.webinars.statConfirmed', lang),
   statCompleted: t('admin.webinars.statCompleted', lang),
   statTotalAttendees: t('admin.webinars.statTotalAttendees', lang),
+  statNeedsReview: t('admin.webinars.statNeedsReview', lang),
+  cardNeedsReview: t('admin.webinars.cardNeedsReview', lang),
   actionConfirm: t('admin.webinars.actionConfirm', lang),
   actionCreateSession: t('admin.webinars.actionCreateSession', lang),
   actionAddMeetingLink: t('admin.webinars.actionAddMeetingLink', lang),
@@ -297,6 +299,7 @@ const WEBINARS_I18N = {
     statusPlanned: 'Planejado', statusConfirmed: 'Confirmado', statusCompleted: 'Realizado', statusCancelled: 'Cancelado',
     chapterGeneral: 'Geral',
     statPlanned: 'Planejados', statConfirmed: 'Confirmados', statCompleted: 'Realizados', statTotalAttendees: 'Total presentes',
+    statNeedsReview: 'Aguardando status', cardNeedsReview: 'Passou da data — marque Concluído ou Cancelado',
     actionConfirm: 'Confirmar webinar', actionCreateSession: 'Criar sessão Attendance',
     actionAddMeetingLink: 'Adicionar link da reunião', actionPrepareCommunication: 'Preparar divulgação',
     actionMarkCompleted: 'Marcar como realizado', actionPublishReplay: 'Publicar replay',
@@ -408,11 +411,15 @@ const WEBINARS_I18N = {
     const confirmed = webinars.filter(w => w.status === 'confirmed').length;
     const completed = webinars.filter(w => w.status === 'completed').length;
     const totalAttendees = webinars.reduce((s: number, w: any) => s + Number(w.attendee_count || 0), 0);
+    // #1029 nudge: webinares que já passaram da data mas seguem sem status terminal (flag do RPC).
+    const needsReview = webinars.filter(w => w.needs_status_review).length;
     const cards = [
       { label: T.statPlanned, value: planned, tone: 'bg-gray-50 text-gray-700 border-gray-200' },
       { label: T.statConfirmed, value: confirmed, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
       { label: T.statCompleted, value: completed, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
       { label: T.statTotalAttendees, value: totalAttendees, tone: 'bg-purple-50 text-purple-700 border-purple-200' },
+      { label: T.statNeedsReview, value: needsReview,
+        tone: needsReview > 0 ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-gray-50 text-gray-500 border-gray-200' },
     ];
     el.innerHTML = cards.map(c => `
       <div class="rounded-2xl border ${c.tone} p-4">
@@ -430,6 +437,10 @@ const WEBINARS_I18N = {
     const eventBadge = w.event_id
       ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700">${T.cardLinkedSession}</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">${T.cardNoSession}</span>`;
+    // #1029 nudge: destaca a linha quando o webinar passou da data mas segue sem status terminal.
+    const needsReviewBadge = w.needs_status_review
+      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="${esc(T.cardNeedsReview)}">⏰ ${esc(T.statNeedsReview)}</span>`
+      : '';
     const coManagers = (w.co_managers || []).length
       ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">${T.cardCoManagersLabel}: ${(w.co_managers || []).map((cm: any) => esc(cm.name)).join(', ')}</div>`
       : '';
@@ -442,7 +453,7 @@ const WEBINARS_I18N = {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <h3 class="text-sm font-bold text-navy">${esc(w.title)}</h3>
-              ${statusBadge} ${chapterBadge} ${tribeBadge} ${eventBadge}
+              ${statusBadge} ${chapterBadge} ${tribeBadge} ${eventBadge} ${needsReviewBadge}
             </div>
             <div class="text-[.76rem] text-[var(--text-secondary)] flex items-center gap-2 flex-wrap">
               <span>${fmtDateTime(w.scheduled_at)}</span>
