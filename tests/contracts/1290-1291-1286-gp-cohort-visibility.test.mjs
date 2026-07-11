@@ -71,6 +71,11 @@ test('#1290/#1291 DB: get_gp_cohort_health returns summary + approvals + at_risk
   // consistency: without_tribe count matches the flagged subset
   const flaggedNoTribe = data.at_risk_members.filter((m) => m.no_tribe).length;
   assert.equal(flaggedNoTribe, data.cohort_summary.without_tribe, 'no_tribe flags match cohort_summary.without_tribe');
+  // #1291 refinamento (owner 2026-07-11): curador / membro de comite NAO e "sem tribo em risco".
+  assert.equal(typeof data.cohort_summary.committee_members, 'number', 'cohort_summary.committee_members present');
+  const committeeFlaggedNoTribe = data.at_risk_members.filter((m) => m.is_committee && m.no_tribe);
+  assert.equal(committeeFlaggedNoTribe.length, 0,
+    `a committee member (curator) must never be flagged no_tribe: ${JSON.stringify(committeeFlaggedNoTribe)}`);
 });
 
 test('#1286 DB: get_cycle_attendance_overview(null) returns current cycle + members[]', { skip: dbGated ? false : skipMsg }, async () => {
