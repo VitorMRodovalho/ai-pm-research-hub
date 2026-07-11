@@ -37,7 +37,18 @@ Filiação PMI tem **três dimensões temporais distintas** que não são interc
 |---|---|---|---|
 | **Filiação ATUAL multi-chapter** | `pmi_chapter_memberships(person_id, chapter_name, expiry_date, source, captured_at)` | Re-sync via worker | Mutable — evolve com renewals |
 | **Filiação HISTÓRICA / service history** | `selection_application_service_history(application_id, chapter, role, start_date, end_date, source)` | Append-only at submission | Imutável após import |
-| **Chapter de ENTRADA (admissão Núcleo)** | `selection_applications.chapter` (existing) | Set once at submission | Imutável após decision |
+| **Chapter de ENTRADA (admissão Núcleo)** | ~~`selection_applications.chapter`~~ → **`members.entry_chapter_code`** (ADR-0104; escolha de governança derivada do enriquecimento PMI, #1224) | Set at approval / member choice | Governança (escolha do membro), não imutável |
+
+> **⚠️ Correção (2026-07-11, #1316 Parte D):** a linha "Chapter de ENTRADA" acima foi
+> **superada pelo ADR-0104**. A entrada NÃO vive mais em `selection_applications.chapter`
+> (valor colapsado/lossy do p87); o SSOT do capítulo de entrada é `members.entry_chapter_code`
+> (origem; escolha de governança), com `members.chapter = COALESCE('PMI-'||entry_chapter_code,
+> primary affiliation, legacy)`. **Ortogonalmente**, a *sede contratante* do Termo de
+> Voluntariado é constante — `chapter_registry.is_contracting_chapter = PMI-GO` (o único; o termo
+> sempre contrata com PMI-GO, independente da origem). Origem e sede são eixos independentes
+> (ADR-0104 Amendment #1316 Part D). `pmi_chapter_memberships` (linha 1) tampouco foi criada — ver
+> o aviso de status em "Implementação" abaixo; a filiação atual vive em
+> `member_chapter_affiliations` (ADR-0104).
 
 **`selection_applications.pmi_memberships JSONB`** = snapshot point-in-time das filiações ATUAIS do candidato no momento da submission (committee evaluates state at submission, ADR-0067 D5 audit principle). Imutável após import. **NÃO é canonical** — para consultas live (cron compliance E3), use `pmi_chapter_memberships`.
 
