@@ -1,4 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+// #1347 — reuse the shared certificate PDF helpers to view/download/archive the signed
+// volunteer term per volunteer (frozen PDF via downloadCertificatePDF; immutable-snapshot
+// rebuild in batch via downloadBulkCertificatesPDF). Read-only: no state writes here.
+import { downloadCertificatePDF, downloadBulkCertificatesPDF, type CertificateData } from '../../lib/certificates/pdf';
 
 interface Props { lang?: string; }
 
@@ -127,6 +131,12 @@ const L: Record<string, Record<string, string>> = {
     bulkConfirm: 'Contra-assinar {n} termo(s) selecionado(s)? Cada um será contra-assinado pela diretoria (ato bilateral) e liberado ao voluntário.',
     bulkResult: '{ok} contra-assinado(s), {failed} falha(s).',
     selectAllPending: 'Selecionar pendentes na visão',
+    downloadPdf: 'Baixar PDF',
+    previewTerm: 'Pré-visualizar',
+    bulkDownloadTerms: 'Baixar termos (lote)',
+    bulkNoTerms: 'Nenhum termo assinado na visão atual.',
+    previewPendingTitle: 'Pré-visualização do termo (antes da assinatura)',
+    previewMemberNote: 'Dados completos (endereço, contato, aniversário) são preenchidos na assinatura.',
   },
   'en-US': {
     title: 'Volunteer Agreement',
@@ -188,6 +198,12 @@ const L: Record<string, Record<string, string>> = {
     bulkConfirm: 'Counter-sign {n} selected agreement(s)? Each is counter-signed by the board (bilateral act) and released to the volunteer.',
     bulkResult: '{ok} counter-signed, {failed} failed.',
     selectAllPending: 'Select pending in view',
+    downloadPdf: 'Download PDF',
+    previewTerm: 'Preview',
+    bulkDownloadTerms: 'Download terms (batch)',
+    bulkNoTerms: 'No signed terms in the current view.',
+    previewPendingTitle: 'Term preview (before signing)',
+    previewMemberNote: 'Full data (address, contact, birthday) is filled in at signing.',
   },
   'es-LATAM': {
     title: 'Acuerdo de Voluntariado',
@@ -249,6 +265,12 @@ const L: Record<string, Record<string, string>> = {
     bulkConfirm: '¿Contrafirmar {n} término(s) seleccionado(s)? Cada uno es contrafirmado por la directiva (acto bilateral) y liberado al voluntario.',
     bulkResult: '{ok} contrafirmado(s), {failed} fallo(s).',
     selectAllPending: 'Seleccionar pendientes en vista',
+    downloadPdf: 'Descargar PDF',
+    previewTerm: 'Vista previa',
+    bulkDownloadTerms: 'Descargar términos (lote)',
+    bulkNoTerms: 'No hay términos firmados en la vista actual.',
+    previewPendingTitle: 'Vista previa del término (antes de firmar)',
+    previewMemberNote: 'Los datos completos (dirección, contacto, cumpleaños) se completan al firmar.',
   },
 };
 
@@ -295,6 +317,10 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [acting, setActing] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActing, setBulkActing] = useState(false);
+  // #1347 — per-row PDF download (signed) + batch download (signed in view) + pending preview
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [previewMember, setPreviewMember] = useState<MemberRow | null>(null);
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
@@ -337,6 +363,9 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     members.filter(m => m.agreement_template_id).map(m => [m.agreement_template_id!, m.agreement_version || m.agreement_template_id!])
   ).entries()];
   const uniqueCohorts = [...new Set(members.map(m => m.cycle_code).filter(Boolean) as string[])].sort().reverse();
+  // #1347 — signed terms in the current (filtered) view: the only rows with a frozen
+  // instrument to batch-download. verification_code is the current-year issued cert's code.
+  const signedInView = filtered.filter(m => m.signed && !!m.verification_code);
 
   // A row is eligible for BULK counter-sign only where the single-cert gate would also pass:
   // caller can counter-sign, volunteer already signed, not yet counter-signed, term still issued.
@@ -498,6 +527,57 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     }
   };
 
+  // #1347 — build the shared CertificateData payload from a member row. verification_code
+  // drives the frozen-PDF serve (downloadCertificatePDF) and the immutable-snapshot rebuild
+  // (bulk). id enables the #648 id-fallback lookup. No PII is passed — hydrateCertData reads
+  // the snapshot from the cert itself, keyed by verification_code.
+  const certToData = (m: MemberRow): CertificateData => ({
+    id: m.agreement_cert_id || undefined,
+    verification_code: m.verification_code || '',
+    type: 'volunteer_agreement',
+    member_name: m.name,
+    function_role: m.role,
+    period_start: m.contract_start || '',
+    period_end: m.contract_end || '',
+    language: lang,
+  });
+
+  // Serve the FROZEN immutable PDF for a signed term (downloadCertificatePDF short-circuits
+  // to the pdf_url in storage). Read-only inspection/archival — the #1048 QA need.
+  const downloadTermPdf = async (m: MemberRow) => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    setDownloadingId(m.id);
+    try {
+      await downloadCertificatePDF(certToData(m), sb);
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // Batch (mail-merge / offline archive) over the SIGNED terms in the current view — respects
+  // the chapter/version/cohort/search filters. Rebuilds each from its immutable per-cert
+  // snapshot; enough for QA/archival (issue non-goal: no server-side mass PDF).
+  const bulkDownloadTerms = async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    if (signedInView.length === 0) { (window as any).toast?.(t.bulkNoTerms, 'info'); return; }
+    setBulkDownloading(true);
+    try {
+      await downloadBulkCertificatesPDF(signedInView.map(certToData), sb);
+    } catch {
+      (window as any).toast?.(t.actionError, 'error');
+    } finally {
+      setBulkDownloading(false);
+    }
+  };
+
+  // Pending preview reuses the active-template modal (below); clear the member scope on close
+  // so the plain "Ver Template" button keeps its generic (blank member-data) rendering.
+  const closeTemplateModal = () => { setShowTemplate(false); setPreviewMember(null); };
+
   const pctColor = (summary.pct ?? 0) >= 80 ? 'text-emerald-600' : (summary.pct ?? 0) >= 50 ? 'text-amber-600' : 'text-red-600';
 
   return (
@@ -544,12 +624,16 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
 
       {/* Template modal — formal document */}
       {showTemplate && template && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowTemplate(false)}>
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={closeTemplateModal}>
           <div className="bg-white dark:bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] max-w-3xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Close button */}
             <div className="sticky top-0 bg-white/95 dark:bg-[var(--surface-card)]/95 backdrop-blur px-6 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between z-10">
-              <span className="text-[10px] font-semibold text-[var(--text-muted)]">{template.title} — {template.version}</span>
-              <button onClick={() => setShowTemplate(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer text-lg">✕</button>
+              <span className="text-[10px] font-semibold text-[var(--text-muted)]">
+                {previewMember
+                  ? <>{t.previewPendingTitle} — <strong className="text-[var(--text-secondary)]">{previewMember.name}</strong> · {template.version}</>
+                  : <>{template.title} — {template.version}</>}
+              </span>
+              <button onClick={closeTemplateModal} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer text-lg">✕</button>
             </div>
 
             <div className="px-8 py-6 text-[13px] leading-relaxed text-[var(--text-secondary)]">
@@ -576,11 +660,25 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                         <strong>Termo de Compromisso de Voluntário com o PMI Goiás</strong> que fazem entre si a <strong>Seção Goiânia, Goiás — Brasil do Project Management Institute (PMI Goiás)</strong>, inscrito no CNPJ/MF sob o nº 06.065.645/0001-99 e:
                       </p>
 
-                      {/* Member data placeholder */}
+                      {/* Member data block. For a per-volunteer pending preview (#1347) fill in the
+                          fields the roster RPC returns (name/email/chapter); the remaining PII
+                          (address, contact, birthday) is only captured at signing, so it stays a
+                          placeholder with a note. The generic "Ver Template" keeps the blank stub. */}
                       <div className="bg-gray-50 dark:bg-[var(--surface-section-cool)] rounded-lg p-4 mb-4 text-[11px] space-y-1 border border-dashed border-gray-300 dark:border-[var(--border-subtle)]">
-                        <div className="text-[var(--text-muted)] italic">[ Dados do membro preenchidos automaticamente na assinatura ]</div>
-                        <div>PMI ID: ______ &nbsp;|&nbsp; Nome: ______ &nbsp;|&nbsp; E-mail: ______</div>
-                        <div>Cidade/Estado: ______ &nbsp;|&nbsp; Contato: ______</div>
+                        {previewMember ? (
+                          <>
+                            <div>Nome: <strong>{previewMember.name}</strong> &nbsp;|&nbsp; E-mail: {previewMember.email || '______'}</div>
+                            <div>Capítulo: {previewMember.chapter || '______'} &nbsp;|&nbsp; PMI ID: ______</div>
+                            <div>Cidade/Estado: ______ &nbsp;|&nbsp; Contato: ______</div>
+                            <div className="text-[var(--text-muted)] italic pt-1">{t.previewMemberNote}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-[var(--text-muted)] italic">[ Dados do membro preenchidos automaticamente na assinatura ]</div>
+                            <div>PMI ID: ______ &nbsp;|&nbsp; Nome: ______ &nbsp;|&nbsp; E-mail: ______</div>
+                            <div>Cidade/Estado: ______ &nbsp;|&nbsp; Contato: ______</div>
+                          </>
+                        )}
                       </div>
 
                       <p className="mb-4 text-[12px]">
@@ -655,7 +753,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-white/95 dark:bg-[var(--surface-card)]/95 backdrop-blur px-6 py-3 border-t border-[var(--border-subtle)] text-center">
-              <button onClick={() => setShowTemplate(false)} className="px-5 py-2 rounded-lg bg-navy text-white text-xs font-semibold border-0 cursor-pointer hover:opacity-90">{t.closeTemplate}</button>
+              <button onClick={closeTemplateModal} className="px-5 py-2 rounded-lg bg-navy text-white text-xs font-semibold border-0 cursor-pointer hover:opacity-90">{t.closeTemplate}</button>
             </div>
           </div>
         </div>
@@ -789,6 +887,17 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
             📥 {t.exportCsv}
           </button>
 
+          {/* #1347 — batch download of the signed terms currently in view (mail-merge / archive) */}
+          {signedInView.length > 0 && (
+            <button
+              onClick={bulkDownloadTerms}
+              disabled={bulkDownloading}
+              className="px-2.5 py-1.5 rounded-lg border border-navy text-navy text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5 disabled:opacity-50"
+            >
+              📦 {t.bulkDownloadTerms} ({signedInView.length})
+            </button>
+          )}
+
           {summary.unsigned > 0 && (
             <button
               onClick={notifyPending}
@@ -913,37 +1022,58 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                   {/* W3c-ii: lifecycle actions. Reject available on an issued term (manager OR board);
                       Reissue is manager-only (RPC-gated; hidden for chapter_board scoped view). */}
                   <td className="px-3 py-2 text-right whitespace-nowrap">
-                    {m.agreement_status === 'issued' ? (
-                      <div className="inline-flex gap-1.5">
-                        {canCounterSign && m.signed && !m.counter_signed && (
-                          <button
-                            onClick={() => counterSignAgreement(m)}
-                            disabled={acting === m.id}
-                            className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold border-0 cursor-pointer hover:bg-emerald-700 disabled:opacity-50"
-                          >
-                            ✍️ {t.counterSign}
-                          </button>
-                        )}
+                    <div className="inline-flex gap-1.5 items-center justify-end">
+                      {/* #1347 — inspect/archive the signed instrument (serves the frozen PDF) */}
+                      {m.signed && m.verification_code && (
                         <button
-                          onClick={() => rejectAgreement(m)}
-                          disabled={acting === m.id}
-                          className="px-2 py-0.5 rounded-md border border-orange-300 text-orange-700 text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-orange-50 disabled:opacity-50"
+                          onClick={() => downloadTermPdf(m)}
+                          disabled={downloadingId === m.id}
+                          title={t.downloadPdf}
+                          className="px-2 py-0.5 rounded-md border border-navy text-navy text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5 disabled:opacity-50"
                         >
-                          {t.reject}
+                          📄 {t.downloadPdf}
                         </button>
-                        {isManager && (
+                      )}
+                      {/* #1347 — pending preview: the active template as this volunteer will sign it */}
+                      {!m.signed && (
+                        <button
+                          onClick={() => { setPreviewMember(m); setShowTemplate(true); }}
+                          title={t.previewPendingTitle}
+                          className="px-2 py-0.5 rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-[var(--surface-hover)]"
+                        >
+                          👁 {t.previewTerm}
+                        </button>
+                      )}
+                      {m.agreement_status === 'issued' && (
+                        <>
+                          {canCounterSign && m.signed && !m.counter_signed && (
+                            <button
+                              onClick={() => counterSignAgreement(m)}
+                              disabled={acting === m.id}
+                              className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold border-0 cursor-pointer hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              ✍️ {t.counterSign}
+                            </button>
+                          )}
                           <button
-                            onClick={() => reissueAgreement(m)}
+                            onClick={() => rejectAgreement(m)}
                             disabled={acting === m.id}
-                            className="px-2 py-0.5 rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                            className="px-2 py-0.5 rounded-md border border-orange-300 text-orange-700 text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-orange-50 disabled:opacity-50"
                           >
-                            {t.reissue}
+                            {t.reject}
                           </button>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[var(--text-muted)]">—</span>
-                    )}
+                          {isManager && (
+                            <button
+                              onClick={() => reissueAgreement(m)}
+                              disabled={acting === m.id}
+                              className="px-2 py-0.5 rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                            >
+                              {t.reissue}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
