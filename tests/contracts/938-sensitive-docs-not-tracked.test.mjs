@@ -43,20 +43,8 @@ const BASELINE = new Set([
   // Group 2 — internal / legal-draft docs surfaced by the 2nd-pass audit. TODO: purge in #816 rewrite.
   'docs/drafts/v2.7_p153_tap_cpmai_v1.docx',
   'docs/editorial/drafts/FRONTIERS_EDITORIAL_GUIDE_v1_DRAFT.html',
-  // Group 3 — commercial pitch-deck build tooling (partner-named: Kruel/CEIA/LATAM). The heavy
-  // .pptx/.pdf decks are ALREADY untracked (nested docs/strategy/deck/.gitignore). TODO: purge/untrack in #816.
-  'docs/strategy/deck/.gitignore',
-  'docs/strategy/deck/build.py',
-  'docs/strategy/deck/build_kruel.py',
-  'docs/strategy/deck/deck_engine.py',
-  'docs/strategy/deck/gen_assets.py',
-  'docs/strategy/deck/gen_assets_ceia.py',
-  'docs/strategy/deck/gen_assets_kruel.py',
-  'docs/strategy/deck/assets/ceia_bridge.png',
-  'docs/strategy/deck/assets/hub_spoke.png',
-  'docs/strategy/deck/assets/hub_spoke_en.png',
-  'docs/strategy/deck/assets/strategy_flow.png',
-  'docs/strategy/deck/assets/synergy.png',
+  // Group 3 — commercial pitch-deck build tooling — UNTRACKED via `git rm --cached` (still local,
+  // still gitignored). Ratcheted OUT of the baseline once removed from HEAD. See #816.
 ]);
 
 /**
