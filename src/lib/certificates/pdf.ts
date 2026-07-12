@@ -97,6 +97,16 @@ export interface CertificateData {
   chapter_name?: string;
 }
 
+// #1048 — the volunteer term's contracting party is ALWAYS the host chapter (PMI Goiás,
+// the sede), by LGPD/IP policy — never the volunteer's PMI affiliation chapter. Legal name
+// kept in sync with the is_contracting=true chapter in src/lib/chapters.ts (the SSOT for
+// chapter names); CNPJ is not modelled there, so it lives here (only the term preamble uses it).
+const SEDE_CHAPTER = {
+  legalName: 'Seção Goiânia, Goiás — Brasil do Project Management Institute (PMI Goiás)',
+  inline: 'PMI Goiás',
+  cnpj: '06.065.645/0001-99',
+} as const;
+
 const TEMPLATES: Record<string, Record<string, string>> = {
   'pt-BR': {
     participation: 'Certificamos que',
@@ -347,13 +357,11 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       `${certData.verification_code || '(unknown)'} — refusing to render a blank signed term (#648)`
     );
   }
-  // Defensive {chapterName} resolution (the RPC already resolves it at snapshot time; this
-  // covers any legacy/edge body). Mirrors the SQL: short parenthetical form of the legal name.
-  const chapterInline = (() => {
-    const cn = certData.chapter_name || 'PMI Goiás';
-    const m = cn.match(/\(([^)]+)\)\s*$/);
-    return m ? m[1] : cn;
-  })();
+  // #1048 — the chapter named throughout the instrument is ALWAYS the sede (contracting
+  // party), never the volunteer's affiliation chapter. Used for the title-inline and the
+  // {chapterName} placeholder in legacy chain bodies. (Was derived from certData.chapter_name,
+  // which carries the member's PMI affiliation — the root cause that leaked another chapter.)
+  const chapterInline = SEDE_CHAPTER.inline;
   const SUB_KEYS: Record<string, string[]> = {
     clause1: ['clause1a', 'clause1b', 'clause1c'],
     clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
@@ -524,7 +532,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ${headerBlock}
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
-      <b>Termo de Adesão ao Serviço Voluntário com o ${chapterInline}</b> que fazem entre si a <b>${certData.chapter_name || 'Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)'}</b>, inscrito no CNPJ/MF sob o nº ${certData.chapter_cnpj || '06.065.645/0001-99'} e:
+      <b>Termo de Adesão ao Serviço Voluntário com o ${chapterInline}</b> que fazem entre si a <b>${SEDE_CHAPTER.legalName}</b>, inscrito no CNPJ/MF sob o nº ${SEDE_CHAPTER.cnpj} e:
     </p>
 
     ${memberDataBlock}
@@ -838,8 +846,9 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
           certData.member_state = certData.member_state || snap.member_state;
           certData.member_country = certData.member_country || snap.member_country;
           certData.member_birth_date = certData.member_birth_date || snap.member_birth_date;
-          certData.chapter_cnpj = certData.chapter_cnpj || snap.chapter_cnpj;
-          certData.chapter_name = certData.chapter_name || snap.chapter_name;
+          // #1048 — snapshot chapter_name/chapter_cnpj (the member's PMI affiliation) are
+          // intentionally NOT restored as render inputs anymore: the term's contracting party
+          // is always the sede (SEDE_CHAPTER), never the volunteer's chapter.
           certData.signed_at = certData.signed_at || snap.signed_at || fullCert.issued_at;
           certData.counter_signed_at = certData.counter_signed_at || fullCert.counter_signed_at;
           (certData as any).source = (certData as any).source || fullCert.source;
