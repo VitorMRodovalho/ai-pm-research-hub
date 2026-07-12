@@ -16,7 +16,11 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # #1261: `npm test` runs DB-aware tests serially (--test-concurrency=1) to
+    # kill intra-run collisions on the shared remote project. Serial ≈ 6 min
+    # (vs ~2 min parallel), so bumped 10 -> 15 for margin over the full job
+    # (install + lint + serial test + build + smoke).
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       
@@ -37,6 +41,10 @@ jobs:
         # (rpc-migration-coverage Q-C orphan check + drift detection). Without
         # them, the Track Q-C orphan check silently skips (p174 audit sediment).
         # Required GH secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+        # #1261: `test` script pins --test-concurrency=1 so mutating DB-aware
+        # tests can't race global-invariant readers within one run (the shared
+        # remote project has no per-run isolation). Do NOT reintroduce parallel
+        # file execution here without an isolated tenant.
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
