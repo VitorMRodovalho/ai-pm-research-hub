@@ -96,8 +96,10 @@ describe('#1153 pdf.ts — caminho Direção 1 + guarda #648 (estático)', () =>
       'o corpo aprovado (scopedBody) deve ter {chapterName} defensivamente resolvido no render');
     assert.match(PDF, /const scopedBody = applyResidencyConditionals\(approvedBody, certData\.member_country\)/,
       'scopedBody deve derivar de approvedBody via applyResidencyConditionals (F3)');
-    assert.ok(PDF.includes('const chapterInline') && PDF.includes('cn.match(/\\(([^)]+)\\)\\s*$/)'),
-      'chapterInline deve derivar a forma curta (parentético) do SSOT, sem hardcode');
+    // #1048: chapterInline is now the SEDE (the contracting party is ALWAYS PMI Goiás, never
+    // derived from the volunteer's affiliation chapter — that derivation was the party leak).
+    assert.ok(PDF.includes('const chapterInline = SEDE_CHAPTER.inline'),
+      'chapterInline deve ser a sede (SEDE_CHAPTER.inline), não derivado de certData.chapter_name (#1048)');
   });
   it('caminho legado (slots) preservado + guard fail-loud (#648)', () => {
     assert.match(PDF, /Termos da Adesão do Programa de Voluntariado:/,
