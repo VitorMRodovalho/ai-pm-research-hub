@@ -560,6 +560,7 @@ const enUS: Record<string, string> = {
   'tribe.requests.toastAccepted': 'Request approved ✓',
   'tribe.requests.toastDeclined': 'Request declined.',
   'tribe.requests.toastError': 'Could not review. Please try again.',
+  'tribe.requests.toastFull': 'Tribe is full: decline the request or ask the GP to adjust the capacity.',
   'tribe.requests.today': 'today',
   'tribe.requests.daysAgo': '{n} day(s) ago',
   'tribe.requests.expiringSoon': 'Expiring soon',

@@ -115,6 +115,7 @@ const TRIBE_I18N = {
   reqToastAccepted: t('tribe.requests.toastAccepted', lang),
   reqToastDeclined: t('tribe.requests.toastDeclined', lang),
   reqToastError: t('tribe.requests.toastError', lang),
+  reqToastFull: t('tribe.requests.toastFull', lang),
   reqToday: t('tribe.requests.today', lang),
   reqDaysAgo: t('tribe.requests.daysAgo', lang),
   reqExpiringSoon: t('tribe.requests.expiringSoon', lang),
@@ -1253,10 +1254,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         (nextBtn || document.getElementById('tribe-requests-heading'))?.focus();
       }
       (window as any).toast?.(msg, decision === 'approve' ? 'success' : 'info');
-    } catch (_) {
+    } catch (e) {
       card.removeAttribute('aria-busy');
       btns.forEach((b) => { b.disabled = false; });
-      (window as any).toast?.(I18N.reqToastError || 'Erro', 'error');
+      // #1350: approving into a full tribe raises "Tribo lotada (X/Y)" (HTTP 400). Surface that
+      // actionable message (decline the request or ask the GP to raise the cap) instead of "Erro".
+      const emsg = e instanceof Error ? e.message : '';
+      (window as any).toast?.(/lotad/i.test(emsg) ? (I18N.reqToastFull || I18N.reqToastError || 'Erro') : (I18N.reqToastError || 'Erro'), 'error');
     }
   }
 
