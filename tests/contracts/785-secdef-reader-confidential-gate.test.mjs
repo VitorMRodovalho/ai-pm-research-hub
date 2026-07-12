@@ -82,6 +82,81 @@ const ALLOWLIST = {
   // notification/trigger functions (no content returned to a caller)
   notify_leader_on_review: 'notification function',
   notify_on_assignment: 'notification function',
+
+  // ===========================================================================
+  // #1063 (2026-07-11): the audit regex was extended to also match `events` and
+  // `initiatives` (word boundaries), closing the F-05 blind spot where a SECDEF
+  // reader aggregating events/initiatives WITHOUT a board table escaped detection.
+  // Live triage (project ldrfrvwhxsmgaabwmaik, 1 confidential initiative — GP ×
+  // Presidência, legacy_tribe_id=NULL, 10 events): 57 newly-flagged readers. The 4
+  // real leaks were fixed in migration 20260805000426 (2 REVOKEs + 2 gates, see the
+  // static assertions below) and therefore are NOT here. The rest are structurally
+  // safe against the confidential-initiative threat, justified below. Two pre-existing
+  // BOARD-flagged readers (_audit_merit_transfer_on_completed_cards,
+  // offboard_member_with_handoffs) are also added here: they were flagged by the
+  // original board regex but had gone unlisted because this test was never wired into
+  // CI (fixed in this PR — registered in package.json test + test:contracts).
+  // ---------------------------------------------------------------------------
+  // -- non-content helpers (return boolean/uuid/trigger/SETOF uuid, not user content)
+  _can_manage_event: 'authority helper (boolean manage-event check; no content returned)',
+  _events_inherit_meeting_link: 'trigger function (not a user-callable reader)',
+  _v4_initiative_leader_member_ids: 'helper (SETOF member uuid; tribe-scoped via legacy_tribe_id, confidential NULL never matches)',
+  _v4_tribe_leader_member_id: 'helper (single member uuid; tribe-scoped via legacy_tribe_id)',
+  _work_initiative_id: 'helper (resolves an initiative uuid; no content returned)',
+  rls_can_write_event: 'authority helper (boolean write-gate; no content returned)',
+  // -- gp-only / analytics-gated (entry gate = manage_platform/superadmin/view_internal_analytics; GP sees confidential anyway)
+  _audit_merit_transfer_on_completed_cards: 'gp-only (RAISE unless manage_platform/service_role) — audit helper (board-flagged, pre-existing)',
+  admin_get_anomaly_report: 'gp-only (manage_platform entry gate)',
+  admin_list_members: 'analytics-gated (view_internal_analytics entry gate; perm ordinary members lack)',
+  broadcast_history: 'comms-analytics gate (can_view_comms_analytics) — empty for ordinary members; 0 confidential broadcasts',
+  detect_and_notify_detractors: 'system/cron aggregate, manage_platform/superadmin gated',
+  get_chain_audit_report: 'gated (manage_member OR participate_in_governance_review); reads governance chains, not initiative/event content',
+  get_comms_pipeline: 'gated (write_board OR manage_event OR manage_member); ordinary member Unauthorized',
+  get_cost_entries: 'gated (view_finance); ordinary member permission_denied',
+  get_cycle_attendance_overview: 'gated (manage_member OR view_internal_analytics OR service_role)',
+  get_cycle_renewal_radar: 'gated (manage_member / service_role)',
+  get_dropout_risk_members: 'gated (manage_event); returns member attendance-risk, no confidential event content',
+  get_event_attendance_health: 'gated (view_internal_analytics OR view_chapter_dashboards)',
+  get_event_champion_suggestions: 'gated (manage_event OR award_champion) + caller-org check',
+  get_gp_cohort_health: 'gated (manage_member OR view_internal_analytics); logic filters kind=research_tribe (excludes governance)',
+  get_member_comms_card: 'gated (manage_event OR manage_member)',
+  get_member_detail: 'analytics-gated (view_internal_analytics entry gate)',
+  get_pending_agreement_engagements: 'gated (manage_member)',
+  get_platform_usage: 'gp-only (manage_platform entry gate)',
+  get_recurring_meeting_admin_list: 'gp-only (manage_platform entry gate)',
+  get_recurring_meeting_drift: 'gp-only (manage_platform entry gate)',
+  list_drive_discoveries: 'gated (view_internal_analytics); confidential initiative has 0 drive_links',
+  list_orphan_interview_events: 'gp-only (manage_platform entry gate)',
+  offboard_member_with_handoffs: 'gated (manage_member) member-lifecycle write, GP-only (board-flagged, pre-existing)',
+  // -- self-scoped (auth.uid own data; a non-engaged caller only ever sees their own rows)
+  get_active_engagements: 'self-scoped (defaults to caller person_id; cross-person needs manage_member)',
+  get_attendance_panel: 'self-scoped (non-privileged caller filtered to own row)',
+  get_governance_change_log: 'self-scoped (non-privileged sees only rows where caller is actor/target); no events/initiatives content',
+  get_member_attendance_hours: 'self-scoped (caller own member_id; cross-member needs view_pii + chapter)',
+  get_member_champions_history: 'self-scoped (caller own history; cross-member needs view_pii)',
+  get_my_attendance_history: 'self-scoped (caller own attendance)',
+  get_my_tribe_request_context: 'self-scoped (caller own tribe request)',
+  get_recent_showcases_by_member: 'self-scoped (v_caller_id=p_member_id else manage_event/manage_member)',
+  list_invitations_for_my_initiatives: 'leader/self-scoped (caller own initiatives)',
+  // -- tribe-scoped via legacy_tribe_id (confidential legacy_tribe_id=NULL never matches an integer tribe id)
+  get_attendance_grid: 'grid_events whitelist excludes type=1on1 and (initiative_id IS NULL OR type=tribo); confidential 1on1 events excluded',
+  get_initiative_attendance_grid: 'confidential legacy_tribe_id=NULL routes to native path requiring manage_member/view_partner/engagement; non-engaged Unauthorized',
+  get_tribe_attendance_grid: 'tribe-scoped ((initiative_id IS NULL OR legacy_tribe_id=p_tribe_id)); confidential NULL never matches',
+  get_tribe_events_timeline: 'tribe-scoped + type filter + visibility != gp_only; confidential (gp_only, NULL tribe) triply excluded',
+  get_tribe_gamification: 'tribe-scoped (legacy_tribe_id); confidential committee unaddressable by integer p_tribe_id',
+  list_tribe_pending_requests: 'tribe-scoped (research_tribe by legacy_tribe_id); confidential kind=committee/NULL unreachable',
+  // -- public / domain structurally excludes the confidential governance initiative
+  get_cpmai_course_dashboard: 'scoped to kind=study_group initiatives (confidential is governance-kind); my_* blocks self-filtered',
+  get_geral_agenda_viva: 'result restricted to type=geral; confidential events are type=1on1',
+  get_next_general_meeting: 'type=geral AND initiative_id IS NULL; confidential (1on1, non-null initiative) doubly excluded',
+  get_pilots_summary: 'reads pilots registry only (0 pilots reference confidential); never reads events',
+  get_public_publications: 'is_published=true only; joins initiatives for legacy_tribe_id only; 0 confidential published publications',
+  get_public_verticals: 'kind=community_vertical AND status=active; confidential is kind=committee',
+  get_publication_pipeline_summary: 'reads publication_submissions only; confidential committee has 0 submissions',
+  get_publication_submissions: 'reads publication_submissions (p_tribe_id by legacy_tribe_id); confidential has 0 submissions',
+  list_curation_board: 'gated (curate_content/write_board) reads hub_resources only; confidential has 0 hub_resources',
+  verify_certificate: 'public verification by unguessable code (rate-limited); no enumeration of confidential events',
+  webinars_pending_comms: 'comms-analytics gated; reads webinars (not events); confidential has 0 webinars',
 };
 
 test('#785 guard: no ungated SECDEF reader over initiative tables outside the allowlist', {
@@ -210,3 +285,38 @@ for (const name of GATED_IN_MIG932P2) {
       `${name} must exclude confidential (is_confidential_board / is_confidential_initiative / visibility <> 'confidential')`);
   });
 }
+
+// --- #1063 (2026-07-11): events/initiatives blind-spot extension. The audit regex now also
+// matches `events`/`initiatives` (word boundaries); the 4 leaks it surfaced were closed in
+// migration 20260805000426 (2 REVOKEs + 2 gates). Static guards so a future rewrite cannot
+// silently drop the extended detection or the gates.
+const MIG1063 = 'supabase/migrations/20260805000426_1063_secdef_events_initiatives_reader_guard.sql';
+
+test('#1063 static: audit RPC regex extended to events/initiatives in mig 426', () => {
+  const block = migBlock(MIG1063, '_audit_secdef_initiative_reader_gates');
+  assert.ok(block, '_audit_secdef_initiative_reader_gates must be re-created in mig 426');
+  assert.ok(/\\mevents\\M/.test(block) && /\\minitiatives\\M/.test(block),
+    'reads_initiative_table regex must add \\mevents\\M and \\minitiatives\\M word-boundary terms');
+});
+
+test('#1063 static: the 2 internal helper leaks are REVOKEd from anon/authenticated in mig 426', () => {
+  const sql = readFileSync(resolve(process.cwd(), MIG1063), 'utf8');
+  assert.ok(/REVOKE EXECUTE ON FUNCTION public\._v4_active_initiatives_with_leaders\(\) FROM PUBLIC, anon, authenticated/.test(sql),
+    '_v4_active_initiatives_with_leaders must be REVOKEd from PUBLIC, anon, authenticated');
+  assert.ok(/REVOKE EXECUTE ON FUNCTION public\._recurrence_stockout_rows\(integer\) FROM PUBLIC, anon, authenticated/.test(sql),
+    '_recurrence_stockout_rows must be REVOKEd from PUBLIC, anon, authenticated');
+});
+
+test('#1063 static: get_tribe_event_roster applies rls_can_see_initiative in mig 426', () => {
+  const block = migBlock(MIG1063, 'get_tribe_event_roster');
+  assert.ok(block, 'get_tribe_event_roster must be CREATE OR REPLACE\'d in migration 426');
+  assert.ok(/rls_can_see_initiative\(v_event\.initiative_id\)/.test(block),
+    'get_tribe_event_roster must gate the confidential initiative via rls_can_see_initiative');
+});
+
+test('#1063 static: get_meeting_notes_compliance excludes confidential in mig 426', () => {
+  const block = migBlock(MIG1063, 'get_meeting_notes_compliance');
+  assert.ok(block, 'get_meeting_notes_compliance must be CREATE OR REPLACE\'d in migration 426');
+  assert.ok(/visibility IS DISTINCT FROM 'confidential'/.test(block),
+    'get_meeting_notes_compliance must exclude confidential initiatives from the rollup');
+});
