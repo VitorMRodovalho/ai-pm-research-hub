@@ -4493,6 +4493,8 @@ const ptBR: Record<string, string> = {
   'comp.vepReconciliation.tabMatrixHint': 'Plataforma (contrato voluntário ativo) × VEP (mirror Active) por papel e coorte. Join estável por PMI id.',
   'comp.vepReconciliation.tabOnboarding': 'Onboarding',
   'comp.vepReconciliation.tabOnboardingHint': 'Núcleo: aprovado/convertido · VEP pré-aceite (Submitted = sem oferta / OfferExtended = oferta emitida aguardando aceite). Active = já aceitou, na jornada — não é divergência (#1130).',
+  'comp.vepReconciliation.tabRejection': 'Rejeição',
+  'comp.vepReconciliation.tabRejectionHint': 'Núcleo: rejeitado · VEP: oferta ainda aberta (Submitted/Active/OfferExtended). Falta negar/retirar a oferta no VEP.',
   'comp.vepReconciliation.tabSelection': 'Seleção',
   'comp.vepReconciliation.tabSelectionHint': 'VEP: terminal (Withdrawn/Declined/OfferNotExtended) · Núcleo: ainda no funil',
   'comp.vepReconciliation.title': 'Reconciliação VEP ↔ Núcleo',

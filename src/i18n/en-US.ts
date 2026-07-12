@@ -4488,6 +4488,8 @@ const enUS: Record<string, string> = {
   'comp.vepReconciliation.tabMatrixHint': 'Platform (active volunteer contract) × VEP (Active mirror) by role and cohort. Stable join by PMI id.',
   'comp.vepReconciliation.tabOnboarding': 'Onboarding',
   'comp.vepReconciliation.tabOnboardingHint': 'Núcleo: approved/converted · VEP pre-acceptance (Submitted = no offer / OfferExtended = offer emitted awaiting acceptance). Active = accepted, in journey — not a divergence (#1130).',
+  'comp.vepReconciliation.tabRejection': 'Rejection',
+  'comp.vepReconciliation.tabRejectionHint': 'Núcleo: rejected · VEP: offer still open (Submitted/Active/OfferExtended). Needs deny/withdraw in VEP.',
   'comp.vepReconciliation.tabSelection': 'Selection',
   'comp.vepReconciliation.tabSelectionHint': 'VEP: terminal (Withdrawn/Declined/OfferNotExtended) · Núcleo: still in funnel',
   'comp.vepReconciliation.title': 'VEP ↔ Núcleo Reconciliation',

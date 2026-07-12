@@ -4489,6 +4489,8 @@ const esLATAM: Record<string, string> = {
   'comp.vepReconciliation.tabMatrixHint': 'Plataforma (contrato de voluntario activo) × VEP (mirror Active) por rol y cohorte. Join estable por PMI id.',
   'comp.vepReconciliation.tabOnboarding': 'Onboarding',
   'comp.vepReconciliation.tabOnboardingHint': 'Núcleo: aprobado/convertido · VEP pre-aceptación (Submitted = sin oferta / OfferExtended = oferta emitida esperando aceptación). Active = ya aceptó, en la jornada — no es divergencia (#1130).',
+  'comp.vepReconciliation.tabRejection': 'Rechazo',
+  'comp.vepReconciliation.tabRejectionHint': 'Núcleo: rechazado · VEP: oferta aún abierta (Submitted/Active/OfferExtended). Falta denegar/retirar la oferta en VEP.',
   'comp.vepReconciliation.tabSelection': 'Selección',
   'comp.vepReconciliation.tabSelectionHint': 'VEP: terminal (Withdrawn/Declined/OfferNotExtended) · Núcleo: aún en embudo',
   'comp.vepReconciliation.title': 'Reconciliación VEP ↔ Núcleo',

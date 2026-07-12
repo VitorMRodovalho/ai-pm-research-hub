@@ -5,7 +5,7 @@ import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props { lang?: string; }
 
-type TabKey = 'matrix' | 'selection' | 'onboarding' | 'active_members';
+type TabKey = 'matrix' | 'selection' | 'onboarding' | 'active_members' | 'rejection';
 
 
 function useLang(p?: string): string {
@@ -373,6 +373,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     selection: data.selection_divergent || [],
     onboarding: data.onboarding_divergent || [],
     active_members: data.active_members_divergent || [],
+    rejection: data.rejection_divergent || [],
   };
   const matrixDivCount = (matrixData?.totals?.platform_only_count ?? 0) + (matrixData?.totals?.vep_only_count ?? 0);
   const tabCounts: Record<TabKey, number> = {
@@ -380,18 +381,21 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     selection: summary.selection_count ?? lists.selection.length,
     onboarding: summary.onboarding_count ?? lists.onboarding.length,
     active_members: summary.active_members_count ?? lists.active_members.length,
+    rejection: summary.rejection_count ?? lists.rejection.length,
   };
   const tabHints: Record<TabKey, string> = {
     matrix: t('comp.vepReconciliation.tabMatrixHint'),
     selection: t('comp.vepReconciliation.tabSelectionHint'),
     onboarding: t('comp.vepReconciliation.tabOnboardingHint'),
     active_members: t('comp.vepReconciliation.tabActiveMembersHint'),
+    rejection: t('comp.vepReconciliation.tabRejectionHint'),
   };
   const tabLabels: Record<TabKey, string> = {
     matrix: t('comp.vepReconciliation.tabMatrix'),
     selection: t('comp.vepReconciliation.tabSelection'),
     onboarding: t('comp.vepReconciliation.tabOnboarding'),
     active_members: t('comp.vepReconciliation.tabActiveMembers'),
+    rejection: t('comp.vepReconciliation.tabRejection'),
   };
   const currentList = tab === 'matrix' ? [] : lists[tab];
 
@@ -522,7 +526,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
 
       {/* Tabs */}
       <div className="flex border-b border-[var(--border-default)]">
-        {(['matrix', 'selection', 'onboarding', 'active_members'] as TabKey[]).map((key) => {
+        {(['matrix', 'selection', 'onboarding', 'active_members', 'rejection'] as TabKey[]).map((key) => {
           const active = tab === key;
           const count = tabCounts[key];
           return (
