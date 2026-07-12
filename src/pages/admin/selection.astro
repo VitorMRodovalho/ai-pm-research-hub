@@ -638,6 +638,7 @@ const SEL_I18N = {
 </script>
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { SELECTION_STATUS_TONE, GROUP_TONE, TONE_BADGE } from '../../lib/statusFarol';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__SEL_I18N) || {
@@ -1060,12 +1061,15 @@ const SEL_I18N = {
   }
 
   /* ── status helpers ───────────────────────────────── */
+  // #1132 — colours derived from the shared SSOT (src/lib/statusFarol); this file
+  // owns only the group labels + the status→group buckets, not the palette.
+  const badge = (tone: keyof typeof TONE_BADGE) => ({ color: TONE_BADGE[tone].text, bg: TONE_BADGE[tone].bg });
   const STATUS_GROUPS: Record<string, { label: string; color: string; bg: string; statuses: string[] }> = {
-    submitted:  { label: T.statusGroups.submitted,  color: 'text-gray-700',    bg: 'bg-gray-100',    statuses: ['submitted'] },
-    evaluation: { label: T.statusGroups.evaluation, color: 'text-blue-700',    bg: 'bg-blue-50',     statuses: ['screening', 'objective_eval', 'objective_cutoff'] },
-    interview:  { label: T.statusGroups.interview,  color: 'text-yellow-700',  bg: 'bg-yellow-50',   statuses: ['interview_pending', 'interview_scheduled', 'interview_done', 'interview_noshow'] },
-    approved:   { label: T.statusGroups.approved,   color: 'text-emerald-700', bg: 'bg-emerald-50',  statuses: ['approved', 'converted'] },
-    rejected:   { label: T.statusGroups.rejected,   color: 'text-red-700',     bg: 'bg-red-50',      statuses: ['rejected', 'cancelled', 'withdrawn'] },
+    submitted:  { label: T.statusGroups.submitted,  ...badge(GROUP_TONE.submitted),  statuses: ['submitted'] },
+    evaluation: { label: T.statusGroups.evaluation, ...badge(GROUP_TONE.evaluation), statuses: ['screening', 'objective_eval', 'objective_cutoff'] },
+    interview:  { label: T.statusGroups.interview,  ...badge(GROUP_TONE.interview),  statuses: ['interview_pending', 'interview_scheduled', 'interview_done', 'interview_noshow'] },
+    approved:   { label: T.statusGroups.approved,   ...badge(GROUP_TONE.approved),   statuses: ['approved', 'converted'] },
+    rejected:   { label: T.statusGroups.rejected,   ...badge(GROUP_TONE.rejected),   statuses: ['rejected', 'cancelled', 'withdrawn'] },
   };
 
   function statusGroup(status: string): string {
@@ -1075,23 +1079,9 @@ const SEL_I18N = {
     return 'submitted';
   }
 
-  const STATUS_BADGE: Record<string, { color: string; bg: string }> = {
-    submitted: { color: 'text-gray-700', bg: 'bg-gray-100' },
-    screening: { color: 'text-blue-700', bg: 'bg-blue-50' },
-    objective_eval: { color: 'text-blue-700', bg: 'bg-blue-50' },
-    objective_cutoff: { color: 'text-blue-700', bg: 'bg-blue-50' },
-    interview_pending: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
-    interview_scheduled: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
-    interview_done: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
-    interview_noshow: { color: 'text-orange-700', bg: 'bg-orange-50' },
-    final_eval: { color: 'text-indigo-700', bg: 'bg-indigo-50' },
-    approved: { color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    converted: { color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    rejected: { color: 'text-red-700', bg: 'bg-red-50' },
-    cancelled: { color: 'text-red-700', bg: 'bg-red-50' },
-    withdrawn: { color: 'text-red-600', bg: 'bg-red-50' },
-    waitlist: { color: 'text-amber-700', bg: 'bg-amber-50' },
-  };
+  const STATUS_BADGE: Record<string, { color: string; bg: string }> = Object.fromEntries(
+    Object.entries(SELECTION_STATUS_TONE).map(([status, tone]) => [status, badge(tone)]),
+  );
 
   const ROLE_LABELS: Record<string, string> = T.roleLabels;
 
