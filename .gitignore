@@ -124,6 +124,7 @@ docs/**/*peer_review_briefing*
 docs/**/*WHATSAPP_CROSS_GROUP*
 docs/drafts/p131_email_*
 docs/drafts/p277_*
+# === END #816 === (sentinel: tests/contracts/938-sensitive-docs-not-tracked.test.mjs parses the block above)
 
 # Deno lockfile — EF deps are managed by the Supabase bundler; CI runs lockless (#1106)
 deno.lock
