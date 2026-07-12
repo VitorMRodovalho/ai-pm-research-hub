@@ -339,6 +339,13 @@ const SEL_I18N = {
           <!-- p279 #411 W1b: F2 toolbar filter chips — surface the interview-invite lifecycle gaps -->
           <button id="filter-no-interview" class="px-3 py-1 rounded-full font-semibold border border-sky-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-sky-500/10" data-active="false" title={t('admin.selection.noInterviewHint', lang)}>{t('admin.selection.noInterview', lang)}</button>
           <button id="filter-stuck-scheduled" class="px-3 py-1 rounded-full font-semibold border border-rose-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-rose-500/10" data-active="false" title={t('admin.selection.stuckScheduledHint', lang)}>{t('admin.selection.stuckScheduled', lang)}</button>
+          <!-- #1000: VEP reconciliation quick-chips (mutually exclusive; derive from status + vep_recon.status_raw — no RPC, read-only, never writes VEP state). Same taxonomy as /admin/vep-reconciliation buckets (#1001). -->
+          <span class="text-[var(--border-default)]">|</span>
+          <button class="filter-vep-chip px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-amber-500/10" data-vep="approved_needs_extend" data-active="false" title={t('admin.selection.vepApprovedNeedsExtendHint', lang)}>{t('admin.selection.vepApprovedNeedsExtend', lang)}</button>
+          <button class="filter-vep-chip px-3 py-1 rounded-full font-semibold border border-rose-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-rose-500/10" data-vep="rejected_needs_deny" data-active="false" title={t('admin.selection.vepRejectedNeedsDenyHint', lang)}>{t('admin.selection.vepRejectedNeedsDeny', lang)}</button>
+          <button class="filter-vep-chip px-3 py-1 rounded-full font-semibold border border-cyan-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-cyan-500/10" data-vep="offer_waiting" data-active="false" title={t('admin.selection.vepOfferWaitingHint', lang)}>{t('admin.selection.vepOfferWaiting', lang)}</button>
+          <button class="filter-vep-chip px-3 py-1 rounded-full font-semibold border border-emerald-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-emerald-500/10" data-vep="offer_accepted" data-active="false" title={t('admin.selection.vepOfferAcceptedHint', lang)}>{t('admin.selection.vepOfferAccepted', lang)}</button>
+          <button class="filter-vep-chip px-3 py-1 rounded-full font-semibold border border-red-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-red-500/10" data-vep="offer_expired" data-active="false" title={t('admin.selection.vepOfferExpiredHint', lang)}>{t('admin.selection.vepOfferExpired', lang)}</button>
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="filter-myeval-toggle">
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-navy text-white" data-myeval="all">{t('admin.selection.allOption', lang)}</button>
             <button class="filter-myeval-btn px-3 py-1 font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-navy" data-myeval="pending_mine" title={t('admin.selection.pendingReviewHint', lang)}>{t('admin.selection.myPending', lang)}</button>
@@ -952,6 +959,9 @@ const SEL_I18N = {
   // p279 #411 W1b: F2 chips — surface the interview-invite lifecycle gaps (default OFF)
   let filterNoInterview = false;
   let filterStuckScheduled = false;
+  // #1000: VEP reconciliation quick-chip (mutually exclusive; 'all' = off). Derived from
+  // status + vep_recon.status_raw, read-only — never writes VEP state.
+  let filterVep: 'all' | 'approved_needs_extend' | 'rejected_needs_deny' | 'offer_waiting' | 'offer_accepted' | 'offer_expired' = 'all';
 
   /* ── helpers ──────────────────────────────────────── */
   function esc(s: any): string {
@@ -1569,6 +1579,19 @@ const SEL_I18N = {
       // p279 #411 W1b: "Stuck scheduled" — interview lapsed (server-computed meta.interview_stuck:
       //   app.status=interview_scheduled AND a scheduled interview is past + not conducted).
       if (filterStuckScheduled && r.meta?.interview_stuck !== true) return false;
+      // #1000: VEP reconciliation quick-chip — same bucket taxonomy as /admin/vep-reconciliation
+      // (#1001). Derived from status + vep_recon.status_raw; read-only, never writes VEP state.
+      if (filterVep !== 'all') {
+        const vs = r.vep_recon?.status_raw;
+        const st = r.status;
+        let vepMatch = false;
+        if (filterVep === 'approved_needs_extend') vepMatch = st === 'approved' && vs === 'Submitted';
+        else if (filterVep === 'rejected_needs_deny') vepMatch = st === 'rejected' && ['Submitted', 'Active', 'OfferExtended'].includes(vs);
+        else if (filterVep === 'offer_waiting') vepMatch = vs === 'OfferExtended';
+        else if (filterVep === 'offer_accepted') vepMatch = st === 'approved' && vs === 'Active';
+        else if (filterVep === 'offer_expired') vepMatch = ['OfferExpired', 'Expired'].includes(vs);
+        if (!vepMatch) return false;
+      }
       if (search) {
         const name = (r.applicant_name || '').toLowerCase();
         const email = (r.email || '').toLowerCase();
@@ -5024,6 +5047,26 @@ const SEL_I18N = {
       btn.classList.toggle('text-rose-700', filterStuckScheduled);
       btn.classList.toggle('text-[var(--text-secondary)]', !filterStuckScheduled);
       applyFilters();
+    });
+
+    // #1000: VEP reconciliation quick-chips — single active; click the active chip to clear.
+    // Uniform navy active tint (per-chip border keeps identity). Read-only filter, no VEP write.
+    document.querySelectorAll('.filter-vep-chip').forEach((chip) => {
+      chip.addEventListener('click', (e) => {
+        const clicked = e.currentTarget as HTMLButtonElement;
+        const val = (clicked.dataset.vep || 'all') as typeof filterVep;
+        filterVep = filterVep === val ? 'all' : val;
+        document.querySelectorAll('.filter-vep-chip').forEach((c) => {
+          const el = c as HTMLButtonElement;
+          const active = el.dataset.vep === filterVep;
+          el.dataset.active = active ? 'true' : 'false';
+          el.classList.toggle('bg-navy/10', active);
+          el.classList.toggle('text-navy', active);
+          el.classList.toggle('bg-[var(--surface-card)]', !active);
+          el.classList.toggle('text-[var(--text-secondary)]', !active);
+        });
+        applyFilters();
+      });
     });
 
     document.getElementById('filter-myeval-toggle')?.addEventListener('click', (e) => {
