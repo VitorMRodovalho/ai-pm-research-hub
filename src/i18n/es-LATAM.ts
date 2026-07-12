@@ -560,6 +560,7 @@ const esLATAM: Record<string, string> = {
   'tribe.requests.toastAccepted': 'Solicitud aprobada ✓',
   'tribe.requests.toastDeclined': 'Solicitud rechazada.',
   'tribe.requests.toastError': 'No se pudo revisar. Inténtalo de nuevo.',
+  'tribe.requests.toastFull': 'Tribu llena: rechaza la solicitud o pide al GP que ajuste la capacidad.',
   'tribe.requests.today': 'hoy',
   'tribe.requests.daysAgo': 'hace {n} día(s)',
   'tribe.requests.expiringSoon': 'Expira pronto',

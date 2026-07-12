@@ -560,6 +560,7 @@ const ptBR: Record<string, string> = {
   'tribe.requests.toastAccepted': 'Pedido aprovado ✓',
   'tribe.requests.toastDeclined': 'Pedido recusado.',
   'tribe.requests.toastError': 'Não foi possível revisar. Tente novamente.',
+  'tribe.requests.toastFull': 'Tribo lotada: recuse o pedido ou peça ao GP para ajustar a capacidade.',
   'tribe.requests.today': 'hoje',
   'tribe.requests.daysAgo': 'há {n} dia(s)',
   'tribe.requests.expiringSoon': 'Expira em breve',

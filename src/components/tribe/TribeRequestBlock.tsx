@@ -119,6 +119,7 @@ interface Copy {
   toastLeft: string;
   toastSent: string;
   toastError: string;
+  toastFull: string;
 }
 
 const COPY: Record<string, Copy> = {
@@ -170,6 +171,9 @@ const COPY: Record<string, Copy> = {
     toastLeft: 'Você saiu da tribo. Agora escolha outra.',
     toastSent: 'Pedido enviado! O líder da tribo vai revisar.',
     toastError: 'Não foi possível enviar. Tente novamente.',
+    // #1350: the request RPC now blocks a full tribe with "Tribo lotada (X/Y)". Surface it clearly
+    // instead of the generic error, so the researcher picks another tribe.
+    toastFull: 'Esta tribo está lotada. Escolha outra tribo.',
   },
   'en-US': {
     ariaLabel: 'Request to join a tribe',
@@ -219,6 +223,7 @@ const COPY: Record<string, Copy> = {
     toastLeft: 'You left the tribe. Now pick another one.',
     toastSent: 'Request sent! The tribe leader will review it.',
     toastError: 'Could not send. Please try again.',
+    toastFull: 'This tribe is full. Please choose another tribe.',
   },
   'es-LATAM': {
     ariaLabel: 'Solicitar ingreso a una tribu',
@@ -268,6 +273,7 @@ const COPY: Record<string, Copy> = {
     toastLeft: 'Saliste de la tribu. Ahora elige otra.',
     toastSent: '¡Solicitud enviada! El líder de la tribu la revisará.',
     toastError: 'No se pudo enviar. Inténtalo de nuevo.',
+    toastFull: 'Esta tribu está llena. Elige otra tribu.',
   },
 };
 
@@ -327,8 +333,11 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       setMessage('');
       setSelected(null);
       await load(); // re-read -> now shows the pending state
-    } catch {
-      (window as any).toast?.(copy.toastError, 'error');
+    } catch (e) {
+      // #1350: the request RPC blocks a full tribe ("Tribo lotada (X/Y)"). Show that specific,
+      // actionable message instead of the generic "try again" (the picker stays so they re-pick).
+      const msg = e instanceof Error ? e.message : '';
+      (window as any).toast?.(/lotad/i.test(msg) ? copy.toastFull : copy.toastError, 'error');
     } finally {
       setSubmitting(false);
     }
