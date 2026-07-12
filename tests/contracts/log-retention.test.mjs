@@ -8,7 +8,7 @@
  * This test does NOT verify actual purge writes (cron does that monthly).
  * It verifies:
  *   1. RPC signature exists and returns expected shape
- *   2. All 8 covered tables appear in the output
+ *   2. All 9 covered tables appear in the output
  *   3. pii_access_log appears twice (anonymize + drop phases)
  *   4. admin_audit_log pair appears (archive live + drop z_archive)
  *   5. purge_mode enum matches spec (drop|archive|anonymize|drop_resolved|error)
@@ -37,6 +37,7 @@ const EXPECTED_TABLES = [
   'pii_access_log',             // appears 2x (anonymize + drop)
   'admin_audit_log',
   'z_archive.admin_audit_log',
+  'drive_offboarding_audit',    // #1054: 5y anonymize of permission_email (8 → 9 log tables)
 ];
 
 async function callPurgeDryRun() {
@@ -57,7 +58,7 @@ async function callPurgeDryRun() {
   return res.json();
 }
 
-test('ADR-0014: purge_expired_logs covers all 8 log tables', { skip: !canRun && skipMsg }, async () => {
+test('ADR-0014: purge_expired_logs covers all 9 log tables', { skip: !canRun && skipMsg }, async () => {
   const rows = await callPurgeDryRun();
 
   assert.ok(Array.isArray(rows), 'RPC must return an array');
