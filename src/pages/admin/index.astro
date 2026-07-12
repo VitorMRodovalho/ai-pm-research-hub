@@ -11,7 +11,7 @@ import ResearchPipelineWidget from '../../components/admin/ResearchPipelineWidge
 import VepReconciliationWidget from '../../components/admin/VepReconciliationWidget';
 import GpActionTodayWidget from '../../components/admin/GpActionTodayWidget';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
+const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common', 'comp.vepReconciliation'], lang);
 
 // Pre-render strings for inline TS scripts via define:vars (Ω-B+.9 p145)
 const DASH_I18N = {
