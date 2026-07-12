@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { canForAdminEntry } from '../../lib/permissions';
+import { SELECTION_STATUS_TONE, VEP_STATUS_TONE, toneClasses } from '../../lib/statusFarol';
 
 interface Props { lang?: string; }
 
@@ -223,32 +224,15 @@ function timeAgo(dateStr: string | null | undefined, label: string): string {
   return `${days}d ${label}`;
 }
 
-const NUCLEO_STATUS_COLOR: Record<string, string> = {
-  submitted: 'bg-gray-100 text-gray-700',
-  screening: 'bg-blue-50 text-blue-700',
-  objective_eval: 'bg-blue-50 text-blue-700',
-  interview_pending: 'bg-yellow-50 text-yellow-700',
-  interview_scheduled: 'bg-yellow-50 text-yellow-700',
-  interview_done: 'bg-yellow-50 text-yellow-700',
-  final_eval: 'bg-purple-50 text-purple-700',
-  approved: 'bg-emerald-50 text-emerald-700',
-  converted: 'bg-emerald-100 text-emerald-800',
-  rejected: 'bg-red-50 text-red-700',
-  withdrawn: 'bg-red-50 text-red-700',
-  cancelled: 'bg-gray-50 text-gray-700',
-  waitlist: 'bg-amber-50 text-amber-700',
-};
+// #1132 — palettes derived from the shared SSOT (src/lib/statusFarol), no longer
+// a local colour map that could drift from selection.astro / AffiliationQueueIsland.
+const NUCLEO_STATUS_COLOR: Record<string, string> = Object.fromEntries(
+  Object.entries(SELECTION_STATUS_TONE).map(([status, tone]) => [status, toneClasses(tone)]),
+);
 
-const VEP_STATUS_COLOR: Record<string, string> = {
-  Submitted: 'bg-blue-100 text-blue-700',
-  OfferExtended: 'bg-amber-100 text-amber-700',
-  Active: 'bg-emerald-100 text-emerald-700',
-  Withdrawn: 'bg-red-100 text-red-700',
-  Declined: 'bg-red-100 text-red-700',
-  OfferNotExtended: 'bg-red-100 text-red-700',
-  OfferExpired: 'bg-red-100 text-red-700',
-  Complete: 'bg-gray-100 text-gray-700',
-};
+const VEP_STATUS_COLOR: Record<string, string> = Object.fromEntries(
+  Object.entries(VEP_STATUS_TONE).map(([status, tone]) => [status, toneClasses(tone)]),
+);
 
 // #1130 — role×cohort reconciliation matrix panel
 function MatrixPanel({ t, data, loading, error, onRetry, roleLabel, cycleHref, renderBadge }: {

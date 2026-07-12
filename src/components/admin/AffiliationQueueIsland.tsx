@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'rea
 import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { unifiedBrChapters, soonestChapterExpiry, type PmiMembershipEntry, type ChapterAffiliation } from '../../lib/affiliation-chapters';
+import { validityFarol, toneClasses, VEP_STATUS_TONE, COHORT_TONE } from '../../lib/statusFarol';
 
 interface LatestVerification {
   created_at: string;
@@ -87,52 +88,55 @@ interface Farol { emoji: string; label: string; cls: string; provisional: boolea
  * VEP expiry (soonestChapterExpiry, SSOT-first #1192) so the GP triages at a glance and opens the
  * modal only to confirm.
  */
+// #1132 — emoji + colour come from the shared validity farol (src/lib/statusFarol);
+// this function keeps only the business logic that picks the farol key + label + provisional.
 function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
+  const mk = (key: Farol['key'], label: string, provisional: boolean): Farol => {
+    const f = validityFarol(key);
+    return { emoji: f.emoji, label, cls: f.cls, provisional, key };
+  };
   const v = r.latest_verification;
   if (v) {
-    if (v.membership_active === false) return { emoji: '🔴', label: t('comp.affiliationQueue.affInactive', 'Filiação inativa'), cls: 'bg-rose-50 text-rose-700', provisional: false, key: 'expired' };
+    if (v.membership_active === false) return mk('expired', t('comp.affiliationQueue.affInactive', 'Filiação inativa'), false);
     if (v.membership_expires_on) {
       const days = Math.ceil((new Date(v.membership_expires_on).getTime() - Date.now()) / 86400000);
-      if (days < 0) return { emoji: '🔴', label: t('comp.affiliationQueue.affExpired', 'Filiação vencida'), cls: 'bg-rose-50 text-rose-700', provisional: false, key: 'expired' };
-      if (days <= 30) return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiring', 'Vence em breve'), cls: 'bg-amber-50 text-amber-700', provisional: false, key: 'soon' };
+      if (days < 0) return mk('expired', t('comp.affiliationQueue.affExpired', 'Filiação vencida'), false);
+      if (days <= 30) return mk('soon', t('comp.affiliationQueue.affExpiring', 'Vence em breve'), false);
     }
-    return { emoji: '🟢', label: t('comp.affiliationQueue.affVerified', 'Verificada'), cls: 'bg-emerald-50 text-emerald-700', provisional: false, key: 'ok' };
+    return mk('ok', t('comp.affiliationQueue.affVerified', 'Verificada'), false);
   }
   const s = soonestChapterExpiry(r.chapter_affiliations, r.pmi_memberships);
-  if (s.status === 'expired') return { emoji: '🔴', label: t('comp.affiliationQueue.affExpiredVep', 'Vencida (VEP)'), cls: 'bg-rose-50 text-rose-700', provisional: true, key: 'expired' };
-  if (s.status === 'soon') return { emoji: '🟡', label: t('comp.affiliationQueue.affExpiringVep', 'Vence em breve (VEP)'), cls: 'bg-amber-50 text-amber-700', provisional: true, key: 'soon' };
-  if (s.status === 'ok') return { emoji: '🟢', label: t('comp.affiliationQueue.affActiveVep', 'Ativa (VEP)'), cls: 'bg-emerald-50 text-emerald-700', provisional: true, key: 'ok' };
-  return { emoji: '⚪', label: t('comp.affiliationQueue.affUnverified', 'Não verificada'), cls: 'bg-slate-100 text-slate-500', provisional: false, key: 'unverified' };
+  if (s.status === 'expired') return mk('expired', t('comp.affiliationQueue.affExpiredVep', 'Vencida (VEP)'), true);
+  if (s.status === 'soon') return mk('soon', t('comp.affiliationQueue.affExpiringVep', 'Vence em breve (VEP)'), true);
+  if (s.status === 'ok') return mk('ok', t('comp.affiliationQueue.affActiveVep', 'Ativa (VEP)'), true);
+  return mk('unverified', t('comp.affiliationQueue.affUnverified', 'Não verificada'), false);
 }
 
-const VEP_CLS: Record<string, string> = {
-  Active: 'bg-emerald-50 text-emerald-700',
-  Submitted: 'bg-blue-50 text-blue-700',
-  OfferExtended: 'bg-amber-50 text-amber-700',
-};
+// #1132 — VEP badge colours derived from the shared SSOT (subset used here).
+const VEP_CLS: Record<string, string> = Object.fromEntries(
+  Object.entries(VEP_STATUS_TONE).map(([status, tone]) => [status, toneClasses(tone)]),
+);
 
-/** #1129 — cohort badge presentation (label + tooltip + class). */
+/** #1129 — cohort badge presentation (label + tooltip + class). Colour from the shared SSOT (#1132). */
 function cohortMeta(cls: CohortClass, t: (k: string, f?: string) => string): { label: string; hint: string; cls: string } {
-  const map: Record<CohortClass, string> = {
-    current_selection: 'bg-teal-50 text-teal-700',
-    carryover: 'bg-indigo-50 text-indigo-700',
-    non_selection: 'bg-slate-100 text-slate-600',
-  };
   return {
     label: t(`comp.affiliationQueue.cohort_${cls}`, cls),
     hint: t(`comp.affiliationQueue.cohortHint_${cls}`, ''),
-    cls: map[cls] || 'bg-slate-100 text-slate-600',
+    cls: toneClasses(COHORT_TONE[cls] ?? 'mutedInk'),
   };
 }
 
-/** #1129 — volunteer-term validity badge (emoji + label + class). */
+/** #1129 — volunteer-term validity badge (emoji + label + class). Farol from the shared SSOT (#1132). */
 function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { emoji: string; label: string; cls: string } {
-  switch (status) {
-    case 'expired':  return { emoji: '🔴', label: t('comp.affiliationQueue.term_expired', 'Vencido'), cls: 'bg-rose-50 text-rose-700' };
-    case 'expiring': return { emoji: '🟡', label: t('comp.affiliationQueue.term_expiring', 'Vencendo'), cls: 'bg-amber-50 text-amber-700' };
-    case 'valid':    return { emoji: '🟢', label: t('comp.affiliationQueue.term_valid', 'Vigente'), cls: 'bg-emerald-50 text-emerald-700' };
-    default:         return { emoji: '⚪', label: t('comp.affiliationQueue.term_none', 'Sem termo'), cls: 'bg-slate-100 text-slate-500' };
-  }
+  const labels: Record<TermStatus, string> = {
+    expired:  t('comp.affiliationQueue.term_expired', 'Vencido'),
+    expiring: t('comp.affiliationQueue.term_expiring', 'Vencendo'),
+    valid:    t('comp.affiliationQueue.term_valid', 'Vigente'),
+    none:     t('comp.affiliationQueue.term_none', 'Sem termo'),
+  };
+  // term status keys (expired/expiring/valid/none) are validity-farol keys.
+  const f = validityFarol(status);
+  return { emoji: f.emoji, label: labels[status], cls: f.cls };
 }
 
 // #1192 — chapter-filter option row read straight from chapter_registry (the SSOT).
