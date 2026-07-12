@@ -67,7 +67,7 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
         </span>
       </div>
       <p className="text-[11px] text-[var(--text-secondary)] mb-3">{t('comp.vepReconciliation.widgetSubtitle')}</p>
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-4 gap-2 mb-3">
         <div className="bg-[var(--surface-section-cool)] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] text-[var(--text-muted)] font-semibold uppercase">{t('comp.vepReconciliation.tabSelection')}</div>
           <div className={`font-bold text-base ${(summary.selection_count || 0) > 0 ? 'text-amber-700' : 'text-[var(--text-muted)]'}`}>{summary.selection_count ?? 0}</div>
@@ -79,6 +79,10 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
         <div className="bg-[var(--surface-section-cool)] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] text-[var(--text-muted)] font-semibold uppercase">{t('comp.vepReconciliation.tabActiveMembers')}</div>
           <div className={`font-bold text-base ${(summary.active_members_count || 0) > 0 ? 'text-amber-700' : 'text-[var(--text-muted)]'}`}>{summary.active_members_count ?? 0}</div>
+        </div>
+        <div className="bg-[var(--surface-section-cool)] rounded-lg px-2 py-2 text-center">
+          <div className="text-[9px] text-[var(--text-muted)] font-semibold uppercase">{t('comp.vepReconciliation.tabRejection')}</div>
+          <div className={`font-bold text-base ${(summary.rejection_count || 0) > 0 ? 'text-amber-700' : 'text-[var(--text-muted)]'}`}>{summary.rejection_count ?? 0}</div>
         </div>
       </div>
       <a
