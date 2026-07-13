@@ -7142,6 +7142,7 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.attestConfirm': 'Confirm and access',
   'comp.affiliationQueue.searchPh': 'Search by name or email',
   'comp.affiliationQueue.filterChapterAll': 'All chapters',
+  'comp.affiliationQueue.chapterReconcile': '{chapter}: {total} active members in Members · {verified} already verified (outside this queue) · {queue} awaiting verification here.',
   'comp.affiliationQueue.filterVepAll': 'All VEP',
   'comp.affiliationQueue.sort_attention': 'Needs attention',
   'comp.affiliationQueue.sort_name': 'Name',

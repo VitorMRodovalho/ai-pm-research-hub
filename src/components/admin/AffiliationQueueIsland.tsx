@@ -142,6 +142,10 @@ function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { e
 // #1192 — chapter-filter option row read straight from chapter_registry (the SSOT).
 interface RegistryChapter { chapter_code: string; state: string; }
 
+// #1364 — per-chapter reconciliation row from get_affiliation_chapter_rollup(). `chapter` is
+// members.chapter ('PMI-XX', the /admin/members roster axis); in_queue mirrors this queue's cohort.
+interface ChapterRollupEntry { chapter: string; total_active: number; in_queue: number; verified_out: number; }
+
 type SortKey = 'attention' | 'name' | 'expiry' | 'sync';
 
 /** #996 "precisa atenção" default ordering: pré-onboarding → vencida → vence em breve → não verificada → resto. */
@@ -180,6 +184,7 @@ export default function AffiliationQueueIsland() {
   const [termFilter, setTermFilter] = useState<'all' | TermStatus>('all');       // #1129
   const [search, setSearch] = useState('');
   const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
+  const [rollup, setRollup] = useState<ChapterRollupEntry[]>([]);                // #1364
 
   // #1192 — chapter filter options come from chapter_registry (RLS: read-all for authenticated),
   // NOT from whatever the loaded rows happen to parse to (the old 5-of-15 bug).
@@ -210,6 +215,10 @@ export default function AffiliationQueueIsland() {
     } else {
       setRows(Array.isArray(data) ? data : []);
     }
+    // #1364 — per-chapter reconciliation (full roster vs this queue) for the chapter-filter banner.
+    sb.rpc('get_affiliation_chapter_rollup')
+      .then(({ data: rd }: any) => setRollup(Array.isArray(rd) ? rd : []))
+      .catch(() => {});
     setLoading(false);
   }, [getSb, t]);
 
@@ -480,6 +489,28 @@ export default function AffiliationQueueIsland() {
           </button>
         ))}
       </div>
+
+      {/* #1364 — chapter reconciliation. This screen is a verification QUEUE (a subset of /admin/members),
+          so a chapter here shows FEWER people than the same chapter on /membros: the difference is the
+          already-verified members, who correctly leave the queue. Surfaced so the two screens reconcile
+          at a glance and the old "PMI-RS shows 16 there but 3 here" reads as by-design, not a bug. */}
+      {chapterFilter !== 'all' && (() => {
+        const r = rollup.find(x => x.chapter === `PMI-${chapterFilter}`);
+        if (!r) return null;
+        const label = registry.find(c => c.chapter_code === chapterFilter)?.state || `PMI-${chapterFilter}`;
+        const msg = t('comp.affiliationQueue.chapterReconcile',
+          '{chapter}: {total} membros ativos em Membros · {verified} já verificados (fora desta fila) · {queue} aguardando verificação aqui.')
+          .replace('{chapter}', label)
+          .replace('{total}', String(r.total_active))
+          .replace('{verified}', String(r.verified_out))
+          .replace('{queue}', String(r.in_queue));
+        return (
+          <div className="mb-4 flex items-start gap-1.5 text-[12px] text-[var(--text-secondary)] bg-[var(--surface-section-cool)] rounded-lg px-3 py-2">
+            <Info size={13} className="flex-shrink-0 mt-0.5" />
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {/* bulk bar */}
       {selectedIds.size > 0 && (
