@@ -40,6 +40,7 @@ import {
   getOpenSelectionCycle,
   getRecentCycles,
   pickCycleForApplicationDate,
+  pickCohortCycleByContractStart,
   getCycleAppIdStats,
   pickCycleByAppIdSequence,
   getActiveOpportunities,
@@ -418,31 +419,45 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
 
       const mapped = mapScriptToNucleo(app, opp, allQRs, cycle.id, cycle.cycle_code, env.ORG_ID);
 
-      // p195 BUG-195.B fix: redirect to semantically-correct cycle when
-      // application_date falls in a different cycle's window. Mapper already
-      // computed application_date (from submittedDate or fallback). If a
-      // closed-cycle match exists, override the cycle_id stamped by mapper.
-      const dateMatched = pickCycleForApplicationDate(mapped.application_date, recentCycles);
-      if (dateMatched && dateMatched.id !== cycle.id) {
-        // Track the redirect for observability + audit
+      // #1316: contract-start cohort is the SSOT for APPROVED apps and supersedes
+      // the p195 temporal heuristic. A placed volunteer's Núcleo contract start
+      // (serviceStartDateUTC, scoped to THIS opportunity) deterministically anchors
+      // the cohort cycle (greatest open_date <= contract_start). A 1-year contract
+      // crosses two semesters, so application_date is NOT the determinant. Apps with
+      // no contract yet (rejected/pending) fall through to the temporal redirect /
+      // app_id-sequence fallback; legacy pre-cycle3 contracts (2025) match no cycle
+      // here (cohortMatched null) and keep the mapper's open-cycle default (#1284).
+      const cohortMatched = pickCohortCycleByContractStart(mapped.nucleo_contract_start, recentCycles);
+      if (cohortMatched && cohortMatched.id !== cycle.id) {
         summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
-        console.log(`[cycle-redirect:date] app=${app.applicationId} date=${mapped.application_date} ` +
-          `default=${cycle.cycle_code} → matched=${dateMatched.cycle_code}`);
-        mapped.cycle_id = dateMatched.id;
-      } else if (!mapped.application_date) {
-        // p195 OPP-196.A fallback: application_date is null (VEP Active /
-        // historical legacy). Try app_id sequence heuristic to infer the
-        // semantically-correct cycle before defaulting to current open.
-        const appIdNum = Number(app.applicationId);
-        const seqMatched = Number.isFinite(appIdNum)
-          ? pickCycleByAppIdSequence(appIdNum, cycleAppIdStats)
-          : null;
-        if (seqMatched && seqMatched.cycle_id !== cycle.id) {
+        console.log(`[cycle-cohort:contract] app=${app.applicationId} start=${mapped.nucleo_contract_start} ` +
+          `default=${cycle.cycle_code} → matched=${cohortMatched.cycle_code}`);
+        mapped.cycle_id = cohortMatched.id;
+      } else if (!mapped.nucleo_contract_start) {
+        // No Núcleo contract yet — p195 BUG-195.B: redirect to the cycle whose window
+        // contains application_date (rejected/pending apps keep the temporal lens).
+        const dateMatched = pickCycleForApplicationDate(mapped.application_date, recentCycles);
+        if (dateMatched && dateMatched.id !== cycle.id) {
+          // Track the redirect for observability + audit
           summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
-          console.log(`[cycle-redirect:seq] app=${app.applicationId} (no date) ` +
-            `default=${cycle.cycle_code} → matched=${seqMatched.cycle_code} ` +
-            `(in range ${seqMatched.min_app_id}-${seqMatched.max_app_id})`);
-          mapped.cycle_id = seqMatched.cycle_id;
+          console.log(`[cycle-redirect:date] app=${app.applicationId} date=${mapped.application_date} ` +
+            `default=${cycle.cycle_code} → matched=${dateMatched.cycle_code}`);
+          mapped.cycle_id = dateMatched.id;
+        } else if (!mapped.application_date) {
+          // p195 OPP-196.A fallback: application_date is null (VEP Active /
+          // historical legacy). Try app_id sequence heuristic to infer the
+          // semantically-correct cycle before defaulting to current open.
+          const appIdNum = Number(app.applicationId);
+          const seqMatched = Number.isFinite(appIdNum)
+            ? pickCycleByAppIdSequence(appIdNum, cycleAppIdStats)
+            : null;
+          if (seqMatched && seqMatched.cycle_id !== cycle.id) {
+            summary.applications_cycle_redirected = (summary.applications_cycle_redirected ?? 0) + 1;
+            console.log(`[cycle-redirect:seq] app=${app.applicationId} (no date) ` +
+              `default=${cycle.cycle_code} → matched=${seqMatched.cycle_code} ` +
+              `(in range ${seqMatched.min_app_id}-${seqMatched.max_app_id})`);
+            mapped.cycle_id = seqMatched.cycle_id;
+          }
         }
       }
 

@@ -115,6 +115,11 @@ export function mapScriptToNucleo(
   const phaseBSvcChapters = isPhaseBPrivate ? null : (app.serviceHistoryChapters ?? null);
   const phaseBSvcFirst = isPhaseBPrivate ? null : (app.serviceFirstStartDate ?? null);
   const phaseBSvcLatest = isPhaseBPrivate ? null : (app.serviceLatestEndDate ?? null);
+  // #1316 — Núcleo contract for THIS opportunity (serviceStartDateUTC/EndDateUTC).
+  // Operational (cohort determinant), NOT private community-profile data, so it is
+  // captured regardless of isPhaseBPrivate. Normalize to date-only.
+  const nucleoContractStart = app.serviceStartDateUTC ? app.serviceStartDateUTC.slice(0, 10) : null;
+  const nucleoContractEnd = app.serviceEndDateUTC ? app.serviceEndDateUTC.slice(0, 10) : null;
   const phaseBOpenToVol = isPhaseBPrivate ? null : (app.isOpenToVolunteer ?? null);
 
   // Wave 3 synth fix (3-agent convergent S-CONV-2): geo fallback when script
@@ -216,6 +221,8 @@ export function mapScriptToNucleo(
     service_history_chapters: phaseBSvcChapters,
     service_first_start_date: phaseBSvcFirst,
     service_latest_end_date: phaseBSvcLatest,
+    nucleo_contract_start: nucleoContractStart,
+    nucleo_contract_end: nucleoContractEnd,
     is_open_to_volunteer: phaseBOpenToVol,
     community_profile_private: isPhaseBPrivate,
     // p152 W4 GAP-152.2: PMI script doesn't emit pmiDataFetchedAt — fall back to
