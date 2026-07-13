@@ -189,6 +189,13 @@ export interface SelectionApplicationUpsert {
   service_first_start_date?: string | null;
   service_latest_end_date?: string | null;
 
+  // #1316 — Núcleo VEP contract for THIS application/role (serviceStartDateUTC/
+  // serviceEndDateUTC, scoped to the opportunity). Determinant of cohort cycle;
+  // distinct from service_first_start_date/service_latest_end_date (lifetime
+  // cross-chapter VEP history, must NOT be reused for cohort).
+  nucleo_contract_start?: string | null;
+  nucleo_contract_end?: string | null;
+
   // Ternary: true=open / false=not / NULL=unknown (Decision P3 — NUNCA em LLM)
   is_open_to_volunteer?: boolean | null;
 

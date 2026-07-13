@@ -246,6 +246,30 @@ export function pickCycleByAppIdSequence(
   return ranked[0].stats;
 }
 
+// Pure function — #1316 cohort SSOT for APPROVED apps. Picks the cycle whose
+// application window OPENED most recently on or before the Núcleo contract
+// start (serviceStartDateUTC, scoped to this opportunity). Contract start, not
+// application_date, is the determinant: a 1-year contract crosses two semesters,
+// and its start deterministically anchors the cohort (e.g. 2026-01-20 -> cycle3,
+// 2026-07-01 -> cycle4, 2026-04-01 -> b2). Returns null for pre-cycle3 legacy
+// contracts (2025 -> no cycle with open_date <= start; #1284 handles those) or
+// when contractStart is absent (rejected/pending — caller uses the temporal
+// date/seq heuristic instead). MUST stay byte-equivalent to the DB SSOT
+// public.nucleo_contract_cohort_cycle_id(date).
+export function pickCohortCycleByContractStart(
+  contractStart: string | null | undefined,
+  cycles: CycleWindow[]
+): CycleWindow | null {
+  if (!contractStart || cycles.length === 0) return null;
+  const start = contractStart.length >= 10 ? contractStart.slice(0, 10) : contractStart;
+
+  // Cycles that had opened by the contract start; pick the latest-opening one.
+  const eligible = cycles.filter(c => c.open_date && c.open_date <= start);
+  if (eligible.length === 0) return null;
+  eligible.sort((a, b) => (a.open_date! < b.open_date! ? 1 : -1));
+  return eligible[0];
+}
+
 // =====================================================================
 // VEP opportunity helpers
 // =====================================================================
@@ -472,6 +496,9 @@ export async function upsertSelectionApplication(
       service_history_chapters: payload.service_history_chapters,
       service_first_start_date: payload.service_first_start_date,
       service_latest_end_date: payload.service_latest_end_date,
+      // #1316 — Núcleo contract for this opportunity (cohort determinant).
+      nucleo_contract_start: payload.nucleo_contract_start,
+      nucleo_contract_end: payload.nucleo_contract_end,
       is_open_to_volunteer: payload.is_open_to_volunteer,
       community_profile_private: payload.community_profile_private,
       pmi_data_fetched_at: payload.pmi_data_fetched_at,
