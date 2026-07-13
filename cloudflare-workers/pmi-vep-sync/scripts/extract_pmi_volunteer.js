@@ -1,6 +1,31 @@
 // PMI Volunteer Applications Extractor — Núcleo IA & GP
 // =====================================================================
-// VERSION: 2026-07-08 Wave 4 (#1175 F7)
+// VERSION: 2026-07-13 (#1368) — enriquecimento volunteer-first (same-origin)
+//
+// CHANGELOG 2026-07-13 (#1368):
+//   Seção 3c — enrichment via volunteer.pmi.org SAME-ORIGIN (novo), keyed por
+//        applicantId (= pmi_id, ver script-mapper). Endpoints (HAR 2026-07-13):
+//          GET /api/volunteer/<pmi_id>/profile/information  → membership[] (chapterName
+//              + expiryDate!), membershipChapters, location/state/city/country,
+//              company, industry, certifications, specialties, volunteerInterest, aboutMe
+//          GET /api/volunteer/<pmi_id>/serviceHistory       → volunteerHistory
+//          GET /api/volunteer/<pmi_id>/information           → isOpenToVolunteer
+//        Popula os MESMOS campos que o worker mapper lê (profileMemberships etc.).
+//        Resolve o gap #1368: o community.pmi.org devolve 400 (privado) e esconde a
+//        filiação; o volunteer expõe memberships+validade do MESMO pmi_id mesmo com
+//        o community privado, e é same-origin (sem CORS / sem Fase B). Volunteer é a
+//        fonte AUTORITATIVA; a Fase B (community) fica redundante/fallback.
+//   VOLUNTEER-ONLY: as flags FETCH_PROFILE_* (community) vêm DESLIGADAS por default.
+//        Fluxo agora é 1 fase: rodar no volunteer.pmi.org → o pmi_volunteer_full_<data>.json
+//        já sai enriquecido → importar direto (NÃO precisa da Fase B em community.pmi.org).
+//        Para reativar o community como fallback: ponha as flags FETCH_PROFILE_* em true.
+//
+// CHANGELOG 2026-07-11 (#1316):
+//   G1 — NUCLEO_HISTORICAL_OPPORTUNITY_IDS: [62106]. Vagas FECHADAS do Núcleo
+//        (ex. 62106 = Ciclo 1 Goiás) que a auto-descoberta não lista agora são
+//        SEMPRE forçadas na varredura (seção 1a) e contam como allowlisted
+//        (não passam pelo modal LGPD). Traz o dado real de contrato + coorte.
+//        ⚠️ Exige acesso do recruiter à vaga; sem acesso, loga "sem dados".
 //
 // CHANGELOG Wave 4 (#1175 F7):
 //   W1 — allowlist default das vagas do Núcleo (64966/64967/66470).
@@ -151,16 +176,22 @@
     // antes de iniciar varredura. Padrão: 30min. Detection via JWT exp claim.
     TOKEN_EXPIRY_WARN_MIN: 30,
 
-    // Coleta — Community Profile (community.pmi.org) — enrichment 3-dimensional
-    FETCH_PROFILE_INFO: true,        // /UserVolunteer/getVolunteerInformation_v2
-                                     //   → location, state, certifications, industry
-    FETCH_PROFILE_HISTORY: true,     // /UserVolunteer/getVolunteerServiceHistory
-                                     //   → array de roles históricos (multi-chapter signal)
-    FETCH_PROFILE_PERMISSIONS: false,// /UserVolunteer/getVolunteerProfilePermissions
-                                     //   → low signal — só útil pra debug. Desliga por default.
-    FETCH_OPEN_TO_VOLUNTEER: true,   // /UserVolunteer/getIsOpenToVolunteer
-                                     //   → re-engagement signal
+    // Coleta — Community Profile (community.pmi.org) — enrichment 3-dimensional.
+    // #1368 VOLUNTEER-ONLY: DESLIGADO por default. A Seção 3c faz todo o enrichment via
+    //   volunteer.pmi.org (same-origin, keyed por pmi_id), inclusive memberships+validade
+    //   que o community esconde em perfil privado. A Fase B (community) fica como FALLBACK
+    //   legado — para reativar, ponha estas flags em true (e rode a Fase B em community.pmi.org).
+    FETCH_PROFILE_INFO: false,       // (legado) /UserVolunteer/getVolunteerInformation_v2
+    FETCH_PROFILE_HISTORY: false,    // (legado) /UserVolunteer/getVolunteerServiceHistory
+    FETCH_PROFILE_PERMISSIONS: false,// (legado) /UserVolunteer/getVolunteerProfilePermissions
+    FETCH_OPEN_TO_VOLUNTEER: false,  // (legado) /UserVolunteer/getIsOpenToVolunteer
     PROFILE_API_BASE: 'https://community.pmi.org/api/v1',
+
+    // #1368 — enrichment via volunteer.pmi.org (SAME-ORIGIN, keyed por pmi_id=applicantId).
+    // Expõe memberships+validade mesmo com o community privado. Fonte autoritativa; torna
+    // a Fase B (community) redundante. Endpoints: /api/volunteer/<pmi_id>/{profile/information,
+    // serviceHistory, information}.
+    FETCH_VOLUNTEER_PROFILE: true,
 
     // Rate limiting (PMI tolera bem; conservador por segurança)
     DELAY_MS: 200,                   // entre páginas de listagem
@@ -840,8 +871,9 @@
   // Cache para não buscar profile do mesmo applicant 2x (mesmo applicantId pode
   // aparecer em 2 opportunities — leader+researcher dual-track)
   const profileCache = new Map();   // applicantId → { info, history, isOpen }
+  const volProfileCache = new Map(); // #1368 — applicantId(=pmi_id) → volunteer.pmi.org profile
 
-  if (CONFIG.FETCH_DETAIL || CONFIG.FETCH_COMMENTS || (wantsEnrichment && !communityEnrichmentBlocked)) {
+  if (CONFIG.FETCH_DETAIL || CONFIG.FETCH_COMMENTS || CONFIG.FETCH_VOLUNTEER_PROFILE || (wantsEnrichment && !communityEnrichmentBlocked)) {
     console.log(`\n🔍 Buscando detalhe + enrichment de ${applications.length} applications...`);
     let i = 0;
     for (const a of applications) {
@@ -1018,6 +1050,97 @@
         }
         if (typeof cached.isOpenToVolunteer === 'boolean') {
           a.isOpenToVolunteer = cached.isOpenToVolunteer;
+        }
+      }
+
+      // ----- 3c) Volunteer Profile enrichment (volunteer.pmi.org, SAME-ORIGIN) -----
+      // #1368 — o community.pmi.org devolve 400 p/ perfis privados (esconde a filiação) e é
+      // cross-origin (por isso a Fase B separada existe). O volunteer.pmi.org expõe PMI
+      // Memberships (chapterName + expiryDate), service history e isOpenToVolunteer para o
+      // MESMO pmi_id (= applicantId; ver script-mapper `pmi_id: app.applicantId`), SAME-ORIGIN,
+      // mesmo com o community privado. Popula os MESMOS campos que o worker mapper lê, tornando
+      // o volunteer a fonte autoritativa e a Fase B redundante. Endpoints via HAR 2026-07-13.
+      if (CONFIG.FETCH_VOLUNTEER_PROFILE && a.applicantId) {
+        const vkey = String(a.applicantId);
+        let vc = volProfileCache.get(vkey);
+        if (!vc) {
+          vc = {};
+          const pid = a.applicantId;
+          try {
+            const r = await fetchJson(`/api/volunteer/${pid}/profile/information`);
+            if (r?.isSuccess && r.result) vc.info = r.result;
+          } catch (e) { /* sem acesso / inexistente — silent */ }
+          await sleep(CONFIG.DELAY_PROFILE_MS);
+          try {
+            const r = await fetchJson(`/api/volunteer/${pid}/serviceHistory`);
+            if (r?.isSuccess) vc.history = r.result?.volunteerHistory ?? [];
+          } catch (e) { /* silent */ }
+          await sleep(CONFIG.DELAY_PROFILE_MS);
+          try {
+            const r = await fetchJson(`/api/volunteer/${pid}/information`);
+            if (r?.isSuccess) vc.isOpenToVolunteer =
+              (r.result?.isOpenToVolunteer === true || r.result?.isOpenToVolunteer === 'true');
+          } catch (e) { /* silent */ }
+          await sleep(CONFIG.DELAY_PROFILE_MS);
+          volProfileCache.set(vkey, vc);
+        }
+        // Volunteer é autoritativo (funciona mesmo com community privado) → sobrescreve.
+        if (vc.info) {
+          const inf = vc.info;
+          a.profileLocation = inf.location ?? a.profileLocation ?? null;
+          a.profileState = inf.state ?? a.profileState ?? null;
+          a.profileCity = inf.city ?? null;
+          a.profileCountry = inf.country ?? null;
+          a.profileCompany = inf.company ?? null;
+          a.profileIndustry = inf.industry ?? a.profileIndustry ?? null;
+          a.profileDesignation = inf.designation ?? null;
+          a.profileAboutMe = inf.aboutMe ?? null;
+          a.profileLinkedinUrl = inf.linkedInURL ?? null;
+          a.profileCertifications = flattenArrField(inf.certifications) ?? a.profileCertifications ?? null;
+          a.profileSpecialties = flattenArrField(inf.specialties);
+          a.profileVolunteerInterest = flattenArrField(inf.volunteerInterest) ?? a.profileVolunteerInterest ?? null;
+          // O ponto do #1368: memberships com validade. O mapper lê profileMemberships
+          // (parseMaybeJsonArray + normalizeMemberships tolera a string JSON).
+          if (Array.isArray(inf.membership) && inf.membership.length) {
+            a.profileMemberships = JSON.stringify(inf.membership);
+          }
+          if (Array.isArray(inf.membershipChapters) && inf.membershipChapters.length) {
+            a.profileMembershipChapters = JSON.stringify(inf.membershipChapters);
+          }
+          a.pmiDataFetchedAt = new Date().toISOString();
+          a.profilePrivate = false; // volunteer devolveu dados → não-privado p/ filiação
+        }
+        // Service history: só se a Fase B (community) não preencheu, p/ não duplicar rows.
+        if (vc.history && a.serviceHistoryCount == null) {
+          a.serviceHistoryCount = vc.history.length;
+          const distinctChapters = new Set(vc.history.map(h => h.chapterName).filter(Boolean));
+          a.serviceHistoryChapters = [...distinctChapters].join(';');
+          const dates = vc.history.map(h => h.startDate).filter(Boolean).sort();
+          a.serviceFirstStartDate = dates[0] || null;
+          a.serviceLatestEndDate = vc.history.map(h => h.endDate).filter(Boolean).sort().slice(-1)[0] || null;
+          for (const h of vc.history) {
+            serviceHistoryRows.push({
+              applicationId: a.applicationId,
+              applicantId: a.applicantId,
+              applicantName: a.applicantName,
+              applicantEmail: a.applicantEmail,
+              roleId: h.id,
+              title: h.title,
+              roleTitle: h.roleTitle,
+              roleName: h.roleTitle || h.title || null,
+              chapterName: h.chapterName,
+              chapterId: h.chapterId,
+              startDate: h.startDate,
+              endDate: h.endDate,
+              isSelfReported: h.isSelfReported,
+              opportunityURL: h.opportunityURL,
+              categoryId: h.categoryId,
+              additionalInformation: h.additionalInformation,
+            });
+          }
+        }
+        if (typeof vc.isOpenToVolunteer === 'boolean' && typeof a.isOpenToVolunteer !== 'boolean') {
+          a.isOpenToVolunteer = vc.isOpenToVolunteer;
         }
       }
 
