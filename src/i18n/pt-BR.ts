@@ -7149,6 +7149,7 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.attestConfirm': 'Confirmar e acessar',
   'comp.affiliationQueue.searchPh': 'Buscar por nome ou email',
   'comp.affiliationQueue.filterChapterAll': 'Todos os capítulos',
+  'comp.affiliationQueue.chapterReconcile': '{chapter}: {total} membros ativos em Membros · {verified} já verificados (fora desta fila) · {queue} aguardando verificação aqui.',
   'comp.affiliationQueue.filterVepAll': 'Todos VEP',
   'comp.affiliationQueue.sort_attention': 'Precisa atenção',
   'comp.affiliationQueue.sort_name': 'Nome',

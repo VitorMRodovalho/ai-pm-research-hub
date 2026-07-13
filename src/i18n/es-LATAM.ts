@@ -7142,6 +7142,7 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.attestConfirm': 'Confirmar y acceder',
   'comp.affiliationQueue.searchPh': 'Buscar por nombre o email',
   'comp.affiliationQueue.filterChapterAll': 'Todos los capítulos',
+  'comp.affiliationQueue.chapterReconcile': '{chapter}: {total} miembros activos en Miembros · {verified} ya verificados (fuera de esta cola) · {queue} esperando verificación aquí.',
   'comp.affiliationQueue.filterVepAll': 'Todos VEP',
   'comp.affiliationQueue.sort_attention': 'Requiere atención',
   'comp.affiliationQueue.sort_name': 'Nombre',
