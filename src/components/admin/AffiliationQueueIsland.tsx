@@ -172,7 +172,10 @@ export default function AffiliationQueueIsland() {
   // #1129 — default to 'all' so the queue never silently hides the current-selection members who
   // are past pre-onboarding (10/45 were invisible under the old 'pre' default). Attention-sort still
   // floats pre-onboarding rows to the top, so nothing urgent is lost.
-  const [tab, setTab] = useState<'pre' | 'all'>('all');
+  // #1364b — three scopes: 'pre' (pre-onboarding), 'queue' (todos não-verificados = the queue), and
+  // 'all' (todos os ativos, verified + unverified — lazy-loaded via p_scope='all'). Default 'queue'
+  // preserves the prior landing view.
+  const [tab, setTab] = useState<'pre' | 'queue' | 'all'>('queue');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [bulkVerifying, setBulkVerifying] = useState(false);
@@ -185,6 +188,10 @@ export default function AffiliationQueueIsland() {
   const [search, setSearch] = useState('');
   const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
   const [rollup, setRollup] = useState<ChapterRollupEntry[]>([]);                // #1364
+  const [allRows, setAllRows] = useState<QueueRow[]>([]);                        // #1364b full roster
+  const [allLoaded, setAllLoaded] = useState(false);                            // #1364b lazy-load latch
+  const [allLoading, setAllLoading] = useState(false);                          // #1364b
+  const allLoadedRef = useRef(false); allLoadedRef.current = allLoaded;
 
   // #1192 — chapter filter options come from chapter_registry (RLS: read-all for authenticated),
   // NOT from whatever the loaded rows happen to parse to (the old 5-of-15 bug).
@@ -203,24 +210,47 @@ export default function AffiliationQueueIsland() {
     return () => { cancelled = true; };
   }, [getSb]);
 
+  // ── load one scope of the queue RPC ('queue' = unverified cohort, 'all' = full active roster #1364b) ──
+  const loadScope = useCallback(async (scope: 'queue' | 'all'): Promise<QueueRow[] | null> => {
+    const sb = getSb();
+    if (!sb) return null;
+    const { data, error } = await sb.rpc(
+      'get_affiliation_verification_queue',
+      scope === 'all' ? { p_scope: 'all' } : undefined,
+    );
+    if (error) {
+      (window as any).toast?.(error.message || t('comp.affiliationQueue.loadError', 'Erro ao carregar a fila'), 'error');
+      return null;
+    }
+    return Array.isArray(data) ? data : [];
+  }, [getSb, t]);
+
   // ── load the queue (retry until Nav publishes the authed client) ──
   const fetchQueue = useCallback(async () => {
     const sb = getSb();
     if (!sb) { setTimeout(fetchQueue, 300); return; }
     setLoading(true);
-    const { data, error } = await sb.rpc('get_affiliation_verification_queue');
-    if (error) {
-      (window as any).toast?.(error.message || t('comp.affiliationQueue.loadError', 'Erro ao carregar a fila'), 'error');
-      setRows([]);
-    } else {
-      setRows(Array.isArray(data) ? data : []);
-    }
+    const q = await loadScope('queue');
+    if (q) setRows(q);
     // #1364 — per-chapter reconciliation (full roster vs this queue) for the chapter-filter banner.
     sb.rpc('get_affiliation_chapter_rollup')
       .then(({ data: rd }: any) => setRollup(Array.isArray(rd) ? rd : []))
       .catch(() => {});
     setLoading(false);
-  }, [getSb, t]);
+    // #1364b — keep the full-roster tab in sync after a verify/refresh, if it was already loaded.
+    if (allLoadedRef.current) { const a = await loadScope('all'); if (a) setAllRows(a); }
+  }, [getSb, t, loadScope]);
+
+  // #1364b — lazy-load the full active roster the first time the "Todos" tab is opened.
+  const fetchAll = useCallback(async () => {
+    setAllLoading(true);
+    const a = await loadScope('all');
+    if (a) { setAllRows(a); setAllLoaded(true); }
+    setAllLoading(false);
+  }, [loadScope]);
+  useEffect(() => {
+    if (tab === 'all' && !allLoaded && !allLoading) fetchAll();
+  }, [tab, allLoaded, allLoading, fetchAll]);
 
   const fetchRef = useRef(fetchQueue); fetchRef.current = fetchQueue;
   useEffect(() => {
@@ -356,7 +386,10 @@ export default function AffiliationQueueIsland() {
   }, [rows]);
 
   const visible = useMemo(() => {
-    let list = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding) : rows.slice();
+    // #1364b — base set by tab: 'pre' = pre-onboarding subset, 'all' = full active roster, else the queue.
+    let list = tab === 'pre' ? rows.filter(r => r.is_pre_onboarding)
+             : tab === 'all' ? allRows.slice()
+             : rows.slice();
     if (statusFilter === 'action') list = list.filter(r => { const k = farol(r, t).key; return k === 'expired' || k === 'soon'; });
     else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
     if (cohortFilter !== 'all') list = list.filter(r => r.cohort_class === cohortFilter);   // #1129
@@ -383,7 +416,7 @@ export default function AffiliationQueueIsland() {
       return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
     });
     return list;
-  }, [rows, tab, statusFilter, cohortFilter, termFilter, chapterFilter, vepFilter, search, sortKey, t]);
+  }, [rows, allRows, tab, statusFilter, cohortFilter, termFilter, chapterFilter, vepFilter, search, sortKey, t]);
 
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
@@ -414,9 +447,15 @@ export default function AffiliationQueueIsland() {
           className={`px-3 py-1.5 text-[13px] rounded-lg border cursor-pointer ${tab === 'pre' ? 'bg-teal-600 text-white border-teal-600' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
           {t('comp.affiliationQueue.tabPre', 'Pré-onboarding')} ({preCount})
         </button>
+        <button onClick={() => setTab('queue')}
+          className={`px-3 py-1.5 text-[13px] rounded-lg border cursor-pointer ${tab === 'queue' ? 'bg-teal-600 text-white border-teal-600' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
+          {t('comp.affiliationQueue.tabAll', 'Todos não-verificados')} ({rows.length})
+        </button>
+        {/* #1364b — full active roster (verified + unverified) so the office can filter a chapter and
+            see every member linked to it with each one's status. Lazy-loaded on first open. */}
         <button onClick={() => setTab('all')}
           className={`px-3 py-1.5 text-[13px] rounded-lg border cursor-pointer ${tab === 'all' ? 'bg-teal-600 text-white border-teal-600' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
-          {t('comp.affiliationQueue.tabAll', 'Todos não-verificados')} ({rows.length})
+          {t('comp.affiliationQueue.tabEveryone', 'Todos')}{allLoaded ? ` (${allRows.length})` : ''}
         </button>
       </div>
 
@@ -494,7 +533,7 @@ export default function AffiliationQueueIsland() {
           so a chapter here shows FEWER people than the same chapter on /membros: the difference is the
           already-verified members, who correctly leave the queue. Surfaced so the two screens reconcile
           at a glance and the old "PMI-RS shows 16 there but 3 here" reads as by-design, not a bug. */}
-      {chapterFilter !== 'all' && (() => {
+      {tab !== 'all' && chapterFilter !== 'all' && (() => {
         const r = rollup.find(x => x.chapter === `PMI-${chapterFilter}`);
         if (!r) return null;
         const label = registry.find(c => c.chapter_code === chapterFilter)?.state || `PMI-${chapterFilter}`;
@@ -523,7 +562,11 @@ export default function AffiliationQueueIsland() {
         </div>
       )}
 
-      {visible.length === 0 ? (
+      {tab === 'all' && allLoading && !allLoaded ? (
+        <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
+          <Loader2 size={20} className="animate-spin mr-2" /> {t('comp.affiliationQueue.loadingAll', 'Carregando todos os membros…')}
+        </div>
+      ) : visible.length === 0 ? (
         <div className="text-center py-16 text-[var(--text-muted)]">{t('comp.affiliationQueue.empty', 'Nenhum membro pendente de verificação.')}</div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">

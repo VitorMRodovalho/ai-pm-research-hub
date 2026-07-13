@@ -7098,6 +7098,8 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.intro': 'Verifique a filiação PMI dos membros: (1) membresia ativa e (2) filiação a um capítulo brasileiro em dia. O dado de filiação do VEP é exibido quando disponível; quando o candidato mantém a comunidade PMI privada ou ainda não é filiado, preencha manualmente.',
   'comp.affiliationQueue.tabPre': 'Pré-onboarding',
   'comp.affiliationQueue.tabAll': 'Todos não-verificados',
+  'comp.affiliationQueue.tabEveryone': 'Todos',
+  'comp.affiliationQueue.loadingAll': 'Carregando todos os membros…',
   'comp.affiliationQueue.selected': 'selecionado(s)',
   'comp.affiliationQueue.selectAll': 'Selecionar todos',
   'comp.affiliationQueue.bulkVerifyVep': 'Verificar via VEP (membresia ativa)',
