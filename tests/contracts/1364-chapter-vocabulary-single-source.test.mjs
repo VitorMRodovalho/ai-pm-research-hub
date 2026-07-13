@@ -105,6 +105,21 @@ test('i18n: tabEveryone + loadingAll exist in all three dictionaries', () => {
   }
 });
 
+// ---------- #1368 — deterministic VEP profile link by pmi_id ----------
+
+test('FE links PMI ID to the deterministic volunteer.pmi.org profile (owner-confirmed pattern)', () => {
+  const src = read(ISLAND);
+  // pattern volunteer.pmi.org/profiles/<pmi_id> (owner-confirmed 2026-07-13), built from stored pmi_id
+  assert.match(src, /volunteer\.pmi\.org\/profiles\/\$\{encodeURIComponent\(pmiId\)\}/,
+    'must build the VEP profile URL from pmi_id (no re-sync, no hardcoded id)');
+  assert.match(src, /vepProfileUrl\(p\.pmi_id\)/, 'the PMI ID cell must link via vepProfileUrl');
+  assert.match(src, /target="_blank"/, 'the external link must open in a new tab');
+  for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
+    assert.match(read(`src/i18n/${dict}.ts`), /'comp\.affiliationQueue\.openVepProfile':/,
+      `${dict} must define openVepProfile`);
+  }
+});
+
 // ---------- DB-aware (skipped without creds) ----------
 
 async function rest(path) {

@@ -7152,6 +7152,7 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.sort_sync': 'Last sync',
   'comp.affiliationQueue.expandHint': 'View PMI identity',
   'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.openVepProfile': 'Open the PMI VEP profile (volunteer.pmi.org) to verify affiliation',
   'comp.affiliationQueue.panelSince': 'Member since',
   'comp.affiliationQueue.panelUntil': 'Member until',
   'comp.affiliationQueue.panelVolunteer': 'PMI service records',

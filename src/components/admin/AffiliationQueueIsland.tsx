@@ -14,7 +14,7 @@
 // #1041 expiry column/farol. Migrate from "verify everything by hand" → "review the auto-derived
 // and confirm exceptions" without loosening the write boundary (SPEC_996_FILIACAO_JOURNEY.md).
 import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
-import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard } from 'lucide-react';
+import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard, ExternalLink } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { unifiedBrChapters, soonestChapterExpiry, type PmiMembershipEntry, type ChapterAffiliation } from '../../lib/affiliation-chapters';
 import { validityFarol, toneClasses, VEP_STATUS_TONE, COHORT_TONE } from '../../lib/statusFarol';
@@ -145,6 +145,11 @@ interface RegistryChapter { chapter_code: string; state: string; }
 // #1364 — per-chapter reconciliation row from get_affiliation_chapter_rollup(). `chapter` is
 // members.chapter ('PMI-XX', the /admin/members roster axis); in_queue mirrors this queue's cohort.
 interface ChapterRollupEntry { chapter: string; total_active: number; in_queue: number; verified_out: number; }
+
+// #1368 — deterministic PMI VEP profile URL by pmi_id (owner-confirmed pattern, 2026-07-13:
+// volunteer.pmi.org/profiles/<pmi_id>[/stub]). Lets the office jump straight to the source used
+// for affiliation enrichment to verify membership manually. Requires the caller to be logged in.
+const vepProfileUrl = (pmiId: string) => `https://volunteer.pmi.org/profiles/${encodeURIComponent(pmiId)}`;
 
 type SortKey = 'attention' | 'name' | 'expiry' | 'sync';
 
@@ -714,7 +719,15 @@ export default function AffiliationQueueIsland() {
                           <div className="flex flex-wrap gap-x-8 gap-y-2 text-[12px]">
                             <div>
                               <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1"><IdCard size={11} /> {t('comp.affiliationQueue.panelPmiId', 'PMI ID')}</div>
-                              <div className="font-medium text-[var(--text-primary)]">{p.pmi_id || '—'}</div>
+                              {p.pmi_id ? (
+                                <a href={vepProfileUrl(p.pmi_id)} target="_blank" rel="noopener noreferrer"
+                                   title={t('comp.affiliationQueue.openVepProfile', 'Abrir perfil no PMI VEP (volunteer.pmi.org) para verificar a filiação')}
+                                   className="font-medium text-teal-700 hover:text-teal-800 hover:underline inline-flex items-center gap-1">
+                                  {p.pmi_id} <ExternalLink size={11} className="opacity-70" />
+                                </a>
+                              ) : (
+                                <div className="font-medium text-[var(--text-primary)]">—</div>
+                              )}
                             </div>
                             <div>
                               <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelSince', 'Membro desde')}</div>
