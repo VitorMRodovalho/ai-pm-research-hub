@@ -144,8 +144,15 @@ test('approve_selection_application is idempotent on existing active engagement'
   const body = findFunctionBody('approve_selection_application');
   assert.ok(/v_existing_engagement_id[\s\S]+?FROM public\.engagements[\s\S]+?status\s*=\s*'active'/.test(body),
     'must look up existing active engagement before INSERT');
-  assert.ok(/UPDATE public\.engagements\s*SET selection_application_id = p_application_id[\s\S]+?WHERE id = v_existing_engagement_id\s+AND selection_application_id IS NULL/.test(body),
-    'must backfill selection_application_id on existing engagement when missing');
+  // #1362: the re-point is now set-if-null via COALESCE (same idempotent semantics as the prior
+  // `= p_application_id ... WHERE selection_application_id IS NULL`) AND extends the engagement
+  // end_date to the newly-approved contract so a promotion never keeps a stale, already-expired
+  // window (the Paulo regression). The WHERE no longer needs the IS NULL guard because COALESCE
+  // keeps an existing pointer untouched.
+  assert.ok(/UPDATE public\.engagements\s*SET selection_application_id = COALESCE\(selection_application_id, p_application_id\)[\s\S]+?WHERE id = v_existing_engagement_id/.test(body),
+    'must backfill selection_application_id on existing engagement when missing (set-if-null via COALESCE)');
+  assert.ok(/end_date = CASE[\s\S]+?end_date < v_app\.nucleo_contract_end[\s\S]+?THEN v_app\.nucleo_contract_end/.test(body),
+    '#1362: must extend engagement end_date to the new contract on promotion (no silent authority loss)');
 });
 
 // ─── 9. Onboarding + notification + audit ───
