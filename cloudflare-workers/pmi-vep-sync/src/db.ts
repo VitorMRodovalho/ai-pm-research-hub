@@ -826,18 +826,39 @@ export async function insertServiceHistory(
  *   - 'estimated' last resort with current_date + 6 months
  *
  * Returns count of rows updated. Idempotent — only updates if source not already set.
+ *
+ * #1372 (2026-07-13): the VEP serviceEndDateUTC is a PER-VAGA fact (one selection
+ * application = one Núcleo service contract). A `pmi_vep` write MUST therefore be scoped
+ * to the engagement linked to THAT application (`applicationId`). Fanning a single
+ * application's end date across all of a person's active engagements was the #1362
+ * recurrence: processing a researcher application (contract ended 2026-06-30) stamped that
+ * stale end_date onto the person's promoted-leader engagement (contract 2027-06-30) and onto
+ * unrelated workgroup engagements (start in July → end<start), silently dropping authority to
+ * `guest` on the next trigger fire. See reference-engagement-window-tracks-contract-lazy-cache.
+ * The `applicationId` is the selection_applications.id (dbApplicationId) from the upsert.
  */
 export async function setEngagementEndDateSource(
   db: SupabaseClient,
   personId: string,
+  applicationId: string | null,
   source: 'agreement' | 'pmi_vep' | 'estimated' | 'manual',
   endDate?: string | null
 ): Promise<number> {
-  const { data: rows, error: queryErr } = await db
+  let query = db
     .from('engagements')
-    .select('id, metadata, end_date')
+    .select('id, metadata, end_date, start_date')
     .eq('person_id', personId)
     .eq('status', 'active');
+
+  // #1372: only the engagement of this vaga may receive a per-application VEP end date.
+  // Without a resolvable application link there is no engagement this end date governs, so
+  // touch nothing (never fan out person-wide).
+  if (source === 'pmi_vep') {
+    if (!applicationId) return 0;
+    query = query.eq('selection_application_id', applicationId);
+  }
+
+  const { data: rows, error: queryErr } = await query;
 
   if (queryErr) {
     throw new Error(`setEngagementEndDateSource query: ${queryErr.message}`);
@@ -878,7 +899,16 @@ export async function setEngagementEndDateSource(
 
     const updatePayload: Record<string, any> = { metadata: newMeta };
     if (endDate && source === 'pmi_vep') {
-      updatePayload.end_date = endDate;
+      // #1372 fail-safe: never write an end_date before the engagement's start_date (an
+      // invalid window the new DB CHECK rejects, and which silently voids authority). The
+      // per-vaga scoping above should already prevent this; this guard covers data anomalies
+      // (e.g. a VEP contract whose serviceEndDateUTC predates the engagement start). Keep the
+      // metadata source flag; just skip the invalid end_date.
+      if (endDate >= row.start_date) {
+        updatePayload.end_date = endDate;
+      } else {
+        console.warn(`[pmi-vep-sync] skip end_date<start for engagement ${row.id}: end=${endDate} start=${row.start_date}`);
+      }
     }
 
     const { error: updErr } = await db

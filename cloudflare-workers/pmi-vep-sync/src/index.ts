@@ -533,7 +533,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
             if (app.serviceEndDateUTC) {
               try {
                 const endDate = app.serviceEndDateUTC.slice(0, 10);
-                await setEngagementEndDateSource(db, personId, 'pmi_vep', endDate);
+                // #1372: scope the per-vaga VEP end date to THIS application's engagement
+                // (result.id = dbApplicationId). Never fan it across the person's other
+                // engagements — that demoted a promoted leader (#1362 recurrence).
+                await setEngagementEndDateSource(db, personId, result.id, 'pmi_vep', endDate);
               } catch (e: any) {
                 summary.errors.push({
                   scope: 'engagement_end_date_source',
