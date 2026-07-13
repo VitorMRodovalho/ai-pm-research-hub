@@ -7152,6 +7152,7 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.sort_sync': 'Última sync',
   'comp.affiliationQueue.expandHint': 'Ver identidad PMI',
   'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.openVepProfile': 'Abrir el perfil en PMI VEP (volunteer.pmi.org) para verificar la afiliación',
   'comp.affiliationQueue.panelSince': 'Miembro desde',
   'comp.affiliationQueue.panelUntil': 'Miembro hasta',
   'comp.affiliationQueue.panelVolunteer': 'Registros de servicio PMI',

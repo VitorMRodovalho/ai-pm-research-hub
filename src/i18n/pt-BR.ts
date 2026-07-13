@@ -7159,6 +7159,7 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.sort_sync': 'Última sync',
   'comp.affiliationQueue.expandHint': 'Ver identidade PMI',
   'comp.affiliationQueue.panelPmiId': 'PMI ID',
+  'comp.affiliationQueue.openVepProfile': 'Abrir perfil no PMI VEP (volunteer.pmi.org) para verificar a filiação',
   'comp.affiliationQueue.panelSince': 'Membro desde',
   'comp.affiliationQueue.panelUntil': 'Membro até',
   'comp.affiliationQueue.panelVolunteer': 'Registros de serviço PMI',
