@@ -7091,6 +7091,8 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.intro': 'Verify members\' PMI affiliation: (1) active membership and (2) an in-good-standing Brazilian chapter affiliation. VEP affiliation data is shown when available; when a candidate keeps their PMI community private or is not yet affiliated, fill it in manually.',
   'comp.affiliationQueue.tabPre': 'Pre-onboarding',
   'comp.affiliationQueue.tabAll': 'All unverified',
+  'comp.affiliationQueue.tabEveryone': 'Everyone',
+  'comp.affiliationQueue.loadingAll': 'Loading all members…',
   'comp.affiliationQueue.selected': 'selected',
   'comp.affiliationQueue.selectAll': 'Select all',
   'comp.affiliationQueue.bulkVerifyVep': 'Verify via VEP (active membership)',

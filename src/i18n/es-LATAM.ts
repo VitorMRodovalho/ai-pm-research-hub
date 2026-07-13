@@ -7091,6 +7091,8 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.intro': 'Verifique la afiliación PMI de los miembros: (1) membresía activa y (2) afiliación a un capítulo brasileño vigente. El dato de afiliación del VEP se muestra cuando está disponible; cuando el candidato mantiene la comunidad PMI privada o aún no está afiliado, complete manualmente.',
   'comp.affiliationQueue.tabPre': 'Pre-onboarding',
   'comp.affiliationQueue.tabAll': 'Todos sin verificar',
+  'comp.affiliationQueue.tabEveryone': 'Todos',
+  'comp.affiliationQueue.loadingAll': 'Cargando todos los miembros…',
   'comp.affiliationQueue.selected': 'seleccionado(s)',
   'comp.affiliationQueue.selectAll': 'Seleccionar todos',
   'comp.affiliationQueue.bulkVerifyVep': 'Verificar vía VEP (membresía activa)',

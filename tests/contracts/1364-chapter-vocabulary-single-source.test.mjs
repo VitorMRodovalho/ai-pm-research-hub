@@ -29,6 +29,7 @@ const REPO_ROOT = join(__dirname, '..', '..');
 const read = (p) => readFileSync(join(REPO_ROOT, p), 'utf8');
 
 const MIGRATION = 'supabase/migrations/20260805000436_1364_affiliation_chapter_rollup.sql';
+const MIGRATION_SCOPE = 'supabase/migrations/20260805000437_1364b_affiliation_queue_scope_all.sql';
 const ISLAND = 'src/components/admin/AffiliationQueueIsland.tsx';
 
 // ---------- static (offline) ----------
@@ -66,6 +67,41 @@ test('i18n: chapterReconcile exists in all three dictionaries', () => {
     const src = read(`src/i18n/${dict}.ts`);
     assert.match(src, /'comp\.affiliationQueue\.chapterReconcile':/,
       `${dict} must define comp.affiliationQueue.chapterReconcile`);
+  }
+});
+
+// ---------- #1364b — "Todos" tab (full active roster) ----------
+
+test('scope migration adds p_scope via DROP+CREATE without losing the queue shape', () => {
+  const src = read(MIGRATION_SCOPE);
+  // arg count changed -> must DROP then re-CREATE (GC-097), not a bare CREATE OR REPLACE of the 0-arg
+  assert.match(src, /DROP FUNCTION IF EXISTS public\.get_affiliation_verification_queue\(\);/,
+    'must DROP the 0-arg function before recreating with the new signature');
+  assert.match(src, /CREATE OR REPLACE FUNCTION public\.get_affiliation_verification_queue\(p_scope text DEFAULT 'queue'\)/,
+    'must recreate with p_scope defaulting to queue (back-compatible)');
+  // p_scope='all' relaxes the cohort; the rich per-row shape is preserved (single source, not duplicated)
+  assert.match(src, /p_scope = 'all'/, "p_scope='all' must relax the cohort WHERE");
+  assert.match(src, /chapter_affiliations/, 'the SSOT chapter read-through shape must be preserved');
+  assert.match(src, /PERFORM public\.log_pii_access_batch/, 'nominal PII read logging must be preserved');
+  // grants re-applied on the NEW (text) signature
+  assert.match(src, /REVOKE ALL ON FUNCTION public\.get_affiliation_verification_queue\(text\) FROM public, anon;/,
+    'must revoke the new (text) signature from public, anon');
+  assert.match(src, /GRANT EXECUTE ON FUNCTION public\.get_affiliation_verification_queue\(text\) TO authenticated, service_role;/,
+    'must grant the new (text) signature to authenticated, service_role');
+});
+
+test('FE has a third "Todos" tab that loads the full roster via p_scope=all', () => {
+  const src = read(ISLAND);
+  assert.match(src, /'pre' \| 'queue' \| 'all'/, 'tab state must be the three scopes');
+  assert.match(src, /p_scope: 'all'/, 'the Todos tab must request the full-roster scope');
+  assert.match(src, /comp\.affiliationQueue\.tabEveryone/, 'must render the "Todos" tab label');
+});
+
+test('i18n: tabEveryone + loadingAll exist in all three dictionaries', () => {
+  for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const src = read(`src/i18n/${dict}.ts`);
+    assert.match(src, /'comp\.affiliationQueue\.tabEveryone':/, `${dict} must define tabEveryone`);
+    assert.match(src, /'comp\.affiliationQueue\.loadingAll':/, `${dict} must define loadingAll`);
   }
 });
 
