@@ -8332,6 +8332,117 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   );
 }
 
+// #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
+// 256 tools and ingests them ALPHABETICALLY (by display name), so /mcp (~339 tools) silently
+// drops everything past the ~"manage_*" boundary — which is almost the entire write/action
+// surface (schedule_interview, submit_interview_scores, move_card, offboard_member, …). This
+// second surface re-exposes that dropped tail as a separate connector, reusing the SAME
+// registerTools definitions (zero body duplication) via an allowlist filter on `.tool()`.
+// Coverage is guarded by tests/contracts/1377-mcp-actions-overflow-coverage.test.mjs — if a
+// future tool addition shifts the /mcp 256 cut and drops a write tool, CI fails until it is
+// added here. Margin starts at the boundary (lock_document_version) to absorb display-name vs
+// tool-name sort ambiguity; the few overlap reads are harmless.
+const ACTIONS_ALLOWLIST: Set<string> = new Set([
+  "lock_document_version",
+  "log_partner_interaction",
+  "manage_initiative_engagement",
+  "manage_partner",
+  "manage_selection_committee",
+  "mark_interview_status",
+  "mark_member_excused",
+  "meeting_close",
+  "member_add_alternate_email",
+  "member_list_emails",
+  "member_remove_alternate_email",
+  "member_resolve_email",
+  "member_set_primary_email",
+  "member_update_alternate_email_kind",
+  "move_card",
+  "move_card_to_board",
+  "notify_selection_cutoff_approved",
+  "offboard_member",
+  "promote_lead_to_application",
+  "promote_to_leader_track",
+  "propose_manual_version",
+  "propose_new_version",
+  "propose_publication_idea",
+  "recalculate_cycle_rankings",
+  "recirculate_governance_doc",
+  "record_offboarding_interview",
+  "register_attendance",
+  "register_card_drive_file",
+  "register_decision",
+  "register_exclusion_asset",
+  "register_showcase",
+  "reissue_agreement",
+  "request_to_join_initiative",
+  "request_tribe_assignment",
+  "resolve_action_item",
+  "resolve_document_comment",
+  "respond_re_engagement",
+  "respond_to_initiative_invitation",
+  "restore_card",
+  "review_change_request",
+  "review_initiative_request",
+  "review_tribe_request",
+  "review_webinar_proposal",
+  "revoke_champion",
+  "revoke_exclusion_declaration",
+  "schedule_comms_post",
+  "schedule_interview",
+  "search_board_cards",
+  "search_hub_resources",
+  "search_knowledge",
+  "search_members",
+  "search_partner_cards",
+  "search_wiki",
+  "search_wiki_pages",
+  "selection_rescue_stuck_interview",
+  "send_notification_to_tribe",
+  "set_my_gamification_visibility",
+  "set_tribe_video",
+  "sign_ratification_gate",
+  "stage_alumni_for_re_engagement",
+  "submit_change_request",
+  "submit_chapter_need",
+  "submit_curation_review",
+  "submit_evaluation",
+  "submit_interview_scores",
+  "unlink_board_from_drive",
+  "unlink_initiative_from_drive",
+  "unlink_partner_from_card",
+  "update_application_contact",
+  "update_card_comment",
+  "update_card_during_meeting",
+  "update_card_fields",
+  "update_card_forecast",
+  "update_card_status",
+  "update_certificate",
+  "update_checklist_item",
+  "update_event_instance",
+  "update_my_application",
+  "update_webinar_comms_assets",
+  "update_webinar_proposal",
+  "upload_my_resume",
+  "upload_text_to_drive_folder",
+  "verify_certificate",
+  "wiki_health_report",
+  "withdraw_from_initiative",
+]);
+
+// Wrap an McpServer so registerTools() only attaches tools whose name is in `allow`.
+// Mutates the instance's own `tool` method (the only McpServer method registerTools uses),
+// forwarding to the original for allowed names and no-op'ing the rest. Reuses every existing
+// tool definition with no duplication.
+function filterToAllowlist(mcp: McpServer, allow: Set<string>): McpServer {
+  const orig = mcp.tool.bind(mcp) as (...args: unknown[]) => unknown;
+  (mcp as unknown as { tool: (...a: unknown[]) => unknown }).tool = (...args: unknown[]) => {
+    const name = args[0] as string;
+    return allow.has(name) ? orig(...args) : undefined;
+  };
+  return mcp;
+}
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
 // SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
@@ -8387,13 +8498,42 @@ app.all("/semantic", async (c) => {
   }
 });
 
-// Health check (p222 #280 alpha — reports both surfaces)
+// #1377 — /actions overflow surface: re-exposes the write/action tools the 256-tool connector
+// cap drops from /mcp. Same transport + protocol as /mcp; the McpServer registers ONLY the
+// ACTIONS_ALLOWLIST subset (via filterToAllowlist), no registerKnowledge (reads/prompts/resources
+// stay on /mcp). Consumed as a SECOND Claude connector alongside /mcp.
+app.all("/actions", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    const sb = createAuthenticatedClient(token);
+    const mcp = new McpServer({ name: "nucleo-ia-actions", version: "0.1.0" });
+    registerTools(filterToAllowlist(mcp, ACTIONS_ALLOWLIST), sb);
+
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless mode — no session persistence
+    });
+
+    await mcp.connect(transport);
+    const response = await transport.handleRequest(c.req.raw);
+    transport.onclose = () => mcp.close();
+
+    return response;
+  } catch (e: any) {
+    console.error("[MCP-Actions] Handler error:", e.message, e.stack?.substring(0, 300));
+    return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
+  }
+});
+
+// Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.80.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
+    "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
   sdk: "1.29.0",

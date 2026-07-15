@@ -6,14 +6,25 @@ paths:
   - "scripts/audit-mcp-tool-matrix.mjs"
 ---
 
-# MCP Server Rules (nucleo-mcp — /mcp full catalog + /semantic bridge)
+# MCP Server Rules (nucleo-mcp — /mcp full catalog + /semantic bridge + /actions overflow)
 
 ## Current State (do NOT pin counts here)
 
-Two surfaces shipped post-p222 #280 (Semantic MCP Gateway bridge):
-- `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~300 tools + 4 prompts + 3 resources).
+Three surfaces:
+- `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
 - `/semantic` (server: `nucleo-ia-semantic`) — bridge-first public semantic gateway (wave-1: 3 tools; wave-2: +get_operational_status, SPEC-280.C), stable
   envelope `{ok,data,summary,warnings,next_actions,audit}`.
+- `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's
+  **256-tool per-connector cap**. The connector ingests tools ALPHABETICALLY by display name and drops
+  everything past the ~`manage_*` boundary — i.e. almost the entire write/action tail (schedule_interview,
+  submit_interview_scores, move_card, offboard_member, …). `/actions` re-exposes that dropped tail as a SECOND
+  connector, reusing the SAME `registerTools` definitions via `ACTIONS_ALLOWLIST` + `filterToAllowlist()` (zero
+  body duplication; no `registerKnowledge`). Consumed alongside `/mcp` (reads/browse) as a separate connector
+  URL. Coverage is guarded by `tests/contracts/1377-mcp-actions-overflow-coverage.test.mjs` — a future tool
+  addition that shifts the /mcp 256-cut and drops a write tool fails CI until it is added to the allowlist.
+  **The 256 cap is per-connector, not global** (validated when /actions' write tools became callable with /mcp
+  still connected); if that ever changes, the fix reverts to shrinking /mcp below 256 (consolidate thin tools).
+  Worker proxy: `/mcp/actions` → EF `/nucleo-mcp/actions` (`src/pages/mcp/actions.ts`, mirrors `semantic.ts`).
 
 **The exact tool count changes every session — never recite it from memory or pin it here.** Get the live count:
 ```bash
