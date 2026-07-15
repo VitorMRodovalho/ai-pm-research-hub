@@ -8529,7 +8529,7 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.81.0",
+  ef_version: "2.80.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
