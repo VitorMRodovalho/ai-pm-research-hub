@@ -5059,6 +5059,111 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok({ ...efJson, auto_link: linkResult });
   });
 
+  // TOOL: provision_initiative_drive — #1376 / ADR-0124. GP one-shot provisioner: creates the
+  // workspace subfolder (OAuth EF, owner=human), links it (workspace), and grants the active roster.
+  // Closes problem #2 (new tribes had no folder). Idempotent: if a workspace link already exists, it
+  // skips creation and only reconciles the grants. Ownership stays human per the #1376 decision.
+  mcp.tool("provision_initiative_drive", "Provisiona o Drive de uma iniciativa/tribo: cria a subpasta de workspace (se ainda não existir), vincula em initiative_drive_links (link_purpose=workspace) e concede acesso 'writer' a todo o roster ativo via reconcile. Idempotente — se já houver pasta de workspace, apenas reconcilia os acessos. Authority: manage_platform (GP). Requer a SA com organizer/fileOrganizer na pasta-raiz (ADR-0094 G4.1) senão os grants falham 403.", {
+    initiative_id: z.string().describe("Initiative UUID (tribo/workgroup/comitê/etc.)"),
+    parent_folder_id: z.string().optional().describe("Drive folder ID pai onde criar a subpasta. Default: raiz da organização."),
+    folder_name: z.string().optional().describe("Nome da subpasta. Default: título da iniciativa.")
+  }, async (params: { initiative_id: string; parent_folder_id?: string; folder_name?: string }) => {
+    const start = Date.now();
+    const DEFAULT_PARENT = "1PFLzCa8dwjFNhc_y3TPOnkN9O7jfbqnA"; // org root (same as audit EF PARENT_FOLDER_ID)
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "provision_initiative_drive", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "provision_initiative_drive", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, "manage_platform"))) { await logUsage(sb, member.id, "provision_initiative_drive", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+
+    // 1. existing links? (also yields the initiative title for the folder name)
+    const { data: linkData, error: linkErr } = await sb.rpc("get_initiative_drive_links", { p_initiative_id: params.initiative_id });
+    if (linkErr) { await logUsage(sb, member.id, "provision_initiative_drive", false, linkErr.message, start); return err(linkErr.message); }
+    if (linkData?.error) { await logUsage(sb, member.id, "provision_initiative_drive", false, linkData.error, start); return err(linkData.error); }
+    const existingWorkspace = (linkData?.drive_links ?? []).find((l: any) => l.link_purpose === "workspace");
+
+    let created: any = null;
+    if (!existingWorkspace) {
+      const folderName = (params.folder_name ?? linkData?.initiative_title ?? "Iniciativa").slice(0, 200);
+      const efRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-create-subfolder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify({ parent_folder_id: params.parent_folder_id ?? DEFAULT_PARENT, name: folderName })
+      });
+      const efJson = await efRes.json().catch(() => ({}));
+      if (!efRes.ok || !efJson.success) { await logUsage(sb, member.id, "provision_initiative_drive", false, efJson.error || `EF ${efRes.status}`, start); return err(`Drive create subfolder failed: ${efJson.error || efJson.detail || efRes.status}`); }
+      const { error: lErr } = await sb.rpc("link_initiative_to_drive", {
+        p_initiative_id: params.initiative_id, p_drive_folder_id: efJson.drive_folder_id,
+        p_drive_folder_url: efJson.drive_folder_url, p_drive_folder_name: efJson.name, p_link_purpose: "workspace"
+      });
+      if (lErr) { await logUsage(sb, member.id, "provision_initiative_drive", false, lErr.message, start); return err(`folder created (${efJson.drive_folder_url}) but link failed: ${lErr.message}`); }
+      created = { drive_folder_id: efJson.drive_folder_id, drive_folder_url: efJson.drive_folder_url, name: efJson.name };
+    }
+
+    // 2. reconcile grants for the active roster (service-role EF)
+    const recRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/reconcile-initiative-drive-access`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({ initiative_id: params.initiative_id, source: "provision" })
+    });
+    const recJson = await recRes.json().catch(() => ({}));
+    await logUsage(sb, member.id, "provision_initiative_drive", true, undefined, start);
+    return ok({ initiative_id: params.initiative_id, workspace_folder: created ?? existingWorkspace, created: !!created, reconcile: recJson });
+  });
+
+  // TOOL: reconcile_initiative_drive_access — #1376. GP manual trigger of the grant reconcile
+  // (self-heal after a reorg). No initiative_id = full sweep. dry_run = plan without granting.
+  mcp.tool("reconcile_initiative_drive_access", "Reconcilia o acesso de Drive: para cada pasta de workspace vinculada, concede 'writer' aos membros ativos que faltam na ACL. Sem initiative_id = varredura completa (todas as iniciativas ativas com pasta). dry_run=true retorna o plano sem conceder. Use para reparar acesso após reorg/movimento de pasta. Authority: manage_platform (GP).", {
+    initiative_id: z.string().optional().describe("Optional: restringe a uma iniciativa. Omitido = todas."),
+    dry_run: z.boolean().optional().describe("true = calcula o diff sem conceder. Default false.")
+  }, async (params: { initiative_id?: string; dry_run?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "reconcile_initiative_drive_access", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) { await logUsage(sb, member.id, "reconcile_initiative_drive_access", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, "manage_platform"))) { await logUsage(sb, member.id, "reconcile_initiative_drive_access", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/reconcile-initiative-drive-access`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({ initiative_id: params.initiative_id ?? undefined, dry_run: params.dry_run === true, source: "manual" })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { await logUsage(sb, member.id, "reconcile_initiative_drive_access", false, j.error || `EF ${res.status}`, start); return err(`reconcile failed: ${j.error || j.detail || res.status}`); }
+    await logUsage(sb, member.id, "reconcile_initiative_drive_access", true, undefined, start);
+    return ok(j);
+  });
+
+  // TOOL: list_membership_drive_grants — #1376. GP observability of the auto-grant ledger.
+  mcp.tool("list_membership_drive_grants", "Lista o ledger de grants de Drive de membros (#1376): quem recebeu acesso 'writer' a qual pasta de iniciativa, com status (granted/failed/already_present) e erro do Google. Authority: manage_platform (GP).", {
+    status: z.string().optional().describe("Filtrar por status: granted|failed|already_present|pending_grant|skipped"),
+    initiative_id: z.string().optional().describe("Filtrar por iniciativa (UUID)"),
+    limit: z.number().optional().describe("Default 50, máx 200"),
+    offset: z.number().optional().describe("Default 0")
+  }, async (params: { status?: string; initiative_id?: string; limit?: number; offset?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_membership_drive_grants", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (params.initiative_id && !isUUID(params.initiative_id)) { await logUsage(sb, member.id, "list_membership_drive_grants", false, "Invalid UUID", start); return err("initiative_id must be a UUID"); }
+    const { data, error } = await sb.rpc("admin_list_membership_drive_grants", {
+      p_status: params.status ?? null, p_initiative_id: params.initiative_id ?? null,
+      p_limit: params.limit ?? 50, p_offset: params.offset ?? 0
+    });
+    if (error) { await logUsage(sb, member.id, "list_membership_drive_grants", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_membership_drive_grants", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_membership_drive_grant_health — #1376. GP health: ledger rollup + tribes missing a folder.
+  mcp.tool("get_membership_drive_grant_health", "Saúde do auto-grant de Drive (#1376): rollup do ledger por status, total concedido/falho, último reconcile, links de workspace ativos, e a lista de tribos/workgroups ativos AINDA sem pasta de workspace (a fila do provision_initiative_drive). Authority: manage_platform (GP).", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_membership_drive_grant_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, "manage_platform"))) { await logUsage(sb, member.id, "get_membership_drive_grant_health", false, "Unauthorized", start); return err("Unauthorized: GP only (manage_platform)."); }
+    const { data, error } = await sb.rpc("get_membership_drive_grant_health");
+    if (error) { await logUsage(sb, member.id, "get_membership_drive_grant_health", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_membership_drive_grant_health", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL: create_card_comment — Mayanna Item 01 (BUG ALTA)
   mcp.tool("create_card_comment", "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.", {
     board_item_id: z.string().describe("Card UUID"),
@@ -8343,6 +8448,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
 // added here. Margin starts at the boundary (lock_document_version) to absorb display-name vs
 // tool-name sort ambiguity; the few overlap reads are harmless.
 const ACTIONS_ALLOWLIST: Set<string> = new Set([
+  "list_membership_drive_grants",
   "lock_document_version",
   "log_partner_interaction",
   "manage_initiative_engagement",
@@ -8366,8 +8472,10 @@ const ACTIONS_ALLOWLIST: Set<string> = new Set([
   "propose_manual_version",
   "propose_new_version",
   "propose_publication_idea",
+  "provision_initiative_drive",
   "recalculate_cycle_rankings",
   "recirculate_governance_doc",
+  "reconcile_initiative_drive_access",
   "record_offboarding_interview",
   "register_attendance",
   "register_card_drive_file",

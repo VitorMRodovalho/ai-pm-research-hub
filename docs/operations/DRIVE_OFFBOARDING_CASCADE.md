@@ -53,6 +53,14 @@ policy working as designed — plus one documented edge: a reactivation racing t
 `skipped` whose permission was in fact deleted (µs window; diagnose via `admin_audit_log`
 `drive_permission_revoked` vs the row's `skip_reason`).
 
+> **Note (#1376 / ADR-0124):** the "NO auto re-grant" decision above is scoped to *reactivation of a
+> former member* (data-minimization on a stale historical folder set). It is NOT the same as granting an
+> **active** tribe/initiative member the CURRENT workspace folder — that gap (no auto-grant for actives)
+> is closed by the GRANT mirror: `reconcile-initiative-drive-access` (folder ACL × active roster →
+> `writer`), the daily `membership-drive-reconcile-daily` cron, and `provision_initiative_drive` (GP).
+> See `docs/adr/ADR-0124-drive-membership-provisioning.md`. Same SA organizer/fileOrganizer prerequisite
+> (ADR-0094 G4.1) as the revoke side.
+
 ## Go-live OPS checklist (#1039 — flip the kill-switch)
 
 Preconditions (legal COND-1/COND-3, council 2026-07-02): the Privacy Notice §6 revocation-window text
