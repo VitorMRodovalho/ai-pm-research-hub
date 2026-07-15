@@ -104,6 +104,7 @@ const ALLOWLIST = {
   // ---------------------------------------------------------------------------
   // -- non-content helpers (return boolean/uuid/trigger/SETOF uuid, not user content)
   _can_manage_event: 'authority helper (boolean manage-event check; no content returned)',
+  _manage_event_scope_ok: 'authority helper (#1383: boolean manage-event scope check; reads only events.initiative_id to pass it to can_by_member, no content returned)',
   _events_inherit_meeting_link: 'trigger function (not a user-callable reader)',
   _v4_initiative_leader_member_ids: 'helper (SETOF member uuid; tribe-scoped via legacy_tribe_id, confidential NULL never matches)',
   _v4_tribe_leader_member_id: 'helper (single member uuid; tribe-scoped via legacy_tribe_id)',
