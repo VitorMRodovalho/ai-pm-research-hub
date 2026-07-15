@@ -89,10 +89,14 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "unauthorized", detail: "service-role only" }), { status: 401 });
   }
 
-  let body: { initiative_id?: string; dry_run?: boolean; source?: string } = {};
+  let body: { initiative_id?: string; dry_run?: boolean; source?: string; force_email?: string } = {};
   try { body = await req.json(); } catch { /* empty body ok */ }
   const dryRun = body.dry_run === true;
   const source = body.source ?? "manual";
+  // force_email: POST a direct writer grant for ONE roster member even if the folder ACL already shows
+  // them present (i.e. they only hold an INHERITED permission). Makes their access explicit + ledger-
+  // tracked + self-healing, instead of fragile inheritance. Scope with initiative_id to bound the folders.
+  const forceEmail = (body.force_email ?? "").trim().toLowerCase();
 
   const sa = await getServiceAccountKey();
   if (!sa.available) {
@@ -155,6 +159,7 @@ Deno.serve(async (req) => {
       const email = r.email.toLowerCase();
       if (seen.has(email)) continue;
       seen.add(email);
+      if (forceEmail && email !== forceEmail) continue; // force mode: only the named member
       const base = {
         initiative_id: t.initiative_id, drive_link_id: t.drive_link_id,
         drive_folder_id: t.drive_folder_id, drive_folder_url: t.drive_folder_url,
@@ -163,7 +168,8 @@ Deno.serve(async (req) => {
       };
       // Already in the folder ACL → no Drive call, and NOT persisted (a daily cron would otherwise
       // accrete an already_present row per member per run). Counted for observability only.
-      if (present_by_email.has(email)) { present++; continue; }
+      // EXCEPTION: force_email POSTs an explicit direct writer even when present (upgrade inherited).
+      if (!forceEmail && present_by_email.has(email)) { present++; continue; }
       if (dryRun) { plan.push({ ...base, status: "pending_grant" }); continue; }
       if (grantsAttempted >= MAX_GRANTS_PER_RUN) { capped = true; errors.push(`MAX_GRANTS_PER_RUN (${MAX_GRANTS_PER_RUN}) reached — remainder next run`); break; }
       grantsAttempted++;
