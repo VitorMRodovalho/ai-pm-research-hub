@@ -74,6 +74,11 @@ const ALLOWLIST = {
   admin_list_curation_drive_grants: 'admin curation drive ops (manage gate)',
   force_grant_curation_drive_access: 'admin curation drive op',
   force_revoke_curation_drive_access: 'admin curation drive op',
+  // --- #1376 / ADR-0124 Drive membership auto-grant (manage_platform-gated; GP sees confidential anyway;
+  //     the confidential gate would be WRONG here — the GP must see ALL tribes/workgroups incl.
+  //     confidential to provision/observe their Drive access) ---
+  admin_list_membership_drive_grants: 'gp-only (manage_platform entry gate) — #1376 grant-ledger observability',
+  list_initiatives_missing_drive_workspace: 'gp-only OR service/cron (manage_platform gate) — #1376 missing-folder provisioning queue; GP must see confidential too',
   generate_agenda_template: 'template helper (no confidential content surfaced)',
   // wrappers over already-gated readers
   get_board_by_domain: 'delegates to get_board (gated)',
