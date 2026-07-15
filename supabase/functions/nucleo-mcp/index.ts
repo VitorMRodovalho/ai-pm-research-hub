@@ -7360,14 +7360,13 @@ function registerTools(mcp: McpServer, sb: Sb) {
 
   mcp.tool("stage_alumni_for_re_engagement", "Stage an alumni member into the re-engagement pipeline for a specific cycle. Admin manual curation step (cron auto-stages on cycle open). Returns existing pipeline_id if already staged (idempotent).", {
     member_id: z.string().describe("UUID of the alumni member"),
-    cycle_code: z.string().describe("Target cycle code (e.g., 'cycle_3')"),
-    source: z.string().optional().describe("Source: 'manual_admin' (default) or 'cron_new_cycle'")
-  }, async (params: { member_id: string; cycle_code: string; source?: string }) => {
+    cycle_code: z.string().describe("Target cycle code (e.g., 'cycle_3')")
+  }, async (params: { member_id: string; cycle_code: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "stage_alumni_for_re_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
     const { data, error } = await sb.rpc("stage_alumni_for_re_engagement", {
-      p_member_id: params.member_id, p_cycle_code: params.cycle_code, p_source: params.source ?? 'manual_admin'
+      p_member_id: params.member_id, p_cycle_code: params.cycle_code
     });
     if (error) { await logUsage(sb, member.id, "stage_alumni_for_re_engagement", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "stage_alumni_for_re_engagement", true, undefined, start);
