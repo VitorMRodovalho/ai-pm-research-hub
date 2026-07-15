@@ -125,13 +125,16 @@ const ALLOWLIST = {
   get_event_attendance_health: 'gated (view_internal_analytics OR view_chapter_dashboards)',
   get_event_champion_suggestions: 'gated (manage_event OR award_champion) + caller-org check',
   get_gp_cohort_health: 'gated (manage_member OR view_internal_analytics); logic filters kind=research_tribe (excludes governance)',
-  get_member_comms_card: 'gated (manage_event OR manage_member)',
+  // get_member_comms_card: gated in mig 447 (#1383) — excludes visibility='confidential'
+  //   initiatives from the roles list; now references a gate, removed from this allowlist.
   get_member_detail: 'analytics-gated (view_internal_analytics entry gate)',
   get_pending_agreement_engagements: 'gated (manage_member)',
   get_platform_usage: 'gp-only (manage_platform entry gate)',
   get_recurring_meeting_admin_list: 'gp-only (manage_platform entry gate)',
   get_recurring_meeting_drift: 'gp-only (manage_platform entry gate)',
-  list_drive_discoveries: 'gated (view_internal_analytics); confidential initiative has 0 drive_links',
+  // list_drive_discoveries: gated in mig 446 (#1383) — rls_can_see_initiative(l.initiative_id)
+  //   on both the count and the rows (the "0 drive_links" containment lapsed once #1376
+  //   provisioned a link for the confidential committee); now gated, removed from this allowlist.
   list_orphan_interview_events: 'gp-only (manage_platform entry gate)',
   offboard_member_with_handoffs: 'gated (manage_member) member-lifecycle write, GP-only (board-flagged, pre-existing)',
   // -- self-scoped (auth.uid own data; a non-engaged caller only ever sees their own rows)
@@ -325,4 +328,36 @@ test('#1063 static: get_meeting_notes_compliance excludes confidential in mig 42
   assert.ok(block, 'get_meeting_notes_compliance must be CREATE OR REPLACE\'d in migration 426');
   assert.ok(/visibility IS DISTINCT FROM 'confidential'/.test(block),
     'get_meeting_notes_compliance must exclude confidential initiatives from the rollup');
+});
+
+// --- #1383 PR-C (2026-07-15): board_item_checklists RLS carve-out + two SECDEF reader gates.
+// Static guards so a future rewrite cannot silently drop the confidential protection. The
+// DB-aware guard above already keeps the two functions out of the ungated set; these lock
+// the migration bodies, and cover the RLS policy (which the SECDEF audit does not track).
+const MIG_CHK = 'supabase/migrations/20260805000445_1383_p0c_checklists_confidential_rls.sql';
+const MIG_DRV = 'supabase/migrations/20260805000446_1383_p0c_list_drive_discoveries_confidential_gate.sql';
+const MIG_CMC = 'supabase/migrations/20260805000447_1383_p0c_member_comms_card_confidential_roles.sql';
+
+test('#1383 static: board_item_checklists gains a RESTRICTIVE confidential SELECT policy in mig 445', () => {
+  const sql = readFileSync(resolve(process.cwd(), MIG_CHK), 'utf8');
+  assert.ok(/CREATE POLICY checklists_confidential_visibility/.test(sql),
+    'mig 445 must create the checklists_confidential_visibility policy');
+  assert.ok(/AS RESTRICTIVE/i.test(sql) && /FOR SELECT/i.test(sql),
+    'the checklist policy must be RESTRICTIVE FOR SELECT');
+  assert.ok(/FROM public\.board_items bi/.test(sql),
+    'the checklist policy must gate through board_items (inherits its confidential RLS)');
+});
+
+test('#1383 static: list_drive_discoveries applies rls_can_see_initiative in mig 446', () => {
+  const block = migBlock(MIG_DRV, 'list_drive_discoveries');
+  assert.ok(block, 'list_drive_discoveries must be CREATE OR REPLACE\'d in migration 446');
+  assert.ok(/rls_can_see_initiative\(l\.initiative_id\)/.test(block),
+    'list_drive_discoveries must gate discoveries via rls_can_see_initiative');
+});
+
+test('#1383 static: get_member_comms_card excludes confidential roles in mig 447', () => {
+  const block = migBlock(MIG_CMC, 'get_member_comms_card');
+  assert.ok(block, 'get_member_comms_card must be CREATE OR REPLACE\'d in migration 447');
+  assert.ok(/visibility IS DISTINCT FROM 'confidential'/.test(block),
+    'get_member_comms_card must exclude confidential initiatives from the roles list');
 });
