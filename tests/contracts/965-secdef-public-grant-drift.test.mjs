@@ -63,13 +63,14 @@ const ALLOWLIST = new Set([
   'increment_blog_view',
   'increment_publication_view',
   'log_topic_view',
-  // ── Own person-scoped path (by design). NOTE: the 4-arg overload still carries a leftover explicit
-  //    `anon` grant (the 6-arg overload was revoked in mig 20260805000234); tracked for a dedicated
-  //    caller-graph review before revoking — NOT mass-revoked here ([LL] #588). ──
-  'create_initiative',
+  // ── Ratcheted DOWN (mig 20260805000453, EPIC #1383 board-write hardening): create_initiative and
+  //    create_notification had their caller-graph reviewed (create_initiative ← admin/initiatives.astro;
+  //    create_notification ← VolunteerAgreementPanel + send_notification_to_tribe) and PUBLIC/anon EXECUTE
+  //    revoked while KEEPING authenticated (legit callers use a session JWT). Per-orthogonal-gate, not mass
+  //    revoke ([LL] #588). They therefore left the sweep and are no longer allowlisted. ──
   // ── Lower-severity internal / cron helpers exposed to PostgREST (issue #965 triage). PENDING revoke —
   //    each needs its own caller-graph check (e.g. recompute_all_active_pert_cutoffs has an MCP-wrapper hint;
-  //    record_milestone/register_video_screening/create_notification may have authenticated callers). Ratchet DOWN. ──
+  //    record_milestone/register_video_screening may have authenticated callers). Ratchet DOWN. ──
   '_audit_secdef_initiative_reader_gates',
   '_compute_pert_cutoff_core',
   '_enqueue_engagement_welcome',
@@ -77,7 +78,6 @@ const ALLOWLIST = new Set([
   '_recompute_application_pert',
   '_refresh_preview_gate_eligibles_for_member',
   '_sync_interview_to_event',
-  'create_notification',
   'log_cron_run_complete',
   'log_cron_run_start',
   'log_mcp_usage',
