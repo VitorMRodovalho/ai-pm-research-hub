@@ -32,13 +32,23 @@ const SRC = readFileSync(resolve(ROOT, 'supabase/functions/nucleo-mcp/index.ts')
 // connector UI "Other tools 256" label). Tools alphabetically past this are dropped from /mcp.
 const CONNECTOR_CAP = 256;
 
-// The 4 semantic-gateway tools live on /semantic ONLY (multi-line mcp.tool( — not matched by
-// the single-line name regex below, but excluded explicitly for robustness).
+// The semantic-gateway tools live on /semantic ONLY (registerSemanticTools) — they are NOT part
+// of the /mcp registerTools surface and must be excluded from the 256-cap overflow computation.
+// 4 bridge tools (SPEC-280) + 8 Wave-1 boards/cards tools (#1383).
 const SEMANTIC_ONLY = new Set([
   'get_my_context',
   'search_nucleo_knowledge',
   'get_board_or_initiative_context',
   'get_operational_status',
+  // Wave 1 (#1383) — /semantic only
+  'card_checklist',
+  'card_write',
+  'card_comment',
+  'card_search',
+  'card_get',
+  'board_overview',
+  'platform_context',
+  'portfolio_report',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

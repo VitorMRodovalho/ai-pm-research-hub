@@ -12,8 +12,16 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`) — bridge-first public semantic gateway (wave-1: 3 tools; wave-2: +get_operational_status, SPEC-280.C), stable
-  envelope `{ok,data,summary,warnings,next_actions,audit}`.
+- `/semantic` (server: `nucleo-ia-semantic`, v0.3.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+  **12 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
+  `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
+  `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`). Stable envelope
+  `{ok,data,summary,warnings,next_actions,audit}`; writes carry `write_board` + the #785 (ADR-0105)
+  fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`). Raw tools stay
+  registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`. Contract
+  guard: `tests/contracts/semantic-envelope-w1.test.mjs`. NOTE: `mcp.tool(` registrations are counted
+  differently per surface — `/semantic` tools live in `registerSemanticTools()` and must be excluded from
+  the `/mcp` 256-cap computation (see the SEMANTIC_ONLY set in the #1377 test).
 - `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's
   **256-tool per-connector cap**. The connector ingests tools ALPHABETICALLY by display name and drops
   everything past the ~`manage_*` boundary — i.e. almost the entire write/action tail (schedule_interview,

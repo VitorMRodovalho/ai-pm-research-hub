@@ -1,5 +1,9 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.80.0 — /mcp 329 tools + 4 prompts + 3 resources + /semantic 4 tools (bridge, v0.2.0)
+// MCP server v2.81.0 — /mcp full catalog + 4 prompts + 3 resources + /semantic 12 tools (Wave 1 #1383, v0.3.0)
+// #1383 Wave 1 (2026-07-15): +8 semantic boards/cards tools (card_checklist, card_write, card_comment,
+//   card_search, card_get, board_overview, platform_context, portfolio_report) on /semantic (4→12).
+//   Intent-level, stable envelope {ok,data,summary,warnings,next_actions,audit} with #785 (ADR-0105) baked
+//   as a fail-fast contract + write_board authority. Raw tools stay registered (additive/deprecation).
 // #1138 (2026-07-10): Wave 4 tribe hybrid-journey MCP parity — +6 tools wrapping the live
 //   self-service tribe flow (request_tribe_assignment, get_my_tribe_request_context,
 //   cancel_tribe_request, list_tribe_pending_requests, review_tribe_request) + a leave_tribe
@@ -7956,6 +7960,54 @@ function buildSemanticError(args: { tool: string; semantic_domain: string; code:
   };
 }
 
+// ── Wave 1 (#1383) plumbing: envelope builder + #785 fail-fast gate ───────────
+// semanticOk wraps the stable SPEC-280 envelope {ok,data,summary,warnings,next_actions,audit}
+// and carries the Wave-1 audit SUPERSET: the live shape
+// {tool,semantic_domain,pii_level,permission,source_tools,generated_at} PLUS
+// {caller_member_id,gate_checked,resource_id} so the authority contract is machine-inspectable.
+// The contract is asserted by tests/contracts/semantic-envelope-w1.test.mjs.
+type SemanticAudit = {
+  tool: string; semantic_domain: string; pii_level: string; permission: string;
+  source_tools: (string | null)[]; caller_member_id?: string | null;
+  gate_checked?: string | null; resource_id?: string | null; extra?: Record<string, unknown>;
+};
+function semanticOk(args: {
+  data: unknown; summary: string; warnings?: string[]; next_actions?: string[]; audit: SemanticAudit;
+}) {
+  const a = args.audit;
+  return ok({
+    ok: true,
+    data: args.data,
+    summary: args.summary,
+    warnings: args.warnings ?? [],
+    next_actions: args.next_actions ?? [],
+    audit: {
+      tool: a.tool,
+      semantic_domain: a.semantic_domain,
+      pii_level: a.pii_level,
+      permission: a.permission,
+      source_tools: a.source_tools.filter(Boolean),
+      caller_member_id: a.caller_member_id ?? null,
+      gate_checked: a.gate_checked ?? null,
+      resource_id: a.resource_id ?? null,
+      generated_at: new Date().toISOString(),
+      ...(a.extra ?? {}),
+    },
+  });
+}
+
+// #785 confidential-visibility gate (ADR-0105) as a fail-fast CONTRACT for the board/card
+// semantic tools. Live chain: rls_can_see_item → rls_can_see_board → rls_can_see_initiative
+// (all SECURITY DEFINER STABLE, EXECUTE granted to authenticated). Fail-CLOSED on any error.
+// Only ever RESTRICTS visibility (never grants) — preserves the Tier-1 cross-board curator
+// read-all model (CLAUDE.md #5) while excluding confidential initiatives from non-engaged callers.
+async function canSee(sb: Sb, kind: "item" | "board" | "initiative", id: string): Promise<boolean> {
+  const fn = kind === "item" ? "rls_can_see_item" : kind === "board" ? "rls_can_see_board" : "rls_can_see_initiative";
+  const arg = kind === "item" ? { p_item_id: id } : kind === "board" ? { p_board_id: id } : { p_initiative_id: id };
+  const { data, error } = await sb.rpc(fn, arg);
+  return !error && data === true;
+}
+
 function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
   // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
@@ -8434,6 +8486,536 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WAVE 1 — Boards & cards (#1383). 8 intent-level tools absorbing 43 raw tools,
+  // ordered by 180d traffic. Every write carries write_board authority + the #785
+  // confidential-visibility gate as a CONTRACT; every read over initiative-linked
+  // data carries #785. Raw tools stay registered (additive/deprecation, never break).
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── W1 · card_checklist (W) — 345 calls/180d, the platform's #1 write path ──
+  mcp.tool(
+    "card_checklist",
+    "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: write_board — EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+    {
+      action: z.enum(["add", "update", "complete", "assign", "delete"]).describe("Checklist operation."),
+      card_id: z.string().optional().describe("Card UUID — REQUIRED for action='add'."),
+      checklist_item_id: z.string().optional().describe("Checklist item UUID — REQUIRED for update/complete/assign/delete."),
+      text: z.string().optional().describe("Activity text — 'add' (required) or 'update'."),
+      position: z.number().optional().describe("Position in the list — add/update."),
+      assigned_to: z.string().optional().describe("Member UUID — 'assign' (required); optional on 'add'."),
+      target_date: z.string().optional().describe("YYYY-MM-DD — add/update/assign."),
+      completed: z.boolean().optional().describe("'complete': true (default) marks done, false reopens."),
+      reason: z.string().optional().describe("Optional audit reason — 'delete'."),
+    },
+    async (params: { action: "add" | "update" | "complete" | "assign" | "delete"; card_id?: string; checklist_item_id?: string; text?: string; position?: number; assigned_to?: string; target_date?: string; completed?: boolean; reason?: string }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "card_checklist", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+
+      // Resolve the target CARD for the #785 gate (action='add' has it directly; item ops resolve
+      // via the checklist row — that SELECT is itself #785-RESTRICTIVE, so a confidential card the
+      // caller can't see returns null → not_found, closing the oracle).
+      let cardId: string | null = null;
+      if (params.action === "add") {
+        if (!isUUID(params.card_id ?? "")) { await logUsage(sb, member.id, "card_checklist", false, "Invalid card_id", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "invalid_input", message: "action='add' requires a valid card_id (UUID).", action: "Pass card_id." })); }
+        if (!params.text || !params.text.trim()) { await logUsage(sb, member.id, "card_checklist", false, "Missing text", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "invalid_input", message: "action='add' requires non-empty text.", action: "Pass text." })); }
+        cardId = params.card_id!;
+      } else {
+        if (!isUUID(params.checklist_item_id ?? "")) { await logUsage(sb, member.id, "card_checklist", false, "Invalid checklist_item_id", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "invalid_input", message: `action='${params.action}' requires a valid checklist_item_id (UUID).`, action: "Pass checklist_item_id." })); }
+        if (params.action === "assign" && !isUUID(params.assigned_to ?? "")) { await logUsage(sb, member.id, "card_checklist", false, "Invalid assigned_to", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "invalid_input", message: "action='assign' requires assigned_to (member UUID).", action: "Pass assigned_to." })); }
+        const { data: row, error: rErr } = await sb.from("board_item_checklists").select("board_item_id").eq("id", params.checklist_item_id!).maybeSingle();
+        if (rErr) { await logUsage(sb, member.id, "card_checklist", false, rErr.message, start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "internal_error", message: rErr.message })); }
+        if (!row) { await logUsage(sb, member.id, "card_checklist", false, "Item not visible", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "not_found", message: "Checklist item not found or not visible to you.", action: "Confirm the checklist_item_id and your access to its card." })); }
+        cardId = row.board_item_id;
+      }
+
+      // #785 fail-fast (contract) — the card must be visible.
+      if (!cardId || !(await canSee(sb, "item", cardId))) { await logUsage(sb, member.id, "card_checklist", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthorized", message: "You cannot see this card (confidential initiative or no access).", action: "This card belongs to a confidential initiative you are not engaged in." })); }
+
+      // Authority — write_board for mutating actions; 'complete' is RPC-self-gated (activity owner).
+      const needsWriteBoard = params.action !== "complete";
+      if (needsWriteBoard && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_checklist", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP, or use action='complete' if you own the activity." })); }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "add": rpc = "add_checklist_item"; rpcArgs = { p_board_item_id: cardId, p_text: params.text, p_position: params.position ?? null, p_assigned_to: params.assigned_to || null, p_target_date: params.target_date || null }; break;
+        case "update": rpc = "update_checklist_item"; rpcArgs = { p_checklist_item_id: params.checklist_item_id, p_text: params.text ?? null, p_position: params.position ?? null, p_target_date: params.target_date || null }; break;
+        case "complete": rpc = "complete_checklist_item"; rpcArgs = { p_checklist_item_id: params.checklist_item_id, p_completed: params.completed ?? true }; break;
+        case "assign": rpc = "assign_checklist_item"; rpcArgs = { p_checklist_item_id: params.checklist_item_id, p_assigned_to: params.assigned_to, p_target_date: params.target_date || null }; break;
+        case "delete": rpc = "delete_checklist_item"; rpcArgs = { p_checklist_item_id: params.checklist_item_id, p_reason: params.reason || null }; break;
+      }
+      const { data, error } = await sb.rpc(rpc!, rpcArgs!);
+      if (error) { await logUsage(sb, member.id, "card_checklist", false, error.message, start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const newId = params.action === "add" ? (data ?? null) : (params.checklist_item_id ?? null);
+      await logUsage(sb, member.id, "card_checklist", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, card_id: cardId, checklist_item_id: newId, result: data ?? null },
+        summary: `Checklist ${params.action} ${params.action === "complete" && params.completed === false ? "(reopened) " : ""}ok em card ${cardId}.`,
+        next_actions: ["card_get: re-read the card with its checklist", "card_checklist action='complete' to tick items off"],
+        audit: { tool: "card_checklist", semantic_domain: dom, pii_level: "low", permission: params.action === "complete" ? "activity_owner|write_board" : "write_board", source_tools: [rpc!], caller_member_id: member.id, gate_checked: params.action === "complete" ? "rls_can_see_item + RPC-self(owner)" : "rls_can_see_item + write_board", resource_id: cardId, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W1 · card_write (W) — 297 calls/180d; 10 actions over one card ──────────
+  mcp.tool(
+    "card_write",
+    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+    {
+      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast"]).describe("Card operation."),
+      card_id: z.string().optional().describe("Card UUID — required for every action EXCEPT 'create'."),
+      board_id: z.string().optional().describe("Board UUID — required for action='create'."),
+      target_board_id: z.string().optional().describe("Destination board UUID — move_to_board (required), duplicate/mirror (optional/required)."),
+      title: z.string().optional().describe("create (required) / update."),
+      description: z.string().optional().describe("create / update."),
+      status: z.string().optional().describe("action='move' target status (backlog|in_progress|review|done|archived)."),
+      position: z.number().optional().describe("action='move' 0-based position within the column."),
+      restore_status: z.string().optional().describe("action='restore' target column (default 'backlog')."),
+      assignee_id: z.string().optional().describe("update — member UUID ('' to unassign)."),
+      reviewer_id: z.string().optional().describe("update — reviewer member UUID."),
+      due_date: z.string().optional().describe("create/update — YYYY-MM-DD."),
+      tags: z.string().optional().describe("create/update — comma-separated tags."),
+      forecast_date: z.string().optional().describe("action='forecast' new forecast date (YYYY-MM-DD); also settable via update."),
+      justification: z.string().optional().describe("action='forecast' — required justification."),
+      is_portfolio_item: z.boolean().optional().describe("update — mark portfolio deliverable (Leader/GP)."),
+      priority: z.string().optional().describe("create — low|medium|high|urgent (stored as a tag)."),
+      notes: z.string().optional().describe("mirror — optional notes on the copy."),
+      reason: z.string().optional().describe("delete (required) / move / archive / restore — audit reason."),
+      confirm: z.boolean().optional().describe("archive/delete: pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "card_write", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+
+      // Resolve the resource for the #785 gate: 'create' gates the target board, everything else the card.
+      let gateKind: "item" | "board"; let resourceId: string;
+      if (params.action === "create") {
+        if (!isUUID(params.board_id ?? "")) { await logUsage(sb, member.id, "card_write", false, "Invalid board_id", start); return invalid("action='create' requires a valid board_id (UUID). Use board_overview to find one.", "Pass board_id."); }
+        gateKind = "board"; resourceId = params.board_id;
+      } else {
+        if (!isUUID(params.card_id ?? "")) { await logUsage(sb, member.id, "card_write", false, "Invalid card_id", start); return invalid(`action='${params.action}' requires a valid card_id (UUID).`, "Pass card_id."); }
+        gateKind = "item"; resourceId = params.card_id;
+      }
+      if (!(await canSee(sb, gateKind, resourceId))) { await logUsage(sb, member.id, "card_write", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: `You cannot see this ${gateKind} (confidential initiative or no access).`, action: "This resource belongs to a confidential initiative you are not engaged in." })); }
+      if (!(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
+
+      // Per-action input validation
+      if (params.action === "create" && (!params.title || !params.title.trim())) return invalid("action='create' requires title.", "Pass title.");
+      if (params.action === "move" && (!params.status || !params.status.trim())) return invalid("action='move' requires status.", "Pass status.");
+      if (params.action === "move_to_board" && !isUUID(params.target_board_id ?? "")) return invalid("action='move_to_board' requires target_board_id (UUID).", "Pass target_board_id.");
+      if (params.action === "mirror" && !isUUID(params.target_board_id ?? "")) return invalid("action='mirror' requires target_board_id (UUID).", "Pass target_board_id.");
+      if (params.action === "duplicate" && params.target_board_id && !isUUID(params.target_board_id)) return invalid("target_board_id must be a UUID.", "Fix target_board_id.");
+      if (params.action === "delete" && (!params.reason || !params.reason.trim())) return invalid("action='delete' requires reason (audit).", "Pass reason.");
+      if (params.action === "forecast" && (!params.forecast_date || !params.justification || !params.justification.trim())) return invalid("action='forecast' requires forecast_date + justification.", "Pass forecast_date and justification.");
+
+      // ADR-0018 confirm-gate for destructive verbs (archive/delete) — return a preview unless confirm=true.
+      if ((params.action === "archive" || params.action === "delete") && params.confirm !== true) {
+        const { data: target } = await sb.from("board_items").select("id, title, status, board_id").eq("id", resourceId).maybeSingle();
+        await logUsage(sb, member.id, "card_write", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, target: target || { id: resourceId, note: "not found or inaccessible" }, next_call: { action: params.action, card_id: resourceId, reason: params.reason ?? null, confirm: true } },
+          summary: params.action === "delete" ? `PREVIEW: delete card ${resourceId} é IRREVERSÍVEL (prefira archive). Reenvie com confirm=true.` : `PREVIEW: archive (soft-delete) card ${resourceId}. Reenvie com confirm=true (reversível via action='restore').`,
+          warnings: [params.action === "delete" ? "Destructive: permanently deletes the card + checklist/assignments." : "Soft-delete: sets status='archived' (reversible)."],
+          next_actions: [`card_write action='${params.action}' confirm=true`],
+          audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "write_board", source_tools: [], caller_member_id: member.id, gate_checked: "rls_can_see_item + write_board (preview, not executed)", resource_id: resourceId, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "create": {
+          const tags = params.tags ? String(params.tags).split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+          if (params.priority && params.priority !== "medium") tags.push(`priority:${params.priority}`);
+          rpc = "create_board_item"; rpcArgs = { p_board_id: params.board_id, p_title: params.title, p_description: params.description || null, p_tags: tags, p_due_date: params.due_date || null }; break;
+        }
+        case "update": {
+          const fields: Record<string, unknown> = {};
+          if (params.title !== undefined) fields.title = params.title;
+          if (params.description !== undefined) fields.description = params.description;
+          if (params.assignee_id !== undefined) fields.assignee_id = params.assignee_id || null;
+          if (params.reviewer_id !== undefined) fields.reviewer_id = params.reviewer_id || null;
+          if (params.due_date !== undefined) fields.due_date = params.due_date || null;
+          if (params.tags !== undefined) fields.tags = String(params.tags).split(",").map((t: string) => t.trim()).filter(Boolean);
+          if (params.forecast_date !== undefined) fields.forecast_date = params.forecast_date || null;
+          if (params.is_portfolio_item !== undefined) fields.is_portfolio_item = params.is_portfolio_item;
+          if (params.reason !== undefined) fields.reason = params.reason;
+          if (Object.keys(fields).length === 0) return invalid("action='update' needs at least one field.", "Pass a field to update.");
+          rpc = "update_board_item"; rpcArgs = { p_item_id: params.card_id, p_fields: fields }; break;
+        }
+        case "move": rpc = "move_board_item"; rpcArgs = { p_item_id: params.card_id, p_new_status: params.status, p_new_position: params.position ?? 0, p_reason: params.reason || null }; break;
+        case "move_to_board": rpc = "move_item_to_board"; rpcArgs = { p_item_id: params.card_id, p_target_board_id: params.target_board_id }; break;
+        case "archive": rpc = "admin_archive_board_item"; rpcArgs = { p_item_id: params.card_id, p_reason: params.reason || null }; break;
+        case "restore": rpc = "admin_restore_board_item"; rpcArgs = { p_item_id: params.card_id, p_restore_status: params.restore_status || "backlog", p_reason: params.reason || null }; break;
+        case "delete": rpc = "delete_board_item"; rpcArgs = { p_item_id: params.card_id, p_reason: params.reason }; break;
+        case "duplicate": rpc = "duplicate_board_item"; rpcArgs = { p_item_id: params.card_id, p_target_board_id: params.target_board_id || null }; break;
+        case "mirror": rpc = "create_mirror_card"; rpcArgs = { p_source_item_id: params.card_id, p_target_board_id: params.target_board_id, p_target_status: params.restore_status || "backlog", p_notes: params.notes || null }; break;
+        case "forecast": rpc = "update_card_forecast"; rpcArgs = { p_board_item_id: params.card_id, p_new_forecast: params.forecast_date, p_justification: params.justification }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc!, rpcArgs!);
+      if (error) { await logUsage(sb, member.id, "card_write", false, error.message, start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const newCardId = params.action === "create" ? (data ?? null) : params.action === "duplicate" ? (data ?? null) : params.action === "mirror" ? (data ?? null) : (params.card_id ?? null);
+      await logUsage(sb, member.id, "card_write", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, card_id: newCardId, source_card_id: params.card_id ?? null, result: data ?? null },
+        summary: `card_write action='${params.action}' ok (${params.action === "create" || params.action === "duplicate" || params.action === "mirror" ? `novo card ${newCardId}` : `card ${params.card_id}`}).`,
+        next_actions: ["card_get: re-read the card", "card_checklist: manage its checklist"],
+        audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "write_board", source_tools: [rpc!], caller_member_id: member.id, gate_checked: `rls_can_see_${gateKind} + write_board`, resource_id: resourceId, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W1 · card_comment (W) — 22 calls/180d; #785 ADDED at semantic layer ─────
+  mcp.tool(
+    "card_comment",
+    "Semantic comment writer for a board card (absorbs create/update/delete_card_comment). Set `action`: 'create' (board_item_id + body; optional parent_comment_id + mentioned_member_ids for @mentions), 'update' (comment_id + body; author only), 'delete' (comment_id; soft-delete, author OR write_board OR GP). Authority is enforced by the RPC per action; the semantic layer ADDS the #785 confidential-visibility gate on the parent card (a gap in the raw tools). Stable envelope.",
+    {
+      action: z.enum(["create", "update", "delete"]).describe("Comment operation."),
+      board_item_id: z.string().optional().describe("Card UUID — REQUIRED for action='create'."),
+      comment_id: z.string().optional().describe("Comment UUID — REQUIRED for update/delete."),
+      body: z.string().optional().describe("Comment text (markdown) — create/update (required)."),
+      parent_comment_id: z.string().optional().describe("Parent comment UUID — 'create' thread reply."),
+      mentioned_member_ids: z.array(z.string()).optional().describe("Member UUIDs to @mention — 'create'."),
+    },
+    async (params: { action: "create" | "update" | "delete"; board_item_id?: string; comment_id?: string; body?: string; parent_comment_id?: string; mentioned_member_ids?: string[] }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "card_comment", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+
+      // Resolve the parent card for #785 (create has it directly; update/delete via the comment row,
+      // itself RLS-scoped → confidential invisibility returns null → not_found).
+      let cardId: string;
+      if (params.action === "create") {
+        if (!isUUID(params.board_item_id ?? "")) { await logUsage(sb, member.id, "card_comment", false, "Invalid board_item_id", start); return invalid("action='create' requires board_item_id (UUID).", "Pass board_item_id."); }
+        if (!params.body || !params.body.trim()) { await logUsage(sb, member.id, "card_comment", false, "Empty body", start); return invalid("action='create' requires non-empty body.", "Pass body."); }
+        cardId = params.board_item_id!;
+      } else {
+        if (!isUUID(params.comment_id ?? "")) { await logUsage(sb, member.id, "card_comment", false, "Invalid comment_id", start); return invalid(`action='${params.action}' requires comment_id (UUID).`, "Pass comment_id."); }
+        if (params.action === "update" && (!params.body || !params.body.trim())) { await logUsage(sb, member.id, "card_comment", false, "Empty body", start); return invalid("action='update' requires non-empty body.", "Pass body."); }
+        const { data: row, error: rErr } = await sb.from("board_item_comments").select("board_item_id").eq("id", params.comment_id!).maybeSingle();
+        if (rErr) { await logUsage(sb, member.id, "card_comment", false, rErr.message, start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "internal_error", message: rErr.message })); }
+        if (!row) { await logUsage(sb, member.id, "card_comment", false, "Comment not visible", start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "not_found", message: "Comment not found or not visible to you.", action: "Confirm the comment_id and your access to its card." })); }
+        cardId = row.board_item_id;
+      }
+      if (!(await canSee(sb, "item", cardId))) { await logUsage(sb, member.id, "card_comment", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "unauthorized", message: "You cannot see this card (confidential initiative or no access).", action: "This card belongs to a confidential initiative you are not engaged in." })); }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      if (params.action === "create") { rpc = "create_card_comment"; rpcArgs = { p_board_item_id: cardId, p_body: params.body, p_parent_comment_id: params.parent_comment_id ?? null, p_mentioned_member_ids: params.mentioned_member_ids ?? [] }; }
+      else if (params.action === "update") { rpc = "update_card_comment"; rpcArgs = { p_comment_id: params.comment_id, p_new_body: params.body }; }
+      else { rpc = "delete_card_comment"; rpcArgs = { p_comment_id: params.comment_id }; }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "card_comment", false, error.message, start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      if (data?.error) { await logUsage(sb, member.id, "card_comment", false, data.error, start); return ok(buildSemanticError({ tool: "card_comment", semantic_domain: dom, code: "unauthorized", message: String(data.error), action: "Only the author can edit; delete allows author / write_board / GP." })); }
+      await logUsage(sb, member.id, "card_comment", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, card_id: cardId, comment_id: params.action === "create" ? (data?.id ?? data ?? null) : params.comment_id, result: data ?? null },
+        summary: `Comentário ${params.action} ok em card ${cardId}.`,
+        next_actions: ["card_get: re-read the card with its comments"],
+        audit: { tool: "card_comment", semantic_domain: dom, pii_level: "low", permission: params.action === "update" ? "author" : params.action === "delete" ? "author|write_board|manage_member" : "active_member|write_board", source_tools: [rpc], caller_member_id: member.id, gate_checked: "rls_can_see_item + RPC-self(authority)", resource_id: cardId, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W1 · card_search (R) — 56 calls/180d; 4 lookup modes ────────────────────
+  mcp.tool(
+    "card_search",
+    "Semantic card finder (absorbs list_board_cards/search_board_cards/get_my_assigned_cards/list_orphan_card_assignments). Set `mode`: 'board' (board_id; optional status), 'text' (query; tribe_id or initiative_id — defaults to your tribe), 'mine' (cards assigned to you across boards), 'orphans' (admin: cards still assigned to offboarded/inactive members; optional tribe_id/chapter). #785: 'board' and 'text' fail-fast if the target board/initiative is confidential and you are not engaged; 'mine'/'orphans' are RLS/authority-scoped. Read-only, stable envelope.",
+    {
+      mode: z.enum(["board", "text", "mine", "orphans"]).describe("Lookup mode."),
+      board_id: z.string().optional().describe("Board UUID — REQUIRED for mode='board'."),
+      status: z.string().optional().describe("mode='board' status filter (backlog|in_progress|review|done|archived)."),
+      query: z.string().optional().describe("mode='text' full-text search term (required)."),
+      tribe_id: z.number().optional().describe("Legacy tribe 1-8 — mode='text' (scope) / mode='orphans' (filter)."),
+      initiative_id: z.string().optional().describe("Initiative UUID — mode='text' scope alternative to tribe_id."),
+      chapter: z.string().optional().describe("mode='orphans' chapter code filter (e.g. 'PMI-GO')."),
+      limit: z.number().optional().describe("mode='orphans' max rows (default 100, max 500)."),
+    },
+    async (params: { mode: "board" | "text" | "mine" | "orphans"; board_id?: string; status?: string; query?: string; tribe_id?: number; initiative_id?: string; chapter?: string; limit?: number }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "card_search", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>; let gate = "RLS (authenticated)"; let resourceId: string | null = null; let perm = "authenticated";
+      if (params.mode === "board") {
+        if (!isUUID(params.board_id ?? "")) { await logUsage(sb, member.id, "card_search", false, "Invalid board_id", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "invalid_input", message: "mode='board' requires board_id (UUID).", action: "Use board_overview to find one." })); }
+        if (!(await canSee(sb, "board", params.board_id!))) { await logUsage(sb, member.id, "card_search", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "unauthorized", message: "You cannot see this board (confidential initiative or no access).", action: "This board belongs to a confidential initiative you are not engaged in." })); }
+        rpc = "list_board_items"; rpcArgs = { p_board_id: params.board_id, p_status: params.status || null }; gate = "rls_can_see_board"; resourceId = params.board_id!;
+      } else if (params.mode === "text") {
+        if (!params.query || !params.query.trim()) { await logUsage(sb, member.id, "card_search", false, "Empty query", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "invalid_input", message: "mode='text' requires query.", action: "Pass query." })); }
+        let initId = params.initiative_id ?? null;
+        if (!initId) {
+          const tid = params.tribe_id ?? member.tribe_id;
+          if (!tid) { await logUsage(sb, member.id, "card_search", false, "No tribe", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "invalid_input", message: "mode='text' needs tribe_id or initiative_id (you have no assigned tribe).", action: "Pass tribe_id (1-8) or initiative_id." })); }
+          initId = await resolveInitiativeId(sb, tid);
+        }
+        if (!initId || !isUUID(initId)) { await logUsage(sb, member.id, "card_search", false, "Initiative not found", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "not_found", message: "Initiative not found for the given tribe_id/initiative_id.", action: "Confirm the tribe_id or pass initiative_id." })); }
+        if (!(await canSee(sb, "initiative", initId))) { await logUsage(sb, member.id, "card_search", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "unauthorized", message: "You cannot see this initiative (confidential or no access).", action: "This initiative is confidential and you are not engaged in it." })); }
+        rpc = "search_initiative_board_items"; rpcArgs = { p_query: params.query, p_initiative_id: initId }; gate = "rls_can_see_initiative"; resourceId = initId;
+      } else if (params.mode === "mine") {
+        rpc = "get_my_cards"; rpcArgs = {}; gate = "self (auth.uid)"; perm = "self";
+      } else {
+        rpc = "list_orphan_card_assignments"; rpcArgs = { p_tribe_id: params.tribe_id ?? null, p_chapter: params.chapter ?? null, p_limit: Math.min(params.limit ?? 100, 500) }; gate = "RPC-self(manage_member)"; perm = "manage_member";
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "card_search", false, error.message, start); return ok(buildSemanticError({ tool: "card_search", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const rows = Array.isArray(data) ? data : (data?.cards ?? data ?? []);
+      const count = Array.isArray(rows) ? rows.length : 0;
+      await logUsage(sb, member.id, "card_search", true, undefined, start);
+      return semanticOk({
+        data: { mode: params.mode, count, cards: rows },
+        summary: `${count} card(s) via mode='${params.mode}'${params.mode === "text" ? ` para "${params.query}"` : ""}.`,
+        next_actions: ["card_get: open a card by id", "card_write: mutate a card"],
+        audit: { tool: "card_search", semantic_domain: dom, pii_level: "low", permission: perm, source_tools: [rpc], caller_member_id: member.id, gate_checked: gate, resource_id: resourceId, extra: { mode: params.mode } },
+      });
+    },
+  );
+
+  // ── W1 · card_get (R) — one card 360° in a single call ──────────────────────
+  mcp.tool(
+    "card_get",
+    "Semantic 360° card read (absorbs get_card_detail/get_card_timeline/get_card_full_history/list_card_comments/list_card_checklist/list_card_drive_files). `detail_level`: 'summary' = card detail only; 'standard' (default) = + checklist + comments + timeline; 'full' = + drive files + cross-entity history (meetings/decisions/showcases). #785 fail-fast: the card must be visible to you (fixes the board_item_checklists read gap). Read-only, stable envelope; partial-source failures surface in `warnings` (never masked).",
+    {
+      card_id: z.string().describe("Card UUID (board_items)."),
+      detail_level: z.enum(["summary", "standard", "full"]).optional().describe("'summary' | 'standard' (default) | 'full'."),
+    },
+    async (params: { card_id: string; detail_level?: "summary" | "standard" | "full" }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "card_get", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "card_get", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "card_get", false, "Invalid card_id", start); return ok(buildSemanticError({ tool: "card_get", semantic_domain: dom, code: "invalid_input", message: "card_id must be a UUID.", action: "Pass a valid card_id." })); }
+      if (!(await canSee(sb, "item", params.card_id))) { await logUsage(sb, member.id, "card_get", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_get", semantic_domain: dom, code: "not_found", message: "Card not found or not visible to you.", action: "This card may belong to a confidential initiative you are not engaged in." })); }
+      const detail = params.detail_level ?? "standard";
+
+      const tasks: PromiseLike<any>[] = [sb.rpc("get_card_detail", { p_card_id: params.card_id })];
+      const labels = ["detail"];
+      if (detail === "standard" || detail === "full") {
+        tasks.push(sb.from("board_item_checklists").select("id, text, is_completed, position, assigned_to, target_date, completed_at, created_at").eq("board_item_id", params.card_id).order("position", { ascending: true }));
+        labels.push("checklist");
+        tasks.push(sb.rpc("list_card_comments", { p_board_item_id: params.card_id }));
+        labels.push("comments");
+        tasks.push(sb.rpc("get_card_timeline", { p_item_id: params.card_id }));
+        labels.push("timeline");
+      }
+      if (detail === "full") {
+        tasks.push(sb.rpc("list_card_drive_files", { p_board_item_id: params.card_id }));
+        labels.push("drive_files");
+        tasks.push(sb.rpc("get_card_full_history", { p_card_id: params.card_id }));
+        labels.push("full_history");
+      }
+      const settled = await Promise.allSettled(tasks);
+      const warnings: string[] = [];
+      const pick = (i: number): any => {
+        const r = settled[i];
+        if (r.status === "rejected") { warnings.push(`${labels[i]}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+        const v = r.value as any;
+        if (v?.error) { warnings.push(`${labels[i]}: ${v.error.message}`); return null; }
+        return v?.data ?? null;
+      };
+      const dataOut: Record<string, unknown> = { card_id: params.card_id, detail: pick(0) };
+      if (detail === "standard" || detail === "full") {
+        dataOut.checklist = pick(1) ?? [];
+        dataOut.comments = pick(2) ?? [];
+        dataOut.timeline = pick(3) ?? [];
+      }
+      if (detail === "full") {
+        dataOut.drive_files = pick(4) ?? [];
+        dataOut.full_history = pick(5) ?? null;
+      }
+      const d0: any = dataOut.detail;
+      const title = d0?.title ?? d0?.card?.title ?? null;
+      await logUsage(sb, member.id, "card_get", true, undefined, start);
+      return semanticOk({
+        data: dataOut,
+        summary: `Card ${title ? `"${title}"` : params.card_id} (detail_level='${detail}')${Array.isArray(dataOut.checklist) ? ` · ${(dataOut.checklist as any[]).length} checklist` : ""}${Array.isArray(dataOut.comments) ? ` · ${(dataOut.comments as any[]).length} comentário(s)` : ""}.`,
+        warnings,
+        next_actions: ["card_write: mutate this card", "card_checklist: manage its checklist", "card_comment: comment on it"],
+        audit: { tool: "card_get", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_card_detail", "board_item_checklists", "list_card_comments", "get_card_timeline", detail === "full" ? "list_card_drive_files" : null, detail === "full" ? "get_card_full_history" : null], caller_member_id: member.id, gate_checked: "rls_can_see_item", resource_id: params.card_id, extra: { detail_level: detail } },
+      });
+    },
+  );
+
+  // ── W1 · board_overview (R) — boards list / one board / initiative context ──
+  mcp.tool(
+    "board_overview",
+    "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent activities), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'initiative'. Read-only, stable envelope.",
+    {
+      scope: z.enum(["list", "board", "initiative"]).describe("What to summarize."),
+      board_id: z.string().optional().describe("Board UUID — REQUIRED for scope='board'."),
+      initiative_id: z.string().optional().describe("Initiative UUID — scope='initiative'."),
+      tribe_id: z.number().optional().describe("Legacy tribe 1-8 — scope='initiative' alternative to initiative_id."),
+      activity_limit: z.number().optional().describe("scope='board' recent-activity cap (default 20)."),
+    },
+    async (params: { scope: "list" | "board" | "initiative"; board_id?: string; initiative_id?: string; tribe_id?: number; activity_limit?: number }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "board_overview", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+
+      if (params.scope === "list") {
+        const { data, error } = await sb.from("project_boards").select("id, board_name, board_scope, domain_key, initiative:initiatives(legacy_tribe_id)").eq("is_active", true).order("board_scope", { ascending: true });
+        if (error) { await logUsage(sb, member.id, "board_overview", false, error.message, start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        const boards = (data || []).map((b: any) => ({ id: b.id, board_name: b.board_name, board_scope: b.board_scope, domain_key: b.domain_key, tribe_id: b.initiative?.legacy_tribe_id ?? null })).sort((a: any, b: any) => (a.tribe_id ?? 999) - (b.tribe_id ?? 999));
+        await logUsage(sb, member.id, "board_overview", true, undefined, start);
+        return semanticOk({
+          data: { scope: "list", count: boards.length, boards },
+          summary: `${boards.length} board(s) visíveis (confidenciais não-engajados excluídos por RLS #785).`,
+          next_actions: ["board_overview scope='board' board_id=… para detalhe", "card_search mode='board' para os cards"],
+          audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["project_boards"], caller_member_id: member.id, gate_checked: "RLS project_boards_confidential_visibility (#785)", resource_id: null, extra: { scope: "list" } },
+        });
+      }
+
+      if (params.scope === "board") {
+        if (!isUUID(params.board_id ?? "")) { await logUsage(sb, member.id, "board_overview", false, "Invalid board_id", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "invalid_input", message: "scope='board' requires board_id (UUID).", action: "Use scope='list' to find one." })); }
+        if (!(await canSee(sb, "board", params.board_id!))) { await logUsage(sb, member.id, "board_overview", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: "Board not found or not visible to you.", action: "This board may belong to a confidential initiative you are not engaged in." })); }
+        const [boardRes, membersRes, tagsRes, actRes] = await Promise.allSettled([
+          sb.rpc("get_board", { p_board_id: params.board_id }),
+          sb.rpc("get_board_members", { p_board_id: params.board_id }),
+          sb.rpc("get_board_tags", { p_board_id: params.board_id }),
+          sb.rpc("get_board_activities", { p_board_id: params.board_id, p_limit: params.activity_limit ?? 20 }),
+        ]);
+        const warnings: string[] = [];
+        const pick = (r: PromiseSettledResult<any>, label: string): any => {
+          if (r.status === "rejected") { warnings.push(`${label}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+          if (r.value?.error) { warnings.push(`${label}: ${r.value.error.message}`); return null; }
+          return r.value?.data ?? null;
+        };
+        const board = pick(boardRes, "board");
+        await logUsage(sb, member.id, "board_overview", true, undefined, start);
+        return semanticOk({
+          data: { scope: "board", board_id: params.board_id, board, members: pick(membersRes, "members"), tags: pick(tagsRes, "tags"), recent_activities: pick(actRes, "activities") },
+          summary: `Board ${board?.board_name ? `"${board.board_name}"` : params.board_id}.`,
+          warnings,
+          next_actions: ["card_search mode='board': list its cards", "card_write action='create': add a card"],
+          audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_board", "get_board_members", "get_board_tags", "get_board_activities"], caller_member_id: member.id, gate_checked: "rls_can_see_board", resource_id: params.board_id!, extra: { scope: "board" } },
+        });
+      }
+
+      // scope === "initiative"
+      const hasInit = isUUID(params.initiative_id ?? "");
+      const hasTribe = params.tribe_id !== undefined && params.tribe_id !== null;
+      if (hasInit === hasTribe) { await logUsage(sb, member.id, "board_overview", false, "XOR init/tribe", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "invalid_input", message: "scope='initiative' needs exactly one of initiative_id (UUID) or tribe_id (1-8).", action: "Pass one of them." })); }
+      let initId = params.initiative_id ?? null;
+      if (!initId && hasTribe) initId = await resolveInitiativeId(sb, params.tribe_id!);
+      if (!initId || !isUUID(initId)) { await logUsage(sb, member.id, "board_overview", false, "Initiative not found", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: "Initiative not found.", action: "Confirm the tribe_id or pass initiative_id." })); }
+      if (!(await canSee(sb, "initiative", initId))) { await logUsage(sb, member.id, "board_overview", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: "Initiative not found or not visible to you.", action: "This initiative may be confidential and you are not engaged." })); }
+      const [initRes, boardRes] = await Promise.all([
+        sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initId).maybeSingle(),
+        sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).limit(1).maybeSingle(),
+      ]);
+      if (initRes.error) { await logUsage(sb, member.id, "board_overview", false, initRes.error.message, start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "internal_error", message: initRes.error.message })); }
+      if (!initRes.data) { await logUsage(sb, member.id, "board_overview", false, "Initiative not found", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: `Initiative ${initId} not found or you lack access.` })); }
+      const initiative = initRes.data; const board = boardRes.data ?? null;
+      const [cardsRes, engRes] = await Promise.all([
+        board?.id ? sb.from("board_items").select("id, title, status, due_date, position").eq("board_id", board.id).neq("status", "archived").order("position").limit(5) : Promise.resolve({ data: [], error: null } as any),
+        sb.from("engagements").select("id", { count: "exact", head: true }).eq("initiative_id", initId).is("end_date", null).is("revoked_at", null),
+      ]);
+      const cards = (cardsRes.data ?? []).slice(0, 5);
+      const statusCounts: Record<string, number> = {};
+      for (const c of cards) statusCounts[c.status] = (statusCounts[c.status] ?? 0) + 1;
+      await logUsage(sb, member.id, "board_overview", true, undefined, start);
+      return semanticOk({
+        data: { scope: "initiative", initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status }, board: board ? { id: board.id, board_name: board.board_name, sample_status_breakdown: statusCounts } : null, sample_cards: cards, active_engagement_count: (engRes as any).count ?? null },
+        summary: `Iniciativa "${initiative.title}" (${initiative.kind})${board ? `, board "${board.board_name}" — ${cards.length} card(s)` : " (sem board)"}.`,
+        next_actions: ["board_overview scope='board': full board detail", "card_search mode='board': all cards", "card_search mode='text': search cards"],
+        audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["initiatives", "project_boards", "board_items", "engagements(count)"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative", resource_id: initId, extra: { scope: "initiative" } },
+      });
+    },
+  );
+
+  // ── W1 · platform_context (R) — current cycle + release + cycles list ───────
+  mcp.tool(
+    "platform_context",
+    "Semantic platform-context read (absorbs get_current_cycle/get_current_release/list_cycles). Returns the current operational cycle (code/label/dates), the current platform release, and the full cycles list. Tier-1 read, no PII, no per-resource gate. Use this to know what 'current cycle' means before calling cycle-scoped tools. Stable envelope.",
+    {
+      include_all_cycles: z.boolean().optional().describe("Include the full cycles list (past + future). Default: true."),
+    },
+    async (params: { include_all_cycles?: boolean }) => {
+      const start = Date.now();
+      const dom = "platform";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "platform_context", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "platform_context", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const withAll = params.include_all_cycles !== false;
+      const settled = await Promise.allSettled([
+        sb.rpc("get_current_cycle"),
+        sb.rpc("get_current_release"),
+        withAll ? sb.from("cycles").select("cycle_code, cycle_label, cycle_abbr, cycle_start, cycle_end, cycle_color, sort_order, is_current").order("sort_order") : Promise.resolve({ data: [], error: null } as any),
+      ]);
+      const warnings: string[] = [];
+      const labels = ["current_cycle", "current_release", "cycles"];
+      const pick = (i: number): any => {
+        const r = settled[i];
+        if (r.status === "rejected") { warnings.push(`${labels[i]}: ${(r.reason as any)?.message ?? "rejected"}`); return null; }
+        const v = r.value as any;
+        if (v?.error) { warnings.push(`${labels[i]}: ${v.error.message}`); return null; }
+        return v?.data ?? null;
+      };
+      const currentCycle = pick(0);
+      const currentRelease = pick(1);
+      const cycles = withAll ? (pick(2) ?? []) : undefined;
+      const cc = currentCycle?.cycle_code ?? currentCycle?.code ?? null;
+      await logUsage(sb, member.id, "platform_context", true, undefined, start);
+      return semanticOk({
+        data: { current_cycle: currentCycle, current_release: currentRelease, ...(withAll ? { cycles } : {}) },
+        summary: [cc ? `ciclo atual ${cc}` : "ciclo atual indisponível", currentRelease?.version ? `release ${currentRelease.version}` : null, withAll && Array.isArray(cycles) ? `${cycles.length} ciclo(s) no histórico` : null].filter(Boolean).join(" · ") + ".",
+        warnings,
+        next_actions: ["card_search / board_overview: operate within the current cycle"],
+        audit: { tool: "platform_context", semantic_domain: dom, pii_level: "none", permission: "authenticated", source_tools: ["get_current_cycle", "get_current_release", withAll ? "cycles" : null], caller_member_id: member.id, gate_checked: "none (Tier-1 read)", resource_id: null, extra: { include_all_cycles: withAll } },
+      });
+    },
+  );
+
+  // ── W1 · portfolio_report (R) — PMO rollups (admin/sponsor) ─────────────────
+  mcp.tool(
+    "portfolio_report",
+    "Semantic portfolio/PMO rollup (absorbs get_portfolio_overview/get_portfolio_items/get_portfolio_health/get_portfolio_timeline/get_portfolio_planned_vs_actual/exec_portfolio_board_summary). Set `report`: 'overview' (default, executive dashboard), 'items' (portfolio-flagged cards; filters tribe_id/status/cycle_code), 'health' (quarterly KPI traffic-light; cycle_code), 'timeline' (items by month), 'planned_vs_actual' (baseline vs actual variance; cycle), 'board_summary' (per-board executive view). Authority: manage_member OR view_partner (admin/sponsor). Confidential initiatives are excluded inline by the underlying RPCs. Read-only, stable envelope.",
+    {
+      report: z.enum(["overview", "items", "health", "timeline", "planned_vs_actual", "board_summary"]).optional().describe("Which rollup. Default: 'overview'."),
+      tribe_id: z.number().optional().describe("report='items' tribe filter (legacy_tribe_id)."),
+      status: z.string().optional().describe("report='items' board_item status filter."),
+      cycle_code: z.string().optional().describe("report='items'/'health' cycle_code filter (health default 'cycle3-2026')."),
+      cycle: z.number().optional().describe("report='planned_vs_actual' cycle number (default 3)."),
+      include_inactive: z.boolean().optional().describe("report='board_summary' include archived/inactive boards. Default false."),
+    },
+    async (params: { report?: "overview" | "items" | "health" | "timeline" | "planned_vs_actual" | "board_summary"; tribe_id?: number; status?: string; cycle_code?: string; cycle?: number; include_inactive?: boolean }) => {
+      const start = Date.now();
+      const dom = "boards";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "portfolio_report", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "portfolio_report", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const isAdmin = await canV4(sb, member.id, "manage_member");
+      const isSponsor = isAdmin ? false : await canV4(sb, member.id, "view_partner");
+      if (!isAdmin && !isSponsor) { await logUsage(sb, member.id, "portfolio_report", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "portfolio_report", semantic_domain: dom, code: "unauthorized", message: "Requires manage_member or view_partner (admin/sponsor).", action: "Ask a GP/sponsor to run this." })); }
+      const report = params.report ?? "overview";
+      let rpc: string; let rpcArgs: Record<string, unknown> = {};
+      switch (report) {
+        case "overview": rpc = "get_portfolio_dashboard"; break;
+        case "items": rpc = "get_portfolio_items"; rpcArgs = { p_tribe_id: params.tribe_id ?? null, p_status: params.status ?? null, p_cycle_code: params.cycle_code ?? null }; break;
+        case "health": rpc = "exec_portfolio_health"; rpcArgs = { p_cycle_code: params.cycle_code || "cycle3-2026" }; break;
+        case "timeline": rpc = "get_portfolio_timeline"; break;
+        case "planned_vs_actual": rpc = "get_portfolio_planned_vs_actual"; rpcArgs = { p_cycle: params.cycle ?? 3 }; break;
+        case "board_summary": rpc = "exec_portfolio_board_summary"; rpcArgs = { p_include_inactive: params.include_inactive ?? false }; break;
+        default: rpc = "get_portfolio_dashboard";
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "portfolio_report", false, error.message, start); return ok(buildSemanticError({ tool: "portfolio_report", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      await logUsage(sb, member.id, "portfolio_report", true, undefined, start);
+      return semanticOk({
+        data: { report, result: data },
+        summary: `Portfolio report='${report}' gerado (${isAdmin ? "manage_member" : "view_partner"}).`,
+        next_actions: ["portfolio_report report='items': portfolio-flagged cards", "board_overview: drill into a board"],
+        audit: { tool: "portfolio_report", semantic_domain: dom, pii_level: "low", permission: isAdmin ? "manage_member" : "view_partner", source_tools: [rpc], caller_member_id: member.id, gate_checked: `canV4(${isAdmin ? "manage_member" : "view_partner"})`, resource_id: null, extra: { report } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -8587,7 +9169,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.2.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.3.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -8636,10 +9218,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.80.0",
+  ef_version: "2.81.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.2.0", tools: 4 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.3.0", tools: 12 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

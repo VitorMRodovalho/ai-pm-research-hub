@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-15T12:59:29.667Z",
+  "generated_at": "2026-07-16T01:54:54.207Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 347,
+  "total": 355,
   "by_domain": {
     "personal": 23,
-    "tribe": 112,
-    "board": 70,
+    "tribe": 113,
+    "board": 77,
     "events": 16,
     "governance": 23,
     "comms": 16,
@@ -17,7 +17,7 @@
     "health": 20
   },
   "by_permission": {
-    "read": 230,
+    "read": 238,
     "write": 108,
     "admin": 9
   },
@@ -647,6 +647,13 @@
       "is_sensitive": false
     },
     {
+      "name": "platform_context",
+      "description": "Semantic platform-context read (absorbs get_current_cycle/get_current_release/list_cycles). Returns the current operational cycle (code/label/dates), the current platform release, and the full cycles list. Tier-1 read, no PII, no per-resource gate. Use this to know what 'current cycle' means before calling cycle-scoped tools. Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "provision_initiative_drive",
       "description": "Provisiona o Drive de uma iniciativa/tribo: cria a subpasta de workspace (se ainda não existir), vincula em initiative_drive_links (link_purpose=workspace) e concede acesso 'writer' a todo o roster ativo via reconcile. Idempotente — se já houver pasta de workspace, apenas reconcilia os acessos. Authority: manage_platform (GP). Requer a SA com organizer/fileOrganizer na pasta-raiz (ADR-0094 G4.1) senão os grants falham 403.",
       "domain": "tribe",
@@ -983,6 +990,48 @@
       "is_sensitive": false
     },
     {
+      "name": "board_overview",
+      "description": "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent activities), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'initiative'. Read-only, stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_checklist",
+      "description": "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: write_board — EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_comment",
+      "description": "Semantic comment writer for a board card (absorbs create/update/delete_card_comment). Set `action`: 'create' (board_item_id + body; optional parent_comment_id + mentioned_member_ids for @mentions), 'update' (comment_id + body; author only), 'delete' (comment_id; soft-delete, author OR write_board OR GP). Authority is enforced by the RPC per action; the semantic layer ADDS the #785 confidential-visibility gate on the parent card (a gap in the raw tools). Stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_get",
+      "description": "Semantic 360° card read (absorbs get_card_detail/get_card_timeline/get_card_full_history/list_card_comments/list_card_checklist/list_card_drive_files). `detail_level`: 'summary' = card detail only; 'standard' (default) = + checklist + comments + timeline; 'full' = + drive files + cross-entity history (meetings/decisions/showcases). #785 fail-fast: the card must be visible to you (fixes the board_item_checklists read gap). Read-only, stable envelope; partial-source failures surface in `warnings` (never masked).",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_search",
+      "description": "Semantic card finder (absorbs list_board_cards/search_board_cards/get_my_assigned_cards/list_orphan_card_assignments). Set `mode`: 'board' (board_id; optional status), 'text' (query; tribe_id or initiative_id — defaults to your tribe), 'mine' (cards assigned to you across boards), 'orphans' (admin: cards still assigned to offboarded/inactive members; optional tribe_id/chapter). #785: 'board' and 'text' fail-fast if the target board/initiative is confidential and you are not engaged; 'mine'/'orphans' are RLS/authority-scoped. Read-only, stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_write",
+      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "force_grant_curation_drive_access",
       "description": "Concede (ou re-concede) acesso temporário 'commenter' aos curadores nos artefatos Drive de um card em curadoria, executando via Service Account imediatamente. Authority: manage_platform (GP). Normalmente o grant é automático no handoff para curation_pending; use para remediar falhas. Mesma observação 403-até-elevação-de-papel do #209. Retorna resultado por linha.",
       "domain": "board",
@@ -1209,6 +1258,13 @@
     {
       "name": "list_orphan_card_assignments",
       "description": "Lists unresolved board cards still assigned to offboarded/inactive/observer members. Admin triage for reassignment. Filters by chapter or tribe_id.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "portfolio_report",
+      "description": "Semantic portfolio/PMO rollup (absorbs get_portfolio_overview/get_portfolio_items/get_portfolio_health/get_portfolio_timeline/get_portfolio_planned_vs_actual/exec_portfolio_board_summary). Set `report`: 'overview' (default, executive dashboard), 'items' (portfolio-flagged cards; filters tribe_id/status/cycle_code), 'health' (quarterly KPI traffic-light; cycle_code), 'timeline' (items by month), 'planned_vs_actual' (baseline vs actual variance; cycle), 'board_summary' (per-board executive view). Authority: manage_member OR view_partner (admin/sponsor). Confidential initiatives are excluded inline by the underlying RPCs. Read-only, stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
