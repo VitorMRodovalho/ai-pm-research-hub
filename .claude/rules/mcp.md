@@ -12,14 +12,17 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.3.0) — public semantic gateway (SPEC-280 / EPIC #1383).
-  **12 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
+- `/semantic` (server: `nucleo-ia-semantic`, v0.4.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+  **21 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
-  `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`). Stable envelope
-  `{ok,data,summary,warnings,next_actions,audit}`; writes carry `write_board` + the #785 (ADR-0105)
-  fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`). Raw tools stay
-  registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`. Contract
-  guard: `tests/contracts/semantic-envelope-w1.test.mjs`. NOTE: `mcp.tool(` registrations are counted
+  `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
+  members/engagements/initiatives** (`member_search`, `member_get`, `member_emails`, `member_lifecycle`,
+  `engagement_write`, `initiative_roster`, `initiative_directory`, `initiative_report`, `my_status`).
+  Stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + the #785
+  (ADR-0105) fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`); the PII
+  surface (member_search/member_get/member_emails) masks email/auth_id unless `view_pii` (`canSeePII()`).
+  Raw tools stay registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`.
+  Contract guards: `tests/contracts/semantic-envelope-w{1,2}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
   differently per surface — `/semantic` tools live in `registerSemanticTools()` and must be excluded from
   the `/mcp` 256-cap computation (see the SEMANTIC_ONLY set in the #1377 test).
 - `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's

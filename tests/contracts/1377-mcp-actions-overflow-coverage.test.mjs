@@ -49,6 +49,16 @@ const SEMANTIC_ONLY = new Set([
   'board_overview',
   'platform_context',
   'portfolio_report',
+  // Wave 2 (#1383) — /semantic only (members/engagements/initiatives)
+  'member_search',
+  'member_get',
+  'member_emails',
+  'member_lifecycle',
+  'engagement_write',
+  'initiative_roster',
+  'initiative_directory',
+  'initiative_report',
+  'my_status',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

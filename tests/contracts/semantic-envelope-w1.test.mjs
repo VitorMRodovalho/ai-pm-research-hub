@@ -158,8 +158,8 @@ test('W1[card_write]: destructive verbs (archive/delete) honor the ADR-0018 conf
   assert.ok(b.includes('preview: true'), 'card_write preview payload must be marked preview:true');
 });
 
-test('W1: /semantic health surface advertises 12 tools (4 bridge + 8 Wave-1)', () => {
+test('W1: /semantic health surface advertises at least 12 tools (4 bridge + 8 Wave-1; later waves add more)', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 12, '/semantic health tools count must be 12 after Wave 1');
+  assert.ok(Number(health[1]) >= 12, '/semantic health tools count must be >= 12 (Wave-1 floor)');
 });

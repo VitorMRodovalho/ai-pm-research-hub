@@ -8008,6 +8008,12 @@ async function canSee(sb: Sb, kind: "item" | "board" | "initiative", id: string)
   return !error && data === true;
 }
 
+// #1383 W2: PII visibility helper (LGPD data-minimization). Callers with view_pii see the sensitive
+// columns (email/phone/pmi_id/auth_id); others get them redacted. Fail-closed via canV4.
+async function canSeePII(sb: Sb, memberId: string): Promise<boolean> {
+  return await canV4(sb, memberId, "view_pii");
+}
+
 function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
   // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
@@ -9016,6 +9022,586 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Wave 2 (#1383) — members / engagements / initiatives (423 calls/180d).
+  // search_members is the #2 tool (167). member_get fixes the raw get_person
+  // #2-failure class (17/20) + get_active_engagements (3/3). LGPD: member_search /
+  // member_get / member_emails are the PII surface — mask unless view_pii.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── W2 · member_search (R) — 167 calls/180d (the #2 tool) ───────────────────
+  mcp.tool(
+    "member_search",
+    "Semantic member directory search (absorbs search_members; 167 calls/180d, the #2 tool). Filter by name (`query`), `tribe_id` (1-8), `tier` (tier1|tier2|tier3), `status` (active|inactive|observer|alumni|pre_onboarding|all; default active). Authority: manage_member (admin/GP). LGPD: PII columns (email, auth_id) are REDACTED unless the caller has view_pii — audit.pii_level reflects the actual disclosure. Stable envelope.",
+    {
+      query: z.string().optional().describe("Name partial-match filter."),
+      tribe_id: z.number().optional().describe("Filter by tribe (1-8)."),
+      tier: z.string().optional().describe("tier1|tier2|tier3."),
+      status: z.string().optional().describe("active|inactive|observer|alumni|pre_onboarding|all. Default: active."),
+    },
+    async (params: { query?: string; tribe_id?: number; tier?: string; status?: string }) => {
+      const start = Date.now();
+      const dom = "members";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "member_search", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "member_search", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "member_search", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "member_search", semantic_domain: dom, code: "unauthorized", message: "Requires manage_member (admin/GP).", action: "Ask a GP to run this search." })); }
+      const hasPii = await canSeePII(sb, member.id);
+      const { data, error } = await sb.rpc("admin_list_members", { p_search: params.query || null, p_tribe_id: params.tribe_id || null, p_tier: params.tier || null, p_status: params.status || "active" });
+      if (error) { await logUsage(sb, member.id, "member_search", false, error.message, start); return ok(buildSemanticError({ tool: "member_search", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const rows: any[] = Array.isArray(data) ? data : [];
+      // LGPD data-minimization: redact email + auth_id when the caller lacks view_pii.
+      const members = hasPii ? rows : rows.map((r: any) => ({ ...r, email: null, auth_id: null }));
+      const warnings = hasPii ? [] : ["PII redacted (email, auth_id) — caller lacks view_pii (LGPD data-minimization)."];
+      await logUsage(sb, member.id, "member_search", true, undefined, start);
+      return semanticOk({
+        data: { count: members.length, members },
+        summary: `${members.length} membro(s) (status='${params.status || "active"}'${params.query ? `, query='${params.query}'` : ""}${params.tribe_id ? `, tribo ${params.tribe_id}` : ""})${hasPii ? "" : " — PII redigida"}.`,
+        warnings,
+        next_actions: ["member_get: 360° de um membro (perfil + engajamentos)", "initiative_roster: quem está engajado numa iniciativa"],
+        audit: { tool: "member_search", semantic_domain: dom, pii_level: hasPii ? "high" : "low", permission: "manage_member", source_tools: ["admin_list_members"], caller_member_id: member.id, gate_checked: hasPii ? "canV4(manage_member) + view_pii" : "canV4(manage_member) + PII-redacted(no view_pii)", resource_id: null, extra: { has_pii: hasPii, status: params.status || "active" } },
+      });
+    },
+  );
+
+  // ── W2 · member_get (R) — get_person(#2 fail 17/20) + get_active_engagements ─
+  mcp.tool(
+    "member_get",
+    "One person, 360° (absorbs get_person + get_active_engagements). Resolve the target by ANY of: `person_id` (persons.id), `member_id` (members.id — BOTH accepted; this fixes the raw get_person #2-failure class where a members.id returned 'Person not found', 17/20 fails/180d), or `email` (requires manage_member — closes the email-existence oracle). Omit all three for your OWN record. Returns profile + active engagements. LGPD: sensitive PII (email/phone/pmi_id/address/birth_date) only for your own record or with view_pii (+ chapter-scope), masked by the RPC; engagements of OTHERS require manage_member (surfaced in warnings if absent). Stable envelope.",
+    {
+      person_id: z.string().optional().describe("persons.id UUID."),
+      member_id: z.string().optional().describe("members.id UUID (also accepted — resolved internally)."),
+      email: z.string().optional().describe("Email to resolve to a person (requires manage_member — anti-enumeration)."),
+    },
+    async (params: { person_id?: string; member_id?: string; email?: string }) => {
+      const start = Date.now();
+      const dom = "members";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "member_get", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+
+      // Resolve the target person. person_id and member_id are both accepted by the (fixed) get_person.
+      let targetId: string | null = null;
+      let selfCall = false;
+      let via = "self";
+      if (isUUID(params.person_id)) { targetId = params.person_id!; via = "person_id"; }
+      else if (isUUID(params.member_id)) { targetId = params.member_id!; via = "member_id"; }
+      else if (params.email && params.email.trim()) {
+        if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "member_get", false, "Email resolve requires manage_member", start); return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code: "unauthorized", message: "Resolving a person by email requires manage_member (anti-enumeration).", action: "Pass person_id/member_id, or ask a GP." })); }
+        const { data: rid, error: rErr } = await sb.rpc("member_resolve_email", { p_email: params.email.trim() });
+        if (rErr) { await logUsage(sb, member.id, "member_get", false, rErr.message, start); return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code: "internal_error", message: rErr.message })); }
+        if (!rid) { await logUsage(sb, member.id, "member_get", false, "Email not found", start); return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code: "not_found", message: "No member with that email.", action: "Check the address." })); }
+        targetId = rid as string; via = "email";
+      } else { selfCall = true; targetId = null; }
+
+      const personRes = await sb.rpc("get_person", targetId ? { p_person_id: targetId } : {});
+      if (personRes.error) { await logUsage(sb, member.id, "member_get", false, personRes.error.message, start); return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code: "internal_error", message: personRes.error.message })); }
+      const personData: any = personRes.data;
+      if (personData?.error) {
+        const code = personData.error === "Person not found" ? "not_found" : personData.error.startsWith("Unauthorized") ? "unauthorized" : "internal_error";
+        await logUsage(sb, member.id, "member_get", false, personData.error, start);
+        return ok(buildSemanticError({ tool: "member_get", semantic_domain: dom, code, message: personData.error }));
+      }
+
+      // Engagements: get_active_engagements self-gates (others need manage_member). Surface a denial as a warning, never a hard fail.
+      const warnings: string[] = [];
+      let engagements: any = null;
+      const engRes = await sb.rpc("get_active_engagements", targetId ? { p_person_id: targetId } : {});
+      if (engRes.error) { warnings.push(`engagements: ${engRes.error.message}`); }
+      else if ((engRes.data as any)?.error) { warnings.push(`engagements: ${(engRes.data as any).error}`); }
+      else { engagements = engRes.data; }
+
+      const piiDisclosed = personData && personData.email != null;
+      const engCount = engagements?.count ?? null;
+      await logUsage(sb, member.id, "member_get", true, undefined, start);
+      return semanticOk({
+        data: { person: personData, engagements },
+        summary: `${personData?.name?.trim() || "Pessoa"}${selfCall ? " (você)" : ""}${engCount !== null ? ` · ${engCount} engajamento(s) ativo(s)` : ""}${piiDisclosed ? "" : " · PII mascarada"}.`,
+        warnings,
+        next_actions: selfCall ? ["my_status: sua situação (comitê, board, onboarding)"] : ["member_emails: gerenciar e-mails deste membro", "initiative_roster: iniciativas onde atua"],
+        audit: { tool: "member_get", semantic_domain: dom, pii_level: selfCall ? "self" : (piiDisclosed ? "high" : "low"), permission: selfCall ? "authenticated (self)" : "get_person(view_pii-gated) + get_active_engagements(manage_member for others)", source_tools: ["get_person", "get_active_engagements"], caller_member_id: member.id, gate_checked: `resolve via ${via}; RPC PII-mask (view_pii) + engagements manage_member`, resource_id: personData?.id ?? targetId, extra: { via, self: selfCall } },
+      });
+    },
+  );
+
+  // ── W2 · member_emails (R/W) — resolve gains manage_member (closes the oracle) ─
+  mcp.tool(
+    "member_emails",
+    "Member email identity management (absorbs member_list_emails/add/remove/set_primary/update_kind/resolve). Set `action`: 'list' (member_id), 'add' (member_id + email + kind), 'remove' (member_id + email), 'set_primary' (member_id + email), 'update_kind' (member_id + email + new_kind), 'resolve' (email → member_id). Per-record authority (self OR manage_member; +view_pii for list) is enforced by the RPCs; 'resolve' ADDS a manage_member gate here to close the email-existence oracle. kind/new_kind ∈ personal|institutional|chapter|other. PII surface. Stable envelope.",
+    {
+      action: z.enum(["list", "add", "remove", "set_primary", "update_kind", "resolve"]).describe("Email operation."),
+      member_id: z.string().optional().describe("members.id — required for every action except 'resolve'."),
+      email: z.string().optional().describe("Email — required for add/remove/set_primary/update_kind/resolve."),
+      kind: z.enum(["personal", "institutional", "chapter", "other"]).optional().describe("action='add' — alternate-email kind."),
+      new_kind: z.enum(["personal", "institutional", "chapter", "other"]).optional().describe("action='update_kind' — new kind."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "members";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "member_emails", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      if (params.action === "resolve") {
+        if (!params.email || !params.email.trim()) { await logUsage(sb, member.id, "member_emails", false, "resolve needs email", start); return invalid("action='resolve' requires email.", "Pass email."); }
+        if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "member_emails", false, "resolve requires manage_member", start); return ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: "unauthorized", message: "Resolving an email requires manage_member (anti-enumeration).", action: "Ask a GP." })); }
+        const { data, error } = await sb.rpc("member_resolve_email", { p_email: params.email.trim() });
+        if (error) { await logUsage(sb, member.id, "member_emails", false, error.message, start); return ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        await logUsage(sb, member.id, "member_emails", true, undefined, start);
+        return semanticOk({
+          data: { action: "resolve", email: params.email.trim(), member_id: data ?? null },
+          summary: data ? `Email → membro ${data}.` : "Nenhum membro com esse email.",
+          next_actions: data ? ["member_get member_id=<id>"] : [],
+          audit: { tool: "member_emails", semantic_domain: dom, pii_level: "high", permission: "manage_member", source_tools: ["member_resolve_email"], caller_member_id: member.id, gate_checked: "canV4(manage_member) [anti-oracle, added at semantic layer]", resource_id: (data as string) ?? null, extra: { action: "resolve" } },
+        });
+      }
+
+      if (!isUUID(params.member_id)) return invalid(`action='${params.action}' requires member_id (UUID).`, "Pass member_id.");
+      const needsEmail = params.action !== "list";
+      if (needsEmail && (!params.email || !params.email.trim())) return invalid(`action='${params.action}' requires email.`, "Pass email.");
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "list": rpc = "member_list_emails"; rpcArgs = { p_member_id: params.member_id }; break;
+        case "add": if (!params.kind) return invalid("action='add' requires kind (personal|institutional|chapter|other).", "Pass kind."); rpc = "member_add_alternate_email"; rpcArgs = { p_member_id: params.member_id, p_email: params.email, p_kind: params.kind }; break;
+        case "remove": rpc = "member_remove_alternate_email"; rpcArgs = { p_member_id: params.member_id, p_email: params.email }; break;
+        case "set_primary": rpc = "member_set_primary_email"; rpcArgs = { p_member_id: params.member_id, p_email: params.email }; break;
+        case "update_kind": if (!params.new_kind) return invalid("action='update_kind' requires new_kind.", "Pass new_kind."); rpc = "member_update_alternate_email_kind"; rpcArgs = { p_member_id: params.member_id, p_email: params.email, p_new_kind: params.new_kind }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "member_emails", false, error.message, start); return ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      if ((data as any)?.error) { const em = (data as any).error; await logUsage(sb, member.id, "member_emails", false, em, start); return ok(buildSemanticError({ tool: "member_emails", semantic_domain: dom, code: String(em).startsWith("Unauthorized") ? "unauthorized" : "internal_error", message: em })); }
+      await logUsage(sb, member.id, "member_emails", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, member_id: params.member_id, result: data ?? null },
+        summary: `member_emails action='${params.action}' ok (membro ${params.member_id}).`,
+        next_actions: ["member_emails action='list' member_id=<id>: reler os e-mails"],
+        audit: { tool: "member_emails", semantic_domain: dom, pii_level: "high", permission: "self|manage_member (RPC-enforced)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "RPC self-OR-manage_member (+view_pii on list) + chapter-scope", resource_id: params.member_id, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W2 · member_lifecycle (W) — GP-only (manage_member); lifecycle = GP invariant (LGPD Art.18) ─
+  mcp.tool(
+    "member_lifecycle",
+    "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive'. Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
+    {
+      action: z.enum(["offboard", "reissue_agreement", "record_offboarding", "get_offboarding_record", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "respond_re_engagement", "cancel_re_engagement", "list_re_engagement", "promote_to_leader", "detect_inactive"]).describe("Lifecycle operation."),
+      member_id: z.string().optional().describe("members.id — offboard/reissue/record_offboarding/get_offboarding_record/stage_alumni; optional filter for explain_authority."),
+      new_status: z.enum(["alumni", "observer", "inactive"]).optional().describe("offboard — target status."),
+      reason_category: z.string().optional().describe("offboard/list_offboarding filter — reason taxonomy code."),
+      reason_detail: z.string().optional().describe("offboard — free-text context."),
+      reassign_cards_to: z.string().optional().describe("offboard — member UUID to reassign open cards to."),
+      reason: z.string().optional().describe("reissue_agreement / cancel_re_engagement — audit reason."),
+      confirm: z.boolean().optional().describe("offboard/reissue_agreement — pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+      cycle_code: z.string().optional().describe("stage_alumni (target cycle) / list_re_engagement filter."),
+      pipeline_id: z.string().optional().describe("re_engagement_pipeline UUID — invite_alumni/respond_re_engagement/cancel_re_engagement."),
+      message: z.string().optional().describe("invite_alumni — optional custom message."),
+      response: z.enum(["accepted", "declined"]).optional().describe("respond_re_engagement."),
+      note: z.string().optional().describe("respond_re_engagement — optional note."),
+      application_id: z.string().optional().describe("promote_to_leader — researcher application UUID."),
+      create_leader_app: z.boolean().optional().describe("promote_to_leader — clone a leader application (default true)."),
+      state: z.string().optional().describe("list_re_engagement filter (staged|invited|declined|accepted|cancelled)."),
+      since: z.string().optional().describe("list_offboarding — ISO from."),
+      until: z.string().optional().describe("list_offboarding — ISO to."),
+      limit: z.number().optional().describe("list_offboarding — max rows (default 50)."),
+      exit_interview_full_text: z.string().optional().describe("record_offboarding — transcript/paraphrase."),
+      exit_interview_source: z.enum(["whatsapp", "email", "verbal", "google_form", "other"]).optional().describe("record_offboarding — source."),
+      return_interest: z.boolean().optional().describe("record_offboarding — interested in returning."),
+      lessons_learned: z.string().optional().describe("record_offboarding — retrospective feedback."),
+      reason_category_code: z.string().optional().describe("record_offboarding — override reason category."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "members";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "member_lifecycle", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (m: string, a?: string) => ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: "unauthorized", message: m, action: a }));
+
+      // Authority: admin verbs require manage_member; promote_to_leader requires 'promote';
+      // respond_re_engagement (self) + get_offboarding_record (RPC self-OR-manage) pass through.
+      const ADMIN = new Set(["offboard", "reissue_agreement", "record_offboarding", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "cancel_re_engagement", "list_re_engagement", "detect_inactive"]);
+      let permission = "RPC self-gated";
+      if (ADMIN.has(params.action)) {
+        if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "member_lifecycle", false, "Unauthorized", start); return denied("Requires manage_member (GP-only lifecycle — LGPD Art.18).", "Ask a GP."); }
+        permission = "manage_member";
+      } else if (params.action === "promote_to_leader") {
+        if (!(await canV4(sb, member.id, "promote"))) { await logUsage(sb, member.id, "member_lifecycle", false, "Unauthorized", start); return denied("Requires 'promote' (manager/deputy/superadmin).", "Ask a GP."); }
+        permission = "promote";
+      }
+
+      // ADR-0018 confirm-gate for destructive verbs (offboard/reissue).
+      if ((params.action === "offboard" || params.action === "reissue_agreement") && params.confirm !== true) {
+        if (!isUUID(params.member_id)) return invalid(`action='${params.action}' requires member_id (UUID).`, "Pass member_id.");
+        const { data: tgt } = await sb.from("members").select("id, name, member_status").eq("id", params.member_id).maybeSingle();
+        await logUsage(sb, member.id, "member_lifecycle", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, target: tgt || { id: params.member_id, note: "not found" }, next_call: { action: params.action, member_id: params.member_id, confirm: true } },
+          summary: params.action === "offboard" ? `PREVIEW: offboard ${tgt?.name ?? params.member_id} → ${params.new_status ?? "?"}. Reenvie com confirm=true.` : `PREVIEW: reissue agreement de ${tgt?.name ?? params.member_id}. ⚠️ Re-aceite de termo = Camada-5, NÃO reissue (reissue REBAIXA autoridade). Reenvie com confirm=true se realmente for reissue.`,
+          warnings: [params.action === "reissue_agreement" ? "reissue supersedes the current agreement link → is_authoritative=false → demotes operational_role. For a member re-accepting, use Camada-5 (#976), not reissue." : "Offboarding revokes engagements + may reassign cards."],
+          next_actions: [`member_lifecycle action='${params.action}' confirm=true`],
+          audit: { tool: "member_lifecycle", semantic_domain: dom, pii_level: "self", permission, source_tools: [], caller_member_id: member.id, gate_checked: `${permission} (preview, not executed)`, resource_id: params.member_id, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      const warnings: string[] = [];
+      switch (params.action) {
+        case "offboard":
+          if (!isUUID(params.member_id) || !params.new_status || !params.reason_category || !params.reason_detail) return invalid("offboard requires member_id + new_status + reason_category + reason_detail.");
+          rpc = "admin_offboard_member"; rpcArgs = { p_member_id: params.member_id, p_new_status: params.new_status, p_reason_category: params.reason_category, p_reason_detail: params.reason_detail, p_reassign_to: params.reassign_cards_to || null }; break;
+        case "reissue_agreement":
+          if (!isUUID(params.member_id) || !params.reason) return invalid("reissue_agreement requires member_id + reason.");
+          warnings.push("reissue supersedes the current agreement → demotes authority. Use Camada-5 for a re-accept.");
+          rpc = "reissue_agreement"; rpcArgs = { p_member_id: params.member_id, p_reason: params.reason }; break;
+        case "record_offboarding":
+          if (!isUUID(params.member_id)) return invalid("record_offboarding requires member_id.");
+          rpc = "record_offboarding_interview"; rpcArgs = { p_member_id: params.member_id, p_exit_interview_full_text: params.exit_interview_full_text ?? null, p_exit_interview_source: params.exit_interview_source ?? null, p_return_interest: params.return_interest ?? null, p_return_window_suggestion: null, p_lessons_learned: params.lessons_learned ?? null, p_recommendation_for_future: null, p_referred_by_tribe_leader: null, p_attachment_urls: null, p_reason_category_code: params.reason_category_code ?? null }; break;
+        case "get_offboarding_record":
+          if (!isUUID(params.member_id)) return invalid("get_offboarding_record requires member_id.");
+          rpc = "get_member_offboarding_record"; rpcArgs = { p_member_id: params.member_id }; break;
+        case "list_offboarding":
+          rpc = "list_offboarding_records"; rpcArgs = { p_reason_category: params.reason_category ?? null, p_since: params.since ?? null, p_until: params.until ?? null, p_limit: params.limit ?? 50 }; break;
+        case "offboarding_dashboard": rpc = "get_offboarding_dashboard"; rpcArgs = {}; break;
+        case "onboarding_dashboard": rpc = "get_onboarding_dashboard"; rpcArgs = {}; break;
+        case "pending_agreements": rpc = "get_pending_agreement_engagements"; rpcArgs = {}; break;
+        case "explain_authority": rpc = "get_pending_agreement_engagements"; rpcArgs = {}; break;
+        case "stage_alumni":
+          if (!isUUID(params.member_id) || !params.cycle_code) return invalid("stage_alumni requires member_id + cycle_code.");
+          rpc = "stage_alumni_for_re_engagement"; rpcArgs = { p_member_id: params.member_id, p_cycle_code: params.cycle_code }; break;
+        case "invite_alumni":
+          if (!isUUID(params.pipeline_id)) return invalid("invite_alumni requires pipeline_id.");
+          rpc = "invite_alumni_to_re_engage"; rpcArgs = { p_pipeline_id: params.pipeline_id, p_message: params.message ?? null }; break;
+        case "respond_re_engagement":
+          if (!isUUID(params.pipeline_id) || !params.response) return invalid("respond_re_engagement requires pipeline_id + response.");
+          rpc = "respond_re_engagement"; rpcArgs = { p_pipeline_id: params.pipeline_id, p_response: params.response, p_note: params.note ?? null }; break;
+        case "cancel_re_engagement":
+          if (!isUUID(params.pipeline_id)) return invalid("cancel_re_engagement requires pipeline_id.");
+          rpc = "cancel_re_engagement"; rpcArgs = { p_pipeline_id: params.pipeline_id, p_reason: params.reason ?? null }; break;
+        case "list_re_engagement": rpc = "list_re_engagement_pipeline"; rpcArgs = { p_state: params.state ?? null, p_cycle_code: params.cycle_code ?? null }; break;
+        case "promote_to_leader":
+          if (!isUUID(params.application_id)) return invalid("promote_to_leader requires application_id.");
+          rpc = "promote_to_leader_track"; rpcArgs = { p_application_id: params.application_id, p_create_leader_app: params.create_leader_app ?? true }; break;
+        case "detect_inactive": rpc = "detect_inactive_members"; rpcArgs = {}; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "member_lifecycle", false, error.message, start); return ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      if ((data as any)?.error) { const em = (data as any).error; await logUsage(sb, member.id, "member_lifecycle", false, em, start); return ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: String(em).startsWith("Unauthorized") ? "unauthorized" : String(em).includes("not found") ? "not_found" : "internal_error", message: em })); }
+      await logUsage(sb, member.id, "member_lifecycle", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `member_lifecycle action='${params.action}' ok.`,
+        warnings,
+        next_actions: ["member_get: reler o membro", "member_lifecycle action='list_re_engagement': pipeline de re-engajamento"],
+        audit: { tool: "member_lifecycle", semantic_domain: dom, pii_level: "high", permission, source_tools: [rpc], caller_member_id: member.id, gate_checked: permission === "RPC self-gated" ? "RPC self-gated (respond=self / record=self|manage_member)" : `canV4(${permission})`, resource_id: params.member_id ?? params.pipeline_id ?? params.application_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W2 · engagement_write (W) — engagement lifecycle; #785 on the initiative ──
+  mcp.tool(
+    "engagement_write",
+    "Initiative engagement lifecycle (absorbs manage_initiative_engagement + invite/respond/request/review/withdraw). Set `action`: 'add' | 'remove' | 'update_role' (initiative_id + person_id + kind [+ role]; DESTRUCTIVE add/remove→confirm), 'invite' (initiative_id + member_ids[] + kind_scope + message≥50), 'respond_invitation' (invitation_id + response accept|decline [+ note]; SELF), 'request_join' (initiative_id + message≥50), 'review_request' (invitation_id + decision approve|decline [+ note]), 'withdraw' (initiative_id + reason≥10; DESTRUCTIVE→confirm; SELF). Authority is enforced by the RPCs (admin-of-initiative OR owner for admin verbs; caller-scoped for self verbs); the semantic layer ADDS the #785 confidential-visibility fail-fast on the target initiative. dual-write (members.tribe_id↔initiative_id) is handled server-side (#1270). Stable envelope.",
+    {
+      action: z.enum(["add", "remove", "update_role", "invite", "respond_invitation", "request_join", "review_request", "withdraw"]).describe("Engagement operation."),
+      initiative_id: z.string().optional().describe("Initiative UUID — add/remove/update_role/invite/request_join/withdraw."),
+      person_id: z.string().optional().describe("Person UUID — add/remove/update_role."),
+      kind: z.string().optional().describe("Engagement kind slug — add/remove/update_role."),
+      role: z.string().optional().describe("Role within engagement (default participant) — add/update_role."),
+      member_ids: z.array(z.string()).optional().describe("Member UUIDs to invite — action='invite'."),
+      kind_scope: z.string().optional().describe("Engagement kind offered — action='invite'."),
+      message: z.string().optional().describe("Context message ≥50 chars — invite / request_join."),
+      invitation_id: z.string().optional().describe("Invitation UUID — respond_invitation / review_request."),
+      response: z.enum(["accept", "decline"]).optional().describe("respond_invitation."),
+      decision: z.enum(["approve", "decline"]).optional().describe("review_request."),
+      note: z.string().optional().describe("Optional note — respond_invitation / review_request."),
+      reason: z.string().optional().describe("withdraw — reason ≥10 chars (audit)."),
+      confirm: z.boolean().optional().describe("add/remove/withdraw — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "engagements";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "engagement_write", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "engagement_write", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "engagement_write", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      // #785 fail-fast on the target initiative (verbs that carry an initiative_id).
+      const INIT_VERBS = new Set(["add", "remove", "update_role", "invite", "request_join", "withdraw"]);
+      if (INIT_VERBS.has(params.action)) {
+        if (!isUUID(params.initiative_id)) return invalid(`action='${params.action}' requires initiative_id (UUID).`, "Use initiative_directory to find one.");
+        if (!(await canSee(sb, "initiative", params.initiative_id))) { await logUsage(sb, member.id, "engagement_write", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "engagement_write", semantic_domain: dom, code: "unauthorized", message: "Initiative not visible to you (confidential or no access).", action: "You must be engaged in a confidential initiative to act on it." })); }
+      }
+
+      // ADR-0018 confirm-gate for destructive verbs (add/remove/withdraw).
+      if ((params.action === "add" || params.action === "remove" || params.action === "withdraw") && params.confirm !== true) {
+        await logUsage(sb, member.id, "engagement_write", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, next_call: { ...params, confirm: true } },
+          summary: `PREVIEW: engagement_write action='${params.action}'. Reenvie com confirm=true.`,
+          warnings: [params.action === "remove" ? "Removes an active engagement (dual-write columns cleared server-side)." : params.action === "withdraw" ? "You leave the initiative (revokes your engagement)." : "Adds/creates an engagement."],
+          next_actions: [`engagement_write action='${params.action}' confirm=true`],
+          audit: { tool: "engagement_write", semantic_domain: dom, pii_level: "low", permission: "RPC (admin-of-initiative|owner|self)", source_tools: [], caller_member_id: member.id, gate_checked: "rls_can_see_initiative + RPC authority (preview, not executed)", resource_id: params.initiative_id ?? null, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "add": case "remove": case "update_role": {
+          if (!isUUID(params.person_id) || !params.kind) return invalid(`action='${params.action}' requires person_id + kind.`);
+          const rawAction = params.action === "add" ? "add" : params.action === "remove" ? "remove" : "update_role";
+          rpc = "manage_initiative_engagement"; rpcArgs = { p_initiative_id: params.initiative_id, p_person_id: params.person_id, p_kind: params.kind, p_role: params.role || "participant", p_action: rawAction }; break;
+        }
+        case "invite":
+          if (!Array.isArray(params.member_ids) || params.member_ids.length === 0 || !params.kind_scope || !params.message || params.message.length < 50) return invalid("action='invite' requires member_ids[] + kind_scope + message (≥50 chars).");
+          rpc = "create_initiative_invitations"; rpcArgs = { p_initiative_id: params.initiative_id, p_invitee_member_ids: params.member_ids, p_kind_scope: params.kind_scope, p_message: params.message }; break;
+        case "request_join":
+          if (!params.message || params.message.length < 50) return invalid("action='request_join' requires message (≥50 chars).");
+          rpc = "request_to_join_initiative"; rpcArgs = { p_initiative_id: params.initiative_id, p_message: params.message }; break;
+        case "respond_invitation":
+          if (!isUUID(params.invitation_id) || !params.response) return invalid("action='respond_invitation' requires invitation_id + response.");
+          rpc = "respond_to_initiative_invitation"; rpcArgs = { p_invitation_id: params.invitation_id, p_response: params.response, p_note: params.note ?? null }; break;
+        case "review_request":
+          if (!isUUID(params.invitation_id) || !params.decision) return invalid("action='review_request' requires invitation_id + decision.");
+          rpc = "review_initiative_request"; rpcArgs = { p_invitation_id: params.invitation_id, p_decision: params.decision, p_note: params.note ?? null }; break;
+        case "withdraw":
+          if (!params.reason || params.reason.trim().length < 10) return invalid("action='withdraw' requires reason (≥10 chars).");
+          rpc = "withdraw_from_initiative"; rpcArgs = { p_initiative_id: params.initiative_id, p_reason: params.reason }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "engagement_write", false, error.message, start); return ok(buildSemanticError({ tool: "engagement_write", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      if ((data as any)?.error) { const em = (data as any).error; await logUsage(sb, member.id, "engagement_write", false, em, start); return ok(buildSemanticError({ tool: "engagement_write", semantic_domain: dom, code: String(em).startsWith("Unauthorized") || String(em).startsWith("Not authorized") ? "unauthorized" : "internal_error", message: em })); }
+      await logUsage(sb, member.id, "engagement_write", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `engagement_write action='${params.action}' ok.`,
+        next_actions: ["initiative_roster scope='initiative' initiative_id=<id>: reler o roster"],
+        audit: { tool: "engagement_write", semantic_domain: dom, pii_level: "low", permission: "RPC (admin-of-initiative|owner|self)", source_tools: [rpc], caller_member_id: member.id, gate_checked: INIT_VERBS.has(params.action) ? "rls_can_see_initiative + RPC authority" : "RPC caller-scoped", resource_id: params.initiative_id ?? params.invitation_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W2 · initiative_roster (R) — who is engaged where; #785 on the initiative ─
+  mcp.tool(
+    "initiative_roster",
+    "Who is engaged where (absorbs list_initiative_engagements(_by_kind), get_my_tribe_members, list_invitations_*). Set `scope`: 'initiative' (initiative_id [+ status_filter]) — #785-gated; 'by_kind' (engagement_kind and/or initiative_kind [+ status_filter, limit]); 'my_tribe' (tribe_id optional → your tribe); 'invitations_for_my_initiatives' ([initiative_id] [+ status_filter]); 'invitations_received' ([status_filter]); 'invitations_sent' ([initiative_id] [+ status_filter]). Confidential initiatives are excluded (#785 / RLS). Stable envelope.",
+    {
+      scope: z.enum(["initiative", "by_kind", "my_tribe", "invitations_for_my_initiatives", "invitations_received", "invitations_sent"]).describe("Roster view."),
+      initiative_id: z.string().optional().describe("Initiative UUID — scope='initiative' (required) / invitations filters."),
+      status_filter: z.string().optional().describe("Status filter (scope-specific; e.g. active|all|revoked|onboarding OR pending|accepted|declined|...)."),
+      engagement_kind: z.string().optional().describe("scope='by_kind' — engagement.kind slug."),
+      initiative_kind: z.string().optional().describe("scope='by_kind' — initiative.kind."),
+      tribe_id: z.number().optional().describe("scope='my_tribe' — tribe 1-8 (default: your tribe)."),
+      limit: z.number().optional().describe("scope='by_kind' — max rows (default 100)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "initiatives";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "initiative_roster", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "initiative_roster", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "initiative_roster", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = ""; let gate = "RLS/self-scoped"; let resourceId: string | null = null;
+
+      if (params.scope === "initiative") {
+        if (!isUUID(params.initiative_id)) return invalid("scope='initiative' requires initiative_id (UUID).", "Use initiative_directory.");
+        if (!(await canSee(sb, "initiative", params.initiative_id))) { await logUsage(sb, member.id, "initiative_roster", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "initiative_roster", semantic_domain: dom, code: "not_found", message: "Initiative not found or not visible to you.", action: "May be confidential and you are not engaged." })); }
+        resourceId = params.initiative_id; gate = "rls_can_see_initiative";
+        ({ data, error } = await sb.rpc("list_initiative_engagements", { p_initiative_id: params.initiative_id, p_status_filter: params.status_filter || "active" })); source = "list_initiative_engagements";
+      } else if (params.scope === "by_kind") {
+        if (!params.engagement_kind && !params.initiative_kind) return invalid("scope='by_kind' requires engagement_kind and/or initiative_kind.");
+        ({ data, error } = await sb.rpc("list_initiative_engagements_by_kind", { p_engagement_kind: params.engagement_kind ?? null, p_initiative_kind: params.initiative_kind ?? null, p_status_filter: params.status_filter || "active", p_limit: params.limit ?? 100 })); source = "list_initiative_engagements_by_kind";
+      } else if (params.scope === "my_tribe") {
+        const tribeId = params.tribe_id ?? member.tribe_id;
+        if (!tribeId) return invalid("No tribe. Pass tribe_id (1-8).", NO_TRIBE_HINT);
+        ({ data, error } = await sb.from("public_members").select("name, operational_role, designations, chapter, current_cycle_active").eq("tribe_id", tribeId).eq("current_cycle_active", true).order("name")); source = "public_members(tribe)"; resourceId = String(tribeId);
+      } else if (params.scope === "invitations_for_my_initiatives") {
+        ({ data, error } = await sb.rpc("list_invitations_for_my_initiatives", { p_initiative_id: params.initiative_id ?? null, p_status_filter: params.status_filter ?? "pending" })); source = "list_invitations_for_my_initiatives";
+      } else if (params.scope === "invitations_received") {
+        let q = sb.from("initiative_invitations").select("id, initiative_id, kind_scope, message, status, expires_at, responded_at, responded_note, created_at, inviter_member_id").eq("invitee_member_id", member.id).order("created_at", { ascending: false });
+        if (params.status_filter && params.status_filter !== "all") q = q.eq("status", params.status_filter);
+        ({ data, error } = await q); source = "initiative_invitations(received)";
+      } else if (params.scope === "invitations_sent") {
+        let q = sb.from("initiative_invitations").select("id, initiative_id, invitee_member_id, kind_scope, message, status, expires_at, responded_at, responded_note, created_at").eq("inviter_member_id", member.id).order("created_at", { ascending: false });
+        if (params.initiative_id) q = q.eq("initiative_id", params.initiative_id);
+        if (params.status_filter && params.status_filter !== "all") q = q.eq("status", params.status_filter);
+        ({ data, error } = await q); source = "initiative_invitations(sent)";
+      } else { return invalid(`Unknown scope '${params.scope}'.`); }
+
+      if (error) { await logUsage(sb, member.id, "initiative_roster", false, error.message, start); return ok(buildSemanticError({ tool: "initiative_roster", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const rows = Array.isArray(data) ? data : (data?.engagements ?? data ?? []);
+      const count = Array.isArray(rows) ? rows.length : (data?.count ?? null);
+      await logUsage(sb, member.id, "initiative_roster", true, undefined, start);
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `initiative_roster scope='${params.scope}'${count !== null ? ` — ${count} registro(s)` : ""}.`,
+        next_actions: ["member_get: 360° de um membro do roster", "initiative_report: dashboard da iniciativa"],
+        audit: { tool: "initiative_roster", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: [source], caller_member_id: member.id, gate_checked: gate, resource_id: resourceId, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W2 · initiative_directory (R) — list/browse; #785 excluded inline by RPC ──
+  mcp.tool(
+    "initiative_directory",
+    "List/browse initiatives (absorbs list_initiatives + list_open_initiatives). Set `mode`: 'all' (optional kind/status filters) or 'open' (initiatives you can request to join). Confidential initiatives are excluded inline by the RPCs (rls_can_see_initiative, #785). Stable envelope.",
+    {
+      mode: z.enum(["all", "open"]).optional().describe("'all' (default) = every visible initiative; 'open' = joinable (request_to_join/open)."),
+      kind: z.string().optional().describe("mode='all' — filter by initiative kind."),
+      status: z.string().optional().describe("mode='all' — filter by status (draft|active|concluded|archived)."),
+    },
+    async (params: { mode?: "all" | "open"; kind?: string; status?: string }) => {
+      const start = Date.now();
+      const dom = "initiatives";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "initiative_directory", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "initiative_directory", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const mode = params.mode ?? "all";
+      const { data, error } = mode === "open"
+        ? await sb.rpc("list_open_initiatives")
+        : await sb.rpc("list_initiatives", { p_kind: params.kind || null, p_status: params.status || null });
+      if (error) { await logUsage(sb, member.id, "initiative_directory", false, error.message, start); return ok(buildSemanticError({ tool: "initiative_directory", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      const rows = Array.isArray(data) ? data : [];
+      await logUsage(sb, member.id, "initiative_directory", true, undefined, start);
+      return semanticOk({
+        data: { mode, count: rows.length, initiatives: rows },
+        summary: `${rows.length} iniciativa(s) (${mode}${params.kind ? `, kind=${params.kind}` : ""}${params.status ? `, status=${params.status}` : ""}). Confidenciais excluídas.`,
+        next_actions: mode === "open" ? ["engagement_write action='request_join' initiative_id=<id>"] : ["initiative_roster scope='initiative': quem está engajado", "initiative_report: dashboard"],
+        audit: { tool: "initiative_directory", semantic_domain: dom, pii_level: "none", permission: "authenticated", source_tools: [mode === "open" ? "list_open_initiatives" : "list_initiatives"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative (inline, #785)", resource_id: null, extra: { mode } },
+      });
+    },
+  );
+
+  // ── W2 · initiative_report (R) — per-initiative dashboards; #785 mandatory ────
+  mcp.tool(
+    "initiative_report",
+    "Per-initiative reporting (absorbs get_tribe_dashboard/stats_ranked/housekeeping/deliverables/credly + tribes_comparison + pilots_summary). Set `report`: 'dashboard' | 'stats' | 'housekeeping' | 'deliverables' | 'credly' | 'members_credly' (each needs tribe_id OR initiative_id — #785-gated) · 'comparison' (cross-initiative; requires manage_platform OR view_chapter_dashboards) · 'pilots' (org-wide AI pilots). Stable envelope.",
+    {
+      report: z.enum(["dashboard", "stats", "housekeeping", "deliverables", "credly", "members_credly", "comparison", "pilots"]).describe("Report kind."),
+      tribe_id: z.number().optional().describe("Tribe 1-8 (per-initiative reports; default: your tribe for dashboard)."),
+      initiative_id: z.string().optional().describe("Initiative UUID (alternative to tribe_id)."),
+      cycle_code: z.string().optional().describe("report='deliverables' — cycle (default current)."),
+      kind: z.string().optional().describe("report='comparison' — initiative kind filter (or 'all')."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "initiatives";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "initiative_report", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      // Aggregate reports with their own authority — no single initiative to gate.
+      if (params.report === "comparison") {
+        if (!(await canV4(sb, member.id, "manage_platform")) && !(await canV4(sb, member.id, "view_chapter_dashboards"))) { await logUsage(sb, member.id, "initiative_report", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "unauthorized", message: "report='comparison' requires manage_platform or view_chapter_dashboards.", action: "Ask a GP." })); }
+        const { data, error } = await sb.rpc("exec_cross_initiative_comparison", { p_kind: params.kind && params.kind !== "all" ? params.kind : null });
+        if (error) { await logUsage(sb, member.id, "initiative_report", false, error.message, start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        await logUsage(sb, member.id, "initiative_report", true, undefined, start);
+        return semanticOk({ data: { report: "comparison", result: data }, summary: "Comparativo cross-iniciativa.", audit: { tool: "initiative_report", semantic_domain: dom, pii_level: "low", permission: "manage_platform|view_chapter_dashboards", source_tools: ["exec_cross_initiative_comparison"], caller_member_id: member.id, gate_checked: "canV4(manage_platform|view_chapter_dashboards)", resource_id: null, extra: { report: "comparison" } } });
+      }
+      if (params.report === "pilots") {
+        const { data, error } = await sb.rpc("get_pilots_summary");
+        if (error) { await logUsage(sb, member.id, "initiative_report", false, error.message, start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        await logUsage(sb, member.id, "initiative_report", true, undefined, start);
+        return semanticOk({ data: { report: "pilots", result: data }, summary: "Resumo dos pilotos de IA.", audit: { tool: "initiative_report", semantic_domain: dom, pii_level: "none", permission: "authenticated", source_tools: ["get_pilots_summary"], caller_member_id: member.id, gate_checked: "auth (org-level)", resource_id: null, extra: { report: "pilots" } } });
+      }
+
+      // Per-initiative reports — resolve to an initiative UUID and #785-gate it.
+      let initId: string | null = null;
+      if (isUUID(params.initiative_id)) initId = params.initiative_id;
+      else {
+        const tribeId = params.tribe_id ?? (params.report === "dashboard" ? member.tribe_id : null);
+        if (!tribeId) return invalid(`report='${params.report}' requires tribe_id (1-8) or initiative_id.`, "Pass one.");
+        initId = await resolveInitiativeId(sb, tribeId);
+        if (!initId) return invalid(`No initiative for tribe ${tribeId}.`, "Check the tribe_id.");
+      }
+      if (!(await canSee(sb, "initiative", initId!))) { await logUsage(sb, member.id, "initiative_report", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "not_found", message: "Initiative not found or not visible to you.", action: "May be confidential and you are not engaged." })); }
+      const legacyTribe = params.tribe_id ?? null;
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.report) {
+        case "dashboard": rpc = "exec_initiative_dashboard"; rpcArgs = { p_initiative_id: initId }; break;
+        case "stats": rpc = "get_initiative_stats"; rpcArgs = { p_initiative_id: initId }; break;
+        case "housekeeping": rpc = "get_tribe_housekeeping"; rpcArgs = { p_initiative_id: initId, p_legacy_tribe_id: legacyTribe }; break;
+        case "deliverables": rpc = "list_initiative_deliverables"; rpcArgs = { p_initiative_id: initId, p_cycle_code: params.cycle_code || null }; break;
+        case "credly": if (!legacyTribe) return invalid("report='credly' requires tribe_id (1-8).", "Pass tribe_id."); rpc = "get_tribe_credly_status"; rpcArgs = { p_tribe_id: legacyTribe }; break;
+        case "members_credly": if (!legacyTribe) return invalid("report='members_credly' requires tribe_id (1-8).", "Pass tribe_id."); rpc = "get_tribe_members_with_credly"; rpcArgs = { p_tribe_id: legacyTribe }; break;
+        default: return invalid(`Unknown report '${params.report}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "initiative_report", false, error.message, start); return ok(buildSemanticError({ tool: "initiative_report", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      await logUsage(sb, member.id, "initiative_report", true, undefined, start);
+      return semanticOk({
+        data: { report: params.report, initiative_id: initId, result: data },
+        summary: `initiative_report report='${params.report}' (iniciativa ${initId}).`,
+        next_actions: ["initiative_roster scope='initiative': roster completo", "initiative_report report='dashboard'"],
+        audit: { tool: "initiative_report", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: [rpc], caller_member_id: member.id, gate_checked: "rls_can_see_initiative (#785)", resource_id: initId, extra: { report: params.report } },
+      });
+    },
+  );
+
+  // ── W2 · my_status (R) — "where am I?"; SELF-only, zero admin surface ─────────
+  mcp.tool(
+    "my_status",
+    "\"Where am I?\" — your own status across the platform (absorbs get_my_profile/committee_assignments/board_status/application_status/notifications/onboarding/selection_result/credly). Set `scope`: 'all' (default: profile + committee + board summary + unread count) | 'profile' | 'committee' | 'board' | 'application' | 'notifications' | 'onboarding' | 'selection_result' | 'credly'. SELF-only (auth.uid → member); zero admin surface, no PII of others. Supersedes the get_my_context bridge tool. Stable envelope.",
+    {
+      scope: z.enum(["all", "profile", "committee", "board", "application", "notifications", "onboarding", "selection_result", "credly"]).optional().describe("Which self-view. Default: 'all'."),
+    },
+    async (params: { scope?: string }) => {
+      const start = Date.now();
+      const dom = "personal";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "my_status", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "my_status", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const scope = params.scope ?? "all";
+      const warnings: string[] = [];
+      const source: string[] = [];
+      const data: any = {};
+
+      const want = (s: string) => scope === "all" || scope === s;
+      const wrap = async (label: string, p: PromiseLike<any>) => { const r: any = await p; if (r?.error) { warnings.push(`${label}: ${r.error.message ?? r.error}`); return null; } return r?.data ?? null; };
+
+      if (want("profile") || scope === "all") {
+        source.push("members(self)");
+        data.profile = await wrap("profile", sb.from("members").select("name, operational_role, designations, tribe_id, chapter, is_active, current_cycle_active, credly_url, cpmai_certified").eq("id", member.id).single());
+      }
+      if (want("committee")) { source.push("get_my_committee_assignments"); data.committee = await wrap("committee", sb.rpc("get_my_committee_assignments")); }
+      if (want("board")) {
+        // get_my_board_status is not an RPC — replicate its direct-query logic (project_boards → board_items).
+        source.push("project_boards+board_items(self tribe)");
+        const tribeId = member.tribe_id;
+        if (!tribeId) { data.board = { board_id: null, items: [], note: "no tribe assigned" }; }
+        else {
+          const initId = await resolveInitiativeId(sb, tribeId);
+          const boardRow: any = initId ? await sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).limit(1).maybeSingle() : { data: null };
+          const boardId = boardRow?.data?.id ?? null;
+          if (!boardId) { data.board = { board_id: null, items: [] }; }
+          else {
+            const items: any = await sb.from("board_items").select("id, title, status, tags, due_date").eq("board_id", boardId).neq("status", "archived").order("position", { ascending: true });
+            if (items?.error) warnings.push(`board: ${items.error.message}`);
+            data.board = { board_id: boardId, board_name: boardRow.data?.board_name ?? null, items: items?.data ?? [] };
+          }
+        }
+      }
+      if (want("notifications") || scope === "all") {
+        source.push("notifications(self)");
+        const nc: any = await sb.from("notifications").select("id", { count: "exact", head: true }).eq("recipient_id", member.id).is("read_at", null);
+        data.notifications_unread_count = nc?.count ?? 0;
+        if (scope === "notifications") { data.notifications = await wrap("notifications", sb.rpc("get_my_notifications")); }
+      }
+      if (scope === "application") { source.push("get_my_application_status"); data.application = await wrap("application", sb.rpc("get_my_application_status")); }
+      if (scope === "onboarding") { source.push("get_my_onboarding"); data.onboarding = await wrap("onboarding", sb.rpc("get_my_onboarding")); }
+      if (scope === "selection_result") { source.push("get_my_selection_result"); data.selection_result = await wrap("selection_result", sb.rpc("get_my_selection_result")); }
+      if (scope === "credly") { source.push("get_my_credly_status"); data.credly = await wrap("credly", sb.rpc("get_my_credly_status")); }
+
+      await logUsage(sb, member.id, "my_status", true, undefined, start);
+      const name = data.profile?.name?.trim() || member.name || "você";
+      return semanticOk({
+        data,
+        summary: `${name}${data.profile?.operational_role ? ` (${data.profile.operational_role})` : ""}${data.notifications_unread_count ? ` · ${data.notifications_unread_count} não lida(s)` : ""} · scope='${scope}'.`,
+        warnings,
+        next_actions: ["member_get: seu perfil 360° (engajamentos)", "my_status scope='board': seus cards"],
+        audit: { tool: "my_status", semantic_domain: dom, pii_level: "self", permission: "authenticated (self)", source_tools: source, caller_member_id: member.id, gate_checked: "self (auth.uid → member); no cross-member surface", resource_id: member.id, extra: { scope } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -9169,7 +9755,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.3.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.4.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -9218,10 +9804,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.81.0",
+  ef_version: "2.82.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.3.0", tools: 12 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.4.0", tools: 21 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

@@ -111,13 +111,70 @@ The contract is guarded statically by `tests/contracts/semantic-envelope-w1.test
 
 ---
 
+## Wave 2 — Members, engagements & initiatives (shipped 2026-07-16)
+
+9 tools absorbing the members/engagements/initiatives raw surface (423 calls/180d; `search_members` is
+the #2 tool at 167). `/semantic` 12 → 21 (`nucleo-ia-semantic@0.4.0`, `ef_version 2.82.0`). LGPD is the
+theme: `member_search`/`member_get`/`member_emails` are the PII surface and mask sensitive columns unless
+the caller has `view_pii`. Two raw-RPC failure fixes are baked in (migration `20260805000454`):
+`get_person` now accepts a `members.id` OR a `persons.id` (killed the raw #2-failure class, 17/20
+"Person not found") and `get_active_engagements` no longer references the non-existent `initiatives.name`
+(was `i.title`; killed 3/3 failures).
+
+### `member_search` (R)
+- **Intent:** the member directory — the #2 tool (167 calls/180d). Filter by `query` (name), `tribe_id`, `tier`, `status`.
+- **Absorbs:** `search_members` (→ `admin_list_members`).
+- **Gate:** `manage_member`. **LGPD:** redacts `email` + `auth_id` unless the caller has `view_pii` (`audit.pii_level` = `high`/`low` reflects the actual disclosure).
+
+### `member_get` (R)
+- **Intent:** one person, 360° (profile + active engagements). Resolve by `person_id`, `member_id`, or `email` (email → `manage_member`, anti-enumeration); omit all for your own record.
+- **Absorbs:** `get_person` (member_id-resolution fix) + `get_active_engagements` (i.title fix).
+- **Gate:** self always; PII masked by `get_person` per `view_pii` (+ chapter-scope); engagements of others require `manage_member` (surfaced in `warnings` if absent).
+
+### `member_emails` (R/W)
+- **`action`:** `list` · `add` · `remove` · `set_primary` · `update_kind` · `resolve` (email → member_id).
+- **Absorbs:** `member_list_emails`/`add`/`remove`/`set_primary`/`update_kind`/`resolve`.
+- **Gate:** per-record self-OR-`manage_member` (RPC-enforced; +`view_pii` on list). **`resolve` ADDS a `manage_member` gate here** to close the email-existence oracle (raw `member_resolve_email` was auth-only).
+
+### `member_lifecycle` (W)
+- **Intent:** GP-only member lifecycle (LGPD Art.18 invariant). **`action`:** offboard* · reissue_agreement* · record_offboarding · get_offboarding_record · list_offboarding · offboarding_dashboard · onboarding_dashboard · pending_agreements · explain_authority · stage_alumni · invite_alumni · respond_re_engagement · cancel_re_engagement · list_re_engagement · promote_to_leader · detect_inactive. (*destructive → `confirm=true`.)
+- **Absorbs:** 16 raw lifecycle/offboarding/re-engagement tools.
+- **Gate:** `manage_member` for admin verbs (`promote_to_leader` → `promote`; `respond_re_engagement`/`get_offboarding_record` are RPC self-gated). **Warns Camada-5 on reissue** (reissue supersedes the agreement → demotes authority; a re-accept must use Camada-5, never batch-reissue).
+
+### `engagement_write` (W)
+- **`action`:** `add`* · `remove`* · `update_role` · `invite` · `respond_invitation` · `request_join` · `review_request` · `withdraw`*. (*destructive → `confirm=true`.)
+- **Absorbs:** `manage_initiative_engagement`, `invite_to_initiative`, `respond_to_initiative_invitation`, `request_to_join_initiative`, `review_initiative_request`, `withdraw_from_initiative`.
+- **Gate:** authority is RPC-enforced (admin-of-initiative OR owner for admin verbs; caller-scoped for self verbs); the semantic layer ADDS the #785 confidential fail-fast (`canSee(initiative)`) on the target. dual-write (`members.tribe_id↔initiative_id`) is server-side (#1270). `create_external_speaker_engagement` stays raw this wave (heavyweight bootstrap).
+
+### `initiative_roster` (R)
+- **`scope`:** `initiative` (#785-gated) · `by_kind` · `my_tribe` · `invitations_for_my_initiatives` · `invitations_received` · `invitations_sent`.
+- **Absorbs:** `list_initiative_engagements(_by_kind)`, `get_my_tribe_members`, `list_invitations_*` ×3.
+- **Gate:** `canSee(initiative)` on the `initiative` scope; other scopes are RLS/self-scoped. Confidential excluded.
+
+### `initiative_directory` (R)
+- **`mode`:** `all` (kind/status filters) · `open` (joinable).
+- **Absorbs:** `list_initiatives`, `list_open_initiatives`.
+- **Gate:** confidential excluded inline by the RPCs (`rls_can_see_initiative`, #785).
+
+### `initiative_report` (R)
+- **`report`:** `dashboard` · `stats` · `housekeeping` · `deliverables` · `credly` · `members_credly` (per-initiative, #785-gated) · `comparison` (cross-initiative, `manage_platform`/`view_chapter_dashboards`) · `pilots`.
+- **Absorbs:** `get_tribe_dashboard`/`stats_ranked`/`housekeeping`/`deliverables`/`credly`/`members_with_credly` + `tribes_comparison` + `pilots_summary`.
+- **Gate:** `canSee(initiative)` mandatory on per-initiative reports; aggregate reports carry their own authority.
+
+### `my_status` (R)
+- **Intent:** "where am I?" — SELF-only. **`scope`:** `all` (default) · `profile` · `committee` · `board` · `application` · `notifications` · `onboarding` · `selection_result` · `credly`.
+- **Absorbs:** `get_my_profile`/`committee_assignments`/`board_status`/`application_status`/`notifications`/`onboarding`/`selection_result`/`credly`. Supersedes the `get_my_context` bridge (which stays registered).
+- **Gate:** self (auth.uid → member); `pii_level: "self"`; zero admin surface.
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
 |---|---|---|
 | 0 | Bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`, `get_operational_status`) | shipped (SPEC-280) |
 | **1** | **Boards & cards** | **shipped 2026-07-15** |
-| 2 | Members / engagements / initiatives | planned |
+| **2** | **Members / engagements / initiatives** | **shipped 2026-07-16** |
 | 3 | Events / attendance / meetings | planned |
 | 4 | Selection & evaluation | planned |
 | 5 | Governance / docs / certificates | planned |
