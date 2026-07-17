@@ -12,7 +12,7 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.9.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+- `/semantic` (server: `nucleo-ia-semantic`, v0.10.0) — public semantic gateway (SPEC-280 / EPIC #1383).
   **52 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
@@ -48,8 +48,14 @@ Three surfaces:
   `add_document_comment`→`create_document_comment`, `list_change_requests`→`get_change_requests`,
   `list_my_signatures`→`get_my_signatures`. Migration `20260805000459` clamped `submit_change_request`
   priority (`critical`→`high`, was a hard CHECK fail) and REVOKEd dead anon/PUBLIC EXECUTE on 14 governance/cert
-  write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (Lorena-only, never auto),
-  `review_change_request`/`approve_change_request` (open CR-authority finding — V3 fallback reaches `implement`).
+  write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (Lorena-only, never auto).
+  **#1397 (migration `20260805000462`, ef 2.88.0 / semantic v0.10.0):** `review_change_request`/
+  `approve_change_request` are now absorbed into `change_request` (`review`/`approve`). The unilateral
+  `implement` branch was retired (`approved→implemented` is 2-of-N only, via `document_version_write
+  propose_manual/confirm_manual`, ADR-0044); the quorum numerator is sponsor-only; two latent crashers
+  (a `submitted_by` field ref that had made the RPC non-functional, and a `create_notification` overload
+  ambiguity) were fixed. Owner Option A: both approval paths kept (`approved` is a triage state; publication
+  remains the 2-of-N control).
   **Wave 6a comms/drive/partners tools pass through RPC-internal authority** (comms reads = `manage_comms`/
   `manage_member`/`write_board`; partner reads = `view_partner`, writes = `manage_partner`; webinar review/convert
   = `manage_event`; drive-admin = `manage_platform`/`manage_member`). Migration `20260805000460` added the #785

@@ -6434,10 +6434,12 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // approve_change_request — signoff on a CR (approval or rejection), recorded with signature hash
-  mcp.tool("approve_change_request", "Record your signoff on a change request. action: 'approve' | 'reject' | 'abstain'. Signature hash + timestamp captured for audit. Permissions: CR approver role assigned to the CR.", {
+  // approve_change_request — sponsor-quorum signoff on a CR, recorded with signature hash.
+  // Prefer the semantic tool change_request action='approve'. Only sponsor×sponsor approvals count
+  // toward quorum (#1397). Raw tool kept for additive/never-break; behaviour is pass-through.
+  mcp.tool("approve_change_request", "Record your sponsor-quorum signoff on a change request. action: 'approved' | 'rejected' | 'abstained'. Signature hash + timestamp captured for audit. Authority: participate_in_governance_review (only sponsor×sponsor approvals count toward quorum). Prefer semantic tool change_request action='approve'.", {
     cr_id: z.string().describe("UUID of change_requests row"),
-    action: z.string().describe("'approve' | 'reject' | 'abstain'"),
+    action: z.string().describe("'approved' | 'rejected' | 'abstained'"),
     comment: z.string().optional().describe("Optional comment posted with the signoff")
   }, async (params: { cr_id: string; action: string; comment?: string }) => {
     const start = Date.now();
@@ -6454,10 +6456,12 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // review_change_request — intermediate review step (distinct from final approve)
-  mcp.tool("review_change_request", "Post a review on a CR — intermediate step before final approval. action: 'request_changes' | 'ready_for_approval' | 'comment'.", {
+  // review_change_request — CR review lifecycle. Prefer semantic tool change_request action='review'.
+  // #1397: the unilateral 'implement' action was retired (approved→implemented is 2-of-N only,
+  // ADR-0044). Raw tool kept for additive/never-break; behaviour is pass-through.
+  mcp.tool("review_change_request", "Advance a CR through its review lifecycle. action: 'approve' | 'reject' | 'request_changes' | 'withdraw' | 'resubmit' ('implement' is retired — publish a Manual version via the 2-of-N flow instead). Authority: manage_platform / curate_content / sponsor / chapter_liaison. Prefer semantic tool change_request action='review'.", {
     cr_id: z.string().describe("UUID of change_requests row"),
-    action: z.string().describe("'request_changes' | 'ready_for_approval' | 'comment'"),
+    action: z.string().describe("'approve' | 'reject' | 'request_changes' | 'withdraw' | 'resubmit'"),
     notes: z.string().describe("Review notes body")
   }, async (params: { cr_id: string; action: string; notes: string }) => {
     const start = Date.now();
@@ -10649,10 +10653,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // Kept RAW on purpose:
   //   - counter_sign_certificate — countersign is the Dir. de Voluntariados' exclusive act
   //     (Lorena; reference-volunteer-term-countersign-lorena). NEVER auto-countersign via MCP.
-  //   - review_change_request / approve_change_request — the CR review/approve authority model has
-  //     an open finding (V3 sponsor/chapter_liaison fallback reaches 'implement', bypassing the
-  //     2-of-N manual-publication flow; hardcoded manual_version_to='R3'; quorum divergence).
-  //     Deferred to a dedicated authority-remediation issue; change_request exposes submit + list only.
+  //   - (#1397 REMEDIATED) review_change_request / approve_change_request are now absorbed into
+  //     change_request action='review'/'approve'. The unilateral 'implement' branch was retired
+  //     (approved→implemented is 2-of-N only, ADR-0044), the quorum numerator is sponsor-only, and
+  //     two latent crashers (submitted_by field, create_notification overload ambiguity) were fixed
+  //     — see migration 20260805000462.
 
   // ── W5 · document_get (R) — governance document reader surfaces ──
   mcp.tool(
@@ -10873,12 +10878,12 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
     },
   );
 
-  // ── W5 · change_request (W) — CR submission + listing (submit/list only; review/approve deferred) ──
+  // ── W5 · change_request (W) — CR submit/list + review/approve (review/approve absorbed post-#1397) ──
   mcp.tool(
     "change_request",
-    "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests]). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]), 'list' ([status, cr_type]). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency' (the raw tool's 'manual_edit'/'gc_override'/'policy_update' were rejected by the RPC on every call — fixed here). impact_level 'critical' now maps priority→'high' (was a hard CHECK failure — migration 20260805000459). Authority: curate_content / manager / tribe_leader / superadmin. NOTE: review + approve stay RAW pending the CR-authority remediation (review_change_request V3 fallback reaches 'implement' bypassing 2-of-N; tracked). Stable envelope.",
+    "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests] + review_change_request + approve_change_request). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]); 'list' ([status, cr_type]); 'review' (cr_id + review_action) — lifecycle review by manage_platform / curate_content / sponsor / chapter_liaison; review_action is 'approve' | 'reject' | 'request_changes' | 'withdraw' | 'resubmit'. 'implement' is intentionally NOT offered: the approved→implemented transition (publishing a Manual version) is done ONLY via the 2-of-N flow document_version_write action='propose_manual'/'confirm_manual' (ADR-0044, #1397). 'approve' (cr_id + vote) — record your sponsor-quorum signoff; vote is 'approved' | 'rejected' | 'abstained' (only sponsor×sponsor approvals count toward quorum, #1397). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency'. impact_level 'critical' maps priority→'high' (migration 20260805000459). Authority enforced per-RPC (all fail-closed for anon). Stable envelope.",
     {
-      action: z.enum(["submit", "list"]).describe("CR operation."),
+      action: z.enum(["submit", "list", "review", "approve"]).describe("CR operation."),
       title: z.string().optional().describe("submit — short title."),
       description: z.string().optional().describe("submit — detailed description."),
       cr_type: z.enum(["editorial", "operational", "structural", "emergency"]).optional().describe("submit / list — CR type (RPC-validated enum)."),
@@ -10888,6 +10893,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       impact_description: z.string().optional().describe("submit — who/what is affected."),
       justification: z.string().optional().describe("submit — why the change is necessary."),
       status: z.string().optional().describe("list — status filter."),
+      cr_id: z.string().optional().describe("review / approve — target change_requests UUID."),
+      review_action: z.enum(["approve", "reject", "request_changes", "withdraw", "resubmit"]).optional().describe("review — lifecycle verb (implement is NOT here; use the 2-of-N Manual flow)."),
+      vote: z.enum(["approved", "rejected", "abstained"]).optional().describe("approve — your sponsor-quorum signoff."),
+      notes: z.string().optional().describe("review — optional review notes."),
+      comment: z.string().optional().describe("approve — optional comment recorded with the signoff."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -10903,16 +10913,27 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           ({ data, error } = await sb.rpc("submit_change_request", { p_title: params.title, p_description: params.description, p_cr_type: params.cr_type, p_manual_section_ids: params.manual_section_ids ?? null, p_gc_references: params.gc_references ?? null, p_impact_level: params.impact_level ?? "medium", p_impact_description: params.impact_description ?? null, p_justification: params.justification ?? null })); source = "submit_change_request"; break;
         case "list":
           ({ data, error } = await sb.rpc("get_change_requests", { p_status: params.status ?? null, p_cr_type: params.cr_type ?? null })); source = "get_change_requests"; break;
+        case "review":
+          if (!isUUID(params.cr_id) || !params.review_action) return invalid("action='review' requires cr_id (UUID) + review_action.");
+          ({ data, error } = await sb.rpc("review_change_request", { p_cr_id: params.cr_id, p_action: params.review_action, p_notes: params.notes ?? null })); source = "review_change_request"; break;
+        case "approve":
+          if (!isUUID(params.cr_id) || !params.vote) return invalid("action='approve' requires cr_id (UUID) + vote.");
+          ({ data, error } = await sb.rpc("approve_change_request", { p_cr_id: params.cr_id, p_action: params.vote, p_comment: params.comment ?? null })); source = "approve_change_request"; break;
         default: return invalid(`Unknown action '${params.action}'.`);
       }
       if (error) { await logUsage(sb, member.id, "change_request", false, error.message, start); return ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: selErr("change_request", error.message), message: error.message })); }
       if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "change_request", false, em, start); return ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: selErr("change_request", em), message: em })); }
       await logUsage(sb, member.id, "change_request", true, undefined, start);
+      const gate = params.action === "approve"
+        ? "RPC internal (participate_in_governance_review; sponsor-only quorum, #1397)"
+        : params.action === "review"
+          ? "RPC internal (manage_platform / curate_content / sponsor / chapter_liaison; implement retired, 2-of-N only)"
+          : "RPC internal (curate_content / manager / tribe_leader / superadmin)";
       return semanticOk({
         data: { action: params.action, result: data ?? null },
         summary: `change_request action='${params.action}' ok.`,
-        next_actions: ["change_request action='list': ver a fila de CRs", "document_version_write action='propose_manual': iniciar nova versão do Manual"],
-        audit: { tool: "change_request", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (curate_content / manager / tribe_leader / superadmin)", resource_id: null, extra: { action: params.action } },
+        next_actions: ["change_request action='list': ver a fila de CRs", "change_request action='approve': registrar voto de quorum (sponsor)", "document_version_write action='propose_manual': publicar nova versão do Manual (2-of-N)"],
+        audit: { tool: "change_request", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [source], caller_member_id: member.id, gate_checked: gate, resource_id: (params.action === "review" || params.action === "approve") ? (params.cr_id ?? null) : null, extra: { action: params.action } },
       });
     },
   );
@@ -12016,7 +12037,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.9.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.10.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -12065,10 +12086,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.87.0",
+  ef_version: "2.88.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.9.0", tools: 52 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.10.0", tools: 52 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

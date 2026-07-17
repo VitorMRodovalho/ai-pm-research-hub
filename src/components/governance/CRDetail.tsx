@@ -21,7 +21,8 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
 
   const isGP = member?.is_superadmin || member?.operational_role === 'manager' || (member?.designations || []).includes('deputy_manager');
   const canApprove = canReview && ['draft', 'submitted', 'under_review'].includes(cr.status);
-  const canImplement = isGP && cr.status === 'approved';
+  // #1397: the unilateral "implement" action was retired. Marking a CR implemented (publishing a
+  // Manual version) is done only via the 2-of-N propose/confirm manual-version flow (ADR-0044).
   const canWithdraw = isGP && ['draft', 'submitted', 'under_review'].includes(cr.status);
   const canResubmit = cr.status === 'under_review';
 
@@ -116,7 +117,7 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
         </div>
 
         {/* Review actions */}
-        {(canReview || canWithdraw || canResubmit) && (canApprove || canImplement || canWithdraw || canResubmit) && (
+        {(canReview || canWithdraw || canResubmit) && (canApprove || canWithdraw || canResubmit) && (
           <div className="px-5 py-4 border-t border-[var(--border-default)] space-y-3">
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
               placeholder={t('governance.cr_review_notes', 'Notas de revisão...')}
@@ -137,12 +138,6 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
                     {t('governance.cr_request_changes', 'Pedir Ajustes')}
                   </button>
                 </>
-              )}
-              {canImplement && (
-                <button onClick={() => handleAction('implement')} disabled={loading}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold cursor-pointer border-0 disabled:opacity-50">
-                  {t('governance.cr_implement', 'Implementar')}
-                </button>
               )}
               {canWithdraw && (
                 <button onClick={() => { if (confirm(t('governance.withdraw_confirm', 'Retirar esta CR?'))) handleAction('withdraw'); }} disabled={loading}

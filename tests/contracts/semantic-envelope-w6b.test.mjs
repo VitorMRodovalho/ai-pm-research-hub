@@ -191,5 +191,5 @@ test('W6b: /semantic health surface advertises 52 tools + version 0.9.0', () => 
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
   assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6b');
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.9\.0"\s*\}\s*\)/, '/semantic McpServer must be v0.9.0');
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.10\.0"\s*\}\s*\)/, '/semantic McpServer must be v0.10.0');
 });

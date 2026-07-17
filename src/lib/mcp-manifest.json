@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T18:15:00.648Z",
+  "generated_at": "2026-07-17T21:17:28.920Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -207,7 +207,7 @@
     },
     {
       "name": "change_request",
-      "description": "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests]). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]), 'list' ([status, cr_type]). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency' (the raw tool's 'manual_edit'/'gc_override'/'policy_update' were rejected by the RPC on every call — fixed here). impact_level 'critical' now maps priority→'high' (was a hard CHECK failure — migration 20260805000459). Authority: curate_content / manager / tribe_leader / superadmin. NOTE: review + approve stay RAW pending the CR-authority remediation (review_change_request V3 fallback reaches 'implement' bypassing 2-of-N; tracked). Stable envelope.",
+      "description": "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests] + review_change_request + approve_change_request). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]); 'list' ([status, cr_type]); 'review' (cr_id + review_action) — lifecycle review by manage_platform / curate_content / sponsor / chapter_liaison; review_action is 'approve' | 'reject' | 'request_changes' | 'withdraw' | 'resubmit'. 'implement' is intentionally NOT offered: the approved→implemented transition (publishing a Manual version) is done ONLY via the 2-of-N flow document_version_write action='propose_manual'/'confirm_manual' (ADR-0044, #1397). 'approve' (cr_id + vote) — record your sponsor-quorum signoff; vote is 'approved' | 'rejected' | 'abstained' (only sponsor×sponsor approvals count toward quorum, #1397). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency'. impact_level 'critical' maps priority→'high' (migration 20260805000459). Authority enforced per-RPC (all fail-closed for anon). Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -858,7 +858,7 @@
     },
     {
       "name": "approve_change_request",
-      "description": "Record your signoff on a change request. action: 'approve' | 'reject' | 'abstain'. Signature hash + timestamp captured for audit. Permissions: CR approver role assigned to the CR.",
+      "description": "Record your sponsor-quorum signoff on a change request. action: 'approved' | 'rejected' | 'abstained'. Signature hash + timestamp captured for audit. Authority: participate_in_governance_review (only sponsor×sponsor approvals count toward quorum). Prefer semantic tool change_request action='approve'.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -1047,7 +1047,7 @@
     },
     {
       "name": "review_change_request",
-      "description": "Post a review on a CR — intermediate step before final approval. action: 'request_changes' | 'ready_for_approval' | 'comment'.",
+      "description": "Advance a CR through its review lifecycle. action: 'approve' | 'reject' | 'request_changes' | 'withdraw' | 'resubmit' ('implement' is retired — publish a Manual version via the 2-of-N flow instead). Authority: manage_platform / curate_content / sponsor / chapter_liaison. Prefer semantic tool change_request action='review'.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false

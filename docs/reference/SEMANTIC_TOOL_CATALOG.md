@@ -319,11 +319,16 @@ governance/certificate write RPCs** was REVOKEd (all already fail-closed; defens
 
 **Deliberately kept raw (not surfaced semantically):**
 - `counter_sign_certificate` — countersign is the **Dir. de Voluntariados' exclusive act** (never automated via MCP).
-- `review_change_request` / `approve_change_request` — an **open CR-authority finding** (the V3
-  `sponsor`/`chapter_liaison` fallback reaches the `implement` branch, bypassing the 2-of-N manual-publication
-  flow; hardcoded `manual_version_to='R3'`; a quorum-free single-approver path diverging from
-  `approve_change_request`'s sponsor quorum). Deferred to a dedicated authority-remediation issue;
-  `change_request` exposes `submit` + `list` only until it lands.
+
+**Remediated (#1397, migration `20260805000462`) — `review_change_request` / `approve_change_request` now
+absorbed into `change_request` (`review`/`approve`):** the unilateral `implement` branch was **retired**
+(the `approved→implemented` transition is 2-of-N only, via `document_version_write propose_manual/confirm_manual`,
+ADR-0044); the hardcoded `manual_version_to='R3'` is gone; the quorum numerator is now **sponsor-only** (a
+non-sponsor governance voter no longer inflates it against the sponsor-only denominator); and two latent
+crashers were fixed (a `submitted_by` field reference that had made the RPC non-functional and rolled back
+every action, plus a `create_notification` overload ambiguity). Owner decision (Option A): both approval paths
+are kept — `review` drives the CR lifecycle, `approve` records the sponsor-quorum vote; both write
+`status='approved'`, which only makes a CR eligible for the 2-of-N Manual publication.
 
 ### `document_get` (R)
 - **Intent:** read governance documents. **`mode`:** `list` · `detail` · `body` (sanitized HTML + Markdown + section anchors of the current LOCKED version) · `versions` · `diff` · `changelog` · `manual`.
@@ -341,9 +346,9 @@ governance/certificate write RPCs** was REVOKEd (all already fail-closed; defens
 - **Gate:** `participate_in_governance_review` (add) / author-or-review (resolve), RPC-internal. Visibility enum corrected (see above).
 
 ### `change_request` (W)
-- **Intent:** CR submission + listing (submit/list only). **`action`:** `submit` · `list`.
-- **Absorbs:** `submit_change_request` · `list_change_requests` (→ `get_change_requests`). `review`/`approve` stay raw (deferred authority finding).
-- **Gate:** `curate_content` / manager / tribe_leader / superadmin (RPC-internal). `cr_type` + `impact_level` enums corrected.
+- **Intent:** CR submission, listing, lifecycle review, and quorum signoff. **`action`:** `submit` · `list` · `review` (`review_action` = `approve|reject|request_changes|withdraw|resubmit` — **no `implement`**; publish via the 2-of-N Manual flow) · `approve` (`vote` = `approved|rejected|abstained`, sponsor-quorum).
+- **Absorbs:** `submit_change_request` · `list_change_requests` (→ `get_change_requests`) · `review_change_request` · `approve_change_request` (review/approve absorbed post-#1397, migration `20260805000462`).
+- **Gate (RPC-internal, all fail-closed):** submit = `curate_content`/manager/tribe_leader/superadmin; review = `manage_platform`/`curate_content`/`sponsor`/`chapter_liaison`; approve = `participate_in_governance_review` (only sponsor×sponsor approvals count toward quorum). `cr_type` + `impact_level` enums corrected.
 
 ### `signature_flow` (W)
 - **Intent:** IP-ratification / cooperation-agreement approval-chain signing. **`action`:** `sign` · `pending` · `my_signatures` · `chain_audit`.
