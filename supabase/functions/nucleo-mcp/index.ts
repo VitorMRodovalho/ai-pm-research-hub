@@ -10261,7 +10261,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // 0 MCP calls ever), generate_interview_briefing (inline-Haiku raw tool, view_pii),
   // capture_visitor_lead (public site entry — anon + rl_check + LGPD consent, stays raw).
 
-  const selErr = (tool: string, em: string) =>
+  const selErr = (_tool: string, em: string) =>
     /^(unauthorized|not authoriz|recused)/i.test(em) ? "unauthorized"
       : /not found|no cycle|not_found/i.test(em) ? "not_found"
       : /already|locked|invalid|required|must /i.test(em) ? "invalid_input"
