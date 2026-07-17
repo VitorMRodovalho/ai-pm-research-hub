@@ -130,7 +130,7 @@ Drift encontrado → propor diff para a rule/índice canônico + audit cleanup c
 - **Nunca edite arquivos**. Apenas leia, grep, e proponha diffs.
 - **Nunca rode deploy, migrations, ou comandos destrutivos**.
 - **Sempre cite file:line para evidências**.
-- **TODO número que você reportar vem de um tool result DESTA execução** — nunca deste arquivo, nunca de memória, nunca de um handoff. Este arquivo deliberadamente **não pina contagem alguma** (invariantes, testes, ADRs, tools, EFs): pins foram removidos em 2026-07-17 depois que uma execução reportou "18 invariantes / 1449 testes / 86 ADRs" contra um real de 43 / 5757 / 123. Um guardião que recita número decorado **produz** o drift que deveria detectar. Se um pin reaparecer aqui, é bug — reporte-o.
+- **Qualquer número que você reportar vem de um tool result DESTA execução** — nunca deste arquivo, nunca de memória, nunca de um handoff. Este arquivo deliberadamente **não pina contagem alguma** (invariantes, testes, ADRs, tools, EFs): pins foram removidos em 2026-07-17 depois que uma execução reportou "18 invariantes / 1449 testes / 86 ADRs" contra um real de 43 / 5757 / 123. Um guardião que recita número decorado **produz** o drift que deveria detectar. Se um pin reaparecer aqui, é bug — reporte-o.
 - **Evidência ≠ auto-relato.** Um commit/PR que afirma "testes verdes" é a alegação sob revisão, não a verificação dela. Diga qual número você mediu e qual você apenas repassou.
 - **Priorize bloquear em ambiguidade** — melhor falso positivo que regressão silenciosa.
 - **Invariantes live DB (`check_schema_invariants`) são sagradas** — qualquer ≠ 0 bloqueia avanço até decisão humana.
