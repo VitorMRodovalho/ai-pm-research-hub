@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-16T13:27:21.733Z",
+  "generated_at": "2026-07-17T00:20:08.466Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 364,
+  "total": 370,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
-    "events": 16,
+    "events": 22,
     "gamification": 15,
     "board": 77,
     "tribe": 117,
@@ -4731,8 +4731,11 @@
       "rpcs": [
         "member_update_alternate_email_kind"
       ],
-      "tables": [],
+      "tables": [
+        "events"
+      ],
       "canV4_actions": [
+        "manage_event",
         "view_pii"
       ],
       "external_fetch_count": 0,
@@ -5080,6 +5083,104 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "buildSemanticError({ tool: \"my_status\", semantic_domain: dom, code: \"unauthenticated\", mes"
+    },
+    {
+      "name": "event_search",
+      "description": "Semantic event reader (absorbs list_initiative_events 41, get_event_detail 31, get_upcoming_events 12, get_near_events 7 — 91 calls/180d). Set `scope`: 'upcoming' (next 7 days, org-wide), 'near' (events inside a check-in window, self), 'initiative' (filtered list for a tribe/initiative — types/date range/has_minutes/has_recording/has_attendance + pagination), 'detail' (one event, full record — requires event_id). Read-only. Confidential initiatives (ADR-0105 / #785) are excluded by the source RPCs and, for 'detail', re-checked fail-fast at this layer. Stable envelope.",
+      "domain": "events",
+      "rpcs": [
+        "get_event_detail",
+        "get_near_events",
+        "list_initiative_events"
+      ],
+      "tables": [
+        "events"
+      ],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"event_search\", semantic_domain: dom, code: \"unauthenticated\", "
+    },
+    {
+      "name": "event_write",
+      "description": "Semantic event writer (absorbs create_tribe_event, update_event_instance 29, drop_event_instance — 36 calls/180d). Set `action`: 'create' (title + date; optional type/duration/tribe_id/initiative_id/time_start/meeting_link), 'update' (event_id + any of date/time_start/duration_minutes/meeting_link/notes/agenda_text), 'drop' (event_id; DESTRUCTIVE→confirm; force_delete_attendance to remove attendance too). Authority: manage_event RESOURCE-SCOPED to the event's initiative + the #785 gate — an initiative-scoped leader can no longer edit or delete another initiative's events (the raw tools gated on a resourceless can(), fixed raw-side in migration 455 and baked as a contract here). Stable envelope.",
+      "domain": "events",
+      "rpcs": [],
+      "tables": [
+        "attendance"
+      ],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"event_write\", semantic_domain: dom, code: \"unauthenticated\", m"
+    },
+    {
+      "name": "attendance_record",
+      "description": "Semantic attendance writer (absorbs register_attendance 132 — the #3 tool overall —, mark_member_excused, bulk_mark_excused, register_showcase 17 — 166 calls/180d). Set `action`: 'register' (event_id + member_ids — batch-capable; present=false is a no-op by design, absence is the default state), 'excuse' (event_id + member_id + reason; excused=false reverts), 'bulk_excuse' (member_id + date_from + date_to + reason — excuses a member across a date range), 'showcase' (event_id + member_id + showcase_type — awards 15-25 XP). Authority: manage_event scoped to the event's initiative + #785. Attribution: the RPC records registered_by/marked_by, which is what distinguishes self check-in from a leader's batch (#1322) — NOT checked_in_at. Stable envelope.",
+      "domain": "events",
+      "rpcs": [
+        "bulk_mark_excused"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"attendance_record\", semantic_domain: dom, code: \"unauthenticat"
+    },
+    {
+      "name": "attendance_report",
+      "description": "Semantic attendance reader (absorbs get_my_tribe_attendance, get_attendance_ranking, get_my_attendance_history, get_my_attendance_hours, get_event_attendance_health, get_cycle_attendance_overview — 20 calls/180d). Set `scope`: 'tribe' (attendance grid for a tribe/initiative), 'ranking' (members by attendance rate), 'mine' (your own history), 'hours' (your — or, with view_internal_analytics, another member's — attendance hours for a cycle), 'health' (org-wide events missing attendance), 'cycle' (per-cycle overview). Read-only. Self scopes are free; cross-member/cross-tribe reads require view_internal_analytics, and the tribe grid ADDS the #785 confidential gate that the underlying RPC lacks. Stable envelope.",
+      "domain": "events",
+      "rpcs": [
+        "get_attendance_panel",
+        "get_cycle_attendance_overview",
+        "get_event_attendance_health",
+        "get_initiative_attendance_grid",
+        "get_member_attendance_hours",
+        "get_my_attendance_history"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "view_internal_analytics"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"attendance_report\", semantic_domain: dom, code: \"unauthenticat"
+    },
+    {
+      "name": "meeting_minutes",
+      "description": "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: get_agenda_smart is intentionally NOT absorbed — it is retired (see docs). Stable envelope.",
+      "domain": "events",
+      "rpcs": [
+        "get_meeting_preparation",
+        "meeting_close",
+        "upsert_event_minutes"
+      ],
+      "tables": [
+        "events"
+      ],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"meeting_minutes\", semantic_domain: dom, code: \"unauthenticated"
+    },
+    {
+      "name": "meeting_actions",
+      "description": "Semantic action-item + decision tool for meetings (absorbs create_action_item 21, resolve_action_item, list_meeting_action_items, convert_action_to_card, register_decision 15, get_decision_log — 37 calls/180d). Set `action`: 'create' (event_id + description; optional assignee_id/due_date/kind), 'resolve' (action_item_id; optional resolution_note, or carry_to_event_id to carry it into a later meeting), 'list' (filter by event_id/assignee_id/status/kind/unresolved_only), 'convert_to_card' (action_item_id + board_id — turns an action into a board card), 'decision' (event_id + title; optional description + related_card_ids), 'decision_log' (the governance ADR log from the wiki; optional text filter). Authority: manage_event scoped to the event's initiative (migration 455 closed the resourceless gate on create/resolve/decision); convert_to_card additionally needs write_board. Stable envelope.",
+      "domain": "events",
+      "rpcs": [
+        "get_decision_log",
+        "list_meeting_action_items"
+      ],
+      "tables": [
+        "meeting_action_items"
+      ],
+      "canV4_actions": [
+        "write_board"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"meeting_actions\", semantic_domain: dom, code: \"unauthenticated"
     }
   ]
 }

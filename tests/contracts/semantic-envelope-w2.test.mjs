@@ -152,8 +152,8 @@ test('W2[my_status]: SELF-only — pii_level "self", no cross-member manage_memb
   assert.ok(!/canV4\(sb,\s*member\.id,\s*"manage_member"\)/.test(b), 'my_status must NOT expose an admin (manage_member) surface');
 });
 
-test('W2: /semantic health surface advertises 21 tools (4 bridge + 8 Wave-1 + 9 Wave-2)', () => {
+test('W2: /semantic health surface still advertises the Wave-2 tools (count now 27 after Wave 3)', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 21, '/semantic health tools count must be 21 after Wave 2');
+  assert.equal(Number(health[1]), 27, '/semantic health tools count must be 27 after Wave 3 (4 bridge + 8 W1 + 9 W2 + 6 W3)');
 });

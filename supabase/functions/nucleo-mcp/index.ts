@@ -8014,6 +8014,38 @@ async function canSeePII(sb: Sb, memberId: string): Promise<boolean> {
   return await canV4(sb, memberId, "view_pii");
 }
 
+// #1383 W3: an event's initiative is the resource for BOTH event-domain gates — the #785
+// confidential check (canSee) and the resource-scoped manage_event check (canV4). Mirrors
+// the SQL helper `_manage_event_scope_ok` (migration 444 + 455): an event with no initiative
+// (org-wide 'geral'/'kickoff') has no initiative to scope to, so `initiative_id` is null and
+// callers fall back to the org-wide manage_event check. Reads through the caller's own client,
+// so events RLS applies before the tool ever sees the row.
+async function eventScope(sb: Sb, eventId: string): Promise<{ found: boolean; initiative_id: string | null; title: string | null; date: string | null }> {
+  const { data, error } = await sb.from("events").select("id, title, date, initiative_id").eq("id", eventId).maybeSingle();
+  if (error || !data) return { found: false, initiative_id: null, title: null, date: null };
+  const d = data as any;
+  return { found: true, initiative_id: d.initiative_id ?? null, title: d.title ?? null, date: d.date ?? null };
+}
+
+// #1383 W3: the event-domain authority contract in one place — #785 visibility THEN
+// resource-scoped manage_event. Returns null when allowed, or the error code/message to
+// return. Keeping both gates here is what makes every W3 write tool provably consistent
+// with the raw RPC gates (migration 455) instead of each tool re-deriving them.
+async function eventWriteGate(
+  sb: Sb, memberId: string, initiativeId: string | null,
+): Promise<{ code: string; message: string; action?: string } | null> {
+  if (initiativeId && !(await canSee(sb, "initiative", initiativeId))) {
+    return { code: "unauthorized", message: "You cannot see this event's initiative (confidential or no access).", action: "This event belongs to a confidential initiative you are not engaged in (ADR-0105)." };
+  }
+  const okAuth = initiativeId
+    ? await canV4(sb, memberId, "manage_event", "initiative", initiativeId)
+    : await canV4(sb, memberId, "manage_event");
+  if (!okAuth) {
+    return { code: "unauthorized", message: initiativeId ? "Requires manage_event on this event's initiative." : "Requires manage_event.", action: "Ask the initiative leader / GP. Initiative-scoped leaders can only manage their own initiative's events." };
+  }
+  return null;
+}
+
 function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
   // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
@@ -9602,6 +9634,627 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ── W3 · event_search (R) — 91 calls/180d; #785 already in the source RPCs ──
+  mcp.tool(
+    "event_search",
+    "Semantic event reader (absorbs list_initiative_events 41, get_event_detail 31, get_upcoming_events 12, get_near_events 7 — 91 calls/180d). Set `scope`: 'upcoming' (next 7 days, org-wide), 'near' (events inside a check-in window, self), 'initiative' (filtered list for a tribe/initiative — types/date range/has_minutes/has_recording/has_attendance + pagination), 'detail' (one event, full record — requires event_id). Read-only. Confidential initiatives (ADR-0105 / #785) are excluded by the source RPCs and, for 'detail', re-checked fail-fast at this layer. Stable envelope.",
+    {
+      scope: z.enum(["upcoming", "near", "initiative", "detail"]).optional().describe("What to read. Default: 'upcoming'."),
+      event_id: z.string().optional().describe("Event UUID — REQUIRED for scope='detail'."),
+      tribe_id: z.number().optional().describe("scope='initiative' — legacy tribe id (1-8); resolved to its initiative. Omit to use your own tribe."),
+      initiative_id: z.string().optional().describe("scope='initiative' — initiative UUID (takes precedence over tribe_id)."),
+      types: z.string().optional().describe("scope='initiative' — comma-separated event types (tribo|geral|lideranca|kickoff|comms|webinar)."),
+      date_from: z.string().optional().describe("scope='initiative' — YYYY-MM-DD lower bound."),
+      date_to: z.string().optional().describe("scope='initiative' — YYYY-MM-DD upper bound."),
+      has_minutes: z.boolean().optional().describe("scope='initiative' — only events with/without minutes."),
+      has_recording: z.boolean().optional().describe("scope='initiative' — only events with/without a recording."),
+      has_attendance: z.boolean().optional().describe("scope='initiative' — only events with/without attendance registered."),
+      window_hours: z.number().optional().describe("scope='near' — look-ahead window in hours. Default: RPC default."),
+      limit: z.number().optional().describe("scope='initiative' — page size. Default: 50."),
+      offset: z.number().optional().describe("scope='initiative' — page offset. Default: 0."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "events";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "event_search", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const scope = params.scope ?? "upcoming";
+      const warnings: string[] = [];
+      let data: unknown; let source: string[] = []; let gate = "authenticated"; let resourceId: string | null = null;
+
+      if (scope === "detail") {
+        if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "event_search", false, "Invalid event_id", start); return invalid("scope='detail' requires a valid event_id (UUID).", "Use scope='initiative' or 'upcoming' to find one."); }
+        resourceId = params.event_id;
+        const ev = await eventScope(sb, params.event_id);
+        if (ev.found && ev.initiative_id && !(await canSee(sb, "initiative", ev.initiative_id))) {
+          await logUsage(sb, member.id, "event_search", false, "Confidential/no access", start);
+          return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." }));
+        }
+        source = ["get_event_detail"]; gate = "rls_can_see_initiative (RPC + fail-fast) ";
+        const r: any = await sb.rpc("get_event_detail", { p_event_id: params.event_id });
+        if (r.error) { await logUsage(sb, member.id, "event_search", false, r.error.message, start); return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else if (scope === "near") {
+        source = ["get_near_events"]; gate = "rls_can_see_initiative (RPC) + self";
+        const args: Record<string, unknown> = { p_member_id: member.id };
+        if (params.window_hours !== undefined) args.p_window_hours = params.window_hours;
+        const r: any = await sb.rpc("get_near_events", args);
+        if (r.error) { await logUsage(sb, member.id, "event_search", false, r.error.message, start); return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? [];
+      } else if (scope === "initiative") {
+        let initiativeId: string | null = params.initiative_id ?? null;
+        if (initiativeId && !isUUID(initiativeId)) return invalid("initiative_id must be a UUID.", "Fix initiative_id.");
+        if (!initiativeId) {
+          const tribeId = params.tribe_id ?? member.tribe_id;
+          if (!tribeId) { await logUsage(sb, member.id, "event_search", false, "No tribe", start); return invalid("scope='initiative' needs initiative_id or tribe_id (you have no tribe assigned).", "Pass initiative_id or tribe_id."); }
+          initiativeId = await resolveInitiativeId(sb, tribeId);
+          if (!initiativeId) { await logUsage(sb, member.id, "event_search", false, "Initiative not found", start); return invalid(`No initiative found for tribe ${tribeId}.`, "Use initiative_directory to find one."); }
+        }
+        resourceId = initiativeId;
+        if (!(await canSee(sb, "initiative", initiativeId))) {
+          await logUsage(sb, member.id, "event_search", false, "Confidential/no access", start);
+          return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "not_found", message: "Initiative not found.", action: "It may be confidential and you are not engaged in it (ADR-0105)." }));
+        }
+        source = ["list_initiative_events"]; gate = "rls_can_see_initiative (RPC + fail-fast)";
+        const r: any = await sb.rpc("list_initiative_events", {
+          p_initiative_id: initiativeId,
+          p_types: params.types ? String(params.types).split(",").map((t: string) => t.trim()).filter(Boolean) : null,
+          p_date_from: params.date_from ?? null,
+          p_date_to: params.date_to ?? null,
+          p_has_minutes: params.has_minutes ?? null,
+          p_has_recording: params.has_recording ?? null,
+          p_has_attendance: params.has_attendance ?? null,
+          p_limit: params.limit ?? 50,
+          p_offset: params.offset ?? 0,
+        });
+        if (r.error) { await logUsage(sb, member.id, "event_search", false, r.error.message, start); return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? [];
+      } else {
+        source = ["events(table, RLS)"]; gate = "events RLS (caller-scoped client)";
+        const today = new Date().toISOString().split("T")[0];
+        const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+        const r: any = await sb.from("events").select("id, title, date, type, initiative:initiatives(legacy_tribe_id), duration_minutes, meeting_link").gte("date", today).lte("date", nextWeek).order("date");
+        if (r.error) { await logUsage(sb, member.id, "event_search", false, r.error.message, start); return ok(buildSemanticError({ tool: "event_search", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = (r.data || []).map((ev: any) => ({ ...ev, tribe_id: ev.initiative?.legacy_tribe_id ?? null, initiative: undefined }));
+      }
+
+      const n = Array.isArray(data) ? data.length : data ? 1 : 0;
+      await logUsage(sb, member.id, "event_search", true, undefined, start);
+      return semanticOk({
+        data,
+        summary: scope === "detail" ? `Evento ${params.event_id}${(data as any)?.title ? ` — ${(data as any).title}` : ""}.` : `${n} evento(s) · scope='${scope}'.`,
+        warnings,
+        next_actions: ["event_search scope='detail': o registro completo de um evento", "attendance_report: presença desse evento/ciclo", "meeting_minutes action='read': a ata"],
+        audit: { tool: "event_search", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: source, caller_member_id: member.id, gate_checked: gate, resource_id: resourceId, extra: { scope, count: n } },
+      });
+    },
+  );
+
+  // ── W3 · event_write (W) — 36 calls/180d; resource-scoped manage_event ──────
+  mcp.tool(
+    "event_write",
+    "Semantic event writer (absorbs create_tribe_event, update_event_instance 29, drop_event_instance — 36 calls/180d). Set `action`: 'create' (title + date; optional type/duration/tribe_id/initiative_id/time_start/meeting_link), 'update' (event_id + any of date/time_start/duration_minutes/meeting_link/notes/agenda_text), 'drop' (event_id; DESTRUCTIVE→confirm; force_delete_attendance to remove attendance too). Authority: manage_event RESOURCE-SCOPED to the event's initiative + the #785 gate — an initiative-scoped leader can no longer edit or delete another initiative's events (the raw tools gated on a resourceless can(), fixed raw-side in migration 455 and baked as a contract here). Stable envelope.",
+    {
+      action: z.enum(["create", "update", "drop"]).describe("Event operation."),
+      event_id: z.string().optional().describe("Event UUID — REQUIRED for update/drop."),
+      title: z.string().optional().describe("action='create' (required)."),
+      date: z.string().optional().describe("create (required) — YYYY-MM-DD. For 'update' this reschedules the event."),
+      type: z.string().optional().describe("create — tribo|geral|lideranca|kickoff|comms|webinar. Default: 'tribo'."),
+      duration_minutes: z.number().optional().describe("create (default 90) / update."),
+      tribe_id: z.number().optional().describe("create — legacy tribe id (1-8). Omit to use your own tribe."),
+      initiative_id: z.string().optional().describe("create — initiative UUID (takes precedence over tribe_id for the authority gate)."),
+      time_start: z.string().optional().describe("create/update — HH:MM."),
+      meeting_link: z.string().optional().describe("create/update — meeting URL."),
+      notes: z.string().optional().describe("update — event notes."),
+      agenda_text: z.string().optional().describe("create/update — agenda (Markdown)."),
+      force_delete_attendance: z.boolean().optional().describe("action='drop' — also delete registered attendance (otherwise the RPC refuses)."),
+      confirm: z.boolean().optional().describe("action='drop': pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "events";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "event_write", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "event_write", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "event_write", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const denied = (e: { code: string; message: string; action?: string }) => ok(buildSemanticError({ tool: "event_write", semantic_domain: dom, code: e.code, message: e.message, action: e.action }));
+
+      // Resolve the initiative that owns this write, then apply #785 + scoped manage_event.
+      let initiativeId: string | null = null; let resourceId: string | null = null; let evTitle: string | null = null;
+      if (params.action === "create") {
+        if (params.initiative_id) {
+          if (!isUUID(params.initiative_id)) return invalid("initiative_id must be a UUID.", "Fix initiative_id.");
+          initiativeId = params.initiative_id;
+        } else {
+          const tribeId = params.tribe_id ?? member.tribe_id;
+          if (tribeId) initiativeId = await resolveInitiativeId(sb, tribeId);
+        }
+        resourceId = initiativeId;
+      } else {
+        if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "event_write", false, "Invalid event_id", start); return invalid(`action='${params.action}' requires a valid event_id (UUID).`, "Use event_search to find one."); }
+        resourceId = params.event_id;
+        const ev = await eventScope(sb, params.event_id);
+        if (!ev.found) { await logUsage(sb, member.id, "event_write", false, "Event not found", start); return ok(buildSemanticError({ tool: "event_write", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." })); }
+        initiativeId = ev.initiative_id; evTitle = ev.title;
+      }
+      const gateErr = await eventWriteGate(sb, member.id, initiativeId);
+      if (gateErr) { await logUsage(sb, member.id, "event_write", false, gateErr.code, start); return denied(gateErr); }
+
+      if (params.action === "create" && (!params.title || !params.title.trim())) return invalid("action='create' requires title.", "Pass title.");
+      if (params.action === "create" && !params.date) return invalid("action='create' requires date (YYYY-MM-DD).", "Pass date.");
+
+      // ADR-0018 confirm-gate: dropping an event is irreversible.
+      if (params.action === "drop" && params.confirm !== true) {
+        const { count } = await sb.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", params.event_id) as any;
+        await logUsage(sb, member.id, "event_write", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: "drop", preview: true, target: { event_id: params.event_id, title: evTitle, attendance_rows: count ?? 0 }, next_call: { action: "drop", event_id: params.event_id, confirm: true, force_delete_attendance: (count ?? 0) > 0 ? true : undefined } },
+          summary: `PREVIEW: drop do evento ${params.event_id}${evTitle ? ` ("${evTitle}")` : ""} é IRREVERSÍVEL${(count ?? 0) > 0 ? ` e há ${count} presença(s) registrada(s)` : ""}. Reenvie com confirm=true.`,
+          warnings: ["Destructive: deletes the event permanently.", ...((count ?? 0) > 0 ? [`${count} attendance row(s) exist — the RPC refuses unless force_delete_attendance=true.`] : [])],
+          next_actions: ["event_write action='drop' confirm=true"],
+          audit: { tool: "event_write", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: [], caller_member_id: member.id, gate_checked: "rls_can_see_initiative + can(manage_event, initiative) (preview, not executed)", resource_id: resourceId, extra: { action: "drop", preview: true } },
+        });
+      }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "create": {
+          const tribeId = params.tribe_id ?? member.tribe_id ?? null;
+          rpc = "create_event"; rpcArgs = {
+            p_type: params.type || "tribo", p_title: params.title, p_date: params.date,
+            p_duration_minutes: params.duration_minutes || 90, p_tribe_id: tribeId,
+            ...(params.meeting_link ? { p_meeting_link: params.meeting_link } : {}),
+            ...(params.agenda_text ? { p_agenda_text: params.agenda_text } : {}),
+            ...(params.time_start ? { p_time_start: params.time_start } : {}),
+          }; break;
+        }
+        case "update": {
+          if (params.date === undefined && params.time_start === undefined && params.duration_minutes === undefined && params.meeting_link === undefined && params.notes === undefined && params.agenda_text === undefined) return invalid("action='update' needs at least one field (date/time_start/duration_minutes/meeting_link/notes/agenda_text).", "Pass a field.");
+          rpc = "update_event_instance"; rpcArgs = {
+            p_event_id: params.event_id, p_new_date: params.date ?? null, p_new_time_start: params.time_start ?? null,
+            p_new_duration_minutes: params.duration_minutes ?? null, p_meeting_link: params.meeting_link ?? null,
+            p_notes: params.notes ?? null, p_agenda_text: params.agenda_text ?? null,
+          }; break;
+        }
+        case "drop": rpc = "drop_event_instance"; rpcArgs = { p_event_id: params.event_id, p_force_delete_attendance: params.force_delete_attendance === true }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc!, rpcArgs!);
+      if (error) { await logUsage(sb, member.id, "event_write", false, error.message, start); return ok(buildSemanticError({ tool: "event_write", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      await logUsage(sb, member.id, "event_write", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, event_id: params.action === "create" ? (data ?? null) : params.event_id, result: data ?? null },
+        summary: `event_write action='${params.action}' ok${params.action === "create" ? ` (novo evento ${data ?? "?"})` : ` (evento ${params.event_id})`}.`,
+        next_actions: ["event_search scope='detail': re-ler o evento", "attendance_record: registrar presença", "meeting_minutes action='write': escrever a ata"],
+        audit: { tool: "event_write", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: [rpc!], caller_member_id: member.id, gate_checked: initiativeId ? "rls_can_see_initiative + can(manage_event, initiative)" : "can(manage_event) — org-wide event, no initiative to scope to", resource_id: resourceId, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W3 · attendance_record (W) — 166 calls/180d; register_attendance = #3 tool ──
+  mcp.tool(
+    "attendance_record",
+    "Semantic attendance writer (absorbs register_attendance 132 — the #3 tool overall —, mark_member_excused, bulk_mark_excused, register_showcase 17 — 166 calls/180d). Set `action`: 'register' (event_id + member_ids — batch-capable; present=false is a no-op by design, absence is the default state), 'excuse' (event_id + member_id + reason; excused=false reverts), 'bulk_excuse' (member_id + date_from + date_to + reason — excuses a member across a date range), 'showcase' (event_id + member_id + showcase_type — awards 15-25 XP). Authority: manage_event scoped to the event's initiative + #785. Attribution: the RPC records registered_by/marked_by, which is what distinguishes self check-in from a leader's batch (#1322) — NOT checked_in_at. Stable envelope.",
+    {
+      action: z.enum(["register", "excuse", "bulk_excuse", "showcase"]).describe("Attendance operation."),
+      event_id: z.string().optional().describe("Event UUID — REQUIRED for register/excuse/showcase."),
+      member_id: z.string().optional().describe("Member UUID — REQUIRED for excuse/bulk_excuse/showcase."),
+      member_ids: z.string().optional().describe("action='register' — comma-separated member UUIDs (batch). Falls back to member_id, then to yourself."),
+      excused: z.boolean().optional().describe("action='excuse' — false reverts a previously-excused absence. Default: true."),
+      reason: z.string().optional().describe("excuse/bulk_excuse — justification."),
+      date_from: z.string().optional().describe("action='bulk_excuse' (required) — YYYY-MM-DD."),
+      date_to: z.string().optional().describe("action='bulk_excuse' (required) — YYYY-MM-DD."),
+      override_existing: z.boolean().optional().describe("action='bulk_excuse' — overwrite non-excused attendance already registered. Default: false."),
+      showcase_type: z.enum(["case_study", "tool_review", "prompt_week", "quick_insight", "awareness"]).optional().describe("action='showcase' (required) — case_study 25XP, tool_review/prompt_week 20XP, quick_insight/awareness 15XP."),
+      title: z.string().optional().describe("action='showcase' — presentation title."),
+      notes: z.string().optional().describe("action='showcase' — brief description."),
+      duration_min: z.number().optional().describe("action='showcase' — duration in minutes."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "attendance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "attendance_record", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const denied = (e: { code: string; message: string; action?: string }) => ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: e.code, message: e.message, action: e.action }));
+
+      // bulk_excuse is member-scoped (no single event): the RPC gates it itself — a resourceless
+      // manage_event pre-gate FOLLOWED BY an inline scope check (caller must share an active
+      // initiative with the target, unless org-scoped). Pass through rather than re-derive it.
+      if (params.action === "bulk_excuse") {
+        if (!isUUID(params.member_id ?? "")) return invalid("action='bulk_excuse' requires member_id (UUID).", "Pass member_id.");
+        if (!params.date_from || !params.date_to) return invalid("action='bulk_excuse' requires date_from and date_to (YYYY-MM-DD).", "Pass the date range.");
+        const { data, error } = await sb.rpc("bulk_mark_excused", { p_member_id: params.member_id, p_date_from: params.date_from, p_date_to: params.date_to, p_reason: params.reason ?? null, p_override_existing: params.override_existing === true });
+        if (error) { await logUsage(sb, member.id, "attendance_record", false, error.message, start); return ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: "unauthorized", message: error.message, action: "bulk_excuse requires manage_event AND sharing an active initiative with the target member." })); }
+        await logUsage(sb, member.id, "attendance_record", true, undefined, start);
+        return semanticOk({
+          data: { action: "bulk_excuse", member_id: params.member_id, result: data ?? null },
+          summary: `bulk_excuse ok — ${(data as any)?.events_marked ?? 0} evento(s) marcados como justificados entre ${params.date_from} e ${params.date_to}.`,
+          warnings: params.override_existing === true ? ["override_existing=true: events_skipped is reported as 0 (N/A in override mode), not 'nothing was skipped'."] : [],
+          next_actions: ["attendance_report scope='member': conferir o histórico do membro"],
+          audit: { tool: "attendance_record", semantic_domain: dom, pii_level: "low", permission: "manage_event + shared-initiative (RPC-enforced)", source_tools: ["bulk_mark_excused"], caller_member_id: member.id, gate_checked: "RPC inline scope (org-scope OR shares an active initiative with target)", resource_id: params.member_id, extra: { action: "bulk_excuse" } },
+        });
+      }
+
+      if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "attendance_record", false, "Invalid event_id", start); return invalid(`action='${params.action}' requires a valid event_id (UUID).`, "Use event_search to find one."); }
+      const ev = await eventScope(sb, params.event_id);
+      if (!ev.found) { await logUsage(sb, member.id, "attendance_record", false, "Event not found", start); return ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." })); }
+      const gateErr = await eventWriteGate(sb, member.id, ev.initiative_id);
+      if (gateErr) { await logUsage(sb, member.id, "attendance_record", false, gateErr.code, start); return denied(gateErr); }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>; let summary: string;
+      switch (params.action) {
+        case "register": {
+          const ids: string[] = params.member_ids
+            ? String(params.member_ids).split(",").map((s: string) => s.trim()).filter(Boolean)
+            : [params.member_id || member.id];
+          const bad = ids.filter((i) => !isUUID(i));
+          if (bad.length) return invalid(`member_ids contains non-UUID value(s): ${bad.join(", ")}.`, "Pass member UUIDs (use member_search).");
+          rpc = "register_attendance_batch"; rpcArgs = { p_event_id: params.event_id, p_member_ids: ids, p_registered_by: member.id };
+          summary = `Presença registrada para ${ids.length} membro(s) no evento ${params.event_id}.`; break;
+        }
+        case "excuse": {
+          if (!isUUID(params.member_id ?? "")) return invalid("action='excuse' requires member_id (UUID).", "Pass member_id.");
+          rpc = "mark_member_excused"; rpcArgs = { p_event_id: params.event_id, p_member_id: params.member_id, p_excused: params.excused !== false, p_reason: params.reason ?? null };
+          summary = `${params.excused === false ? "Justificativa revertida" : "Ausência justificada"} para o membro ${params.member_id}.`; break;
+        }
+        case "showcase": {
+          if (!isUUID(params.member_id ?? "")) return invalid("action='showcase' requires member_id (UUID).", "Pass member_id.");
+          if (!params.showcase_type) return invalid("action='showcase' requires showcase_type.", "Pass showcase_type.");
+          rpc = "register_event_showcase"; rpcArgs = { p_event_id: params.event_id, p_member_id: params.member_id, p_showcase_type: params.showcase_type, p_title: params.title ?? null, p_notes: params.notes ?? null, p_duration_min: params.duration_min ?? null };
+          summary = `Showcase '${params.showcase_type}' registrado para o membro ${params.member_id}.`; break;
+        }
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc!, rpcArgs!);
+      if (error) { await logUsage(sb, member.id, "attendance_record", false, error.message, start); return ok(buildSemanticError({ tool: "attendance_record", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      await logUsage(sb, member.id, "attendance_record", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, event_id: params.event_id, result: data ?? null },
+        summary,
+        next_actions: ["attendance_report scope='event': conferir a grade do evento", "meeting_minutes action='close': fechar a reunião"],
+        audit: { tool: "attendance_record", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: [rpc!], caller_member_id: member.id, gate_checked: ev.initiative_id ? "rls_can_see_initiative + can(manage_event, initiative)" : "can(manage_event) — org-wide event", resource_id: params.event_id, extra: { action: params.action, registered_by: member.id } },
+      });
+    },
+  );
+
+  // ── W3 · attendance_report (R) — 20 calls/180d; ADDS the #785 gate ──────────
+  mcp.tool(
+    "attendance_report",
+    "Semantic attendance reader (absorbs get_my_tribe_attendance, get_attendance_ranking, get_my_attendance_history, get_my_attendance_hours, get_event_attendance_health, get_cycle_attendance_overview — 20 calls/180d). Set `scope`: 'tribe' (attendance grid for a tribe/initiative), 'ranking' (members by attendance rate), 'mine' (your own history), 'hours' (your — or, with view_internal_analytics, another member's — attendance hours for a cycle), 'health' (org-wide events missing attendance), 'cycle' (per-cycle overview). Read-only. Self scopes are free; cross-member/cross-tribe reads require view_internal_analytics, and the tribe grid ADDS the #785 confidential gate that the underlying RPC lacks. Stable envelope.",
+    {
+      scope: z.enum(["tribe", "ranking", "mine", "hours", "health", "cycle"]).optional().describe("Which report. Default: 'mine'."),
+      tribe_id: z.number().optional().describe("scope='tribe' — legacy tribe id (1-8). Omit to use your own tribe."),
+      initiative_id: z.string().optional().describe("scope='tribe' — initiative UUID (takes precedence over tribe_id)."),
+      member_id: z.string().optional().describe("scope='hours' — another member (requires view_internal_analytics). Omit for yourself."),
+      cycle_code: z.string().optional().describe("scope='hours'/'cycle' — cycle code (e.g. 'C4'). Omit for the current cycle."),
+      event_type: z.string().optional().describe("scope='tribe' — restrict the grid to one event type."),
+      limit: z.number().optional().describe("scope='mine' — number of records. Default: 20."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "attendance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "attendance_report", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const scope = params.scope ?? "mine";
+      const warnings: string[] = [];
+      let data: unknown; let source: string[] = []; let gate = "self"; let resourceId: string | null = null; let perm = "authenticated (self)";
+
+      // Cross-member / cross-cohort surfaces need the analytics capability.
+      const needsAnalytics = scope === "ranking" || scope === "health" || scope === "cycle" || (scope === "hours" && !!params.member_id && params.member_id !== member.id);
+      if (needsAnalytics && !(await canV4(sb, member.id, "view_internal_analytics"))) {
+        await logUsage(sb, member.id, "attendance_report", false, "Unauthorized", start);
+        return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "unauthorized", message: `scope='${scope}' reads across members and requires view_internal_analytics.`, action: "Use scope='mine' for your own attendance, or ask a leader / GP." }));
+      }
+
+      if (scope === "tribe") {
+        let initiativeId: string | null = params.initiative_id ?? null;
+        if (initiativeId && !isUUID(initiativeId)) return invalid("initiative_id must be a UUID.", "Fix initiative_id.");
+        if (!initiativeId) {
+          const tribeId = params.tribe_id ?? member.tribe_id;
+          if (!tribeId) { await logUsage(sb, member.id, "attendance_report", false, "No tribe", start); return invalid("scope='tribe' needs initiative_id or tribe_id (you have no tribe assigned).", "Pass initiative_id or tribe_id."); }
+          initiativeId = await resolveInitiativeId(sb, tribeId);
+          if (!initiativeId) { await logUsage(sb, member.id, "attendance_report", false, "Initiative not found", start); return invalid(`No initiative found for tribe ${tribeId}.`, "Use initiative_directory to find one."); }
+        }
+        resourceId = initiativeId;
+        // #785 ADDED here: get_initiative_attendance_grid has no confidential gate of its own.
+        if (!(await canSee(sb, "initiative", initiativeId))) {
+          await logUsage(sb, member.id, "attendance_report", false, "Confidential/no access", start);
+          return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "not_found", message: "Initiative not found.", action: "It may be confidential and you are not engaged in it (ADR-0105)." }));
+        }
+        source = ["get_initiative_attendance_grid"]; gate = "rls_can_see_initiative (ADDED at this layer)"; perm = "authenticated + #785";
+        const r: any = await sb.rpc("get_initiative_attendance_grid", { p_initiative_id: initiativeId, ...(params.event_type ? { p_event_type: params.event_type } : {}) });
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else if (scope === "ranking") {
+        source = ["get_attendance_panel"]; gate = "view_internal_analytics"; perm = "view_internal_analytics";
+        const r: any = await sb.rpc("get_attendance_panel");
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else if (scope === "hours") {
+        const target = params.member_id && isUUID(params.member_id) ? params.member_id : member.id;
+        resourceId = target;
+        source = ["get_member_attendance_hours"]; gate = target === member.id ? "self" : "view_internal_analytics"; perm = target === member.id ? "authenticated (self)" : "view_internal_analytics";
+        const r: any = await sb.rpc("get_member_attendance_hours", { p_member_id: target, ...(params.cycle_code ? { p_cycle_code: params.cycle_code } : {}) });
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else if (scope === "health") {
+        source = ["get_event_attendance_health"]; gate = "view_internal_analytics"; perm = "view_internal_analytics";
+        const r: any = await sb.rpc("get_event_attendance_health");
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else if (scope === "cycle") {
+        source = ["get_cycle_attendance_overview"]; gate = "view_internal_analytics"; perm = "view_internal_analytics";
+        const r: any = await sb.rpc("get_cycle_attendance_overview", { ...(params.cycle_code ? { p_cycle_code: params.cycle_code } : {}) });
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? null;
+      } else {
+        source = ["get_my_attendance_history"]; gate = "self (auth.uid → member)"; resourceId = member.id;
+        const r: any = await sb.rpc("get_my_attendance_history", { p_limit: params.limit ?? 20 });
+        if (r.error) { await logUsage(sb, member.id, "attendance_report", false, r.error.message, start); return ok(buildSemanticError({ tool: "attendance_report", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        data = r.data ?? [];
+      }
+
+      const n = Array.isArray(data) ? data.length : data ? 1 : 0;
+      await logUsage(sb, member.id, "attendance_report", true, undefined, start);
+      return semanticOk({
+        data,
+        summary: `Relatório de presença · scope='${scope}'${Array.isArray(data) ? ` · ${n} registro(s)` : ""}.`,
+        warnings,
+        next_actions: ["attendance_record: registrar presença ou justificar ausência", "event_search: encontrar o evento"],
+        audit: { tool: "attendance_report", semantic_domain: dom, pii_level: scope === "mine" || scope === "hours" ? "self" : "low", permission: perm, source_tools: source, caller_member_id: member.id, gate_checked: gate, resource_id: resourceId, extra: { scope } },
+      });
+    },
+  );
+
+  // ── W3 · meeting_minutes (R/W) — 43 calls/180d; carries the #1384 fix as contract ──
+  mcp.tool(
+    "meeting_minutes",
+    "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: get_agenda_smart is intentionally NOT absorbed — it is retired (see docs). Stable envelope.",
+    {
+      action: z.enum(["read", "prepare", "write", "close"]).describe("Minutes operation."),
+      event_id: z.string().optional().describe("Event UUID — REQUIRED for prepare/write/close."),
+      tribe_id: z.number().optional().describe("action='read' — legacy tribe id (1-8). Omit to use your own tribe."),
+      initiative_id: z.string().optional().describe("action='read' — initiative UUID (takes precedence over tribe_id)."),
+      content: z.string().optional().describe("action='write' (required) — minutes body in Markdown."),
+      decisions: z.string().optional().describe("action='write' — key decisions, ONE PER LINE (newline-separated). Do NOT comma-separate: commas inside a decision are preserved verbatim."),
+      action_items: z.string().optional().describe("action='write' — action items, ONE PER LINE (newline-separated). Prefer meeting_actions action='create' for items you want tracked as structured rows."),
+      minutes_url: z.string().optional().describe("action='write' — external minutes URL."),
+      summary: z.string().optional().describe("action='close' — a closing summary appended to the event notes."),
+      suggested_champion_ids: z.string().optional().describe("action='close' — comma-separated member UUIDs suggested as champions (max 10, must be in your organization)."),
+      limit: z.number().optional().describe("action='read' — how many recent minutes. Default: 5."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "meetings";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "meeting_minutes", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const denied = (e: { code: string; message: string; action?: string }) => ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: e.code, message: e.message, action: e.action }));
+
+      // ── read: a list scoped to an initiative (#785 fail-fast) ────────────────
+      if (params.action === "read") {
+        let initiativeId: string | null = params.initiative_id ?? null;
+        if (initiativeId && !isUUID(initiativeId)) return invalid("initiative_id must be a UUID.", "Fix initiative_id.");
+        if (!initiativeId) {
+          const tribeId = params.tribe_id ?? member.tribe_id;
+          if (!tribeId) { await logUsage(sb, member.id, "meeting_minutes", false, "No tribe", start); return invalid("action='read' needs initiative_id or tribe_id (you have no tribe assigned).", "Pass initiative_id or tribe_id."); }
+          initiativeId = await resolveInitiativeId(sb, tribeId);
+          if (!initiativeId) { await logUsage(sb, member.id, "meeting_minutes", false, "Initiative not found", start); return invalid(`No initiative found for tribe ${tribeId}.`, "Use initiative_directory to find one."); }
+        }
+        if (!(await canSee(sb, "initiative", initiativeId))) {
+          await logUsage(sb, member.id, "meeting_minutes", false, "Confidential/no access", start);
+          return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "not_found", message: "Initiative not found.", action: "It may be confidential and you are not engaged in it (ADR-0105)." }));
+        }
+        const r: any = await sb.from("events")
+          .select("id, title, date, type, initiative_id, minutes_text, minutes_posted_at, minutes_posted_by, agenda_text, duration_minutes")
+          .eq("initiative_id", initiativeId).not("minutes_text", "is", null)
+          .order("date", { ascending: false }).limit(params.limit ?? 5);
+        if (r.error) { await logUsage(sb, member.id, "meeting_minutes", false, r.error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
+        return semanticOk({
+          data: r.data ?? [],
+          summary: `${(r.data ?? []).length} ata(s) recente(s).`,
+          next_actions: ["meeting_minutes action='write': atualizar uma ata", "meeting_actions action='list': ações em aberto"],
+          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "authenticated + #785", source_tools: ["events(table, RLS)"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative (fail-fast) + events RLS", resource_id: initiativeId, extra: { action: "read" } },
+        });
+      }
+
+      // ── prepare / write / close: all event-scoped ───────────────────────────
+      if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "meeting_minutes", false, "Invalid event_id", start); return invalid(`action='${params.action}' requires a valid event_id (UUID).`, "Use event_search to find one."); }
+      const ev = await eventScope(sb, params.event_id);
+      if (!ev.found) { await logUsage(sb, member.id, "meeting_minutes", false, "Event not found", start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." })); }
+
+      if (params.action === "prepare") {
+        // Read-only: the RPC carries its own #785 gate; re-check fail-fast for a clean envelope.
+        if (ev.initiative_id && !(await canSee(sb, "initiative", ev.initiative_id))) {
+          await logUsage(sb, member.id, "meeting_minutes", false, "Confidential/no access", start);
+          return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." }));
+        }
+        const r: any = await sb.rpc("get_meeting_preparation", { p_event_id: params.event_id });
+        if (r.error) { await logUsage(sb, member.id, "meeting_minutes", false, r.error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: r.error.message })); }
+        await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
+        return semanticOk({
+          data: r.data ?? null,
+          summary: `Briefing da reunião ${ev.title ?? params.event_id}${ev.date ? ` (${ev.date})` : ""}.`,
+          next_actions: ["attendance_record action='register': registrar presença", "meeting_minutes action='write': escrever a ata"],
+          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "authenticated + #785", source_tools: ["get_meeting_preparation"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative (RPC + fail-fast)", resource_id: params.event_id, extra: { action: "prepare" } },
+        });
+      }
+
+      const gateErr = await eventWriteGate(sb, member.id, ev.initiative_id);
+      if (gateErr) { await logUsage(sb, member.id, "meeting_minutes", false, gateErr.code, start); return denied(gateErr); }
+
+      if (params.action === "write") {
+        if (!params.content || !params.content.trim()) return invalid("action='write' requires content.", "Pass content (Markdown).");
+        let text = params.content;
+        if (params.decisions && params.decisions.trim()) text += `\n\n## Decisões\n` + String(params.decisions).split("\n").map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- ${l}`).join("\n");
+        if (params.action_items && params.action_items.trim()) text += `\n\n## Ações\n` + String(params.action_items).split("\n").map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- [ ] ${l}`).join("\n");
+        const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: text, p_url: params.minutes_url ?? null });
+        if (error) { await logUsage(sb, member.id, "meeting_minutes", false, error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
+        return semanticOk({
+          data: { action: "write", event_id: params.event_id, result: data ?? null },
+          summary: `Ata salva no evento ${ev.title ?? params.event_id}.`,
+          warnings: params.action_items && params.action_items.trim() ? ["action_items were appended as Markdown checkboxes, not structured rows — use meeting_actions action='create' so they can be tracked and resolved."] : [],
+          next_actions: ["meeting_actions action='create': registrar ações rastreáveis", "meeting_minutes action='close': fechar a reunião"],
+          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: ["upsert_event_minutes"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative + can(manage_event, initiative) + RPC _can_manage_event", resource_id: params.event_id, extra: { action: "write" } },
+        });
+      }
+
+      if (params.action === "close") {
+        const champs = params.suggested_champion_ids ? String(params.suggested_champion_ids).split(",").map((s: string) => s.trim()).filter(Boolean) : null;
+        if (champs) {
+          const bad = champs.filter((c: string) => !isUUID(c));
+          if (bad.length) return invalid(`suggested_champion_ids contains non-UUID value(s): ${bad.join(", ")}.`, "Pass member UUIDs (use member_search).");
+        }
+        const { data, error } = await sb.rpc("meeting_close", { p_event_id: params.event_id, p_summary: params.summary ?? null, p_suggested_champion_ids: champs });
+        if (error) { await logUsage(sb, member.id, "meeting_minutes", false, error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        const d: any = data ?? {};
+        await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
+        return semanticOk({
+          data: { action: "close", event_id: params.event_id, result: d },
+          summary: `Reunião ${d.event_title ?? ev.title ?? params.event_id} ${d.already_closed ? "já estava fechada" : "fechada"} · ${d.action_count ?? 0} ação(ões), ${d.decision_count ?? 0} decisão(ões), ${d.unresolved_actions ?? 0} em aberto.`,
+          warnings: d.drift_signal ? [`${d.structured_drift} ação(ões) aparecem só como checkbox na ata, sem row estruturada — registre-as via meeting_actions action='create'.`] : [],
+          next_actions: ["meeting_actions action='list' unresolved_only=true: o que ficou em aberto", "attendance_report scope='event': conferir presença"],
+          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: ["meeting_close"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative + can(manage_event, initiative) + RPC _manage_event_scope_ok", resource_id: params.event_id, extra: { action: "close" } },
+        });
+      }
+      return invalid(`Unknown action '${params.action}'.`);
+    },
+  );
+
+  // ── W3 · meeting_actions (R/W) — 37 calls/180d; carries the migration-455 fixes ──
+  mcp.tool(
+    "meeting_actions",
+    "Semantic action-item + decision tool for meetings (absorbs create_action_item 21, resolve_action_item, list_meeting_action_items, convert_action_to_card, register_decision 15, get_decision_log — 37 calls/180d). Set `action`: 'create' (event_id + description; optional assignee_id/due_date/kind), 'resolve' (action_item_id; optional resolution_note, or carry_to_event_id to carry it into a later meeting), 'list' (filter by event_id/assignee_id/status/kind/unresolved_only), 'convert_to_card' (action_item_id + board_id — turns an action into a board card), 'decision' (event_id + title; optional description + related_card_ids), 'decision_log' (the governance ADR log from the wiki; optional text filter). Authority: manage_event scoped to the event's initiative (migration 455 closed the resourceless gate on create/resolve/decision); convert_to_card additionally needs write_board. Stable envelope.",
+    {
+      action: z.enum(["create", "resolve", "list", "convert_to_card", "decision", "decision_log"]).describe("Operation."),
+      event_id: z.string().optional().describe("Event UUID — REQUIRED for create/decision; optional filter for 'list'."),
+      action_item_id: z.string().optional().describe("Action item UUID — REQUIRED for resolve/convert_to_card."),
+      description: z.string().optional().describe("action='create' (required) — what has to be done."),
+      assignee_id: z.string().optional().describe("create — member UUID responsible; 'list' — filter by assignee."),
+      due_date: z.string().optional().describe("create/convert_to_card — YYYY-MM-DD."),
+      kind: z.enum(["action", "decision", "followup", "general"]).optional().describe("create — item kind. Default: 'action'. Also a 'list' filter."),
+      resolution_note: z.string().optional().describe("action='resolve' — how it was resolved."),
+      carry_to_event_id: z.string().optional().describe("action='resolve' — carry the item into this future event (creates a fresh open item there; requires manage_event on THAT event's initiative too)."),
+      status: z.string().optional().describe("action='list' — filter by status (open|done|cancelled|carried_over)."),
+      unresolved_only: z.boolean().optional().describe("action='list' — only items still open. Default: false."),
+      board_id: z.string().optional().describe("action='convert_to_card' (required) — destination board UUID."),
+      title: z.string().optional().describe("action='decision' (required) — the decision. Also an optional card title override for convert_to_card."),
+      related_card_ids: z.string().optional().describe("action='decision' — comma-separated card UUIDs the decision relates to."),
+      filter: z.string().optional().describe("action='decision_log' — free-text search over the governance ADR log."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "meetings";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "meeting_actions", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+      const denied = (e: { code: string; message: string; action?: string }) => ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: e.code, message: e.message, action: e.action }));
+      const fail = (m: string) => ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "internal_error", message: m }));
+
+      // ── reads: list + decision_log (both #785-filtered inside their RPCs) ────
+      if (params.action === "list") {
+        const r: any = await sb.rpc("list_meeting_action_items", {
+          p_event_id: params.event_id && isUUID(params.event_id) ? params.event_id : null,
+          p_status: params.status ?? null,
+          p_assignee_id: params.assignee_id && isUUID(params.assignee_id) ? params.assignee_id : null,
+          p_kind: params.kind ?? null,
+          p_unresolved_only: params.unresolved_only === true,
+        });
+        if (r.error) { await logUsage(sb, member.id, "meeting_actions", false, r.error.message, start); return fail(r.error.message); }
+        const rows = r.data ?? [];
+        await logUsage(sb, member.id, "meeting_actions", true, undefined, start);
+        return semanticOk({
+          data: rows,
+          summary: `${Array.isArray(rows) ? rows.length : 0} item(ns)${params.unresolved_only === true ? " em aberto" : ""}.`,
+          next_actions: ["meeting_actions action='resolve': fechar um item", "meeting_actions action='convert_to_card': virar card do board"],
+          audit: { tool: "meeting_actions", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["list_meeting_action_items"], caller_member_id: member.id, gate_checked: "RPC filters by rls_can_see_initiative + rls_can_see_item (#785)", resource_id: params.event_id ?? null, extra: { action: "list" } },
+        });
+      }
+      if (params.action === "decision_log") {
+        const r: any = await sb.rpc("get_decision_log", { p_filter: params.filter ?? null });
+        if (r.error) { await logUsage(sb, member.id, "meeting_actions", false, r.error.message, start); return fail(r.error.message); }
+        await logUsage(sb, member.id, "meeting_actions", true, undefined, start);
+        return semanticOk({
+          data: r.data ?? [],
+          summary: `${(r.data ?? []).length} ADR(s) no log de decisões de governança${params.filter ? ` para '${params.filter}'` : ""}.`,
+          next_actions: ["search_nucleo_knowledge: buscar o conteúdo de uma ADR"],
+          audit: { tool: "meeting_actions", semantic_domain: dom, pii_level: "none", permission: "authenticated", source_tools: ["get_decision_log"], caller_member_id: member.id, gate_checked: "governance ADR pages (wiki_pages, domain='governance')", resource_id: null, extra: { action: "decision_log" } },
+        });
+      }
+
+      // ── writes: resolve the owning event, then gate ──────────────────────────
+      let eventId: string | null = null;
+      if (params.action === "create" || params.action === "decision") {
+        if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "meeting_actions", false, "Invalid event_id", start); return invalid(`action='${params.action}' requires a valid event_id (UUID).`, "Use event_search to find one."); }
+        eventId = params.event_id;
+      } else {
+        if (!isUUID(params.action_item_id ?? "")) { await logUsage(sb, member.id, "meeting_actions", false, "Invalid action_item_id", start); return invalid(`action='${params.action}' requires a valid action_item_id (UUID).`, "Use action='list' to find one."); }
+        const { data: item, error: itemErr } = await sb.from("meeting_action_items").select("id, event_id, description, board_item_id").eq("id", params.action_item_id).maybeSingle();
+        if (itemErr) { await logUsage(sb, member.id, "meeting_actions", false, itemErr.message, start); return fail(itemErr.message); }
+        if (!item) { await logUsage(sb, member.id, "meeting_actions", false, "Action item not found", start); return ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "not_found", message: "Action item not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." })); }
+        eventId = (item as any).event_id;
+      }
+      const ev = eventId ? await eventScope(sb, eventId) : { found: false, initiative_id: null, title: null, date: null };
+      if (!ev.found) { await logUsage(sb, member.id, "meeting_actions", false, "Event not found", start); return ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "not_found", message: "Event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." })); }
+      const gateErr = await eventWriteGate(sb, member.id, ev.initiative_id);
+      if (gateErr) { await logUsage(sb, member.id, "meeting_actions", false, gateErr.code, start); return denied(gateErr); }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>; let summary: string;
+      switch (params.action) {
+        case "create": {
+          if (!params.description || !params.description.trim()) return invalid("action='create' requires description.", "Pass description.");
+          if (params.assignee_id && !isUUID(params.assignee_id)) return invalid("assignee_id must be a UUID.", "Use member_search to find one.");
+          rpc = "create_action_item"; rpcArgs = { p_event_id: eventId, p_description: params.description, p_assignee_id: params.assignee_id ?? null, p_due_date: params.due_date ?? null, p_kind: params.kind ?? "action" };
+          summary = `Ação registrada na reunião ${ev.title ?? eventId}.`; break;
+        }
+        case "resolve": {
+          if (params.carry_to_event_id) {
+            if (!isUUID(params.carry_to_event_id)) return invalid("carry_to_event_id must be a UUID.", "Fix carry_to_event_id.");
+            // The carry target is a second write: gate it independently (mirrors migration 455).
+            const tgt = await eventScope(sb, params.carry_to_event_id);
+            if (!tgt.found) return ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "not_found", message: "carry_to_event not found.", action: "It may belong to a confidential initiative you are not engaged in (ADR-0105)." }));
+            const tgtErr = await eventWriteGate(sb, member.id, tgt.initiative_id);
+            if (tgtErr) { await logUsage(sb, member.id, "meeting_actions", false, "carry target denied", start); return denied({ ...tgtErr, message: `Carry-forward target: ${tgtErr.message}` }); }
+          }
+          rpc = "resolve_action_item"; rpcArgs = { p_action_item_id: params.action_item_id, p_resolution_note: params.resolution_note ?? null, p_carry_to_event_id: params.carry_to_event_id ?? null };
+          summary = params.carry_to_event_id ? `Item carregado para o evento ${params.carry_to_event_id} (status 'carried_over').` : `Item resolvido (status 'done').`; break;
+        }
+        case "convert_to_card": {
+          if (!isUUID(params.board_id ?? "")) return invalid("action='convert_to_card' requires board_id (UUID).", "Use board_overview to find one.");
+          if (!(await canSee(sb, "board", params.board_id))) { await logUsage(sb, member.id, "meeting_actions", false, "Confidential/no access (board)", start); return denied({ code: "unauthorized", message: "You cannot see the destination board (confidential initiative or no access).", action: "Pick a board you have access to." }); }
+          if (!(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "meeting_actions", false, "Unauthorized (write_board)", start); return denied({ code: "unauthorized", message: "Converting an action into a card also requires write_board.", action: "Ask a tribe leader / GP." }); }
+          rpc = "convert_action_to_card"; rpcArgs = { p_action_item_id: params.action_item_id, p_board_id: params.board_id, p_title: params.title ?? null, p_description: params.description ?? null, p_due_date: params.due_date ?? null };
+          summary = `Ação convertida em card no board ${params.board_id}.`; break;
+        }
+        case "decision": {
+          if (!params.title || !params.title.trim()) return invalid("action='decision' requires title.", "Pass title.");
+          const cards = params.related_card_ids ? String(params.related_card_ids).split(",").map((s: string) => s.trim()).filter(Boolean) : null;
+          if (cards) {
+            const bad = cards.filter((c: string) => !isUUID(c));
+            if (bad.length) return invalid(`related_card_ids contains non-UUID value(s): ${bad.join(", ")}.`, "Pass card UUIDs (use card_search).");
+          }
+          rpc = "register_decision"; rpcArgs = { p_event_id: eventId, p_title: params.title, p_description: params.description ?? null, p_related_card_ids: cards };
+          summary = `Decisão registrada na reunião ${ev.title ?? eventId}.`; break;
+        }
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc!, rpcArgs!);
+      if (error) { await logUsage(sb, member.id, "meeting_actions", false, error.message, start); return fail(error.message); }
+      if ((data as any)?.error) { await logUsage(sb, member.id, "meeting_actions", false, (data as any).error, start); return ok(buildSemanticError({ tool: "meeting_actions", semantic_domain: dom, code: "invalid_input", message: String((data as any).error), action: "Check the ids and try again." })); }
+      await logUsage(sb, member.id, "meeting_actions", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, event_id: eventId, result: data ?? null },
+        summary,
+        next_actions: ["meeting_actions action='list' unresolved_only=true: o que segue em aberto", "meeting_minutes action='close': fechar a reunião"],
+        audit: { tool: "meeting_actions", semantic_domain: dom, pii_level: "low", permission: params.action === "convert_to_card" ? "manage_event (initiative-scoped) + write_board" : "manage_event (initiative-scoped)", source_tools: [rpc!], caller_member_id: member.id, gate_checked: ev.initiative_id ? "rls_can_see_initiative + can(manage_event, initiative) + RPC _manage_event_scope_ok" : "can(manage_event) — org-wide event", resource_id: eventId, extra: { action: params.action } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -9755,7 +10408,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.4.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.5.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -9804,10 +10457,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.82.0",
+  ef_version: "2.83.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.4.0", tools: 21 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.5.0", tools: 27 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

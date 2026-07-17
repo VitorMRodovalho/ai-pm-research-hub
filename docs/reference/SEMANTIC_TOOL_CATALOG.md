@@ -168,6 +168,60 @@ the caller has `view_pii`. Two raw-RPC failure fixes are baked in (migration `20
 
 ---
 
+## Wave 3 — Events, attendance & meetings (shipped 2026-07-16)
+
+6 tools absorbing the event domain (393 calls/180d; `register_attendance` is the #3 tool overall at 132).
+`/semantic` 21 → 27 (`nucleo-ia-semantic@0.5.0`, `ef_version 2.83.0`). Authority is the theme: the Wave-0
+CONFIRMED finding was a **resourceless `can_by_member(caller, 'manage_event')`** — any manage_event holder
+could write to every initiative's events. Migration 444 (#1384) scoped four paths; this wave re-verified
+them live and extended the same helper (`_manage_event_scope_ok`) to **five more** in migration
+`20260805000455`: `create_action_item`, `register_decision`, `resolve_action_item`, `update_event_instance`
+and `drop_event_instance`. Proven live before/after with an impersonated, rolled-back probe: an
+initiative-scoped leader writing into another initiative's meeting went from `success: true` to denied,
+while the same leader's own initiative and an org-scoped holder stayed allowed.
+
+Two live failure fixes ride along: `resolve_action_item` wrote `status` values (`carried_forward`,
+`completed`) that the live CHECK constraint rejects — every call failed; it now writes `done` /
+`carried_over`. (The historical `register_decision` 8F / `create_action_item` 6F were the same
+constraint class, already fixed in their live bodies — the failure log is 180d wide and predates the fix.)
+
+`get_agenda_smart` is **retired** from the semantic surface (it raises `record "v_initiative" is not
+assigned yet` for any event with no initiative). `get_meeting_preparation` has the identical latent bug
+and is tracked as a follow-up — `meeting_minutes action='prepare'` surfaces it rather than hiding it.
+
+### `event_search` (R)
+- **Intent:** find events. **`scope`:** `upcoming` (next 7 days) · `near` (check-in window, self) · `initiative` (filtered list + pagination) · `detail` (one event).
+- **Absorbs:** `list_initiative_events` (41) · `get_event_detail` (31) · `get_upcoming_events` (12) · `get_near_events` (7).
+- **Gate:** authenticated; #785 already lives in the source RPCs and is re-checked fail-fast for `detail`/`initiative`.
+
+### `event_write` (W)
+- **Intent:** the event lifecycle. **`action`:** `create` · `update` (reschedule/link/agenda) · `drop` (DESTRUCTIVE → `confirm=true`, ADR-0018).
+- **Absorbs:** `create_tribe_event` · `update_event_instance` (29) · `drop_event_instance`.
+- **Gate:** `eventWriteGate()` = `canSee(initiative)` + **`can(manage_event, resource=event.initiative_id)`** — fixes the cross-initiative edit/delete bypass.
+
+### `attendance_record` (W)
+- **Intent:** who was there. **`action`:** `register` (batch-capable; the #3 tool) · `excuse` · `bulk_excuse` (date range) · `showcase` (15-25 XP).
+- **Absorbs:** `register_attendance` (132) · `mark_member_excused` · `bulk_mark_excused` · `register_showcase` (17).
+- **Gate:** `eventWriteGate()` (initiative-scoped `manage_event` + #785). `bulk_excuse` is member-scoped, not event-scoped: the RPC gates it inline (org-scope OR shares an active initiative with the target) and is passed through.
+- **Attribution:** the RPC records `registered_by`/`marked_by` — that, NOT `checked_in_at`, is what distinguishes a self check-in from a leader's batch (#1322).
+
+### `attendance_report` (R)
+- **Intent:** attendance analytics. **`scope`:** `mine` (default) · `tribe` (grid) · `ranking` · `hours` · `health` · `cycle`.
+- **Absorbs:** `get_my_attendance_history` · `get_my_tribe_attendance` · `get_attendance_ranking` · `get_my_attendance_hours` · `get_event_attendance_health` · `get_cycle_attendance_overview`.
+- **Gate:** self scopes free; cross-member/cross-cohort requires `view_internal_analytics`. **`scope='tribe'` ADDS the #785 gate** — `get_initiative_attendance_grid` has none of its own.
+
+### `meeting_minutes` (R/W)
+- **Intent:** the minutes lifecycle. **`action`:** `read` (recent minutes) · `prepare` (briefing) · `write` · `close` (posts minutes + returns action/decision counts + drift signal).
+- **Absorbs:** `create_meeting_notes` (38) · `meeting_close` · `get_meeting_notes` · `get_meeting_preparation`. **NOT** `get_agenda_smart` (retired).
+- **Gate:** `eventWriteGate()` on `write`/`close`; #785 on reads. `write` warns when `action_items` are appended as Markdown checkboxes instead of structured rows.
+
+### `meeting_actions` (R/W)
+- **Intent:** what the meeting decided and who does what. **`action`:** `create` · `resolve` (incl. `carry_to_event_id`) · `list` · `convert_to_card` · `decision` · `decision_log`.
+- **Absorbs:** `create_action_item` (21) · `resolve_action_item` (CHECK fix) · `list_meeting_action_items` · `convert_action_to_card` · `register_decision` (15) · `get_decision_log`.
+- **Gate:** `eventWriteGate()` on every write; the **carry-forward target is gated independently** (carrying into another initiative is the same cross-initiative write); `convert_to_card` additionally requires `write_board` + `canSee(board)`.
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
@@ -175,7 +229,7 @@ the caller has `view_pii`. Two raw-RPC failure fixes are baked in (migration `20
 | 0 | Bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`, `get_operational_status`) | shipped (SPEC-280) |
 | **1** | **Boards & cards** | **shipped 2026-07-15** |
 | **2** | **Members / engagements / initiatives** | **shipped 2026-07-16** |
-| 3 | Events / attendance / meetings | planned |
+| **3** | **Events / attendance / meetings** | **shipped 2026-07-16** |
 | 4 | Selection & evaluation | planned |
 | 5 | Governance / docs / certificates | planned |
 | 6 | Comms / drive / partners / knowledge / gamification / ops | planned |

@@ -59,6 +59,13 @@ const SEMANTIC_ONLY = new Set([
   'initiative_directory',
   'initiative_report',
   'my_status',
+  // Wave 3 (#1383) — /semantic only (events/attendance/meetings)
+  'event_search',
+  'event_write',
+  'attendance_record',
+  'attendance_report',
+  'meeting_minutes',
+  'meeting_actions',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */
