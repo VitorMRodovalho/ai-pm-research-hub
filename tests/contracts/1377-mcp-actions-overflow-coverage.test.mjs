@@ -73,6 +73,14 @@ const SEMANTIC_ONLY = new Set([
   'interview_manage',
   'selection_decide',
   'visitor_leads',
+  // Wave 5 (#1383) — /semantic only (governance/docs/certificates)
+  'document_get',
+  'document_version_write',
+  'document_comment',
+  'change_request',
+  'signature_flow',
+  'certificate_manage',
+  'ip_exclusion',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

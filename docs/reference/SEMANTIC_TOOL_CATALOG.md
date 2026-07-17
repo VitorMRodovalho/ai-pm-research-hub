@@ -287,6 +287,81 @@ avoided a false correction. Deliberately **kept raw** (not surfaced semantically
 
 ---
 
+## Wave 5 — Governance, documents & certificates (shipped 2026-07-17)
+
+7 tools absorbing the governance domain — the **worst-failure domain** in the window (117 calls/180d but ~40%
+failure). `/semantic` 33 → 40 (`nucleo-ia-semantic@0.7.0`, `ef_version 2.85.0`). The wave is justified by fix
+density, not volume: three of the top failures were **enum/contract bugs masked as `ok:true`** by the raw tools.
+
+Every absorbed RPC **self-gates authority internally** (audited live via `pg_get_functiondef`): the governance
+READ RPCs enforce a **`visibility_class` ceiling** (`get_document_detail` / `get_version_diff` /
+`get_governance_document_reader` — migrations 450/451, already live; a `legal_scoped` doc needs `manage_member`
+or a current signature); version writes require `manage_member`; the manual-version 2-of-N flow +
+change-request writes require `manage_platform` / `curate_content`; the certificate + ip-exclusion RPCs resolve
+the caller and self-gate. **All are fail-closed for anon.** The semantic layer passes through and surfaces each
+RPC's own `{error}`/RAISE in `ok:false`; `document_version_write` adds a proactive `canV4()` fail-fast.
+
+**Contract fixes baked in (root cause of the failure rate):**
+- `document_comment` uses the RPC-validated visibility enum `curator_only | submitter_only | change_notes`.
+  The raw `add_document_comment` documented `public`/`signers_only`/`private` — all rejected by
+  `create_document_comment` on **every** call, then masked as `ok:true`. The raw tool's schema was also corrected.
+- `change_request` uses `cr_type` `editorial | operational | structural | emergency`. The raw
+  `submit_change_request` documented `manual_edit`/`gc_override`/`policy_update` — likewise always rejected + masked.
+- `certificate_manage` validates issue inputs **before** dispatch (title required, `type`/`language` enums,
+  `cycle` as int) — the root cause of the 18/27 `issue_certificate` failures (null-title NOT-NULL crash;
+  `"cycle_3"` → integer-cast crash). This turns a raw DB constraint error into a clean `invalid_input`.
+
+**Raw-side hardening rode along in migration `20260805000459`, proven live (impersonated, rolled back):**
+`submit_change_request` set `priority = impact_level`, but `priority`'s CHECK is `high|medium|low` while
+`impact_level` allows `critical` — a `critical`-impact CR **always** failed the `priority` CHECK. Clamped
+`critical → high` (impact_level keeps the true value). And the dead **anon/PUBLIC `EXECUTE` drift on 14
+governance/certificate write RPCs** was REVOKEd (all already fail-closed; defense-in-depth, #965 trap).
+
+**Deliberately kept raw (not surfaced semantically):**
+- `counter_sign_certificate` — countersign is the **Dir. de Voluntariados' exclusive act** (never automated via MCP).
+- `review_change_request` / `approve_change_request` — an **open CR-authority finding** (the V3
+  `sponsor`/`chapter_liaison` fallback reaches the `implement` branch, bypassing the 2-of-N manual-publication
+  flow; hardcoded `manual_version_to='R3'`; a quorum-free single-approver path diverging from
+  `approve_change_request`'s sponsor quorum). Deferred to a dedicated authority-remediation issue;
+  `change_request` exposes `submit` + `list` only until it lands.
+
+### `document_get` (R)
+- **Intent:** read governance documents. **`mode`:** `list` · `detail` · `body` (sanitized HTML + Markdown + section anchors of the current LOCKED version) · `versions` · `diff` · `changelog` · `manual`.
+- **Absorbs:** `get_governance_docs` · `get_document_detail` · `get_governance_document_body` · `list_document_versions` · `get_version_diff` · `get_governance_change_log` · `get_manual_section`.
+- **Gate:** RPC-internal `visibility_class` ceiling on `detail`/`body`/`diff`; the MCP `body` channel serves only `public`/`active_members` classes + locked versions. Read-only.
+
+### `document_version_write` (W)
+- **Intent:** author document versions + the manual-version 2-of-N flow. **`action`:** `create` · `edit` (both → `upsert_document_version`) · `delete` (→ confirm) · `lock` · `propose_manual` · `confirm_manual` (→ confirm) · `cancel_manual` · `recirculate` (`dry_run` default true).
+- **Absorbs:** `propose_new_version` + `edit_document_version_draft` (alias split collapsed) · `delete_document_version_draft` · `lock_document_version` · `propose_manual_version` · `confirm_manual_version` · `cancel_manual_version_proposal` · `recirculate_governance_doc`.
+- **Gate:** proactive `canV4()` — `manage_member` for version drafts/lock/recirculate, `manage_platform` for the manual-version flow. `delete` + `confirm_manual` confirm-gated (ADR-0018).
+
+### `document_comment` (W)
+- **Intent:** clause-anchored review comments. **`action`:** `add` · `resolve` · `list`.
+- **Absorbs:** `add_document_comment` (→ `create_document_comment`) · `resolve_document_comment` · `list_document_comments`.
+- **Gate:** `participate_in_governance_review` (add) / author-or-review (resolve), RPC-internal. Visibility enum corrected (see above).
+
+### `change_request` (W)
+- **Intent:** CR submission + listing (submit/list only). **`action`:** `submit` · `list`.
+- **Absorbs:** `submit_change_request` · `list_change_requests` (→ `get_change_requests`). `review`/`approve` stay raw (deferred authority finding).
+- **Gate:** `curate_content` / manager / tribe_leader / superadmin (RPC-internal). `cr_type` + `impact_level` enums corrected.
+
+### `signature_flow` (W)
+- **Intent:** IP-ratification / cooperation-agreement approval-chain signing. **`action`:** `sign` · `pending` · `my_signatures` · `chain_audit`.
+- **Absorbs:** `sign_ratification_gate` (→ `sign_ip_ratification`) · `get_pending_ratifications` · `list_my_signatures` (→ `get_my_signatures`) · `get_chain_audit_report`.
+- **Gate:** RPC-internal `_can_sign_gate` + sequential-gate order + EU Art. 49(1)(a) consent for external_signer gates.
+
+### `certificate_manage` (R/W)
+- **Intent:** certificate lifecycle. **`action`:** `issue` (→ confirm) · `update` (→ confirm) · `verify` (public) · `list` · `my` · `timeline`.
+- **Absorbs:** `issue_certificate` · `update_certificate` · `verify_certificate` · `get_all_certificates` · `get_my_certificates` · `exec_cert_timeline`. (`counter_sign_certificate` stays raw — Lorena-only.)
+- **Gate:** `curate_content` / manager / superadmin (issue/update/list/timeline), RPC-internal; `verify` is public + rate-limited. Inputs validated before dispatch (see above).
+
+### `ip_exclusion` (R/W)
+- **Intent:** PI-exclusion declarations + Anexo I (doc7 / ADR-0101). **`action`:** `list` · `get` · `create` · `add_asset` (digest-only SHA-256) · `revoke` (→ confirm, terminal) · `export`.
+- **Absorbs:** `list_my_exclusion_declarations` · `get_exclusion_declaration` · `create_exclusion_declaration` · `register_exclusion_asset` · `revoke_exclusion_declaration` · `export_anexo_i`.
+- **Gate:** declarant self-service (RPC-internal); a `view_pii` admin gets an org-fenced read, logged to `pii_access_log`.
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
@@ -296,7 +371,7 @@ avoided a false correction. Deliberately **kept raw** (not surfaced semantically
 | **2** | **Members / engagements / initiatives** | **shipped 2026-07-16** |
 | **3** | **Events / attendance / meetings** | **shipped 2026-07-16** |
 | **4** | **Selection & evaluation** | **shipped 2026-07-17** |
-| 5 | Governance / docs / certificates | planned |
+| **5** | **Governance / docs / certificates** | **shipped 2026-07-17** |
 | 6 | Comms / drive / partners / knowledge / gamification / ops | planned |
 
 Per-wave exit criteria (all 8 must tick): authority/RLS audited · envelope contract test green ·

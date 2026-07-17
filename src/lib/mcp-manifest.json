@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-17T15:17:45.117Z",
+  "generated_at": "2026-07-17T16:11:30.726Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 375,
+  "total": 382,
   "by_domain": {
     "personal": 23,
-    "tribe": 122,
+    "tribe": 126,
     "board": 78,
     "events": 22,
-    "governance": 23,
+    "governance": 26,
     "comms": 16,
     "partners": 11,
     "gamification": 16,
@@ -17,7 +17,7 @@
     "health": 20
   },
   "by_permission": {
-    "read": 258,
+    "read": 265,
     "write": 108,
     "admin": 9
   },
@@ -206,8 +206,29 @@
       "is_sensitive": false
     },
     {
+      "name": "change_request",
+      "description": "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests]). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]), 'list' ([status, cr_type]). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency' (the raw tool's 'manual_edit'/'gc_override'/'policy_update' were rejected by the RPC on every call — fixed here). impact_level 'critical' now maps priority→'high' (was a hard CHECK failure — migration 20260805000459). Authority: curate_content / manager / tribe_leader / superadmin. NOTE: review + approve stay RAW pending the CR-authority remediation (review_change_request V3 fallback reaches 'implement' bypassing 2-of-N; tracked). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "compute_pert_cutoff",
       "description": "Admin trigger: recomputes the PERT cutoff for a selection cycle and persists target/band/cohort_n columns on every application. Two dimensions can be recomputed independently: objective (default; writes pert_target_score/pert_band_*/pert_cohort_n/pert_cutoff_method/pert_calc_at) and leader_extra (score_column='leader_extra_pert_score'; writes leader_extra_pert_target/band_*/cohort_n/cutoff_method/calc_at). Cohort = applicants approved + engaged as active volunteer in prior cycles, filtered by role. Method: dynamic (n>=10) | historical_fallback | disabled. Auth: manage_member. Logs to admin_audit_log. Note: the weekly cron recompute-pert-cutoffs-weekly already calls BOTH dimensions per active cycle — use this MCP tool only for on-demand admin recompute (e.g., before committee final decision).",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "document_comment",
+      "description": "Comment on a governance document version (absorbs add_document_comment[→create_document_comment] + resolve_document_comment + list_document_comments). Set `action`: 'add' (version_id + clause_anchor + body + visibility [+ parent_id]), 'resolve' (comment_id [+ resolution_note]), 'list' (version_id [+ include_resolved, include_prior_versions]). Authority: participate_in_governance_review (add) / author-or-review (resolve). NOTE: visibility is 'curator_only' | 'submitter_only' | 'change_notes' (the raw tool's 'public'/'signers_only'/'private' were rejected by the RPC on every call — fixed here). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "document_get",
+      "description": "Read governance documents (absorbs get_governance_docs + get_document_detail + get_governance_document_body + list_document_versions + get_version_diff + get_governance_change_log + get_manual_section). Set `mode`: 'list' ([doc_type]), 'detail' (document_id → doc + current version + active chain + signoffs + comment counts), 'body' (document_id → sanitized HTML + server-rendered Markdown + section_anchors of the current LOCKED version — informational, NOT legal advice), 'versions' (document_id), 'diff' (version_a + version_b [+ include_content]), 'changelog' ([since, limit, include_payload]), 'manual' ([section, lang]). Authority is enforced by each RPC: the visibility_class ceiling (public/active_members/legal_scoped) gates detail/body/diff; legal_scoped needs manage_member or a current signature. Read-only. Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -495,6 +516,13 @@
     {
       "name": "initiative_roster",
       "description": "Who is engaged where (absorbs list_initiative_engagements(_by_kind), get_my_tribe_members, list_invitations_*). Set `scope`: 'initiative' (initiative_id [+ status_filter]) — #785-gated; 'by_kind' (engagement_kind and/or initiative_kind [+ status_filter, limit]); 'my_tribe' (tribe_id optional → your tribe); 'invitations_for_my_initiatives' ([initiative_id] [+ status_filter]); 'invitations_received' ([status_filter]); 'invitations_sent' ([initiative_id] [+ status_filter]). Confidential initiatives are excluded (#785 / RLS). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "ip_exclusion",
+      "description": "PI-exclusion declarations — doc7 'Declaração de Exclusão de PI e Autoria Independente' (absorbs list_my_exclusion_declarations + get_exclusion_declaration + create_exclusion_declaration + register_exclusion_asset + revoke_exclusion_declaration + export_anexo_i). Set `action`: 'list' (your declarations), 'get' (declaration_id), 'create' ([title] → returns declaration_id), 'add_asset' (declaration_id + title + sha256 [+ nature, author_label, work_created_on, source_ref, reinforcement] — DIGEST-ONLY, the file never leaves the Núcleo), 'revoke' (declaration_id — TERMINAL→confirm), 'export' (declaration_id → filled Anexo I). Declarant self-service (a view_pii admin gets an org-fenced read, logged). Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -795,7 +823,7 @@
     },
     {
       "name": "add_document_comment",
-      "description": "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'public' (all viewers) | 'signers_only' (approval_chain roles) | 'private' (author only). Optional parent_id for threaded replies.",
+      "description": "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'curator_only' | 'submitter_only' | 'change_notes' (validated by create_document_comment; the legacy 'public'/'signers_only'/'private' were rejected on every call). Optional parent_id for threaded replies. Prefer the semantic document_comment tool.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -1026,7 +1054,7 @@
     },
     {
       "name": "submit_change_request",
-      "description": "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'manual_edit' | 'gc_override' | 'policy_update'. impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type.",
+      "description": "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'editorial' | 'operational' | 'structural' | 'emergency' (RPC-validated; the legacy 'manual_edit'/'gc_override'/'policy_update' were rejected on every call). impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type. Prefer the semantic change_request tool.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -1753,6 +1781,20 @@
       "is_sensitive": false
     },
     {
+      "name": "certificate_manage",
+      "description": "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "document_version_write",
+      "description": "Author governance document versions (absorbs propose_new_version + edit_document_version_draft → the single upsert_document_version RPC, plus delete_document_version_draft + lock_document_version + propose_manual_version + confirm_manual_version + cancel_manual_version_proposal + recirculate_governance_doc). Set `action`: 'create' (document_id + content_html [+ content_markdown, version_label, notes]), 'edit' (version_id + content_html [+ ...]), 'delete' (version_id — DESTRUCTIVE→confirm), 'lock' (version_id + gates[] [+ change_class]), 'propose_manual' (version_label [+ notes]), 'confirm_manual' (proposal_id — publishes the Manual→confirm), 'cancel_manual' (proposal_id [+ reason]), 'recirculate' (chain_id [+ dry_run(default true), recipient_emails]). Authority: manage_member for version drafts/lock/recirculate, manage_platform for the manual-version 2-of-N flow. Stable envelope.",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_all_certificates",
       "description": "Admin search of certificates (all members). Optional filters: status (active|revoked|all), search (name/email match), include_volunteer_agreements (default false — VEPs are noisy). Authority: enforced server-side via certificate ACL.",
       "domain": "governance",
@@ -1818,6 +1860,13 @@
     {
       "name": "recirculate_governance_doc",
       "description": "Re-circulação de documento governance pós-redraft (Material change). Locks pending draft, supersedes current approval_chain, creates new chain with same gates, and emails recipients via parametrized template. Use dry_run=true para preview (default). Default recipients = all members eligible to sign first gate (curators for most docs); pass recipient_emails para override explicito. Requires manage_member authority. Sediment p88 ADR-0068 Round 5 (#122).",
+      "domain": "governance",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "signature_flow",
+      "description": "IP-ratification / cooperation-agreement approval-chain signing (absorbs sign_ratification_gate[→sign_ip_ratification] + get_pending_ratifications + list_my_signatures[→get_my_signatures] + get_chain_audit_report). Set `action`: 'sign' (chain_id + gate_kind [+ signoff_type, sections_verified(JSON string), comment_body, ue_consent_49_1_a]), 'pending' (docs awaiting YOUR signoff), 'my_signatures' ([include_superseded] — your signature history), 'chain_audit' (chain_id — full signoff timeline). Authority: the RPC scopes each gate to eligible signers + sequential order; EU signers need Art. 49(1)(a) consent for external_signer gates. Stable envelope.",
       "domain": "governance",
       "permission": "read",
       "is_sensitive": false

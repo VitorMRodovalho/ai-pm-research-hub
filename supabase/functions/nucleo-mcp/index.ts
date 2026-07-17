@@ -6339,11 +6339,11 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // add_document_comment — post a clause-anchored comment on a document version
-  mcp.tool("add_document_comment", "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'public' (all viewers) | 'signers_only' (approval_chain roles) | 'private' (author only). Optional parent_id for threaded replies.", {
+  mcp.tool("add_document_comment", "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'curator_only' | 'submitter_only' | 'change_notes' (validated by create_document_comment; the legacy 'public'/'signers_only'/'private' were rejected on every call). Optional parent_id for threaded replies. Prefer the semantic document_comment tool.", {
     version_id: z.string().describe("UUID of document_versions row"),
     clause_anchor: z.string().describe("Clause/section anchor (e.g. '§2.5', 'Art. 4', 'preamble')"),
     body: z.string().describe("Comment body text"),
-    visibility: z.string().describe("'public' | 'signers_only' | 'private'"),
+    visibility: z.enum(["curator_only", "submitter_only", "change_notes"]).describe("'curator_only' | 'submitter_only' | 'change_notes'"),
     parent_id: z.string().optional().describe("UUID of parent comment for threaded reply")
   }, async (params: { version_id: string; clause_anchor: string; body: string; visibility: string; parent_id?: string }) => {
     const start = Date.now();
@@ -6400,13 +6400,13 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // submit_change_request — create a new change_request (CR) targeting Manual sections / GCs
-  mcp.tool("submit_change_request", "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'manual_edit' | 'gc_override' | 'policy_update'. impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type.", {
+  mcp.tool("submit_change_request", "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'editorial' | 'operational' | 'structural' | 'emergency' (RPC-validated; the legacy 'manual_edit'/'gc_override'/'policy_update' were rejected on every call). impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type. Prefer the semantic change_request tool.", {
     title: z.string().describe("Short title"),
     description: z.string().describe("Detailed description of the change"),
-    cr_type: z.string().describe("'manual_edit' | 'gc_override' | 'policy_update'"),
-    manual_section_ids: z.array(z.string()).optional().describe("UUIDs of affected manual_sections (for manual_edit type)"),
+    cr_type: z.enum(["editorial", "operational", "structural", "emergency"]).describe("'editorial' | 'operational' | 'structural' | 'emergency'"),
+    manual_section_ids: z.array(z.string()).optional().describe("UUIDs of affected manual_sections"),
     gc_references: z.array(z.string()).optional().describe("GC identifiers affected (e.g. ['GC-097','GC-162'])"),
-    impact_level: z.string().optional().describe("'low' (default 'medium') | 'medium' | 'high' | 'critical'"),
+    impact_level: z.enum(["low", "medium", "high", "critical"]).optional().describe("'low' | 'medium' (default) | 'high' | 'critical'"),
     impact_description: z.string().optional().describe("Describe who/what is affected"),
     justification: z.string().optional().describe("Why this change is necessary")
   }, async (params: { title: string; description: string; cr_type: string; manual_section_ids?: string[]; gc_references?: string[]; impact_level?: string; impact_description?: string; justification?: string }) => {
@@ -10262,9 +10262,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // capture_visitor_lead (public site entry — anon + rl_check + LGPD consent, stays raw).
 
   const selErr = (_tool: string, em: string) =>
-    /^(unauthorized|not authoriz|recused)/i.test(em) ? "unauthorized"
+    /^(unauthorized|not[ _]authoriz|access[ _]denied|forbidden|recused)/i.test(em) ? "unauthorized"
       : /not found|no cycle|not_found/i.test(em) ? "not_found"
-      : /already|locked|invalid|required|must /i.test(em) ? "invalid_input"
+      : /already|locked|invalid|required|must |consent|not_pending|not_signable/i.test(em) ? "invalid_input"
       : "internal_error";
 
   // ── W4 · selection_dashboard (R) — cycle pipeline surfaces; RPCs self-gate + COI ──
@@ -10584,6 +10584,499 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // #1383 WAVE 5 — Governance, documents & certificates (taxonomy §2.5)
+  // 117 calls/180d but ~40% failure (worst domain). Every absorbed RPC self-gates
+  // INTERNALLY (audited live 2026-07-17 via pg_get_functiondef): the governance READ RPCs
+  // enforce the visibility_class ceiling (get_document_detail / get_version_diff /
+  // get_governance_document_reader — migs 450/451); version writes require manage_member;
+  // the manual-version 2-of-N + change-request writes require manage_platform / curate_content;
+  // the certificate + ip-exclusion RPCs resolve the caller and self-gate. All are FAIL-CLOSED
+  // for anon (migration 20260805000459 also REVOKEd the dead anon/PUBLIC EXECUTE drift on the
+  // write set). The semantic layer passes through and surfaces the RPC's own {error}/RAISE in
+  // ok:false; write tools add a proactive canV4() fail-fast where the RPC gate is a clean V4
+  // action. Enum contracts are CORRECTED here (the raw add_document_comment / submit_change_request
+  // schemas documented values the RPC/CHECK reject on every call — masked as ok:true).
+  // Kept RAW on purpose:
+  //   - counter_sign_certificate — countersign is the Dir. de Voluntariados' exclusive act
+  //     (Lorena; reference-volunteer-term-countersign-lorena). NEVER auto-countersign via MCP.
+  //   - review_change_request / approve_change_request — the CR review/approve authority model has
+  //     an open finding (V3 sponsor/chapter_liaison fallback reaches 'implement', bypassing the
+  //     2-of-N manual-publication flow; hardcoded manual_version_to='R3'; quorum divergence).
+  //     Deferred to a dedicated authority-remediation issue; change_request exposes submit + list only.
+
+  // ── W5 · document_get (R) — governance document reader surfaces ──
+  mcp.tool(
+    "document_get",
+    "Read governance documents (absorbs get_governance_docs + get_document_detail + get_governance_document_body + list_document_versions + get_version_diff + get_governance_change_log + get_manual_section). Set `mode`: 'list' ([doc_type]), 'detail' (document_id → doc + current version + active chain + signoffs + comment counts), 'body' (document_id → sanitized HTML + server-rendered Markdown + section_anchors of the current LOCKED version — informational, NOT legal advice), 'versions' (document_id), 'diff' (version_a + version_b [+ include_content]), 'changelog' ([since, limit, include_payload]), 'manual' ([section, lang]). Authority is enforced by each RPC: the visibility_class ceiling (public/active_members/legal_scoped) gates detail/body/diff; legal_scoped needs manage_member or a current signature. Read-only. Stable envelope.",
+    {
+      mode: z.enum(["list", "detail", "body", "versions", "diff", "changelog", "manual"]).describe("Read surface."),
+      document_id: z.string().optional().describe("detail / body / versions — governance_documents UUID."),
+      doc_type: z.string().optional().describe("list — filter (manual|cooperation_agreement|volunteer_term_template)."),
+      version_a: z.string().optional().describe("diff — first document_versions UUID."),
+      version_b: z.string().optional().describe("diff — second document_versions UUID."),
+      include_content: z.boolean().optional().describe("diff — include full content (default true; false = stats only)."),
+      since: z.string().optional().describe("changelog — ISO-8601 cutoff (default 90d ago)."),
+      limit: z.number().optional().describe("changelog — max rows (default 200, cap 1000)."),
+      include_payload: z.boolean().optional().describe("changelog — include per-event payload (default true)."),
+      section: z.string().optional().describe("manual — section number (e.g. '3.1') or keyword."),
+      lang: z.string().optional().describe("manual — pt|en|es (default pt)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "document_get", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "document_get", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "document_get", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      let data: any = null; let error: any = null; let source = ""; let summary = "";
+      switch (params.mode) {
+        case "list": {
+          let q = sb.from("governance_documents").select("id, doc_type, title, version, status, parties, valid_from, valid_until, pdf_url").eq("status", "active").order("created_at", { ascending: false });
+          if (params.doc_type) q = q.eq("doc_type", params.doc_type);
+          ({ data, error } = await q); source = "governance_documents"; summary = "Active governance documents."; break;
+        }
+        case "detail":
+          if (!isUUID(params.document_id)) return invalid("mode='detail' requires document_id (UUID).");
+          ({ data, error } = await sb.rpc("get_document_detail", { p_document_id: params.document_id })); source = "get_document_detail"; summary = "Document detail (version + chain + comments)."; break;
+        case "body": {
+          if (!isUUID(params.document_id)) return invalid("mode='body' requires document_id (UUID).");
+          const { data: rd, error: re } = await sb.rpc("get_governance_document_reader", { p_document_id: params.document_id });
+          if (re) { error = re; source = "get_governance_document_reader"; break; }
+          const doc = (rd && (rd as Record<string, unknown>).document) as Record<string, unknown> | null;
+          const ver = (rd && (rd as Record<string, unknown>).current_version) as Record<string, unknown> | null;
+          const visClass = doc ? String(doc.visibility_class ?? "") : "";
+          // Mirror the raw body tool's MCP-channel ceiling: only public/active_members classes,
+          // only a LOCKED current version, sanitized HTML → Markdown + anchors (no existence oracle).
+          if (!doc || !MCP_GOVERNANCE_VISIBLE_CLASSES.includes(visClass) || !ver || !ver.content_html || !ver.locked_at) {
+            const reason = !doc ? "not_found_or_not_accessible" : !MCP_GOVERNANCE_VISIBLE_CLASSES.includes(visClass) ? "restricted_for_mcp_channel" : (!ver || !ver.content_html) ? "no_published_version" : "draft_not_locked";
+            await logUsage(sb, member.id, "document_get", true, undefined, start);
+            return semanticOk({ data: { mode: "body", available: false, reason, document: doc ? { id: doc.id, title: doc.title, doc_type: doc.doc_type, visibility_class: visClass } : null }, summary: `Document body unavailable via MCP (${reason}).`, warnings: ["Governance bodies are served only for public/active_members classes and locked versions; read restricted docs in the platform UI."], audit: { tool: "document_get", semantic_domain: dom, pii_level: "low", permission: "governance_read", source_tools: ["get_governance_document_reader"], caller_member_id: member.id, gate_checked: "visibility_class ceiling (MCP channel) + locked-version gate", resource_id: params.document_id, extra: { mode: "body", available: false, reason } } });
+          }
+          const cleanHtml = sanitizeGovernanceHtml(String(ver.content_html));
+          const status = String(doc.status ?? "");
+          await logUsage(sb, member.id, "document_get", true, undefined, start);
+          return semanticOk({ data: { mode: "body", available: true, document: { id: doc.id, title: doc.title, doc_type: doc.doc_type, status, visibility_class: visClass, version_id: ver.version_id ?? null, version_number: ver.version_number ?? null, version_label: ver.version_label ?? null, locked_at: ver.locked_at ?? null, caveat: ratificationCaveat(status) }, content_html: cleanHtml, content_markdown: htmlToMarkdown(cleanHtml), content_html_length: cleanHtml.length, section_anchors: extractSectionAnchors(cleanHtml) }, summary: `Body of "${doc.title}" (v${ver.version_label ?? ver.version_number ?? "?"}). Informational — not legal advice.`, next_actions: ["document_get mode='versions': histórico de versões", "document_get mode='changelog': linha do tempo de governança"], audit: { tool: "document_get", semantic_domain: dom, pii_level: "low", permission: "governance_read", source_tools: ["get_governance_document_reader"], caller_member_id: member.id, gate_checked: "visibility_class ceiling (MCP channel) + locked-version gate", resource_id: params.document_id, extra: { mode: "body", version_id: ver.version_id } } });
+        }
+        case "versions":
+          if (!isUUID(params.document_id)) return invalid("mode='versions' requires document_id (UUID).");
+          ({ data, error } = await sb.rpc("list_document_versions", { p_document_id: params.document_id })); source = "list_document_versions"; summary = "Version history."; break;
+        case "diff":
+          if (!isUUID(params.version_a) || !isUUID(params.version_b)) return invalid("mode='diff' requires version_a + version_b (UUIDs).");
+          ({ data, error } = await sb.rpc("get_version_diff", { p_version_a: params.version_a, p_version_b: params.version_b, p_include_content: params.include_content ?? true })); source = "get_version_diff"; summary = "Version diff."; break;
+        case "changelog":
+          ({ data, error } = await sb.rpc("get_governance_change_log", { p_since: params.since ?? null, p_limit: params.limit ?? 200, p_include_payload: params.include_payload ?? true })); source = "get_governance_change_log"; summary = "Governance change log."; break;
+        case "manual": {
+          const langSuffix = params.lang === "en" ? "_en" : params.lang === "es" ? "_es" : "_pt";
+          let q = sb.from("manual_sections").select(`section_number, title${langSuffix}, content${langSuffix}, manual_version, page_start, page_end`).eq("is_current", true).order("sort_order");
+          if (params.section) { if (/^\d/.test(params.section)) q = q.eq("section_number", params.section); else q = q.ilike(`title${langSuffix}`, `%${params.section}%`); }
+          ({ data, error } = await q.limit(5)); source = "manual_sections"; summary = "Manual section(s)."; break;
+        }
+        default: return invalid(`Unknown mode '${params.mode}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "document_get", false, error.message, start); return ok(buildSemanticError({ tool: "document_get", semantic_domain: dom, code: selErr("document_get", error.message), message: error.message })); }
+      await logUsage(sb, member.id, "document_get", true, undefined, start);
+      return semanticOk({
+        data: { mode: params.mode, result: data ?? null },
+        summary,
+        next_actions: ["document_get mode='body': texto normativo", "document_version_write: propor/editar versão"],
+        audit: { tool: "document_get", semantic_domain: dom, pii_level: "low", permission: "governance_read", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC/RLS internal (visibility_class ceiling on detail/diff; caller-RLS on list/manual)", resource_id: params.document_id ?? null, extra: { mode: params.mode } },
+      });
+    },
+  );
+
+  // ── W5 · document_version_write (W) — draft/lock/manual-version lifecycle ──
+  mcp.tool(
+    "document_version_write",
+    "Author governance document versions (absorbs propose_new_version + edit_document_version_draft → the single upsert_document_version RPC, plus delete_document_version_draft + lock_document_version + propose_manual_version + confirm_manual_version + cancel_manual_version_proposal + recirculate_governance_doc). Set `action`: 'create' (document_id + content_html [+ content_markdown, version_label, notes]), 'edit' (version_id + content_html [+ ...]), 'delete' (version_id — DESTRUCTIVE→confirm), 'lock' (version_id + gates[] [+ change_class]), 'propose_manual' (version_label [+ notes]), 'confirm_manual' (proposal_id — publishes the Manual→confirm), 'cancel_manual' (proposal_id [+ reason]), 'recirculate' (chain_id [+ dry_run(default true), recipient_emails]). Authority: manage_member for version drafts/lock/recirculate, manage_platform for the manual-version 2-of-N flow. Stable envelope.",
+    {
+      action: z.enum(["create", "edit", "delete", "lock", "propose_manual", "confirm_manual", "cancel_manual", "recirculate"]).describe("Version operation."),
+      document_id: z.string().optional().describe("create — governance_documents UUID."),
+      version_id: z.string().optional().describe("edit / delete / lock — document_versions UUID."),
+      content_html: z.string().optional().describe("create / edit — full HTML body (required, non-empty)."),
+      content_markdown: z.string().optional().describe("create / edit — optional Markdown source."),
+      version_label: z.string().optional().describe("create / edit — label; propose_manual — new manual version label (required there)."),
+      notes: z.string().optional().describe("create / edit / propose_manual — change notes."),
+      gates: z.array(z.object({ kind: z.string(), order: z.number(), threshold: z.union([z.string(), z.number()]) })).optional().describe("lock — ordered approval gate sequence (kind/order/threshold)."),
+      change_class: z.enum(["editorial", "material"]).optional().describe("lock — Material vs Editorial (Política 12.2); frozen at lock."),
+      proposal_id: z.string().optional().describe("confirm_manual / cancel_manual — pending_manual_version_approvals UUID."),
+      reason: z.string().optional().describe("cancel_manual — cancellation reason (audited)."),
+      chain_id: z.string().optional().describe("recirculate — approval_chains UUID to supersede."),
+      dry_run: z.boolean().optional().describe("recirculate — preview without executing (default true)."),
+      recipient_emails: z.array(z.string()).optional().describe("recirculate — explicit recipient override."),
+      confirm: z.boolean().optional().describe("delete / confirm_manual — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "document_version_write", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "document_version_write", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "document_version_write", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (m: string, a?: string) => ok(buildSemanticError({ tool: "document_version_write", semantic_domain: dom, code: "unauthorized", message: m, action: a }));
+
+      const GATE: Record<string, string> = { create: "manage_member", edit: "manage_member", delete: "manage_member", lock: "manage_member", recirculate: "manage_member", propose_manual: "manage_platform", confirm_manual: "manage_platform", cancel_manual: "manage_platform" };
+      const need = GATE[params.action];
+      if (!need) return invalid(`Unknown action '${params.action}'.`);
+      if (!(await canV4(sb, member.id, need))) { await logUsage(sb, member.id, "document_version_write", false, "Unauthorized", start); return denied(`Requires ${need}.`, need === "manage_platform" ? "Manual-version 2-of-N is manage_platform (GP) only." : "Document authoring requires manage_member."); }
+
+      // ADR-0018 confirm-gate for the irreversible actions.
+      if ((params.action === "delete" || params.action === "confirm_manual") && params.confirm !== true) {
+        await logUsage(sb, member.id, "document_version_write", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, next_call: { ...params, confirm: true } },
+          summary: `PREVIEW: document_version_write action='${params.action}'. Reenvie com confirm=true.`,
+          warnings: [params.action === "delete" ? "Permanently deletes an unlocked draft version." : "Publishes the pending Manual version (supersedes the current Manual, marks CRs implemented, broadcasts) — 2-of-N: signer must differ from proposer."],
+          next_actions: [`document_version_write action='${params.action}' confirm=true`],
+          audit: { tool: "document_version_write", semantic_domain: dom, pii_level: "low", permission: need, source_tools: [], caller_member_id: member.id, gate_checked: `canV4(${need}) (preview, not executed)`, resource_id: params.version_id ?? params.proposal_id ?? null, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "create":
+          if (!isUUID(params.document_id) || !params.content_html) return invalid("action='create' requires document_id + content_html.");
+          ({ data, error } = await sb.rpc("upsert_document_version", { p_document_id: params.document_id, p_content_html: params.content_html, p_content_markdown: params.content_markdown ?? null, p_version_label: params.version_label ?? null, p_version_id: null, p_notes: params.notes ?? null })); source = "upsert_document_version"; break;
+        case "edit": {
+          if (!isUUID(params.version_id) || !params.content_html) return invalid("action='edit' requires version_id + content_html.");
+          const { data: existing, error: le } = await sb.from("document_versions").select("document_id").eq("id", params.version_id).maybeSingle();
+          if (le) { error = le; source = "document_versions"; break; }
+          if (!existing) return invalid("document_version not found for that version_id.");
+          ({ data, error } = await sb.rpc("upsert_document_version", { p_document_id: (existing as any).document_id, p_content_html: params.content_html, p_content_markdown: params.content_markdown ?? null, p_version_label: params.version_label ?? null, p_version_id: params.version_id, p_notes: params.notes ?? null })); source = "upsert_document_version"; break;
+        }
+        case "delete":
+          if (!isUUID(params.version_id)) return invalid("action='delete' requires version_id.");
+          ({ data, error } = await sb.rpc("delete_document_version_draft", { p_version_id: params.version_id })); source = "delete_document_version_draft"; break;
+        case "lock":
+          if (!isUUID(params.version_id) || !Array.isArray(params.gates) || params.gates.length === 0) return invalid("action='lock' requires version_id + a non-empty gates[] array.");
+          ({ data, error } = await sb.rpc("lock_document_version", { p_version_id: params.version_id, p_gates: params.gates, p_change_class: params.change_class ?? null })); source = "lock_document_version"; break;
+        case "propose_manual":
+          if (!params.version_label) return invalid("action='propose_manual' requires version_label.");
+          ({ data, error } = await sb.rpc("propose_manual_version", { p_version_label: params.version_label, p_notes: params.notes ?? null })); source = "propose_manual_version"; break;
+        case "confirm_manual":
+          if (!isUUID(params.proposal_id)) return invalid("action='confirm_manual' requires proposal_id.");
+          ({ data, error } = await sb.rpc("confirm_manual_version", { p_proposal_id: params.proposal_id })); source = "confirm_manual_version"; break;
+        case "cancel_manual":
+          if (!isUUID(params.proposal_id)) return invalid("action='cancel_manual' requires proposal_id.");
+          ({ data, error } = await sb.rpc("cancel_manual_version_proposal", { p_proposal_id: params.proposal_id, p_reason: params.reason ?? null })); source = "cancel_manual_version_proposal"; break;
+        case "recirculate":
+          if (!isUUID(params.chain_id)) return invalid("action='recirculate' requires chain_id.");
+          ({ data, error } = await sb.rpc("recirculate_governance_doc", { p_chain_id: params.chain_id, p_dry_run: params.dry_run ?? true, p_recipient_emails: params.recipient_emails ?? null })); source = "recirculate_governance_doc"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "document_version_write", false, error.message, start); return ok(buildSemanticError({ tool: "document_version_write", semantic_domain: dom, code: selErr("document_version_write", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "document_version_write", false, em, start); return ok(buildSemanticError({ tool: "document_version_write", semantic_domain: dom, code: selErr("document_version_write", em), message: em })); }
+      await logUsage(sb, member.id, "document_version_write", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `document_version_write action='${params.action}' ok.`,
+        next_actions: ["document_get mode='detail': reler o documento", "document_version_write action='lock': abrir a cadeia de aprovação"],
+        audit: { tool: "document_version_write", semantic_domain: dom, pii_level: "low", permission: need, source_tools: [source], caller_member_id: member.id, gate_checked: `canV4(${need}) + RPC internal gate`, resource_id: params.version_id ?? params.document_id ?? params.proposal_id ?? params.chain_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W5 · document_comment (W) — clause-anchored review comments ──
+  mcp.tool(
+    "document_comment",
+    "Comment on a governance document version (absorbs add_document_comment[→create_document_comment] + resolve_document_comment + list_document_comments). Set `action`: 'add' (version_id + clause_anchor + body + visibility [+ parent_id]), 'resolve' (comment_id [+ resolution_note]), 'list' (version_id [+ include_resolved, include_prior_versions]). Authority: participate_in_governance_review (add) / author-or-review (resolve). NOTE: visibility is 'curator_only' | 'submitter_only' | 'change_notes' (the raw tool's 'public'/'signers_only'/'private' were rejected by the RPC on every call — fixed here). Stable envelope.",
+    {
+      action: z.enum(["add", "resolve", "list"]).describe("Comment operation."),
+      version_id: z.string().optional().describe("add / list — document_versions UUID."),
+      clause_anchor: z.string().optional().describe("add — clause/section anchor (e.g. '§2.5', 'Art. 4')."),
+      body: z.string().optional().describe("add — comment body."),
+      visibility: z.enum(["curator_only", "submitter_only", "change_notes"]).optional().describe("add — comment visibility (RPC-validated enum)."),
+      parent_id: z.string().optional().describe("add — parent comment UUID for a threaded reply."),
+      comment_id: z.string().optional().describe("resolve — document_comments UUID."),
+      resolution_note: z.string().optional().describe("resolve — optional note."),
+      include_resolved: z.boolean().optional().describe("list — include resolved comments (default false)."),
+      include_prior_versions: z.boolean().optional().describe("list — include comments from prior versions (default false)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "document_comment", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "document_comment", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "document_comment", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "add":
+          if (!isUUID(params.version_id) || !params.clause_anchor || !params.body || !params.visibility) return invalid("action='add' requires version_id + clause_anchor + body + visibility.");
+          if (params.parent_id && !isUUID(params.parent_id)) return invalid("parent_id must be a UUID.");
+          ({ data, error } = await sb.rpc("create_document_comment", { p_version_id: params.version_id, p_clause_anchor: params.clause_anchor, p_body: params.body, p_visibility: params.visibility, p_parent_id: params.parent_id ?? null })); source = "create_document_comment"; break;
+        case "resolve":
+          if (!isUUID(params.comment_id)) return invalid("action='resolve' requires comment_id.");
+          ({ data, error } = await sb.rpc("resolve_document_comment", { p_comment_id: params.comment_id, p_resolution_note: params.resolution_note ?? null })); source = "resolve_document_comment"; break;
+        case "list":
+          if (!isUUID(params.version_id)) return invalid("action='list' requires version_id.");
+          ({ data, error } = await sb.rpc("list_document_comments", { p_version_id: params.version_id, p_include_resolved: params.include_resolved ?? false, p_include_prior_versions: params.include_prior_versions ?? false })); source = "list_document_comments"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "document_comment", false, error.message, start); return ok(buildSemanticError({ tool: "document_comment", semantic_domain: dom, code: selErr("document_comment", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "document_comment", false, em, start); return ok(buildSemanticError({ tool: "document_comment", semantic_domain: dom, code: selErr("document_comment", em), message: em })); }
+      await logUsage(sb, member.id, "document_comment", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `document_comment action='${params.action}' ok.`,
+        next_actions: ["document_comment action='list': ver a thread", "document_get mode='detail': contexto do documento"],
+        audit: { tool: "document_comment", semantic_domain: dom, pii_level: "low", permission: "participate_in_governance_review", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (participate_in_governance_review / author-self)", resource_id: params.version_id ?? params.comment_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W5 · change_request (W) — CR submission + listing (submit/list only; review/approve deferred) ──
+  mcp.tool(
+    "change_request",
+    "Governance change requests (absorbs submit_change_request + list_change_requests[→get_change_requests]). Set `action`: 'submit' (title + description + cr_type [+ manual_section_ids, gc_references, impact_level, impact_description, justification]), 'list' ([status, cr_type]). cr_type is 'editorial' | 'operational' | 'structural' | 'emergency' (the raw tool's 'manual_edit'/'gc_override'/'policy_update' were rejected by the RPC on every call — fixed here). impact_level 'critical' now maps priority→'high' (was a hard CHECK failure — migration 20260805000459). Authority: curate_content / manager / tribe_leader / superadmin. NOTE: review + approve stay RAW pending the CR-authority remediation (review_change_request V3 fallback reaches 'implement' bypassing 2-of-N; tracked). Stable envelope.",
+    {
+      action: z.enum(["submit", "list"]).describe("CR operation."),
+      title: z.string().optional().describe("submit — short title."),
+      description: z.string().optional().describe("submit — detailed description."),
+      cr_type: z.enum(["editorial", "operational", "structural", "emergency"]).optional().describe("submit / list — CR type (RPC-validated enum)."),
+      manual_section_ids: z.array(z.string()).optional().describe("submit — affected manual_sections UUIDs."),
+      gc_references: z.array(z.string()).optional().describe("submit — GC identifiers (e.g. ['GC-097'])."),
+      impact_level: z.enum(["low", "medium", "high", "critical"]).optional().describe("submit — impact (default medium)."),
+      impact_description: z.string().optional().describe("submit — who/what is affected."),
+      justification: z.string().optional().describe("submit — why the change is necessary."),
+      status: z.string().optional().describe("list — status filter."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "change_request", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "submit":
+          if (!params.title || !params.description || !params.cr_type) return invalid("action='submit' requires title + description + cr_type.");
+          ({ data, error } = await sb.rpc("submit_change_request", { p_title: params.title, p_description: params.description, p_cr_type: params.cr_type, p_manual_section_ids: params.manual_section_ids ?? null, p_gc_references: params.gc_references ?? null, p_impact_level: params.impact_level ?? "medium", p_impact_description: params.impact_description ?? null, p_justification: params.justification ?? null })); source = "submit_change_request"; break;
+        case "list":
+          ({ data, error } = await sb.rpc("get_change_requests", { p_status: params.status ?? null, p_cr_type: params.cr_type ?? null })); source = "get_change_requests"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "change_request", false, error.message, start); return ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: selErr("change_request", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "change_request", false, em, start); return ok(buildSemanticError({ tool: "change_request", semantic_domain: dom, code: selErr("change_request", em), message: em })); }
+      await logUsage(sb, member.id, "change_request", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `change_request action='${params.action}' ok.`,
+        next_actions: ["change_request action='list': ver a fila de CRs", "document_version_write action='propose_manual': iniciar nova versão do Manual"],
+        audit: { tool: "change_request", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (curate_content / manager / tribe_leader / superadmin)", resource_id: null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W5 · signature_flow (W) — IP ratification signing + signature reads ──
+  mcp.tool(
+    "signature_flow",
+    "IP-ratification / cooperation-agreement approval-chain signing (absorbs sign_ratification_gate[→sign_ip_ratification] + get_pending_ratifications + list_my_signatures[→get_my_signatures] + get_chain_audit_report). Set `action`: 'sign' (chain_id + gate_kind [+ signoff_type, sections_verified(JSON string), comment_body, ue_consent_49_1_a]), 'pending' (docs awaiting YOUR signoff), 'my_signatures' ([include_superseded] — your signature history), 'chain_audit' (chain_id — full signoff timeline). Authority: the RPC scopes each gate to eligible signers + sequential order; EU signers need Art. 49(1)(a) consent for external_signer gates. Stable envelope.",
+    {
+      action: z.enum(["sign", "pending", "my_signatures", "chain_audit"]).describe("Signature operation."),
+      chain_id: z.string().optional().describe("sign / chain_audit — approval_chains UUID."),
+      gate_kind: z.string().optional().describe("sign — gate kind (curator|leader_awareness|submitter_acceptance|chapter_witness|president_go|cert_director_go|member_ratification|external_signer)."),
+      signoff_type: z.string().optional().describe("sign — 'approval' (default) or 'rejection'."),
+      sections_verified: z.string().optional().describe("sign — JSON string listing verified sections."),
+      comment_body: z.string().optional().describe("sign — optional comment."),
+      ue_consent_49_1_a: z.boolean().optional().describe("sign — GDPR/LGPD Art. 49(1)(a) consent (required for external_signer)."),
+      include_superseded: z.boolean().optional().describe("my_signatures — include superseded ratifications (default false)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "signature_flow", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "signature_flow", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "signature_flow", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "sign": {
+          if (!isUUID(params.chain_id) || !params.gate_kind) return invalid("action='sign' requires chain_id + gate_kind.");
+          let sections: any = null;
+          if (params.sections_verified) { try { sections = JSON.parse(params.sections_verified); } catch { return invalid("sections_verified must be valid JSON."); } }
+          ({ data, error } = await sb.rpc("sign_ip_ratification", { p_chain_id: params.chain_id, p_gate_kind: params.gate_kind, p_signoff_type: params.signoff_type ?? "approval", p_sections_verified: sections, p_comment_body: params.comment_body ?? null, p_ue_consent_49_1_a: params.ue_consent_49_1_a ?? null })); source = "sign_ip_ratification"; break;
+        }
+        case "pending":
+          ({ data, error } = await sb.rpc("get_pending_ratifications")); source = "get_pending_ratifications"; break;
+        case "my_signatures":
+          ({ data, error } = await sb.rpc("get_my_signatures", { p_include_superseded: params.include_superseded ?? false })); source = "get_my_signatures"; break;
+        case "chain_audit":
+          if (!isUUID(params.chain_id)) return invalid("action='chain_audit' requires chain_id.");
+          ({ data, error } = await sb.rpc("get_chain_audit_report", { p_chain_id: params.chain_id })); source = "get_chain_audit_report"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "signature_flow", false, error.message, start); return ok(buildSemanticError({ tool: "signature_flow", semantic_domain: dom, code: selErr("signature_flow", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "signature_flow", false, em, start); return ok(buildSemanticError({ tool: "signature_flow", semantic_domain: dom, code: selErr("signature_flow", em), message: em })); }
+      await logUsage(sb, member.id, "signature_flow", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `signature_flow action='${params.action}' ok.`,
+        next_actions: ["signature_flow action='pending': o que falta assinar", "document_get mode='detail': contexto do documento"],
+        audit: { tool: "signature_flow", semantic_domain: dom, pii_level: "low", permission: "signer_eligibility", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (_can_sign_gate + prior-gate order + EU consent)", resource_id: params.chain_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W5 · certificate_manage (R/W) — certificate issuance/verification (NO countersign) ──
+  mcp.tool(
+    "certificate_manage",
+    "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
+    {
+      action: z.enum(["issue", "update", "verify", "list", "my", "timeline"]).describe("Certificate operation."),
+      member_id: z.string().optional().describe("issue — recipient members UUID."),
+      title: z.string().optional().describe("issue — certificate title (required for issue)."),
+      type: z.enum(["participation", "completion", "contribution", "excellence", "volunteer_agreement", "institutional_declaration", "ip_ratification", "alumni_recognition"]).optional().describe("issue — certificate type (default participation)."),
+      cycle: z.number().optional().describe("issue — cycle number (integer; default 3)."),
+      language: z.enum(["pt-BR", "en-US", "es-LATAM"]).optional().describe("issue / update — language (default pt-BR)."),
+      period_start: z.string().optional().describe("issue / update — period start."),
+      period_end: z.string().optional().describe("issue / update — period end."),
+      function_role: z.string().optional().describe("issue / update — function/role label."),
+      description: z.string().optional().describe("issue / update — description."),
+      cert_id: z.string().optional().describe("update — certificate UUID."),
+      code: z.string().optional().describe("verify — verification code."),
+      status: z.string().optional().describe("list — status filter."),
+      search: z.string().optional().describe("list — search term."),
+      include_volunteer_agreements: z.boolean().optional().describe("list / my — include volunteer agreements (default false)."),
+      months: z.number().optional().describe("timeline — months back (default 12)."),
+      confirm: z.boolean().optional().describe("issue / update — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "certificate_manage", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "certificate_manage", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "certificate_manage", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      // Input-contract validation for issue (root cause of the 18/27 failures: null title → NOT NULL
+      // crash; non-int cycle → "invalid input syntax for integer"; type outside the CHECK enum).
+      if (params.action === "issue" && (!isUUID(params.member_id) || !params.title || String(params.title).trim().length === 0)) {
+        return invalid("action='issue' requires member_id (UUID) + a non-empty title.", "The certificate title is NOT NULL; supply it explicitly.");
+      }
+      if (params.action === "update" && !isUUID(params.cert_id)) return invalid("action='update' requires cert_id.");
+
+      // ADR-0018 confirm-gate for the state-changing certificate actions.
+      if ((params.action === "issue" || params.action === "update") && params.confirm !== true) {
+        await logUsage(sb, member.id, "certificate_manage", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, next_call: { ...params, confirm: true } },
+          summary: `PREVIEW: certificate_manage action='${params.action}'. Reenvie com confirm=true.`,
+          warnings: [params.action === "issue" ? "Issues a permanent certificate record for the member." : "Updates an existing certificate (audit-logged)."],
+          next_actions: [`certificate_manage action='${params.action}' confirm=true`],
+          audit: { tool: "certificate_manage", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [], caller_member_id: member.id, gate_checked: "RPC internal (curate_content/manager/superadmin) (preview, not executed)", resource_id: params.cert_id ?? params.member_id ?? null, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "issue": {
+          const p_data: Record<string, unknown> = { member_id: params.member_id, title: params.title, type: params.type ?? "participation", language: params.language ?? "pt-BR", cycle: params.cycle ?? 3 };
+          if (params.period_start != null) p_data.period_start = params.period_start;
+          if (params.period_end != null) p_data.period_end = params.period_end;
+          if (params.function_role != null) p_data.function_role = params.function_role;
+          if (params.description != null) p_data.description = params.description;
+          ({ data, error } = await sb.rpc("issue_certificate", { p_data })); source = "issue_certificate"; break;
+        }
+        case "update": {
+          const p_updates: Record<string, unknown> = {};
+          for (const k of ["title", "description", "type", "period_start", "period_end", "function_role", "language"]) { if (params[k] != null) p_updates[k] = params[k]; }
+          if (params.cycle != null) p_updates.cycle = params.cycle;
+          ({ data, error } = await sb.rpc("update_certificate", { p_cert_id: params.cert_id, p_updates })); source = "update_certificate"; break;
+        }
+        case "verify":
+          if (!params.code) return invalid("action='verify' requires code.");
+          ({ data, error } = await sb.rpc("verify_certificate", { p_code: params.code })); source = "verify_certificate"; break;
+        case "list":
+          ({ data, error } = await sb.rpc("get_all_certificates", { p_status_filter: params.status ?? null, p_search: params.search ?? null, p_include_volunteer_agreements: params.include_volunteer_agreements ?? false })); source = "get_all_certificates"; break;
+        case "my":
+          ({ data, error } = await sb.rpc("get_my_certificates", { p_include_volunteer_agreements: params.include_volunteer_agreements ?? false })); source = "get_my_certificates"; break;
+        case "timeline":
+          ({ data, error } = await sb.rpc("exec_cert_timeline", { p_months: params.months ?? 12 })); source = "exec_cert_timeline"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "certificate_manage", false, error.message, start); return ok(buildSemanticError({ tool: "certificate_manage", semantic_domain: dom, code: selErr("certificate_manage", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "certificate_manage", false, em, start); return ok(buildSemanticError({ tool: "certificate_manage", semantic_domain: dom, code: selErr("certificate_manage", em), message: em })); }
+      await logUsage(sb, member.id, "certificate_manage", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `certificate_manage action='${params.action}' ok.`,
+        next_actions: ["certificate_manage action='verify': validar um código", "certificate_manage action='list': listar certificados"],
+        audit: { tool: "certificate_manage", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (curate_content/manager/superadmin; verify=public throttled)", resource_id: params.cert_id ?? params.member_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W5 · ip_exclusion (R/W) — PI-exclusion declarations + Anexo I (doc7 / ADR-0101) ──
+  mcp.tool(
+    "ip_exclusion",
+    "PI-exclusion declarations — doc7 'Declaração de Exclusão de PI e Autoria Independente' (absorbs list_my_exclusion_declarations + get_exclusion_declaration + create_exclusion_declaration + register_exclusion_asset + revoke_exclusion_declaration + export_anexo_i). Set `action`: 'list' (your declarations), 'get' (declaration_id), 'create' ([title] → returns declaration_id), 'add_asset' (declaration_id + title + sha256 [+ nature, author_label, work_created_on, source_ref, reinforcement] — DIGEST-ONLY, the file never leaves the Núcleo), 'revoke' (declaration_id — TERMINAL→confirm), 'export' (declaration_id → filled Anexo I). Declarant self-service (a view_pii admin gets an org-fenced read, logged). Stable envelope.",
+    {
+      action: z.enum(["list", "get", "create", "add_asset", "revoke", "export"]).describe("PI-exclusion operation."),
+      declaration_id: z.string().optional().describe("get / add_asset / revoke / export — declaration UUID."),
+      title: z.string().optional().describe("create — declaration title; add_asset — work title (required for add_asset)."),
+      sha256: z.string().regex(/^[0-9a-fA-F]{64}$/, "sha256 must be 64 hex characters").optional().describe("add_asset — SHA-256 hex digest (compute locally, e.g. `sha256sum file`)."),
+      nature: z.string().optional().describe("add_asset — nature of the work (e.g. 'tese', 'software')."),
+      author_label: z.string().optional().describe("add_asset — author/chapter label for Anexo I."),
+      work_created_on: z.string().optional().describe("add_asset — work creation date (YYYY-MM-DD)."),
+      source_ref: z.string().optional().describe("add_asset — path/URL reference."),
+      reinforcement: z.string().optional().describe("add_asset — optional reinforcement note."),
+      confirm: z.boolean().optional().describe("revoke — pass confirm=true to execute the TERMINAL revocation; otherwise a preview (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "governance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "ip_exclusion", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "ip_exclusion", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "ip_exclusion", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+
+      // ADR-0018 confirm-gate for the terminal revocation (surfaces the current declaration first).
+      if (params.action === "revoke") {
+        if (!isUUID(params.declaration_id)) return invalid("action='revoke' requires declaration_id.");
+        if (params.confirm !== true) {
+          const { data: preview, error: pe } = await sb.rpc("get_exclusion_declaration", { p_declaration_id: params.declaration_id });
+          if (pe) { await logUsage(sb, member.id, "ip_exclusion", false, pe.message, start, "preview"); return ok(buildSemanticError({ tool: "ip_exclusion", semantic_domain: dom, code: selErr("ip_exclusion", pe.message), message: pe.message })); }
+          await logUsage(sb, member.id, "ip_exclusion", true, undefined, start, "preview");
+          return semanticOk({
+            data: { action: "revoke", preview: true, target: preview, next_call: { declaration_id: params.declaration_id, confirm: true } },
+            summary: "PREVIEW: ip_exclusion revoke é TERMINAL. Reenvie com confirm=true.",
+            warnings: ["Revogação é terminal: a declaração deixa de aceitar assets; provas .ots são mantidas 5 anos (LGPD Art. 7º IX) e a revogação é auditada."],
+            next_actions: ["ip_exclusion action='revoke' confirm=true"],
+            audit: { tool: "ip_exclusion", semantic_domain: dom, pii_level: "self", permission: "declarant_self", source_tools: ["get_exclusion_declaration"], caller_member_id: member.id, gate_checked: "RPC internal (declarant-only) (preview, not executed)", resource_id: params.declaration_id, extra: { action: "revoke", preview: true } },
+          });
+        }
+      }
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "list":
+          ({ data, error } = await sb.rpc("list_my_exclusion_declarations")); source = "list_my_exclusion_declarations"; break;
+        case "get":
+          if (!isUUID(params.declaration_id)) return invalid("action='get' requires declaration_id.");
+          ({ data, error } = await sb.rpc("get_exclusion_declaration", { p_declaration_id: params.declaration_id })); source = "get_exclusion_declaration"; break;
+        case "create":
+          ({ data, error } = await sb.rpc("create_exclusion_declaration", { p_title: params.title ?? null })); source = "create_exclusion_declaration"; if (!error) data = { declaration_id: data }; break;
+        case "add_asset":
+          if (!isUUID(params.declaration_id) || !params.title || !params.sha256) return invalid("action='add_asset' requires declaration_id + title + sha256.");
+          ({ data, error } = await sb.rpc("register_exclusion_asset", { p_declaration_id: params.declaration_id, p_title: params.title, p_sha256: params.sha256, p_nature: params.nature ?? null, p_author_label: params.author_label ?? null, p_work_created_on: params.work_created_on ?? null, p_source_ref: params.source_ref ?? null, p_reinforcement: params.reinforcement ?? null })); source = "register_exclusion_asset"; break;
+        case "revoke":
+          ({ data, error } = await sb.rpc("revoke_exclusion_declaration", { p_declaration_id: params.declaration_id })); source = "revoke_exclusion_declaration"; break;
+        case "export":
+          if (!isUUID(params.declaration_id)) return invalid("action='export' requires declaration_id.");
+          ({ data, error } = await sb.rpc("export_anexo_i", { p_declaration_id: params.declaration_id })); source = "export_anexo_i"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "ip_exclusion", false, error.message, start); return ok(buildSemanticError({ tool: "ip_exclusion", semantic_domain: dom, code: selErr("ip_exclusion", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "ip_exclusion", false, em, start); return ok(buildSemanticError({ tool: "ip_exclusion", semantic_domain: dom, code: selErr("ip_exclusion", em), message: em })); }
+      await logUsage(sb, member.id, "ip_exclusion", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `ip_exclusion action='${params.action}' ok.`,
+        next_actions: ["ip_exclusion action='add_asset': registrar obra (sha256)", "ip_exclusion action='export': gerar Anexo I"],
+        audit: { tool: "ip_exclusion", semantic_domain: dom, pii_level: "self", permission: "declarant_self", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC internal (declarant-only; view_pii admin org-fenced + logged)", resource_id: params.declaration_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -10737,7 +11230,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.6.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.7.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -10786,10 +11279,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.84.0",
+  ef_version: "2.85.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.6.0", tools: 33 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.7.0", tools: 40 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

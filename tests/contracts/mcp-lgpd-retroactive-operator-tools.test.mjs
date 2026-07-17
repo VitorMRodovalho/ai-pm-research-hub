@@ -210,8 +210,8 @@ test('p239b #332: nucleo-ia-hub MCP server bumped to 2.79.0 (was 2.78.1 pre-p239
   );
 });
 
-test('ef_version is 2.84.0 (#1383 Wave 4 semantic surface; was 2.83.0 at Wave 3)', () => {
-  assert.match(EF, /ef_version:\s*"2\.84\.0"/, '/health must report ef_version 2.84.0');
+test('ef_version is 2.85.0 (#1383 Wave 5 semantic surface; was 2.84.0 at Wave 4)', () => {
+  assert.match(EF, /ef_version:\s*"2\.85\.0"/, '/health must report ef_version 2.85.0');
 });
 
 test('p239b #332 + #411 + #191 + #188 + #415 + #459 + #209 + #301 + #1138: /health surface declares /mcp tools: 323 + version 2.79.0', () => {
