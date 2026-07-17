@@ -12,8 +12,8 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.6.0) — public semantic gateway (SPEC-280 / EPIC #1383).
-  **33 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
+- `/semantic` (server: `nucleo-ia-semantic`, v0.7.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+  **40 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
   members/engagements/initiatives** (`member_search`, `member_get`, `member_emails`, `member_lifecycle`,
@@ -21,7 +21,8 @@ Three surfaces:
   **Wave 3 events/attendance/meetings** (`event_search`, `event_write`, `attendance_record`,
   `attendance_report`, `meeting_minutes`, `meeting_actions`) + 6 **Wave 4 selection/evaluation**
   (`selection_dashboard`, `application_get`, `evaluation_submit`, `interview_manage`, `selection_decide`,
-  `visitor_leads`).
+  `visitor_leads`) + 7 **Wave 5 governance/docs/certificates** (`document_get`, `document_version_write`,
+  `document_comment`, `change_request`, `signature_flow`, `certificate_manage`, `ip_exclusion`).
   Stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + the #785
   (ADR-0105) fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`); the PII
   surface (member_search/member_get/member_emails) masks email/auth_id unless `view_pii` (`canSeePII()`).
@@ -34,8 +35,18 @@ Three surfaces:
   Migration `20260805000458` widened `get_application_interviews` (GP-only → committee + COI) and revoked an
   anon EXECUTE drift on `recalculate_cycle_rankings`. Kept RAW on purpose: `compute_application_scores`
   (service-role helper), `generate_interview_briefing` (inline-Haiku), `capture_visitor_lead` (public entry).
+  **Wave 5 governance tools pass through RPC-internal authority** (the READ RPCs enforce the `visibility_class`
+  ceiling — migs 450/451; version writes = `manage_member`, manual-version 2-of-N + CRs = `manage_platform`/
+  `curate_content`; certificates + ip-exclusion self-gate). W5 corrects two always-fail-and-masked enum bugs:
+  `document_comment` visibility = `curator_only|submitter_only|change_notes` (RPC `create_document_comment`),
+  `change_request` cr_type = `editorial|operational|structural|emergency`. Additional W5 dispatch divergences:
+  `add_document_comment`→`create_document_comment`, `list_change_requests`→`get_change_requests`,
+  `list_my_signatures`→`get_my_signatures`. Migration `20260805000459` clamped `submit_change_request`
+  priority (`critical`→`high`, was a hard CHECK fail) and REVOKEd dead anon/PUBLIC EXECUTE on 14 governance/cert
+  write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (Lorena-only, never auto),
+  `review_change_request`/`approve_change_request` (open CR-authority finding — V3 fallback reaches `implement`).
   Raw tools stay registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`.
-  Contract guards: `tests/contracts/semantic-envelope-w{1,2,3,4}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
+  Contract guards: `tests/contracts/semantic-envelope-w{1,2,3,4,5}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
   differently per surface — `/semantic` tools live in `registerSemanticTools()` and must be excluded from
   the `/mcp` 256-cap computation (see the SEMANTIC_ONLY set in the #1377 test).
 - `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's
