@@ -362,6 +362,72 @@ governance/certificate write RPCs** was REVOKEd (all already fail-closed; defens
 
 ---
 
+## Wave 6a — Comms / drive / partners (7 tools, `nucleo-ia-semantic` v0.8.0, ef 2.86.0)
+
+The first half of the long tail (§2.6). Authority audited live 2026-07-17 (`pg_get_functiondef`): the comms
+readers gate on comms authority (`manage_comms|manage_member|write_board`), partner reads on `view_partner`,
+partner/webinar/idea/drive writes on the RPC's own internal gate (`manage_comms`/`manage_event`/`manage_partner`/
+`manage_platform`). The semantic layer passes through and surfaces the RPC's own `{error}`/RAISE in `ok:false`.
+
+**Raw-side hardening rode along in migration `20260805000460`, proven live (impersonated, rolled back):**
+- `search_partner_cards` was SECURITY DEFINER with **no `EXECUTE` grant to authenticated** (unreachable) **and no
+  confidential filter** on the `board_items` join. Added the #785 gate (`rls_can_see_item(bi.id)`, ADR-0105) and
+  granted it to `authenticated` (REVOKE anon/PUBLIC) so `partner_crm` search is reachable AND confidential-safe.
+- The webinar/idea write RPCs (`create/update/review_webinar_proposal`, `convert_proposal_to_webinar`,
+  `update_webinar_comms_assets`, `advance_idea_stage`, `fork_idea_to_channel`, `link_idea_to_series`,
+  `propose_publication_idea`) had drifted onto a **PUBLIC/anon `EXECUTE` grant**. All already reject a caller
+  whose `auth.uid()` has no member (fail-closed), so this was defense-in-depth: REVOKE anon/PUBLIC + re-GRANT
+  authenticated (the PUBLIC-default trap, #965).
+- **Enum correction:** the raw `log_partner_interaction` advertised `document`/`other`, which fail the live
+  `partner_interactions_interaction_type_check` on every call. Both the raw tool schema and `partner_crm` now use
+  the live CHECK enum (`email|whatsapp|linkedin|call|meeting|note|status_change`).
+- **Ownership gate:** the Service-Account Drive writers `upload_text_to_drive_folder` + `create_drive_subfolder`
+  were gated only by `rls_is_member` (any authenticated member could write to any named folder). They now require
+  `write_board`/`manage_event`/`manage_member`.
+
+**Deliberately kept raw (not surfaced semantically):** `upload_text_to_drive_folder` + `create_drive_subfolder`
+(Service-Account operations — but hardened above); `provision_initiative_drive` + `reconcile_initiative_drive_access`
+(multi-step SA orchestrations, #1376/ADR-0124; the auto-grant cron uses the ADR-0028 bypass, not this path);
+`create_notification` (shared low-level helper; the authenticated-user spoofing surface is tracked as a follow-up,
+not patched mid-wave).
+
+### `comms_report` (R)
+- **Intent:** comms dashboards/metrics/pipeline/member-card. **`scope`:** `dashboard` · `metrics_by_channel` · `pipeline` · `pending_webinars` · `member_card` (query|person_id) · `campaign` (send_id) · `notifications` (window_days).
+- **Absorbs:** `get_comms_dashboard` (→ `get_comms_dashboard_metrics`) · `get_comms_metrics_by_channel` (→ `comms_metrics_latest_by_channel`) · `get_comms_pipeline` · `get_comms_pending_webinars` (→ `webinars_pending_comms`) · `get_member_comms_card` · `get_campaign_analytics` · `get_notifications_analytics`.
+- **Gate:** comms authority (`manage_comms|manage_member|write_board`); confidential rows excluded by RPC-internal filters (mig 447 / comms_pipeline). Read-only.
+
+### `comms_post` (W)
+- **Intent:** scheduled social posts + tribe notifications. **`action`:** `schedule` · `cancel` · `list` · `notify_tribe`.
+- **Absorbs:** `schedule_comms_post` · `cancel_scheduled_comms_post` · `list_scheduled_comms_posts` · `send_notification_to_tribe` (→ loops `create_notification`).
+- **Gate:** `manage_comms` for schedule/cancel/list; `write` for notify_tribe (tribe-scoped). Warns that IG collab/user-tags/story link-stickers + LinkedIn mentions are manual-only (#1374).
+
+### `webinar_manage` (W)
+- **Intent:** webinar proposal lifecycle. **`action`:** `create` · `update` · `review` · `convert` · `list` · `list_tribe` · `update_assets`.
+- **Absorbs:** `create/update/review_webinar_proposal` · `convert_proposal_to_webinar` · `list_webinar_proposals` · `list_tribe_webinars` (→ `list_webinars_v2`) · `update_webinar_comms_assets`.
+- **Gate:** `manage_event` for review/convert; `write_board|manage_event|manage_member` for update_assets; create/update open to active members (RPC scopes proposer/committee). `format_type` is a Zod enum.
+
+### `idea_pipeline` (R/W)
+- **Intent:** publication/content idea funnel + research pipeline. **`action`:** `list` · `propose` · `advance` · `fork` · `link_series` · `research`.
+- **Absorbs:** `get_idea_pipeline` · `propose_publication_idea` · `advance_idea_stage` · `fork_idea_to_channel` · `link_idea_to_series` · `get_research_pipeline` (→ `get_global_research_pipeline`).
+- **Gate:** any active member proposes; advance-to-approved/published + research are RPC/committee-gated. Enforces the `source_type` XOR `source_id` pairing before dispatch; `source_type`/`new_stage` are Zod enums of the live CHECKs.
+
+### `drive_links` (R/W)
+- **Intent:** link/register Drive folders & files. **`action`:** `link_initiative` · `unlink_initiative` · `list_initiative` · `link_board` · `unlink_board` · `list_board` · `register_file` · `list_files` · `discoveries`.
+- **Absorbs:** `link/unlink/get_initiative_drive_links` · `link/unlink/get_board_drive_links` · `register_card_drive_file` · `list_card_drive_files` · `list_drive_discoveries`.
+- **Gate:** RPC-internal (`manage_member` OR `write`/`board_admin` for links; #785 on reads). SA text-upload + subfolder-create stay raw (hardened above).
+
+### `drive_access_admin` (W)
+- **Intent:** ADR-0124 provisioning ledger + revocations (#1376). **`action`:** `list_grants` · `grant_health` · `approve_revocation` · `bulk_approve_revocation` · `revocation_pending` · `discovery_health`.
+- **Absorbs:** `admin_list_membership_drive_grants` · `get_membership_drive_grant_health` · `approve/bulk_approve_drive_revocations` · `list_drive_revocation_pending` (→ `admin_list_drive_revocation_audit`) · `get_drive_discovery_health`.
+- **Gate:** `manage_platform` OR `manage_member` (GP/DPO), each RPC re-enforces. `provision_initiative_drive`/`reconcile_initiative_drive_access` stay raw (SA orchestrations).
+
+### `partner_crm` (R/W)
+- **Intent:** partner entities, interactions, pipeline, card links. **`action`:** `search` · `list_cards` · `card_partners` · `pipeline` · `followups` · `interactions` · `manage` (entity_action) · `log_interaction` · `link_card` · `unlink_card`.
+- **Absorbs:** all 11 partner tools (`manage_partner` → `admin_manage_partner_entity` · `log_partner_interaction` → `add_partner_interaction` · `list_partner_interactions` → `get_partner_interactions` · `get_partner_pipeline` · `get_partner_followups` · `search_partner_cards` · `link/unlink_partner_to_card` · `list_partner_cards` · `list_card_partners`).
+- **Gate:** reads `view_partner`, writes `manage_partner`; #785 on the card joins. `interaction_type`/`entity_type`/`status`/`link_role` are Zod enums (interaction_type = the live CHECK).
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
@@ -372,7 +438,8 @@ governance/certificate write RPCs** was REVOKEd (all already fail-closed; defens
 | **3** | **Events / attendance / meetings** | **shipped 2026-07-16** |
 | **4** | **Selection & evaluation** | **shipped 2026-07-17** |
 | **5** | **Governance / docs / certificates** | **shipped 2026-07-17** |
-| 6 | Comms / drive / partners / knowledge / gamification / ops | planned |
+| **6a** | **Comms / drive / partners** | **shipped 2026-07-17** |
+| 6b | Knowledge / gamification / admin / audit / lgpd | planned |
 
 Per-wave exit criteria (all 8 must tick): authority/RLS audited · envelope contract test green ·
 256-cap headroom · deprecation wiring (no breakage) · docs shipped (this file + matrix + `rules/mcp.md` + wiki) ·

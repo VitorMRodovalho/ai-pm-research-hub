@@ -179,13 +179,13 @@ test('W4[interview_manage]: keeps generate_interview_briefing raw (inline-Haiku,
   }
 });
 
-test('W4: /semantic health surface advertises 40 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5)', () => {
+test('W4: /semantic health surface advertises 47 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 40, '/semantic health tools count must be 40 after Wave 5');
+  assert.equal(Number(health[1]), 47, '/semantic health tools count must be 47 after Wave 6a');
 });
 
-test('W4: nucleo-ia-semantic version bumped to 0.7.0 (Wave 5)', () => {
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.7\.0"\s*\}\s*\)/,
-    '/semantic McpServer must be v0.7.0 at Wave 5');
+test('W4: nucleo-ia-semantic version bumped to 0.8.0 (Wave 6a)', () => {
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.8\.0"\s*\}\s*\)/,
+    '/semantic McpServer must be v0.8.0 at Wave 6a');
 });

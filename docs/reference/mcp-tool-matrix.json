@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-07-17T16:11:30.761Z",
+  "generated_at": "2026-07-17T17:13:08.274Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 382,
+  "total": 389,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
     "events": 22,
     "gamification": 15,
     "board": 78,
-    "tribe": 120,
-    "comms": 16,
+    "tribe": 123,
+    "comms": 19,
     "knowledge": 12,
-    "partners": 11,
+    "partners": 12,
     "selection": 31,
     "health": 19,
     "governance": 34,
@@ -2984,7 +2984,11 @@
         "register_card_drive_file"
       ],
       "tables": [],
-      "canV4_actions": [],
+      "canV4_actions": [
+        "manage_event",
+        "manage_member",
+        "write_board"
+      ],
       "external_fetch_count": 1,
       "uses_service_role": true,
       "return_shape_hint": "{ ...efJson, register_to_card: registerResult }"
@@ -2997,7 +3001,11 @@
         "link_initiative_to_drive"
       ],
       "tables": [],
-      "canV4_actions": [],
+      "canV4_actions": [
+        "manage_event",
+        "manage_member",
+        "write_board"
+      ],
       "external_fetch_count": 1,
       "uses_service_role": true,
       "return_shape_hint": "{ ...efJson, auto_link: linkResult }"
@@ -5384,6 +5392,155 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "buildSemanticError({ tool: \"ip_exclusion\", semantic_domain: dom, code: \"unauthenticated\", "
+    },
+    {
+      "name": "comms_report",
+      "description": "Communications reporting surface (absorbs get_comms_dashboard/metrics_by_channel/pipeline/pending_webinars/member_comms_card/campaign_analytics/notifications_analytics). Set `scope`: 'dashboard', 'metrics_by_channel', 'pipeline', 'pending_webinars', 'member_card' (query|person_id), 'campaign' (send_id), 'notifications' (window_days). Requires comms authority (manage_comms OR manage_member OR write_board). Confidential-initiative rows are excluded by the underlying RPC gates (mig 447 / comms_pipeline). Stable envelope.",
+      "domain": "comms",
+      "rpcs": [
+        "comms_metrics_latest_by_channel",
+        "get_campaign_analytics",
+        "get_comms_dashboard_metrics",
+        "get_comms_pipeline",
+        "get_member_comms_card",
+        "get_notifications_analytics",
+        "webinars_pending_comms"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_comms",
+        "manage_member",
+        "write_board"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"comms_report\", semantic_domain: dom, code: \"unauthenticated\", "
+    },
+    {
+      "name": "comms_post",
+      "description": "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. Stable envelope.",
+      "domain": "comms",
+      "rpcs": [
+        "cancel_scheduled_comms_post",
+        "create_notification",
+        "list_scheduled_comms_posts",
+        "schedule_comms_post"
+      ],
+      "tables": [
+        "members"
+      ],
+      "canV4_actions": [
+        "manage_comms",
+        "write"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"comms_post\", semantic_domain: dom, code: \"unauthenticated\", me"
+    },
+    {
+      "name": "webinar_manage",
+      "description": "Webinar proposal lifecycle (absorbs create/update/review/convert_webinar_proposal + list_webinar_proposals + list_tribe_webinars + update_webinar_comms_assets). Set `action`: 'create' (title+format), 'update' (proposal_id), 'review' (proposal_id+decision — manage_event), 'convert' (proposal_id+scheduled_at+chapter_code — manage_event), 'list' (status?), 'list_tribe' (status?), 'update_assets' (webinar_id — comms/board/admin). create/update are open to any active member (RPC scopes proposer/committee). format: palestra|painel|dupla|lightning|workshop. Stable envelope.",
+      "domain": "comms",
+      "rpcs": [
+        "convert_proposal_to_webinar",
+        "create_webinar_proposal",
+        "list_webinar_proposals",
+        "list_webinars_v2",
+        "review_webinar_proposal",
+        "update_webinar_comms_assets",
+        "update_webinar_proposal"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_event",
+        "manage_member",
+        "write_board"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"webinar_manage\", semantic_domain: dom, code: \"unauthenticated\""
+    },
+    {
+      "name": "idea_pipeline",
+      "description": "Publication/content idea funnel (absorbs get_idea_pipeline/propose_publication_idea/advance_idea_stage/fork_idea_to_channel/link_idea_to_series + get_research_pipeline). Set `action`: 'list' (tribe_id?/stage?/series_id?), 'propose' (title [+source_type & source_id paired]), 'advance' (idea_id+new_stage), 'fork' (idea_id+channel), 'link_series' (idea_id+series_id), 'research'. Any active member may propose; advance to approved/published and research are gated by the RPC/committee. Stable envelope.",
+      "domain": "tribe",
+      "rpcs": [
+        "advance_idea_stage",
+        "fork_idea_to_channel",
+        "get_global_research_pipeline",
+        "get_idea_pipeline",
+        "link_idea_to_series",
+        "propose_publication_idea"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"idea_pipeline\", semantic_domain: dom, code: \"unauthenticated\","
+    },
+    {
+      "name": "drive_links",
+      "description": "Drive folder/file linking (absorbs link/unlink/get_initiative_drive_links + link/unlink/get_board_drive_links + register_card_drive_file + list_card_drive_files + list_drive_discoveries). Set `action`: 'link_initiative', 'unlink_initiative' (link_id), 'list_initiative' (initiative_id), 'link_board', 'unlink_board' (link_id), 'list_board' (board_id), 'register_file' (board_item_id+drive_file_id+drive_file_url+filename), 'list_files' (board_item_id), 'discoveries' (initiative_id?). Authority is enforced by each RPC (link=manage_member OR write/board_admin; reads carry #785). NOTE: text upload + subfolder creation stay in the raw upload_text_to_drive_folder / create_drive_subfolder tools (service-account operations). Stable envelope.",
+      "domain": "tribe",
+      "rpcs": [
+        "get_board_drive_links",
+        "get_initiative_drive_links",
+        "link_board_to_drive",
+        "link_initiative_to_drive",
+        "list_card_drive_files",
+        "list_drive_discoveries",
+        "register_card_drive_file",
+        "unlink_board_from_drive",
+        "unlink_initiative_from_drive"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"drive_links\", semantic_domain: dom, code: \"unauthenticated\", m"
+    },
+    {
+      "name": "drive_access_admin",
+      "description": "Drive membership-grant administration (#1376 / ADR-0124; absorbs admin_list_membership_drive_grants + get_membership_drive_grant_health + approve/bulk_approve_drive_revocations + list_drive_revocation_pending + get_drive_discovery_health). Set `action`: 'list_grants' (status?/initiative_id?), 'grant_health', 'approve_revocation' (audit_id), 'bulk_approve_revocation' (member_id), 'revocation_pending', 'discovery_health'. GP/DPO cockpit — requires manage_platform or manage_member; each RPC re-enforces. NOTE: provision_initiative_drive + reconcile_initiative_drive_access stay raw (service-account orchestrations; the auto-grant cron uses the ADR-0028 bypass, not this path). Stable envelope.",
+      "domain": "tribe",
+      "rpcs": [
+        "admin_list_drive_revocation_audit",
+        "admin_list_membership_drive_grants",
+        "approve_drive_revocation",
+        "bulk_approve_drive_revocations",
+        "get_drive_discovery_health",
+        "get_membership_drive_grant_health"
+      ],
+      "tables": [],
+      "canV4_actions": [
+        "manage_member",
+        "manage_platform"
+      ],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"drive_access_admin\", semantic_domain: dom, code: \"unauthentica"
+    },
+    {
+      "name": "partner_crm",
+      "description": "Partner CRM (absorbs manage_partner/log_partner_interaction/list_partner_interactions/get_partner_pipeline/get_partner_followups/search_partner_cards/link/unlink_partner_to_card/list_partner_cards/list_card_partners). Reads require view_partner; writes require manage_partner. Set `action`: 'search' (cards), 'list_cards' (partner_entity_id), 'card_partners' (board_item_id), 'pipeline', 'followups', 'interactions' (partner_id), 'manage' (entity_action create|update), 'log_interaction' (partner_id+interaction_type+summary), 'link_card', 'unlink_card'. interaction_type is validated against the live CHECK (email|whatsapp|linkedin|call|meeting|note|status_change). Card joins carry #785. Stable envelope.",
+      "domain": "partners",
+      "rpcs": [
+        "add_partner_interaction",
+        "admin_manage_partner_entity",
+        "get_partner_followups",
+        "get_partner_interactions",
+        "get_partner_pipeline",
+        "link_partner_to_card",
+        "list_card_partners",
+        "list_partner_cards",
+        "search_partner_cards",
+        "unlink_partner_from_card"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"partner_crm\", semantic_domain: dom, code: \"unauthenticated\", m"
     }
   ]
 }
