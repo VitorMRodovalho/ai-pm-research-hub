@@ -106,6 +106,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       admin_links: {
@@ -149,6 +163,143 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      affiliation_access_attestations: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          id: string
+          member_id: string
+          organization_id: string
+          signed_ip: unknown
+          signed_user_agent: string | null
+          terms_version: string
+          valid_until: string
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          member_id: string
+          organization_id?: string
+          signed_ip?: unknown
+          signed_user_agent?: string | null
+          terms_version: string
+          valid_until: string
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          member_id?: string
+          organization_id?: string
+          signed_ip?: unknown
+          signed_user_agent?: string | null
+          terms_version?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_block_formats: {
+        Row: {
+          active: boolean
+          base_points: number
+          created_at: string
+          default_duration_min: number
+          label_i18n: Json
+          organization_id: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_points: number
+          created_at?: string
+          default_duration_min: number
+          label_i18n: Json
+          organization_id?: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_points?: number
+          created_at?: string
+          default_duration_min?: number
+          label_i18n?: Json
+          organization_id?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_block_formats_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_analysis_runs: {
         Row: {
@@ -208,6 +359,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_analysis_runs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
         ]
@@ -338,6 +496,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_processing_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_processing_log_caller_member_id_fkey"
             columns: ["caller_member_id"]
             isOneToOne: false
@@ -371,6 +536,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_processing_log_caller_member_id_fkey"
+            columns: ["caller_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_processing_log_caller_member_id_fkey"
+            columns: ["caller_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -426,6 +605,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_score_validations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_score_validations_validator_id_fkey"
             columns: ["validator_id"]
             isOneToOne: false
@@ -459,6 +645,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_score_validations_validator_id_fkey"
+            columns: ["validator_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_score_validations_validator_id_fkey"
+            columns: ["validator_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -584,6 +784,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "announcements_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -673,6 +887,24 @@ export type Database = {
           },
         ]
       }
+      anon_rate_counters: {
+        Row: {
+          bucket_key: string
+          expires_at: string
+          hits: number
+        }
+        Insert: {
+          bucket_key: string
+          expires_at: string
+          hits?: number
+        }
+        Update: {
+          bucket_key?: string
+          expires_at?: string
+          hits?: number
+        }
+        Relationships: []
+      }
       approval_chains: {
         Row: {
           activated_at: string | null
@@ -681,11 +913,13 @@ export type Database = {
           closed_by: string | null
           created_at: string
           document_id: string
+          gate_state: Json
           gates: Json
           id: string
           notes: string | null
           opened_at: string | null
           opened_by: string | null
+          organization_id: string
           status: string
           updated_at: string
           version_id: string
@@ -697,11 +931,13 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           document_id: string
+          gate_state?: Json
           gates?: Json
           id?: string
           notes?: string | null
           opened_at?: string | null
           opened_by?: string | null
+          organization_id: string
           status?: string
           updated_at?: string
           version_id: string
@@ -713,11 +949,13 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           document_id?: string
+          gate_state?: Json
           gates?: Json
           id?: string
           notes?: string | null
           opened_at?: string | null
           opened_by?: string | null
+          organization_id?: string
           status?: string
           updated_at?: string
           version_id?: string
@@ -757,6 +995,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_chains_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_chains_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "approval_chains_document_id_fkey"
@@ -801,6 +1053,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "approval_chains_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_chains_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "approval_chains_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "approval_chains_version_id_fkey"
             columns: ["version_id"]
             isOneToOne: false
@@ -817,6 +1090,7 @@ export type Database = {
           created_at: string
           gate_kind: string
           id: string
+          organization_id: string
           referenced_policy_version_id: string | null
           sections_verified: Json | null
           signature_hash: string
@@ -833,6 +1107,7 @@ export type Database = {
           created_at?: string
           gate_kind: string
           id?: string
+          organization_id: string
           referenced_policy_version_id?: string | null
           sections_verified?: Json | null
           signature_hash: string
@@ -849,6 +1124,7 @@ export type Database = {
           created_at?: string
           gate_kind?: string
           id?: string
+          organization_id?: string
           referenced_policy_version_id?: string | null
           sections_verified?: Json | null
           signature_hash?: string
@@ -864,6 +1140,13 @@ export type Database = {
             columns: ["approval_chain_id"]
             isOneToOne: false
             referencedRelation: "approval_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_signoffs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -907,6 +1190,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_signoffs_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_signoffs_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -1074,6 +1371,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "attendance_corrected_by_fkey"
+            columns: ["corrected_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_corrected_by_fkey"
+            columns: ["corrected_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "attendance_edited_by_fkey"
             columns: ["edited_by"]
             isOneToOne: false
@@ -1107,6 +1418,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "attendance_event_id_fkey"
@@ -1151,6 +1476,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "attendance_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1191,6 +1530,413 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      blind_review_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by_member_id: string | null
+          id: string
+          metadata: Json
+          reviewer_member_id: string
+          session_id: string
+          status: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_member_id?: string | null
+          id?: string
+          metadata?: Json
+          reviewer_member_id: string
+          session_id: string
+          status?: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_member_id?: string | null
+          id?: string
+          metadata?: Json
+          reviewer_member_id?: string
+          session_id?: string
+          status?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "blind_review_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blind_review_pareceres: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          parecer_body: string | null
+          recommendation: string | null
+          reviewer_member_id: string
+          session_id: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          parecer_body?: string | null
+          recommendation?: string | null
+          reviewer_member_id: string
+          session_id: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          parecer_body?: string | null
+          recommendation?: string | null
+          reviewer_member_id?: string
+          session_id?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "blind_review_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blind_review_sessions: {
+        Row: {
+          closed_at: string | null
+          content_product_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          release_kind: string | null
+          released_at: string | null
+          released_by_member_id: string | null
+          review_round: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          content_product_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          release_kind?: string | null
+          released_at?: string | null
+          released_by_member_id?: string | null
+          review_round?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          content_product_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          release_kind?: string | null
+          released_at?: string | null
+          released_by_member_id?: string | null
+          review_round?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blind_review_sessions_content_product_id_fkey"
+            columns: ["content_product_id"]
+            isOneToOne: false
+            referencedRelation: "content_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -1248,6 +1994,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_likes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_likes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "blog_likes_post_id_fkey"
@@ -1365,6 +2125,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "blog_posts_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "blog_posts_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1465,6 +2239,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_drive_links_unlinked_by_fkey"
             columns: ["unlinked_by"]
             isOneToOne: false
@@ -1498,6 +2286,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -1563,6 +2365,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_item_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_item_assignments_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -1603,6 +2419,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -1686,6 +2516,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_item_checklists_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_item_checklists_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -1719,6 +2563,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_checklists_board_item_id_fkey"
@@ -1761,6 +2619,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -1836,6 +2708,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_comments_board_item_id_fkey"
@@ -1919,6 +2805,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_event_links_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_event_links_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_event_links_board_item_id_fkey"
@@ -2026,6 +2926,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "board_item_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_item_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       board_item_tag_assignments: {
@@ -2075,6 +2989,7 @@ export type Database = {
           baseline_locked_at: string | null
           board_id: string
           checklist: Json | null
+          content_product_id: string | null
           created_at: string
           created_by: string | null
           curation_due_at: string | null
@@ -2120,6 +3035,7 @@ export type Database = {
           baseline_locked_at?: string | null
           board_id: string
           checklist?: Json | null
+          content_product_id?: string | null
           created_at?: string
           created_by?: string | null
           curation_due_at?: string | null
@@ -2165,6 +3081,7 @@ export type Database = {
           baseline_locked_at?: string | null
           board_id?: string
           checklist?: Json | null
+          content_product_id?: string | null
           created_at?: string
           created_by?: string | null
           curation_due_at?: string | null
@@ -2237,6 +3154,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_items_board_id_fkey"
             columns: ["board_id"]
             isOneToOne: false
@@ -2244,6 +3175,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_items_content_product_id_fkey"
+            columns: ["content_product_id"]
+            isOneToOne: false
+            referencedRelation: "content_products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "board_items_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -2279,6 +3217,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_items_leader_reviewer_id_fkey"
             columns: ["leader_reviewer_id"]
             isOneToOne: false
@@ -2312,6 +3264,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_leader_reviewer_id_fkey"
+            columns: ["leader_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_leader_reviewer_id_fkey"
+            columns: ["leader_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_items_mirror_source_id_fkey"
@@ -2368,6 +3334,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_items_source_partner_id_fkey"
@@ -2461,6 +3441,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_lifecycle_events_board_id_fkey"
             columns: ["board_id"]
             isOneToOne: false
@@ -2552,6 +3546,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "board_members_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_members_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "board_members_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -2585,6 +3593,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -2712,6 +3734,27 @@ export type Database = {
           },
         ]
       }
+      br_holidays: {
+        Row: {
+          created_at: string
+          holiday_date: string
+          label: string
+          scope: string
+        }
+        Insert: {
+          created_at?: string
+          holiday_date: string
+          label: string
+          scope: string
+        }
+        Update: {
+          created_at?: string
+          holiday_date?: string
+          label?: string
+          scope?: string
+        }
+        Relationships: []
+      }
       broadcast_log: {
         Row: {
           body: string
@@ -2788,6 +3831,210 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      buddy_pairings: {
+        Row: {
+          afilhado_member_id: string
+          created_at: string
+          id: string
+          message: string | null
+          offered_at: string
+          padrino_member_id: string
+          responded_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          afilhado_member_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          offered_at?: string
+          padrino_member_id: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          afilhado_member_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          offered_at?: string
+          padrino_member_id?: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -2910,6 +4157,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaign_recipients_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "campaign_recipients_send_id_fkey"
             columns: ["send_id"]
             isOneToOne: false
@@ -3007,6 +4268,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaign_sends_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_sends_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "campaign_sends_sent_by_fkey"
             columns: ["sent_by"]
             isOneToOne: false
@@ -3040,6 +4315,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_sends_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_sends_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "campaign_sends_source_idea_id_fkey"
@@ -3138,6 +4427,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "campaign_templates_source_idea_id_fkey"
@@ -3279,6 +4582,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "certificates_issued_by_fkey"
             columns: ["issued_by"]
             isOneToOne: false
@@ -3314,6 +4631,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "certificates_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -3347,6 +4678,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -3492,6 +4837,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "champions_awarded_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "champions_awarded_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -3541,6 +4900,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "champions_awarded_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "champions_awarded_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
@@ -3574,6 +4947,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -3714,6 +5101,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "change_requests_implemented_by_fkey"
+            columns: ["implemented_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_implemented_by_fkey"
+            columns: ["implemented_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "change_requests_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3756,6 +5157,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "change_requests_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
@@ -3789,6 +5204,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "change_requests_source_document_id_fkey"
@@ -3872,6 +5301,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chapter_needs_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_needs_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       chapter_registry: {
@@ -3888,6 +5331,7 @@ export type Database = {
           logo_url: string | null
           state: string
           updated_at: string | null
+          vep_name_aliases: string[]
         }
         Insert: {
           chapter_code: string
@@ -3902,6 +5346,7 @@ export type Database = {
           logo_url?: string | null
           state: string
           updated_at?: string | null
+          vep_name_aliases?: string[]
         }
         Update: {
           chapter_code?: string
@@ -3916,6 +5361,7 @@ export type Database = {
           logo_url?: string | null
           state?: string
           updated_at?: string | null
+          vep_name_aliases?: string[]
         }
         Relationships: []
       }
@@ -4018,6 +5464,7 @@ export type Database = {
       }
       comms_media_items: {
         Row: {
+          cached_image_url: string | null
           caption: string | null
           channel: string
           comments: number | null
@@ -4036,6 +5483,7 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          cached_image_url?: string | null
           caption?: string | null
           channel: string
           comments?: number | null
@@ -4054,6 +5502,7 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          cached_image_url?: string | null
           caption?: string | null
           channel?: string
           comments?: number | null
@@ -4171,6 +5620,65 @@ export type Database = {
           upserted_rows?: number
         }
         Relationships: []
+      }
+      comms_scheduled_posts: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          error: string | null
+          external_id: string | null
+          id: string
+          idea_id: string | null
+          label: string | null
+          media_type: string
+          payload: Json
+          permalink: string | null
+          published_at: string | null
+          scheduled_at: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          external_id?: string | null
+          id?: string
+          idea_id?: string | null
+          label?: string | null
+          media_type: string
+          payload: Json
+          permalink?: string | null
+          published_at?: string | null
+          scheduled_at: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          external_id?: string | null
+          id?: string
+          idea_id?: string | null
+          label?: string | null
+          media_type?: string
+          payload?: Json
+          permalink?: string | null
+          published_at?: string | null
+          scheduled_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_scheduled_posts_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "publication_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comms_token_alerts: {
         Row: {
@@ -4340,6 +5848,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "consent_records_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "consent_records_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -4375,10 +5890,249 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "consent_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "consent_records_policy_document_id_fkey"
             columns: ["policy_document_id"]
             isOneToOne: false
             referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_products: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          derived_group_id: string | null
+          id: string
+          initiative_id: string | null
+          organization_id: string
+          proposer_member_id: string | null
+          publication_metadata: Json
+          published_at: string | null
+          review_mode: Database["public"]["Enums"]["review_mode"]
+          review_round: number
+          source_board_item_id: string | null
+          source_document_version_id: string | null
+          source_external_uri: string | null
+          source_kind: Database["public"]["Enums"]["content_product_source_kind"]
+          source_publication_idea_id: string | null
+          status: Database["public"]["Enums"]["content_product_status"]
+          summary: string | null
+          target_audience: string | null
+          target_instrument: Database["public"]["Enums"]["content_product_instrument"]
+          target_language_policy: string | null
+          target_length_policy: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          derived_group_id?: string | null
+          id?: string
+          initiative_id?: string | null
+          organization_id?: string
+          proposer_member_id?: string | null
+          publication_metadata?: Json
+          published_at?: string | null
+          review_mode: Database["public"]["Enums"]["review_mode"]
+          review_round?: number
+          source_board_item_id?: string | null
+          source_document_version_id?: string | null
+          source_external_uri?: string | null
+          source_kind: Database["public"]["Enums"]["content_product_source_kind"]
+          source_publication_idea_id?: string | null
+          status?: Database["public"]["Enums"]["content_product_status"]
+          summary?: string | null
+          target_audience?: string | null
+          target_instrument: Database["public"]["Enums"]["content_product_instrument"]
+          target_language_policy?: string | null
+          target_length_policy?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          derived_group_id?: string | null
+          id?: string
+          initiative_id?: string | null
+          organization_id?: string
+          proposer_member_id?: string | null
+          publication_metadata?: Json
+          published_at?: string | null
+          review_mode?: Database["public"]["Enums"]["review_mode"]
+          review_round?: number
+          source_board_item_id?: string | null
+          source_document_version_id?: string | null
+          source_external_uri?: string | null
+          source_kind?: Database["public"]["Enums"]["content_product_source_kind"]
+          source_publication_idea_id?: string | null
+          status?: Database["public"]["Enums"]["content_product_status"]
+          summary?: string | null
+          target_audience?: string | null
+          target_instrument?: Database["public"]["Enums"]["content_product_instrument"]
+          target_language_policy?: string | null
+          target_length_policy?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_derived_group_id_fkey"
+            columns: ["derived_group_id"]
+            isOneToOne: false
+            referencedRelation: "content_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_source_board_item_id_fkey"
+            columns: ["source_board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_source_document_version_id_fkey"
+            columns: ["source_document_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_products_source_publication_idea_id_fkey"
+            columns: ["source_publication_idea_id"]
+            isOneToOne: false
+            referencedRelation: "publication_ideas"
             referencedColumns: ["id"]
           },
         ]
@@ -4497,6 +6251,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cost_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "cost_entries_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -4586,6 +6354,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -4716,6 +6498,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cr_approvals_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_approvals_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       cron_run_log: {
@@ -4765,8 +6561,161 @@ export type Database = {
           },
         ]
       }
+      curation_artifact_snapshots: {
+        Row: {
+          board_item_file_id: string | null
+          board_item_id: string
+          capture_trigger: string
+          captured_by: string | null
+          content_product_id: string | null
+          created_at: string
+          digest_status: string
+          document_version_id: string | null
+          drive_revision_id: string | null
+          file_digest: string | null
+          id: string
+          initiative_id: string | null
+          metadata_snapshot: Json | null
+          organization_id: string
+          review_round: number
+          snapshot_at: string
+          version_label: string
+        }
+        Insert: {
+          board_item_file_id?: string | null
+          board_item_id: string
+          capture_trigger?: string
+          captured_by?: string | null
+          content_product_id?: string | null
+          created_at?: string
+          digest_status?: string
+          document_version_id?: string | null
+          drive_revision_id?: string | null
+          file_digest?: string | null
+          id?: string
+          initiative_id?: string | null
+          metadata_snapshot?: Json | null
+          organization_id: string
+          review_round?: number
+          snapshot_at?: string
+          version_label: string
+        }
+        Update: {
+          board_item_file_id?: string | null
+          board_item_id?: string
+          capture_trigger?: string
+          captured_by?: string | null
+          content_product_id?: string | null
+          created_at?: string
+          digest_status?: string
+          document_version_id?: string | null
+          drive_revision_id?: string | null
+          file_digest?: string | null
+          id?: string
+          initiative_id?: string | null
+          metadata_snapshot?: Json | null
+          organization_id?: string
+          review_round?: number
+          snapshot_at?: string
+          version_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curation_artifact_snapshots_board_item_file_id_fkey"
+            columns: ["board_item_file_id"]
+            isOneToOne: false
+            referencedRelation: "board_item_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_board_item_id_fkey"
+            columns: ["board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_content_product_id_fkey"
+            columns: ["content_product_id"]
+            isOneToOne: false
+            referencedRelation: "content_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       curation_review_log: {
         Row: {
+          artifact_snapshot_id: string | null
           board_item_id: string
           completed_at: string
           created_at: string
@@ -4776,10 +6725,15 @@ export type Database = {
           due_date: string | null
           feedback_notes: string | null
           id: string
+          initiative_id: string | null
           metadata: Json
           organization_id: string
+          review_round: number
+          reviewer_governing_politica_version_id: string | null
+          reviewer_governing_termo_version_id: string | null
         }
         Insert: {
+          artifact_snapshot_id?: string | null
           board_item_id: string
           completed_at?: string
           created_at?: string
@@ -4789,10 +6743,15 @@ export type Database = {
           due_date?: string | null
           feedback_notes?: string | null
           id?: string
+          initiative_id?: string | null
           metadata?: Json
           organization_id?: string
+          review_round?: number
+          reviewer_governing_politica_version_id?: string | null
+          reviewer_governing_termo_version_id?: string | null
         }
         Update: {
+          artifact_snapshot_id?: string | null
           board_item_id?: string
           completed_at?: string
           created_at?: string
@@ -4802,10 +6761,21 @@ export type Database = {
           due_date?: string | null
           feedback_notes?: string | null
           id?: string
+          initiative_id?: string | null
           metadata?: Json
           organization_id?: string
+          review_round?: number
+          reviewer_governing_politica_version_id?: string | null
+          reviewer_governing_termo_version_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "curation_review_log_artifact_snapshot_id_fkey"
+            columns: ["artifact_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "curation_artifact_snapshots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "curation_review_log_board_item_id_fkey"
             columns: ["board_item_id"]
@@ -4849,10 +6819,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "curation_review_log_curator_id_fkey"
+            columns: ["curator_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_review_log_curator_id_fkey"
+            columns: ["curator_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_review_log_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "curation_review_log_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_review_log_reviewer_governing_politica_version_id_fkey"
+            columns: ["reviewer_governing_politica_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_review_log_reviewer_governing_termo_version_id_fkey"
+            columns: ["reviewer_governing_termo_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -4980,6 +6985,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "data_anomaly_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_anomaly_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       data_quality_audit_snapshots: {
@@ -5051,6 +7070,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -5155,6 +7188,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "document_comment_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_comment_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       document_comments: {
@@ -5237,6 +7284,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "document_comments_document_version_id_fkey"
             columns: ["document_version_id"]
             isOneToOne: false
@@ -5285,12 +7346,27 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "document_comments_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_comments_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       document_versions: {
         Row: {
           authored_at: string
           authored_by: string | null
+          change_class: string | null
           content_diff_json: Json | null
           content_html: string
           content_markdown: string | null
@@ -5300,8 +7376,12 @@ export type Database = {
           locked_at: string | null
           locked_by: string | null
           notes: string | null
+          organization_id: string
           published_at: string | null
           published_by: string | null
+          summary_en: string | null
+          summary_es: string | null
+          summary_pt: string | null
           updated_at: string
           version_label: string
           version_number: number
@@ -5309,6 +7389,7 @@ export type Database = {
         Insert: {
           authored_at?: string
           authored_by?: string | null
+          change_class?: string | null
           content_diff_json?: Json | null
           content_html: string
           content_markdown?: string | null
@@ -5318,8 +7399,12 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           notes?: string | null
+          organization_id: string
           published_at?: string | null
           published_by?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
+          summary_pt?: string | null
           updated_at?: string
           version_label: string
           version_number: number
@@ -5327,6 +7412,7 @@ export type Database = {
         Update: {
           authored_at?: string
           authored_by?: string | null
+          change_class?: string | null
           content_diff_json?: Json | null
           content_html?: string
           content_markdown?: string | null
@@ -5336,8 +7422,12 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           notes?: string | null
+          organization_id?: string
           published_at?: string | null
           published_by?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
+          summary_pt?: string | null
           updated_at?: string
           version_label?: string
           version_number?: number
@@ -5377,6 +7467,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_authored_by_fkey"
+            columns: ["authored_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_authored_by_fkey"
+            columns: ["authored_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "document_versions_document_id_fkey"
@@ -5421,6 +7525,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_versions_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_versions_published_by_fkey"
             columns: ["published_by"]
             isOneToOne: false
@@ -5454,6 +7579,146 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      drive_curation_grants: {
+        Row: {
+          api_error: Json | null
+          board_item_id: string
+          created_at: string
+          drive_file_id: string
+          drive_file_url: string | null
+          grant_reason: string
+          granted_at: string | null
+          grantee_member_id: string
+          id: string
+          last_dispatched_at: string | null
+          notes: string | null
+          organization_id: string
+          permission_email: string
+          permission_id: string | null
+          requested_at: string
+          revision_id: string | null
+          revoked_at: string | null
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_error?: Json | null
+          board_item_id: string
+          created_at?: string
+          drive_file_id: string
+          drive_file_url?: string | null
+          grant_reason?: string
+          granted_at?: string | null
+          grantee_member_id: string
+          id?: string
+          last_dispatched_at?: string | null
+          notes?: string | null
+          organization_id: string
+          permission_email: string
+          permission_id?: string | null
+          requested_at?: string
+          revision_id?: string | null
+          revoked_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_error?: Json | null
+          board_item_id?: string
+          created_at?: string
+          drive_file_id?: string
+          drive_file_url?: string | null
+          grant_reason?: string
+          granted_at?: string | null
+          grantee_member_id?: string
+          id?: string
+          last_dispatched_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          permission_email?: string
+          permission_id?: string | null
+          requested_at?: string
+          revision_id?: string | null
+          revoked_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_curation_grants_board_item_id_fkey"
+            columns: ["board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -5559,40 +7824,486 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "drive_file_discoveries_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_file_discoveries_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      drive_membership_grants: {
+        Row: {
+          api_error: Json | null
+          created_at: string
+          drive_folder_id: string
+          drive_folder_url: string | null
+          granted_at: string | null
+          grantee_member_id: string | null
+          grantee_person_id: string | null
+          id: string
+          initiative_drive_link_id: string | null
+          initiative_id: string
+          last_dispatched_at: string | null
+          notes: string | null
+          organization_id: string
+          permission_email: string
+          permission_id: string | null
+          reconcile_source: string | null
+          requested_at: string
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_error?: Json | null
+          created_at?: string
+          drive_folder_id: string
+          drive_folder_url?: string | null
+          granted_at?: string | null
+          grantee_member_id?: string | null
+          grantee_person_id?: string | null
+          id?: string
+          initiative_drive_link_id?: string | null
+          initiative_id: string
+          last_dispatched_at?: string | null
+          notes?: string | null
+          organization_id: string
+          permission_email: string
+          permission_id?: string | null
+          reconcile_source?: string | null
+          requested_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_error?: Json | null
+          created_at?: string
+          drive_folder_id?: string
+          drive_folder_url?: string | null
+          granted_at?: string | null
+          grantee_member_id?: string | null
+          grantee_person_id?: string | null
+          id?: string
+          initiative_drive_link_id?: string | null
+          initiative_id?: string
+          last_dispatched_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          permission_email?: string
+          permission_id?: string | null
+          reconcile_source?: string | null
+          requested_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_person_id_fkey"
+            columns: ["grantee_person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_initiative_drive_link_id_fkey"
+            columns: ["initiative_drive_link_id"]
+            isOneToOne: false
+            referencedRelation: "initiative_drive_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drive_offboarding_audit: {
+        Row: {
+          approval_mode: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          detected_at: string
+          drive_file_id: string
+          drive_file_name: string | null
+          drive_file_url: string | null
+          engagement_id: string | null
+          google_error: Json | null
+          id: string
+          is_shared_drive: boolean
+          last_detected_at: string
+          member_id: string
+          notes: string | null
+          organization_id: string
+          permission_email: string
+          permission_id: string
+          permission_role: string | null
+          permission_type: string | null
+          revoked_at: string | null
+          shared_drive_id: string | null
+          skip_reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_mode?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          detected_at?: string
+          drive_file_id: string
+          drive_file_name?: string | null
+          drive_file_url?: string | null
+          engagement_id?: string | null
+          google_error?: Json | null
+          id?: string
+          is_shared_drive?: boolean
+          last_detected_at?: string
+          member_id: string
+          notes?: string | null
+          organization_id: string
+          permission_email: string
+          permission_id: string
+          permission_role?: string | null
+          permission_type?: string | null
+          revoked_at?: string | null
+          shared_drive_id?: string | null
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_mode?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          detected_at?: string
+          drive_file_id?: string
+          drive_file_name?: string | null
+          drive_file_url?: string | null
+          engagement_id?: string | null
+          google_error?: Json | null
+          id?: string
+          is_shared_drive?: boolean
+          last_detected_at?: string
+          member_id?: string
+          notes?: string | null
+          organization_id?: string
+          permission_email?: string
+          permission_id?: string
+          permission_role?: string | null
+          permission_type?: string | null
+          revoked_at?: string | null
+          shared_drive_id?: string | null
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "auth_engagements"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      drive_teardown_scans: {
+        Row: {
+          created_at: string
+          deletable_queued: number
+          emails_scanned: number
+          exceptions_found: number
+          grants_found: number
+          id: string
+          member_id: string | null
+          notes: string | null
+          scan_source: string
+          scanned_at: string
+        }
+        Insert: {
+          created_at?: string
+          deletable_queued?: number
+          emails_scanned?: number
+          exceptions_found?: number
+          grants_found?: number
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          scan_source: string
+          scanned_at?: string
+        }
+        Update: {
+          created_at?: string
+          deletable_queued?: number
+          emails_scanned?: number
+          exceptions_found?: number
+          grants_found?: number
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          scan_source?: string
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       email_verification_pending: {
         Row: {
+          claiming_auth_id: string | null
           consumed_at: string | null
           created_at: string
           dispatched_at: string | null
           expires_at: string
           id: string
           purpose: string
-          requesting_member_id: string
+          requesting_member_id: string | null
           target_email: string
+          target_member_id: string | null
           token: string
         }
         Insert: {
+          claiming_auth_id?: string | null
           consumed_at?: string | null
           created_at?: string
           dispatched_at?: string | null
           expires_at?: string
           id?: string
           purpose?: string
-          requesting_member_id: string
+          requesting_member_id?: string | null
           target_email: string
+          target_member_id?: string | null
           token: string
         }
         Update: {
+          claiming_auth_id?: string | null
           consumed_at?: string | null
           created_at?: string
           dispatched_at?: string | null
           expires_at?: string
           id?: string
           purpose?: string
-          requesting_member_id?: string
+          requesting_member_id?: string | null
           target_email?: string
+          target_member_id?: string | null
           token?: string
         }
         Relationships: [
@@ -5630,6 +8341,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_requesting_member_id_fkey"
+            columns: ["requesting_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_requesting_member_id_fkey"
+            columns: ["requesting_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -5720,6 +8494,7 @@ export type Database = {
           created_by_role: string[]
           default_duration_days: number | null
           description: string | null
+          display_i18n: Json
           display_name: string
           initiative_kinds_allowed: string[]
           is_initiative_scoped: boolean
@@ -5745,6 +8520,7 @@ export type Database = {
           created_by_role?: string[]
           default_duration_days?: number | null
           description?: string | null
+          display_i18n?: Json
           display_name: string
           initiative_kinds_allowed?: string[]
           is_initiative_scoped?: boolean
@@ -5770,6 +8546,7 @@ export type Database = {
           created_by_role?: string[]
           default_duration_days?: number | null
           description?: string | null
+          display_i18n?: Json
           display_name?: string
           initiative_kinds_allowed?: string[]
           is_initiative_scoped?: boolean
@@ -5958,6 +8735,278 @@ export type Database = {
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "engagements_selection_application_id_fkey"
+            columns: ["selection_application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_agenda_block_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          block_id: string | null
+          changed_at: string
+          id: number
+          new_row: Json | null
+          old_row: Json | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          block_id?: string | null
+          changed_at?: string
+          id?: never
+          new_row?: Json | null
+          old_row?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          block_id?: string | null
+          changed_at?: string
+          id?: never
+          new_row?: Json | null
+          old_row?: Json | null
+        }
+        Relationships: []
+      }
+      event_agenda_blocks: {
+        Row: {
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          duration_min: number
+          event_id: string
+          external_guest: boolean
+          format_slug: string
+          guest_name: string | null
+          id: string
+          material_url: string | null
+          organization_id: string
+          owner_member_id: string
+          reserved_at: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_min: number
+          event_id: string
+          external_guest?: boolean
+          format_slug: string
+          guest_name?: string | null
+          id?: string
+          material_url?: string | null
+          organization_id?: string
+          owner_member_id: string
+          reserved_at?: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_min?: number
+          event_id?: string
+          external_guest?: boolean
+          format_slug?: string
+          guest_name?: string | null
+          id?: string
+          material_url?: string | null
+          organization_id?: string
+          owner_member_id?: string
+          reserved_at?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_format_slug_fkey"
+            columns: ["format_slug"]
+            isOneToOne: false
+            referencedRelation: "agenda_block_formats"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       event_audience_rules: {
@@ -5992,6 +9041,250 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_guest_certificates: {
+        Row: {
+          content_snapshot: Json | null
+          counter_signed_at: string | null
+          counter_signed_by: string | null
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          issued_at: string
+          issued_by: string | null
+          language: string
+          organization_id: string
+          pdf_url: string | null
+          person_id: string
+          retention_until: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          verification_code: string
+        }
+        Insert: {
+          content_snapshot?: Json | null
+          counter_signed_at?: string | null
+          counter_signed_by?: string | null
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          language?: string
+          organization_id: string
+          pdf_url?: string | null
+          person_id: string
+          retention_until: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+          verification_code: string
+        }
+        Update: {
+          content_snapshot?: Json | null
+          counter_signed_at?: string | null
+          counter_signed_by?: string | null
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          language?: string
+          organization_id?: string
+          pdf_url?: string | null
+          person_id?: string
+          retention_until?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          verification_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -6062,6 +9355,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invited_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invited_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -6169,6 +9476,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_showcases_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_showcases_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "event_showcases_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -6209,6 +9530,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_showcases_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_showcases_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -6288,6 +9623,7 @@ export type Database = {
           recording_url: string | null
           recurrence_group: string | null
           rescheduled_from: string | null
+          roster_sealed_at: string | null
           selection_application_id: string | null
           source: string | null
           status: string
@@ -6341,6 +9677,7 @@ export type Database = {
           recording_url?: string | null
           recurrence_group?: string | null
           rescheduled_from?: string | null
+          roster_sealed_at?: string | null
           selection_application_id?: string | null
           source?: string | null
           status?: string
@@ -6394,6 +9731,7 @@ export type Database = {
           recording_url?: string | null
           recurrence_group?: string | null
           rescheduled_from?: string | null
+          roster_sealed_at?: string | null
           selection_application_id?: string | null
           source?: string | null
           status?: string
@@ -6445,6 +9783,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_agenda_posted_by_fkey"
+            columns: ["agenda_posted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_agenda_posted_by_fkey"
+            columns: ["agenda_posted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "events_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
@@ -6478,6 +9830,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "events_initiative_id_fkey"
@@ -6520,6 +9886,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_minutes_posted_by_fkey"
+            columns: ["minutes_posted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_minutes_posted_by_fkey"
+            columns: ["minutes_posted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "events_organization_id_fkey"
@@ -6568,6 +9948,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string | null
+          granted_by: string | null
           id: string
           member_id: string
           organization_id: string
@@ -6578,6 +9959,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string | null
+          granted_by?: string | null
           id?: string
           member_id: string
           organization_id?: string
@@ -6588,6 +9970,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string | null
+          granted_by?: string | null
           id?: string
           member_id?: string
           organization_id?: string
@@ -6602,6 +9985,55 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "gamification_rules"
             referencedColumns: ["organization_id", "slug"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "gamification_points_member_id_fkey"
@@ -6639,6 +10071,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gamification_points_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_points_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "gamification_points_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -6659,6 +10105,7 @@ export type Database = {
           display_name_i18n: Json
           effective_from: string
           id: string
+          on_time_bonus_points: number | null
           organization_id: string
           pillar: string
           slug: string
@@ -6677,6 +10124,7 @@ export type Database = {
           display_name_i18n?: Json
           effective_from?: string
           id?: string
+          on_time_bonus_points?: number | null
           organization_id: string
           pillar: string
           slug: string
@@ -6695,6 +10143,7 @@ export type Database = {
           display_name_i18n?: Json
           effective_from?: string
           id?: string
+          on_time_bonus_points?: number | null
           organization_id?: string
           pillar?: string
           slug?: string
@@ -6739,6 +10188,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gamification_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "gamification_rules_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -6779,6 +10242,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -6834,6 +10311,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gate_attempts_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gate_attempts_caller_id_fkey"
             columns: ["caller_id"]
             isOneToOne: false
@@ -6868,12 +10352,29 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gate_attempts_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gate_attempts_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       governance_documents: {
         Row: {
+          acknowledgement_mode: string
+          approved_at: string | null
           artia_activity_id: number | null
           artia_synced_at: string | null
+          closing_gate_signoff_id: string | null
           content: Json | null
           created_at: string
           current_ratified_at: string | null
@@ -6883,16 +10384,22 @@ export type Database = {
           description: string | null
           doc_type: string
           docusign_envelope_id: string | null
+          effective_from: string | null
+          effective_until: string | null
           exit_notice_days: number | null
           first_ratified_at: string | null
           first_ratified_chain_id: string | null
           first_ratified_version_id: string | null
           id: string
           initiative_id: string | null
+          metadata: Json
+          organization_id: string
           parties: string[] | null
           partner_entity_id: string | null
           pdf_url: string | null
+          proposer_member_id: string | null
           related_manual_sections: string[] | null
+          required_action: string | null
           signatories: Json | null
           signed_at: string | null
           status: string
@@ -6901,10 +10408,14 @@ export type Database = {
           valid_from: string | null
           valid_until: string | null
           version: string | null
+          visibility_class: string
         }
         Insert: {
+          acknowledgement_mode: string
+          approved_at?: string | null
           artia_activity_id?: number | null
           artia_synced_at?: string | null
+          closing_gate_signoff_id?: string | null
           content?: Json | null
           created_at?: string
           current_ratified_at?: string | null
@@ -6914,16 +10425,22 @@ export type Database = {
           description?: string | null
           doc_type: string
           docusign_envelope_id?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
           exit_notice_days?: number | null
           first_ratified_at?: string | null
           first_ratified_chain_id?: string | null
           first_ratified_version_id?: string | null
           id?: string
           initiative_id?: string | null
+          metadata?: Json
+          organization_id: string
           parties?: string[] | null
           partner_entity_id?: string | null
           pdf_url?: string | null
+          proposer_member_id?: string | null
           related_manual_sections?: string[] | null
+          required_action?: string | null
           signatories?: Json | null
           signed_at?: string | null
           status?: string
@@ -6932,10 +10449,14 @@ export type Database = {
           valid_from?: string | null
           valid_until?: string | null
           version?: string | null
+          visibility_class: string
         }
         Update: {
+          acknowledgement_mode?: string
+          approved_at?: string | null
           artia_activity_id?: number | null
           artia_synced_at?: string | null
+          closing_gate_signoff_id?: string | null
           content?: Json | null
           created_at?: string
           current_ratified_at?: string | null
@@ -6945,16 +10466,22 @@ export type Database = {
           description?: string | null
           doc_type?: string
           docusign_envelope_id?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
           exit_notice_days?: number | null
           first_ratified_at?: string | null
           first_ratified_chain_id?: string | null
           first_ratified_version_id?: string | null
           id?: string
           initiative_id?: string | null
+          metadata?: Json
+          organization_id?: string
           parties?: string[] | null
           partner_entity_id?: string | null
           pdf_url?: string | null
+          proposer_member_id?: string | null
           related_manual_sections?: string[] | null
+          required_action?: string | null
           signatories?: Json | null
           signed_at?: string | null
           status?: string
@@ -6963,6 +10490,7 @@ export type Database = {
           valid_from?: string | null
           valid_until?: string | null
           version?: string | null
+          visibility_class?: string
         }
         Relationships: [
           {
@@ -6994,6 +10522,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "governance_documents_closing_gate_signoff_id_fkey"
+            columns: ["closing_gate_signoff_id"]
+            isOneToOne: false
+            referencedRelation: "approval_signoffs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "governance_documents_current_version_id_fkey"
             columns: ["current_version_id"]
             isOneToOne: false
@@ -7008,11 +10543,67 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "governance_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "governance_documents_partner_entity_id_fkey"
             columns: ["partner_entity_id"]
             isOneToOne: false
             referencedRelation: "partner_entities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -7191,6 +10782,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "hub_resources_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
@@ -7311,6 +10916,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ia_pilots_lead_member_id_fkey"
+            columns: ["lead_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ia_pilots_lead_member_id_fkey"
+            columns: ["lead_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "ia_pilots_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -7383,6 +11002,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       ingestion_source_controls: {
@@ -7445,6 +11078,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -7511,6 +11158,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -7595,6 +11256,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "initiative_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "initiative_drive_links_unlinked_by_fkey"
             columns: ["unlinked_by"]
             isOneToOne: false
@@ -7629,6 +11304,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "initiative_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       initiative_invitations: {
@@ -7641,6 +11330,7 @@ export type Database = {
           inviter_member_id: string
           kind_scope: string
           message: string
+          metadata: Json
           responded_at: string | null
           responded_note: string | null
           reviewed_at: string | null
@@ -7660,6 +11350,7 @@ export type Database = {
           inviter_member_id: string
           kind_scope: string
           message: string
+          metadata?: Json
           responded_at?: string | null
           responded_note?: string | null
           reviewed_at?: string | null
@@ -7679,6 +11370,7 @@ export type Database = {
           inviter_member_id?: string
           kind_scope?: string
           message?: string
+          metadata?: Json
           responded_at?: string | null
           responded_note?: string | null
           reviewed_at?: string | null
@@ -7733,6 +11425,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "initiative_invitations_invitee_member_id_fkey"
+            columns: ["invitee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_invitee_member_id_fkey"
+            columns: ["invitee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "initiative_invitations_inviter_member_id_fkey"
             columns: ["inviter_member_id"]
             isOneToOne: false
@@ -7768,6 +11474,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "initiative_invitations_inviter_member_id_fkey"
+            columns: ["inviter_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_inviter_member_id_fkey"
+            columns: ["inviter_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "initiative_invitations_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
@@ -7803,6 +11523,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "initiative_invitations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "initiative_invitations_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
@@ -7836,6 +11570,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -7989,6 +11737,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           artia_activity_id?: number | null
@@ -8007,6 +11756,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           artia_activity_id?: number | null
@@ -8025,6 +11775,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -8053,6 +11804,145 @@ export type Database = {
             columns: ["parent_initiative_id"]
             isOneToOne: false
             referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instrument_version_bindings: {
+        Row: {
+          bound_at: string
+          bound_by: string | null
+          bound_document_id: string
+          created_at: string
+          id: string
+          last_material_version_id: string | null
+          notes: string | null
+          organization_id: string
+          pin_clause_ref: string | null
+          pinned_version_id: string
+          re_anchor_required: boolean
+          referenced_document_id: string
+          status: string
+          superseded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          bound_at?: string
+          bound_by?: string | null
+          bound_document_id: string
+          created_at?: string
+          id?: string
+          last_material_version_id?: string | null
+          notes?: string | null
+          organization_id: string
+          pin_clause_ref?: string | null
+          pinned_version_id: string
+          re_anchor_required?: boolean
+          referenced_document_id: string
+          status?: string
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bound_at?: string
+          bound_by?: string | null
+          bound_document_id?: string
+          created_at?: string
+          id?: string
+          last_material_version_id?: string | null
+          notes?: string | null
+          organization_id?: string
+          pin_clause_ref?: string | null
+          pinned_version_id?: string
+          re_anchor_required?: boolean
+          referenced_document_id?: string
+          status?: string
+          superseded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_document_id_fkey"
+            columns: ["bound_document_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_last_material_version_id_fkey"
+            columns: ["last_material_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_pinned_version_id_fkey"
+            columns: ["pinned_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_referenced_document_id_fkey"
+            columns: ["referenced_document_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -8141,6 +12031,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -8347,6 +12251,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "knowledge_insights_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_insights_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       knowledge_insights_ingestion_log: {
@@ -8536,6 +12454,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "mcp_usage_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_usage_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "mcp_usage_log_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -8639,6 +12571,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "meeting_action_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "meeting_action_items_board_item_id_fkey"
             columns: ["board_item_id"]
             isOneToOne: false
@@ -8695,6 +12641,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "meeting_action_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "meeting_action_items_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -8735,6 +12695,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -8825,6 +12799,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "meeting_artifacts_event_id_fkey"
@@ -8920,10 +12908,220 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_activity_sessions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_activity_sessions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "member_activity_sessions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_affiliation_verifications: {
+        Row: {
+          chapter_verified: string | null
+          created_at: string
+          id: string
+          member_id: string
+          membership_active: boolean
+          membership_expires_on: string | null
+          method: string
+          organization_id: string
+          source_ref: string | null
+          verification_obs: string | null
+          verified_by_member_id: string | null
+        }
+        Insert: {
+          chapter_verified?: string | null
+          created_at?: string
+          id?: string
+          member_id: string
+          membership_active: boolean
+          membership_expires_on?: string | null
+          method: string
+          organization_id?: string
+          source_ref?: string | null
+          verification_obs?: string | null
+          verified_by_member_id?: string | null
+        }
+        Update: {
+          chapter_verified?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string
+          membership_active?: boolean
+          membership_expires_on?: string | null
+          method?: string
+          organization_id?: string
+          source_ref?: string | null
+          verification_obs?: string | null
+          verified_by_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      member_chapter_affiliations: {
+        Row: {
+          chapter_code: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          person_id: string
+          source: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          chapter_code: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          person_id: string
+          source: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          chapter_code?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          person_id?: string
+          source?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_chapter_affiliations_chapter_code_fkey"
+            columns: ["chapter_code"]
+            isOneToOne: false
+            referencedRelation: "chapter_registry"
+            referencedColumns: ["chapter_code"]
+          },
+          {
+            foreignKeyName: "member_chapter_affiliations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
             referencedColumns: ["id"]
           },
         ]
@@ -9015,6 +13213,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_cycle_history_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_cycle_history_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -9122,6 +13334,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_document_signatures_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_document_signatures_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "member_document_signatures_signed_version_id_fkey"
             columns: ["signed_version_id"]
             isOneToOne: false
@@ -9209,11 +13435,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_emails_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_emails_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "member_emails_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_milestones: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          id: string
+          member_id: string
+          metadata: Json
+          milestone_key: string
+          occurred_at: string
+          source_id: string | null
+          source_type: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          member_id: string
+          metadata?: Json
+          milestone_key: string
+          occurred_at?: string
+          source_id?: string | null
+          source_type?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string
+          metadata?: Json
+          milestone_key?: string
+          occurred_at?: string
+          source_id?: string | null
+          source_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -9318,6 +13644,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
             columns: ["offboarded_by"]
             isOneToOne: false
@@ -9351,6 +13691,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "member_offboarding_records_reason_category_code_fkey"
@@ -9422,11 +13776,181 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "member_quick_start_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_quick_start_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      member_reacceptance_obligations: {
+        Row: {
+          change_class: string
+          created_at: string
+          document_id: string
+          effective_from: string | null
+          from_version_id: string | null
+          id: string
+          license_preservation_noted: boolean
+          member_id: string
+          notified_at: string | null
+          objection_id: string | null
+          organization_id: string
+          resolution: string | null
+          resolved_at: string | null
+          signature_id: string | null
+          state: string
+          suspended_until: string | null
+          to_version_id: string
+          updated_at: string
+          window_closes_at: string | null
+          window_opens_at: string | null
+        }
+        Insert: {
+          change_class?: string
+          created_at?: string
+          document_id: string
+          effective_from?: string | null
+          from_version_id?: string | null
+          id?: string
+          license_preservation_noted?: boolean
+          member_id: string
+          notified_at?: string | null
+          objection_id?: string | null
+          organization_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          signature_id?: string | null
+          state?: string
+          suspended_until?: string | null
+          to_version_id: string
+          updated_at?: string
+          window_closes_at?: string | null
+          window_opens_at?: string | null
+        }
+        Update: {
+          change_class?: string
+          created_at?: string
+          document_id?: string
+          effective_from?: string | null
+          from_version_id?: string | null
+          id?: string
+          license_preservation_noted?: boolean
+          member_id?: string
+          notified_at?: string | null
+          objection_id?: string | null
+          organization_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          signature_id?: string | null
+          state?: string
+          suspended_until?: string | null
+          to_version_id?: string
+          updated_at?: string
+          window_closes_at?: string | null
+          window_opens_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_reacceptance_obligations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_from_version_id_fkey"
+            columns: ["from_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_objection_id_fkey"
+            columns: ["objection_id"]
+            isOneToOne: false
+            referencedRelation: "reacceptance_objections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_signature_id_fkey"
+            columns: ["signature_id"]
+            isOneToOne: false
+            referencedRelation: "member_document_signatures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_to_version_id_fkey"
+            columns: ["to_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       members: {
         Row: {
           address: string | null
+          allow_precise_location_in_public_map: boolean
+          allow_state_in_public_map: boolean
           anonymized_at: string | null
           anonymized_by: string | null
           auth_id: string | null
@@ -9445,12 +13969,15 @@ export type Database = {
           data_last_reviewed_at: string | null
           designations: string[] | null
           email: string
+          entry_chapter_code: string | null
           gamification_opt_out: boolean
           id: string
           inactivated_at: string | null
           inactivation_reason: string | null
           initiative_id: string | null
+          interview_booking_url: string | null
           is_active: boolean | null
+          is_founder: boolean
           is_superadmin: boolean | null
           last_active_pages: string[] | null
           last_seen_at: string | null
@@ -9489,6 +14016,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          allow_precise_location_in_public_map?: boolean
+          allow_state_in_public_map?: boolean
           anonymized_at?: string | null
           anonymized_by?: string | null
           auth_id?: string | null
@@ -9507,12 +14036,15 @@ export type Database = {
           data_last_reviewed_at?: string | null
           designations?: string[] | null
           email: string
+          entry_chapter_code?: string | null
           gamification_opt_out?: boolean
           id?: string
           inactivated_at?: string | null
           inactivation_reason?: string | null
           initiative_id?: string | null
+          interview_booking_url?: string | null
           is_active?: boolean | null
+          is_founder?: boolean
           is_superadmin?: boolean | null
           last_active_pages?: string[] | null
           last_seen_at?: string | null
@@ -9551,6 +14083,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          allow_precise_location_in_public_map?: boolean
+          allow_state_in_public_map?: boolean
           anonymized_at?: string | null
           anonymized_by?: string | null
           auth_id?: string | null
@@ -9569,12 +14103,15 @@ export type Database = {
           data_last_reviewed_at?: string | null
           designations?: string[] | null
           email?: string
+          entry_chapter_code?: string | null
           gamification_opt_out?: boolean
           id?: string
           inactivated_at?: string | null
           inactivation_reason?: string | null
           initiative_id?: string | null
+          interview_booking_url?: string | null
           is_active?: boolean | null
+          is_founder?: boolean
           is_superadmin?: boolean | null
           last_active_pages?: string[] | null
           last_seen_at?: string | null
@@ -9648,6 +14185,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "members_anonymized_by_fkey"
+            columns: ["anonymized_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_anonymized_by_fkey"
+            columns: ["anonymized_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "members_entry_chapter_code_fkey"
+            columns: ["entry_chapter_code"]
+            isOneToOne: false
+            referencedRelation: "chapter_registry"
+            referencedColumns: ["chapter_code"]
+          },
+          {
             foreignKeyName: "members_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -9690,6 +14248,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "members_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "members_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -9701,6 +14273,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -9768,6 +14347,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -9863,6 +14456,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "notifications_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
@@ -9896,6 +14503,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -9990,6 +14611,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "onboarding_progress_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "onboarding_progress_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -10024,10 +14652,25 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "onboarding_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       onboarding_steps: {
         Row: {
+          applies_to_role: string[] | null
           created_at: string | null
           description_en: string | null
           description_es: string | null
@@ -10041,6 +14684,7 @@ export type Database = {
           step_order: number
         }
         Insert: {
+          applies_to_role?: string[] | null
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -10054,6 +14698,7 @@ export type Database = {
           step_order: number
         }
         Update: {
+          applies_to_role?: string[] | null
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -10248,6 +14893,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "partner_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       partner_cards: {
@@ -10325,6 +14984,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "partner_cards_partner_entity_id_fkey"
             columns: ["partner_entity_id"]
             isOneToOne: false
@@ -10342,6 +15015,7 @@ export type Database = {
           is_active: boolean | null
           partnership_end: string | null
           partnership_start: string | null
+          partnership_status: string
         }
         Insert: {
           chapter_code: string
@@ -10351,6 +15025,7 @@ export type Database = {
           is_active?: boolean | null
           partnership_end?: string | null
           partnership_start?: string | null
+          partnership_status?: string
         }
         Update: {
           chapter_code?: string
@@ -10360,6 +15035,7 @@ export type Database = {
           is_active?: boolean | null
           partnership_end?: string | null
           partnership_start?: string | null
+          partnership_status?: string
         }
         Relationships: []
       }
@@ -10374,6 +15050,7 @@ export type Database = {
           entity_type: string
           follow_up_date: string | null
           id: string
+          is_international: boolean
           last_interaction_at: string | null
           mou_stage: string | null
           name: string
@@ -10394,6 +15071,7 @@ export type Database = {
           entity_type: string
           follow_up_date?: string | null
           id?: string
+          is_international?: boolean
           last_interaction_at?: string | null
           mou_stage?: string | null
           name: string
@@ -10414,6 +15092,7 @@ export type Database = {
           entity_type?: string
           follow_up_date?: string | null
           id?: string
+          is_international?: boolean
           last_interaction_at?: string | null
           mou_stage?: string | null
           name?: string
@@ -10506,6 +15185,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_interactions_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_interactions_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "partner_interactions_partner_id_fkey"
@@ -10602,6 +15295,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pending_manual_version_approvals_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "pending_manual_version_approvals_governance_document_id_fkey"
             columns: ["governance_document_id"]
             isOneToOne: false
@@ -10644,6 +15351,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pending_manual_version_approvals_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "pending_manual_version_approvals_signoff_member_id_fkey"
             columns: ["signoff_member_id"]
             isOneToOne: false
@@ -10677,6 +15398,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_signoff_member_id_fkey"
+            columns: ["signoff_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_signoff_member_id_fkey"
+            columns: ["signoff_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -10781,11 +15516,202 @@ export type Database = {
           },
         ]
       }
+      pi_exclusion_assets: {
+        Row: {
+          attested_at: string | null
+          author_label: string | null
+          bitcoin_block: number | null
+          claimed_at: string | null
+          created_at: string
+          created_by: string | null
+          declaration_id: string
+          id: string
+          nature: string | null
+          organization_id: string
+          ots_proof: string | null
+          ots_status: string
+          reinforcement: string | null
+          seq: number | null
+          sha256: string
+          source_ref: string | null
+          stamp_attempts: number
+          stamp_error: string | null
+          title: string
+          updated_at: string
+          work_created_on: string | null
+        }
+        Insert: {
+          attested_at?: string | null
+          author_label?: string | null
+          bitcoin_block?: number | null
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          declaration_id: string
+          id?: string
+          nature?: string | null
+          organization_id: string
+          ots_proof?: string | null
+          ots_status?: string
+          reinforcement?: string | null
+          seq?: number | null
+          sha256: string
+          source_ref?: string | null
+          stamp_attempts?: number
+          stamp_error?: string | null
+          title: string
+          updated_at?: string
+          work_created_on?: string | null
+        }
+        Update: {
+          attested_at?: string | null
+          author_label?: string | null
+          bitcoin_block?: number | null
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          declaration_id?: string
+          id?: string
+          nature?: string | null
+          organization_id?: string
+          ots_proof?: string | null
+          ots_status?: string
+          reinforcement?: string | null
+          seq?: number | null
+          sha256?: string
+          source_ref?: string | null
+          stamp_attempts?: number
+          stamp_error?: string | null
+          title?: string
+          updated_at?: string
+          work_created_on?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pi_exclusion_assets_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "pi_exclusion_declarations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pi_exclusion_declarations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          declarant_member_id: string
+          governance_document_id: string | null
+          id: string
+          organization_id: string
+          revoked_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          declarant_member_id: string
+          governance_document_id?: string | null
+          id?: string
+          organization_id: string
+          revoked_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          declarant_member_id?: string
+          governance_document_id?: string | null
+          id?: string
+          organization_id?: string
+          revoked_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_governance_document_id_fkey"
+            columns: ["governance_document_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pii_access_log: {
         Row: {
           accessed_at: string
           accessor_id: string | null
           context: string
+          deletion_artifacts: Json | null
           fields_accessed: string[]
           id: string
           reason: string | null
@@ -10795,6 +15721,7 @@ export type Database = {
           accessed_at?: string
           accessor_id?: string | null
           context: string
+          deletion_artifacts?: Json | null
           fields_accessed: string[]
           id?: string
           reason?: string | null
@@ -10804,6 +15731,7 @@ export type Database = {
           accessed_at?: string
           accessor_id?: string | null
           context?: string
+          deletion_artifacts?: Json | null
           fields_accessed?: string[]
           id?: string
           reason?: string | null
@@ -10846,6 +15774,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pii_access_log_accessor_id_fkey"
+            columns: ["accessor_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_accessor_id_fkey"
+            columns: ["accessor_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "pii_access_log_target_member_id_fkey"
             columns: ["target_member_id"]
             isOneToOne: false
@@ -10879,6 +15821,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -10990,6 +15946,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pilots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "pilots_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -11065,6 +16035,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_settings_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_settings_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -11156,6 +16140,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pmi_video_screenings_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
         ]
@@ -11312,6 +16303,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preview_gate_eligibles_cache_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preview_gate_eligibles_cache_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -11502,6 +16507,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "project_boards_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -11595,6 +16614,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_memberships_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_memberships_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "project_memberships_organization_id_fkey"
@@ -11837,6 +16870,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "publication_ideas_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_ideas_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "publication_ideas_initiative_id_fkey"
             columns: ["initiative_id"]
             isOneToOne: false
@@ -11884,6 +16931,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_ideas_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_ideas_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_ideas_series_id_fkey"
@@ -11986,6 +17047,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "publication_series_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_series_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "publication_series_hero_initiative_id_fkey"
             columns: ["hero_initiative_id"]
             isOneToOne: false
@@ -12061,6 +17136,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submission_authors_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submission_authors_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submission_authors_submission_id_fkey"
@@ -12154,6 +17243,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       publication_submissions: {
@@ -12162,6 +17265,7 @@ export type Database = {
           acceptance_date: string | null
           actual_cost_brl: number | null
           board_item_id: string | null
+          content_product_id: string
           cost_paid_by: string | null
           created_at: string | null
           created_by: string | null
@@ -12189,6 +17293,7 @@ export type Database = {
           acceptance_date?: string | null
           actual_cost_brl?: number | null
           board_item_id?: string | null
+          content_product_id: string
           cost_paid_by?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -12216,6 +17321,7 @@ export type Database = {
           acceptance_date?: string | null
           actual_cost_brl?: number | null
           board_item_id?: string | null
+          content_product_id?: string
           cost_paid_by?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -12244,6 +17350,13 @@ export type Database = {
             columns: ["board_item_id"]
             isOneToOne: false
             referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_content_product_id_fkey"
+            columns: ["content_product_id"]
+            isOneToOne: false
+            referencedRelation: "content_products"
             referencedColumns: ["id"]
           },
           {
@@ -12280,6 +17393,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submissions_initiative_id_fkey"
@@ -12329,6 +17456,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_primary_author_id_fkey"
+            columns: ["primary_author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_primary_author_id_fkey"
+            columns: ["primary_author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submissions_source_idea_id_fkey"
@@ -12491,6 +17632,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "re_engagement_pipeline_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "re_engagement_pipeline_cycle_code_fkey"
             columns: ["cycle_code"]
             isOneToOne: false
@@ -12533,6 +17688,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "re_engagement_pipeline_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "re_engagement_pipeline_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -12568,6 +17737,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "re_engagement_pipeline_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "re_engagement_pipeline_staged_by_fkey"
             columns: ["staged_by"]
             isOneToOne: false
@@ -12600,6 +17783,369 @@ export type Database = {
             columns: ["staged_by"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_staged_by_fkey"
+            columns: ["staged_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_staged_by_fkey"
+            columns: ["staged_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      reacceptance_objections: {
+        Row: {
+          accommodation_window_closes_at: string | null
+          body: string
+          committee_decision: string | null
+          committee_due_at: string
+          committee_responded_at: string | null
+          committee_responder_id: string | null
+          contested_points: string | null
+          created_at: string
+          id: string
+          member_id: string
+          minutes_ref: string | null
+          obligation_id: string
+          organization_id: string
+          recirculated_chain_id: string | null
+          registered_at: string
+          suggested_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          accommodation_window_closes_at?: string | null
+          body: string
+          committee_decision?: string | null
+          committee_due_at: string
+          committee_responded_at?: string | null
+          committee_responder_id?: string | null
+          contested_points?: string | null
+          created_at?: string
+          id?: string
+          member_id: string
+          minutes_ref?: string | null
+          obligation_id: string
+          organization_id: string
+          recirculated_chain_id?: string | null
+          registered_at?: string
+          suggested_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accommodation_window_closes_at?: string | null
+          body?: string
+          committee_decision?: string | null
+          committee_due_at?: string
+          committee_responded_at?: string | null
+          committee_responder_id?: string | null
+          contested_points?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string
+          minutes_ref?: string | null
+          obligation_id?: string
+          organization_id?: string
+          recirculated_chain_id?: string | null
+          registered_at?: string
+          suggested_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "member_reacceptance_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_recirculated_chain_id_fkey"
+            columns: ["recirculated_chain_id"]
+            isOneToOne: false
+            referencedRelation: "approval_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_meeting_rule_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          changed_at: string
+          id: number
+          new_row: Json | null
+          old_row: Json | null
+          rule_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          changed_at?: string
+          id?: never
+          new_row?: Json | null
+          old_row?: Json | null
+          rule_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          changed_at?: string
+          id?: never
+          new_row?: Json | null
+          old_row?: Json | null
+          rule_id?: string | null
+        }
+        Relationships: []
+      }
+      recurring_meeting_rules: {
+        Row: {
+          anchor_date: string
+          audience_level: string
+          created_at: string
+          created_by: string | null
+          day_of_week: number
+          duration_minutes: number
+          event_type: string
+          frequency: string
+          id: string
+          initiative_id: string | null
+          meeting_link: string | null
+          notes: string | null
+          organization_id: string
+          recurrence_group: string
+          scope_type: string
+          status: string
+          time_start: string
+          timezone: string
+          title: string
+          tribe_id: number | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          anchor_date: string
+          audience_level?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week: number
+          duration_minutes?: number
+          event_type: string
+          frequency?: string
+          id?: string
+          initiative_id?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          organization_id?: string
+          recurrence_group?: string
+          scope_type: string
+          status?: string
+          time_start: string
+          timezone?: string
+          title: string
+          tribe_id?: number | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          anchor_date?: string
+          audience_level?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number
+          duration_minutes?: number
+          event_type?: string
+          frequency?: string
+          id?: string
+          initiative_id?: string | null
+          meeting_link?: string | null
+          notes?: string | null
+          organization_id?: string
+          recurrence_group?: string
+          scope_type?: string
+          status?: string
+          time_start?: string
+          timezone?: string
+          title?: string
+          tribe_id?: number | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -12724,6 +18270,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       releases: {
@@ -12807,6 +18367,324 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "releases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "releases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      responsibility_handoffs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          from_member_id: string
+          id: string
+          item_ref: string
+          item_type: string
+          organization_id: string
+          owner_member_id: string
+          placed_at: string | null
+          placed_by: string | null
+          reason: string | null
+          status: string
+          successor_member_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          from_member_id: string
+          id?: string
+          item_ref: string
+          item_type: string
+          organization_id: string
+          owner_member_id: string
+          placed_at?: string | null
+          placed_by?: string | null
+          reason?: string | null
+          status?: string
+          successor_member_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          from_member_id?: string
+          id?: string
+          item_ref?: string
+          item_type?: string
+          organization_id?: string
+          owner_member_id?: string
+          placed_at?: string | null
+          placed_by?: string | null
+          reason?: string | null
+          status?: string
+          successor_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -12921,6 +18799,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "revenue_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "revenue_entries_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -13002,6 +18894,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_application_service_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "selection_application_service_history_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -13021,6 +18920,7 @@ export type Database = {
           ai_triage_model: string | null
           ai_triage_reasoning: string | null
           ai_triage_score: number | null
+          anonymized_at: string | null
           applicant_city: string | null
           applicant_name: string
           application_count: number | null
@@ -13044,6 +18944,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           credly_url: string | null
+          cutoff_approved_email_sent_at: string | null
           cv_extracted_text: string | null
           cycle_decision_date: string | null
           cycle_id: string
@@ -13051,11 +18952,18 @@ export type Database = {
           enrichment_count: number
           feedback: string | null
           final_score: number | null
+          final_score_pert_band_lower: number | null
+          final_score_pert_band_upper: number | null
+          final_score_pert_calc_at: string | null
+          final_score_pert_cohort_n: number | null
+          final_score_pert_cutoff_method: string | null
+          final_score_pert_target: number | null
           first_name: string | null
           gender: string | null
           id: string
           imported_at: string | null
           industry: string | null
+          interview_auto_rescue_count: number
           interview_reschedule_last_nudged_at: string | null
           interview_reschedule_reason: string | null
           interview_reschedule_requested_at: string | null
@@ -13070,7 +18978,13 @@ export type Database = {
           last_enrichment_at: string | null
           last_enrichment_content_hash: string | null
           last_name: string | null
+          leader_extra_pert_band_lower: number | null
+          leader_extra_pert_band_upper: number | null
+          leader_extra_pert_calc_at: string | null
+          leader_extra_pert_cohort_n: number | null
+          leader_extra_pert_cutoff_method: string | null
           leader_extra_pert_score: number | null
+          leader_extra_pert_target: number | null
           leader_score: number | null
           leadership_experience: string | null
           linked_application_id: string | null
@@ -13079,6 +18993,8 @@ export type Database = {
           membership_status: string | null
           motivation_letter: string | null
           non_pmi_experience: string | null
+          nucleo_contract_end: string | null
+          nucleo_contract_start: string | null
           objective_score_avg: number | null
           organization_id: string
           pert_band_lower: number | null
@@ -13133,7 +19049,12 @@ export type Database = {
           updated_at: string | null
           utm_data: Json | null
           vep_application_id: string | null
+          vep_expired_at: string | null
+          vep_expired_reapply_email_sent_at: string | null
           vep_last_seen_at: string | null
+          vep_offer_expires_at: string | null
+          vep_offer_extended_at: string | null
+          vep_offer_reminder_sent_at: string | null
           vep_opportunity_id: string | null
           vep_reconciled_at: string | null
           vep_reconciled_by: string | null
@@ -13150,6 +19071,7 @@ export type Database = {
           ai_triage_model?: string | null
           ai_triage_reasoning?: string | null
           ai_triage_score?: number | null
+          anonymized_at?: string | null
           applicant_city?: string | null
           applicant_name: string
           application_count?: number | null
@@ -13173,6 +19095,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credly_url?: string | null
+          cutoff_approved_email_sent_at?: string | null
           cv_extracted_text?: string | null
           cycle_decision_date?: string | null
           cycle_id: string
@@ -13180,11 +19103,18 @@ export type Database = {
           enrichment_count?: number
           feedback?: string | null
           final_score?: number | null
+          final_score_pert_band_lower?: number | null
+          final_score_pert_band_upper?: number | null
+          final_score_pert_calc_at?: string | null
+          final_score_pert_cohort_n?: number | null
+          final_score_pert_cutoff_method?: string | null
+          final_score_pert_target?: number | null
           first_name?: string | null
           gender?: string | null
           id?: string
           imported_at?: string | null
           industry?: string | null
+          interview_auto_rescue_count?: number
           interview_reschedule_last_nudged_at?: string | null
           interview_reschedule_reason?: string | null
           interview_reschedule_requested_at?: string | null
@@ -13199,7 +19129,13 @@ export type Database = {
           last_enrichment_at?: string | null
           last_enrichment_content_hash?: string | null
           last_name?: string | null
+          leader_extra_pert_band_lower?: number | null
+          leader_extra_pert_band_upper?: number | null
+          leader_extra_pert_calc_at?: string | null
+          leader_extra_pert_cohort_n?: number | null
+          leader_extra_pert_cutoff_method?: string | null
           leader_extra_pert_score?: number | null
+          leader_extra_pert_target?: number | null
           leader_score?: number | null
           leadership_experience?: string | null
           linked_application_id?: string | null
@@ -13208,6 +19144,8 @@ export type Database = {
           membership_status?: string | null
           motivation_letter?: string | null
           non_pmi_experience?: string | null
+          nucleo_contract_end?: string | null
+          nucleo_contract_start?: string | null
           objective_score_avg?: number | null
           organization_id?: string
           pert_band_lower?: number | null
@@ -13262,7 +19200,12 @@ export type Database = {
           updated_at?: string | null
           utm_data?: Json | null
           vep_application_id?: string | null
+          vep_expired_at?: string | null
+          vep_expired_reapply_email_sent_at?: string | null
           vep_last_seen_at?: string | null
+          vep_offer_expires_at?: string | null
+          vep_offer_extended_at?: string | null
+          vep_offer_reminder_sent_at?: string | null
           vep_opportunity_id?: string | null
           vep_reconciled_at?: string | null
           vep_reconciled_by?: string | null
@@ -13279,6 +19222,7 @@ export type Database = {
           ai_triage_model?: string | null
           ai_triage_reasoning?: string | null
           ai_triage_score?: number | null
+          anonymized_at?: string | null
           applicant_city?: string | null
           applicant_name?: string
           application_count?: number | null
@@ -13302,6 +19246,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           credly_url?: string | null
+          cutoff_approved_email_sent_at?: string | null
           cv_extracted_text?: string | null
           cycle_decision_date?: string | null
           cycle_id?: string
@@ -13309,11 +19254,18 @@ export type Database = {
           enrichment_count?: number
           feedback?: string | null
           final_score?: number | null
+          final_score_pert_band_lower?: number | null
+          final_score_pert_band_upper?: number | null
+          final_score_pert_calc_at?: string | null
+          final_score_pert_cohort_n?: number | null
+          final_score_pert_cutoff_method?: string | null
+          final_score_pert_target?: number | null
           first_name?: string | null
           gender?: string | null
           id?: string
           imported_at?: string | null
           industry?: string | null
+          interview_auto_rescue_count?: number
           interview_reschedule_last_nudged_at?: string | null
           interview_reschedule_reason?: string | null
           interview_reschedule_requested_at?: string | null
@@ -13328,7 +19280,13 @@ export type Database = {
           last_enrichment_at?: string | null
           last_enrichment_content_hash?: string | null
           last_name?: string | null
+          leader_extra_pert_band_lower?: number | null
+          leader_extra_pert_band_upper?: number | null
+          leader_extra_pert_calc_at?: string | null
+          leader_extra_pert_cohort_n?: number | null
+          leader_extra_pert_cutoff_method?: string | null
           leader_extra_pert_score?: number | null
+          leader_extra_pert_target?: number | null
           leader_score?: number | null
           leadership_experience?: string | null
           linked_application_id?: string | null
@@ -13337,6 +19295,8 @@ export type Database = {
           membership_status?: string | null
           motivation_letter?: string | null
           non_pmi_experience?: string | null
+          nucleo_contract_end?: string | null
+          nucleo_contract_start?: string | null
           objective_score_avg?: number | null
           organization_id?: string
           pert_band_lower?: number | null
@@ -13391,7 +19351,12 @@ export type Database = {
           updated_at?: string | null
           utm_data?: Json | null
           vep_application_id?: string | null
+          vep_expired_at?: string | null
+          vep_expired_reapply_email_sent_at?: string | null
           vep_last_seen_at?: string | null
+          vep_offer_expires_at?: string | null
+          vep_offer_extended_at?: string | null
+          vep_offer_reminder_sent_at?: string | null
           vep_opportunity_id?: string | null
           vep_reconciled_at?: string | null
           vep_reconciled_by?: string | null
@@ -13449,10 +19414,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_applications_interview_reschedule_requested_by_fkey"
+            columns: ["interview_reschedule_requested_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_reschedule_requested_by_fkey"
+            columns: ["interview_reschedule_requested_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "selection_applications_linked_application_id_fkey"
             columns: ["linked_application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_linked_application_id_fkey"
+            columns: ["linked_application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -13496,6 +19482,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_applications_renews_engagement_id_fkey"
@@ -13547,6 +19547,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_applications_track_decided_by_fkey"
+            columns: ["track_decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_track_decided_by_fkey"
+            columns: ["track_decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "selection_applications_vep_reconciled_by_fkey"
             columns: ["vep_reconciled_by"]
             isOneToOne: false
@@ -13581,6 +19595,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "selection_applications_vep_reconciled_by_fkey"
+            columns: ["vep_reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_vep_reconciled_by_fkey"
+            columns: ["vep_reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       selection_committee: {
@@ -13589,6 +19617,7 @@ export type Database = {
           created_at: string | null
           cycle_id: string
           id: string
+          interview_booking_url: string | null
           member_id: string
           organization_id: string
           role: string
@@ -13598,6 +19627,7 @@ export type Database = {
           created_at?: string | null
           cycle_id: string
           id?: string
+          interview_booking_url?: string | null
           member_id: string
           organization_id?: string
           role?: string
@@ -13607,6 +19637,7 @@ export type Database = {
           created_at?: string | null
           cycle_id?: string
           id?: string
+          interview_booking_url?: string | null
           member_id?: string
           organization_id?: string
           role?: string
@@ -13653,6 +19684,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_committee_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_committee_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_committee_organization_id_fkey"
@@ -13776,11 +19821,139 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_cycles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_cycles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "selection_cycles_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_dispatch_url_log: {
+        Row: {
+          application_id: string
+          cycle_id: string
+          dispatched_at: string
+          id: string
+          organization_id: string
+          resolution_path: string
+          resolved_evaluator_id: string | null
+          resolved_url: string
+          track: string
+        }
+        Insert: {
+          application_id: string
+          cycle_id: string
+          dispatched_at?: string
+          id?: string
+          organization_id: string
+          resolution_path: string
+          resolved_evaluator_id?: string | null
+          resolved_url: string
+          track: string
+        }
+        Update: {
+          application_id?: string
+          cycle_id?: string
+          dispatched_at?: string
+          id?: string
+          organization_id?: string
+          resolution_path?: string
+          resolved_evaluator_id?: string | null
+          resolved_url?: string
+          track?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_dispatch_url_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -13899,6 +20072,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_evaluation_ai_suggestions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "selection_evaluation_ai_suggestions_superseded_by_fkey"
             columns: ["superseded_by"]
             isOneToOne: false
@@ -13954,6 +20134,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_evaluation_anomalies_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "selection_evaluation_anomalies_cycle_id_fkey"
             columns: ["cycle_id"]
             isOneToOne: false
@@ -13994,6 +20181,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_anomalies_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_anomalies_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -14046,6 +20247,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_evaluations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "selection_evaluations_evaluator_id_fkey"
             columns: ["evaluator_id"]
             isOneToOne: false
@@ -14079,6 +20287,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_evaluations_organization_id_fkey"
@@ -14144,6 +20366,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "selection_interviews_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "selection_interviews_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -14192,6 +20421,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_membership_snapshots_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
         ]
@@ -14267,6 +20503,20 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       selection_topic_views: {
@@ -14300,6 +20550,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_topic_views_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -14366,7 +20623,54 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
+      }
+      sla_policies: {
+        Row: {
+          category: string
+          description: string | null
+          max_interval: string | null
+          min_interval: string | null
+          policy_key: string
+          updated_at: string
+          updated_by: string | null
+          value_interval: string
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          max_interval?: string | null
+          min_interval?: string | null
+          policy_key: string
+          updated_at?: string
+          updated_by?: string | null
+          value_interval: string
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          max_interval?: string | null
+          min_interval?: string | null
+          policy_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_interval?: string
+        }
+        Relationships: []
       }
       sustainability_kpi_targets: {
         Row: {
@@ -14499,6 +20803,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -14700,12 +21018,27 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
       tribe_deliverables: {
         Row: {
           artifact_id: string | null
           assigned_member_id: string | null
+          completed_at: string | null
           created_at: string
           cycle_code: string
           description: string | null
@@ -14722,6 +21055,7 @@ export type Database = {
         Insert: {
           artifact_id?: string | null
           assigned_member_id?: string | null
+          completed_at?: string | null
           created_at?: string
           cycle_code: string
           description?: string | null
@@ -14738,6 +21072,7 @@ export type Database = {
         Update: {
           artifact_id?: string | null
           assigned_member_id?: string | null
+          completed_at?: string | null
           created_at?: string
           cycle_code?: string
           description?: string | null
@@ -14786,6 +21121,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tribe_deliverables_cycle_code_fkey"
@@ -14948,6 +21297,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "tribe_lineage_current_tribe_id_fkey"
             columns: ["current_tribe_id"]
             isOneToOne: false
@@ -14995,6 +21358,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -15093,6 +21470,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_selections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_selections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -15209,6 +21600,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tribes_leader_member_id_fkey"
+            columns: ["leader_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribes_leader_member_id_fkey"
+            columns: ["leader_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "tribes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -15256,6 +21661,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -15411,6 +21830,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vep_reconciliation_baselines_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vep_reconciliation_baselines_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "vep_reconciliation_baselines_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -15444,6 +21877,7 @@ export type Database = {
           role_interest: string | null
           source: string | null
           status: string | null
+          target_vertical: string | null
           utm_data: Json | null
         }
         Insert: {
@@ -15470,6 +21904,7 @@ export type Database = {
           role_interest?: string | null
           source?: string | null
           status?: string | null
+          target_vertical?: string | null
           utm_data?: Json | null
         }
         Update: {
@@ -15496,6 +21931,7 @@ export type Database = {
           role_interest?: string | null
           source?: string | null
           status?: string | null
+          target_vertical?: string | null
           utm_data?: Json | null
         }
         Relationships: [
@@ -15535,6 +21971,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "visitor_leads_contacted_by_fkey"
+            columns: ["contacted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_contacted_by_fkey"
+            columns: ["contacted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "visitor_leads_dismissed_by_fkey"
             columns: ["dismissed_by"]
             isOneToOne: false
@@ -15568,6 +22018,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_dismissed_by_fkey"
+            columns: ["dismissed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_dismissed_by_fkey"
+            columns: ["dismissed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "visitor_leads_organization_id_fkey"
@@ -15612,10 +22076,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "visitor_leads_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "visitor_leads_promoted_to_application_id_fkey"
             columns: ["promoted_to_application_id"]
             isOneToOne: false
             referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_promoted_to_application_id_fkey"
+            columns: ["promoted_to_application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
           {
@@ -15651,6 +22136,27 @@ export type Database = {
             columns: ["referrer_member_id"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_target_vertical_fkey"
+            columns: ["target_vertical"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
             referencedColumns: ["id"]
           },
         ]
@@ -15777,6 +22283,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "volunteer_applications_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -15851,6 +22371,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_lifecycle_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_lifecycle_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "webinar_lifecycle_events_webinar_id_fkey"
@@ -15966,6 +22500,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "webinar_proposals_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_proposals_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "webinar_proposals_quadrant_anchor_fkey"
             columns: ["quadrant_anchor"]
             isOneToOne: false
@@ -16006,6 +22554,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "webinar_proposals_series_id_fkey"
@@ -16176,6 +22738,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
             foreignKeyName: "webinars_series_id_fkey"
             columns: ["series_id"]
             isOneToOne: false
@@ -16240,6 +22816,193 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      work_governing_version: {
+        Row: {
+          attribution_text: string | null
+          author_member_id: string | null
+          created_at: string
+          enquadramento: Json
+          first_material_contribution_at: string
+          governing_politica_version_id: string
+          governing_termo_document_id: string | null
+          governing_termo_version_id: string | null
+          id: string
+          organization_id: string | null
+          requires_legal_review: boolean
+          stamped_at: string
+          stamped_by: string | null
+          superseded_by_id: string | null
+          updated_at: string
+          work_id: string
+          work_type: string
+        }
+        Insert: {
+          attribution_text?: string | null
+          author_member_id?: string | null
+          created_at?: string
+          enquadramento?: Json
+          first_material_contribution_at: string
+          governing_politica_version_id: string
+          governing_termo_document_id?: string | null
+          governing_termo_version_id?: string | null
+          id?: string
+          organization_id?: string | null
+          requires_legal_review?: boolean
+          stamped_at?: string
+          stamped_by?: string | null
+          superseded_by_id?: string | null
+          updated_at?: string
+          work_id: string
+          work_type: string
+        }
+        Update: {
+          attribution_text?: string | null
+          author_member_id?: string | null
+          created_at?: string
+          enquadramento?: Json
+          first_material_contribution_at?: string
+          governing_politica_version_id?: string
+          governing_termo_document_id?: string | null
+          governing_termo_version_id?: string | null
+          id?: string
+          organization_id?: string | null
+          requires_legal_review?: boolean
+          stamped_at?: string
+          stamped_by?: string | null
+          superseded_by_id?: string | null
+          updated_at?: string
+          work_id?: string
+          work_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_governing_politica_version_id_fkey"
+            columns: ["governing_politica_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_governing_termo_document_id_fkey"
+            columns: ["governing_termo_document_id"]
+            isOneToOne: false
+            referencedRelation: "governance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_governing_termo_version_id_fkey"
+            columns: ["governing_termo_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_superseded_by_id_fkey"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "work_governing_version"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -16369,6 +23132,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -16525,7 +23295,15 @@ export type Database = {
           photo_url?: string | null
           tribe_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_members: {
         Row: {
@@ -16543,13 +23321,13 @@ export type Database = {
           id: string | null
           initiative_id: string | null
           is_active: boolean | null
+          is_founder: boolean | null
           linkedin_url: string | null
           member_status: string | null
           name: string | null
           operational_role: string | null
           photo_url: string | null
           share_whatsapp: boolean | null
-          signature_url: string | null
           state: string | null
           tribe_id: number | null
         }
@@ -16568,13 +23346,13 @@ export type Database = {
           id?: string | null
           initiative_id?: string | null
           is_active?: boolean | null
+          is_founder?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
           name?: string | null
           operational_role?: string | null
           photo_url?: string | null
           share_whatsapp?: boolean | null
-          signature_url?: string | null
           state?: string | null
           tribe_id?: number | null
         }
@@ -16593,13 +23371,13 @@ export type Database = {
           id?: string | null
           initiative_id?: string | null
           is_active?: boolean | null
+          is_founder?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
           name?: string | null
           operational_role?: string | null
           photo_url?: string | null
           share_whatsapp?: boolean | null
-          signature_url?: string | null
           state?: string | null
           tribe_id?: number | null
         }
@@ -16609,6 +23387,13 @@ export type Database = {
             columns: ["initiative_id"]
             isOneToOne: false
             referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -16626,6 +23411,55 @@ export type Database = {
           upcoming_events: number | null
         }
         Relationships: []
+      }
+      v_active_members: {
+        Row: {
+          chapter: string | null
+          id: string | null
+          operational_role: string | null
+          organization_id: string | null
+          person_id: string | null
+          tribe_id: number | null
+        }
+        Insert: {
+          chapter?: string | null
+          id?: string | null
+          operational_role?: string | null
+          organization_id?: string | null
+          person_id?: string | null
+          tribe_id?: number | null
+        }
+        Update: {
+          chapter?: string | null
+          id?: string | null
+          operational_role?: string | null
+          organization_id?: string | null
+          person_id?: string | null
+          tribe_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_ai_human_concordance: {
         Row: {
@@ -16652,6 +23486,67 @@ export type Database = {
         }
         Relationships: []
       }
+      v_initiative_roster: {
+        Row: {
+          gamification_opt_out: boolean | null
+          initiative_id: string | null
+          kind: string | null
+          legacy_tribe_id: number | null
+          member_id: string | null
+          name: string | null
+          person_id: string | null
+          role: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagements_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "engagement_kinds"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "engagements_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_nucleo_contract_status: {
+        Row: {
+          applicant_name: string | null
+          cohort_cycle_id: string | null
+          contract_status: string | null
+          cycle_id: string | null
+          email: string | null
+          has_later_contract: boolean | null
+          id: string | null
+          nucleo_contract_end: string | null
+          nucleo_contract_start: string | null
+          pmi_id: string | null
+          role_applied: string | null
+          status: string | null
+          vep_application_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_applications_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_exec_cert_timeline: {
         Row: {
           avg_days_to_tier1: number | null
@@ -16677,6 +23572,10 @@ export type Database = {
       }
     }
     Functions: {
+      _activate_eligible_gates: {
+        Args: { p_chain_id: string }
+        Returns: undefined
+      }
       _artia_safe_event_summary: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -16685,11 +23584,31 @@ export type Database = {
         Args: { p_month: number; p_year: number }
         Returns: Json
       }
+      _attendance_eligible_events: {
+        Args: { p_cycle_start?: string; p_member_id: string }
+        Returns: {
+          event_date: string
+          event_id: string
+          event_type: string
+        }[]
+      }
+      _audit_can_authuid_function_bodies: {
+        Args: never
+        Returns: {
+          identity_args: string
+          proname: string
+        }[]
+      }
       _audit_classify_function_gate: {
         Args: { p_function_name: string }
         Returns: Json
       }
+      _audit_curation_artifact_snapshot_security: { Args: never; Returns: Json }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
+      _audit_get_all_certificates_anon_execute: {
+        Args: never
+        Returns: boolean
+      }
       _audit_list_public_function_bodies: {
         Args: never
         Returns: {
@@ -16724,9 +23643,53 @@ export type Database = {
           table_name: string
         }[]
       }
+      _audit_list_schema_migrations: { Args: never; Returns: Json }
+      _audit_merit_transfer_on_completed_cards: {
+        Args: never
+        Returns: {
+          assignee_id: string
+          assignee_name: string
+          assignee_role: string
+          board_id: string
+          detail: Json
+          flag: string
+          item_id: string
+          status: string
+          title: string
+        }[]
+      }
       _audit_preview_gate_eligibles_drift: { Args: never; Returns: Json }
+      _audit_secdef_initiative_reader_gates: {
+        Args: never
+        Returns: {
+          exec_authenticated: boolean
+          identity_args: string
+          is_writer: boolean
+          proname: string
+          reads_initiative_table: boolean
+          references_gate: boolean
+        }[]
+      }
+      _audit_secdef_public_grant_drift: {
+        Args: never
+        Returns: {
+          proname: string
+          sends_http: boolean
+        }[]
+      }
+      _audit_trigger_dispatch_without_handler: {
+        Args: never
+        Returns: {
+          identity_args: string
+          proname: string
+        }[]
+      }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
       _can_manage_event: { Args: { p_event_id: string }; Returns: boolean }
+      _can_manage_recurring_rule: {
+        Args: { p_initiative_id: string; p_member_id: string }
+        Returns: boolean
+      }
       _can_sign_gate: {
         Args: {
           p_chain_id: string
@@ -16747,6 +23710,24 @@ export type Database = {
         }
         Returns: Json
       }
+      _credly_health_rows: {
+        Args: never
+        Returns: {
+          kind: string
+          member_id: string
+          member_name: string
+          papel: string
+        }[]
+      }
+      _credly_unmapped_rows: {
+        Args: never
+        Returns: {
+          badge_name: string
+          members: number
+          occurrences: number
+        }[]
+      }
+      _current_affiliation_terms_version: { Args: never; Returns: string }
       _delivery_mode_for: { Args: { p_type: string }; Returns: string }
       _enqueue_engagement_welcome: {
         Args: { p_engagement_id: string }
@@ -16756,9 +23737,17 @@ export type Database = {
         Args: { p_chain_id: string; p_event: string; p_gate_kind?: string }
         Returns: number
       }
+      _erase_application_pii: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       _extract_date_from_filename: {
         Args: { p_filename: string }
         Returns: string
+      }
+      _gate_threshold_met: {
+        Args: { p_chain_id: string; p_gate: Json }
+        Returns: boolean
       }
       _get_peer_review_eligibility: {
         Args: { p_application_id: string }
@@ -16771,8 +23760,14 @@ export type Database = {
         }[]
       }
       _get_vault_secret: { Args: { p_name: string }; Returns: string }
+      _grant_agenda_block_xp: {
+        Args: { p_block_id: string }
+        Returns: undefined
+      }
       _grant_auto_xp: {
         Args: {
+          p_granted_by?: string
+          p_on_time?: boolean
           p_reason: string
           p_recipient_id: string
           p_ref_id: string
@@ -16780,9 +23775,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      _has_valid_affiliation_attestation: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       _ip_ratify_cta_link: {
         Args: { p_chain_id: string; p_gate_kind: string }
         Returns: string
+      }
+      _is_operational_candidate_facing: {
+        Args: { p_type: string }
+        Returns: boolean
       }
       _log_application_pii_access: {
         Args: {
@@ -16808,6 +23811,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      _manage_event_scope_ok: {
+        Args: { p_caller_id: string; p_event_id: string }
+        Returns: boolean
+      }
+      _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
+      _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
+      _ots_mark_confirmed: {
+        Args: {
+          p_asset_id: string
+          p_attested_at: string
+          p_bitcoin_block: number
+          p_ots_proof: string
+        }
+        Returns: undefined
+      }
+      _ots_mark_error: {
+        Args: { p_asset_id: string; p_error: string }
+        Returns: undefined
+      }
+      _ots_mark_stamped: {
+        Args: { p_asset_id: string; p_ots_proof: string }
+        Returns: undefined
+      }
+      _ots_retention_pass: { Args: { p_retention?: string }; Returns: Json }
       _pmi_vep_sync_cycle_app_id_stats: {
         Args: never
         Returns: {
@@ -16818,14 +23845,51 @@ export type Database = {
           sample_count: number
         }[]
       }
+      _prior_gates_satisfied: {
+        Args: { p_chain_id: string; p_gate_kind: string }
+        Returns: boolean
+      }
+      _reacceptance_disengage: {
+        Args: {
+          p_member_id: string
+          p_preserve_licenses?: boolean
+          p_reason_category: string
+        }
+        Returns: Json
+      }
       _recompute_application_pert: {
         Args: { p_application_id: string }
         Returns: undefined
       }
+      _recurrence_stockout_rows: {
+        Args: { p_horizon_days?: number }
+        Returns: {
+          event_type: string
+          last_date: string
+          modal_gap_days: number
+          next_expected: string
+          occurrences: number
+          recurrence_group: string
+          suggested_next_dates: string[]
+        }[]
+      }
+      _recurring_request_is_rest: { Args: never; Returns: boolean }
       _refresh_preview_gate_eligibles_for_member: {
         Args: { p_member_id: string }
         Returns: undefined
       }
+      _replay_selection_notifications_p228: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
+      _request_is_rest_caller: { Args: never; Returns: boolean }
+      _selection_apto_to_sign_digest_cron: { Args: never; Returns: Json }
+      _selection_consistency_cron: { Args: never; Returns: Json }
+      _selection_cutoff_pending_cron: { Args: never; Returns: Json }
+      _selection_interview_overdue_cron: { Args: never; Returns: Json }
+      _selection_status_recompute_cron: { Args: never; Returns: Json }
+      _selection_stuck_scheduled_rescue_cron: { Args: never; Returns: Json }
+      _selection_unbooked_rescue_cron: { Args: never; Returns: Json }
       _should_offer_enrichment: {
         Args: { p_ai_analysis: Json }
         Returns: boolean
@@ -16864,8 +23928,25 @@ export type Database = {
         Returns: string
       }
       _validate_gates_shape: { Args: { p_gates: Json }; Returns: boolean }
+      _volunteer_term_signed_digest_cron: { Args: never; Returns: Json }
+      _work_initiative_id: {
+        Args: { p_work_id: string; p_work_type: string }
+        Returns: string
+      }
       accept_privacy_consent: { Args: { p_version?: string }; Returns: Json }
+      acknowledge_milestone: {
+        Args: { p_milestone_key: string }
+        Returns: Json
+      }
       activate_initiative: { Args: { p_initiative_id: string }; Returns: Json }
+      activate_volunteer_term_version: {
+        Args: { p_doc_id: string }
+        Returns: Json
+      }
+      add_business_days: {
+        Args: { p_days: number; p_start: string }
+        Returns: string
+      }
       add_checklist_item: {
         Args: {
           p_assigned_to?: string
@@ -17039,8 +24120,33 @@ export type Database = {
           updated_at: string
         }[]
       }
+      admin_list_curation_drive_grants: {
+        Args: {
+          p_board_item_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_list_drive_revocation_audit: {
+        Args: {
+          p_limit?: number
+          p_member_id?: string
+          p_offset?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_list_member_consents: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       admin_list_members: {
         Args: {
+          p_chapter?: string
+          p_cycle?: string
+          p_initiative_id?: string
           p_search?: string
           p_status?: string
           p_tier?: string
@@ -17050,6 +24156,15 @@ export type Database = {
       }
       admin_list_members_with_pii: {
         Args: { p_tribe_id?: number }
+        Returns: Json
+      }
+      admin_list_membership_drive_grants: {
+        Args: {
+          p_initiative_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_status?: string
+        }
         Returns: Json
       }
       admin_list_tribe_lineage: {
@@ -17199,6 +24314,10 @@ export type Database = {
       }
       admin_retry_application_ai_analysis: {
         Args: { p_application_id: string }
+        Returns: Json
+      }
+      admin_roll_cycle_membership: {
+        Args: { p_dry_run?: boolean; p_from_cycle: string; p_to_cycle: string }
         Returns: Json
       }
       admin_run_portfolio_data_sanity: { Args: never; Returns: Json }
@@ -17389,6 +24508,19 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_limit?: number; p_years?: number }
         Returns: Json
       }
+      anonymize_premember_applications: {
+        Args: {
+          p_dry_run?: boolean
+          p_limit?: number
+          p_years?: number
+          p_years_withdrawn?: number
+        }
+        Returns: Json
+      }
+      apply_partner_chapter_tags: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
       approve_change_request: {
         Args: {
           p_action: string
@@ -17399,6 +24531,7 @@ export type Database = {
         }
         Returns: Json
       }
+      approve_drive_revocation: { Args: { p_audit_id: string }; Returns: Json }
       approve_selection_application: {
         Args: { p_application_id: string; p_decision?: Json }
         Returns: Json
@@ -17427,7 +24560,15 @@ export type Database = {
         Args: { p_item_id: string; p_member_id: string; p_role?: string }
         Returns: string
       }
+      attest_affiliation_access: {
+        Args: { p_signed_ip?: string; p_signed_user_agent?: string }
+        Returns: Json
+      }
       auth_org: { Args: never; Returns: string }
+      auto_approve_alumni_drive_revocations: {
+        Args: { p_member_id?: string; p_source?: string }
+        Returns: Json
+      }
       auto_archive_done_cards: { Args: never; Returns: Json }
       auto_detect_onboarding_completions: { Args: never; Returns: undefined }
       auto_generate_cr_for_partnership: {
@@ -17450,6 +24591,10 @@ export type Database = {
         }
         Returns: Json
       }
+      board_write_authority: {
+        Args: { p_board_id: string; p_member_id: string }
+        Returns: boolean
+      }
       broadcast_history: {
         Args: { p_limit?: number; p_tribe_id?: number }
         Returns: {
@@ -17461,6 +24606,14 @@ export type Database = {
           tribe_id: number
           tribe_name: string
         }[]
+      }
+      bulk_approve_drive_revocations: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
+      bulk_counter_sign_certificates: {
+        Args: { p_certificate_ids: string[]; p_signed_user_agent?: string }
+        Returns: Json
       }
       bulk_issue_certificates: {
         Args: {
@@ -17484,9 +24637,14 @@ export type Database = {
         }
         Returns: Json
       }
+      business_days_between: {
+        Args: { p_from: string; p_to: string }
+        Returns: number
+      }
       calc_attendance_pct: { Args: never; Returns: number }
       calc_trail_completion_pct: { Args: never; Returns: number }
       calculate_rankings: { Args: { p_cycle_id: string }; Returns: Json }
+      caller_chapter_scope: { Args: never; Returns: string }
       campaign_send_one_off: {
         Args: {
           p_metadata?: Json
@@ -17517,6 +24675,11 @@ export type Database = {
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
       can_read_internal_analytics: { Args: never; Returns: boolean }
+      can_view_comms_analytics: { Args: never; Returns: boolean }
+      cancel_agenda_block: {
+        Args: { p_block_id: string; p_reason?: string }
+        Returns: Json
+      }
       cancel_event_occurrence: {
         Args: { p_event_id: string; p_reason?: string }
         Returns: Json
@@ -17529,6 +24692,12 @@ export type Database = {
         Args: { p_pipeline_id: string; p_reason?: string }
         Returns: Json
       }
+      cancel_responsibility_handoff: {
+        Args: { p_handoff_id: string; p_reason?: string }
+        Returns: Json
+      }
+      cancel_scheduled_comms_post: { Args: { p_id: string }; Returns: Json }
+      cancel_tribe_request: { Args: { p_invitation_id: string }; Returns: Json }
       capture_vep_baseline: {
         Args: { p_label: string; p_notes?: string }
         Returns: Json
@@ -17571,6 +24740,14 @@ export type Database = {
           severity: string
           violation_count: number
         }[]
+      }
+      classify_entry_chapter: {
+        Args: {
+          p_community_profile_private: boolean
+          p_pmi_data_fetched_at: string
+          p_pmi_memberships: Json
+        }
+        Returns: Json
       }
       comms_acknowledge_alert: { Args: { p_alert_id: string }; Returns: Json }
       comms_channel_status: { Args: never; Returns: Json }
@@ -17641,6 +24818,9 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_account_claim: { Args: { p_token: string }; Returns: Json }
+      confirm_agenda_block: { Args: { p_block_id: string }; Returns: Json }
+      confirm_event_blocks: { Args: { p_event_id: string }; Returns: Json }
       confirm_manual_version: { Args: { p_proposal_id: string }; Returns: Json }
       confirm_secondary_email: { Args: { p_token: string }; Returns: Json }
       consume_onboarding_token: { Args: { p_token: string }; Returns: Json }
@@ -17754,6 +24934,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_exclusion_declaration: {
+        Args: { p_title?: string }
+        Returns: string
+      }
       create_external_signer_invite: {
         Args: {
           p_chapter_code?: string
@@ -17766,6 +24950,7 @@ export type Database = {
       }
       create_external_speaker_engagement: {
         Args: {
+          p_allow_partner_reuse?: boolean
           p_board_domain_key?: string
           p_co_person_id?: string
           p_deadlines?: Json
@@ -17781,6 +24966,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_governance_document_intake: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       create_initiative: {
         Args: {
           p_description?: string
@@ -17788,6 +24977,7 @@ export type Database = {
           p_metadata?: Json
           p_parent_initiative_id?: string
           p_title: string
+          p_visibility?: string
         }
         Returns: string
       }
@@ -17894,6 +25084,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_recurring_meeting_rule: {
+        Args: { p_payload: Json }
+        Returns: string
+      }
       create_recurring_weekly_events: {
         Args: {
           p_audience_level?: string
@@ -17958,6 +25152,7 @@ export type Database = {
         }
         Returns: Json
       }
+      current_caller_role: { Args: never; Returns: string }
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       delete_board_item: {
         Args: { p_item_id: string; p_reason?: string }
@@ -17971,6 +25166,10 @@ export type Database = {
       delete_cost_entry: { Args: { p_id: string }; Returns: undefined }
       delete_document_version_draft: {
         Args: { p_version_id: string }
+        Returns: Json
+      }
+      delete_expired_event_guest_certificates: {
+        Args: { p_dry_run?: boolean }
         Returns: Json
       }
       delete_my_personal_data: {
@@ -17987,6 +25186,7 @@ export type Database = {
       deselect_tribe: { Args: never; Returns: Json }
       detect_and_notify_detractors: { Args: never; Returns: Json }
       detect_and_notify_detractors_cron: { Args: never; Returns: Json }
+      detect_credly_unmapped_cron: { Args: never; Returns: Json }
       detect_inactive_members: { Args: { p_dry_run?: boolean }; Returns: Json }
       detect_mcp_anomalies: {
         Args: never
@@ -18004,8 +25204,13 @@ export type Database = {
         Args: { p_member_id?: string }
         Returns: number
       }
+      detect_recurrence_stockout_cron: { Args: never; Returns: Json }
       detect_stale_events_cron: { Args: never; Returns: Json }
       detect_stale_portfolio_items_cron: { Args: never; Returns: Json }
+      detect_stuck_selection_funnel: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
       dismiss_onboarding: { Args: never; Returns: undefined }
       dismiss_visitor_lead: {
         Args: { p_lead_id: string; p_reason?: string }
@@ -18016,7 +25221,11 @@ export type Database = {
         Returns: Json
       }
       dispatch_peer_review_invitations: {
-        Args: { p_application_id: string; p_max_peers?: number }
+        Args: {
+          p_application_id: string
+          p_force_no_ai_context?: boolean
+          p_max_peers?: number
+        }
         Returns: Json
       }
       dispatch_pending_welcomes: {
@@ -18032,6 +25241,18 @@ export type Database = {
         Returns: string
       }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
+      enqueue_curation_drive_grant_for_member: {
+        Args: { p_item_id: string; p_member_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      enqueue_curation_drive_grants: {
+        Args: { p_item_id: string }
+        Returns: undefined
+      }
+      enqueue_curation_drive_revokes: {
+        Args: { p_item_id: string }
+        Returns: undefined
+      }
       enrich_applications_from_csv: {
         Args: {
           p_cycle_id: string
@@ -18090,6 +25311,7 @@ export type Database = {
         Returns: Json
       }
       expire_stale_initiative_invitations: { Args: never; Returns: Json }
+      export_anexo_i: { Args: { p_declaration_id: string }; Returns: Json }
       export_audit_log_csv: {
         Args: {
           p_category?: string
@@ -18098,10 +25320,21 @@ export type Database = {
         }
         Returns: string
       }
+      export_institutional_data_dictionary: { Args: never; Returns: Json }
       export_my_data: { Args: never; Returns: Json }
+      export_redacted_settings: { Args: never; Returns: Json }
+      express_reacceptance: { Args: { p_obligation_id: string }; Returns: Json }
       extract_cv_text_batch: { Args: { p_limit?: number }; Returns: Json }
       finalize_decisions: {
         Args: { p_cycle_id: string; p_decisions: Json }
+        Returns: Json
+      }
+      force_grant_curation_drive_access: {
+        Args: { p_board_item_id: string }
+        Returns: Json
+      }
+      force_revoke_curation_drive_access: {
+        Args: { p_board_item_id: string }
         Returns: Json
       }
       fork_idea_to_channel: {
@@ -18109,6 +25342,14 @@ export type Database = {
         Returns: Json
       }
       generate_agenda_template: { Args: { p_tribe_id: number }; Returns: Json }
+      generate_institutional_export_manifest: {
+        Args: {
+          p_export_id?: string
+          p_justification: string
+          p_trigger_event?: string
+        }
+        Returns: Json
+      }
       generate_weekly_card_digest_cron: {
         Args: never
         Returns: {
@@ -18153,6 +25394,11 @@ export type Database = {
       get_active_engagements: { Args: { p_person_id?: string }; Returns: Json }
       get_admin_dashboard: { Args: never; Returns: Json }
       get_adoption_dashboard: { Args: never; Returns: Json }
+      get_affiliation_chapter_rollup: { Args: never; Returns: Json }
+      get_affiliation_verification_queue: {
+        Args: { p_scope?: string }
+        Returns: Json
+      }
       get_ai_suggestion: {
         Args: { p_application_id: string; p_evaluation_type: string }
         Returns: Json
@@ -18220,6 +25466,19 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: Json
       }
+      get_attendance_engagement_rate: {
+        Args: { p_cycle_start?: string; p_member_id: string }
+        Returns: number
+      }
+      get_attendance_engagement_summary: {
+        Args: {
+          p_chapter?: string
+          p_cycle_start?: string
+          p_scope?: string
+          p_scope_id?: number
+        }
+        Returns: Json
+      }
       get_attendance_grid: {
         Args: { p_event_type?: string; p_tribe_id?: number }
         Returns: Json
@@ -18227,6 +25486,9 @@ export type Database = {
       get_attendance_panel: {
         Args: { p_cycle_end?: string; p_cycle_start?: string }
         Returns: {
+          cohort_avg_pct: number
+          cohort_percentile: number
+          cohort_size: number
           combined_pct: number
           dropout_risk: boolean
           general_attended: number
@@ -18244,28 +25506,18 @@ export type Database = {
           typology: string
         }[]
       }
-      get_attendance_summary: {
+      get_attendance_rate: {
+        Args: { p_cycle_start?: string; p_member_id: string }
+        Returns: number
+      }
+      get_attendance_reliability_summary: {
         Args: {
-          p_cycle_end?: string
+          p_chapter?: string
           p_cycle_start?: string
-          p_tribe_id?: number
+          p_scope?: string
+          p_scope_id?: number
         }
-        Returns: {
-          combined_pct: number
-          consecutive_misses: number
-          geral_pct: number
-          geral_present: number
-          geral_total: number
-          last_attendance: string
-          member_id: string
-          member_name: string
-          operational_role: string
-          tribe_id: number
-          tribe_name: string
-          tribe_pct: number
-          tribe_present: number
-          tribe_total: number
-        }[]
+        Returns: Json
       }
       get_audit_log: {
         Args: {
@@ -18280,6 +25532,10 @@ export type Database = {
         Returns: Json
       }
       get_auth_provider_stats: { Args: never; Returns: Json }
+      get_blind_review_session: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       get_blog_likes_batch: { Args: { p_post_ids: string[] }; Returns: Json }
       get_blog_post_likes: { Args: { p_post_id: string }; Returns: Json }
       get_board: { Args: { p_board_id: string }; Returns: Json }
@@ -18303,10 +25559,15 @@ export type Database = {
         Returns: Json
       }
       get_board_drive_links: { Args: { p_board_id: string }; Returns: Json }
+      get_board_item_drive_access: {
+        Args: { p_board_item_id: string }
+        Returns: Json
+      }
       get_board_members: {
         Args: { p_board_id: string }
         Returns: {
           board_role: string
+          can_curate: boolean
           designations: string[]
           id: string
           name: string
@@ -18365,6 +25626,7 @@ export type Database = {
       }
       get_changelog: { Args: never; Returns: Json }
       get_chapter_dashboard: { Args: { p_chapter?: string }; Returns: Json }
+      get_chapter_metrics: { Args: never; Returns: Json }
       get_chapter_needs: {
         Args: { p_chapter?: string }
         Returns: {
@@ -18380,6 +25642,11 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_chapter_outreach_script: { Args: never; Returns: Json }
+      get_chapter_selection_summary: {
+        Args: { p_chapter?: string }
+        Returns: Json
+      }
       get_comms_dashboard_metrics: { Args: never; Returns: Json }
       get_comms_pipeline: { Args: never; Returns: Json }
       get_comms_to_adoption_funnel: {
@@ -18388,6 +25655,10 @@ export type Database = {
       }
       get_communication_template: {
         Args: { p_slug: string; p_vars?: Json }
+        Returns: Json
+      }
+      get_content_product_reader: {
+        Args: { p_product_id: string }
         Returns: Json
       }
       get_cost_entries: {
@@ -18416,18 +25687,32 @@ export type Database = {
         Args: { p_course_id?: string }
         Returns: Json
       }
+      get_cpmai_certified_goal_count: {
+        Args: { p_year?: number }
+        Returns: number
+      }
       get_cpmai_course_dashboard: {
         Args: { p_course_id?: string }
         Returns: Json
       }
       get_cpmai_leaderboard: { Args: { p_course_id?: string }; Returns: Json }
       get_cr_approval_status: { Args: { p_cr_id: string }; Returns: Json }
+      get_credly_health: { Args: never; Returns: Json }
+      get_credly_unmapped_badges: { Args: never; Returns: Json }
       get_cron_status: { Args: never; Returns: Json }
       get_curation_cross_board: { Args: never; Returns: Json }
       get_curation_dashboard: { Args: never; Returns: Json }
+      get_curation_grant_row: { Args: { p_grant_id: string }; Returns: Json }
+      get_curation_queue_state: { Args: { p_status?: string }; Returns: Json }
       get_current_cycle: { Args: never; Returns: Json }
       get_current_release: { Args: never; Returns: Json }
+      get_cutoff_dispatch_health: { Args: never; Returns: Json }
+      get_cycle_attendance_overview: {
+        Args: { p_cycle_code?: string }
+        Returns: Json
+      }
       get_cycle_evolution: { Args: never; Returns: Json }
+      get_cycle_renewal_radar: { Args: { p_as_of?: string }; Returns: Json }
       get_cycle_report: { Args: { p_cycle?: number }; Returns: Json }
       get_decision_log: {
         Args: { p_filter?: string }
@@ -18444,6 +25729,8 @@ export type Database = {
       get_diversity_dashboard: { Args: { p_cycle_id?: string }; Returns: Json }
       get_document_detail: { Args: { p_document_id: string }; Returns: Json }
       get_drive_discovery_health: { Args: never; Returns: Json }
+      get_drive_revocation_row: { Args: { p_audit_id: string }; Returns: Json }
+      get_drive_teardown_overview: { Args: never; Returns: Json }
       get_dropout_risk_members: {
         Args: { p_threshold?: number }
         Returns: {
@@ -18460,6 +25747,19 @@ export type Database = {
       get_dual_track_merged_payload: {
         Args: { p_application_id: string }
         Returns: Json
+      }
+      get_duplicate_identity_candidates: { Args: never; Returns: Json }
+      get_entry_chapter_diagnosis: {
+        Args: { p_cycle_id?: string }
+        Returns: {
+          active_br_codes: string[]
+          applicant_name: string
+          application_id: string
+          bucket: string
+          entry_chapter_code: string
+          member_chapter: string
+          member_id: string
+        }[]
       }
       get_essay_field: {
         Args: { p_index: string; p_mapping: Json }
@@ -18489,7 +25789,7 @@ export type Database = {
         }[]
       }
       get_event_champion_suggestions: {
-        Args: { p_event_id: string }
+        Args: { p_event_id: string; p_force_derive?: boolean }
         Returns: {
           designation_summary: string
           member_id: string
@@ -18530,6 +25830,7 @@ export type Database = {
           date: string
           duration_minutes: number
           external_attendees: string[]
+          i_attended: boolean
           id: string
           initiative_id: string
           initiative_name: string
@@ -18551,6 +25852,10 @@ export type Database = {
           visibility: string
           youtube_url: string
         }[]
+      }
+      get_exclusion_declaration: {
+        Args: { p_declaration_id: string }
+        Returns: Json
       }
       get_executive_kpis: { Args: never; Returns: Json }
       get_extraction_health: { Args: never; Returns: Json }
@@ -18615,6 +25920,15 @@ export type Database = {
           total_points: number
         }[]
       }
+      get_gamification_rules_catalog: { Args: never; Returns: Json }
+      get_geral_agenda_viva: {
+        Args: {
+          p_limit_events?: number
+          p_member_id?: string
+          p_window?: string
+        }
+        Returns: Json
+      }
       get_ghost_visitors: {
         Args: never
         Returns: {
@@ -18646,11 +25960,21 @@ export type Database = {
         }[]
       }
       get_governance_dashboard: { Args: never; Returns: Json }
+      get_governance_document_draft_preview: {
+        Args: { p_document_id: string; p_version_id: string }
+        Returns: Json
+      }
+      get_governance_document_reader: {
+        Args: { p_document_id: string }
+        Returns: Json
+      }
       get_governance_documents: { Args: { p_doc_type: string }; Returns: Json }
       get_governance_glossary: { Args: never; Returns: Json }
       get_governance_preview: { Args: never; Returns: Json }
       get_governance_stats: { Args: never; Returns: Json }
+      get_gp_cohort_health: { Args: never; Returns: Json }
       get_gp_whatsapp: { Args: never; Returns: Json }
+      get_headless_tribes: { Args: never; Returns: Json }
       get_help_journeys: { Args: never; Returns: Json }
       get_homepage_stats: { Args: never; Returns: Json }
       get_idea_pipeline: {
@@ -18683,6 +26007,10 @@ export type Database = {
         Args: { p_initiative_id: string }
         Returns: Json
       }
+      get_initiative_drive_roster: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
       get_initiative_events_timeline: {
         Args: {
           p_initiative_id: string
@@ -18703,6 +26031,18 @@ export type Database = {
         Args: { p_initiative_id: string }
         Returns: Json
       }
+      get_initiative_roadmap: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
+      get_initiative_roster_count: {
+        Args: { p_initiative_id: string }
+        Returns: number
+      }
+      get_initiative_roster_members: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
       get_initiative_stats: { Args: { p_initiative_id: string }; Returns: Json }
       get_invariant_alerts: { Args: never; Returns: Json }
       get_invitation_health: { Args: never; Returns: Json }
@@ -18719,6 +26059,10 @@ export type Database = {
       get_meeting_detail: { Args: { p_event_id: string }; Returns: Json }
       get_meeting_notes_compliance: { Args: never; Returns: Json }
       get_meeting_preparation: { Args: { p_event_id: string }; Returns: Json }
+      get_member_affiliation_status: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       get_member_attendance_hours: {
         Args: { p_cycle_code?: string; p_member_id: string }
         Returns: {
@@ -18731,6 +26075,10 @@ export type Database = {
       get_member_by_auth: { Args: never; Returns: Json }
       get_member_champions_history: {
         Args: { p_member_id?: string }
+        Returns: Json
+      }
+      get_member_comms_card: {
+        Args: { p_person_id?: string; p_query?: string }
         Returns: Json
       }
       get_member_cycle_xp: { Args: { p_member_id: string }; Returns: Json }
@@ -18749,10 +26097,20 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      get_member_responsibility_inventory: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
+      get_member_retention_canonical: { Args: never; Returns: Json }
       get_member_transitions: { Args: { p_member_id: string }; Returns: Json }
       get_member_tribe: { Args: { p_member_id: string }; Returns: number }
       get_member_xp_pillars: {
         Args: { p_cycle_code?: string; p_member_id?: string; p_scope?: string }
+        Returns: Json
+      }
+      get_membership_drive_grant_health: { Args: never; Returns: Json }
+      get_membership_drive_targets: {
+        Args: { p_initiative_id?: string }
         Returns: Json
       }
       get_mirror_target_boards: {
@@ -18764,6 +26122,7 @@ export type Database = {
           item_count: number
         }[]
       }
+      get_my_affiliation_attestation: { Args: never; Returns: Json }
       get_my_application_status: { Args: never; Returns: Json }
       get_my_attendance_history: {
         Args: { p_limit?: number }
@@ -18777,15 +26136,44 @@ export type Database = {
           present: boolean
         }[]
       }
+      get_my_buddy: { Args: never; Returns: Json }
       get_my_cards: { Args: never; Returns: Json }
       get_my_certificates: {
         Args: { p_include_volunteer_agreements?: boolean }
         Returns: Json
       }
+      get_my_chapter_affiliations: {
+        Args: never
+        Returns: {
+          chapter_code: string
+          country: string
+          is_entry: boolean
+          is_primary: boolean
+          legal_name: string
+          source: string
+          state: string
+          verified_at: string
+        }[]
+      }
       get_my_committee_assignments: { Args: never; Returns: Json }
       get_my_credly_status: { Args: never; Returns: Json }
+      get_my_entry_chapter_diagnosis: { Args: never; Returns: Json }
       get_my_evaluation_feedback: { Args: never; Returns: Json }
       get_my_gamification_stats: { Args: never; Returns: Json }
+      get_my_meetings: {
+        Args: { p_days_back?: number; p_days_forward?: number }
+        Returns: {
+          attendance_present: boolean
+          duration_minutes: number
+          event_date: string
+          event_id: string
+          event_title: string
+          event_type: string
+          excused: boolean
+          initiative_id: string
+          initiative_title: string
+        }[]
+      }
       get_my_member_record: {
         Args: never
         Returns: {
@@ -18796,6 +26184,7 @@ export type Database = {
           tribe_id: number
         }[]
       }
+      get_my_milestones: { Args: never; Returns: Json }
       get_my_notification_metrics: {
         Args: { p_window_days?: number }
         Returns: Json
@@ -18808,11 +26197,21 @@ export type Database = {
       get_my_organization: { Args: never; Returns: Json }
       get_my_pending_evaluations: { Args: never; Returns: Json }
       get_my_pii_access_log: { Args: { p_limit?: number }; Returns: Json }
+      get_my_points_statement: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_scope?: string
+        }
+        Returns: Json
+      }
       get_my_quick_start_progress: { Args: never; Returns: Json }
       get_my_re_engagement_invitation: {
         Args: { p_pipeline_id: string }
         Returns: Json
       }
+      get_my_reacceptance_obligations: { Args: never; Returns: Json }
       get_my_selection_result: { Args: never; Returns: Json }
       get_my_signatures: {
         Args: { p_include_superseded?: boolean }
@@ -18822,6 +26221,7 @@ export type Database = {
         Args: { p_period_filter?: string; p_status_filter?: string }
         Returns: Json
       }
+      get_my_tribe_request_context: { Args: never; Returns: Json }
       get_near_events: {
         Args: { p_member_id: string; p_window_hours?: number }
         Returns: {
@@ -18834,18 +26234,35 @@ export type Database = {
         }[]
       }
       get_next_draft_version: { Args: { p_version_id: string }; Returns: Json }
+      get_next_general_meeting: { Args: never; Returns: Json }
       get_notification_count: { Args: never; Returns: number }
       get_notifications_analytics: {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      get_offboarded_member_emails:
+        | { Args: never; Returns: Json }
+        | { Args: { p_member_id: string }; Returns: Json }
       get_offboarding_dashboard: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
       get_onboarding_status: {
         Args: { p_application_id: string }
         Returns: Json
       }
+      get_operational_arms: {
+        Args: never
+        Returns: {
+          description: string
+          has_openings: boolean
+          initiative_id: string
+          leader: Json
+          name_i18n: Json
+          team: Json
+          title: string
+        }[]
+      }
       get_org_chart: { Args: never; Returns: Json }
+      get_ots_pipeline_health: { Args: never; Returns: Json }
       get_partner_entity_attachments: {
         Args: { p_entity_id: string }
         Returns: Json
@@ -18862,6 +26279,7 @@ export type Database = {
       get_partner_pipeline: { Args: never; Returns: Json }
       get_pending_agreement_engagements: { Args: never; Returns: Json }
       get_pending_countersign: { Args: never; Returns: Json }
+      get_pending_handoffs_report: { Args: never; Returns: Json }
       get_pending_ratifications: {
         Args: never
         Returns: {
@@ -18879,12 +26297,10 @@ export type Database = {
         }[]
       }
       get_person: { Args: { p_person_id?: string }; Returns: Json }
-      get_pert_cutoff_summary:
-        | { Args: { p_cycle_id: string }; Returns: Json }
-        | {
-            Args: { p_cycle_id: string; p_score_column?: string }
-            Returns: Json
-          }
+      get_pert_cutoff_summary: {
+        Args: { p_cycle_id: string; p_score_column?: string }
+        Returns: Json
+      }
       get_pii_access_log_admin: {
         Args: {
           p_accessor_id?: string
@@ -18928,6 +26344,20 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: Json
       }
+      get_public_continent_reach: {
+        Args: never
+        Returns: {
+          continent_code: string
+          member_count: number
+        }[]
+      }
+      get_public_country_reach: {
+        Args: never
+        Returns: {
+          country_code: string
+          member_count: number
+        }[]
+      }
       get_public_impact_data: { Args: never; Returns: Json }
       get_public_leaderboard: {
         Args: { p_limit?: number }
@@ -18941,6 +26371,13 @@ export type Database = {
         }[]
       }
       get_public_platform_stats: { Args: never; Returns: Json }
+      get_public_precise_country_reach: {
+        Args: never
+        Returns: {
+          country_code: string
+          member_count: number
+        }[]
+      }
       get_public_publications: {
         Args: {
           p_cycle?: string
@@ -18950,6 +26387,29 @@ export type Database = {
           p_type?: string
         }
         Returns: Json
+      }
+      get_public_state_reach: {
+        Args: never
+        Returns: {
+          member_count: number
+          state_code: string
+        }[]
+      }
+      get_public_state_reach_v2: {
+        Args: { p_min_k?: number }
+        Returns: {
+          country_code: string
+          member_count: number
+          region_code: string
+        }[]
+      }
+      get_public_state_reach_v3: {
+        Args: { p_min_k?: number }
+        Returns: {
+          country_code: string
+          member_count: number
+          region_code: string
+        }[]
       }
       get_public_trail_ranking: {
         Args: never
@@ -18961,6 +26421,7 @@ export type Database = {
           photo_url: string
         }[]
       }
+      get_public_verticals: { Args: never; Returns: Json }
       get_publication_detail: { Args: { p_id: string }; Returns: Json }
       get_publication_pipeline_summary: { Args: never; Returns: Json }
       get_publication_submission_detail: {
@@ -19029,6 +26490,53 @@ export type Database = {
           xp_awarded: number
         }[]
       }
+      get_recurrence_stockout: {
+        Args: { p_horizon_days?: number }
+        Returns: Json
+      }
+      get_recurring_meeting_admin_list: {
+        Args: { p_horizon_end?: string; p_initiative_id?: string }
+        Returns: {
+          anchor_date: string
+          day_of_week: number
+          duration_minutes: number
+          event_type: string
+          expected_future: number
+          frequency: string
+          future_events: number
+          last_reconciled_at: string
+          link_mismatch: number
+          meeting_link: string
+          missing_future: number
+          next_occurrence: string
+          rule_id: string
+          scope_name: string
+          scope_type: string
+          status: string
+          time_mismatch: number
+          time_start: string
+          timezone: string
+          title: string
+        }[]
+      }
+      get_recurring_meeting_drift: {
+        Args: { p_horizon_end?: string }
+        Returns: {
+          day_of_week: number
+          expected_future: number
+          frequency: string
+          future_events: number
+          link_mismatch: number
+          missing_future: number
+          next_occurrence: string
+          rule_id: string
+          scope_type: string
+          status: string
+          time_mismatch: number
+          time_start: string
+          title: string
+        }[]
+      }
       get_revenue_entries: {
         Args: {
           p_category_name?: string
@@ -19075,6 +26583,10 @@ export type Database = {
         Args: { p_cycle_code?: string }
         Returns: Json
       }
+      get_selection_emails_pending_24h: {
+        Args: { p_alert_threshold?: number }
+        Returns: Json
+      }
       get_selection_health: { Args: never; Returns: Json }
       get_selection_pipeline_metrics: {
         Args: { p_chapter?: string; p_cycle_id?: string }
@@ -19083,6 +26595,10 @@ export type Database = {
       get_selection_rankings: {
         Args: { p_cycle_code?: string; p_track?: string }
         Returns: Json
+      }
+      get_signer_signature_url: {
+        Args: { p_signer_id: string }
+        Returns: string
       }
       get_site_config: { Args: never; Returns: Json }
       get_sustainability_dashboard: {
@@ -19143,6 +26659,7 @@ export type Database = {
         Returns: Json
       }
       get_tribe_gamification: { Args: { p_tribe_id: number }; Returns: Json }
+      get_tribe_group_link: { Args: { p_tribe_id: number }; Returns: Json }
       get_tribe_housekeeping: {
         Args: { p_initiative_id?: string; p_legacy_tribe_id?: number }
         Returns: Json
@@ -19152,10 +26669,20 @@ export type Database = {
         Args: { p_tribe_id: number }
         Returns: Json
       }
+      get_tribe_picker_cards: {
+        Args: never
+        Returns: {
+          leader_linkedin: string
+          tribe_id: number
+          video_duration: string
+          video_url: string
+        }[]
+      }
       get_tribe_stats: { Args: { p_tribe_id: number }; Returns: Json }
       get_unread_notification_count: { Args: never; Returns: number }
       get_vep_baseline_history: { Args: { p_limit?: number }; Returns: Json }
       get_vep_divergence_report: { Args: never; Returns: Json }
+      get_vep_role_cohort_reconciliation: { Args: never; Returns: Json }
       get_version_diff: {
         Args: {
           p_include_content?: boolean
@@ -19170,6 +26697,10 @@ export type Database = {
         Returns: Json
       }
       get_webinar_lifecycle: { Args: { p_webinar_id: string }; Returns: Json }
+      get_webinars_count: {
+        Args: { p_end?: string; p_mode?: string; p_start?: string }
+        Returns: number
+      }
       get_weekly_card_digest: { Args: { p_member_id: string }; Returns: Json }
       get_weekly_initiative_digest: {
         Args: { p_initiative_id: string }
@@ -19195,10 +26726,24 @@ export type Database = {
           updated_at: string
         }[]
       }
-      give_consent_via_token: {
-        Args: { p_consent_type?: string; p_token: string }
+      get_work_governing_version: {
+        Args: { p_work_id: string; p_work_type: string }
         Returns: Json
       }
+      give_consent_via_token: {
+        Args: { p_consent_type?: string; p_evidence?: Json; p_token: string }
+        Returns: Json
+      }
+      gp_record_image_consent_revocation: {
+        Args: {
+          p_effective_at?: string
+          p_member_id: string
+          p_reason?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
+      grant_image_voice_consent: { Args: { p_evidence?: Json }; Returns: Json }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
       import_leader_evaluations: { Args: { p_data: Json }; Returns: Json }
@@ -19217,12 +26762,18 @@ export type Database = {
         Args: { p_message?: string; p_pipeline_id: string }
         Returns: Json
       }
+      is_confidential_board: { Args: { p_board_id: string }; Returns: boolean }
+      is_confidential_initiative: {
+        Args: { p_initiative_id: string }
+        Returns: boolean
+      }
       is_eu_resident: { Args: { p_person_id: string }; Returns: boolean }
       is_event_mandatory_for_member: {
         Args: { p_event_id: string; p_member_id: string }
         Returns: boolean
       }
       issue_certificate: { Args: { p_data: Json }; Returns: Json }
+      issue_event_guest_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_interview_booking_token: {
         Args: { p_application_id: string; p_bypass_gate?: boolean }
         Returns: Json
@@ -19307,6 +26858,25 @@ export type Database = {
           title: string
         }[]
       }
+      lgpd_execute_retroactive_deletion: {
+        Args: {
+          p_application_id: string
+          p_deletion_reason: string
+          p_drive_deletion_ref?: string
+          p_video_id: string
+        }
+        Returns: Json
+      }
+      lgpd_record_retroactive_notification: {
+        Args: {
+          p_application_id: string
+          p_dispatched_at?: string
+          p_lang: string
+          p_notification_method?: string
+          p_template_version: string
+        }
+        Returns: Json
+      }
       link_attachment_to_governance: {
         Args: {
           p_attachment_id: string
@@ -19323,6 +26893,10 @@ export type Database = {
           p_drive_folder_name?: string
           p_drive_folder_url: string
         }
+        Returns: Json
+      }
+      link_event_to_initiative: {
+        Args: { p_event_id: string; p_initiative_id: string }
         Returns: Json
       }
       link_idea_to_series: {
@@ -19354,6 +26928,10 @@ export type Database = {
           p_notes?: string
           p_partner_entity_id: string
         }
+        Returns: Json
+      }
+      link_reacceptance_recirculation: {
+        Args: { p_chain_id: string; p_objection_id: string }
         Returns: Json
       }
       link_webinar_event: {
@@ -19455,6 +27033,7 @@ export type Database = {
           partner_status: string
         }[]
       }
+      list_content_products: { Args: { p_filters?: Json }; Returns: Json }
       list_curation_board: { Args: { p_status?: string }; Returns: Json[] }
       list_curation_pending_board_items: { Args: never; Returns: Json[] }
       list_cycles: { Args: never; Returns: Json }
@@ -19511,6 +27090,7 @@ export type Database = {
         }
         Returns: Json
       }
+      list_governance_library: { Args: { p_filters?: Json }; Returns: Json }
       list_initiative_boards: {
         Args: { p_initiative_id?: string }
         Returns: Json[]
@@ -19520,6 +27100,7 @@ export type Database = {
         Returns: {
           artifact_id: string | null
           assigned_member_id: string | null
+          completed_at: string | null
           created_at: string
           cycle_code: string
           description: string | null
@@ -19598,6 +27179,7 @@ export type Database = {
         Args: { p_kind?: string; p_status?: string }
         Returns: Json[]
       }
+      list_initiatives_missing_drive_workspace: { Args: never; Returns: Json }
       list_invitations_for_my_initiatives: {
         Args: { p_initiative_id?: string; p_status_filter?: string }
         Returns: Json
@@ -19657,6 +27239,7 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: Json
       }
+      list_my_consents: { Args: never; Returns: Json }
       list_my_document_drafts: {
         Args: never
         Returns: {
@@ -19671,6 +27254,7 @@ export type Database = {
           version_number: number
         }[]
       }
+      list_my_exclusion_declarations: { Args: never; Returns: Json }
       list_offboarding_records: {
         Args: {
           p_limit?: number
@@ -19733,6 +27317,18 @@ export type Database = {
         }[]
       }
       list_pending_curation: { Args: { p_table?: string }; Returns: Json }
+      list_premember_anonymization_candidates: {
+        Args: { p_years?: number; p_years_withdrawn?: number }
+        Returns: {
+          application_id: string
+          cycle_id: string
+          has_resume: boolean
+          retention_anchor: string
+          status: string
+          vep_status_raw: string
+          years_since_anchor: number
+        }[]
+      }
       list_project_boards: { Args: { p_tribe_id?: number }; Returns: Json[] }
       list_radar_global: {
         Args: { p_publications_limit?: number; p_webinars_limit?: number }
@@ -19741,6 +27337,34 @@ export type Database = {
       list_re_engagement_pipeline: {
         Args: { p_cycle_code?: string; p_state?: string }
         Returns: Json
+      }
+      list_scheduled_comms_posts: {
+        Args: {
+          p_channel?: string
+          p_include_payload?: boolean
+          p_limit?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
+      list_stale_instrument_bindings: {
+        Args: never
+        Returns: {
+          binding_id: string
+          bound_at: string
+          bound_document_id: string
+          bound_title: string
+          current_version_id: string
+          current_version_label: string
+          is_behind: boolean
+          last_material_version_id: string
+          pin_clause_ref: string
+          pinned_version_id: string
+          pinned_version_label: string
+          re_anchor_required: boolean
+          referenced_document_id: string
+          referenced_title: string
+        }[]
       }
       list_taxonomy_tags: {
         Args: never
@@ -19766,6 +27390,7 @@ export type Database = {
         Returns: {
           artifact_id: string | null
           assigned_member_id: string | null
+          completed_at: string | null
           created_at: string
           cycle_code: string
           description: string | null
@@ -19785,6 +27410,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      list_tribe_pending_requests: {
+        Args: { p_tribe_id: number }
+        Returns: Json
       }
       list_validations_by_validator: {
         Args: { p_cycle_id?: string; p_limit?: number; p_validator_id: string }
@@ -19887,6 +27516,10 @@ export type Database = {
         }
         Returns: Json
       }
+      manage_initiative_metadata: {
+        Args: { p_initiative_id: string; p_metadata: Json }
+        Returns: Json
+      }
       manage_selection_committee: {
         Args: {
           p_action: string
@@ -19896,7 +27529,28 @@ export type Database = {
         }
         Returns: Json
       }
+      map_cr_type_to_change_class: {
+        Args: { p_cr_type: string }
+        Returns: string
+      }
       mark_all_notifications_read: { Args: never; Returns: Json }
+      mark_curation_grant_done: {
+        Args: {
+          p_api_error?: Json
+          p_grant_id: string
+          p_permission_id?: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      mark_curation_grant_revoked: {
+        Args: { p_api_error?: Json; p_grant_id: string; p_status: string }
+        Returns: Json
+      }
+      mark_drive_revocation_done: {
+        Args: { p_audit_id: string; p_google_error?: Json; p_status: string }
+        Returns: Json
+      }
       mark_interview_status: {
         Args: { p_interview_id: string; p_notes?: string; p_status: string }
         Returns: Json
@@ -19923,6 +27577,17 @@ export type Database = {
         Args: { p_application_id: string; p_note?: string }
         Returns: Json
       }
+      match_booking_application: {
+        Args: { p_guest_email: string }
+        Returns: {
+          app_status: string
+          applicant_name: string
+          application_id: string
+          cycle_id: string
+          interview_status: string
+          matched_by: string
+        }[]
+      }
       meeting_close: {
         Args: {
           p_event_id: string
@@ -19934,6 +27599,10 @@ export type Database = {
       member_add_alternate_email: {
         Args: { p_email: string; p_kind: string; p_member_id: string }
         Returns: string
+      }
+      member_is_pre_onboarding: {
+        Args: { p_member_status: string; p_person_id: string }
+        Returns: boolean
       }
       member_list_emails: {
         Args: { p_member_id: string }
@@ -19987,8 +27656,38 @@ export type Database = {
         Args: { p_item_id: string; p_target_board_id: string }
         Returns: undefined
       }
+      nominate_tribe_successor: {
+        Args: {
+          p_due_date?: string
+          p_reason?: string
+          p_successor_member_id?: string
+          p_tribe_id: number
+        }
+        Returns: Json
+      }
+      notify_editorial_change_awareness: {
+        Args: {
+          p_document_id: string
+          p_dry_run?: boolean
+          p_to_version_id: string
+        }
+        Returns: Json
+      }
+      notify_missing_drive_workspaces: { Args: never; Returns: Json }
       notify_privacy_policy_change: {
         Args: { p_version_id: string }
+        Returns: Json
+      }
+      notify_selection_cutoff_approved: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
+      nucleo_contract_cohort_cycle_id: {
+        Args: { p_contract_start: string }
+        Returns: string
+      }
+      nudge_entry_chapter_cohort: {
+        Args: { p_cycle_id?: string; p_dry_run?: boolean }
         Returns: Json
       }
       offboard_member: {
@@ -20000,9 +27699,70 @@ export type Database = {
         }
         Returns: Json
       }
+      offboard_member_with_handoffs: {
+        Args: {
+          p_default_due_date?: string
+          p_member_id: string
+          p_new_status: string
+          p_reason_category: string
+          p_reason_detail?: string
+          p_routing?: Json
+        }
+        Returns: Json
+      }
+      offer_buddy: {
+        Args: { p_afilhado_member_id: string; p_message?: string }
+        Returns: Json
+      }
+      onboarding_step_applies: {
+        Args: { p_applies_to_role: string[]; p_member_role: string }
+        Returns: boolean
+      }
+      open_reacceptance_obligations: {
+        Args: {
+          p_document_id: string
+          p_dry_run?: boolean
+          p_to_version_id: string
+        }
+        Returns: Json
+      }
       opt_out_all_pillars: { Args: { p_token: string }; Returns: Json }
+      park_responsibility_handoff: {
+        Args: {
+          p_due_date?: string
+          p_from_member_id: string
+          p_item_ref: string
+          p_item_type: string
+          p_owner_member_id: string
+          p_reason?: string
+          p_successor_member_id?: string
+        }
+        Returns: Json
+      }
       parse_vep_chapters: { Args: { p_membership: string }; Returns: string[] }
+      pin_instrument_version: {
+        Args: {
+          p_bound_document_id: string
+          p_pin_clause_ref?: string
+          p_pinned_version_id: string
+          p_referenced_document_id: string
+        }
+        Returns: Json
+      }
+      place_responsibility_handoff: {
+        Args: { p_handoff_id: string; p_successor_member_id: string }
+        Returns: Json
+      }
+      place_tribe_successor: {
+        Args: {
+          p_reason?: string
+          p_successor_member_id: string
+          p_tribe_id: number
+        }
+        Returns: Json
+      }
       platform_activity_summary: { Args: never; Returns: Json }
+      prepare_member_offboard: { Args: { p_member_id: string }; Returns: Json }
       preview_gate_eligibles: {
         Args: { p_doc_type: string; p_submitter_id: string }
         Returns: Json
@@ -20018,6 +27778,15 @@ export type Database = {
       process_interview_reminders_1h: { Args: never; Returns: Json }
       process_pending_email_queue: { Args: never; Returns: Json }
       process_pending_reschedule_nudges: { Args: never; Returns: Json }
+      process_pending_vep_expired_reapply_invites: {
+        Args: { p_dry_run?: boolean; p_reapply_url?: string }
+        Returns: Json
+      }
+      process_pending_vep_offer_reminders: { Args: never; Returns: Json }
+      process_tribe_request_nudges: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
       promote_lead_to_application: {
         Args: { p_cycle_id: string; p_lead_id: string; p_pmi_id?: string }
         Returns: Json
@@ -20072,6 +27841,16 @@ export type Database = {
         }[]
       }
       purge_stale_digest_notifications_cron: { Args: never; Returns: Json }
+      ratification_window_close_cron: { Args: never; Returns: Json }
+      reacceptance_lifecycle_sweep_cron: { Args: never; Returns: Json }
+      reanchor_instrument_binding: {
+        Args: {
+          p_binding_id: string
+          p_justification: string
+          p_new_version_id: string
+        }
+        Returns: Json
+      }
       recalculate_cycle_rankings: {
         Args: { p_cycle_id: string; p_reason?: string }
         Returns: Json
@@ -20085,6 +27864,27 @@ export type Database = {
         Returns: Json
       }
       recompute_all_active_pert_cutoffs: { Args: never; Returns: Json }
+      recompute_application_status: {
+        Args: {
+          p_application_id?: string
+          p_cycle_id?: string
+          p_dry_run?: boolean
+        }
+        Returns: Json
+      }
+      reconcile_all_recurring_meetings: {
+        Args: { p_horizon_end?: string }
+        Returns: Json
+      }
+      reconcile_recurring_meeting: {
+        Args: { p_horizon_end?: string; p_rule_id: string }
+        Returns: Json
+      }
+      reconcile_recurring_meetings_cron: { Args: never; Returns: Json }
+      reconcile_vep_terminal_status: {
+        Args: { p_application_id?: string; p_dry_run?: boolean }
+        Returns: Json
+      }
       record_ai_validation: {
         Args: {
           p_ai_model?: string
@@ -20110,7 +27910,29 @@ export type Database = {
         }
         Returns: Json
       }
+      record_drive_teardown_scan: {
+        Args: {
+          p_deletable_queued: number
+          p_emails_scanned: number
+          p_exceptions_found: number
+          p_grants_found: number
+          p_member_id: string
+          p_notes?: string
+          p_scan_source: string
+        }
+        Returns: string
+      }
       record_member_activity: { Args: { p_page?: string }; Returns: undefined }
+      record_milestone: {
+        Args: {
+          p_member_id: string
+          p_metadata?: Json
+          p_milestone_key: string
+          p_source_id?: string
+          p_source_type?: string
+        }
+        Returns: undefined
+      }
       record_offboarding_interview: {
         Args: {
           p_attachment_urls?: string[]
@@ -20128,6 +27950,7 @@ export type Database = {
       }
       refresh_cycle_tribe_dim: { Args: never; Returns: undefined }
       refresh_preview_gate_eligibles_cache_all: { Args: never; Returns: Json }
+      refuse_reacceptance: { Args: { p_obligation_id: string }; Returns: Json }
       register_attendance_batch: {
         Args: {
           p_event_id: string
@@ -20145,6 +27968,21 @@ export type Database = {
           p_mime_type?: string
           p_size_bytes?: number
           p_uploaded_via?: string
+        }
+        Returns: Json
+      }
+      register_curation_artifact_snapshot: {
+        Args: {
+          p_board_item_file_id?: string
+          p_board_item_id: string
+          p_capture_trigger?: string
+          p_content_product_id?: string
+          p_digest_status?: string
+          p_document_version_id?: string
+          p_drive_revision_id?: string
+          p_file_digest?: string
+          p_review_round?: number
+          p_version_label?: string
         }
         Returns: Json
       }
@@ -20168,7 +28006,49 @@ export type Database = {
         }
         Returns: Json
       }
+      register_exclusion_asset: {
+        Args: {
+          p_author_label?: string
+          p_declaration_id: string
+          p_nature?: string
+          p_reinforcement?: string
+          p_sha256: string
+          p_source_ref?: string
+          p_title: string
+          p_work_created_on?: string
+        }
+        Returns: string
+      }
+      register_institutional_export_completion: {
+        Args: {
+          p_dump_bytes: number
+          p_dump_sha256: string
+          p_export_id: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
       register_own_presence: { Args: { p_event_id: string }; Returns: Json }
+      register_reacceptance_objection: {
+        Args: {
+          p_body: string
+          p_contested_points?: string
+          p_obligation_id: string
+          p_suggested_text?: string
+        }
+        Returns: Json
+      }
+      register_release_provenance_asset: {
+        Args: {
+          p_archive_sha256: string
+          p_commit_sha: string
+          p_declaration_id: string
+          p_manifest_sha256: string
+          p_source_ref?: string
+          p_version: string
+        }
+        Returns: string
+      }
       register_video_screening: {
         Args: {
           p_drive_file_id?: string
@@ -20183,12 +28063,29 @@ export type Database = {
         }
         Returns: Json
       }
+      reissue_agreement: {
+        Args: { p_member_id: string; p_reason: string }
+        Returns: Json
+      }
+      reject_certificate: {
+        Args: { p_certificate_id: string; p_reason: string }
+        Returns: Json
+      }
+      release_blind_reviews: {
+        Args: { p_release_kind?: string; p_session_id: string }
+        Returns: Json
+      }
       remove_event_showcase: { Args: { p_showcase_id: string }; Returns: Json }
       remove_publication_submission_author: {
         Args: { p_member_id: string; p_submission_id: string }
         Returns: undefined
       }
       remove_secondary_email: { Args: { p_email: string }; Returns: Json }
+      reorder_event_blocks: {
+        Args: { p_event_id: string; p_ordered_ids: string[] }
+        Returns: Json
+      }
+      request_account_claim: { Args: { p_identifier: string }; Returns: Json }
       request_application_enrichment: {
         Args: { p_field_updates: Json; p_token: string }
         Returns: Json
@@ -20205,6 +28102,22 @@ export type Database = {
         Args: { p_initiative_id: string; p_message: string }
         Returns: Json
       }
+      request_tribe_assignment: {
+        Args: { p_message: string; p_tribe_id: number }
+        Returns: Json
+      }
+      reserve_agenda_block: {
+        Args: {
+          p_duration_min: number
+          p_event_id: string
+          p_external_guest?: boolean
+          p_format_slug: string
+          p_guest_name?: string
+          p_material_url?: string
+          p_title: string
+        }
+        Returns: Json
+      }
       resolve_action_item: {
         Args: {
           p_action_item_id: string
@@ -20213,6 +28126,7 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_br_chapter_code: { Args: { p_name: string }; Returns: string }
       resolve_default_gates: { Args: { p_doc_type: string }; Returns: Json }
       resolve_document_comment: {
         Args: { p_comment_id: string; p_resolution_note?: string }
@@ -20223,6 +28137,18 @@ export type Database = {
       resolve_whatsapp_link: { Args: { p_member_id: string }; Returns: Json }
       respond_re_engagement: {
         Args: { p_note?: string; p_pipeline_id: string; p_response: string }
+        Returns: Json
+      }
+      respond_reacceptance_objection: {
+        Args: {
+          p_decision: string
+          p_minutes_ref?: string
+          p_objection_id: string
+        }
+        Returns: Json
+      }
+      respond_to_buddy_offer: {
+        Args: { p_pairing_id: string; p_response: string }
         Returns: Json
       }
       respond_to_initiative_invitation: {
@@ -20240,6 +28166,10 @@ export type Database = {
         Args: { p_decision: string; p_invitation_id: string; p_note?: string }
         Returns: Json
       }
+      review_tribe_request: {
+        Args: { p_decision: string; p_invitation_id: string; p_note?: string }
+        Returns: Json
+      }
       review_webinar_proposal: {
         Args: {
           p_decision: string
@@ -20249,6 +28179,11 @@ export type Database = {
         }
         Returns: Json
       }
+      revoke_agenda_block_xp: {
+        Args: { p_block_id: string; p_reason?: string }
+        Returns: Json
+      }
+      revoke_buddy_offer: { Args: { p_pairing_id: string }; Returns: Json }
       revoke_champion: {
         Args: { p_champion_id: string; p_reason: string }
         Returns: Json
@@ -20256,6 +28191,15 @@ export type Database = {
       revoke_consent_via_token: {
         Args: { p_consent_type?: string; p_token: string }
         Returns: Json
+      }
+      revoke_exclusion_declaration: {
+        Args: { p_declaration_id: string }
+        Returns: Json
+      }
+      revoke_image_voice_consent: { Args: { p_reason?: string }; Returns: Json }
+      rl_check_and_bump: {
+        Args: { p_action: string; p_limit: number; p_window_s?: number }
+        Returns: boolean
       }
       rls_can: { Args: { p_action: string }; Returns: boolean }
       rls_can_for_initiative: {
@@ -20266,6 +28210,25 @@ export type Database = {
         Args: { p_action: string; p_tribe_id: number }
         Returns: boolean
       }
+      rls_can_see_artifact_link: {
+        Args: { p_event_id: string; p_initiative_id: string }
+        Returns: boolean
+      }
+      rls_can_see_board: { Args: { p_board_id: string }; Returns: boolean }
+      rls_can_see_event_tier: {
+        Args: { p_initiative_id: string; p_visibility: string }
+        Returns: boolean
+      }
+      rls_can_see_initiative: {
+        Args: { p_initiative_id: string }
+        Returns: boolean
+      }
+      rls_can_see_item: { Args: { p_item_id: string }; Returns: boolean }
+      rls_can_write_event: {
+        Args: { p_created_by: string; p_initiative_id: string }
+        Returns: boolean
+      }
+      rls_is_authoritative_member: { Args: never; Returns: boolean }
       rls_is_member: { Args: never; Returns: boolean }
       rls_is_superadmin: { Args: never; Returns: boolean }
       save_presentation_snapshot: {
@@ -20282,6 +28245,17 @@ export type Database = {
         }
         Returns: string
       }
+      schedule_comms_post: {
+        Args: {
+          p_channel: string
+          p_idea_id?: string
+          p_label?: string
+          p_media_type: string
+          p_payload: Json
+          p_scheduled_at: string
+        }
+        Returns: Json
+      }
       schedule_interview: {
         Args: {
           p_application_id: string
@@ -20293,6 +28267,7 @@ export type Database = {
         }
         Returns: Json
       }
+      seal_event_attendance: { Args: { p_event_id: string }; Returns: Json }
       search_board_items: {
         Args: { p_query: string; p_tribe_id?: number }
         Returns: Json[]
@@ -20385,16 +28360,41 @@ export type Database = {
         Returns: Json
       }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
+      selection_coi_recused: {
+        Args: { p_caller_id: string; p_cycle_id: string }
+        Returns: boolean
+      }
+      selection_consistency_report: {
+        Args: { p_cycle_id?: string }
+        Returns: Json
+      }
+      selection_rescue_stuck_interview: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
+      selection_rescue_unbooked_invite: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       send_attendance_reminders: { Args: never; Returns: Json }
       send_attendance_reminders_cron: { Args: never; Returns: Json }
       set_event_audience: {
         Args: { p_event_id: string; p_rules: Json }
         Returns: undefined
       }
+      set_event_champions: {
+        Args: { p_champion_ids: string[]; p_event_id: string }
+        Returns: Json
+      }
       set_event_invited_members: {
         Args: { p_event_id: string; p_members: Json }
         Returns: undefined
       }
+      set_initiative_roadmap: {
+        Args: { p_initiative_id: string; p_roadmap: Json }
+        Returns: Json
+      }
+      set_my_entry_chapter: { Args: { p_chapter_code: string }; Returns: Json }
       set_my_gamification_visibility: {
         Args: { p_opt_out: boolean }
         Returns: Json
@@ -20417,6 +28417,10 @@ export type Database = {
       set_site_config:
         | { Args: { p_key: string; p_value: Json }; Returns: undefined }
         | { Args: { p_key: string; p_value: string }; Returns: undefined }
+      set_tribe_video: {
+        Args: { p_duration?: string; p_tribe_id: number; p_url: string }
+        Returns: Json
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       sign_ip_ratification: {
@@ -20430,6 +28434,10 @@ export type Database = {
         }
         Returns: Json
       }
+      sign_proposer_consent: {
+        Args: { p_document_id: string; p_evidence?: Json }
+        Returns: Json
+      }
       sign_volunteer_agreement: {
         Args: {
           p_language?: string
@@ -20440,6 +28448,24 @@ export type Database = {
       }
       stage_alumni_for_re_engagement: {
         Args: { p_cycle_code: string; p_member_id: string; p_source?: string }
+        Returns: Json
+      }
+      stamp_work_governing_version: {
+        Args: {
+          p_author_member_id?: string
+          p_enquadramento?: Json
+          p_first_material_contribution_at?: string
+          p_work_id: string
+          p_work_type: string
+        }
+        Returns: Json
+      }
+      submit_blind_parecer: {
+        Args: {
+          p_parecer_body: string
+          p_recommendation?: string
+          p_session_id: string
+        }
         Returns: Json
       }
       submit_change_request: {
@@ -20512,6 +28538,7 @@ export type Database = {
       }
       title_case: { Args: { input: string }; Returns: string }
       toggle_blog_like: { Args: { p_post_id: string }; Returns: Json }
+      tribe_capacity_limit: { Args: never; Returns: number }
       tribe_impact_ranking: {
         Args: never
         Returns: {
@@ -20528,6 +28555,8 @@ export type Database = {
         Args: never
         Returns: {
           address: string | null
+          allow_precise_location_in_public_map: boolean
+          allow_state_in_public_map: boolean
           anonymized_at: string | null
           anonymized_by: string | null
           auth_id: string | null
@@ -20546,12 +28575,15 @@ export type Database = {
           data_last_reviewed_at: string | null
           designations: string[] | null
           email: string
+          entry_chapter_code: string | null
           gamification_opt_out: boolean
           id: string
           inactivated_at: string | null
           inactivation_reason: string | null
           initiative_id: string | null
+          interview_booking_url: string | null
           is_active: boolean | null
+          is_founder: boolean
           is_superadmin: boolean | null
           last_active_pages: string[] | null
           last_seen_at: string | null
@@ -20607,6 +28639,18 @@ export type Database = {
       }
       unlink_partner_from_card: {
         Args: { p_board_item_id: string; p_partner_entity_id: string }
+        Returns: Json
+      }
+      update_agenda_block: {
+        Args: {
+          p_block_id: string
+          p_duration_min?: number
+          p_external_guest?: boolean
+          p_format_slug?: string
+          p_guest_name?: string
+          p_material_url?: string
+          p_title?: string
+        }
         Returns: Json
       }
       update_application_contact: {
@@ -20682,6 +28726,7 @@ export type Database = {
           p_notes?: string
           p_recording_url?: string
           p_time_start?: string
+          p_timezone?: string
           p_title?: string
           p_type?: string
           p_youtube_url?: string
@@ -20716,6 +28761,7 @@ export type Database = {
           p_nature?: string
           p_new_time_start?: string
           p_notes?: string
+          p_timezone?: string
           p_type?: string
           p_visibility?: string
         }
@@ -20732,6 +28778,7 @@ export type Database = {
           p_metadata?: Json
           p_status?: string
           p_title?: string
+          p_visibility?: string
         }
         Returns: Json
       }
@@ -20827,6 +28874,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_recurring_meeting_rule: {
+        Args: { p_patch: Json; p_rule_id: string }
+        Returns: Json
+      }
+      update_sla_policy: {
+        Args: { p_key: string; p_value: string }
+        Returns: Json
+      }
       update_sustainability_kpi: {
         Args: {
           p_current_value: number
@@ -20880,6 +28935,15 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_chapter_affiliation: {
+        Args: {
+          p_chapter_code: string
+          p_is_primary?: boolean
+          p_person_id: string
+          p_source?: string
+        }
+        Returns: undefined
+      }
       upsert_document_version: {
         Args: {
           p_content_html: string
@@ -20891,6 +28955,10 @@ export type Database = {
         }
         Returns: Json
       }
+      upsert_drive_revocation_candidates: {
+        Args: { p_rows: Json }
+        Returns: Json
+      }
       upsert_event_agenda: {
         Args: { p_event_id: string; p_text?: string; p_url?: string }
         Returns: Json
@@ -20899,6 +28967,7 @@ export type Database = {
         Args: { p_event_id: string; p_text?: string; p_url?: string }
         Returns: Json
       }
+      upsert_membership_drive_grants: { Args: { p_rows: Json }; Returns: Json }
       upsert_my_quick_start_step: {
         Args: { p_done?: boolean; p_step_idx: number }
         Returns: Json
@@ -20968,6 +29037,10 @@ export type Database = {
       }
       v4_expire_engagements: { Args: never; Returns: Json }
       v4_expire_engagements_shadow: { Args: never; Returns: Json }
+      v4_notify_expiring_affiliations: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
       v4_notify_expiring_engagements: { Args: never; Returns: Json }
       validate_initiative_metadata: {
         Args: { p_kind: string; p_metadata: Json }
@@ -20983,6 +29056,22 @@ export type Database = {
         Returns: undefined
       }
       verify_certificate: { Args: { p_code: string }; Returns: Json }
+      verify_member_affiliation: {
+        Args: {
+          p_active?: boolean
+          p_chapter?: string
+          p_expires_on?: string
+          p_member_id: string
+          p_method?: string
+          p_obs?: string
+          p_source_ref?: string
+        }
+        Returns: Json
+      }
+      verify_member_affiliations_bulk: {
+        Args: { p_member_ids: string[]; p_method?: string; p_obs?: string }
+        Returns: Json
+      }
       volunteer_funnel_summary: {
         Args: { p_cycle_code?: string }
         Returns: Json
@@ -21013,12 +29102,45 @@ export type Database = {
       }
     }
     Enums: {
+      content_product_instrument:
+        | "pmi_global_conference"
+        | "pmi_chapter_event"
+        | "academic_journal"
+        | "academic_conference"
+        | "webinar"
+        | "blog_post"
+        | "other"
+        | "linkedin_newsletter"
+        | "linkedin_post"
+        | "medium_article"
+        | "youtube_video"
+        | "podcast_episode"
+        | "hub_article"
+        | "magazine_article"
+      content_product_source_kind:
+        | "governance_document_version"
+        | "board_item"
+        | "publication_idea"
+        | "external"
+        | "none"
+      content_product_status:
+        | "idea"
+        | "drafted"
+        | "under_review"
+        | "approved"
+        | "published"
+        | "archived"
       re_engagement_state:
         | "staged"
         | "invited"
         | "declined"
         | "accepted"
         | "cancelled"
+      review_mode:
+        | "collaborative"
+        | "sequential"
+        | "independent_blind"
+        | "governance_commentary"
       submission_status:
         | "draft"
         | "submitted"
@@ -21169,12 +29291,49 @@ export const Constants = {
   },
   public: {
     Enums: {
+      content_product_instrument: [
+        "pmi_global_conference",
+        "pmi_chapter_event",
+        "academic_journal",
+        "academic_conference",
+        "webinar",
+        "blog_post",
+        "other",
+        "linkedin_newsletter",
+        "linkedin_post",
+        "medium_article",
+        "youtube_video",
+        "podcast_episode",
+        "hub_article",
+        "magazine_article",
+      ],
+      content_product_source_kind: [
+        "governance_document_version",
+        "board_item",
+        "publication_idea",
+        "external",
+        "none",
+      ],
+      content_product_status: [
+        "idea",
+        "drafted",
+        "under_review",
+        "approved",
+        "published",
+        "archived",
+      ],
       re_engagement_state: [
         "staged",
         "invited",
         "declined",
         "accepted",
         "cancelled",
+      ],
+      review_mode: [
+        "collaborative",
+        "sequential",
+        "independent_blind",
+        "governance_commentary",
       ],
       submission_status: [
         "draft",
