@@ -209,9 +209,9 @@ test('W6a: raw SA Drive writers gained an ownership gate (upload_text/create_sub
     'upload_text_to_drive_folder must require write_board/manage_event/manage_member (ownership gate)');
 });
 
-test('W6a: /semantic health surface advertises 47 tools + version 0.8.0', () => {
+test('W6a: /semantic health surface advertises 52 tools + version 0.9.0', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 47, '/semantic health tools count must be 47 after Wave 6a');
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.8\.0"\s*\}\s*\)/, '/semantic McpServer must be v0.8.0');
+  assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6a');
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.9\.0"\s*\}\s*\)/, '/semantic McpServer must be v0.9.0');
 });

@@ -8167,19 +8167,61 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── SEMANTIC TOOL 2/3: search_nucleo_knowledge ─────────────────────────────
   mcp.tool(
     "search_nucleo_knowledge",
-    "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+    "The unified knowledge_search intent (W6b): search + page fetch + latest assets across Núcleo knowledge. `mode`='search' (default) does bounded multi-source full-text search over hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research), returning ranked snippets with citations. `mode`='page' fetches one wiki page in full by `path` (get_wiki_page). `mode`='latest' lists the most recent knowledge_assets (optional `asset_source` filter). Wiki content is narrative only (ADR-0010). Read-only, PII-clean (knowledge content is non-personal). Stable envelope.",
     {
-      query: z.string().min(2).max(200).describe("Search query, Portuguese or English. 2-200 chars."),
-      sources: z.array(z.enum(["hub", "wiki", "knowledge_assets"])).optional().describe("Which sources to search. Default: all 3."),
-      limit_per_source: z.number().int().min(1).max(10).optional().describe("Max results per source. Default: 5; max: 10."),
+      mode: z.enum(["search", "page", "latest"]).optional().describe("'search' (default) full-text search; 'page' fetch a wiki page by path; 'latest' most-recent knowledge_assets."),
+      query: z.string().max(200).optional().describe("mode='search' — query, Portuguese or English (2-200 chars). Required for search."),
+      sources: z.array(z.enum(["hub", "wiki", "knowledge_assets"])).optional().describe("mode='search' — which sources. Default: all 3."),
+      limit_per_source: z.number().int().min(1).max(50).optional().describe("mode='search'/'latest' — max results (search: default 5, cap 10; latest: default 25, cap 50)."),
+      path: z.string().optional().describe("mode='page' — full wiki page path (e.g. 'governance/ADR-0010')."),
+      asset_source: z.string().optional().describe("mode='latest' — optional source filter for knowledge_assets."),
     },
-    async (params: { query: string; sources?: ("hub" | "wiki" | "knowledge_assets")[]; limit_per_source?: number }) => {
+    async (params: { mode?: "search" | "page" | "latest"; query?: string; sources?: ("hub" | "wiki" | "knowledge_assets")[]; limit_per_source?: number; path?: string; asset_source?: string }) => {
       const start = Date.now();
       const member = await getMember(sb);
       if (!member) {
         await logUsage(sb, null, "search_nucleo_knowledge", false, "Not authenticated", start);
         return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." }));
       }
+
+      const mode = params.mode ?? "search";
+
+      // mode='page' — fetch one wiki page in full (get_wiki_page).
+      if (mode === "page") {
+        const path = (params.path ?? "").trim();
+        if (!path) {
+          await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Missing path", start);
+          return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "invalid_input", message: "mode='page' requires path.", action: "Pass the full wiki page path, e.g. 'governance/ADR-0010'. Find it via mode='search'." }));
+        }
+        const { data: pageData, error: pageErr } = await sb.rpc("get_wiki_page", { p_path: path });
+        if (pageErr) { await logUsage(sb, member.id, "search_nucleo_knowledge", false, pageErr.message, start); return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "internal_error", message: pageErr.message })); }
+        const page = Array.isArray(pageData) ? pageData[0] : pageData;
+        if (!page) { await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Page not found", start); return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "not_found", message: `Wiki page not found: ${path}.`, action: "Check the path with mode='search'." })); }
+        await logUsage(sb, member.id, "search_nucleo_knowledge", true, undefined, start);
+        return semanticOk({
+          data: { mode: "page", page },
+          summary: `Wiki page "${(page as any)?.title ?? path}".`,
+          next_actions: ["search_nucleo_knowledge mode='search': procurar termos relacionados"],
+          audit: { tool: "search_nucleo_knowledge", semantic_domain: "knowledge", pii_level: "none", permission: "authenticated", source_tools: ["get_wiki_page"], caller_member_id: member.id, gate_checked: null, resource_id: null, extra: { mode: "page", path } },
+        });
+      }
+
+      // mode='latest' — most-recent knowledge_assets (optional source filter).
+      if (mode === "latest") {
+        const latestLimit = Math.min(Math.max(params.limit_per_source ?? 25, 1), 50);
+        const { data: latestData, error: latestErr } = await sb.rpc("knowledge_assets_latest", { p_source: params.asset_source ?? null, p_limit: latestLimit });
+        if (latestErr) { await logUsage(sb, member.id, "search_nucleo_knowledge", false, latestErr.message, start); return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "internal_error", message: latestErr.message })); }
+        const assets = Array.isArray(latestData) ? latestData : [];
+        await logUsage(sb, member.id, "search_nucleo_knowledge", true, undefined, start);
+        return semanticOk({
+          data: { mode: "latest", source: params.asset_source ?? null, count: assets.length, assets },
+          summary: `${assets.length} knowledge asset(s) mais recente(s)${params.asset_source ? ` (source=${params.asset_source})` : ""}.`,
+          next_actions: ["search_nucleo_knowledge mode='search': buscar por termo"],
+          audit: { tool: "search_nucleo_knowledge", semantic_domain: "knowledge", pii_level: "none", permission: "authenticated", source_tools: ["knowledge_assets_latest"], caller_member_id: member.id, gate_checked: null, resource_id: null, extra: { mode: "latest", source: params.asset_source ?? null } },
+        });
+      }
+
+      // mode='search' (default) — bounded multi-source full-text search.
       const query = (params.query ?? "").trim();
       if (query.length < 2) {
         await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Empty query", start);
@@ -11549,6 +11591,278 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ── W6b · gamification_report (R) — XP/rankings/champions/rules; RPCs self-gate (view_pii for cross-member) ──
+  mcp.tool(
+    "gamification_report",
+    "Gamification surface (absorbs get_my_gamification_stats/get_member_cycle_xp/get_member_xp_pillars/get_member_champions_history/get_champions_ranking/get_gamification_rules_catalog/get_initiative_gamification/get_tribe_gamification/get_cpmai_leaderboard/get_public_trail_ranking). Set `scope`: 'mine', 'member_xp' (member_id), 'member_pillars' (member_id [+ cycle_code, xp_scope]), 'member_champions' (member_id), 'champions_ranking' ([scope_kind global|initiative, scope_id, cycle_code, limit]), 'rules', 'initiative' (initiative_id), 'tribe' (tribe_id), 'cpmai_leaderboard' ([course_id]), 'trail_ranking'. Authority enforced by each RPC (self free; cross-member XP requires view_pii; aggregates + leaderboards public-safe by design; LGPD gamification_opt_out respected). Read-only. Stable envelope.",
+    {
+      scope: z.enum(["mine","member_xp","member_pillars","member_champions","champions_ranking","rules","initiative","tribe","cpmai_leaderboard","trail_ranking"]).describe("Which gamification surface."),
+      member_id: z.string().optional().describe("member_xp/member_pillars/member_champions — members UUID."),
+      initiative_id: z.string().optional().describe("initiative — initiatives UUID."),
+      tribe_id: z.number().int().optional().describe("tribe — legacy tribe id."),
+      cycle_code: z.string().optional().describe("member_pillars/champions_ranking — cycle code (e.g. cycle3-2026)."),
+      xp_scope: z.enum(["lifetime","cycle"]).optional().describe("member_pillars — 'lifetime' or 'cycle'. Default: lifetime."),
+      scope_kind: z.enum(["global","initiative"]).optional().describe("champions_ranking — ranking scope. Default: global."),
+      scope_id: z.string().optional().describe("champions_ranking — initiative UUID when scope_kind='initiative'."),
+      course_id: z.string().optional().describe("cpmai_leaderboard — course UUID (optional)."),
+      limit: z.number().int().optional().describe("champions_ranking — max rows (default 20, cap 100)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "gamification";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "gamification_report", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "gamification_report", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "gamification_report", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "mine": ({ data, error } = await sb.rpc("get_my_gamification_stats")); source = "get_my_gamification_stats"; break;
+        case "member_xp":
+          if (!isUUID(params.member_id)) return invalid("scope='member_xp' requires member_id (UUID).");
+          ({ data, error } = await sb.rpc("get_member_cycle_xp", { p_member_id: params.member_id })); source = "get_member_cycle_xp"; break;
+        case "member_pillars":
+          if (!isUUID(params.member_id)) return invalid("scope='member_pillars' requires member_id (UUID).");
+          ({ data, error } = await sb.rpc("get_member_xp_pillars", { p_member_id: params.member_id, p_cycle_code: params.cycle_code ?? null, p_scope: params.xp_scope ?? "lifetime" })); source = "get_member_xp_pillars"; break;
+        case "member_champions":
+          if (!isUUID(params.member_id)) return invalid("scope='member_champions' requires member_id (UUID).");
+          ({ data, error } = await sb.rpc("get_member_champions_history", { p_member_id: params.member_id })); source = "get_member_champions_history"; break;
+        case "champions_ranking":
+          ({ data, error } = await sb.rpc("get_champions_ranking", { p_scope_kind: params.scope_kind ?? "global", p_scope_id: params.scope_id ?? null, p_cycle_code: params.cycle_code ?? null, p_limit: params.limit ?? 20 })); source = "get_champions_ranking"; break;
+        case "rules": ({ data, error } = await sb.rpc("get_gamification_rules_catalog")); source = "get_gamification_rules_catalog"; break;
+        case "initiative":
+          if (!isUUID(params.initiative_id)) return invalid("scope='initiative' requires initiative_id (UUID).");
+          ({ data, error } = await sb.rpc("get_initiative_gamification", { p_initiative_id: params.initiative_id })); source = "get_initiative_gamification"; break;
+        case "tribe":
+          if (params.tribe_id === undefined || params.tribe_id === null) return invalid("scope='tribe' requires tribe_id.");
+          ({ data, error } = await sb.rpc("get_tribe_gamification", { p_tribe_id: params.tribe_id })); source = "get_tribe_gamification"; break;
+        case "cpmai_leaderboard": ({ data, error } = await sb.rpc("get_cpmai_leaderboard", { p_course_id: params.course_id ?? null })); source = "get_cpmai_leaderboard"; break;
+        case "trail_ranking": ({ data, error } = await sb.rpc("get_public_trail_ranking")); source = "get_public_trail_ranking"; break;
+        default: return invalid(`Unknown scope '${params.scope}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "gamification_report", false, error.message, start); return ok(buildSemanticError({ tool: "gamification_report", semantic_domain: dom, code: selErr("gamification_report", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "gamification_report", false, em, start); return ok(buildSemanticError({ tool: "gamification_report", semantic_domain: dom, code: selErr("gamification_report", em), message: em })); }
+      await logUsage(sb, member.id, "gamification_report", true, undefined, start);
+      const CROSS = ["member_xp","member_pillars","member_champions"];
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `gamification_report scope='${params.scope}' ok.`,
+        next_actions: ["gamification_report scope='mine': seus pontos/ranking", "gamification_report scope='rules': catálogo de regras"],
+        audit: { tool: "gamification_report", semantic_domain: dom, pii_level: CROSS.includes(params.scope) ? "medium" : "none", permission: "authenticated", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal (self / view_pii for cross-member / public-safe aggregates)", resource_id: params.member_id ?? params.initiative_id ?? params.scope_id ?? null, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W6b · champion_award (W) — award/revoke; RPC-gated (org-scope OR initiative grant); merit-immutability ──
+  mcp.tool(
+    "champion_award",
+    "Champion recognition (absorbs award_champion/revoke_champion). Set `action`: 'award' (recipient_id + surface general|tribe|deliverable + context_kind event|deliverable|artifact + context_id + criteria_met[] (1-4 slugs valid for the surface, from champion_criteria_catalog) + justification (>=50 chars)), 'revoke' (champion_id + reason). Authority enforced by the RPC: general surface requires an org-scope award_champion grantor; tribe/deliverable require award_champion on the target initiative; revoke is grantor-within-window OR platform admin. Merit-immutability — a champion recognizes work the recipient DID; awards are additive and never transfer completed-work credit. Stable envelope.",
+    {
+      action: z.enum(["award","revoke"]).describe("award or revoke a champion."),
+      recipient_id: z.string().optional().describe("award — members UUID of the recipient (cannot be self)."),
+      surface: z.enum(["general","tribe","deliverable"]).optional().describe("award — recognition surface."),
+      context_kind: z.enum(["event","deliverable","artifact"]).optional().describe("award — general/tribe require event; deliverable surface requires deliverable|artifact."),
+      context_id: z.string().optional().describe("award — UUID of the event/deliverable/artifact."),
+      criteria_met: z.array(z.string()).optional().describe("award — 1-4 criterion slugs valid for the surface."),
+      justification: z.string().optional().describe("award — >=50 chars."),
+      champion_id: z.string().optional().describe("revoke — champions_awarded UUID."),
+      reason: z.string().optional().describe("revoke — reason."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "gamification";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "champion_award", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "champion_award", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "champion_award", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      if (params.action === "award") {
+        if (!isUUID(params.recipient_id) || !params.surface || !params.context_kind || !isUUID(params.context_id) || !Array.isArray(params.criteria_met) || params.criteria_met.length < 1 || !params.justification) {
+          return invalid("action='award' requires recipient_id (UUID), surface, context_kind, context_id (UUID), criteria_met[] (1-4), justification (>=50).");
+        }
+        ({ data, error } = await sb.rpc("award_champion", { p_recipient_id: params.recipient_id, p_surface: params.surface, p_context_kind: params.context_kind, p_context_id: params.context_id, p_criteria_met: params.criteria_met, p_justification: params.justification })); source = "award_champion";
+      } else if (params.action === "revoke") {
+        if (!isUUID(params.champion_id) || !params.reason) return invalid("action='revoke' requires champion_id (UUID) and reason.");
+        ({ data, error } = await sb.rpc("revoke_champion", { p_champion_id: params.champion_id, p_reason: params.reason })); source = "revoke_champion";
+      } else { return invalid(`Unknown action '${params.action}'.`); }
+      if (error) { await logUsage(sb, member.id, "champion_award", false, error.message, start); return ok(buildSemanticError({ tool: "champion_award", semantic_domain: dom, code: selErr("champion_award", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "champion_award", false, em, start); return ok(buildSemanticError({ tool: "champion_award", semantic_domain: dom, code: selErr("champion_award", em), message: em, action: em === "invalid_criteria" ? "Use a criterion slug from champion_criteria_catalog for this surface." : undefined })); }
+      await logUsage(sb, member.id, "champion_award", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `champion_award action='${params.action}' ok.`,
+        next_actions: ["gamification_report scope='champions_ranking': ver ranking", "gamification_report scope='member_champions': histórico do membro"],
+        audit: { tool: "champion_award", semantic_domain: dom, pii_level: "low", permission: "award_champion", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal (org-scope grantor OR can_by_member(award_champion, initiative); revoke = grantor-window OR platform admin)", resource_id: params.recipient_id ?? params.champion_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6b · admin_dashboard (R) — GP cockpit; each RPC self-gates (manage_platform/view_internal_analytics/view_chapter_dashboards) ──
+  mcp.tool(
+    "admin_dashboard",
+    "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
+    {
+      scope: z.enum(["admin","annual_kpis","chapter","chapter_needs","in_dashboard","vep_divergence","volunteer_funnel","volunteer_funnel_stats","role_transitions","cycle_report","exec_cycle_report","cycle_evolution","public_impact","ai_suggestions","ai_processing_log"]).describe("Which admin surface."),
+      chapter: z.string().optional().describe("chapter/chapter_needs/role_transitions — chapter code."),
+      cycle: z.number().int().optional().describe("annual_kpis/cycle_report — numeric cycle."),
+      year: z.number().int().optional().describe("annual_kpis — year."),
+      cycle_code: z.string().optional().describe("volunteer_funnel/role_transitions/exec_cycle_report — cycle code (e.g. cycle3-2026)."),
+      cycle_id: z.string().optional().describe("volunteer_funnel_stats — cycle UUID."),
+      tribe_id: z.number().int().optional().describe("role_transitions — legacy tribe id."),
+      application_id: z.string().optional().describe("ai_suggestions (required) / ai_processing_log (optional) — application UUID."),
+      evaluation_type: z.string().optional().describe("ai_suggestions — evaluation type filter."),
+      only_pending: z.boolean().optional().describe("ai_suggestions — only pending suggestions."),
+      purpose: z.string().optional().describe("ai_processing_log — purpose filter."),
+      status: z.string().optional().describe("ai_processing_log — status filter."),
+      limit: z.number().int().optional().describe("ai_processing_log — max rows."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "operations";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "admin_dashboard", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "admin": ({ data, error } = await sb.rpc("get_admin_dashboard")); source = "get_admin_dashboard"; break;
+        case "annual_kpis": ({ data, error } = await sb.rpc("get_annual_kpis", { p_cycle: params.cycle ?? 4, p_year: params.year ?? 2026 })); source = "get_annual_kpis"; break;
+        case "chapter":
+          if (!params.chapter) return invalid("scope='chapter' requires chapter.");
+          ({ data, error } = await sb.rpc("get_chapter_dashboard", { p_chapter: params.chapter })); source = "get_chapter_dashboard"; break;
+        case "chapter_needs": ({ data, error } = await sb.rpc("get_chapter_needs", { p_chapter: params.chapter ?? null })); source = "get_chapter_needs"; break;
+        case "in_dashboard": ({ data, error } = await sb.rpc("get_in_dashboard")); source = "get_in_dashboard"; break;
+        case "vep_divergence": ({ data, error } = await sb.rpc("get_vep_divergence_report")); source = "get_vep_divergence_report"; break;
+        case "volunteer_funnel": ({ data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle_code: params.cycle_code ?? null })); source = "volunteer_funnel_summary"; break;
+        case "volunteer_funnel_stats": ({ data, error } = await sb.rpc("get_volunteer_funnel_stats", { p_cycle_id: params.cycle_id ?? null })); source = "get_volunteer_funnel_stats"; break;
+        case "role_transitions": ({ data, error } = await sb.rpc("exec_role_transitions", { p_cycle_code: params.cycle_code ?? null, p_tribe_id: params.tribe_id ?? null, p_chapter: params.chapter ?? null })); source = "exec_role_transitions"; break;
+        case "cycle_report": ({ data, error } = await sb.rpc("get_cycle_report", { p_cycle: params.cycle ?? 3 })); source = "get_cycle_report"; break;
+        case "exec_cycle_report": ({ data, error } = await sb.rpc("exec_cycle_report", { p_cycle_code: params.cycle_code ?? "cycle3-2026" })); source = "exec_cycle_report"; break;
+        case "cycle_evolution": ({ data, error } = await sb.rpc("get_cycle_evolution")); source = "get_cycle_evolution"; break;
+        case "public_impact": ({ data, error } = await sb.rpc("get_public_impact_data")); source = "get_public_impact_data"; break;
+        case "ai_suggestions":
+          if (!isUUID(params.application_id)) return invalid("scope='ai_suggestions' requires application_id (UUID).");
+          ({ data, error } = await sb.rpc("list_ai_suggestions", { p_application_id: params.application_id, p_evaluation_type: params.evaluation_type ?? null, p_only_pending: params.only_pending ?? false })); source = "list_ai_suggestions"; break;
+        case "ai_processing_log": ({ data, error } = await sb.rpc("list_ai_processing_log", { p_application_id: params.application_id ?? null, p_purpose: params.purpose ?? null, p_status: params.status ?? null, p_limit: params.limit ?? 50 })); source = "list_ai_processing_log"; break;
+        default: return invalid(`Unknown scope '${params.scope}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "admin_dashboard", false, error.message, start); return ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: selErr("admin_dashboard", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "admin_dashboard", false, em, start); return ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: selErr("admin_dashboard", em), message: em })); }
+      await logUsage(sb, member.id, "admin_dashboard", true, undefined, start);
+      const PUBLIC_SCOPES = ["public_impact","cycle_evolution"];
+      const HIGH_SCOPES = ["ai_suggestions","vep_divergence"];
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `admin_dashboard scope='${params.scope}' ok.`,
+        next_actions: ["admin_dashboard scope='admin': cockpit GP", "get_operational_status: saúde operacional"],
+        audit: { tool: "admin_dashboard", semantic_domain: dom, pii_level: HIGH_SCOPES.includes(params.scope) ? "high" : PUBLIC_SCOPES.includes(params.scope) ? "none" : "medium", permission: "RPC-internal (manage_platform / view_internal_analytics / view_chapter_dashboards)", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal admin gate", resource_id: params.application_id ?? params.cycle_id ?? null, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W6b · audit_log (R) — self PII-access free; admin audit/PII-access/export gated (manage_platform / view_pii + GP-sede) ──
+  mcp.tool(
+    "audit_log",
+    "Audit + PII-access logs (absorbs get_my_pii_access_log/get_audit_log/get_pii_access_log_admin/export_audit_log_csv). Set `scope`: 'my_pii_access' ([limit]) — who accessed YOUR PII (self, free); 'audit' ([actor_id, target_id, action, date_from, date_to, limit, offset]) — org audit trail (manage_platform); 'pii_access_admin' ([target_member_id, accessor_id, days, limit]) — DPO PII-access review (manage_platform); 'export_csv' ([category, start_date, end_date]) — audit CSV (view_pii + GP/sede only). Authority enforced by each RPC. Read-only. Stable envelope.",
+    {
+      scope: z.enum(["my_pii_access","audit","pii_access_admin","export_csv"]).describe("Which log surface."),
+      limit: z.number().int().optional().describe("my_pii_access/audit/pii_access_admin — row cap."),
+      actor_id: z.string().optional().describe("audit — filter by actor member UUID."),
+      target_id: z.string().optional().describe("audit — filter by target member UUID."),
+      action: z.string().optional().describe("audit — filter by action string."),
+      date_from: z.string().optional().describe("audit — ISO timestamp lower bound."),
+      date_to: z.string().optional().describe("audit — ISO timestamp upper bound."),
+      offset: z.number().int().optional().describe("audit — pagination offset."),
+      target_member_id: z.string().optional().describe("pii_access_admin — filter by target member UUID."),
+      accessor_id: z.string().optional().describe("pii_access_admin — filter by accessor member UUID."),
+      days: z.number().int().optional().describe("pii_access_admin — lookback window (default 30)."),
+      category: z.string().optional().describe("export_csv — category filter (default 'all')."),
+      start_date: z.string().optional().describe("export_csv — YYYY-MM-DD."),
+      end_date: z.string().optional().describe("export_csv — YYYY-MM-DD."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "audit";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "audit_log", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "audit_log", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "audit_log", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "my_pii_access": ({ data, error } = await sb.rpc("get_my_pii_access_log", { p_limit: params.limit ?? 50 })); source = "get_my_pii_access_log"; break;
+        case "audit": ({ data, error } = await sb.rpc("get_audit_log", { p_actor_id: params.actor_id ?? null, p_target_id: params.target_id ?? null, p_action: params.action ?? null, p_date_from: params.date_from ?? null, p_date_to: params.date_to ?? null, p_limit: params.limit ?? 50, p_offset: params.offset ?? 0 })); source = "get_audit_log"; break;
+        case "pii_access_admin": ({ data, error } = await sb.rpc("get_pii_access_log_admin", { p_target_member_id: params.target_member_id ?? null, p_accessor_id: params.accessor_id ?? null, p_days: params.days ?? 30, p_limit: params.limit ?? 500 })); source = "get_pii_access_log_admin"; break;
+        case "export_csv": ({ data, error } = await sb.rpc("export_audit_log_csv", { p_category: params.category ?? "all", p_start_date: params.start_date ?? null, p_end_date: params.end_date ?? null })); source = "export_audit_log_csv"; break;
+        default: return invalid(`Unknown scope '${params.scope}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "audit_log", false, error.message, start); return ok(buildSemanticError({ tool: "audit_log", semantic_domain: dom, code: selErr("audit_log", error.message), message: error.message })); }
+      // admin RPCs return {error:...} jsonb on deny; export_audit_log_csv returns an 'Unauthorized...' TEXT string — surface both.
+      if (data && typeof data === "object" && (data as any).error) { const em = String((data as any).error); await logUsage(sb, member.id, "audit_log", false, em, start); return ok(buildSemanticError({ tool: "audit_log", semantic_domain: dom, code: selErr("audit_log", em), message: em })); }
+      if (typeof data === "string" && /^unauthorized/i.test(data)) { await logUsage(sb, member.id, "audit_log", false, data, start); return ok(buildSemanticError({ tool: "audit_log", semantic_domain: dom, code: "unauthorized", message: data, action: "The audit-log CSV export is restricted to GP/sede with view_pii." })); }
+      await logUsage(sb, member.id, "audit_log", true, undefined, start);
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `audit_log scope='${params.scope}' ok.`,
+        next_actions: ["audit_log scope='my_pii_access': quem acessou seus dados", "audit_log scope='pii_access_admin': revisão DPO"],
+        audit: { tool: "audit_log", semantic_domain: dom, pii_level: params.scope === "my_pii_access" ? "self" : "high", permission: params.scope === "my_pii_access" ? "self" : "RPC-internal (manage_platform / view_pii + GP-sede)", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal audit gate", resource_id: params.target_member_id ?? params.target_id ?? null, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W6b · lgpd_admin (W, DESTRUCTIVE) — Art.18 retroactive deletion/notification; manage_member (GP/DPO) + confirm-gate ──
+  mcp.tool(
+    "lgpd_admin",
+    "LGPD Art.18 retroactive operations (absorbs lgpd_execute_retroactive_deletion/lgpd_record_retroactive_notification). Set `action`: 'record_notification' (application_id + template_version + lang [+ notification_method email|whatsapp|in_person|other, dispatched_at]) — logs a retroactive privacy notice; 'execute_deletion' (application_id + video_id + deletion_reason (>=8 chars) [+ drive_deletion_ref]) — DESTRUCTIVE: clears a video-screening transcription (irreversible, Art.18 §IV) and returns a preview unless confirm=true (ADR-0018). Both require manage_member (GP/DPO); every call writes a pii_access_log row. Stable envelope.",
+    {
+      action: z.enum(["record_notification","execute_deletion"]).describe("Which LGPD operation."),
+      application_id: z.string().optional().describe("selection_applications UUID (both actions)."),
+      template_version: z.string().optional().describe("record_notification — notice template version."),
+      lang: z.string().optional().describe("record_notification — language (e.g. pt-BR, en-US)."),
+      notification_method: z.enum(["email","whatsapp","in_person","other"]).optional().describe("record_notification — method. Default: email."),
+      dispatched_at: z.string().optional().describe("record_notification — ISO timestamp (default now)."),
+      video_id: z.string().optional().describe("execute_deletion — pmi_video_screenings UUID."),
+      deletion_reason: z.string().optional().describe("execute_deletion — non-trivial reason (>=8 chars)."),
+      drive_deletion_ref: z.string().optional().describe("execute_deletion — reference to the separate Drive-file removal."),
+      confirm: z.boolean().optional().describe("execute_deletion — pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "lgpd";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "lgpd_admin", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "lgpd_admin", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "lgpd_admin", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      // Proactive manage_member fail-fast (mirrors the RPC's own gate; every action is GP/DPO-only).
+      if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "lgpd_admin", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "lgpd_admin", semantic_domain: dom, code: "unauthorized", message: "lgpd_admin requires manage_member (GP/DPO).", action: "Only GP / the Data Protection Officer can run Art.18 retroactive operations." })); }
+      if (params.action === "execute_deletion") {
+        if (!isUUID(params.application_id) || !isUUID(params.video_id) || !params.deletion_reason || params.deletion_reason.trim().length < 8) {
+          return invalid("action='execute_deletion' requires application_id (UUID), video_id (UUID), deletion_reason (>=8 chars).");
+        }
+        // ADR-0018 confirm-gate — the deletion is IRREVERSIBLE (Art.18 §IV).
+        if (params.confirm !== true) {
+          await logUsage(sb, member.id, "lgpd_admin", true, undefined, start);
+          return semanticOk({
+            data: { action: params.action, preview: true, next_call: { action: "execute_deletion", application_id: params.application_id, video_id: params.video_id, deletion_reason: params.deletion_reason, drive_deletion_ref: params.drive_deletion_ref ?? null, confirm: true } },
+            summary: `PREVIEW: execute_deletion apaga a transcrição do vídeo ${params.video_id} (IRREVERSÍVEL, Art.18 §IV). A remoção do arquivo no Drive é um passo separado do operador. Reenvie com confirm=true.`,
+            warnings: ["Irreversible transcription deletion. Drive file removal is a separate manual step (pass drive_deletion_ref)."],
+            next_actions: ["lgpd_admin action='execute_deletion' confirm=true"],
+            audit: { tool: "lgpd_admin", semantic_domain: dom, pii_level: "high", permission: "manage_member", source_tools: [], caller_member_id: member.id, gate_checked: "canV4(manage_member) + ADR-0018 confirm-gate", resource_id: params.application_id, extra: { action: params.action, preview: true } },
+          });
+        }
+      }
+      let data: any = null; let error: any = null; let source = "";
+      if (params.action === "record_notification") {
+        if (!isUUID(params.application_id) || !params.template_version || !params.lang) return invalid("action='record_notification' requires application_id (UUID), template_version, lang.");
+        ({ data, error } = await sb.rpc("lgpd_record_retroactive_notification", { p_application_id: params.application_id, p_template_version: params.template_version, p_lang: params.lang, p_notification_method: params.notification_method ?? "email", p_dispatched_at: params.dispatched_at ?? null })); source = "lgpd_record_retroactive_notification";
+      } else if (params.action === "execute_deletion") {
+        ({ data, error } = await sb.rpc("lgpd_execute_retroactive_deletion", { p_application_id: params.application_id, p_video_id: params.video_id, p_deletion_reason: params.deletion_reason, p_drive_deletion_ref: params.drive_deletion_ref ?? null })); source = "lgpd_execute_retroactive_deletion";
+      } else { return invalid(`Unknown action '${params.action}'.`); }
+      if (error) { await logUsage(sb, member.id, "lgpd_admin", false, error.message, start); return ok(buildSemanticError({ tool: "lgpd_admin", semantic_domain: dom, code: selErr("lgpd_admin", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "lgpd_admin", false, em, start); return ok(buildSemanticError({ tool: "lgpd_admin", semantic_domain: dom, code: selErr("lgpd_admin", em), message: em })); }
+      await logUsage(sb, member.id, "lgpd_admin", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `lgpd_admin action='${params.action}' ok.`,
+        next_actions: ["audit_log scope='pii_access_admin': confirmar o registro de acesso"],
+        audit: { tool: "lgpd_admin", semantic_domain: dom, pii_level: "high", permission: "manage_member", source_tools: [source], caller_member_id: member.id, gate_checked: "canV4(manage_member) + RPC-internal manage_member", resource_id: params.application_id, extra: { action: params.action } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -11702,7 +12016,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.8.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.9.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -11751,10 +12065,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.86.0",
+  ef_version: "2.87.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.8.0", tools: 47 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.9.0", tools: 52 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
