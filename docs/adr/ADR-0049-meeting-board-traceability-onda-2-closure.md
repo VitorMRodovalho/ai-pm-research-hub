@@ -2,11 +2,11 @@
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Accepted — **amended 2026-07-17** (1 of the 4 RPCs retired; see [Amendment](#amendment-2026-07-17--get_agenda_smart-retired-1383-wave-3)) |
 | Date | 2026-04-27 (session p73) |
 | Author | Vitor Maia Rodovalho (Assisted-By: Claude) |
-| Migrations | `20260514110000` (4 RPCs) + `20260514120000` (drift hotfix) |
-| Cross-ref | ADR-0045 (schema), ADR-0046/0047/0048 (Onda 2 partials) |
+| Migrations | `20260514110000` (4 RPCs) + `20260514120000` (drift hotfix) + `20260805000457` (amendment: drop `get_agenda_smart`) |
+| Cross-ref | ADR-0045 (schema), ADR-0046/0047/0048 (Onda 2 partials), EPIC #1383 (amendment) |
 | Closes | #84 Onda 2 (11/11, ~100%) |
 
 ## Context
@@ -227,6 +227,40 @@ DROP FUNCTION IF EXISTS public.get_agenda_smart(uuid);
 -- broken body would also need restoration if rollback is required (low likelihood
 -- since the ADR-0048 body was non-functional).
 ```
+
+## Amendment (2026-07-17) — `get_agenda_smart` retired (#1383 Wave 3)
+
+**RPC 1 of this ADR is retired.** `get_agenda_smart(p_event_id)` and its MCP tool were dropped in
+migration `20260805000457` (EPIC #1383 Wave 3, PR #1391). The rest of this ADR stands: RPCs 2-4
+(`update_card_during_meeting`, `meeting_close`, `get_tribe_housekeeping`) remain live, and
+`meeting_close` was additionally hardened in migration `20260805000444` (manage_event scoped to the
+event's initiative).
+
+**Why it went out.** `get_agenda_smart` carried the same defect ADR-0048's `get_meeting_preparation`
+had: `SELECT ... INTO v_initiative` guarded by `IF initiative_id IS NOT NULL`, while `v_initiative.id`
+is read unconditionally. An unassigned plpgsql `record` does not read as NULL — any field read raises
+`record "v_initiative" is not assigned yet`. So it failed for **every** event with no initiative
+(`geral`/`kickoff`/`lideranca`). `get_meeting_preparation` was fixed (migration `20260805000456`);
+`get_agenda_smart` was dropped instead of fixed, because:
+
+* **It never worked.** `mcp_usage_log` over its ENTIRE lifetime (not a rolling window): **1 call,
+  1 failure**, 2026-05-22. It never once returned successfully to a caller.
+* **Nothing depended on it.** Zero `pg_proc` dependents; zero application call sites (the only `src/`
+  hits were generated artifacts). The frontend integration this ADR anticipated ("Tribe leader's
+  pre-meeting prep page can render `get_agenda_smart`") was never built.
+* **Its use case is covered.** The Wave-3 semantic tool `meeting_minutes action='prepare'` (→ the
+  now-fixed `get_meeting_preparation`) serves the pre-meeting briefing need.
+* This ADR's own Consequences section already accepted the same reasoning for the ADR-0048 rename:
+  *"function was broken on day-one and no production caller was actively succeeding"*. Retiring an
+  RPC that never succeeded is the consistent application of that precedent, not a new one.
+
+**Consequences of the amendment.** `/mcp` 343 → 342. `generate_agenda_template` — which RPC 1 was meant
+to substitute (see Decision) — is now moot as a cutover question: the substitute is gone and the
+replacement is the semantic `meeting_minutes action='prepare'`. The Rollback block below still lists
+`DROP FUNCTION ... get_agenda_smart` — for RPC 1 that DROP is now the *live state*, not a rollback step.
+
+Guarded by `tests/contracts/semantic-envelope-w3.test.mjs`, which fails if `get_agenda_smart` is
+re-registered as a tool or dispatched anywhere in the Edge Function.
 
 ## References
 

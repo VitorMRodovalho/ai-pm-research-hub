@@ -18153,7 +18153,6 @@ export type Database = {
       get_active_engagements: { Args: { p_person_id?: string }; Returns: Json }
       get_admin_dashboard: { Args: never; Returns: Json }
       get_adoption_dashboard: { Args: never; Returns: Json }
-      get_agenda_smart: { Args: { p_event_id: string }; Returns: Json }
       get_ai_suggestion: {
         Args: { p_application_id: string; p_evaluation_type: string }
         Returns: Json

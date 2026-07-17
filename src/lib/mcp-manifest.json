@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-15T12:59:29.667Z",
+  "generated_at": "2026-07-17T10:11:25.306Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 347,
+  "total": 369,
   "by_domain": {
     "personal": 23,
-    "tribe": 112,
-    "board": 70,
-    "events": 16,
+    "tribe": 121,
+    "board": 77,
+    "events": 22,
     "governance": 23,
     "comms": 16,
     "partners": 11,
@@ -17,7 +17,7 @@
     "health": 20
   },
   "by_permission": {
-    "read": 230,
+    "read": 252,
     "write": 108,
     "admin": 9
   },
@@ -213,6 +213,13 @@
       "is_sensitive": false
     },
     {
+      "name": "engagement_write",
+      "description": "Initiative engagement lifecycle (absorbs manage_initiative_engagement + invite/respond/request/review/withdraw). Set `action`: 'add' | 'remove' | 'update_role' (initiative_id + person_id + kind [+ role]; DESTRUCTIVE add/remove→confirm), 'invite' (initiative_id + member_ids[] + kind_scope + message≥50), 'respond_invitation' (invitation_id + response accept|decline [+ note]; SELF), 'request_join' (initiative_id + message≥50), 'review_request' (invitation_id + decision approve|decline [+ note]), 'withdraw' (initiative_id + reason≥10; DESTRUCTIVE→confirm; SELF). Authority is enforced by the RPCs (admin-of-initiative OR owner for admin verbs; caller-scoped for self verbs); the semantic layer ADDS the #785 confidential-visibility fail-fast on the target initiative. dual-write (members.tribe_id↔initiative_id) is handled server-side (#1270). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "fork_idea_to_channel",
       "description": "Registra intenção de fork de idea para canal + auto-scaffold downstream artifact se idea status IN (approved, published). Channels: 'blog'/'blog_post' → cria blog_posts draft; 'newsletter'/'email' → cria campaign_templates draft (category=newsletter); 'linkedin'/'instagram'/'twitter'/'youtube'/'tiktok'/'facebook'/'medium'/'dev_to'/'social' → registra brief em idea.metadata.briefs[channel] (V1 Opção B; V2 may migrate to comms_briefs table). Idempotent: blog/newsletter return existing row; social briefs overwrite latest payload_hint per channel. Multi-channel supported.",
       "domain": "tribe",
@@ -229,13 +236,6 @@
     {
       "name": "get_adoption_metrics",
       "description": "Returns MCP adoption metrics. Admin/GP only.",
-      "domain": "tribe",
-      "permission": "read",
-      "is_sensitive": false
-    },
-    {
-      "name": "get_agenda_smart",
-      "description": "Returns smart agenda for an upcoming meeting. Replaces dumb generate_agenda_template. Sections: event metadata, initiative, carry_forward_actions[] (90d unresolved, ordered overdue-first), at_risk_cards[] (forecast slip > 7d OR stale > 14d, with risk_reasons), relevant_kpis[] (RED/YELLOW only, attainment_pct + status_color), showcase_candidates[] (members with recent unshowcased completions), at_risk_deliverables[] (cycle deliverables due ≤14d). Authenticated. ADR-0049 (#84 Onda 2). Use case: 'Mostra agenda inteligente da reunião X'.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -479,6 +479,27 @@
       "is_sensitive": false
     },
     {
+      "name": "initiative_directory",
+      "description": "List/browse initiatives (absorbs list_initiatives + list_open_initiatives). Set `mode`: 'all' (optional kind/status filters) or 'open' (initiatives you can request to join). Confidential initiatives are excluded inline by the RPCs (rls_can_see_initiative, #785). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "initiative_report",
+      "description": "Per-initiative reporting (absorbs get_tribe_dashboard/stats_ranked/housekeeping/deliverables/credly + tribes_comparison + pilots_summary). Set `report`: 'dashboard' | 'stats' | 'housekeeping' | 'deliverables' | 'credly' | 'members_credly' (each needs tribe_id OR initiative_id — #785-gated) · 'comparison' (cross-initiative; requires manage_platform OR view_chapter_dashboards) · 'pilots' (org-wide AI pilots). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "initiative_roster",
+      "description": "Who is engaged where (absorbs list_initiative_engagements(_by_kind), get_my_tribe_members, list_invitations_*). Set `scope`: 'initiative' (initiative_id [+ status_filter]) — #785-gated; 'by_kind' (engagement_kind and/or initiative_kind [+ status_filter, limit]); 'my_tribe' (tribe_id optional → your tribe); 'invitations_for_my_initiatives' ([initiative_id] [+ status_filter]); 'invitations_received' ([status_filter]); 'invitations_sent' ([initiative_id] [+ status_filter]). Confidential initiatives are excluded (#785 / RLS). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "leave_tribe",
       "description": "Leave YOUR current research tribe (self-service, to fix a wrong-tribe choice). Resolves your active tribe's initiative from get_my_tribe_request_context, then withdraws you (delegates to withdraw_from_initiative) — the bridge trigger clears members.tribe_id and re-opens the tribe picker so you can request a different tribe. Reason MUST be at least 10 characters (audit trail). BLOCKED if you are the tribe's only active volunteer (e.g. a leader) — that requires GP mediation, not self-service. Returns a preview unless confirm=true (ADR-0018 W1). Irreversible after confirm.",
       "domain": "tribe",
@@ -612,6 +633,27 @@
       "is_sensitive": false
     },
     {
+      "name": "member_emails",
+      "description": "Member email identity management (absorbs member_list_emails/add/remove/set_primary/update_kind/resolve). Set `action`: 'list' (member_id), 'add' (member_id + email + kind), 'remove' (member_id + email), 'set_primary' (member_id + email), 'update_kind' (member_id + email + new_kind), 'resolve' (email → member_id). Per-record authority (self OR manage_member; +view_pii for list) is enforced by the RPCs; 'resolve' ADDS a manage_member gate here to close the email-existence oracle. kind/new_kind ∈ personal|institutional|chapter|other. PII surface. Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_get",
+      "description": "One person, 360° (absorbs get_person + get_active_engagements). Resolve the target by ANY of: `person_id` (persons.id), `member_id` (members.id — BOTH accepted; this fixes the raw get_person #2-failure class where a members.id returned 'Person not found', 17/20 fails/180d), or `email` (requires manage_member — closes the email-existence oracle). Omit all three for your OWN record. Returns profile + active engagements. LGPD: sensitive PII (email/phone/pmi_id/address/birth_date) only for your own record or with view_pii (+ chapter-scope), masked by the RPC; engagements of OTHERS require manage_member (surfaced in warnings if absent). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "member_lifecycle",
+      "description": "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive'. Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "member_list_emails",
       "description": "ADR-0095: List all emails (primary and alternate) associated with a member. Auth: self, manage_member, or view_pii.",
       "domain": "tribe",
@@ -633,6 +675,13 @@
       "is_sensitive": false
     },
     {
+      "name": "member_search",
+      "description": "Semantic member directory search (absorbs search_members; 167 calls/180d, the #2 tool). Filter by name (`query`), `tribe_id` (1-8), `tier` (tier1|tier2|tier3), `status` (active|inactive|observer|alumni|pre_onboarding|all; default active). Authority: manage_member (admin/GP). LGPD: PII columns (email, auth_id) are REDACTED unless the caller has view_pii — audit.pii_level reflects the actual disclosure. Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "member_set_primary_email",
       "description": "ADR-0095 GAP-205.D: Promote a registered alternate to primary via UPDATE members.email (fires sync trigger; preserves alt kind). Idempotent on already-primary. Raises if email not registered for member. Auth: self or manage_member.",
       "domain": "tribe",
@@ -642,6 +691,20 @@
     {
       "name": "member_update_alternate_email_kind",
       "description": "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "my_status",
+      "description": "\"Where am I?\" — your own status across the platform (absorbs get_my_profile/committee_assignments/board_status/application_status/notifications/onboarding/selection_result/credly). Set `scope`: 'all' (default: profile + committee + board summary + unread count) | 'profile' | 'committee' | 'board' | 'application' | 'notifications' | 'onboarding' | 'selection_result' | 'credly'. SELF-only (auth.uid → member); zero admin surface, no PII of others. Supersedes the get_my_context bridge tool. Stable envelope.",
+      "domain": "tribe",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "platform_context",
+      "description": "Semantic platform-context read (absorbs get_current_cycle/get_current_release/list_cycles). Returns the current operational cycle (code/label/dates), the current platform release, and the full cycles list. Tier-1 read, no PII, no per-resource gate. Use this to know what 'current cycle' means before calling cycle-scoped tools. Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -983,6 +1046,48 @@
       "is_sensitive": false
     },
     {
+      "name": "board_overview",
+      "description": "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent activities), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'initiative'. Read-only, stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_checklist",
+      "description": "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: write_board — EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_comment",
+      "description": "Semantic comment writer for a board card (absorbs create/update/delete_card_comment). Set `action`: 'create' (board_item_id + body; optional parent_comment_id + mentioned_member_ids for @mentions), 'update' (comment_id + body; author only), 'delete' (comment_id; soft-delete, author OR write_board OR GP). Authority is enforced by the RPC per action; the semantic layer ADDS the #785 confidential-visibility gate on the parent card (a gap in the raw tools). Stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_get",
+      "description": "Semantic 360° card read (absorbs get_card_detail/get_card_timeline/get_card_full_history/list_card_comments/list_card_checklist/list_card_drive_files). `detail_level`: 'summary' = card detail only; 'standard' (default) = + checklist + comments + timeline; 'full' = + drive files + cross-entity history (meetings/decisions/showcases). #785 fail-fast: the card must be visible to you (fixes the board_item_checklists read gap). Read-only, stable envelope; partial-source failures surface in `warnings` (never masked).",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_search",
+      "description": "Semantic card finder (absorbs list_board_cards/search_board_cards/get_my_assigned_cards/list_orphan_card_assignments). Set `mode`: 'board' (board_id; optional status), 'text' (query; tribe_id or initiative_id — defaults to your tribe), 'mine' (cards assigned to you across boards), 'orphans' (admin: cards still assigned to offboarded/inactive members; optional tribe_id/chapter). #785: 'board' and 'text' fail-fast if the target board/initiative is confidential and you are not engaged; 'mine'/'orphans' are RLS/authority-scoped. Read-only, stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "card_write",
+      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "force_grant_curation_drive_access",
       "description": "Concede (ou re-concede) acesso temporário 'commenter' aos curadores nos artefatos Drive de um card em curadoria, executando via Service Account imediatamente. Authority: manage_platform (GP). Normalmente o grant é automático no handoff para curation_pending; use para remediar falhas. Mesma observação 403-até-elevação-de-papel do #209. Retorna resultado por linha.",
       "domain": "board",
@@ -1209,6 +1314,13 @@
     {
       "name": "list_orphan_card_assignments",
       "description": "Lists unresolved board cards still assigned to offboarded/inactive/observer members. Admin triage for reassignment. Filters by chapter or tribe_id.",
+      "domain": "board",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "portfolio_report",
+      "description": "Semantic portfolio/PMO rollup (absorbs get_portfolio_overview/get_portfolio_items/get_portfolio_health/get_portfolio_timeline/get_portfolio_planned_vs_actual/exec_portfolio_board_summary). Set `report`: 'overview' (default, executive dashboard), 'items' (portfolio-flagged cards; filters tribe_id/status/cycle_code), 'health' (quarterly KPI traffic-light; cycle_code), 'timeline' (items by month), 'planned_vs_actual' (baseline vs actual variance; cycle), 'board_summary' (per-board executive view). Authority: manage_member OR view_partner (admin/sponsor). Confidential initiatives are excluded inline by the underlying RPCs. Read-only, stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1473,6 +1585,34 @@
       "is_sensitive": true
     },
     {
+      "name": "attendance_record",
+      "description": "Semantic attendance writer (absorbs register_attendance 132 — the #3 tool overall —, mark_member_excused, bulk_mark_excused, register_showcase 17 — 166 calls/180d). Set `action`: 'register' (event_id + member_ids — batch-capable; present=false is a no-op by design, absence is the default state), 'excuse' (event_id + member_id + reason; excused=false reverts), 'bulk_excuse' (member_id + date_from + date_to + reason — excuses a member across a date range), 'showcase' (event_id + member_id + showcase_type — awards 15-25 XP). Authority: manage_event scoped to the event's initiative + #785. Attribution: the RPC records registered_by/marked_by, which is what distinguishes self check-in from a leader's batch (#1322) — NOT checked_in_at. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "attendance_report",
+      "description": "Semantic attendance reader (absorbs get_my_tribe_attendance, get_attendance_ranking, get_my_attendance_history, get_my_attendance_hours, get_event_attendance_health, get_cycle_attendance_overview — 20 calls/180d). Set `scope`: 'tribe' (attendance grid for a tribe/initiative), 'ranking' (members by attendance rate), 'mine' (your own history), 'hours' (your — or, with view_internal_analytics, another member's — attendance hours for a cycle), 'health' (org-wide events missing attendance), 'cycle' (per-cycle overview). Read-only. Self scopes are free; cross-member/cross-tribe reads require view_internal_analytics, and the tribe grid ADDS the #785 confidential gate that the underlying RPC lacks. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "event_search",
+      "description": "Semantic event reader (absorbs list_initiative_events 41, get_event_detail 31, get_upcoming_events 12, get_near_events 7 — 91 calls/180d). Set `scope`: 'upcoming' (next 7 days, org-wide), 'near' (events inside a check-in window, self), 'initiative' (filtered list for a tribe/initiative — types/date range/has_minutes/has_recording/has_attendance + pagination), 'detail' (one event, full record — requires event_id). Read-only. Confidential initiatives (ADR-0105 / #785) are excluded by the source RPCs and, for 'detail', re-checked fail-fast at this layer. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "event_write",
+      "description": "Semantic event writer (absorbs create_tribe_event, update_event_instance 29, drop_event_instance — 36 calls/180d). Set `action`: 'create' (title + date; optional type/duration/tribe_id/initiative_id/time_start/meeting_link), 'update' (event_id + any of date/time_start/duration_minutes/meeting_link/notes/agenda_text), 'drop' (event_id; DESTRUCTIVE→confirm; force_delete_attendance to remove attendance too). Authority: manage_event RESOURCE-SCOPED to the event's initiative + the #785 gate — an initiative-scoped leader can no longer edit or delete another initiative's events (the raw tools gated on a resourceless can(), fixed raw-side in migration 455 and baked as a contract here). Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "get_attendance_ranking",
       "description": "Returns the attendance ranking — members sorted by attendance rate and total meetings.",
       "domain": "events",
@@ -1543,8 +1683,22 @@
       "is_sensitive": false
     },
     {
+      "name": "meeting_actions",
+      "description": "Semantic action-item + decision tool for meetings (absorbs create_action_item 21, resolve_action_item, list_meeting_action_items, convert_action_to_card, register_decision 15, get_decision_log — 37 calls/180d). Set `action`: 'create' (event_id + description; optional assignee_id/due_date/kind), 'resolve' (action_item_id; optional resolution_note, or carry_to_event_id to carry it into a later meeting), 'list' (filter by event_id/assignee_id/status/kind/unresolved_only), 'convert_to_card' (action_item_id + board_id — turns an action into a board card), 'decision' (event_id + title; optional description + related_card_ids), 'decision_log' (the governance ADR log from the wiki; optional text filter). Authority: manage_event scoped to the event's initiative (migration 455 closed the resourceless gate on create/resolve/decision); convert_to_card additionally needs write_board. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "meeting_close",
       "description": "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. p171 #9 (Track B): also accepts suggested_champion_ids[] — member UUIDs the closer suggests for Champion. UI /admin/gamification deep-link reads these for prefill/nudge. Returns drift_signal flag + counter set + suggestions_count. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo + sugiro Champion pra Y e Z'.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "meeting_minutes",
+      "description": "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false

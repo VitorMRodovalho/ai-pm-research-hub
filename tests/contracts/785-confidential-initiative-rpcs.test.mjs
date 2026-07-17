@@ -35,9 +35,12 @@ const INITIATIVE_GATED = [
   'search_board_items', 'search_hub_resources', 'list_initiative_events',
   'get_initiative_detail', 'get_initiative_gamification', 'get_initiative_drive_links',
   'get_initiative_board_summary', 'get_meeting_detail', 'get_near_events', 'get_recent_events',
-  'get_agenda_smart', 'get_curation_cross_board', 'get_curation_dashboard',
+  'get_curation_cross_board', 'get_curation_dashboard',
   'list_curation_pending_board_items', 'list_pending_curation',
 ];
+// get_agenda_smart was gated by this migration but has since been DROPPED (#1383 W3, migration
+// 20260805000457 — unassigned-record bug, 1 lifetime call / 1 failure). The historical migration
+// text still contains it; asserting a live gate on a function that no longer exists would be noise.
 // RPCs that resolve through a board → rls_can_see_board(...)
 const BOARD_GATED = ['get_board', 'get_card_detail', 'assign_curation_reviewer'];
 // RPCs that resolve a meeting artifact (own initiative_id OR via event) → rls_can_see_artifact_link(...)
