@@ -185,8 +185,10 @@ Two live failure fixes ride along: `resolve_action_item` wrote `status` values (
 `carried_over`. (The historical `register_decision` 8F / `create_action_item` 6F were the same
 constraint class, already fixed in their live bodies — the failure log is 180d wide and predates the fix.)
 
-`get_agenda_smart` is **retired** from the semantic surface (it raises `record "v_initiative" is not
-assigned yet` for any event with no initiative — the RPC keeps that bug and stays retired).
+`get_agenda_smart` (ADR-0049) is **dropped** — RPC + MCP tool, migration `20260805000457`. It carried the
+same unassigned-record bug and, across its entire lifetime, logged **1 call, which failed** (2026-05-22):
+it never once returned successfully. Zero DB dependents, zero application call sites. `meeting_minutes
+action='prepare'` is its replacement. `/mcp` 343 → 342.
 `get_meeting_preparation` had the identical bug and is **fixed** in migration `20260805000456`: its
 `SELECT ... INTO v_initiative` was guarded by `IF initiative_id IS NOT NULL` while `v_initiative.id` was
 read unconditionally, so it raised for **every** org-wide event (`geral`/`kickoff`/`lideranca` — 243 live,
@@ -218,7 +220,7 @@ byte-for-byte unchanged (same initiative, same 3 expected attendees).
 
 ### `meeting_minutes` (R/W)
 - **Intent:** the minutes lifecycle. **`action`:** `read` (recent minutes) · `prepare` (briefing) · `write` · `close` (posts minutes + returns action/decision counts + drift signal).
-- **Absorbs:** `create_meeting_notes` (38) · `meeting_close` · `get_meeting_notes` · `get_meeting_preparation`. **NOT** `get_agenda_smart` (retired).
+- **Absorbs:** `create_meeting_notes` (38) · `meeting_close` · `get_meeting_notes` · `get_meeting_preparation`. Replaces the dropped `get_agenda_smart`.
 - **Gate:** `eventWriteGate()` on `write`/`close`; #785 on reads. `write` warns when `action_items` are appended as Markdown checkboxes instead of structured rows.
 
 ### `meeting_actions` (R/W)

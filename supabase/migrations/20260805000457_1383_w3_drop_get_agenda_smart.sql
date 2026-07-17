@@ -1,0 +1,22 @@
+-- #1383 Wave 3 — drop get_agenda_smart (retired, never worked).
+--
+-- ADR-0049 (#84 Onda 2) shipped this "smart agenda" RPC. It carries the same unassigned-record
+-- bug fixed in get_meeting_preparation (migration 20260805000456): `SELECT ... INTO v_initiative`
+-- guarded by `IF initiative_id IS NOT NULL`, while `v_initiative.id` is read unconditionally —
+-- a plpgsql record that was never assigned RAISES on any field read instead of yielding NULL.
+--
+-- Evidence for dropping rather than fixing (all re-queried live before this migration):
+--   • mcp_usage_log, ALL TIME (not a 180d window): 1 call, 1 failure, on 2026-05-22.
+--     The function has never once returned successfully to a caller.
+--   • Zero DB dependents: no other function in pg_proc references it.
+--   • Zero application callers: the only `src/` hits are generated artifacts
+--     (database.gen.ts, mcp-manifest.json), not call sites.
+--   • Its use case is covered by the Wave-3 `meeting_minutes action='prepare'` semantic tool
+--     (→ get_meeting_preparation, now fixed).
+-- Owner decision (2026-07-17): drop it rather than carry a fixed-but-retired duplicate.
+--
+-- The MCP tool registration is removed in the same commit — dropping the RPC while leaving the
+-- tool registered would trade a raising RPC for a tool that calls a non-existent function.
+--
+-- Not in any drift allowlist/baseline (verified), so nothing to ratchet here.
+DROP FUNCTION IF EXISTS public.get_agenda_smart(uuid);

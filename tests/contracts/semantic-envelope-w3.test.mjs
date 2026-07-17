@@ -14,7 +14,9 @@
  *     layer via eventWriteGate() so a future edit cannot silently widen it back.
  *   - attendance_report ADDS the #785 confidential gate the underlying
  *     get_initiative_attendance_grid RPC does not have.
- *   - get_agenda_smart is deliberately NOT absorbed (retired — unassigned-record bug).
+ *   - get_agenda_smart is GONE — RPC + MCP tool dropped (migration 20260805000457). It carried the
+ *     same unassigned-record bug and had logged 1 call / 1 failure over its entire lifetime.
+ *     `meeting_minutes action='prepare'` replaces it. This guard keeps it from creeping back.
  *
  * Pure static check over supabase/functions/nucleo-mcp/index.ts (no network / no DB) — runs in every
  * offline baseline. A future edit that drops the envelope or a gate fails CI here.
@@ -172,12 +174,18 @@ test('W3[attendance_report]: ADDS the #785 gate the attendance-grid RPC lacks, a
     'attendance_report cross-member/cross-cohort scopes must require view_internal_analytics');
 });
 
-test('W3[meeting_minutes]: write/close carry the scoped gate; get_agenda_smart stays retired', () => {
+test('W3[meeting_minutes]: write/close carry the scoped gate; prepare replaces the dropped agenda RPC', () => {
   const b = BLOCKS['meeting_minutes'];
   assert.ok(b.includes('upsert_event_minutes'), 'meeting_minutes action=write must dispatch upsert_event_minutes');
   assert.ok(b.includes('meeting_close'), 'meeting_minutes action=close must dispatch meeting_close');
   assert.ok(b.includes('get_meeting_preparation'), 'meeting_minutes action=prepare must dispatch get_meeting_preparation');
-  assert.ok(!b.includes('get_agenda_smart('), 'get_agenda_smart is retired (unassigned-record bug) — it must NOT be absorbed');
+});
+
+test('W3: get_agenda_smart is fully gone — no RPC dispatch anywhere in the EF (dropped, migration 457)', () => {
+  assert.ok(!/sb\.rpc\(\s*"get_agenda_smart"/.test(SRC),
+    'get_agenda_smart was dropped from the database — a dispatch here would call a non-existent function');
+  assert.ok(!/mcp\.tool\(\s*\n?\s*"get_agenda_smart"/.test(SRC),
+    'get_agenda_smart must not be re-registered as an MCP tool — the RPC no longer exists');
 });
 
 test('W3[meeting_actions]: carry-forward target is gated independently (mirrors migration 455)', () => {

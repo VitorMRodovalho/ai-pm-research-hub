@@ -6742,18 +6742,11 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // #84 ONDA 2 CLOSURE — ADR-0049 (4 of 4 final RPCs)
   // ───────────────────────────────────────────────────────────────
 
-  mcp.tool("get_agenda_smart", "Returns smart agenda for an upcoming meeting. Replaces dumb generate_agenda_template. Sections: event metadata, initiative, carry_forward_actions[] (90d unresolved, ordered overdue-first), at_risk_cards[] (forecast slip > 7d OR stale > 14d, with risk_reasons), relevant_kpis[] (RED/YELLOW only, attainment_pct + status_color), showcase_candidates[] (members with recent unshowcased completions), at_risk_deliverables[] (cycle deliverables due ≤14d). Authenticated. ADR-0049 (#84 Onda 2). Use case: 'Mostra agenda inteligente da reunião X'.", {
-    event_id: z.string().describe("UUID of the event")
-  }, async (params: { event_id: string }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_agenda_smart", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
-    const { data, error } = await sb.rpc("get_agenda_smart", { p_event_id: params.event_id });
-    if (error) { await logUsage(sb, member.id, "get_agenda_smart", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "get_agenda_smart", true, undefined, start);
-    return ok(data);
-  });
+  // get_agenda_smart (ADR-0049) was REMOVED in #1383 Wave 3 together with its RPC
+  // (migration 20260805000457). It carried the unassigned-record bug that raised for every
+  // org-wide event and, over its whole lifetime, logged exactly 1 call which failed — it never
+  // returned successfully. Its use case is covered by the semantic `meeting_minutes
+  // action='prepare'` (→ get_meeting_preparation, fixed in migration 20260805000456).
 
   mcp.tool("update_card_during_meeting", "Atomic card mutation during a meeting. Three modes: (a) status change via new_status; (b) field updates via fields_json string; (c) discussion-only (both omitted, just creates a 'discussed' link). Wraps move_board_item + update_board_item (existing auth + lifecycle events preserved). Requires write_board. ADR-0049 (#84 Onda 2).", {
     card_id: z.string().describe("UUID of the board card to update"),
@@ -10012,7 +10005,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W3 · meeting_minutes (R/W) — 43 calls/180d; carries the #1384 fix as contract ──
   mcp.tool(
     "meeting_minutes",
-    "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: get_agenda_smart is intentionally NOT absorbed — it is retired (see docs). Stable envelope.",
+    "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
     {
       action: z.enum(["read", "prepare", "write", "close"]).describe("Minutes operation."),
       event_id: z.string().optional().describe("Event UUID — REQUIRED for prepare/write/close."),
