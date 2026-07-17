@@ -1,6 +1,6 @@
 ---
 name: invariants
-description: Fast path para rodar check_schema_invariants() via Supabase MCP e interpretar resultado. Use mid-session para confirmar que nenhuma mudança quebrou as 16 invariantes estruturais (A1-A3, B-F, J-Q — ADR-0012 + p162/p170 extensions). Não dispara guardian completo — é um check rápido.
+description: Fast path para rodar check_schema_invariants() via Supabase MCP e interpretar resultado. Use mid-session para confirmar que nenhuma mudança quebrou as invariantes estruturais do schema (ADR-0012 + extensões por hardening; o catálogo cresce — a query é a fonte). Não dispara guardian completo — é um check rápido.
 user_invocable: true
 ---
 
@@ -14,14 +14,14 @@ ORDER BY
   invariant_name;
 ```
 
-Expected: 16 rows, all `violation_count = 0` (A1-A3, B-F, J-Q post-p170).
+Expected: **all rows `violation_count = 0`**. Do NOT expect a specific row count — the catalog grows with each hardening (the letters go well past Q), so a pinned number here would just go stale and start lying. The query is the source: if you want the total, read it off the result.
 
 Interpret:
 - **All 0** → ✅ Clean. Report in 1 line and continue.
 - **Any ≠ 0** → ❌ BLOCK. Report:
   - Which invariant(s) violated
   - severity + violation_count + sample_ids (limit 10)
-  - Probable cause (map to trigger/RPC that should have maintained it):
+  - Probable cause (PARTIAL map — only the original A1-F; newer invariants are not listed here, read the canonical definition in the migration below):
     - A1/A2: B7 trigger `sync_member_status_consistency`
     - A3: cache trigger `sync_operational_role_cache`
     - B/C: B7 trigger (same)
