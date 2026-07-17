@@ -186,6 +186,6 @@ test('W4: /semantic health surface advertises 52 tools (4 bridge + 8 W1 + 9 W2 +
 });
 
 test('W4: nucleo-ia-semantic version bumped to 0.9.0 (Wave 6a)', () => {
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.9\.0"\s*\}\s*\)/,
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.10\.0"\s*\}\s*\)/,
     '/semantic McpServer must be v0.9.0 at Wave 6a');
 });

@@ -159,15 +159,24 @@ test('W5[document_comment]: uses the corrected visibility enum + dispatches crea
   assert.ok(b.includes('create_document_comment'), 'document_comment add must dispatch create_document_comment (not the nonexistent add_document_comment RPC)');
 });
 
-// change_request submit uses the correct cr_type enum; review/approve stay raw (deferred authority finding).
-test('W5[change_request]: correct cr_type enum; does NOT surface review/approve (deferred authority finding)', () => {
+// change_request uses the correct cr_type enum; review/approve are now absorbed (#1397 remediated),
+// and the retired unilateral 'implement' action must NOT be reachable through the semantic surface.
+test('W5[change_request]: correct cr_type enum; surfaces review/approve; implement retired (#1397)', () => {
   const b = BLOCKS['change_request'];
   assert.ok(/cr_type:\s*z\.enum\(\["editorial",\s*"operational",\s*"structural",\s*"emergency"\]/.test(b),
     'change_request cr_type must be the RPC-validated enum (editorial|operational|structural|emergency)');
   assert.ok(!/"manual_edit"|"gc_override"|"policy_update"/.test(b), 'change_request must NOT expose the always-rejected legacy cr_type values');
   assert.ok(b.includes('submit_change_request') && b.includes('get_change_requests'), 'change_request must dispatch submit + list');
-  assert.ok(!/sb\.rpc\(\s*"review_change_request"/.test(b) && !/sb\.rpc\(\s*"approve_change_request"/.test(b),
-    'review_change_request/approve_change_request have an open authority finding — must stay raw, not surfaced');
+  assert.ok(/sb\.rpc\(\s*"review_change_request"/.test(b) && /sb\.rpc\(\s*"approve_change_request"/.test(b),
+    'change_request must absorb review + approve (post-#1397 hardening)');
+  // #1397: 'implement' was retired from review_change_request — the review_action enum must not offer it,
+  // so the approved->implemented transition stays single-sourced to the 2-of-N Manual flow (ADR-0044).
+  assert.ok(/review_action:\s*z\.enum\(\["approve",\s*"reject",\s*"request_changes",\s*"withdraw",\s*"resubmit"\]/.test(b),
+    'review_action enum must be exactly approve|reject|request_changes|withdraw|resubmit (no implement)');
+  assert.ok(!/"implement"/.test(b), 'change_request must NOT offer the retired implement action');
+  // approve path is the sponsor-quorum vote.
+  assert.ok(/vote:\s*z\.enum\(\["approved",\s*"rejected",\s*"abstained"\]/.test(b),
+    'approve vote enum must be approved|rejected|abstained');
 });
 
 // certificate_manage never automates countersign, and confirm-gates issue/update.
@@ -207,6 +216,6 @@ test('W5: /semantic health surface advertises 52 tools (4 bridge + 8 W1 + 9 W2 +
 });
 
 test('W5: nucleo-ia-semantic version bumped to 0.9.0 (Wave 6a)', () => {
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.9\.0"\s*\}\s*\)/,
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.10\.0"\s*\}\s*\)/,
     '/semantic McpServer must be v0.9.0 at Wave 6a');
 });
