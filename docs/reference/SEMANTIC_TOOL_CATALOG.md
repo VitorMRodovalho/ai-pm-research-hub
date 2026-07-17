@@ -428,6 +428,69 @@ not patched mid-wave).
 
 ---
 
+## Wave 6b — Knowledge / gamification / admin / audit / lgpd (5 tools + `knowledge_search` intent, `nucleo-ia-semantic` v0.9.0, ef 2.87.0)
+
+The second half of the long tail (§2.6) — the final wave. Authority audited live 2026-07-17 (`pg_get_functiondef`):
+every absorbed reader self-gates internally (`manage_platform` / `view_internal_analytics` / `view_chapter_dashboards`
+/ `manage_member` / self-scope); the semantic layer passes through and surfaces the RPC's own `{error}`/RAISE in
+`ok:false`. Public feeds (`get_public_impact_data`, `get_public_trail_ranking`, `get_cpmai_leaderboard`) stay anon by
+design. The `knowledge_search` intent is delivered by **expanding the existing `search_nucleo_knowledge` bridge
+in place** (kept name — connectors pin it; the additive/never-break principle) with a `mode` discriminator.
+
+**Raw-side hardening rode along in migration `20260805000461`, proven live (impersonated, rolled back):**
+- `knowledge_assets_latest` was SECURITY DEFINER with **only `service_role` EXECUTE**, so authenticated MCP callers
+  hit `permission denied` (2/2 fails/180d). Its content is non-personal narrative knowledge (ADR-0010) — GRANT
+  authenticated. Proven: authenticated call now returns rows.
+- REVOKE the #965 anon/PUBLIC `EXECUTE` drift on **10 fail-closed admin/audit/lgpd RPCs**
+  (`exec_cycle_report`, `export_audit_log_csv`, `get_admin_dashboard`, `get_audit_log`, `get_my_pii_access_log`,
+  `get_vep_divergence_report`, `get_volunteer_funnel_stats`, `list_ai_suggestions`,
+  `lgpd_execute_retroactive_deletion`, `lgpd_record_retroactive_notification`). Each already RAISEs / returns
+  `Unauthorized` for a caller with no member or without the capability (fail-closed), so this is defense-in-depth
+  (the PUBLIC-default trap, #965). Proven: anon EXECUTE now false on `get_admin_dashboard` +
+  `lgpd_execute_retroactive_deletion`; the public feeds remain anon-true.
+
+**Re-grounding discipline (failure-in-log ≠ live bug):** `lgpd_record_retroactive_notification`'s
+`pii_access_log_accessor_id_fkey` failure (1/2, 180d) was **already fixed in the live body** (the p239b hotfix uses
+`members.id` for `accessor_id`, not `auth.uid()`) — NOT re-fixed. `award_champion`'s `invalid_criteria` (2/5) is a
+**legitimate user error** (a criterion slug outside `champion_criteria_catalog` for the surface), not a masked bug.
+`get_cycle_report`/`exec_cycle_report` statement-timeouts are surfaced as-is (pass-through), not materialized.
+
+**Deliberately kept raw/frozen (not surfaced):** `knowledge_insights_overview`/`knowledge_insights_backlog_candidates`
+(internal ops-improvement backlog, dead, service-role — not narrative knowledge); `counter_sign_certificate`
+(Lorena-only, W5). `create_notification` authenticated-user spoofing stays a follow-up.
+
+### `search_nucleo_knowledge` (R) — the `knowledge_search` intent
+- **Intent:** unified knowledge search + page fetch + latest assets. **`mode`:** `search` (default; hub/wiki/knowledge_assets full-text) · `page` (`path` → one wiki page in full) · `latest` (`asset_source?` → most-recent knowledge_assets).
+- **Absorbs (new in W6b):** `get_wiki_page` (mode=page) · `knowledge_assets_latest` (mode=latest). Search modes unchanged (`search_hub_resources`/`search_wiki_pages`/`knowledge_search_text`).
+- **Gate:** Tier-1 authenticated read; wiki = narrative only (ADR-0010). PII-clean. Kept the bridge name (no break).
+
+### `gamification_report` (R)
+- **Intent:** XP / rankings / champions / rules. **`scope`:** `mine` · `member_xp` (member_id) · `member_pillars` (member_id [+ cycle_code, xp_scope]) · `member_champions` (member_id) · `champions_ranking` ([scope_kind, scope_id, cycle_code, limit]) · `rules` · `initiative` (initiative_id) · `tribe` (tribe_id) · `cpmai_leaderboard` ([course_id]) · `trail_ranking`.
+- **Absorbs:** `get_my_gamification_stats` · `get_member_cycle_xp` · `get_member_xp_pillars` · `get_member_champions_history` · `get_champions_ranking` · `get_gamification_rules_catalog` · `get_initiative_gamification` · `get_tribe_gamification` · `get_cpmai_leaderboard` · `get_public_trail_ranking`.
+- **Gate:** self free; cross-member XP requires `view_pii` (RPC-internal); aggregates + leaderboards public-safe by design (LGPD `gamification_opt_out` respected). Read-only.
+
+### `champion_award` (W)
+- **Intent:** award / revoke a champion. **`action`:** `award` (recipient_id + surface + context_kind + context_id + criteria_met[] + justification≥50) · `revoke` (champion_id + reason).
+- **Absorbs:** `award_champion` · `revoke_champion`.
+- **Gate:** RPC-internal — `general` surface requires an org-scope `award_champion` grantor; `tribe`/`deliverable` require `award_champion` on the target initiative; revoke = grantor-within-window OR platform admin. **Merit-immutability:** a champion recognizes work the recipient DID; awards are additive and never transfer completed-work credit.
+
+### `admin_dashboard` (R)
+- **Intent:** GP / analytics cockpit. **`scope`:** `admin` · `annual_kpis` · `chapter` · `chapter_needs` · `in_dashboard` · `vep_divergence` · `volunteer_funnel` · `volunteer_funnel_stats` · `role_transitions` · `cycle_report` · `exec_cycle_report` · `cycle_evolution` · `public_impact` · `ai_suggestions` · `ai_processing_log`.
+- **Absorbs:** `get_admin_dashboard` · `get_annual_kpis` · `get_chapter_dashboard` · `get_chapter_needs` · `get_in_dashboard` · `get_vep_divergence_report` · `get_volunteer_funnel` (→ `volunteer_funnel_summary`) · `get_volunteer_funnel_stats` · `get_role_transitions` (→ `exec_role_transitions`) · `get_cycle_report` · `exec_cycle_report` · `get_cycle_evolution` · `get_public_impact_data` · `list_ai_suggestions` · `list_ai_processing_log`.
+- **Gate:** RPC-internal (`manage_platform` / `view_internal_analytics` / `view_chapter_dashboards`; COI recusal on `vep_divergence`). Numbers come from the live RPC (grounding rule — never recited). Read-only.
+
+### `audit_log` (R)
+- **Intent:** audit + PII-access logs. **`scope`:** `my_pii_access` (self, free) · `audit` (org trail) · `pii_access_admin` (DPO PII-access review) · `export_csv` (audit CSV).
+- **Absorbs:** `get_my_pii_access_log` · `get_audit_log` · `get_pii_access_log_admin` · `export_audit_log_csv`.
+- **Gate:** self-view free; admin views `manage_platform`; export = `view_pii` + GP/sede (the RPC returns an `Unauthorized` TEXT string on deny — surfaced as `ok:false`). Read-only.
+
+### `lgpd_admin` (W, DESTRUCTIVE)
+- **Intent:** LGPD Art.18 retroactive operations. **`action`:** `record_notification` (application_id + template_version + lang [+ method, dispatched_at]) · `execute_deletion` (application_id + video_id + deletion_reason≥8 [+ drive_deletion_ref]; **confirm-gated**).
+- **Absorbs:** `lgpd_record_retroactive_notification` · `lgpd_execute_retroactive_deletion`.
+- **Gate:** PROACTIVE `canV4(manage_member)` fail-fast (GP/DPO) + the RPC's own `manage_member` gate. `execute_deletion` returns a preview unless `confirm=true` (ADR-0018) — it clears a video-screening transcription (irreversible, Art.18 §IV); Drive-file removal is a separate operator step. Every call writes a `pii_access_log` row.
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
@@ -439,7 +502,7 @@ not patched mid-wave).
 | **4** | **Selection & evaluation** | **shipped 2026-07-17** |
 | **5** | **Governance / docs / certificates** | **shipped 2026-07-17** |
 | **6a** | **Comms / drive / partners** | **shipped 2026-07-17** |
-| 6b | Knowledge / gamification / admin / audit / lgpd | planned |
+| **6b** | **Knowledge / gamification / admin / audit / lgpd** | **shipped 2026-07-17 (final wave)** |
 
 Per-wave exit criteria (all 8 must tick): authority/RLS audited · envelope contract test green ·
 256-cap headroom · deprecation wiring (no breakage) · docs shipped (this file + matrix + `rules/mcp.md` + wiki) ·

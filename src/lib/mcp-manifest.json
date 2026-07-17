@@ -1,27 +1,27 @@
 {
-  "generated_at": "2026-07-17T17:16:56.496Z",
+  "generated_at": "2026-07-17T18:15:00.648Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 389,
+  "total": 394,
   "by_domain": {
     "personal": 23,
     "tribe": 129,
-    "board": 78,
+    "board": 79,
     "events": 22,
     "governance": 26,
     "comms": 19,
     "partners": 12,
-    "gamification": 16,
+    "gamification": 18,
     "selection": 31,
     "knowledge": 12,
     "admin": 1,
-    "health": 20
+    "health": 22
   },
   "by_permission": {
-    "read": 272,
+    "read": 275,
     "write": 108,
-    "admin": 9
+    "admin": 11
   },
-  "sensitive_count": 10,
+  "sensitive_count": 11,
   "domain_order": [
     "personal",
     "tribe",
@@ -1606,6 +1606,13 @@
       "is_sensitive": false
     },
     {
+      "name": "admin_dashboard",
+      "description": "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
+      "domain": "board",
+      "permission": "admin",
+      "is_sensitive": false
+    },
+    {
       "name": "get_admin_dashboard",
       "description": "Returns the admin dashboard: member counts, tribe stats, recent activity, system health.",
       "domain": "board",
@@ -2208,6 +2215,13 @@
       "is_sensitive": false
     },
     {
+      "name": "champion_award",
+      "description": "Champion recognition (absorbs award_champion/revoke_champion). Set `action`: 'award' (recipient_id + surface general|tribe|deliverable + context_kind event|deliverable|artifact + context_id + criteria_met[] (1-4 slugs valid for the surface, from champion_criteria_catalog) + justification (>=50 chars)), 'revoke' (champion_id + reason). Authority enforced by the RPC: general surface requires an org-scope award_champion grantor; tribe/deliverable require award_champion on the target initiative; revoke is grantor-within-window OR platform admin. Merit-immutability — a champion recognizes work the recipient DID; awards are additive and never transfer completed-work credit. Stable envelope.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "explain_pending_authority",
       "description": "Explains what is blocking authoritative status across the volunteer lifecycle — distinguishing 'no permission' from 'authority pending a term'. Combines the pending-agreement queue (with per-person next_action) and the volunteer-agreement signing summary. Pass member_id to focus on one person; omit for the org-wide picture. Authority: manage_member (GP/board). Read-only.",
       "domain": "gamification",
@@ -2217,6 +2231,13 @@
     {
       "name": "export_anexo_i",
       "description": "Exports the filled Anexo I of a PI-exclusion declaration (doc7): per-asset rows (titulo, natureza, sha256, OTS status, Bitcoin anchor block+UTC when confirmed) + the all_confirmed flag (eficácia probatória plena requires ALL assets confirmed — 'pending' is NOT yet anchored, doc7 Cl.4.1) + the digest-only legal notice. Art. 18 II LGPD: this is the portability path for the PROOF ARTIFACTS — complements export_my_data's pi_exclusion section (metadata only). Declarant self-service; admins with view_pii read org-fenced (access logged to pii_access_log, LGPD Art. 37). #569/ADR-0101 Slice 4.",
+      "domain": "gamification",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "gamification_report",
+      "description": "Gamification surface (absorbs get_my_gamification_stats/get_member_cycle_xp/get_member_xp_pillars/get_member_champions_history/get_champions_ranking/get_gamification_rules_catalog/get_initiative_gamification/get_tribe_gamification/get_cpmai_leaderboard/get_public_trail_ranking). Set `scope`: 'mine', 'member_xp' (member_id), 'member_pillars' (member_id [+ cycle_code, xp_scope]), 'member_champions' (member_id), 'champions_ranking' ([scope_kind global|initiative, scope_id, cycle_code, limit]), 'rules', 'initiative' (initiative_id), 'tribe' (tribe_id), 'cpmai_leaderboard' ([course_id]), 'trail_ranking'. Authority enforced by each RPC (self free; cross-member XP requires view_pii; aggregates + leaderboards public-safe by design; LGPD gamification_opt_out respected). Read-only. Stable envelope.",
       "domain": "gamification",
       "permission": "read",
       "is_sensitive": false
@@ -2587,7 +2608,7 @@
     },
     {
       "name": "search_nucleo_knowledge",
-      "description": "Bounded multi-source full-text search across Núcleo knowledge: hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research). Returns ranked snippets with citations. Stable envelope. Read-only, PII-clean (knowledge content is non-personal).",
+      "description": "The unified knowledge_search intent (W6b): search + page fetch + latest assets across Núcleo knowledge. `mode`='search' (default) does bounded multi-source full-text search over hub resources (247+ items), wiki pages (governance/ADRs/research/narrative), and knowledge_assets (synced wiki + external research), returning ranked snippets with citations. `mode`='page' fetches one wiki page in full by `path` (get_wiki_page). `mode`='latest' lists the most recent knowledge_assets (optional `asset_source` filter). Wiki content is narrative only (ADR-0010). Read-only, PII-clean (knowledge content is non-personal). Stable envelope.",
       "domain": "knowledge",
       "permission": "read",
       "is_sensitive": false
@@ -2712,6 +2733,13 @@
       "is_sensitive": false
     },
     {
+      "name": "lgpd_admin",
+      "description": "LGPD Art.18 retroactive operations (absorbs lgpd_execute_retroactive_deletion/lgpd_record_retroactive_notification). Set `action`: 'record_notification' (application_id + template_version + lang [+ notification_method email|whatsapp|in_person|other, dispatched_at]) — logs a retroactive privacy notice; 'execute_deletion' (application_id + video_id + deletion_reason (>=8 chars) [+ drive_deletion_ref]) — DESTRUCTIVE: clears a video-screening transcription (irreversible, Art.18 §IV) and returns a preview unless confirm=true (ADR-0018). Both require manage_member (GP/DPO); every call writes a pii_access_log row. Stable envelope.",
+      "domain": "health",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
       "name": "lgpd_execute_retroactive_deletion",
       "description": "Atomically clears pmi_video_screenings.transcription for a specific video row and writes a pii_access_log row (context='lgpd_art_18_deletion_executed') with full deletion_artifacts jsonb evidence. PM-only (manage_member). Use IF the candidate requests Art. 18 §IV deletion within the response window. Validates video_id belongs to application_id + rejects idempotent no-op (already-NULL transcription) to keep audit clean. Drive file removal is a SEPARATE operator step — pass p_drive_deletion_ref (trash confirmation URL or Workspace audit ref) once you've deleted the Drive asset, so the chain stays complete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).",
       "domain": "health",
@@ -2752,6 +2780,13 @@
       "domain": "health",
       "permission": "write",
       "is_sensitive": false
+    },
+    {
+      "name": "audit_log",
+      "description": "Internal admin operation — full details available to authorized members on request.",
+      "domain": "health",
+      "permission": "admin",
+      "is_sensitive": true
     },
     {
       "name": "get_audit_log",

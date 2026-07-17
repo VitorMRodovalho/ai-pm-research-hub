@@ -89,6 +89,12 @@ const SEMANTIC_ONLY = new Set([
   'drive_links',
   'drive_access_admin',
   'partner_crm',
+  // Wave 6b (#1383) — /semantic only (knowledge/gamification/admin/audit/lgpd)
+  'gamification_report',
+  'champion_award',
+  'admin_dashboard',
+  'audit_log',
+  'lgpd_admin',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

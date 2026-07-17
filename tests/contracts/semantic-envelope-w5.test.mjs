@@ -200,13 +200,13 @@ test('W5[ip_exclusion]: revoke confirm-gated; add_asset validates the sha256 dig
   }
 });
 
-test('W5: /semantic health surface advertises 47 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)', () => {
+test('W5: /semantic health surface advertises 52 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 47, '/semantic health tools count must be 47 after Wave 6a');
+  assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6a');
 });
 
-test('W5: nucleo-ia-semantic version bumped to 0.8.0 (Wave 6a)', () => {
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.8\.0"\s*\}\s*\)/,
-    '/semantic McpServer must be v0.8.0 at Wave 6a');
+test('W5: nucleo-ia-semantic version bumped to 0.9.0 (Wave 6a)', () => {
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.9\.0"\s*\}\s*\)/,
+    '/semantic McpServer must be v0.9.0 at Wave 6a');
 });
