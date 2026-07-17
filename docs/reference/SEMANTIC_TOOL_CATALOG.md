@@ -186,8 +186,14 @@ Two live failure fixes ride along: `resolve_action_item` wrote `status` values (
 constraint class, already fixed in their live bodies — the failure log is 180d wide and predates the fix.)
 
 `get_agenda_smart` is **retired** from the semantic surface (it raises `record "v_initiative" is not
-assigned yet` for any event with no initiative). `get_meeting_preparation` has the identical latent bug
-and is tracked as a follow-up — `meeting_minutes action='prepare'` surfaces it rather than hiding it.
+assigned yet` for any event with no initiative — the RPC keeps that bug and stays retired).
+`get_meeting_preparation` had the identical bug and is **fixed** in migration `20260805000456`: its
+`SELECT ... INTO v_initiative` was guarded by `IF initiative_id IS NOT NULL` while `v_initiative.id` was
+read unconditionally, so it raised for **every** org-wide event (`geral`/`kickoff`/`lideranca` — 243 live,
+23 upcoming). An unassigned plpgsql `record` does not read as NULL. Running the SELECT INTO
+unconditionally assigns it all-NULLs, which is exactly what the read expects (verified live).
+Before → after: org-wide event raised → returns with `initiative: null`; an initiative-linked event is
+byte-for-byte unchanged (same initiative, same 3 expected attendees).
 
 ### `event_search` (R)
 - **Intent:** find events. **`scope`:** `upcoming` (next 7 days) · `near` (check-in window, self) · `initiative` (filtered list + pagination) · `detail` (one event).
