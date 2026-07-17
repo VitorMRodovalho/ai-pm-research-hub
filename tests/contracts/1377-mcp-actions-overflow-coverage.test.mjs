@@ -66,6 +66,13 @@ const SEMANTIC_ONLY = new Set([
   'attendance_report',
   'meeting_minutes',
   'meeting_actions',
+  // Wave 4 (#1383) — /semantic only (selection/evaluation)
+  'selection_dashboard',
+  'application_get',
+  'evaluation_submit',
+  'interview_manage',
+  'selection_decide',
+  'visitor_leads',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

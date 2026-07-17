@@ -10248,6 +10248,342 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ══════════════════════ WAVE 4 — Selection & evaluation (#1383) ══════════════════════
+  // Every raw RPC below self-gates authority INTERNALLY (audited live 2026-07-17 via
+  // pg_get_functiondef): reads on candidate data require view_internal_analytics /
+  // manage_member / committee-membership + ADR-0109 COI recusal; writes require
+  // manage_platform (GP) / manage_member / promote / committee-scoping. The semantic layer
+  // passes through and surfaces the RPC's own {error}/RAISE (unauthorized|recused|not_found)
+  // in the stable envelope; write tools add a proactive canV4() fail-fast for a cleaner
+  // message + to skip a pointless round-trip. No resourceless-can() shape here (W3 class).
+  // Excluded on purpose: compute_application_scores (dormant SECDEF helper, service_role-only,
+  // 0 MCP calls ever), generate_interview_briefing (inline-Haiku raw tool, view_pii),
+  // capture_visitor_lead (public site entry — anon + rl_check + LGPD consent, stays raw).
+
+  const selErr = (_tool: string, em: string) =>
+    /^(unauthorized|not authoriz|recused)/i.test(em) ? "unauthorized"
+      : /not found|no cycle|not_found/i.test(em) ? "not_found"
+      : /already|locked|invalid|required|must /i.test(em) ? "invalid_input"
+      : "internal_error";
+
+  // ── W4 · selection_dashboard (R) — cycle pipeline surfaces; RPCs self-gate + COI ──
+  mcp.tool(
+    "selection_dashboard",
+    "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+    {
+      scope: z.enum(["dashboard", "cycles", "rankings", "cutoff", "calibration", "health", "pipeline", "committee", "dispatch"]).describe("Which selection surface."),
+      cycle_code: z.string().optional().describe("Cycle code (e.g. 'C5') — dashboard / rankings / calibration."),
+      cycle_id: z.string().optional().describe("Cycle UUID — cutoff / pipeline / committee."),
+      track: z.string().optional().describe("scope='rankings' — track filter (researcher|leader|all)."),
+      score_column: z.string().optional().describe("scope='cutoff' — score column (default 'research_score')."),
+      chapter: z.string().optional().describe("scope='pipeline' — chapter code filter."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "selection_dashboard", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "selection_dashboard", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "selection_dashboard", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "dashboard":
+          if (!params.cycle_code) return invalid("scope='dashboard' requires cycle_code.", "Use scope='cycles' to list them.");
+          ({ data, error } = await sb.rpc("get_selection_dashboard", { p_cycle_code: params.cycle_code })); source = "get_selection_dashboard"; break;
+        case "cycles": ({ data, error } = await sb.rpc("get_selection_cycles")); source = "get_selection_cycles"; break;
+        case "rankings":
+          if (!params.cycle_code) return invalid("scope='rankings' requires cycle_code.");
+          ({ data, error } = await sb.rpc("get_selection_rankings", { p_cycle_code: params.cycle_code, p_track: params.track ?? null })); source = "get_selection_rankings"; break;
+        case "cutoff":
+          if (!isUUID(params.cycle_id)) return invalid("scope='cutoff' requires cycle_id (UUID).");
+          ({ data, error } = await sb.rpc("get_pert_cutoff_summary", { p_cycle_id: params.cycle_id, p_score_column: params.score_column ?? "research_score" })); source = "get_pert_cutoff_summary"; break;
+        case "calibration":
+          if (!params.cycle_code) return invalid("scope='calibration' requires cycle_code.");
+          ({ data, error } = await sb.rpc("get_evaluator_calibration_stats", { p_cycle_code: params.cycle_code })); source = "get_evaluator_calibration_stats"; break;
+        case "health": ({ data, error } = await sb.rpc("get_selection_health")); source = "get_selection_health"; break;
+        case "pipeline":
+          if (!isUUID(params.cycle_id)) return invalid("scope='pipeline' requires cycle_id (UUID).");
+          ({ data, error } = await sb.rpc("get_selection_pipeline_metrics", { p_cycle_id: params.cycle_id, p_chapter: params.chapter ?? null })); source = "get_selection_pipeline_metrics"; break;
+        case "committee":
+          if (!isUUID(params.cycle_id)) return invalid("scope='committee' requires cycle_id (UUID).");
+          ({ data, error } = await sb.rpc("get_selection_committee", { p_cycle_id: params.cycle_id })); source = "get_selection_committee"; break;
+        case "dispatch": ({ data, error } = await sb.rpc("get_cutoff_dispatch_health")); source = "get_cutoff_dispatch_health"; break;
+        default: return invalid(`Unknown scope '${params.scope}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "selection_dashboard", false, error.message, start); return ok(buildSemanticError({ tool: "selection_dashboard", semantic_domain: dom, code: selErr("selection_dashboard", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "selection_dashboard", false, em, start); return ok(buildSemanticError({ tool: "selection_dashboard", semantic_domain: dom, code: selErr("selection_dashboard", em), message: em, action: /recused/i.test(em) ? "You are an active candidate in this cycle (ADR-0109 conflict-of-interest recusal)." : "Requires view_internal_analytics (committee/GP/sponsor)." })); }
+      await logUsage(sb, member.id, "selection_dashboard", true, undefined, start);
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `selection_dashboard scope='${params.scope}' ok.`,
+        next_actions: ["application_get: 360° de uma candidatura", "selection_decide: aprovar / cutoff / recalcular"],
+        audit: { tool: "selection_dashboard", semantic_domain: dom, pii_level: "medium", permission: "view_internal_analytics (RPC-gated) + ADR-0109 COI", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC self-gated (view_internal_analytics|view_aggregate_analytics) + selection_coi_recused", resource_id: params.cycle_id ?? params.cycle_code ?? null, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W4 · application_get (R) — one candidature 360°; RPCs self-gate + COI ──────
+  mcp.tool(
+    "application_get",
+    "One application, 360° (absorbs get_application_score_breakdown/interviews/gate_attempts/returning_context + get_application_onboarding_pct). Set `scope`: 'scores' (score breakdown + blind-review state), 'interviews' (schedule/notes — committee-visible since #1383 W4), 'gate_attempts' (authority-gate audit trail), 'returning' (prior-cycle context), 'onboarding' (onboarding %). All require application_id. Authority enforced by each RPC: committee-of-this-cycle OR manage_member/curate_content, plus ADR-0109 COI recusal. Candidate PII (high) stays behind those gates. Stable envelope.",
+    {
+      scope: z.enum(["scores", "interviews", "gate_attempts", "returning", "onboarding"]).describe("Which slice of the application."),
+      application_id: z.string().describe("selection_applications.id (UUID)."),
+    },
+    async (params: { scope: string; application_id: string }) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "application_get", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "application_get", false, "Invalid application_id", start); return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: "invalid_input", message: "application_id must be a UUID.", action: "Use selection_dashboard scope='rankings' to find applications." })); }
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "scores": ({ data, error } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id })); source = "get_application_score_breakdown"; break;
+        case "interviews": ({ data, error } = await sb.rpc("get_application_interviews", { p_application_id: params.application_id })); source = "get_application_interviews"; break;
+        case "gate_attempts": ({ data, error } = await sb.rpc("get_application_gate_attempts", { p_application_id: params.application_id })); source = "get_application_gate_attempts"; break;
+        case "returning": ({ data, error } = await sb.rpc("get_application_returning_context", { p_application_id: params.application_id })); source = "get_application_returning_context"; break;
+        case "onboarding": ({ data, error } = await sb.rpc("get_application_onboarding_pct", { p_application_id: params.application_id })); source = "get_application_onboarding_pct"; break;
+        default: return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: "invalid_input", message: `Unknown scope '${params.scope}'.` }));
+      }
+      if (error) { await logUsage(sb, member.id, "application_get", false, error.message, start); return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: selErr("application_get", error.message), message: error.message, action: /recused/i.test(error.message) ? "ADR-0109 conflict-of-interest recusal." : /unauthor/i.test(error.message) ? "Requires committee membership of this cycle or manage_member." : undefined })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "application_get", false, em, start); return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: selErr("application_get", em), message: em })); }
+      await logUsage(sb, member.id, "application_get", true, undefined, start);
+      return semanticOk({
+        data: { scope: params.scope, application_id: params.application_id, result: data },
+        summary: `application_get scope='${params.scope}' ok.`,
+        next_actions: ["evaluation_submit mode='form': abrir o formulário de avaliação", "interview_manage action='schedule': agendar entrevista"],
+        audit: { tool: "application_get", semantic_domain: dom, pii_level: "high", permission: "committee|manage_member (RPC-gated) + ADR-0109 COI", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC self-gated (committee-of-cycle | manage_member | curate_content) + selection_coi_recused", resource_id: params.application_id, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W4 · evaluation_submit (R/W) — the evaluator loop; committee self-scoped ──
+  mcp.tool(
+    "evaluation_submit",
+    "The evaluator loop (absorbs get_my_pending_evaluations + get_evaluation_form + submit_evaluation + submit_interview_scores + get_evaluation_results + get_my_evaluation_feedback). Set `mode`: 'queue' (my pending evaluations), 'form' (application_id + evaluation_type → blank scoring form), 'submit' (application_id + evaluation_type + scores{criterion:score} [+ notes, criterion_notes, ai_suggestion_id] — WRITE, idempotent: a locked evaluation cannot be re-submitted), 'interview_scores' (interview_id + scores [+ theme, notes, criterion_notes] — WRITE), 'results' (application_id → consolidated results), 'feedback' (my received evaluator feedback). Authority: committee membership of the cycle (RPC-gated; manage_platform bypass). Stable envelope.",
+    {
+      mode: z.enum(["queue", "form", "submit", "interview_scores", "results", "feedback"]).describe("Evaluator operation."),
+      application_id: z.string().optional().describe("Application UUID — form / submit / results."),
+      evaluation_type: z.enum(["objective", "interview", "leader_extra"]).optional().describe("form / submit — which rubric."),
+      scores: z.record(z.string(), z.number()).optional().describe("submit / interview_scores — {criterion_id: score}."),
+      notes: z.string().optional().describe("submit / interview_scores — overall note."),
+      criterion_notes: z.record(z.string(), z.string()).optional().describe("submit / interview_scores — {criterion_id: note}."),
+      ai_suggestion_id: z.string().optional().describe("submit — ai_suggestion consumed (audit)."),
+      interview_id: z.string().optional().describe("interview_scores — selection_interviews.id (UUID)."),
+      theme: z.string().optional().describe("interview_scores — theme_of_interest."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "evaluation_submit", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "evaluation_submit", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "evaluation_submit", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = ""; const isWrite = params.mode === "submit" || params.mode === "interview_scores";
+      switch (params.mode) {
+        case "queue": ({ data, error } = await sb.rpc("get_my_pending_evaluations")); source = "get_my_pending_evaluations"; break;
+        case "form":
+          if (!isUUID(params.application_id) || !params.evaluation_type) return invalid("mode='form' requires application_id + evaluation_type.");
+          ({ data, error } = await sb.rpc("get_evaluation_form", { p_application_id: params.application_id, p_evaluation_type: params.evaluation_type })); source = "get_evaluation_form"; break;
+        case "submit":
+          if (!isUUID(params.application_id) || !params.evaluation_type || !params.scores) return invalid("mode='submit' requires application_id + evaluation_type + scores.");
+          ({ data, error } = await sb.rpc("submit_evaluation", { p_application_id: params.application_id, p_evaluation_type: params.evaluation_type, p_scores: params.scores, p_notes: params.notes ?? null, p_criterion_notes: params.criterion_notes ?? null, p_ai_suggestion_id: params.ai_suggestion_id ?? null })); source = "submit_evaluation"; break;
+        case "interview_scores":
+          if (!isUUID(params.interview_id) || !params.scores) return invalid("mode='interview_scores' requires interview_id + scores.");
+          ({ data, error } = await sb.rpc("submit_interview_scores", { p_interview_id: params.interview_id, p_scores: params.scores, p_theme: params.theme ?? null, p_notes: params.notes ?? null, p_criterion_notes: params.criterion_notes ?? null })); source = "submit_interview_scores"; break;
+        case "results":
+          if (!isUUID(params.application_id)) return invalid("mode='results' requires application_id.");
+          ({ data, error } = await sb.rpc("get_evaluation_results", { p_application_id: params.application_id })); source = "get_evaluation_results"; break;
+        case "feedback": ({ data, error } = await sb.rpc("get_my_evaluation_feedback")); source = "get_my_evaluation_feedback"; break;
+        default: return invalid(`Unknown mode '${params.mode}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "evaluation_submit", false, error.message, start); return ok(buildSemanticError({ tool: "evaluation_submit", semantic_domain: dom, code: selErr("evaluation_submit", error.message), message: error.message, action: /not a committee|unauthor/i.test(error.message) ? "You must be on this cycle's selection committee." : undefined })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "evaluation_submit", false, em, start); return ok(buildSemanticError({ tool: "evaluation_submit", semantic_domain: dom, code: selErr("evaluation_submit", em), message: em, action: /already|locked/i.test(em) ? "This evaluation is already submitted and locked (idempotent)." : undefined })); }
+      await logUsage(sb, member.id, "evaluation_submit", true, undefined, start);
+      return semanticOk({
+        data: { mode: params.mode, result: data },
+        summary: `evaluation_submit mode='${params.mode}' ok.`,
+        next_actions: isWrite ? ["evaluation_submit mode='queue': próxima avaliação pendente", "application_get scope='scores': ver o breakdown atualizado"] : ["evaluation_submit mode='submit': enviar a nota"],
+        audit: { tool: "evaluation_submit", semantic_domain: dom, pii_level: "medium", permission: "committee (self-scoped, RPC-gated)", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC self-gated (committee-of-cycle | manage_platform)", resource_id: params.application_id ?? params.interview_id ?? null, extra: { mode: params.mode } },
+      });
+    },
+  );
+
+  // ── W4 · interview_manage (W) — schedule/mark/rescue; committee-lead/GP gated ──
+  mcp.tool(
+    "interview_manage",
+    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+    {
+      action: z.enum(["schedule", "mark", "rescue"]).describe("Interview operation."),
+      application_id: z.string().optional().describe("Application UUID — schedule / rescue."),
+      interviewer_ids: z.array(z.string()).optional().describe("schedule — interviewer member UUIDs."),
+      scheduled_at: z.string().optional().describe("schedule — ISO 8601 datetime."),
+      duration_minutes: z.number().optional().describe("schedule — default 30."),
+      calendar_event_id: z.string().optional().describe("schedule — external calendar event id (optional)."),
+      bypass_gate: z.boolean().optional().describe("schedule — skip the no-AI-analysis gate (requires manage_member). Default false."),
+      interview_id: z.string().optional().describe("mark — selection_interviews.id (UUID)."),
+      status: z.enum(["pending", "completed", "cancelled", "noshow"]).optional().describe("mark — new status."),
+      notes: z.string().optional().describe("mark — status note."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "interview_manage", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "schedule":
+          if (!isUUID(params.application_id) || !Array.isArray(params.interviewer_ids) || params.interviewer_ids.length === 0 || !params.scheduled_at) return invalid("action='schedule' requires application_id + interviewer_ids[] + scheduled_at.");
+          rpc = "schedule_interview"; rpcArgs = { p_application_id: params.application_id, p_interviewer_ids: params.interviewer_ids, p_scheduled_at: params.scheduled_at, p_duration_minutes: params.duration_minutes ?? 30, p_calendar_event_id: params.calendar_event_id ?? null, p_bypass_gate: params.bypass_gate ?? false }; break;
+        case "mark":
+          if (!isUUID(params.interview_id) || !params.status) return invalid("action='mark' requires interview_id + status.");
+          rpc = "mark_interview_status"; rpcArgs = { p_interview_id: params.interview_id, p_status: params.status, p_notes: params.notes ?? null }; break;
+        case "rescue":
+          if (!isUUID(params.application_id)) return invalid("action='rescue' requires application_id.");
+          rpc = "selection_rescue_stuck_interview"; rpcArgs = { p_application_id: params.application_id }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "interview_manage", false, error.message, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", error.message), message: error.message, action: /GATE_NO_AI/i.test(error.message) ? "Candidate has no AI analysis. Pass bypass_gate=true (needs manage_member) to override." : /unauthor|committee/i.test(error.message) ? "Requires committee lead of the cycle or platform admin." : undefined })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", em), message: em })); }
+      await logUsage(sb, member.id, "interview_manage", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `interview_manage action='${params.action}' ok.`,
+        next_actions: ["application_get scope='interviews': reler as entrevistas", "evaluation_submit mode='interview_scores': lançar notas da entrevista"],
+        audit: { tool: "interview_manage", semantic_domain: dom, pii_level: "medium", permission: "committee-lead|manage_platform (RPC-gated)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "RPC self-gated (committee lead of cycle | manage_platform; schedule bypass = manage_member)", resource_id: params.application_id ?? params.interview_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W4 · selection_decide (W) — cycle decisions; GP-heavy, RPC-gated ──────────
+  mcp.tool(
+    "selection_decide",
+    "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove + member_id [+ role]; promote), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+    {
+      action: z.enum(["approve", "notify_cutoff", "compute_cutoff", "recalc_rankings", "committee", "update_contact"]).describe("Decision operation."),
+      application_id: z.string().optional().describe("Application UUID — approve / notify_cutoff / update_contact."),
+      decision: z.record(z.string(), z.any()).optional().describe("approve — decision payload (e.g. {outcome, notes})."),
+      cycle_id: z.string().optional().describe("Cycle UUID — compute_cutoff / recalc_rankings / committee."),
+      role: z.string().optional().describe("compute_cutoff — role (researcher|leader)."),
+      filter_active_only: z.boolean().optional().describe("compute_cutoff — default true."),
+      score_column: z.string().optional().describe("compute_cutoff — default 'research_score'."),
+      reason: z.string().optional().describe("recalc_rankings — audit reason."),
+      committee_action: z.enum(["add", "remove"]).optional().describe("action='committee' — add/remove a committee member."),
+      member_id: z.string().optional().describe("action='committee' — member UUID."),
+      committee_role: z.string().optional().describe("action='committee' — role (evaluator|lead)."),
+      phone: z.string().optional().describe("update_contact — candidate phone."),
+      linkedin_url: z.string().optional().describe("update_contact — candidate LinkedIn URL."),
+      confirm: z.boolean().optional().describe("approve / recalc_rankings — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "selection_decide", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (m: string, a?: string) => ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: "unauthorized", message: m, action: a }));
+
+      // Proactive canV4 fail-fast mirroring each RPC's internal gate (nicer error + no round-trip).
+      const GATE: Record<string, string> = { approve: "manage_platform", recalc_rankings: "manage_platform", compute_cutoff: "manage_member", notify_cutoff: "manage_member", committee: "promote", update_contact: "manage_member" };
+      const need = GATE[params.action];
+      if (need && !(await canV4(sb, member.id, need))) { await logUsage(sb, member.id, "selection_decide", false, "Unauthorized", start); return denied(`Requires ${need}.`, need === "manage_platform" ? "GP-only decision." : "Ask a GP / committee lead."); }
+
+      // ADR-0018 confirm-gate for the irreversible decisions.
+      if ((params.action === "approve" || params.action === "recalc_rankings") && params.confirm !== true) {
+        await logUsage(sb, member.id, "selection_decide", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, preview: true, next_call: { ...params, confirm: true } },
+          summary: `PREVIEW: selection_decide action='${params.action}'. Reenvie com confirm=true.`,
+          warnings: [params.action === "approve" ? "Approving finalizes the selection outcome for this candidate." : "Recalculating rewrites cycle rankings for every application."],
+          next_actions: [`selection_decide action='${params.action}' confirm=true`],
+          audit: { tool: "selection_decide", semantic_domain: dom, pii_level: "high", permission: need, source_tools: [], caller_member_id: member.id, gate_checked: `canV4(${need}) (preview, not executed)`, resource_id: params.application_id ?? params.cycle_id ?? null, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      let rpc: string; let rpcArgs: Record<string, unknown>;
+      switch (params.action) {
+        case "approve":
+          if (!isUUID(params.application_id) || !params.decision) return invalid("action='approve' requires application_id + decision{}.");
+          rpc = "approve_selection_application"; rpcArgs = { p_application_id: params.application_id, p_decision: params.decision }; break;
+        case "notify_cutoff":
+          if (!isUUID(params.application_id)) return invalid("action='notify_cutoff' requires application_id.");
+          rpc = "notify_selection_cutoff_approved"; rpcArgs = { p_application_id: params.application_id }; break;
+        case "compute_cutoff":
+          if (!isUUID(params.cycle_id) || !params.role) return invalid("action='compute_cutoff' requires cycle_id + role.");
+          rpc = "compute_pert_cutoff"; rpcArgs = { p_cycle_id: params.cycle_id, p_role: params.role, p_filter_active_only: params.filter_active_only ?? true, p_score_column: params.score_column ?? "research_score" }; break;
+        case "recalc_rankings":
+          if (!isUUID(params.cycle_id) || !params.reason) return invalid("action='recalc_rankings' requires cycle_id + reason.");
+          rpc = "recalculate_cycle_rankings"; rpcArgs = { p_cycle_id: params.cycle_id, p_reason: params.reason }; break;
+        case "committee":
+          if (!isUUID(params.cycle_id) || !params.committee_action || !isUUID(params.member_id)) return invalid("action='committee' requires cycle_id + committee_action + member_id.");
+          rpc = "manage_selection_committee"; rpcArgs = { p_cycle_id: params.cycle_id, p_action: params.committee_action, p_member_id: params.member_id, p_role: params.committee_role ?? "evaluator" }; break;
+        case "update_contact":
+          if (!isUUID(params.application_id)) return invalid("action='update_contact' requires application_id.");
+          rpc = "update_application_contact"; rpcArgs = { p_application_id: params.application_id, p_phone: params.phone ?? null, p_linkedin_url: params.linkedin_url ?? null }; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "selection_decide", false, error.message, start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: selErr("selection_decide", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "selection_decide", false, em, start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: selErr("selection_decide", em), message: em })); }
+      await logUsage(sb, member.id, "selection_decide", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data ?? null },
+        summary: `selection_decide action='${params.action}' ok.`,
+        next_actions: ["selection_dashboard scope='dashboard': reler o pipeline do ciclo", "selection_dashboard scope='rankings': ranking atualizado"],
+        audit: { tool: "selection_decide", semantic_domain: dom, pii_level: "high", permission: need, source_tools: [rpc], caller_member_id: member.id, gate_checked: `canV4(${need}) + RPC internal gate`, resource_id: params.application_id ?? params.cycle_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W4 · visitor_leads (R/W) — pre-consent lead triage; manage_member gated ────
+  mcp.tool(
+    "visitor_leads",
+    "Visitor-lead triage for operators (absorbs list_visitor_leads + get_ghost_visitors + dismiss_visitor_lead + promote_lead_to_application). Set `action`: 'list' ([status, chapter, limit]), 'ghosts' (authenticated visitors with no member record — manage_platform), 'dismiss' (lead_id + reason), 'promote' (lead_id + cycle_id [+ pmi_id] → creates an application). Authority: manage_member (ghosts = manage_platform). Leads are pre-consent PII — LGPD-minimal. NOTE: public lead capture (capture_visitor_lead) stays raw (anon site entry, consent-gated). Stable envelope.",
+    {
+      action: z.enum(["list", "ghosts", "dismiss", "promote"]).describe("Lead operation."),
+      status: z.string().optional().describe("list — status filter (new|contacted|dismissed|promoted)."),
+      chapter: z.string().optional().describe("list — chapter filter."),
+      limit: z.number().optional().describe("list — max rows (default 50)."),
+      lead_id: z.string().optional().describe("dismiss / promote — visitor_leads.id (UUID)."),
+      reason: z.string().optional().describe("dismiss — reason."),
+      cycle_id: z.string().optional().describe("promote — target cycle UUID."),
+      pmi_id: z.string().optional().describe("promote — candidate PMI id (optional)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "selection";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "visitor_leads", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "visitor_leads", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "visitor_leads", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (m: string, a?: string) => ok(buildSemanticError({ tool: "visitor_leads", semantic_domain: dom, code: "unauthorized", message: m, action: a }));
+
+      const need = params.action === "ghosts" ? "manage_platform" : "manage_member";
+      if (!(await canV4(sb, member.id, need))) { await logUsage(sb, member.id, "visitor_leads", false, "Unauthorized", start); return denied(`Requires ${need}.`, "Lead triage is GP / manage_member only (pre-consent PII)."); }
+
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "list": ({ data, error } = await sb.rpc("list_visitor_leads", { p_status: params.status ?? null, p_chapter: params.chapter ?? null, p_limit: params.limit ?? 50 })); source = "list_visitor_leads"; break;
+        case "ghosts": ({ data, error } = await sb.rpc("get_ghost_visitors")); source = "get_ghost_visitors"; break;
+        case "dismiss":
+          if (!isUUID(params.lead_id)) return invalid("action='dismiss' requires lead_id.");
+          ({ data, error } = await sb.rpc("dismiss_visitor_lead", { p_lead_id: params.lead_id, p_reason: params.reason ?? null })); source = "dismiss_visitor_lead"; break;
+        case "promote":
+          if (!isUUID(params.lead_id) || !isUUID(params.cycle_id)) return invalid("action='promote' requires lead_id + cycle_id.");
+          ({ data, error } = await sb.rpc("promote_lead_to_application", { p_lead_id: params.lead_id, p_cycle_id: params.cycle_id, p_pmi_id: params.pmi_id ?? null })); source = "promote_lead_to_application"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "visitor_leads", false, error.message, start); return ok(buildSemanticError({ tool: "visitor_leads", semantic_domain: dom, code: selErr("visitor_leads", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "visitor_leads", false, em, start); return ok(buildSemanticError({ tool: "visitor_leads", semantic_domain: dom, code: selErr("visitor_leads", em), message: em })); }
+      await logUsage(sb, member.id, "visitor_leads", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `visitor_leads action='${params.action}' ok.`,
+        next_actions: ["visitor_leads action='promote': converter lead em candidatura", "selection_dashboard scope='dashboard': pipeline do ciclo"],
+        audit: { tool: "visitor_leads", semantic_domain: dom, pii_level: "medium", permission: need, source_tools: [source], caller_member_id: member.id, gate_checked: `canV4(${need}) + RPC internal gate`, resource_id: params.lead_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -10401,7 +10737,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.5.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.6.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -10450,10 +10786,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.83.0",
+  ef_version: "2.84.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.5.0", tools: 27 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.6.0", tools: 33 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

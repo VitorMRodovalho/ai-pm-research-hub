@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-07-17T10:11:25.261Z",
+  "generated_at": "2026-07-17T15:17:23.592Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 369,
+  "total": 375,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
     "events": 22,
     "gamification": 15,
-    "board": 77,
-    "tribe": 116,
+    "board": 78,
+    "tribe": 117,
     "comms": 16,
     "knowledge": 12,
     "partners": 11,
-    "selection": 27,
+    "selection": 31,
     "health": 19,
     "governance": 30,
     "admin": 1
@@ -5166,8 +5166,102 @@
         "write_board"
       ],
       "external_fetch_count": 0,
-      "uses_service_role": false,
+      "uses_service_role": true,
       "return_shape_hint": "buildSemanticError({ tool: \"meeting_actions\", semantic_domain: dom, code: \"unauthenticated"
+    },
+    {
+      "name": "selection_dashboard",
+      "description": "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+      "domain": "board",
+      "rpcs": [
+        "get_cutoff_dispatch_health",
+        "get_evaluator_calibration_stats",
+        "get_pert_cutoff_summary",
+        "get_selection_committee",
+        "get_selection_cycles",
+        "get_selection_dashboard",
+        "get_selection_health",
+        "get_selection_pipeline_metrics",
+        "get_selection_rankings"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"selection_dashboard\", semantic_domain: dom, code: \"unauthentic"
+    },
+    {
+      "name": "application_get",
+      "description": "One application, 360° (absorbs get_application_score_breakdown/interviews/gate_attempts/returning_context + get_application_onboarding_pct). Set `scope`: 'scores' (score breakdown + blind-review state), 'interviews' (schedule/notes — committee-visible since #1383 W4), 'gate_attempts' (authority-gate audit trail), 'returning' (prior-cycle context), 'onboarding' (onboarding %). All require application_id. Authority enforced by each RPC: committee-of-this-cycle OR manage_member/curate_content, plus ADR-0109 COI recusal. Candidate PII (high) stays behind those gates. Stable envelope.",
+      "domain": "selection",
+      "rpcs": [
+        "get_application_gate_attempts",
+        "get_application_interviews",
+        "get_application_onboarding_pct",
+        "get_application_returning_context",
+        "get_application_score_breakdown"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"application_get\", semantic_domain: dom, code: \"unauthenticated"
+    },
+    {
+      "name": "evaluation_submit",
+      "description": "The evaluator loop (absorbs get_my_pending_evaluations + get_evaluation_form + submit_evaluation + submit_interview_scores + get_evaluation_results + get_my_evaluation_feedback). Set `mode`: 'queue' (my pending evaluations), 'form' (application_id + evaluation_type → blank scoring form), 'submit' (application_id + evaluation_type + scores{criterion:score} [+ notes, criterion_notes, ai_suggestion_id] — WRITE, idempotent: a locked evaluation cannot be re-submitted), 'interview_scores' (interview_id + scores [+ theme, notes, criterion_notes] — WRITE), 'results' (application_id → consolidated results), 'feedback' (my received evaluator feedback). Authority: committee membership of the cycle (RPC-gated; manage_platform bypass). Stable envelope.",
+      "domain": "selection",
+      "rpcs": [
+        "get_evaluation_form",
+        "get_evaluation_results",
+        "get_my_evaluation_feedback",
+        "get_my_pending_evaluations",
+        "submit_evaluation",
+        "submit_interview_scores"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"evaluation_submit\", semantic_domain: dom, code: \"unauthenticat"
+    },
+    {
+      "name": "interview_manage",
+      "description": "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+      "domain": "selection",
+      "rpcs": [],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"interview_manage\", semantic_domain: dom, code: \"unauthenticate"
+    },
+    {
+      "name": "selection_decide",
+      "description": "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove + member_id [+ role]; promote), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+      "domain": "selection",
+      "rpcs": [],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"selection_decide\", semantic_domain: dom, code: \"unauthenticate"
+    },
+    {
+      "name": "visitor_leads",
+      "description": "Visitor-lead triage for operators (absorbs list_visitor_leads + get_ghost_visitors + dismiss_visitor_lead + promote_lead_to_application). Set `action`: 'list' ([status, chapter, limit]), 'ghosts' (authenticated visitors with no member record — manage_platform), 'dismiss' (lead_id + reason), 'promote' (lead_id + cycle_id [+ pmi_id] → creates an application). Authority: manage_member (ghosts = manage_platform). Leads are pre-consent PII — LGPD-minimal. NOTE: public lead capture (capture_visitor_lead) stays raw (anon site entry, consent-gated). Stable envelope.",
+      "domain": "tribe",
+      "rpcs": [
+        "dismiss_visitor_lead",
+        "get_ghost_visitors",
+        "list_visitor_leads",
+        "promote_lead_to_application"
+      ],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "buildSemanticError({ tool: \"visitor_leads\", semantic_domain: dom, code: \"unauthenticated\","
     }
   ]
 }

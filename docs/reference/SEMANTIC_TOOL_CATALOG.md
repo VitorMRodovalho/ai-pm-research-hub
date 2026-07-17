@@ -230,6 +230,63 @@ byte-for-byte unchanged (same initiative, same 3 expected attendees).
 
 ---
 
+## Wave 4 — Selection & evaluation (shipped 2026-07-17)
+
+6 tools absorbing the selection domain (367 calls/180d; `submit_evaluation` is the #5 tool overall at 124).
+`/semantic` 27 → 33 (`nucleo-ia-semantic@0.6.0`, `ef_version 2.84.0`). Every absorbed RPC **self-gates
+authority internally** (audited live via `pg_get_functiondef`): candidate-data reads require
+`view_internal_analytics` / `manage_member` / committee-of-cycle membership PLUS **ADR-0109
+conflict-of-interest recusal** (an active candidate in the cycle is blocked from selection surfaces);
+writes require `manage_platform` (GP) / `manage_member` / `promote` / committee-scoping. There is **no
+resourceless-`can()` shape** here — the W3 bypass class was audited and is absent. The semantic layer passes
+through and surfaces each RPC's own `{error}`/RAISE in the `ok:false` envelope; write tools add a proactive
+`canV4()` fail-fast that mirrors the RPC gate.
+
+Raw-side hardening rode along in migration `20260805000458`, proven live with an impersonated, rolled-back
+probe: **`get_application_interviews`** was widened from GP-only (`manage_platform`) to **committee-of-cycle
+OR platform admin**, per the tool's own docstring ("used by committee to coordinate"), with an added COI
+recusal so a candidate seated on the committee stays blocked — a pure committee member went from
+`Unauthorized: requires manage_platform` to seeing the interviews. And an **anon `EXECUTE` grant drift on
+`recalculate_cycle_rankings`** was revoked (its body was already fail-closed; defense-in-depth).
+
+The Wave-0 top failure `get_selection_health` (3/3F, `column t.created_at does not exist`) was **already fixed
+in the live body** (it reads `t.issued_at`; the log is 180d and predates the fix) — no change, re-grounding
+avoided a false correction. Deliberately **kept raw** (not surfaced semantically): `compute_application_scores`
+(dormant `service_role`-only helper, 0 MCP calls ever), `generate_interview_briefing` (inline-Haiku, `view_pii`),
+`capture_visitor_lead` (public anon site entry — rate-limited + LGPD-consent-gated).
+
+### `selection_dashboard` (R)
+- **Intent:** the selection-cycle command surface. **`scope`:** `dashboard` (cycle_code) · `cycles` · `rankings` · `cutoff` (cycle_id) · `calibration` · `health` · `pipeline` (cycle_id) · `committee` (cycle_id) · `dispatch`.
+- **Absorbs:** `get_selection_dashboard` (24) · `get_selection_cycles` · `get_selection_rankings` · `get_pert_cutoff_summary` · `get_evaluator_calibration_stats` · `get_selection_health` · `get_selection_pipeline_metrics` · `get_selection_committee` · `get_cutoff_dispatch_health`.
+- **Gate:** each RPC self-gates on `view_internal_analytics`/`view_aggregate_analytics` + ADR-0109 COI recusal; candidate PII stays behind those gates. Pass-through.
+
+### `application_get` (R)
+- **Intent:** one application, 360°. **`scope`:** `scores` · `interviews` · `gate_attempts` · `returning` · `onboarding` (all keyed by `application_id`).
+- **Absorbs:** `get_application_score_breakdown` (47) · `get_application_interviews` (26, now committee-visible) · `get_application_gate_attempts` · `get_application_returning_context` · `get_application_onboarding_pct`.
+- **Gate:** committee-of-cycle OR `manage_member`/`curate_content` + ADR-0109 COI (all RPC-internal). PII: high.
+
+### `evaluation_submit` (R/W)
+- **Intent:** the evaluator loop. **`mode`:** `queue` · `form` · `submit` (idempotent: a locked evaluation cannot re-submit) · `interview_scores` · `results` · `feedback`.
+- **Absorbs:** `submit_evaluation` (124, #5 tool) · `get_evaluation_form` (73) · `get_my_pending_evaluations` (21) · `submit_interview_scores` · `get_evaluation_results` · `get_my_evaluation_feedback`.
+- **Gate:** committee membership of the cycle (self-scoped; `manage_platform` bypass) — RPC-internal.
+
+### `interview_manage` (W)
+- **Intent:** interview scheduling lifecycle. **`action`:** `schedule` · `mark` · `rescue`.
+- **Absorbs:** `schedule_interview` · `mark_interview_status` · `selection_rescue_stuck_interview`. (`generate_interview_briefing` stays raw — inline-Haiku, `view_pii`.)
+- **Gate:** committee lead of the cycle OR platform admin (RPC-internal); the no-AI-analysis gate on `schedule` is bypassable only with `manage_member` + `bypass_gate=true`.
+
+### `selection_decide` (W)
+- **Intent:** cycle-level decisions. **`action`:** `approve` (DESTRUCTIVE → `confirm=true`, ADR-0018) · `notify_cutoff` · `compute_cutoff` · `recalc_rankings` (DESTRUCTIVE → `confirm=true`) · `committee` (add/remove) · `update_contact`.
+- **Absorbs:** `approve_selection_application` · `notify_selection_cutoff_approved` · `compute_pert_cutoff` · `recalculate_cycle_rankings` · `manage_selection_committee` · `update_application_contact`. (`compute_application_scores` stays raw — dormant service-role helper.)
+- **Gate:** proactive `canV4()` mirroring each RPC gate — `approve`/`recalc_rankings` = `manage_platform` (GP), `compute_cutoff`/`notify_cutoff`/`update_contact` = `manage_member`, `committee` = `promote`.
+
+### `visitor_leads` (R/W)
+- **Intent:** pre-consent lead triage for operators. **`action`:** `list` · `ghosts` · `dismiss` · `promote` (→ application).
+- **Absorbs:** `list_visitor_leads` · `get_ghost_visitors` · `dismiss_visitor_lead` · `promote_lead_to_application`. (Public `capture_visitor_lead` stays raw.)
+- **Gate:** `canV4(manage_member)` (ghosts = `manage_platform`). Leads are pre-consent PII — LGPD-minimal.
+
+---
+
 ## Wave plan (usage-validated order)
 
 | Wave | Family | Status |
@@ -238,7 +295,7 @@ byte-for-byte unchanged (same initiative, same 3 expected attendees).
 | **1** | **Boards & cards** | **shipped 2026-07-15** |
 | **2** | **Members / engagements / initiatives** | **shipped 2026-07-16** |
 | **3** | **Events / attendance / meetings** | **shipped 2026-07-16** |
-| 4 | Selection & evaluation | planned |
+| **4** | **Selection & evaluation** | **shipped 2026-07-17** |
 | 5 | Governance / docs / certificates | planned |
 | 6 | Comms / drive / partners / knowledge / gamification / ops | planned |
 
