@@ -13,7 +13,7 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Member fields         | `operational_role`, `designations` (`role`/`roles` dropped in Wave 8) |
 | History               | `member_cycle_history` |
 | Edge functions        | supabase/functions/ (~37 deployed, 4 with --no-verify-jwt) |
-| DB schema / types     | `src/lib/database.gen.ts` (run `npm run db:types` to refresh) |
+| DB schema / types     | `src/lib/database.gen.ts` (run `npm run db:types` to refresh — supabase CLI **pinned 2.109.0**; CI guard `gen-types-drift.yml` (#1410) fails on drift, so bump the pin there in the same PR when you upgrade the CLI) |
 | Data import scripts   | `scripts/` (trello, calendar, volunteer CSV, miro importers) |
 | Pre-push              | `npm test` + `npm run build` |
 | Pre-commit QA rules   | CLAUDE.md (GC-097) |
