@@ -2,22 +2,28 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes two surfaces: `/mcp` (the full implementation-tool catalog for verified clients) and `/mcp/semantic` (a smaller, bridge-first semantic gateway for strict MCP clients). Both surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes **three surfaces**: `/mcp` (the full internal capability registry), `/mcp/semantic` (an intent-level semantic gateway with a stable envelope), and `/mcp/actions` (an overflow surface for connectors with a per-connector tool cap). All surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ## Endpoints
 
+Live counts are at `/health`; the `tools/list` response is the source of truth. Never pin a number, query it.
+
 | Endpoint | Tools | Purpose | Recommended clients |
 |----------|-------|---------|---------------------|
-| `https://nucleoia.vitormr.dev/mcp` | Full catalog | Full internal capability registry. Stable for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
-| `https://nucleoia.vitormr.dev/mcp/semantic` | 4 | **Bridge-first semantic gateway (p222 #280 alpha).** Compact, review-ready public contract over the internal registry. Stable envelope `{ok,data,summary,warnings,next_actions,audit}`. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
+| `https://nucleoia.vitormr.dev/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
+| `https://nucleoia.vitormr.dev/mcp/semantic` | 52 | **Intent-level semantic gateway (SPEC-280 / #1383, `nucleo-ia-semantic` v0.9.0).** One tool per user intent (~7:1 consolidation over the raw registry) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; write tools carry authority + confidential-visibility (#785) gates as a contract. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
+| `https://nucleoia.vitormr.dev/mcp/actions` | 88 | **Overflow surface (#1377).** The Claude connector ingests at most 256 tools per connector, alphabetically, dropping the write/action tail. `/actions` re-exposes that dropped tail as a second connector, reusing the same tool definitions. | Claude.ai / Claude Code, consumed alongside `/mcp` as a second connector |
 
-Both endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients should still default to `/mcp`.
+All endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients default to `/mcp`; add `/actions` as a second connector if you need the write tail; use `/semantic` for strict clients or a bounded, review-ready contract.
 
-Semantic tools (read-only):
-- `get_my_context` — compact self-scope context (profile, current cycle, gamification, upcoming events, certificates). *(wave-1)*
-- `search_nucleo_knowledge` — bounded multi-source search across hub resources + wiki + knowledge_assets. *(wave-1)*
-- `get_board_or_initiative_context` — initiative/board/tribe one-shot summary. *(wave-1)*
-- `get_operational_status` — composite operational summary (admin/GP only, `manage_platform`-gated, PII-clean). *(wave-2, v0.2.0)*
+The 52 semantic tools cover seven intent domains (full catalog: [`docs/reference/SEMANTIC_TOOL_CATALOG.md`](reference/SEMANTIC_TOOL_CATALOG.md)):
+- **Boards & cards** — `board_overview`, `card_search`, `card_get`, `card_write`, `card_checklist`, `card_comment`, `portfolio_report`, `platform_context`.
+- **Members, engagements & initiatives** — `member_search`, `member_get`, `member_emails`, `member_lifecycle`, `engagement_write`, `initiative_roster`, `initiative_directory`, `initiative_report`, `my_status`.
+- **Events, attendance & meetings** — `event_search`, `event_write`, `attendance_record`, `attendance_report`, `meeting_minutes`, `meeting_actions`.
+- **Selection & evaluation** — `selection_dashboard`, `application_get`, `evaluation_submit`, `interview_manage`, `selection_decide`, `visitor_leads`.
+- **Governance, documents & certificates** — `document_get`, `document_version_write`, `document_comment`, `change_request`, `signature_flow`, `certificate_manage`, `ip_exclusion`.
+- **Comms, Drive & partners** — `comms_report`, `comms_post`, `webinar_manage`, `idea_pipeline`, `drive_links`, `drive_access_admin`, `partner_crm`.
+- **Knowledge, gamification & admin** — `search_nucleo_knowledge`, `gamification_report`, `champion_award`, `admin_dashboard`, `audit_log`, `lgpd_admin`, plus the bridge tools `get_my_context`, `get_board_or_initiative_context`, `get_operational_status`.
 
 ## Compatibility
 
@@ -90,7 +96,7 @@ Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth 
 
 ## Representative Tools
 
-The live source of truth is the MCP `tools/list` response (or the `/health` endpoint for a per-surface count). The examples below cover the most common member and operator workflows; the full runtime inventory currently exposes 300+ tools — never pin the exact number, query it live.
+The live source of truth is the MCP `tools/list` response (or the `/health` endpoint for a per-surface count). The examples below cover the most common member and operator workflows on the raw `/mcp` registry (342 tools); prefer the 52 intent-level `/semantic` tools where your client supports them. Never pin the exact number, query it live.
 
 For the **complete machine-generated contract matrix** (tool → domain → RPC dependencies → tables → canV4 gate → external fetches → service_role usage), see:
 
@@ -179,7 +185,9 @@ Your AI Client → Workers Proxy → Supabase Edge Function (nucleo-mcp)
 ```
 
 The Workers proxy at `nucleoia.vitormr.dev` routes:
-- `/mcp` → Supabase Edge Function `nucleo-mcp`
+- `/mcp` → Supabase Edge Function `nucleo-mcp` (`/nucleo-mcp/mcp`)
+- `/mcp/semantic` → `nucleo-mcp` `/nucleo-mcp/semantic` (semantic gateway)
+- `/mcp/actions` → `nucleo-mcp` `/nucleo-mcp/actions` (overflow surface)
 - `/.well-known/oauth-authorization-server` → OAuth discovery JSON
 
 This ensures OAuth discovery is at the domain root (required by some clients like ChatGPT).

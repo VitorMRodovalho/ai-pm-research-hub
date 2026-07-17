@@ -57,7 +57,7 @@
 
 **Astro 6** opera em modo SSR via Cloudflare Workers adapter (`@astrojs/cloudflare` v13). Env access via `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`). Páginas são `.astro` files que podem conter React islands para interatividade.
 
-**MCP Server:** OAuth 2.1-authenticated MCP endpoint at `nucleoia.vitormr.dev/mcp` with 15 tools (10 read + 5 write). See `docs/MCP_SETUP_GUIDE.md`.
+**MCP Server:** OAuth 2.1-authenticated MCP server at `nucleoia.vitormr.dev/mcp` with 3 surfaces — `/mcp` (342 raw registry) · `/semantic` (52 intent-level, SPEC-280 / #1383) · `/actions` (88 overflow for the 256/connector cap, #1377). See `docs/MCP_SETUP_GUIDE.md`. _(This file's per-subsystem counts below are mid-refresh under #1183.)_
 
 **CSP Middleware:** Content Security Policy headers applied via Astro middleware (`src/middleware.ts`), not via `_headers` file.
 
@@ -124,13 +124,13 @@ Jobs cron usam funções `_cron` separadas (sem `auth.uid()` check) com `REVOKE`
 
 ### 4. Edge Functions
 
-17 Edge Functions (Deno runtime no Supabase):
+46 Edge Functions (Deno runtime no Supabase; amostra representativa abaixo, refresh completo em #1183):
 
 | Categoria | Functions | Notas |
 |-----------|-----------|-------|
 | Credly sync | sync-credly-all, verify-credly, sync-attendance-points | 3 com `--no-verify-jwt` |
 | Email/Campaign | send-campaign, send-global-onboarding, send-allocation-notify | Via Resend API |
-| MCP | nucleo-mcp | OAuth 2.1, 15 tools |
+| MCP | nucleo-mcp | OAuth 2.1, 3 surfaces (342 / 52 / 88) |
 | Utility | detect-detractors, attendance-reminders, etc. | 1 com `--no-verify-jwt` |
 | Legacy | 2 não-deployed | Mantidas por referência |
 

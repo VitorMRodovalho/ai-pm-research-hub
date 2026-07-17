@@ -29,7 +29,7 @@ valid as the **Team/Enterprise playbook** if the org ever upgrades.
 |---|---|
 | **Current path (individual plan)** | Distribute the **member self-add** instruction (§3b): each member adds `https://nucleoia.vitormr.dev/mcp` in *Customize → Connectors*. RLS scopes each user. |
 | **Team/Enterprise playbook** (if upgraded) | PM adds the server in **Organization settings → Connectors** (§1/§3); members enable individually. |
-| **What's done (platform side)** | OAuth 2.1 DCR + PKCE, server-side auto-refresh (KV, 30-day TTL), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. **Personal connector verified working live (308 tools).** |
+| **What's done (platform side)** | OAuth 2.1 DCR + PKCE, native Supabase OAuth server with per-client refresh chains (#1210 — the earlier KV/server-side auto-refresh model was retired), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. **Personal connector verified working live.** |
 | **Risk** | Low. No code change. The connector already works as a per-user custom connector today. |
 
 ---
@@ -95,13 +95,20 @@ GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
   scopes_supported      : [ "mcp:tools", "offline_access" ]
 ```
 
-**Server-side auto-refresh is real** (verified in code, this session):
+> **⚠️ SUPERSEDED by #1210 (native Supabase OAuth server).** The server-side / proxy auto-refresh model
+> described below was **retired**: the AI client now refreshes directly against GoTrue's
+> `/auth/v1/oauth/token` on its own client-scoped chain, and the Worker proxies MUST NOT refresh (a second
+> refresher was the #1053 re-login bug). `src/pages/oauth/token.ts` is now a retired stub and the KV
+> refresh entries are dead (left to expire by TTL). See `.claude/rules/mcp.md` (§ OAuth Flow / Token refresh).
+> The historical description is kept below for context only.
 
-- `src/pages/mcp.ts` and `src/pages/mcp/semantic.ts` decode the JWT `exp`, and within a 5-minute window look up
-  `mcp_refresh:{sub}` from KV and renew against Supabase Auth — transparent to the MCP host.
-- `src/pages/oauth/token.ts` stores the `refresh_token` in KV with a **30-day TTL** on both the
+**Server-side auto-refresh (HISTORICAL, retired by #1210):**
+
+- `src/pages/mcp.ts` and `src/pages/mcp/semantic.ts` decoded the JWT `exp`, and within a 5-minute window looked up
+  `mcp_refresh:{sub}` from KV and renewed against Supabase Auth — transparent to the MCP host.
+- `src/pages/oauth/token.ts` stored the `refresh_token` in KV with a **30-day TTL** on both the
   `authorization_code` and `refresh_token` grants.
-- Net effect on the **happy path**: a Claude.ai connector stays alive well beyond 7 days without manual relogin.
+- Net effect on the **happy path** (pre-#1210): a Claude.ai connector stayed alive well beyond 7 days without manual relogin.
 
 > **Known robustness gap (low severity, tracked separately):** the proxy's KV re-store at `mcp.ts:62` /
 > `semantic.ts:60` is gated on `if (data.refresh_token)` and lacks the `|| oldRefreshToken` fallback that

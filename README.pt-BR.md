@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-320%2B%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
+[![MCP](https://img.shields.io/badge/MCP-3%20Surfaces-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -43,10 +43,10 @@ Fundado em 2024 como piloto no PMI Goias, o projeto evoluiu para uma alianca est
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de governanca | 160+ |
 | Posts no blog | 9 |
-| Ferramentas MCP | 320+ |
-| Edge Functions | 38 |
-| Chaves i18n | 6.200+ (3 idiomas) |
-| Testes | 1.418 passando (1.456 com service-role) |
+| Superfícies MCP | `/mcp` 342 · `/semantic` 52 · `/actions` 88 |
+| Edge Functions | 46 |
+| Chaves i18n | 6.700+ (3 idiomas) |
+| Testes | 5.306 passando (5.839 total; suite DB-aware com service-role) |
 | Custo mensal | $0 |
 
 ---
@@ -80,9 +80,9 @@ graph LR
 
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
-        E --> I[PostgreSQL<br/>795 RPC · RLS]
-        F --> J[Edge Functions<br/>38 deployed]
-        I --> K[pg_cron<br/>34 jobs]
+        E --> I[PostgreSQL<br/>1.066 SECDEF · RLS]
+        F --> J[Edge Functions<br/>46 deployed]
+        I --> K[pg_cron<br/>63 jobs]
     end
 
     subgraph "Observability"
@@ -106,13 +106,13 @@ graph LR
 |--------|-----------|---------|
 | **Frontend** | Astro 6 + React 19 + Tailwind 4 | SSR com island architecture, trilingue |
 | **Hospedagem** | Cloudflare Workers | SSR na edge, proxy OAuth, proxy MCP |
-| **Banco de Dados** | Supabase PostgreSQL | 795 RPCs e helpers SECURITY DEFINER, RLS |
+| **Banco de Dados** | Supabase PostgreSQL | 1.066 funções SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor customizado (320+ ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
-| **Logica Server** | Supabase Edge Functions (38) | Sync Credly, presenca, MCP, campanhas, PostHog proxy, AI/video |
+| **MCP** | Servidor customizado, 3 superfícies | `/mcp` (342 registro) · `/semantic` (52 intencionais, SPEC-280) · `/actions` (88 overflow do cap de 256/conector) |
+| **Logica Server** | Supabase Edge Functions (46) | Sync Credly, presenca, MCP, campanhas, PostHog proxy, AI/video |
 | **Analytics** | PostHog | Analytics de produto, session replay |
 | **Erros** | Sentry | Monitoramento de erros em tempo real |
-| **Cron** | pg_cron (34 jobs) | Sync Credly, presenca, alertas detratores, lembretes, LGPD, AI/video e digests |
+| **Cron** | pg_cron (63 jobs) | Sync Credly, presenca, alertas detratores, lembretes, LGPD, AI/video e digests |
 | **DnD** | @dnd-kit | BoardEngine Kanban |
 | **Rich Text** | TipTap | Atas de reuniao, editor de blog |
 
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracao com IA
 
-Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. 320+ ferramentas autenticadas via OAuth 2.1 com Row Level Security. Auto-refresh server-side mantem sessoes ativas por ate 30 dias sem reconexao manual. Camada de conhecimento dinamica adapta orientacoes ao papel e permissoes de cada membro.
+Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. As tools sao autenticadas via OAuth 2.1 (servidor OAuth nativo do Supabase, #1210 - o cliente de IA renova direto no Supabase Auth, independente da sessao do navegador) com Row Level Security. O servidor expoe tres superficies: `/mcp` (342 registro completo), `/semantic` (52 de intencao, SPEC-280) e `/actions` (88 overflow do cap de 256/conector). Contagens ao vivo em `/health`; `tools/list` e a fonte de verdade.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -229,7 +229,7 @@ npm test
 ├── supabase/
 │   ├── functions/      # 38 Edge Functions
 │   └── migrations/     # Migracoes do banco de dados
-├── tests/              # 1.418 testes passando
+├── tests/              # 5.306 testes passando
 ├── docs/               # Governanca, guias, specs
 └── scripts/            # Scripts de auditoria e utilitarios
 ```

@@ -40,10 +40,10 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Charts    | Chart.js v4 (native)           |
 | Hosting   | Cloudflare Workers SSR         |
 | Database  | Supabase (PostgreSQL, auth, RLS) |
-| Backend   | Supabase Edge Functions (~37 deployed) |
+| Backend   | Supabase Edge Functions (46 deployed) |
 | Auth      | Google + LinkedIn (OIDC) + Microsoft (Azure) |
 | Env access | `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`) |
-| MCP       | 300+ tools, OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
+| MCP       | 3 surfaces (`/mcp` 342 · `/semantic` 52 · `/actions` 88), OAuth 2.1, native Streamable HTTP, `nucleoia.vitormr.dev/mcp` |
 | Observability | PostHog (custom events) + Sentry (global handlers) |
 | i18n      | PT-BR, EN, ES (keys in `src/i18n/`) |
 
@@ -92,7 +92,7 @@ Before changing behavior or schema, check these for constraints and current stat
    See CLAUDE.md for mandatory validation rules before any commit (SQL/RPC, i18n, routes, RPC signatures).
 
 10. **Database patterns**
-    ~795 RPCs / SECURITY DEFINER helpers, RLS recursion pattern (queries via RPCs, not `.from()` when possible). 12 tables have `rpc_only_deny_all` policies. ~34 pg_cron jobs active.
+    ~1,066 SECURITY DEFINER functions, RLS recursion pattern (queries via RPCs, not `.from()` when possible). 12 tables have `rpc_only_deny_all` policies. ~63 pg_cron jobs active.
 
 ## Local workflow
 

@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-320%2B%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![MCP](https://img.shields.io/badge/MCP-3%20Surfaces-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -44,12 +44,12 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | Events held | 209 |
 | Governance entries | 141+ (GC-001 → GC-141+) |
 | Blog posts | 9 |
-| MCP tools | 320+ |
-| Edge Functions | 38 |
-| pg_cron jobs | 34 |
-| RPCs (SECURITY DEFINER + helpers) | 795 |
-| i18n keys | 6,200+ (3 locales) |
-| Tests | 1,449 passing (1,501 with service-role env) |
+| MCP surfaces | `/mcp` 342 registry · `/semantic` 52 intent · `/actions` 88 overflow |
+| Edge Functions | 46 |
+| pg_cron jobs | 63 |
+| RPCs (SECURITY DEFINER) | 1,066 (1,228 public functions total) |
+| i18n keys | 6,700+ (3 locales) |
+| Tests | 5,306 passing (5,839 total; DB-aware suite runs with service-role env) |
 | Monthly cost | $0 |
 
 ---
@@ -76,16 +76,16 @@ graph LR
 
     subgraph "Cloudflare Workers"
         B --> E[Pages + API Routes]
-        D --> F["/mcp Proxy"]
+        D --> F["/mcp · /semantic · /actions"]
         E --> G[OAuth 2.1 Server]
         F --> G
     end
 
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
-        E --> I[PostgreSQL<br/>795 RPC · RLS]
-        F --> J[Edge Functions<br/>38 deployed]
-        I --> K[pg_cron<br/>34 jobs]
+        E --> I[PostgreSQL<br/>1,066 SECDEF · RLS]
+        F --> J[Edge Functions<br/>46 deployed]
+        I --> K[pg_cron<br/>63 jobs]
     end
 
     subgraph "Observability"
@@ -109,13 +109,13 @@ graph LR
 |-------|-----------|---------|
 | **Frontend** | Astro 6 + React 19 + Tailwind 4 | SSR with island architecture, trilingual |
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
-| **Database** | Supabase PostgreSQL | 200+ SECURITY DEFINER functions, RLS |
-| **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (320+ tools) | AI assistants query platform via natural language |
-| **Server Logic** | Supabase Edge Functions (38) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy, AI triage |
+| **Database** | Supabase PostgreSQL | 1,066 SECURITY DEFINER functions, RLS |
+| **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, native Supabase OAuth server (#1210) |
+| **MCP** | Custom server, 3 surfaces | `/mcp` (342 registry) · `/semantic` (52 intent-level, SPEC-280) · `/actions` (88 overflow for the 256/connector cap) |
+| **Server Logic** | Supabase Edge Functions (46) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy, AI triage |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
-| **Cron** | pg_cron (34 jobs) | Credly sync, attendance batch, detractor alerts, weekly digests (member · leader · tribe), MCP anomaly detection, LGPD anonymize, log retention, R2 backup, AI retry queues, Artia sync, drive-discover-atas, V4 engagement expiry/anonymize |
+| **Cron** | pg_cron (63 jobs) | Credly sync, attendance batch, detractor alerts, weekly digests (member · leader · tribe), MCP anomaly detection, LGPD anonymize, log retention, R2 backup, AI retry queues, Artia sync, drive-discover-atas, V4 engagement expiry/anonymize |
 | **DnD** | @dnd-kit | BoardEngine Kanban |
 | **Rich Text** | TipTap | Meeting minutes, blog editor |
 
@@ -123,7 +123,15 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 320+ tools authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. All tools are authenticated via OAuth 2.1 (Supabase's native OAuth server, #1210 — the AI client refreshes directly against Supabase Auth on a client-scoped chain, independent of the browser session) with full Row Level Security enforcement.
+
+The server exposes **three surfaces** (live counts at `/health`; the `tools/list` response is the source of truth, never pin a number):
+
+| Surface | URL | Tools | Purpose |
+|---------|-----|-------|---------|
+| **`/mcp`** | `nucleoia.vitormr.dev/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. |
+| **`/semantic`** | `nucleoia.vitormr.dev/mcp/semantic` | 52 | Intent-level semantic gateway (SPEC-280 / #1383). One tool per user intent (~7:1 consolidation) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + confidential-visibility gates as a contract. Use when a strict client rejects the full catalog. |
+| **`/actions`** | `nucleoia.vitormr.dev/mcp/actions` | 88 | Overflow surface for the Claude connector's 256-tool-per-connector cap (#1377) — re-exposes the write/action tail the alphabetical cut would drop. Consumed alongside `/mcp` as a second connector. |
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -144,15 +152,10 @@ sequenceDiagram
     W->>S: Login (Google/LinkedIn/MS)
     S-->>W: JWT
     W-->>User: authorization code
-    User->>W: POST /oauth/token (PKCE)
-    W-->>User: access_token + refresh_token
-    Note over W: Stores refresh_token in KV (30d TTL)
+    User->>S: POST /auth/v1/oauth/token (PKCE)
+    S-->>User: access_token + refresh_token
+    Note over User,S: Client refreshes directly against GoTrue (#1210)<br/>client-scoped chain; the Worker never refreshes
     User->>W: POST /mcp + Bearer token
-    W->>W: Check JWT exp (5min buffer)
-    alt Token expired
-        W->>S: Refresh via stored token
-        S-->>W: New JWT
-    end
     W->>EF: Proxy with valid JWT
     EF->>EF: RLS-enforced query
     EF-->>User: Tool result
@@ -236,9 +239,9 @@ npm test
 │   ├── lib/            # Supabase client, auth, utilities
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 38 Edge Functions
+│   ├── functions/      # 46 Edge Functions
 │   └── migrations/     # Database migrations
-├── tests/              # 1,383 passing tests
+├── tests/              # 5,306 passing tests
 ├── docs/               # Governance, guides, specs
 └── scripts/            # Audit and utility scripts
 ```
