@@ -81,6 +81,14 @@ const SEMANTIC_ONLY = new Set([
   'signature_flow',
   'certificate_manage',
   'ip_exclusion',
+  // Wave 6a (#1383) — /semantic only (comms/drive/partners)
+  'comms_report',
+  'comms_post',
+  'webinar_manage',
+  'idea_pipeline',
+  'drive_links',
+  'drive_access_admin',
+  'partner_crm',
 ]);
 
 /** All single-line `mcp.tool("name", ...)` names = the /mcp surface (registerKnowledge + registerTools). */

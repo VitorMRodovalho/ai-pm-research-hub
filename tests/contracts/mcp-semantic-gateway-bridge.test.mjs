@@ -91,10 +91,10 @@ function semanticBlock() {
   return block;
 }
 
-test('semantic block registers exactly 40 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 #1383)', () => {
+test('semantic block registers exactly 47 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a #1383)', () => {
   const block = semanticBlock();
   const matches = block.match(/mcp\.tool\(\s*"[^"]+"/g) || [];
-  assert.equal(matches.length, 40, `expected 40 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
+  assert.equal(matches.length, 47, `expected 47 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
 });
 
 test('semantic block names the bridge + Wave-1 tools exactly', () => {
@@ -164,9 +164,9 @@ test('ef declares app.all("/semantic") route', () => {
   assert.match(EF, /app\.all\(\s*"\/semantic"\s*,\s*async/, 'expected app.all("/semantic", ...) route');
 });
 
-test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.7.0 (#1383 Wave 5)', () => {
+test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.8.0 (#1383 Wave 6a)', () => {
   const block = routeBlock('/semantic');
-  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.7\.0"\s*\}\s*\)/);
+  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.8\.0"\s*\}\s*\)/);
 });
 
 test('/semantic handler registers ONLY registerSemanticTools (not registerTools/registerKnowledge)', () => {
@@ -191,7 +191,7 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   assert.match(m[0], /"\/semantic":/, '/health should report /semantic surface');
   assert.match(m[0], /"nucleo-ia-hub"/, '/health should report /mcp server name');
   assert.match(m[0], /"nucleo-ia-semantic"/, '/health should report /semantic server name');
-  assert.match(m[0], /tools:\s*40/, '/health should report 40 tools on /semantic (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 #1383)');
+  assert.match(m[0], /tools:\s*47/, '/health should report 47 tools on /semantic (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a #1383)');
   // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close);
   // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3); then 304 → 303 via #191
   // (removed the broken advance_card_curation tool); then 303 → 306 via #188 (+3 curator-native tools);
@@ -284,7 +284,7 @@ test('semantic block declares pii_level audit field (none|low|self|high) on each
   // (pii_level reflects the actual view_pii disclosure) so they contribute 0 literal matches.
   // One per tool minimum, capped generously to still catch runaway leakage.
   assert.ok(matches.length >= 19, `expected >=19 literal pii_level declarations; got ${matches.length}`);
-  assert.ok(matches.length <= 64, `expected <=64 pii_level declarations (multi-branch cap; W5 adds 12 governance 'low'/'self' across document_get's 3 body/final paths + the confirm-preview tools); got ${matches.length}`);
+  assert.ok(matches.length <= 72, `expected <=72 pii_level declarations (multi-branch cap; W6a adds 5 literal 'none'/'low' across comms_post/webinar_manage/idea_pipeline/drive_links/drive_access_admin — comms_report/partner_crm use a dynamic 'medium' ternary = 0 literal matches); got ${matches.length}`);
   // Each of the three values must appear at least once across the 3 tools.
   for (const expected of ['"none"', '"low"', '"self"']) {
     assert.ok(block.includes(`pii_level: ${expected}`), `expected at least one pii_level: ${expected} in semantic block`);

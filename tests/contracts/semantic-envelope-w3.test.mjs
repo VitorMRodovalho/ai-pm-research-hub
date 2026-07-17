@@ -210,8 +210,8 @@ test('W3[event_search]: read-only — absorbs the 4 event readers, no write RPC'
   assert.ok(!/eventWriteGate\(/.test(b), 'event_search is read-only — it must not carry a write gate');
 });
 
-test('W3: /semantic health surface advertises 40 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5)', () => {
+test('W3: /semantic health surface advertises 47 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)', () => {
   const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
   assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 40, '/semantic health tools count must be 40 after Wave 5');
+  assert.equal(Number(health[1]), 47, '/semantic health tools count must be 47 after Wave 6a');
 });

@@ -12,8 +12,8 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.7.0) — public semantic gateway (SPEC-280 / EPIC #1383).
-  **40 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
+- `/semantic` (server: `nucleo-ia-semantic`, v0.8.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+  **47 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
   members/engagements/initiatives** (`member_search`, `member_get`, `member_emails`, `member_lifecycle`,
@@ -22,7 +22,9 @@ Three surfaces:
   `attendance_report`, `meeting_minutes`, `meeting_actions`) + 6 **Wave 4 selection/evaluation**
   (`selection_dashboard`, `application_get`, `evaluation_submit`, `interview_manage`, `selection_decide`,
   `visitor_leads`) + 7 **Wave 5 governance/docs/certificates** (`document_get`, `document_version_write`,
-  `document_comment`, `change_request`, `signature_flow`, `certificate_manage`, `ip_exclusion`).
+  `document_comment`, `change_request`, `signature_flow`, `certificate_manage`, `ip_exclusion`) + 7 **Wave 6a
+  comms/drive/partners** (`comms_report`, `comms_post`, `webinar_manage`, `idea_pipeline`, `drive_links`,
+  `drive_access_admin`, `partner_crm`).
   Stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + the #785
   (ADR-0105) fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`); the PII
   surface (member_search/member_get/member_emails) masks email/auth_id unless `view_pii` (`canSeePII()`).
@@ -45,8 +47,19 @@ Three surfaces:
   priority (`critical`→`high`, was a hard CHECK fail) and REVOKEd dead anon/PUBLIC EXECUTE on 14 governance/cert
   write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (Lorena-only, never auto),
   `review_change_request`/`approve_change_request` (open CR-authority finding — V3 fallback reaches `implement`).
+  **Wave 6a comms/drive/partners tools pass through RPC-internal authority** (comms reads = `manage_comms`/
+  `manage_member`/`write_board`; partner reads = `view_partner`, writes = `manage_partner`; webinar review/convert
+  = `manage_event`; drive-admin = `manage_platform`/`manage_member`). Migration `20260805000460` added the #785
+  gate (`rls_can_see_item`) to `search_partner_cards` + granted it to authenticated (was unreachable), and REVOKEd
+  the anon/PUBLIC EXECUTE drift on 9 webinar/idea write RPCs. Enum fix: `partner_crm` (and the raw
+  `log_partner_interaction` schema) use the live `interaction_type` CHECK (`email|whatsapp|linkedin|call|meeting|
+  note|status_change`; the raw `document`/`other` always failed). The SA Drive writers
+  `upload_text_to_drive_folder`/`create_drive_subfolder` gained an ownership gate (`write_board`/`manage_event`/
+  `manage_member`). **Kept RAW on purpose:** those two SA writers + `provision_initiative_drive`/
+  `reconcile_initiative_drive_access` (SA orchestrations, #1376) + `create_notification` (shared helper;
+  authenticated-user spoofing surface tracked as a follow-up, not patched mid-wave).
   Raw tools stay registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`.
-  Contract guards: `tests/contracts/semantic-envelope-w{1,2,3,4,5}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
+  Contract guards: `tests/contracts/semantic-envelope-w{1,2,3,4,5,6a}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
   differently per surface — `/semantic` tools live in `registerSemanticTools()` and must be excluded from
   the `/mcp` 256-cap computation (see the SEMANTIC_ONLY set in the #1377 test).
 - `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's

@@ -4987,6 +4987,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "upload_text_to_drive_folder", false, "Not authenticated", start); return err("Not authenticated"); }
+    // #1383 W6a: ownership gate — text upload via Service Account writes to any named folder, so
+    // require an operational write authority (was rls_is_member only = any authenticated member).
+    if (!(await canV4(sb, member.id, "write_board")) && !(await canV4(sb, member.id, "manage_event")) && !(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "upload_text_to_drive_folder", false, "Unauthorized", start); return err("Unauthorized: requires write_board, manage_event, or manage_member (Drive write via service account)."); }
     if (params.register_to_card_id && !isUUID(params.register_to_card_id)) {
       await logUsage(sb, member.id, "upload_text_to_drive_folder", false, "Invalid UUID", start);
       return err("register_to_card_id must be a UUID");
@@ -5034,6 +5037,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_drive_subfolder", false, "Not authenticated", start); return err("Not authenticated"); }
+    // #1383 W6a: ownership gate — subfolder creation via Service Account under any named parent, so
+    // require an operational write authority (was rls_is_member only = any authenticated member).
+    if (!(await canV4(sb, member.id, "write_board")) && !(await canV4(sb, member.id, "manage_event")) && !(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "create_drive_subfolder", false, "Unauthorized", start); return err("Unauthorized: requires write_board, manage_event, or manage_member (Drive write via service account)."); }
     if (params.auto_link_to_initiative_id && !isUUID(params.auto_link_to_initiative_id)) {
       await logUsage(sb, member.id, "create_drive_subfolder", false, "Invalid UUID", start);
       return err("auto_link_to_initiative_id must be a UUID");
@@ -6835,7 +6841,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // log_partner_interaction — record a meeting/call/email with a partner entity
   mcp.tool("log_partner_interaction", "Log an interaction (meeting/call/email/doc) with a partner entity. Optional outcome + next_action + follow_up_date for pipeline tracking.", {
     partner_id: z.string().describe("UUID of partner_entities row"),
-    interaction_type: z.string().describe("'meeting' | 'call' | 'email' | 'document' | 'whatsapp' | 'other'"),
+    interaction_type: z.enum(["email", "whatsapp", "linkedin", "call", "meeting", "note", "status_change"]).describe("Interaction type (live CHECK): email | whatsapp | linkedin | call | meeting | note | status_change"),
     summary: z.string().describe("Short summary of the interaction"),
     details: z.string().optional().describe("Long-form notes"),
     outcome: z.string().optional().describe("Outcome or decision"),
@@ -11077,6 +11083,472 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WAVE 6a (#1383) — comms · drive · partners long-tail (7 tools). Raw tools stay
+  // registered (additive/deprecation). Authority audited live (pg_get_functiondef);
+  // migration 20260805000460 fixed the search_partner_cards #785 gap + the #965
+  // anon-write drift on the webinar/idea write RPCs. upload_text_to_drive_folder +
+  // create_drive_subfolder + provision/reconcile stay raw (service-role EF
+  // orchestrations); the raw upload/subfolder tools gained an ownership gate here.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── W6a · comms_report (R) — comms dashboards / metrics / pipeline / member-card ──
+  mcp.tool(
+    "comms_report",
+    "Communications reporting surface (absorbs get_comms_dashboard/metrics_by_channel/pipeline/pending_webinars/member_comms_card/campaign_analytics/notifications_analytics). Set `scope`: 'dashboard', 'metrics_by_channel', 'pipeline', 'pending_webinars', 'member_card' (query|person_id), 'campaign' (send_id), 'notifications' (window_days). Requires comms authority (manage_comms OR manage_member OR write_board). Confidential-initiative rows are excluded by the underlying RPC gates (mig 447 / comms_pipeline). Stable envelope.",
+    {
+      scope: z.enum(["dashboard","metrics_by_channel","pipeline","pending_webinars","member_card","campaign","notifications"]).describe("Which comms surface."),
+      query: z.string().optional().describe("scope='member_card' — free-text member search."),
+      person_id: z.string().optional().describe("scope='member_card' — persons.id (UUID)."),
+      send_id: z.string().optional().describe("scope='campaign' — campaign send UUID."),
+      window_days: z.number().optional().describe("scope='notifications' — lookback window (default 30)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "comms";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "comms_report", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "comms_report", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "comms_report", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const canRead = (await canV4(sb, member.id, "manage_comms")) || (await canV4(sb, member.id, "manage_member")) || (await canV4(sb, member.id, "write_board"));
+      if (!canRead) { await logUsage(sb, member.id, "comms_report", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "comms_report", semantic_domain: dom, code: "unauthorized", message: "Requires comms authority.", action: "Ask a comms lead / GP (manage_comms, manage_member, or write_board)." })); }
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.scope) {
+        case "dashboard": ({ data, error } = await sb.rpc("get_comms_dashboard_metrics")); source = "get_comms_dashboard_metrics"; break;
+        case "metrics_by_channel": ({ data, error } = await sb.rpc("comms_metrics_latest_by_channel")); source = "comms_metrics_latest_by_channel"; break;
+        case "pipeline": ({ data, error } = await sb.rpc("get_comms_pipeline")); source = "get_comms_pipeline"; break;
+        case "pending_webinars": ({ data, error } = await sb.rpc("webinars_pending_comms")); source = "webinars_pending_comms"; break;
+        case "member_card":
+          if (!params.query && !isUUID(params.person_id)) return invalid("scope='member_card' requires query or person_id.");
+          ({ data, error } = await sb.rpc("get_member_comms_card", { p_query: params.query ?? null, p_person_id: isUUID(params.person_id) ? params.person_id : null })); source = "get_member_comms_card"; break;
+        case "campaign":
+          if (!isUUID(params.send_id)) return invalid("scope='campaign' requires send_id (UUID).");
+          ({ data, error } = await sb.rpc("get_campaign_analytics", { p_send_id: params.send_id })); source = "get_campaign_analytics"; break;
+        case "notifications": ({ data, error } = await sb.rpc("get_notifications_analytics", { p_window_days: params.window_days ?? 30 })); source = "get_notifications_analytics"; break;
+        default: return invalid(`Unknown scope '${params.scope}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "comms_report", false, error.message, start); return ok(buildSemanticError({ tool: "comms_report", semantic_domain: dom, code: selErr("comms_report", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "comms_report", false, em, start); return ok(buildSemanticError({ tool: "comms_report", semantic_domain: dom, code: selErr("comms_report", em), message: em })); }
+      await logUsage(sb, member.id, "comms_report", true, undefined, start);
+      return semanticOk({
+        data: { scope: params.scope, result: data },
+        summary: `comms_report scope='${params.scope}' ok.`,
+        next_actions: ["comms_post action='schedule': agendar post", "webinar_manage action='list': propostas de webinar"],
+        audit: { tool: "comms_report", semantic_domain: dom, pii_level: params.scope === "member_card" ? "medium" : "low", permission: "comms_read (manage_comms|manage_member|write_board)", source_tools: [source], caller_member_id: member.id, gate_checked: "comms authority + RPC-internal confidential filter (mig 447 / comms_pipeline)", resource_id: params.send_id ?? params.person_id ?? null, extra: { scope: params.scope } },
+      });
+    },
+  );
+
+  // ── W6a · comms_post (W) — scheduled social posts + tribe notifications ──
+  mcp.tool(
+    "comms_post",
+    "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. Stable envelope.",
+    {
+      action: z.enum(["schedule","cancel","list","notify_tribe"]).describe("Which comms write."),
+      channel: z.enum(["instagram","linkedin"]).optional().describe("schedule/list — channel."),
+      media_type: z.enum(["IMAGE","CAROUSEL","REELS","STORIES","TEXT","VIDEO","ARTICLE","DOCUMENT"]).optional().describe("schedule — media type (must fit the channel)."),
+      payload: z.record(z.string(), z.any()).optional().describe("schedule — channel publisher body (caption/text, image_url/video_url/children/...)."),
+      scheduled_at: z.string().optional().describe("schedule — ISO 8601 timestamp with timezone."),
+      label: z.string().optional().describe("schedule — human label."),
+      idea_id: z.string().optional().describe("schedule — source publication_idea UUID (stage approved/published)."),
+      id: z.string().optional().describe("cancel — scheduled post UUID."),
+      status: z.enum(["pending","publishing","published","failed","canceled"]).optional().describe("list — status filter."),
+      limit: z.number().optional().describe("list — max rows (default 50, cap 200)."),
+      include_payload: z.boolean().optional().describe("list — include full payload (default false)."),
+      title: z.string().optional().describe("notify_tribe — notification title."),
+      body: z.string().optional().describe("notify_tribe — notification body."),
+      link: z.string().optional().describe("notify_tribe — optional URL."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "comms";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "comms_post", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "comms_post", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "comms_post", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (a: string) => ok(buildSemanticError({ tool: "comms_post", semantic_domain: dom, code: "unauthorized", message: `action='${params.action}' requires ${a}.`, action: "Ask a comms lead / GP." }));
+      let data: any = null; let error: any = null; let source = ""; const warnings: string[] = [];
+      switch (params.action) {
+        case "schedule":
+          if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("manage_comms"); }
+          if (!params.channel || !params.media_type || !params.payload || !params.scheduled_at) return invalid("action='schedule' requires channel, media_type, payload, scheduled_at.");
+          if (params.idea_id && !isUUID(params.idea_id)) return invalid("idea_id must be a UUID.");
+          ({ data, error } = await sb.rpc("schedule_comms_post", { p_channel: params.channel, p_media_type: params.media_type, p_payload: params.payload, p_scheduled_at: params.scheduled_at, p_label: params.label ?? null, p_idea_id: params.idea_id ?? null })); source = "schedule_comms_post";
+          warnings.push("IG collab/user-tags/story link-stickers + LinkedIn mentions are manual-only (#1374).");
+          break;
+        case "cancel":
+          if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("manage_comms"); }
+          if (!isUUID(params.id)) return invalid("action='cancel' requires id (UUID).");
+          ({ data, error } = await sb.rpc("cancel_scheduled_comms_post", { p_id: params.id })); source = "cancel_scheduled_comms_post"; break;
+        case "list":
+          if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("manage_comms"); }
+          ({ data, error } = await sb.rpc("list_scheduled_comms_posts", { p_channel: params.channel ?? null, p_status: params.status ?? null, p_limit: params.limit ?? null, p_include_payload: params.include_payload ?? false })); source = "list_scheduled_comms_posts"; break;
+        case "notify_tribe": {
+          if (!(await canV4(sb, member.id, "write"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("write"); }
+          if (!params.title || !params.body) return invalid("action='notify_tribe' requires title and body.");
+          if (!member.tribe_id && !member.is_superadmin) return invalid("No tribe assigned; notify_tribe targets your active tribe.");
+          const q = sb.from("members").select("id").eq("is_active", true).eq("current_cycle_active", true).neq("id", member.id);
+          if (!member.is_superadmin) q.eq("tribe_id", member.tribe_id);
+          const { data: mem, error: mErr } = await q;
+          if (mErr) { error = mErr; break; }
+          if (!mem?.length) return invalid("No active tribe members to notify.");
+          let sent = 0;
+          for (const rec of mem as any[]) { const { error: e } = await sb.rpc("create_notification", { p_recipient_id: rec.id, p_type: "tribe_broadcast", p_title: params.title, p_body: params.body, p_link: params.link ?? null }); if (!e) sent++; }
+          data = { status: "sent", recipients: sent, total_members: (mem as any[]).length }; source = "create_notification"; break;
+        }
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "comms_post", false, error.message, start); return ok(buildSemanticError({ tool: "comms_post", semantic_domain: dom, code: selErr("comms_post", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "comms_post", false, em, start); return ok(buildSemanticError({ tool: "comms_post", semantic_domain: dom, code: selErr("comms_post", em), message: em })); }
+      await logUsage(sb, member.id, "comms_post", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `comms_post action='${params.action}' ok.`,
+        warnings,
+        next_actions: ["comms_post action='list': ver a fila de posts", "comms_report scope='pipeline': pipeline de comms"],
+        audit: { tool: "comms_post", semantic_domain: dom, pii_level: "none", permission: params.action === "notify_tribe" ? "write (tribe broadcast)" : "manage_comms", source_tools: [source], caller_member_id: member.id, gate_checked: params.action === "notify_tribe" ? "canV4(write) + tribe scope" : "canV4(manage_comms)", resource_id: params.id ?? params.idea_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6a · webinar_manage (W) — webinar proposal lifecycle ──
+  mcp.tool(
+    "webinar_manage",
+    "Webinar proposal lifecycle (absorbs create/update/review/convert_webinar_proposal + list_webinar_proposals + list_tribe_webinars + update_webinar_comms_assets). Set `action`: 'create' (title+format), 'update' (proposal_id), 'review' (proposal_id+decision — manage_event), 'convert' (proposal_id+scheduled_at+chapter_code — manage_event), 'list' (status?), 'list_tribe' (status?), 'update_assets' (webinar_id — comms/board/admin). create/update are open to any active member (RPC scopes proposer/committee). format: palestra|painel|dupla|lightning|workshop. Stable envelope.",
+    {
+      action: z.enum(["create","update","review","convert","list","list_tribe","update_assets"]).describe("Which webinar operation."),
+      proposal_id: z.string().optional().describe("update/review/convert — proposal UUID."),
+      proposed_title: z.string().optional().describe("create/update — title."),
+      format_type: z.enum(["palestra","painel","dupla","lightning","workshop"]).optional().describe("create/update — format."),
+      proposed_by_tribe_id: z.number().optional().describe("create/update — proposing tribe id."),
+      series_id: z.string().optional().describe("create/update — publication_series UUID."),
+      themes: z.array(z.string()).optional().describe("create/update — themes/tags."),
+      proposed_speakers: z.array(z.string()).optional().describe("create/update — member UUIDs."),
+      quadrant_anchor: z.number().optional().describe("create/update — anchor quadrant id."),
+      notes: z.string().optional().describe("create/update — notes."),
+      decision: z.enum(["approve","reject","mark_review"]).optional().describe("review — decision."),
+      rejection_reason: z.string().optional().describe("review — required when decision='reject'."),
+      review_notes: z.string().optional().describe("review — reviewer notes."),
+      scheduled_at: z.string().optional().describe("convert — ISO timestamp."),
+      chapter_code: z.string().optional().describe("convert — chapter code (GO/CE/...)."),
+      duration_min: z.number().optional().describe("convert — minutes (default 60)."),
+      initiative_id: z.string().optional().describe("convert — linked initiative UUID."),
+      status: z.string().optional().describe("list/list_tribe — status filter."),
+      webinar_id: z.string().optional().describe("update_assets — webinar UUID."),
+      briefing_doc_url: z.string().optional().describe("update_assets — briefing doc URL."),
+      sympla_event_url: z.string().optional().describe("update_assets — Sympla URL."),
+      promo_kit_url: z.string().optional().describe("update_assets — promo kit URL."),
+      mark_kickoff: z.boolean().optional().describe("update_assets — mark comms kickoff now."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "comms";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "webinar_manage", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "webinar_manage", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "webinar_manage", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const denied = (a: string) => ok(buildSemanticError({ tool: "webinar_manage", semantic_domain: dom, code: "unauthorized", message: `action='${params.action}' requires ${a}.`, action: "Ask a webinar committee member / GP." }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "create":
+          if (!params.proposed_title || !params.format_type) return invalid("action='create' requires proposed_title and format_type.");
+          ({ data, error } = await sb.rpc("create_webinar_proposal", { p_proposed_title: params.proposed_title, p_format_type: params.format_type, p_proposed_by_tribe_id: params.proposed_by_tribe_id ?? null, p_series_id: params.series_id ?? null, p_themes: params.themes ?? null, p_proposed_speakers: params.proposed_speakers ?? null, p_quadrant_anchor: params.quadrant_anchor ?? null, p_notes: params.notes ?? null })); source = "create_webinar_proposal"; break;
+        case "update":
+          if (!isUUID(params.proposal_id)) return invalid("action='update' requires proposal_id (UUID).");
+          ({ data, error } = await sb.rpc("update_webinar_proposal", { p_proposal_id: params.proposal_id, p_proposed_title: params.proposed_title ?? null, p_format_type: params.format_type ?? null, p_proposed_by_tribe_id: params.proposed_by_tribe_id ?? null, p_series_id: params.series_id ?? null, p_themes: params.themes ?? null, p_proposed_speakers: params.proposed_speakers ?? null, p_quadrant_anchor: params.quadrant_anchor ?? null, p_notes: params.notes ?? null })); source = "update_webinar_proposal"; break;
+        case "review":
+          if (!(await canV4(sb, member.id, "manage_event"))) { await logUsage(sb, member.id, "webinar_manage", false, "Unauthorized", start); return denied("manage_event"); }
+          if (!isUUID(params.proposal_id) || !params.decision) return invalid("action='review' requires proposal_id (UUID) and decision.");
+          if (params.decision === "reject" && !params.rejection_reason) return invalid("decision='reject' requires rejection_reason.");
+          ({ data, error } = await sb.rpc("review_webinar_proposal", { p_proposal_id: params.proposal_id, p_decision: params.decision, p_rejection_reason: params.rejection_reason ?? null, p_review_notes: params.review_notes ?? null })); source = "review_webinar_proposal"; break;
+        case "convert":
+          if (!(await canV4(sb, member.id, "manage_event"))) { await logUsage(sb, member.id, "webinar_manage", false, "Unauthorized", start); return denied("manage_event"); }
+          if (!isUUID(params.proposal_id) || !params.scheduled_at || !params.chapter_code) return invalid("action='convert' requires proposal_id (UUID), scheduled_at, chapter_code.");
+          ({ data, error } = await sb.rpc("convert_proposal_to_webinar", { p_proposal_id: params.proposal_id, p_scheduled_at: params.scheduled_at, p_chapter_code: params.chapter_code, p_duration_min: params.duration_min ?? 60, p_initiative_id: params.initiative_id ?? null })); source = "convert_proposal_to_webinar"; break;
+        case "list": ({ data, error } = await sb.rpc("list_webinar_proposals", { p_status_filter: params.status ?? null })); source = "list_webinar_proposals"; break;
+        case "list_tribe": {
+          const rp: any = {}; if (params.status) rp.p_status = params.status; if (member.tribe_id) rp.p_tribe_id = member.tribe_id;
+          ({ data, error } = await sb.rpc("list_webinars_v2", rp)); source = "list_webinars_v2"; break;
+        }
+        case "update_assets":
+          if (!(await canV4(sb, member.id, "write_board")) && !(await canV4(sb, member.id, "manage_event")) && !(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "webinar_manage", false, "Unauthorized", start); return denied("write_board / manage_event / manage_member"); }
+          if (!isUUID(params.webinar_id)) return invalid("action='update_assets' requires webinar_id (UUID).");
+          ({ data, error } = await sb.rpc("update_webinar_comms_assets", { p_webinar_id: params.webinar_id, p_briefing_doc_url: params.briefing_doc_url ?? null, p_sympla_event_url: params.sympla_event_url ?? null, p_promo_kit_url: params.promo_kit_url ?? null, p_mark_kickoff: params.mark_kickoff ?? false })); source = "update_webinar_comms_assets"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "webinar_manage", false, error.message, start); return ok(buildSemanticError({ tool: "webinar_manage", semantic_domain: dom, code: selErr("webinar_manage", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "webinar_manage", false, em, start); return ok(buildSemanticError({ tool: "webinar_manage", semantic_domain: dom, code: selErr("webinar_manage", em), message: em })); }
+      await logUsage(sb, member.id, "webinar_manage", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `webinar_manage action='${params.action}' ok.`,
+        next_actions: ["webinar_manage action='list': propostas", "comms_report scope='pending_webinars': fila de comms"],
+        audit: { tool: "webinar_manage", semantic_domain: dom, pii_level: "low", permission: (params.action === "review" || params.action === "convert") ? "manage_event" : (params.action === "update_assets" ? "write_board|manage_event|manage_member" : "active_member (RPC-scoped)"), source_tools: [source], caller_member_id: member.id, gate_checked: (params.action === "review" || params.action === "convert") ? "canV4(manage_event)" : "RPC-internal (proposer/committee)", resource_id: params.proposal_id ?? params.webinar_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6a · idea_pipeline (R/W) — publication/content idea funnel + research pipeline ──
+  mcp.tool(
+    "idea_pipeline",
+    "Publication/content idea funnel (absorbs get_idea_pipeline/propose_publication_idea/advance_idea_stage/fork_idea_to_channel/link_idea_to_series + get_research_pipeline). Set `action`: 'list' (tribe_id?/stage?/series_id?), 'propose' (title [+source_type & source_id paired]), 'advance' (idea_id+new_stage), 'fork' (idea_id+channel), 'link_series' (idea_id+series_id), 'research'. Any active member may propose; advance to approved/published and research are gated by the RPC/committee. Stable envelope.",
+    {
+      action: z.enum(["list","propose","advance","fork","link_series","research"]).describe("Which idea operation."),
+      idea_id: z.string().optional().describe("advance/fork/link_series — idea UUID."),
+      title: z.string().optional().describe("propose — idea title."),
+      summary: z.string().optional().describe("propose — synopsis."),
+      source_type: z.enum(["meeting_action","hub_resource","wiki_page","external_research","experiment","partnership","webinar","ata_decision","other"]).optional().describe("propose — polymorphic source type (must be paired with source_id)."),
+      source_id: z.string().optional().describe("propose — source UUID (must be paired with source_type)."),
+      tribe_id: z.number().optional().describe("propose/list — tribe id filter."),
+      initiative_id: z.string().optional().describe("propose — linked initiative UUID."),
+      author_ids: z.array(z.string()).optional().describe("propose — author member UUIDs (default: [proposer])."),
+      proposed_channels: z.array(z.string()).optional().describe("propose — target channels."),
+      series_id: z.string().optional().describe("propose/link_series/list — publication_series UUID."),
+      series_position: z.number().optional().describe("propose — position in series."),
+      target_languages: z.array(z.string()).optional().describe("propose — target languages (default ['pt-BR'])."),
+      metadata: z.record(z.string(), z.any()).optional().describe("propose — metadata jsonb."),
+      themes: z.array(z.string()).optional().describe("propose — themes/tags."),
+      new_stage: z.enum(["draft","proposed","researching","writing","review","curation","approved","published","archived"]).optional().describe("advance — target stage."),
+      review_sub_stage: z.enum(["tribe_review","leader_review"]).optional().describe("advance — sub-stage when new_stage='review'."),
+      notes: z.string().optional().describe("advance — reviewer notes."),
+      channel: z.string().optional().describe("fork — target channel (blog/newsletter/linkedin/...)."),
+      payload_hint: z.record(z.string(), z.any()).optional().describe("fork — payload hints."),
+      position: z.number().optional().describe("link_series — position in series."),
+      stage_filter: z.string().optional().describe("list — filter by stage."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "content";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "idea_pipeline", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "idea_pipeline", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "idea_pipeline", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "list": ({ data, error } = await sb.rpc("get_idea_pipeline", { p_tribe_id: params.tribe_id ?? null, p_stage_filter: params.stage_filter ?? null, p_series_id: params.series_id ?? null })); source = "get_idea_pipeline"; break;
+        case "propose":
+          if (!params.title) return invalid("action='propose' requires title.");
+          if ((!!params.source_type) !== (!!params.source_id)) return invalid("source_type and source_id must be both set or both null.");
+          if (params.source_id && !isUUID(params.source_id)) return invalid("source_id must be a UUID.");
+          ({ data, error } = await sb.rpc("propose_publication_idea", { p_title: params.title, p_summary: params.summary ?? null, p_source_type: params.source_type ?? null, p_source_id: params.source_id ?? null, p_tribe_id: params.tribe_id ?? null, p_initiative_id: params.initiative_id ?? null, p_author_ids: params.author_ids ?? null, p_proposed_channels: params.proposed_channels ?? null, p_series_id: params.series_id ?? null, p_series_position: params.series_position ?? null, p_target_languages: params.target_languages ?? null, p_metadata: params.metadata ?? null, p_themes: params.themes ?? null })); source = "propose_publication_idea"; break;
+        case "advance":
+          if (!isUUID(params.idea_id) || !params.new_stage) return invalid("action='advance' requires idea_id (UUID) and new_stage.");
+          ({ data, error } = await sb.rpc("advance_idea_stage", { p_idea_id: params.idea_id, p_new_stage: params.new_stage, p_review_sub_stage: params.review_sub_stage ?? null, p_notes: params.notes ?? null })); source = "advance_idea_stage"; break;
+        case "fork":
+          if (!isUUID(params.idea_id) || !params.channel) return invalid("action='fork' requires idea_id (UUID) and channel.");
+          ({ data, error } = await sb.rpc("fork_idea_to_channel", { p_idea_id: params.idea_id, p_channel: params.channel, p_payload_hint: params.payload_hint ?? null })); source = "fork_idea_to_channel"; break;
+        case "link_series":
+          if (!isUUID(params.idea_id) || !isUUID(params.series_id)) return invalid("action='link_series' requires idea_id and series_id (UUIDs).");
+          ({ data, error } = await sb.rpc("link_idea_to_series", { p_idea_id: params.idea_id, p_series_id: params.series_id, p_position: params.position ?? null })); source = "link_idea_to_series"; break;
+        case "research": ({ data, error } = await sb.rpc("get_global_research_pipeline")); source = "get_global_research_pipeline"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "idea_pipeline", false, error.message, start); return ok(buildSemanticError({ tool: "idea_pipeline", semantic_domain: dom, code: selErr("idea_pipeline", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "idea_pipeline", false, em, start); return ok(buildSemanticError({ tool: "idea_pipeline", semantic_domain: dom, code: selErr("idea_pipeline", em), message: em })); }
+      await logUsage(sb, member.id, "idea_pipeline", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `idea_pipeline action='${params.action}' ok.`,
+        next_actions: ["idea_pipeline action='advance': mover de estágio", "comms_post action='schedule': agendar a partir da idea"],
+        audit: { tool: "idea_pipeline", semantic_domain: dom, pii_level: "low", permission: params.action === "research" ? "manage_member (RPC-gated)" : "active_member (RPC-scoped)", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal (proposer/committee/manage_member)", resource_id: params.idea_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6a · drive_links (R/W) — link/register Drive folders & files ──
+  mcp.tool(
+    "drive_links",
+    "Drive folder/file linking (absorbs link/unlink/get_initiative_drive_links + link/unlink/get_board_drive_links + register_card_drive_file + list_card_drive_files + list_drive_discoveries). Set `action`: 'link_initiative', 'unlink_initiative' (link_id), 'list_initiative' (initiative_id), 'link_board', 'unlink_board' (link_id), 'list_board' (board_id), 'register_file' (board_item_id+drive_file_id+drive_file_url+filename), 'list_files' (board_item_id), 'discoveries' (initiative_id?). Authority is enforced by each RPC (link=manage_member OR write/board_admin; reads carry #785). NOTE: text upload + subfolder creation stay in the raw upload_text_to_drive_folder / create_drive_subfolder tools (service-account operations). Stable envelope.",
+    {
+      action: z.enum(["link_initiative","unlink_initiative","list_initiative","link_board","unlink_board","list_board","register_file","list_files","discoveries"]).describe("Which drive-link operation."),
+      initiative_id: z.string().optional().describe("link_initiative/list_initiative/discoveries — initiative UUID."),
+      board_id: z.string().optional().describe("link_board/list_board — board UUID."),
+      link_id: z.string().optional().describe("unlink_initiative/unlink_board — link UUID."),
+      board_item_id: z.string().optional().describe("register_file/list_files — card UUID."),
+      drive_folder_id: z.string().optional().describe("link_initiative/link_board — Drive folder ID."),
+      drive_folder_url: z.string().optional().describe("link_initiative/link_board — Drive folder URL."),
+      drive_folder_name: z.string().optional().describe("link_initiative/link_board — display name."),
+      link_purpose: z.enum(["workspace","minutes","archive","shared_resources"]).optional().describe("link_initiative — folder purpose (default workspace)."),
+      drive_file_id: z.string().optional().describe("register_file — Drive file ID."),
+      drive_file_url: z.string().optional().describe("register_file — Drive file URL."),
+      filename: z.string().optional().describe("register_file — file name."),
+      mime_type: z.string().optional().describe("register_file — MIME type."),
+      size_bytes: z.number().optional().describe("register_file — size in bytes."),
+      uploaded_via: z.enum(["platform","drive_native_synced"]).optional().describe("register_file — provenance (default platform)."),
+      status_filter: z.string().optional().describe("discoveries — status filter."),
+      limit: z.number().optional().describe("discoveries — max rows."),
+      offset: z.number().optional().describe("discoveries — offset."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "drive";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "drive_links", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "drive_links", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "drive_links", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "link_initiative":
+          if (!isUUID(params.initiative_id) || !params.drive_folder_id || !params.drive_folder_url) return invalid("action='link_initiative' requires initiative_id (UUID), drive_folder_id, drive_folder_url.");
+          ({ data, error } = await sb.rpc("link_initiative_to_drive", { p_initiative_id: params.initiative_id, p_drive_folder_id: params.drive_folder_id, p_drive_folder_url: params.drive_folder_url, p_drive_folder_name: params.drive_folder_name ?? null, p_link_purpose: params.link_purpose ?? "workspace" })); source = "link_initiative_to_drive"; break;
+        case "unlink_initiative":
+          if (!isUUID(params.link_id)) return invalid("action='unlink_initiative' requires link_id (UUID).");
+          ({ data, error } = await sb.rpc("unlink_initiative_from_drive", { p_link_id: params.link_id })); source = "unlink_initiative_from_drive"; break;
+        case "list_initiative":
+          if (!isUUID(params.initiative_id)) return invalid("action='list_initiative' requires initiative_id (UUID).");
+          ({ data, error } = await sb.rpc("get_initiative_drive_links", { p_initiative_id: params.initiative_id })); source = "get_initiative_drive_links"; break;
+        case "link_board":
+          if (!isUUID(params.board_id) || !params.drive_folder_id || !params.drive_folder_url) return invalid("action='link_board' requires board_id (UUID), drive_folder_id, drive_folder_url.");
+          ({ data, error } = await sb.rpc("link_board_to_drive", { p_board_id: params.board_id, p_drive_folder_id: params.drive_folder_id, p_drive_folder_url: params.drive_folder_url, p_drive_folder_name: params.drive_folder_name ?? null })); source = "link_board_to_drive"; break;
+        case "unlink_board":
+          if (!isUUID(params.link_id)) return invalid("action='unlink_board' requires link_id (UUID).");
+          ({ data, error } = await sb.rpc("unlink_board_from_drive", { p_link_id: params.link_id })); source = "unlink_board_from_drive"; break;
+        case "list_board":
+          if (!isUUID(params.board_id)) return invalid("action='list_board' requires board_id (UUID).");
+          ({ data, error } = await sb.rpc("get_board_drive_links", { p_board_id: params.board_id })); source = "get_board_drive_links"; break;
+        case "register_file":
+          if (!isUUID(params.board_item_id) || !params.drive_file_id || !params.drive_file_url || !params.filename) return invalid("action='register_file' requires board_item_id (UUID), drive_file_id, drive_file_url, filename.");
+          ({ data, error } = await sb.rpc("register_card_drive_file", { p_board_item_id: params.board_item_id, p_drive_file_id: params.drive_file_id, p_drive_file_url: params.drive_file_url, p_filename: params.filename, p_mime_type: params.mime_type ?? null, p_size_bytes: params.size_bytes ?? null, p_uploaded_via: params.uploaded_via ?? "platform" })); source = "register_card_drive_file"; break;
+        case "list_files":
+          if (!isUUID(params.board_item_id)) return invalid("action='list_files' requires board_item_id (UUID).");
+          ({ data, error } = await sb.rpc("list_card_drive_files", { p_board_item_id: params.board_item_id })); source = "list_card_drive_files"; break;
+        case "discoveries":
+          ({ data, error } = await sb.rpc("list_drive_discoveries", { p_initiative_id: isUUID(params.initiative_id) ? params.initiative_id : null, p_status_filter: params.status_filter ?? null, p_limit: params.limit ?? null, p_offset: params.offset ?? null })); source = "list_drive_discoveries"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "drive_links", false, error.message, start); return ok(buildSemanticError({ tool: "drive_links", semantic_domain: dom, code: selErr("drive_links", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "drive_links", false, em, start); return ok(buildSemanticError({ tool: "drive_links", semantic_domain: dom, code: selErr("drive_links", em), message: em })); }
+      await logUsage(sb, member.id, "drive_links", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `drive_links action='${params.action}' ok.`,
+        next_actions: ["drive_links action='list_initiative': pastas da iniciativa", "drive_access_admin action='grant_health': saúde dos acessos"],
+        audit: { tool: "drive_links", semantic_domain: dom, pii_level: "low", permission: "RPC-internal (manage_member|write|board_admin)", source_tools: [source], caller_member_id: member.id, gate_checked: "RPC-internal authority + #785 on reads", resource_id: params.initiative_id ?? params.board_id ?? params.board_item_id ?? params.link_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6a · drive_access_admin (W) — ADR-0124 provisioning ledger + revocations ──
+  mcp.tool(
+    "drive_access_admin",
+    "Drive membership-grant administration (#1376 / ADR-0124; absorbs admin_list_membership_drive_grants + get_membership_drive_grant_health + approve/bulk_approve_drive_revocations + list_drive_revocation_pending + get_drive_discovery_health). Set `action`: 'list_grants' (status?/initiative_id?), 'grant_health', 'approve_revocation' (audit_id), 'bulk_approve_revocation' (member_id), 'revocation_pending', 'discovery_health'. GP/DPO cockpit — requires manage_platform or manage_member; each RPC re-enforces. NOTE: provision_initiative_drive + reconcile_initiative_drive_access stay raw (service-account orchestrations; the auto-grant cron uses the ADR-0028 bypass, not this path). Stable envelope.",
+    {
+      action: z.enum(["list_grants","grant_health","approve_revocation","bulk_approve_revocation","revocation_pending","discovery_health"]).describe("Which drive-admin operation."),
+      status: z.string().optional().describe("list_grants — status filter (granted|failed|already_present|pending_grant|skipped)."),
+      initiative_id: z.string().optional().describe("list_grants — initiative UUID filter."),
+      limit: z.number().optional().describe("list_grants — max rows (default 50)."),
+      offset: z.number().optional().describe("list_grants — offset."),
+      audit_id: z.string().optional().describe("approve_revocation — audit row UUID."),
+      member_id: z.string().optional().describe("bulk_approve_revocation — member UUID."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "drive";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "drive_access_admin", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "drive_access_admin", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "drive_access_admin", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const canAdmin = (await canV4(sb, member.id, "manage_platform")) || (await canV4(sb, member.id, "manage_member"));
+      if (!canAdmin) { await logUsage(sb, member.id, "drive_access_admin", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "drive_access_admin", semantic_domain: dom, code: "unauthorized", message: "Requires manage_platform or manage_member (GP/DPO).", action: "Ask the GP." })); }
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "list_grants": ({ data, error } = await sb.rpc("admin_list_membership_drive_grants", { p_status: params.status ?? null, p_initiative_id: isUUID(params.initiative_id) ? params.initiative_id : null, p_limit: params.limit ?? 50, p_offset: params.offset ?? 0 })); source = "admin_list_membership_drive_grants"; break;
+        case "grant_health": ({ data, error } = await sb.rpc("get_membership_drive_grant_health")); source = "get_membership_drive_grant_health"; break;
+        case "approve_revocation":
+          if (!isUUID(params.audit_id)) return invalid("action='approve_revocation' requires audit_id (UUID).");
+          ({ data, error } = await sb.rpc("approve_drive_revocation", { p_audit_id: params.audit_id })); source = "approve_drive_revocation"; break;
+        case "bulk_approve_revocation":
+          if (!isUUID(params.member_id)) return invalid("action='bulk_approve_revocation' requires member_id (UUID).");
+          ({ data, error } = await sb.rpc("bulk_approve_drive_revocations", { p_member_id: params.member_id })); source = "bulk_approve_drive_revocations"; break;
+        case "revocation_pending": ({ data, error } = await sb.rpc("admin_list_drive_revocation_audit")); source = "admin_list_drive_revocation_audit"; break;
+        case "discovery_health": ({ data, error } = await sb.rpc("get_drive_discovery_health")); source = "get_drive_discovery_health"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "drive_access_admin", false, error.message, start); return ok(buildSemanticError({ tool: "drive_access_admin", semantic_domain: dom, code: selErr("drive_access_admin", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "drive_access_admin", false, em, start); return ok(buildSemanticError({ tool: "drive_access_admin", semantic_domain: dom, code: selErr("drive_access_admin", em), message: em })); }
+      await logUsage(sb, member.id, "drive_access_admin", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `drive_access_admin action='${params.action}' ok.`,
+        next_actions: ["drive_access_admin action='grant_health': rollup do ledger", "drive_links action='list_initiative': pastas vinculadas"],
+        audit: { tool: "drive_access_admin", semantic_domain: dom, pii_level: "low", permission: "manage_platform|manage_member (GP/DPO)", source_tools: [source], caller_member_id: member.id, gate_checked: "canV4(manage_platform|manage_member) + RPC-internal", resource_id: params.audit_id ?? params.member_id ?? params.initiative_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
+
+  // ── W6a · partner_crm (R/W) — partner entities, interactions, pipeline, card links ──
+  mcp.tool(
+    "partner_crm",
+    "Partner CRM (absorbs manage_partner/log_partner_interaction/list_partner_interactions/get_partner_pipeline/get_partner_followups/search_partner_cards/link/unlink_partner_to_card/list_partner_cards/list_card_partners). Reads require view_partner; writes require manage_partner. Set `action`: 'search' (cards), 'list_cards' (partner_entity_id), 'card_partners' (board_item_id), 'pipeline', 'followups', 'interactions' (partner_id), 'manage' (entity_action create|update), 'log_interaction' (partner_id+interaction_type+summary), 'link_card', 'unlink_card'. interaction_type is validated against the live CHECK (email|whatsapp|linkedin|call|meeting|note|status_change). Card joins carry #785. Stable envelope.",
+    {
+      action: z.enum(["search","list_cards","card_partners","pipeline","followups","interactions","manage","log_interaction","link_card","unlink_card"]).describe("Which partner operation."),
+      partner_id: z.string().optional().describe("interactions/log_interaction — partner_entities UUID."),
+      partner_entity_id: z.string().optional().describe("list_cards/link_card/unlink_card — partner_entities UUID."),
+      board_item_id: z.string().optional().describe("card_partners/link_card/unlink_card — board_items UUID."),
+      link_role: z.enum(["general","pipeline","deliverable","follow_up","contract","onboarding"]).optional().describe("search/link_card — link role."),
+      card_status: z.string().optional().describe("search — board_item status filter."),
+      chapter: z.string().optional().describe("search/manage — chapter code."),
+      limit: z.number().optional().describe("search — max rows (default 100, cap 500)."),
+      entity_action: z.enum(["create","update"]).optional().describe("manage — create or update a partner entity."),
+      id: z.string().optional().describe("manage — partner UUID (required for update)."),
+      name: z.string().optional().describe("manage — partner name (required for create)."),
+      entity_type: z.enum(["academia","academic","governo","empresa","pmi_chapter","pmi_global","outro","community","research","association"]).optional().describe("manage — entity type."),
+      status: z.enum(["prospect","contact","negotiation","active","inactive","churned"]).optional().describe("manage — pipeline status."),
+      contact_name: z.string().optional().describe("manage — contact person."),
+      contact_email: z.string().optional().describe("manage — contact email."),
+      notes: z.string().optional().describe("manage/link_card — notes."),
+      interaction_type: z.enum(["email","whatsapp","linkedin","call","meeting","note","status_change"]).optional().describe("log_interaction — interaction type (live CHECK)."),
+      summary: z.string().optional().describe("log_interaction — short summary."),
+      details: z.string().optional().describe("log_interaction — long-form notes."),
+      outcome: z.string().optional().describe("log_interaction — outcome/decision."),
+      next_action: z.string().optional().describe("log_interaction — planned next step."),
+      follow_up_date: z.string().optional().describe("log_interaction — YYYY-MM-DD."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "partners";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "partner_crm", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "partner_crm", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "partner_crm", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      const READS = ["search","list_cards","card_partners","pipeline","followups","interactions"];
+      const needed = READS.includes(params.action) ? "view_partner" : "manage_partner";
+      if (!(await canV4(sb, member.id, needed))) { await logUsage(sb, member.id, "partner_crm", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "partner_crm", semantic_domain: dom, code: "unauthorized", message: `action='${params.action}' requires ${needed}.`, action: "Ask a sponsor/partner lead or GP." })); }
+      let data: any = null; let error: any = null; let source = "";
+      switch (params.action) {
+        case "search": ({ data, error } = await sb.rpc("search_partner_cards", { p_link_role: params.link_role ?? null, p_card_status: params.card_status ?? null, p_chapter: params.chapter ?? null, p_limit: params.limit ?? 100 })); source = "search_partner_cards"; break;
+        case "list_cards":
+          if (!isUUID(params.partner_entity_id)) return invalid("action='list_cards' requires partner_entity_id (UUID).");
+          ({ data, error } = await sb.rpc("list_partner_cards", { p_partner_entity_id: params.partner_entity_id })); source = "list_partner_cards"; break;
+        case "card_partners":
+          if (!isUUID(params.board_item_id)) return invalid("action='card_partners' requires board_item_id (UUID).");
+          ({ data, error } = await sb.rpc("list_card_partners", { p_board_item_id: params.board_item_id })); source = "list_card_partners"; break;
+        case "pipeline": ({ data, error } = await sb.rpc("get_partner_pipeline")); source = "get_partner_pipeline"; break;
+        case "followups": ({ data, error } = await sb.rpc("get_partner_followups")); source = "get_partner_followups"; break;
+        case "interactions":
+          if (!isUUID(params.partner_id)) return invalid("action='interactions' requires partner_id (UUID).");
+          ({ data, error } = await sb.rpc("get_partner_interactions", { p_partner_id: params.partner_id })); source = "get_partner_interactions"; break;
+        case "manage":
+          if (!params.entity_action) return invalid("action='manage' requires entity_action (create|update).");
+          if (params.entity_action === "create" && !params.name) return invalid("entity_action='create' requires name.");
+          if (params.entity_action === "update" && !isUUID(params.id)) return invalid("entity_action='update' requires id (UUID).");
+          ({ data, error } = await sb.rpc("admin_manage_partner_entity", { p_action: params.entity_action, p_id: params.id ?? null, p_name: params.name ?? null, p_entity_type: params.entity_type ?? null, p_status: params.status ?? null, p_contact_name: params.contact_name ?? null, p_contact_email: params.contact_email ?? null, p_notes: params.notes ?? null, p_chapter: params.chapter ?? null })); source = "admin_manage_partner_entity"; break;
+        case "log_interaction":
+          if (!isUUID(params.partner_id) || !params.interaction_type || !params.summary) return invalid("action='log_interaction' requires partner_id (UUID), interaction_type, summary.");
+          ({ data, error } = await sb.rpc("add_partner_interaction", { p_partner_id: params.partner_id, p_interaction_type: params.interaction_type, p_summary: params.summary, p_details: params.details ?? null, p_outcome: params.outcome ?? null, p_next_action: params.next_action ?? null, p_follow_up_date: params.follow_up_date ?? null })); source = "add_partner_interaction"; break;
+        case "link_card":
+          if (!isUUID(params.partner_entity_id) || !isUUID(params.board_item_id)) return invalid("action='link_card' requires partner_entity_id and board_item_id (UUIDs).");
+          ({ data, error } = await sb.rpc("link_partner_to_card", { p_partner_entity_id: params.partner_entity_id, p_board_item_id: params.board_item_id, p_link_role: params.link_role ?? "general", p_notes: params.notes ?? null })); source = "link_partner_to_card"; break;
+        case "unlink_card":
+          if (!isUUID(params.partner_entity_id) || !isUUID(params.board_item_id)) return invalid("action='unlink_card' requires partner_entity_id and board_item_id (UUIDs).");
+          ({ data, error } = await sb.rpc("unlink_partner_from_card", { p_partner_entity_id: params.partner_entity_id, p_board_item_id: params.board_item_id })); source = "unlink_partner_from_card"; break;
+        default: return invalid(`Unknown action '${params.action}'.`);
+      }
+      if (error) { await logUsage(sb, member.id, "partner_crm", false, error.message, start); return ok(buildSemanticError({ tool: "partner_crm", semantic_domain: dom, code: selErr("partner_crm", error.message), message: error.message })); }
+      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "partner_crm", false, em, start); return ok(buildSemanticError({ tool: "partner_crm", semantic_domain: dom, code: selErr("partner_crm", em), message: em })); }
+      await logUsage(sb, member.id, "partner_crm", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, result: data },
+        summary: `partner_crm action='${params.action}' ok.`,
+        next_actions: ["partner_crm action='pipeline': funil de parceiros", "partner_crm action='log_interaction': registrar contato"],
+        audit: { tool: "partner_crm", semantic_domain: dom, pii_level: READS.includes(params.action) ? "medium" : "none", permission: needed, source_tools: [source], caller_member_id: member.id, gate_checked: `canV4(${needed}) + #785 on card joins`, resource_id: params.partner_id ?? params.partner_entity_id ?? params.board_item_id ?? null, extra: { action: params.action } },
+      });
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -11230,7 +11702,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.7.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.8.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -11279,10 +11751,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.85.0",
+  ef_version: "2.86.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.7.0", tools: 40 },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.8.0", tools: 47 },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
