@@ -684,6 +684,7 @@ const enUS: Record<string, string> = {
   'hero.member.createEvent': '📅 Create Event',
   'hero.member.registerAttendance': '✅ Register Attendance',
   'hero.member.viewRanking': '🏆 View Ranking',
+  'hero.member.connectMcp': '🔌 Connect AI (MCP)',
   'hero.member.today': 'Today',
   'hero.member.noMeetings': 'No upcoming meetings',
   'hero.member.noTribe': 'No tribe assigned',
@@ -747,6 +748,9 @@ const enUS: Record<string, string> = {
   'mcp.docs.sensitive': 'Detail restricted',
   'mcp.docs.footer.generated': 'Manifest generated on',
   'mcp.docs.footer.source': 'MCP endpoint',
+  'mcp.docs.connectCta.title': 'New: connect your AI assistant',
+  'mcp.docs.connectCta.desc': 'Use Claude, ChatGPT or Cursor to talk to Núcleo data in natural language, respecting your permissions. In alpha.',
+  'mcp.docs.connectCta.btn': 'How to connect →',
 
   // ── Chapters ──
   'chapters.label': 'Multi-Regional Integration',

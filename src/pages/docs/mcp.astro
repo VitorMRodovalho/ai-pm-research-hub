@@ -82,6 +82,18 @@ const generatedDate = new Date(manifest.generated_at).toLocaleDateString(
       </p>
     </header>
 
+    <!-- Connect CTA (entry-point → quick-start SSOT) -->
+    <a href={lang === 'pt-BR' ? '/docs/mcp/conectar' : `/docs/mcp/conectar?lang=${lang}`}
+       class="block bg-gradient-to-r from-teal/10 to-[var(--surface-section-cool)] border border-teal/30 rounded-2xl p-5 no-underline hover:border-teal/60 transition-all">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div class="text-[.95rem] font-bold text-navy">{t('mcp.docs.connectCta.title', lang)}</div>
+          <p class="text-[.82rem] text-[var(--text-secondary)] mt-1 max-w-[560px]">{t('mcp.docs.connectCta.desc', lang)}</p>
+        </div>
+        <span class="flex-shrink-0 px-4 py-2 bg-teal text-white rounded-xl text-[.85rem] font-bold">{t('mcp.docs.connectCta.btn', lang)}</span>
+      </div>
+    </a>
+
     <!-- Stats grid -->
     <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 text-center">

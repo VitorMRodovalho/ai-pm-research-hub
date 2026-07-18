@@ -4,6 +4,8 @@
 
 MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes **three surfaces**: `/mcp` (the full internal capability registry), `/mcp/semantic` (an intent-level semantic gateway with a stable envelope), and `/mcp/actions` (an overflow surface for connectors with a per-connector tool cap). All surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
+> **Member onboarding (2026-07-18):** the member-facing default route is now the single semantic connector `https://nucleoia.vitormr.dev/mcp/semantic` (one connector, fits every client's tool cap, alpha). The full `/mcp` registry is the documented escape-hatch when a client rejects the semantic connector or a capability is missing. The member-facing quick-start (single source of truth, on the live site, trilingual) is `/docs/mcp/conectar`; this repo-only guide is the technical reference behind it. Feedback: GH #1428.
+
 ## Endpoints
 
 Live counts are at `/health`; the `tools/list` response is the source of truth. Never pin a number, query it.
@@ -11,10 +13,10 @@ Live counts are at `/health`; the `tools/list` response is the source of truth. 
 | Endpoint | Tools | Purpose | Recommended clients |
 |----------|-------|---------|---------------------|
 | `https://nucleoia.vitormr.dev/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
-| `https://nucleoia.vitormr.dev/mcp/semantic` | 52 | **Intent-level semantic gateway (SPEC-280 / #1383, `nucleo-ia-semantic` v0.9.0).** One tool per user intent (~7:1 consolidation over the raw registry) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; write tools carry authority + confidential-visibility (#785) gates as a contract. Use when a strict client rejects the full catalog. | Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
+| `https://nucleoia.vitormr.dev/mcp/semantic` | 52 | **Intent-level semantic gateway (SPEC-280 / #1383, `nucleo-ia-semantic` v0.11.0).** One tool per user intent (~7:1 consolidation over the raw registry) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; write tools carry authority + confidential-visibility (#785) gates as a contract. **Member-facing default route** (single connector, alpha), and the surface for strict clients and store/directory submissions. | Members onboarding (default), Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
 | `https://nucleoia.vitormr.dev/mcp/actions` | 88 | **Overflow surface (#1377).** The Claude connector ingests at most 256 tools per connector, alphabetically, dropping the write/action tail. `/actions` re-exposes that dropped tail as a second connector, reusing the same tool definitions. | Claude.ai / Claude Code, consumed alongside `/mcp` as a second connector |
 
-All endpoints share the same OAuth 2.1 flow (same account, same login). Pick the endpoint that matches your client's catalog tolerance — most clients default to `/mcp`; add `/actions` as a second connector if you need the write tail; use `/semantic` for strict clients or a bounded, review-ready contract.
+All endpoints share the same OAuth 2.1 flow (same account, same login). For **member onboarding**, use the single `/semantic` connector (default). For power users on the full registry, `/mcp` is the escape-hatch, with `/actions` as a second connector for the write tail that the 256-tool per-connector cap drops. Strict clients and store/directory submissions also target `/semantic`.
 
 The 52 semantic tools cover seven intent domains (full catalog: [`docs/reference/SEMANTIC_TOOL_CATALOG.md`](reference/SEMANTIC_TOOL_CATALOG.md)):
 - **Boards & cards** — `board_overview`, `card_search`, `card_get`, `card_write`, `card_checklist`, `card_comment`, `portfolio_report`, `platform_context`.

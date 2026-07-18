@@ -684,6 +684,7 @@ const esLATAM: Record<string, string> = {
   'hero.member.createEvent': '📅 Crear Evento',
   'hero.member.registerAttendance': '✅ Registrar Asistencia',
   'hero.member.viewRanking': '🏆 Ver Ranking',
+  'hero.member.connectMcp': '🔌 Conectar IA (MCP)',
   'hero.member.today': 'Hoy',
   'hero.member.noMeetings': 'Sin reuniones próximas',
   'hero.member.noTribe': 'Sin tribu asignada',
@@ -747,6 +748,9 @@ const esLATAM: Record<string, string> = {
   'mcp.docs.sensitive': 'Detalle restringido',
   'mcp.docs.footer.generated': 'Manifiesto generado en',
   'mcp.docs.footer.source': 'Endpoint MCP',
+  'mcp.docs.connectCta.title': 'Nuevo: conecta tu asistente de IA',
+  'mcp.docs.connectCta.desc': 'Usa Claude, ChatGPT o Cursor para conversar con los datos del Núcleo en lenguaje natural, respetando tus permisos. En alfa.',
+  'mcp.docs.connectCta.btn': 'Cómo conectar →',
 
   // ── Chapters ──
   'chapters.label': 'Integración Multi-Regional',
