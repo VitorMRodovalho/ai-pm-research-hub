@@ -30,14 +30,25 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const canRun = !!(SUPABASE_URL && SERVICE_ROLE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required';
 
-// Views over identity/authority data that MUST be invoker (never SECURITY DEFINER).
-// auth_engagements + v_active_members are the two #1422 flipped. The rest were flipped
-// in the Onda 1 security sweep (20260508030000) and read member/attendance data.
+// Views over identity/authority/attendance/cert data that MUST be invoker (never
+// SECURITY DEFINER) — a DEFINER regression makes them bypass the caller's RLS on the
+// underlying sensitive tables. auth_engagements + v_active_members are the two #1422
+// flipped; the rest were flipped in the Onda 1 security sweep (20260508030000 / p40).
+// NOT included: impact_hours_total + public_members — those are accepted-DEFINER
+// (ADR-0096 / issue #82), tracked in scripts/advisor_baseline.json instead.
+// This is the full set of sensitive-data views that are invoker as of #1422; keep it in
+// sync when a new sensitive view is intentionally flipped (query: public views with
+// reloptions security_invoker=true that read members/persons/engagements).
 const CRITICAL_INVOKER_VIEWS = [
   'auth_engagements',
   'v_active_members',
   'active_members',
   'impact_hours_summary',
+  'member_attendance_summary',
+  'members_public_safe',
+  'v_initiative_roster',
+  'vw_exec_cert_timeline',
+  'vw_exec_skills_radar',
 ];
 
 async function auditViews(views) {
