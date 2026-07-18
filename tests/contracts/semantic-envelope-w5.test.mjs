@@ -216,6 +216,6 @@ test('W5: /semantic health count is DERIVED (not a literal) — #1392', () => {
 });
 
 test('W5: nucleo-ia-semantic version bumped to 0.9.0 (Wave 6a)', () => {
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.10\.0"\s*\}\s*\)/,
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.11\.0"\s*\}\s*\)/,
     '/semantic McpServer must be v0.9.0 at Wave 6a');
 });

@@ -12,7 +12,7 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.10.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+- `/semantic` (server: `nucleo-ia-semantic`, v0.11.0) — public semantic gateway (SPEC-280 / EPIC #1383).
   **52 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
@@ -56,6 +56,17 @@ Three surfaces:
   (a `submitted_by` field ref that had made the RPC non-functional, and a `create_notification` overload
   ambiguity) were fixed. Owner Option A: both approval paths kept (`approved` is a triage state; publication
   remains the 2-of-N control).
+  **#1402 (ef 2.89.0 / semantic v0.11.0):** all 52 semantic tools now carry standard MCP tool
+  annotations (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`) — what an MCP host
+  reads to badge a read-only tool or warn before a destructive call (distinct from our own `audit`
+  envelope block, which the host does not read). Classification: 24 reads = `readOnlyHint`; 8 with an
+  ADR-0018 confirm-gated irreversible/removal verb (`card_write`, `engagement_write`, `event_write`,
+  `member_lifecycle`, `selection_decide`, `document_version_write`, `ip_exclusion`, `lgpd_admin`) =
+  `destructiveHint`; `openWorldHint=false` everywhere (server only touches its own Núcleo DB/Drive).
+  Applied via a `mcp.tool` wrapper (`applySemanticAnnotations` → `RegisteredTool.update({annotations})`,
+  merge-only) driven by the `SEMANTIC_TOOL_ANNOTATIONS` map — annotations are advisory hints, NEVER a
+  substitute for the per-action confirm-gate/`canV4` server-side guard. Parity guarded by
+  `tests/contracts/1402-semantic-tool-annotations.test.mjs`.
   **Wave 6a comms/drive/partners tools pass through RPC-internal authority** (comms reads = `manage_comms`/
   `manage_member`/`write_board`; partner reads = `view_partner`, writes = `manage_partner`; webinar review/convert
   = `manage_event`; drive-admin = `manage_platform`/`manage_member`). Migration `20260805000460` added the #785
