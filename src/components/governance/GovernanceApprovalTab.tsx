@@ -86,6 +86,14 @@ export default function GovernanceApprovalTab({ t, getSb, member }: Props) {
     return <p className="text-[var(--text-muted)] text-sm py-8 text-center">{t('governance.cr.noData')}</p>;
   }
 
+  // #1419: the read gate (get_governance_dashboard) is authority-scoped to
+  // rls_is_authoritative_member on the server (SSOT). A non-authoritative caller
+  // gets {error:'not_authorized'} instead of a misleading all-zeros dashboard —
+  // render the access message rather than duplicating the authority predicate here.
+  if (data.error) {
+    return <p className="text-[var(--text-muted)] text-sm py-8 text-center">{t('governance.cr.notAuthorized', 'Você não tem autoridade para visualizar as aprovações de governança.')}</p>;
+  }
+
   const canApprove = data.can_approve;
   const stats = data.stats || {};
   const pendingCrs: any[] = data.pending_crs || [];

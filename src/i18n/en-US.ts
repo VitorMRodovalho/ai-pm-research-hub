@@ -5384,6 +5384,7 @@ const enUS: Record<string, string> = {
   'governance.cr.priority.medium': 'Medium',
   'governance.cr.priority.low': 'Low',
   'governance.cr.noData': 'No data available.',
+  'governance.cr.notAuthorized': 'You do not have authority to view governance approvals.',
   'governance.cr.recentApproved': 'Recently Approved',
   'governance.previewLink': 'R3 Manual Preview',
   'governance.approvals_tab': 'Approvals',

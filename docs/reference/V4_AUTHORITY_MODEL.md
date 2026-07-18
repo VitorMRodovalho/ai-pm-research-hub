@@ -204,6 +204,34 @@ filtram `visibility <> 'confidential'`.
 `update_initiative` (gated pelo `can(...,'manage_member','initiative',id)` já existente — coordenador/GP;
 baixar `confidential→standard` expõe dados, logo fica atrás desse mesmo gate + oversight de GP).
 
+## Gate de leitura de governança: `rls_is_authoritative_member` (não `rls_is_member`)
+
+Há dois helpers de leitura que parecem intercambiáveis mas **não são**:
+
+- `rls_is_member()` = **existência de linha** (`EXISTS member WHERE auth_id = auth.uid()`). Sem filtro
+  `is_active`: passa até membro inativo/offboarded com linha remanescente ou guest pré-onboarding.
+- `rls_is_authoritative_member()` = ativo **e** `operational_role` real (`NOT NULL`, `<> 'guest'`,
+  `<> 'institutional_auditor'`).
+
+**Regra (sedimentada #1397 → #1408 → #1419):** a superfície de **leitura de aprovação de governança** é
+gated no helper **estreito** `rls_is_authoritative_member()`, não no amplo `rls_is_member()`:
+- `get_cr_approval_status` + policy SELECT de `cr_approvals` — estreitados no #1408 (defense-in-depth do #1397).
+- `get_governance_dashboard` — estreitado no **#1419** (migração `20260805000464`). Antes, qualquer linha em
+  `members` lia o corpo completo de toda CR pendente (title/description/justification/proposed_changes/impact)
+  + stats de quórum. Não vazava PII nem voto de terceiro (só `my_vote` + agregados), mas o *conteúdo* das
+  propostas de governança é a mesma classe de dado que o #1408 fechou. Caller autenticado porém
+  não-autoritativo agora recebe `{error:'not_authorized'}`; o frontend renderiza a mensagem de acesso em vez
+  de um dashboard zerado enganoso (defere ao gate do servidor, não duplica o predicado de autoridade em TS).
+
+**Assimetria read↔write resolvida:** o *write* (`approve_change_request`) já era authority-gated (#1397); o
+#1419 alinhou o *read* ao mesmo nível. Nota: `rls_is_authoritative_member` (read) é **mais amplo** que a
+autoridade de *aprovar* (sponsor/`manage_platform`) — um líder autoritativo navega as CRs pendentes mas só
+sponsors/GP votam. Isso é intencional (mesmo modelo do #1408).
+
+**Precedente do sweep de policies:** `20260805000246_rls_phase2_authoritative_member.sql` fez esse swap em 23
+policies SELECT mas deixou corpos de função intactos. As RPCs SECDEF de governança são o análogo-por-função
+desse trabalho — ao criar uma RPC de leitura sobre superfície de governança, gate em `rls_is_authoritative_member()`.
+
 ## Quando este doc precisa de update
 
 - **Path 4 emerge:** se uma 4ª maneira de conceder autoridade é introduzida (ex: ABAC com row-level expressions). Adicionar com exemplo + procedure update.
