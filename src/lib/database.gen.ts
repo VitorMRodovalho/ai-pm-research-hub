@@ -23684,6 +23684,14 @@ export type Database = {
           proname: string
         }[]
       }
+      _audit_view_security_invoker: {
+        Args: { p_views: string[] }
+        Returns: {
+          is_invoker: boolean
+          view_exists: boolean
+          view_name: string
+        }[]
+      }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
       _can_manage_event: { Args: { p_event_id: string }; Returns: boolean }
       _can_manage_recurring_rule: {
