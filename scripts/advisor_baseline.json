@@ -11,6 +11,10 @@
       {
         "cache_key": "security_definer_view_public_gamification_leaderboard",
         "rationale": "Public leaderboard — 3 callsites in /gamification.astro consume 20+ columns (cycle_*, category breakdowns). get_public_leaderboard() RPC returns subset; either extend RPC OR verify RLS permits full breakdown after invoker flip. Onda 3 product+UX decision (issue #82)."
+      },
+      {
+        "cache_key": "security_definer_view_public_impact_hours_total",
+        "rationale": "SECURITY DEFINER accepted risk per ADR-0096 (p223 audit MED #10, migration 20260805000002). anon SELECT REVOKE'd (authenticated/service_role only); content is scalar platform-wide YTD aggregates with no per-row PII. Documented via COMMENT ON VIEW (canonical p170 BUG-HOI formula). Never surfaced in CI before #1422 because the advisor check ran with a stale API path + no token. Distinct from impact_hours_summary/active_members, which were flipped to invoker in Onda 1 (20260508030000)."
       }
     ],
     "accepted_warnings": [
