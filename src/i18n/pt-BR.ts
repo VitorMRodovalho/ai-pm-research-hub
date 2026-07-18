@@ -684,6 +684,7 @@ const ptBR: Record<string, string> = {
   'hero.member.createEvent': '📅 Criar Evento',
   'hero.member.registerAttendance': '✅ Registrar Presença',
   'hero.member.viewRanking': '🏆 Ver Ranking',
+  'hero.member.connectMcp': '🔌 Conectar IA (MCP)',
   'hero.member.today': 'Hoje',
   'hero.member.noMeetings': 'Sem reuniões próximas',
   'hero.member.noTribe': 'Sem tribo atribuída',
@@ -747,6 +748,9 @@ const ptBR: Record<string, string> = {
   'mcp.docs.sensitive': 'Detalhe restrito',
   'mcp.docs.footer.generated': 'Manifesto gerado em',
   'mcp.docs.footer.source': 'Endpoint MCP',
+  'mcp.docs.connectCta.title': 'Novo: conecte seu assistente de IA',
+  'mcp.docs.connectCta.desc': 'Use Claude, ChatGPT ou Cursor para conversar com os dados do Núcleo em linguagem natural, respeitando as suas permissões. Em alfa.',
+  'mcp.docs.connectCta.btn': 'Como conectar →',
 
   // ── Chapters ──
   'chapters.label': 'Integração Multi-Regional',

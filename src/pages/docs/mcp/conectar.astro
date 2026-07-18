@@ -1,0 +1,202 @@
+---
+/**
+ * /docs/mcp/conectar — Quick-start SSOT: "Como conectar seu assistente de IA ao Núcleo (MCP)"
+ *
+ * FONTE ÚNICA (single-source). Os 3 entry-points (CTA em /docs/mcp, artigo do blog,
+ * card no hero da home) apenas APONTAM para cá; nunca duplicam este conteúdo.
+ * Stream de onboarding MCP dos membros (2026-07-18), rota conector único /mcp/semantic.
+ *
+ * Conteúdo é per-idioma inline (padrão {pt,en,es} — mesmo usado por DOMAIN_LABELS em
+ * ../mcp.astro), então toda a cópia da página vive aqui. en/es são stubs de redirect
+ * (../../en/docs/mcp/conectar.astro + es) que reentram com ?lang=.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getLangFromURL, type Lang } from '../../../i18n/utils';
+import { CANONICAL_ORIGIN } from '../../../lib/canonical';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const L = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+
+// Connection endpoint is OAuth-pinned to the canonical host (CANONICAL_ORIGIN = vitormr.dev).
+const SEMANTIC_URL = `${CANONICAL_ORIGIN}/mcp/semantic`;
+const FULL_URL = `${CANONICAL_ORIGIN}/mcp`;
+const ISSUE_URL = 'https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/1428';
+
+type Tri = { pt: string; en: string; es: string };
+const tr = (o: Tri) => o[L];
+
+const pageTitle = tr({
+  pt: 'Como conectar sua IA ao Núcleo (MCP)',
+  en: 'Connect your AI assistant to the Núcleo (MCP)',
+  es: 'Conecta tu IA al Núcleo (MCP)',
+});
+
+// Passos por cliente
+const clients: { name: string; steps: Tri[] }[] = [
+  {
+    name: 'Claude.ai (Web / Desktop)',
+    steps: [
+      { pt: 'Abra Configurações → Conectores (ou Integrações).', en: 'Open Settings → Connectors (or Integrations).', es: 'Abre Configuración → Conectores (o Integraciones).' },
+      { pt: 'Adicionar servidor MCP personalizado e cole a URL do conector.', en: 'Add a custom MCP server and paste the connector URL.', es: 'Agrega un servidor MCP personalizado y pega la URL del conector.' },
+      { pt: 'Faça login na sua conta do Núcleo e aprove o acesso (OAuth).', en: 'Log in to your Núcleo account and approve access (OAuth).', es: 'Inicia sesión en tu cuenta del Núcleo y aprueba el acceso (OAuth).' },
+    ],
+  },
+  {
+    name: 'Claude Code (terminal)',
+    steps: [
+      { pt: `Rode: claude mcp add --transport http nucleo ${SEMANTIC_URL}`, en: `Run: claude mcp add --transport http nucleo ${SEMANTIC_URL}`, es: `Ejecuta: claude mcp add --transport http nucleo ${SEMANTIC_URL}` },
+      { pt: 'Se o fluxo OAuth abrir, aprove no navegador. Pronto.', en: 'If the OAuth flow opens, approve it in the browser. Done.', es: 'Si se abre el flujo OAuth, apruébalo en el navegador. Listo.' },
+      { pt: 'Fallback (se não abrir OAuth): use um token manual do site (Local Storage, chave sb-ldrfrvwhxsmgaabwmaik-auth-token) como header Bearer. Ele expira em 1 hora; repita para renovar.', en: 'Fallback (if OAuth does not open): use a manual token from the site (Local Storage key sb-ldrfrvwhxsmgaabwmaik-auth-token) as a Bearer header. It expires in 1 hour; repeat to refresh.', es: 'Alternativa (si no abre OAuth): usa un token manual del sitio (Local Storage, clave sb-ldrfrvwhxsmgaabwmaik-auth-token) como header Bearer. Caduca en 1 hora; repite para renovar.' },
+    ],
+  },
+  {
+    name: 'Cursor / VS Code',
+    steps: [
+      { pt: 'Settings → MCP Servers → Add.', en: 'Settings → MCP Servers → Add.', es: 'Settings → MCP Servers → Add.' },
+      { pt: 'Cole a URL do conector e conclua o login (OAuth).', en: 'Paste the connector URL and complete the login (OAuth).', es: 'Pega la URL del conector y completa el login (OAuth).' },
+    ],
+  },
+  {
+    name: 'ChatGPT (beta)',
+    steps: [
+      { pt: 'Settings → Apps → Connectors → Advanced → New App.', en: 'Settings → Apps → Connectors → Advanced → New App.', es: 'Settings → Apps → Connectors → Advanced → New App.' },
+      { pt: 'Nome: Nucleo-IA. Cole a URL e aprove (OAuth). Obs.: "Internal Server Error" aqui costuma ser bug do beta do ChatGPT, não da plataforma.', en: 'Name: Nucleo-IA. Paste the URL and approve (OAuth). Note: an "Internal Server Error" here is usually a ChatGPT beta bug, not the platform.', es: 'Nombre: Nucleo-IA. Pega la URL y aprueba (OAuth). Nota: un "Internal Server Error" aquí suele ser un bug del beta de ChatGPT, no de la plataforma.' },
+    ],
+  },
+  {
+    name: tr({ pt: 'Outros (Perplexity, Manus, xAI...)', en: 'Others (Perplexity, Manus, xAI...)', es: 'Otros (Perplexity, Manus, xAI...)' }),
+    steps: [
+      { pt: 'Mesma URL do conector. Transporte: Streamable HTTP. Auth: OAuth 2.0.', en: 'Same connector URL. Transport: Streamable HTTP. Auth: OAuth 2.0.', es: 'Misma URL del conector. Transporte: Streamable HTTP. Auth: OAuth 2.0.' },
+    ],
+  },
+];
+
+const examples: Tri[] = [
+  { pt: '"Quais são meus próximos eventos?"', en: '"What are my upcoming events?"', es: '"¿Cuáles son mis próximos eventos?"' },
+  { pt: '"Mostra o board da minha tribo por status."', en: '"Show my tribe board by status."', es: '"Muestra el board de mi tribu por estado."' },
+  { pt: '"Qual minha presença e meu XP no ciclo?"', en: '"What is my attendance and XP this cycle?"', es: '"¿Cuál es mi asistencia y mi XP en el ciclo?"' },
+  { pt: '"Registra minha presença na última reunião." (escrita pede confirmação)', en: '"Register my attendance at the last meeting." (writes ask for confirmation)', es: '"Registra mi asistencia en la última reunión." (las escrituras piden confirmación)' },
+  { pt: '"Tenho alguma avaliação pendente?"', en: '"Do I have any pending evaluation?"', es: '"¿Tengo alguna evaluación pendiente?"' },
+];
+
+const troubleshooting: Tri[] = [
+  { pt: 'Reconecte o servidor MCP no seu cliente (remover e adicionar de novo resolve a maioria dos casos).', en: 'Reconnect the MCP server in your client (remove and add again fixes most cases).', es: 'Reconecta el servidor MCP en tu cliente (quitar y volver a agregar resuelve la mayoría de los casos).' },
+  { pt: 'Se persistir ou faltar alguma capacidade, tente o escape-hatch (catálogo completo) e nos avise.', en: 'If it persists or a capability is missing, try the escape-hatch (full catalog) and let us know.', es: 'Si persiste o falta alguna capacidad, prueba el escape-hatch (catálogo completo) y avísanos.' },
+  { pt: 'Ao reportar, diga: cliente + o que tentou + o erro (print ou copiar-colar).', en: 'When reporting, include: client + what you tried + the error (screenshot or copy-paste).', es: 'Al reportar, incluye: cliente + lo que intentaste + el error (captura o copiar-pegar).' },
+];
+---
+
+<BaseLayout title={pageTitle} activePage="" lang={lang}>
+  <div class="max-w-[820px] mx-auto px-4 py-10 space-y-8">
+
+    <!-- Header + alpha badge -->
+    <header class="text-center">
+      <div class="inline-block bg-amber/15 text-amber-700 text-[.72rem] font-bold tracking-[.12em] uppercase px-3 py-1 rounded-full border border-amber-400/40 mb-3">
+        {tr({ pt: 'Alfa · em validação', en: 'Alpha · in validation', es: 'Alfa · en validación' })}
+      </div>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy mb-3">{pageTitle}</h1>
+      <p class="text-sm text-[var(--text-muted)] max-w-[640px] mx-auto leading-relaxed">
+        {tr({
+          pt: 'Conecte o Claude (ou ChatGPT, Cursor, e outros) à plataforma e converse com os dados do Núcleo em linguagem natural, respeitando as permissões que você já tem. Você só enxerga o que já veria no site, com a mesma conta e login.',
+          en: 'Connect Claude (or ChatGPT, Cursor, and others) to the platform and talk to Núcleo data in natural language, respecting the permissions you already have. You only see what you would already see on the site, with the same account and login.',
+          es: 'Conecta Claude (o ChatGPT, Cursor y otros) a la plataforma y conversa con los datos del Núcleo en lenguaje natural, respetando los permisos que ya tienes. Solo ves lo que ya verías en el sitio, con la misma cuenta e inicio de sesión.',
+        })}
+      </p>
+    </header>
+
+    <!-- Alpha framing callout -->
+    <section class="bg-[var(--surface-section-cool)] border border-amber-400/30 rounded-2xl p-5">
+      <h2 class="text-[.95rem] font-bold text-navy mb-1">
+        {tr({ pt: 'Isto é alfa, de propósito', en: 'This is alpha, on purpose', es: 'Esto es alfa, a propósito' })}
+      </h2>
+      <p class="text-sm text-[var(--text-secondary)] leading-relaxed">
+        {tr({
+          pt: 'Estamos construindo e validando a camada semântica. A estabilidade só se conhece com gente usando e dando carga. Você é co-testador: arestas são esperadas, e o seu reporte é exatamente o que faz a ferramenta avançar.',
+          en: 'We are building and validating the semantic layer. Stability is only known with people using it and putting load on it. You are a co-tester: rough edges are expected, and your report is exactly what moves the tool forward.',
+          es: 'Estamos construyendo y validando la capa semántica. La estabilidad solo se conoce con gente usándola y poniéndole carga. Eres co-tester: las asperezas son esperadas, y tu reporte es justo lo que hace avanzar la herramienta.',
+        })}
+      </p>
+    </section>
+
+    <!-- Endpoint box -->
+    <section class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 space-y-3">
+      <div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+          {tr({ pt: 'Endereço do conector (use este)', en: 'Connector address (use this)', es: 'Dirección del conector (usa esta)' })}
+        </div>
+        <code class="block text-[.9rem] font-bold text-teal break-all bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-2">{SEMANTIC_URL}</code>
+      </div>
+      <div>
+        <div class="text-[.7rem] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+          {tr({ pt: 'Escape-hatch (só se o cliente rejeitar o conector acima, e nos avise)', en: 'Escape-hatch (only if the client rejects the connector above, and let us know)', es: 'Escape-hatch (solo si el cliente rechaza el conector de arriba, y avísanos)' })}
+        </div>
+        <code class="block text-[.85rem] text-[var(--text-secondary)] break-all bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-2">{FULL_URL}</code>
+      </div>
+    </section>
+
+    <!-- Steps per client -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-bold text-navy border-b border-[var(--border-subtle)] pb-2">
+        {tr({ pt: 'Passo a passo por cliente', en: 'Step by step, per client', es: 'Paso a paso, por cliente' })}
+      </h2>
+      {clients.map((c) => (
+        <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-4">
+          <h3 class="text-[.95rem] font-bold text-[var(--text-primary)] mb-2">{c.name}</h3>
+          <ol class="list-decimal pl-5 space-y-1.5 text-sm text-[var(--text-secondary)] leading-relaxed">
+            {c.steps.map((s) => <li>{tr(s)}</li>)}
+          </ol>
+        </div>
+      ))}
+    </section>
+
+    <!-- Usage examples -->
+    <section class="space-y-3">
+      <h2 class="text-lg font-bold text-navy border-b border-[var(--border-subtle)] pb-2">
+        {tr({ pt: 'Exemplos de uso (linguagem natural)', en: 'Usage examples (natural language)', es: 'Ejemplos de uso (lenguaje natural)' })}
+      </h2>
+      <ul class="space-y-2">
+        {examples.map((e) => (
+          <li class="bg-[var(--surface-section-cool)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)]">{tr(e)}</li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section class="space-y-3">
+      <h2 class="text-lg font-bold text-navy border-b border-[var(--border-subtle)] pb-2">
+        {tr({ pt: 'Se algo falhar', en: 'If something fails', es: 'Si algo falla' })}
+      </h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-sm text-[var(--text-secondary)] leading-relaxed">
+        {troubleshooting.map((s) => <li>{tr(s)}</li>)}
+      </ul>
+    </section>
+
+    <!-- Where to report -->
+    <section class="bg-gradient-to-r from-navy to-slate-800 rounded-2xl p-6 text-center">
+      <h2 class="text-white font-bold text-[1.05rem] mb-1">
+        {tr({ pt: 'Achou uma aresta? Reporte', en: 'Found a rough edge? Report it', es: '¿Encontraste una aspereza? Repórtala' })}
+      </h2>
+      <p class="text-white/70 text-sm mb-4 max-w-[520px] mx-auto">
+        {tr({
+          pt: 'Abra um comentário na issue de feedback do GitHub, ou avise no WhatsApp do grupo. Diga o cliente, o que tentou e o erro.',
+          en: 'Add a comment on the GitHub feedback issue, or let us know in the group WhatsApp. Include the client, what you tried, and the error.',
+          es: 'Deja un comentario en la issue de feedback de GitHub, o avísanos en el WhatsApp del grupo. Incluye el cliente, lo que intentaste y el error.',
+        })}
+      </p>
+      <a href={ISSUE_URL} target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#05BFE0] text-navy font-bold text-sm rounded-xl no-underline hover:opacity-90 transition-all">
+        {tr({ pt: 'Reportar no GitHub →', en: 'Report on GitHub →', es: 'Reportar en GitHub →' })}
+      </a>
+    </section>
+
+    <!-- Link to full catalog -->
+    <footer class="text-center text-[.8rem] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-6">
+      {tr({ pt: 'Quer ver tudo que dá para pedir?', en: 'Want to see everything you can ask for?', es: '¿Quieres ver todo lo que puedes pedir?' })}
+      {' '}
+      <a href={L === 'pt' ? '/docs/mcp' : `/docs/mcp?lang=${lang}`} class="text-teal no-underline hover:underline">
+        {tr({ pt: 'Catálogo completo de ferramentas', en: 'Full tool catalog', es: 'Catálogo completo de herramientas' })}
+      </a>
+    </footer>
+
+  </div>
+</BaseLayout>
