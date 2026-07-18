@@ -2,7 +2,7 @@
 /**
  * Supabase Advisor drift check (preventive)
  *
- * Calls the Supabase management API for `/projects/{ref}/advisors?type=security`
+ * Calls the Supabase management API for `/projects/{ref}/advisors/security`
  * and diffs results against `scripts/advisor_baseline.json`. Exits non-zero if
  * any ERROR-level finding is NOT in the baseline allowlist — meaning a new
  * security issue was introduced since baseline snapshot.
@@ -40,7 +40,9 @@ if (!TOKEN) {
 }
 
 async function fetchAdvisors(type) {
-  const url = `https://api.supabase.com/v1/projects/${PROJECT_REF}/advisors?type=${type}`;
+  // Management API moved the advisor type from a `?type=` query param to a path
+  // segment (`/advisors/{type}`) on 2026-07-18; the old query form now 404s (#1422).
+  const url = `https://api.supabase.com/v1/projects/${PROJECT_REF}/advisors/${type}`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${TOKEN}`,
