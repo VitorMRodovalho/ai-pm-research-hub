@@ -157,11 +157,13 @@ test('#301: shared drive-sa.ts exports the SA auth helpers reused from #209', ()
 });
 
 // ───────────────────────── Static: MCP + crons ─────────────────────────
-test('#301: 3 MCP tools registered + /health tools count bumped to 314 (now 323 via #1138)', () => {
+test('#301: 3 MCP tools registered + /health derives the /mcp count (#1392)', () => {
   for (const t of ['list_curation_drive_grants', 'force_grant_curation_drive_access', 'force_revoke_curation_drive_access']) {
     assert.match(mcpIndex, new RegExp(`mcp\\.tool\\("${t}"`), `tool ${t} not registered`);
   }
-  assert.match(mcpIndex, /"\/mcp":\s*\{[^}]*tools:\s*323/);
+  // #1392: /health derives the /mcp count from the registrar (was a hardcoded literal that drifted
+  // to 323 while the live catalog grew to 342). Assert the wiring, not a pinned number.
+  assert.match(mcpIndex, /"\/mcp":\s*\{[^}]*tools:\s*MCP_TOOL_COUNT\b/);
   // force tools invoke the grant/revoke EF synchronously
   assert.match(mcpIndex, /functions\/v1\/manage-curation-drive-grant/);
 });

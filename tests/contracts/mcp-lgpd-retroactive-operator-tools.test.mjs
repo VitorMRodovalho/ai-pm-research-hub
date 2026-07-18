@@ -214,11 +214,12 @@ test('ef_version is 2.88.0 (#1397 CR authority hardening; 2.87.0 at Wave 6b)', (
   assert.match(EF, /ef_version:\s*"2\.88\.0"/, '/health must report ef_version 2.88.0');
 });
 
-test('p239b #332 + #411 + #191 + #188 + #415 + #459 + #209 + #301 + #1138: /health surface declares /mcp tools: 323 + version 2.79.0', () => {
+test('#1392: /health /mcp surface derives its tool count + keeps version 2.79.0', () => {
+  // #1392 retired the drift-prone literal (was 323 vs live 342); /health derives from the registrar.
   assert.match(
     EF,
-    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*323\s*\}/,
-    '/health surface report must show 323 tools + version 2.79.0 on /mcp (317 after #1099, +6 via #1138 tribe hybrid-journey MCP parity)'
+    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/,
+    '/health /mcp must derive from MCP_TOOL_COUNT (version pinned 2.79.0)'
   );
 });
 

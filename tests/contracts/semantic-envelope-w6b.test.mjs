@@ -187,9 +187,17 @@ test('W6b: migration grants knowledge_assets_latest to authenticated + revokes a
   assert.ok(!/REVOKE EXECUTE ON FUNCTION public\.get_public_impact_data/.test(mig), 'must NOT revoke the public feed get_public_impact_data');
 });
 
-test('W6b: /semantic health surface advertises 52 tools + version 0.9.0', () => {
-  const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
-  assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6b');
+test('W6b: /semantic surface = 52 tools (derived, not hardcoded) + version 0.10.0', () => {
+  // #1392: /health now DERIVES the count (tools: SEMANTIC_TOOL_COUNT), so the literal is gone.
+  // Verify (a) /semantic health is wired to the derived constant, and (b) registerSemanticTools
+  // actually registers 52 tools — the Wave-6b guarantee, checked at the source instead of a literal.
+  assert.match(SRC, /"\/semantic":\s*\{[^}]*tools:\s*SEMANTIC_TOOL_COUNT\b/, '/semantic health must derive from SEMANTIC_TOOL_COUNT (#1392)');
+  const start = SRC.indexOf('function registerSemanticTools(');
+  assert.ok(start !== -1, 'registerSemanticTools() not found');
+  // The function body ends where the next top-level `function ` declaration begins.
+  const next = SRC.indexOf('\nfunction ', start + 1);
+  const body = SRC.slice(start, next === -1 ? undefined : next);
+  const semanticToolCount = (body.match(/mcp\.tool\(/g) || []).length;
+  assert.equal(semanticToolCount, 52, `registerSemanticTools must register 52 tools after Wave 6b (found ${semanticToolCount})`);
   assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.10\.0"\s*\}\s*\)/, '/semantic McpServer must be v0.10.0');
 });

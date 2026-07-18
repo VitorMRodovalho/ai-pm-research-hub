@@ -152,8 +152,9 @@ test('W2[my_status]: SELF-only — pii_level "self", no cross-member manage_memb
   assert.ok(!/canV4\(sb,\s*member\.id,\s*"manage_member"\)/.test(b), 'my_status must NOT expose an admin (manage_member) surface');
 });
 
-test('W2: /semantic health surface still advertises the Wave-2 tools (count now 52 after Wave 6a)', () => {
-  const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
-  assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6a (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)');
+test('W2: /semantic health count is DERIVED (not a literal) — #1392', () => {
+  // #1392 retired the hardcoded literal; /health now derives from the registrar. Authoritative
+  // count lives in semantic-envelope-w6b (registerSemanticTools == 52). Wave-2 tools themselves
+  // are asserted individually above.
+  assert.match(SRC, /"\/semantic":\s*\{[^}]*tools:\s*SEMANTIC_TOOL_COUNT\b/, '/semantic health must derive from SEMANTIC_TOOL_COUNT');
 });

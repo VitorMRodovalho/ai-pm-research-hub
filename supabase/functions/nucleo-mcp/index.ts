@@ -12000,6 +12000,24 @@ function filterToAllowlist(mcp: McpServer, allow: Set<string>): McpServer {
   return mcp;
 }
 
+// #1392 — derive per-surface tool counts from the SAME registrars the live endpoints use,
+// so /health can never drift from reality the way the old hardcoded literals did (19-tool drift
+// on /mcp since e32e7fd). Registration only builds Zod schemas + closes over handlers — it never
+// touches `sb` synchronously — so a no-op counting shim with a dummy client is safe. Computed once
+// at module load (cold start), mirroring how /actions already derives from ACTIONS_ALLOWLIST.size.
+function countRegisteredTools(...registrars: Array<(mcp: McpServer, sb: Sb) => void>): number {
+  let n = 0;
+  const counter = {
+    tool: () => { n++; return undefined; },
+    registerPrompt: () => undefined,
+    registerResource: () => undefined,
+  } as unknown as McpServer;
+  for (const register of registrars) register(counter, null as unknown as Sb);
+  return n;
+}
+const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);       // /mcp full catalog
+const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
 // SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
@@ -12088,8 +12106,8 @@ app.get("/health", (c) => c.json({
   status: "ok",
   ef_version: "2.88.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: 323 },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.10.0", tools: 52 },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: MCP_TOOL_COUNT },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.10.0", tools: SEMANTIC_TOOL_COUNT },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

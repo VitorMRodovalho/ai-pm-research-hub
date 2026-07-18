@@ -179,10 +179,10 @@ test('W4[interview_manage]: keeps generate_interview_briefing raw (inline-Haiku,
   }
 });
 
-test('W4: /semantic health surface advertises 52 tools (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a)', () => {
-  const health = SRC.match(/"\/semantic":\s*\{[^}]*tools:\s*(\d+)/);
-  assert.ok(health, '/semantic health entry not found');
-  assert.equal(Number(health[1]), 52, '/semantic health tools count must be 52 after Wave 6a');
+test('W4: /semantic health count is DERIVED (not a literal) — #1392', () => {
+  // #1392 retired the hardcoded literal; /health derives from the registrar. Authoritative count
+  // lives in semantic-envelope-w6b (registerSemanticTools == 52).
+  assert.match(SRC, /"\/semantic":\s*\{[^}]*tools:\s*SEMANTIC_TOOL_COUNT\b/, '/semantic health must derive from SEMANTIC_TOOL_COUNT');
 });
 
 test('W4: nucleo-ia-semantic version bumped to 0.9.0 (Wave 6a)', () => {
