@@ -8049,7 +8049,66 @@ async function eventWriteGate(
   return null;
 }
 
+// #1402 — MCP tool annotations for the /semantic surface (Refs #1383). The standard MCP
+// annotation hints (readOnlyHint/destructiveHint/idempotentHint/openWorldHint) are what an
+// MCP host reads to badge a read-only tool or warn a user before a destructive call — distinct
+// from our OWN `audit` envelope block (pii_level/permission/gate_checked), which the host does
+// NOT read. Classification is per tool from its action surface (docs/reference/SEMANTIC_TOOL_CATALOG.md):
+//   - reads → readOnlyHint. Any tool whose action set includes an irreversible/removal verb behind
+//     the ADR-0018 confirm-gate (delete/archive/offboard/drop/withdraw/execute_deletion/terminal-revoke/
+//     recalc) → destructiveHint (most-privileged wins for a consolidated multi-action tool; the
+//     per-action confirm-gate stays the REAL guard — annotations are advisory hints, never a gate).
+//   - openWorldHint=false everywhere (this server only ever touches its own Núcleo DB/Drive — no
+//     open-world reach). idempotentHint=true only where re-issuing the same call is a no-op (upsert).
+// A preview-before-commit confirm-gate that only ADDS (certificate issue/update) is NOT destructive.
+// Parity with the live registrations is enforced by tests/contracts/1402-semantic-tool-annotations.test.mjs.
+type SemanticAnnotation = { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean };
+const SEM_RO: SemanticAnnotation = { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+const SEM_WRITE: SemanticAnnotation = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+const SEM_WRITE_IDEMPOTENT: SemanticAnnotation = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+const SEM_DESTRUCTIVE: SemanticAnnotation = { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false };
+const SEMANTIC_TOOL_ANNOTATIONS: Record<string, SemanticAnnotation> = {
+  // reads (24)
+  get_my_context: SEM_RO, search_nucleo_knowledge: SEM_RO, get_board_or_initiative_context: SEM_RO, get_operational_status: SEM_RO,
+  card_search: SEM_RO, card_get: SEM_RO, board_overview: SEM_RO, platform_context: SEM_RO, portfolio_report: SEM_RO,
+  member_search: SEM_RO, member_get: SEM_RO, initiative_roster: SEM_RO, initiative_directory: SEM_RO, initiative_report: SEM_RO, my_status: SEM_RO,
+  event_search: SEM_RO, attendance_report: SEM_RO, selection_dashboard: SEM_RO, application_get: SEM_RO, document_get: SEM_RO,
+  comms_report: SEM_RO, gamification_report: SEM_RO, admin_dashboard: SEM_RO, audit_log: SEM_RO,
+  // destructive writes — action set includes an irreversible/removal verb behind an ADR-0018 confirm-gate (8)
+  card_write: SEM_DESTRUCTIVE, engagement_write: SEM_DESTRUCTIVE, event_write: SEM_DESTRUCTIVE, member_lifecycle: SEM_DESTRUCTIVE,
+  selection_decide: SEM_DESTRUCTIVE, document_version_write: SEM_DESTRUCTIVE, ip_exclusion: SEM_DESTRUCTIVE, lgpd_admin: SEM_DESTRUCTIVE,
+  // additive writes (20)
+  card_checklist: SEM_WRITE, card_comment: SEM_WRITE, member_emails: SEM_WRITE, meeting_minutes: SEM_WRITE, meeting_actions: SEM_WRITE,
+  evaluation_submit: SEM_WRITE_IDEMPOTENT, visitor_leads: SEM_WRITE, certificate_manage: SEM_WRITE, idea_pipeline: SEM_WRITE,
+  drive_links: SEM_WRITE, partner_crm: SEM_WRITE, attendance_record: SEM_WRITE, document_comment: SEM_WRITE, change_request: SEM_WRITE,
+  signature_flow: SEM_WRITE, comms_post: SEM_WRITE, webinar_manage: SEM_WRITE, champion_award: SEM_WRITE, drive_access_admin: SEM_WRITE,
+  interview_manage: SEM_WRITE,
+};
+
+// Wrap mcp.tool so every /semantic registration attaches its MCP annotation hints via
+// RegisteredTool.update({annotations}) — a merge-only update (leaves inputSchema/handler/description
+// intact, SDK mcp.js#640) applied right after the normal registration. Mirrors filterToAllowlist's
+// in-place mutation of the sole McpServer method registerSemanticTools uses. Safe under the
+// countRegisteredTools() shim (its .tool() returns undefined → the `typeof reg.update` guard no-ops,
+// so the count is unaffected) and composes with any other tool wrapper. A registered tool with no
+// map entry warns loudly and the parity guard fails CI.
+function applySemanticAnnotations(mcp: McpServer): void {
+  const orig = mcp.tool.bind(mcp) as (...args: unknown[]) => { update?: (u: { annotations: SemanticAnnotation }) => void } | undefined;
+  (mcp as unknown as { tool: (...a: unknown[]) => unknown }).tool = (...args: unknown[]) => {
+    const name = args[0] as string;
+    const reg = orig(...args);
+    const ann = SEMANTIC_TOOL_ANNOTATIONS[name];
+    if (!ann) {
+      console.warn(`[semantic] tool '${name}' has no MCP annotation entry (#1402)`);
+    } else if (reg && typeof reg.update === "function") {
+      reg.update({ annotations: ann });
+    }
+    return reg;
+  };
+}
+
 function registerSemanticTools(mcp: McpServer, sb: Sb) {
+  applySemanticAnnotations(mcp); // #1402 — attach MCP annotation hints to every tool below
 
   // ── SEMANTIC TOOL 1/3: get_my_context ──────────────────────────────────────
   mcp.tool(
@@ -12055,7 +12114,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.10.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.11.0" });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -12104,10 +12163,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.88.0",
+  ef_version: "2.89.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: MCP_TOOL_COUNT },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.10.0", tools: SEMANTIC_TOOL_COUNT },
+    "/semantic": { server: "nucleo-ia-semantic", version: "0.11.0", tools: SEMANTIC_TOOL_COUNT },
     "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

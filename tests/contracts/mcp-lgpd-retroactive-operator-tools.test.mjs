@@ -210,8 +210,8 @@ test('p239b #332: nucleo-ia-hub MCP server bumped to 2.79.0 (was 2.78.1 pre-p239
   );
 });
 
-test('ef_version is 2.88.0 (#1397 CR authority hardening; 2.87.0 at Wave 6b)', () => {
-  assert.match(EF, /ef_version:\s*"2\.88\.0"/, '/health must report ef_version 2.88.0');
+test('ef_version is 2.89.0 (#1402 semantic tool annotations; 2.88.0 at #1397 CR authority)', () => {
+  assert.match(EF, /ef_version:\s*"2\.89\.0"/, '/health must report ef_version 2.89.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.79.0', () => {
