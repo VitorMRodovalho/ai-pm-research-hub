@@ -67,6 +67,18 @@ Three surfaces:
   merge-only) driven by the `SEMANTIC_TOOL_ANNOTATIONS` map — annotations are advisory hints, NEVER a
   substitute for the per-action confirm-gate/`canV4` server-side guard. Parity guarded by
   `tests/contracts/1402-semantic-tool-annotations.test.mjs`.
+  **#1418 (ef 2.90.0 / `/mcp` 2.80.0 / `/actions` 0.2.0):** extended the same MCP annotations to the RAW
+  catalog (`registerTools` → covers both `/mcp` and `/actions`, which reuses the defs via `filterToAllowlist`).
+  Unlike the consolidated semantic tools, each raw tool is one verb, so it is classified by NAME via
+  `classifyRawTool()` (not a hand map): read prefixes (`get_/list_/search_/exec_/explain_/knowledge_/wiki_`)
+  + a few explicit reads → `readOnlyHint`; irreversible/removal verbs (`delete_/archive_/offboard_/drop_/
+  leave_/withdraw_/revoke_/unlink_` + explicit `lgpd_execute_retroactive_deletion`,
+  `member_remove_alternate_email`, `force_revoke_curation_drive_access`) → `destructiveHint`; else a plain
+  write; `openWorldHint=false` for all. Live distribution: 203 read / 122 write / 17 destructive (342).
+  Wrapper `applyRawAnnotations` (called at the top of `registerTools`, composes with `filterToAllowlist`
+  and the `countRegisteredTools` shim). Parity + a destructive-NAME safety net (any irreversible-verb tool
+  MUST be destructive — closes the silent-misclassification gap) guarded by
+  `tests/contracts/1418-raw-tool-annotations.test.mjs`.
   **Wave 6a comms/drive/partners tools pass through RPC-internal authority** (comms reads = `manage_comms`/
   `manage_member`/`write_board`; partner reads = `view_partner`, writes = `manage_partner`; webinar review/convert
   = `manage_event`; drive-admin = `manage_platform`/`manage_member`). Migration `20260805000460` added the #785
@@ -97,7 +109,7 @@ Three surfaces:
   Contract guards: `tests/contracts/semantic-envelope-w{1,2,3,4,5,6a,6b}.test.mjs`. NOTE: `mcp.tool(` registrations are counted
   differently per surface — `/semantic` tools live in `registerSemanticTools()` and must be excluded from
   the `/mcp` 256-cap computation (see the SEMANTIC_ONLY set in the #1377 test).
-- `/actions` (server: `nucleo-ia-actions`, #1377) — **overflow surface** for the Claude chat connector's
+- `/actions` (server: `nucleo-ia-actions` v0.2.0, #1377; annotated in #1418) — **overflow surface** for the Claude chat connector's
   **256-tool per-connector cap**. The connector ingests tools ALPHABETICALLY by display name and drops
   everything past the ~`manage_*` boundary — i.e. almost the entire write/action tail (schedule_interview,
   submit_interview_scores, move_card, offboard_member, …). `/actions` re-exposes that dropped tail as a SECOND

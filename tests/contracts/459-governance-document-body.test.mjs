@@ -354,5 +354,5 @@ test('#459 logUsage extended with optional responseSummary → p_response_summar
 
 test('#459: /health derives the /mcp tool count (no hardcoded literal) — #1392', () => {
   // #1392 retired the drift-prone literal (was 323 vs live 342); /health derives from the registrar.
-  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/);
+  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.80\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/);
 });
