@@ -989,6 +989,7 @@ Quando engagement.status='active' é criado (via aceite de invite OU aprovação
 // --- Register MCP tools (runtime source of truth: MCP tools/list + /health; never hardcode the count here) ---
 
 function registerTools(mcp: McpServer, sb: Sb) {
+  applyRawAnnotations(mcp); // #1418 — attach MCP annotation hints to every raw tool below (covers /mcp AND /actions)
 
   // ===== READ TOOLS (1-10, 16-19, 20-23) =====
 
@@ -8107,6 +8108,58 @@ function applySemanticAnnotations(mcp: McpServer): void {
   };
 }
 
+// #1418 — MCP tool annotations for the RAW tool surface (registerTools → both /mcp and /actions).
+// Direct follow-up to #1402, which annotated ONLY /semantic. The `/actions` connector is consumed
+// TODAY (the #1377 overflow surface for the 256-tool cap) and re-exposes the destructive write tail
+// (offboard_member, revoke_champion, delete_card, …) with — before this — ZERO annotation hints, so
+// a host had no signal to warn before running them. Same rationale as #1402: the standard hints
+// (readOnlyHint/destructiveHint/idempotentHint/openWorldHint) are what a HOST reads, distinct from
+// our own `audit` envelope block (which the host does not read).
+//
+// Unlike the consolidated /semantic tools (each a multi-action verb set, hand-classified in
+// SEMANTIC_TOOL_ANNOTATIONS), every RAW tool is a SINGLE verb — so classification is derived from
+// the tool NAME, not a 342-entry hand map:
+//   - read verbs (get_/list_/search_/exec_/explain_/knowledge_/wiki_ prefixes + a few explicit reads
+//     that don't start with one) → readOnlyHint. Reuses SEM_RO (openWorldHint already false).
+//   - irreversible/removal verbs (delete_/archive_/offboard_/drop_/leave_/withdraw_/revoke_/unlink_
+//     prefixes + explicit names that hide the verb mid-name: lgpd_execute_retroactive_deletion,
+//     member_remove_alternate_email, force_revoke_curation_drive_access) → SEM_DESTRUCTIVE.
+//   - everything else → a plain write (SEM_WRITE, neither hint).
+// Deliberately CONSERVATIVE on the warn side: a removal verb is flagged destructive even when
+// technically re-doable (unlink/*), because a false readOnly is the ONLY unsafe error (it suppresses
+// a confirmation the user should see); a false destructive merely over-warns. Ambiguous verbs
+// (compute_/analyze_/detect_/verify_/generate_/cancel_/dismiss_) fall through to SEM_WRITE — safe.
+// openWorldHint=false everywhere (server only ever touches its own Núcleo DB/Drive). Annotations are
+// ADVISORY hints, NEVER a substitute for the server-side canV4 / confirm-gate. Parity + a
+// destructive-name safety net are enforced by tests/contracts/1418-raw-tool-annotations.test.mjs.
+const RAW_READ_PREFIXES = ["get_", "list_", "search_", "exec_", "explain_", "knowledge_", "wiki_"];
+const RAW_DESTRUCTIVE_PREFIXES = ["delete_", "archive_", "offboard_", "drop_", "leave_", "withdraw_", "revoke_", "unlink_"];
+const RAW_READ_NAMES = new Set<string>(["member_list_emails", "member_resolve_email", "verify_certificate", "check_code_schema_drift", "export_anexo_i", "export_audit_log_csv"]);
+const RAW_DESTRUCTIVE_NAMES = new Set<string>(["lgpd_execute_retroactive_deletion", "member_remove_alternate_email", "force_revoke_curation_drive_access"]);
+
+function classifyRawTool(name: string): SemanticAnnotation {
+  if (RAW_DESTRUCTIVE_NAMES.has(name)) return SEM_DESTRUCTIVE;
+  if (RAW_READ_NAMES.has(name)) return SEM_RO;
+  if (RAW_DESTRUCTIVE_PREFIXES.some((p) => name.startsWith(p))) return SEM_DESTRUCTIVE;
+  if (RAW_READ_PREFIXES.some((p) => name.startsWith(p))) return SEM_RO;
+  return SEM_WRITE;
+}
+
+// Wrap mcp.tool so every registerTools registration attaches its classified annotation via
+// RegisteredTool.update({annotations}) (merge-only — leaves inputSchema/handler/description intact,
+// SDK mcp.js#640). Composes with filterToAllowlist (/actions wraps first → this wraps its FILTERED
+// tool; a filtered-out name returns undefined so the `typeof reg.update` guard no-ops) and with the
+// countRegisteredTools() shim (its .tool() returns undefined → same guard no-ops → count unaffected).
+function applyRawAnnotations(mcp: McpServer): void {
+  const orig = mcp.tool.bind(mcp) as (...args: unknown[]) => { update?: (u: { annotations: SemanticAnnotation }) => void } | undefined;
+  (mcp as unknown as { tool: (...a: unknown[]) => unknown }).tool = (...args: unknown[]) => {
+    const name = args[0] as string;
+    const reg = orig(...args);
+    if (reg && typeof reg.update === "function") reg.update({ annotations: classifyRawTool(name) });
+    return reg;
+  };
+}
+
 function registerSemanticTools(mcp: McpServer, sb: Sb) {
   applySemanticAnnotations(mcp); // #1402 — attach MCP annotation hints to every tool below
 
@@ -12085,7 +12138,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.79.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.80.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -12142,7 +12195,7 @@ app.all("/actions", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-actions", version: "0.1.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-actions", version: "0.2.0" });
     registerTools(filterToAllowlist(mcp, ACTIONS_ALLOWLIST), sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -12163,11 +12216,11 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.89.0",
+  ef_version: "2.90.0",
   surfaces: {
-    "/mcp": { server: "nucleo-ia-hub", version: "2.79.0", tools: MCP_TOOL_COUNT },
+    "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: "0.11.0", tools: SEMANTIC_TOOL_COUNT },
-    "/actions": { server: "nucleo-ia-actions", version: "0.1.0", tools: ACTIONS_ALLOWLIST.size },
+    "/actions": { server: "nucleo-ia-actions", version: "0.2.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
   sdk: "1.29.0",

@@ -202,24 +202,24 @@ test('p239b #332: both tools validate UUID params via isUUID helper before RPC c
 
 // ─── 7. Version + tool count bump consistency ────────────────────────────────
 
-test('p239b #332: nucleo-ia-hub MCP server bumped to 2.79.0 (was 2.78.1 pre-p239b)', () => {
+test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw annotations)', () => {
   assert.match(
     EF,
-    /name:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"/,
-    'nucleo-ia-hub must declare version 2.79.0 in McpServer constructor'
+    /name:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.80\.0"/,
+    'nucleo-ia-hub must declare version 2.80.0 in McpServer constructor'
   );
 });
 
-test('ef_version is 2.89.0 (#1402 semantic tool annotations; 2.88.0 at #1397 CR authority)', () => {
-  assert.match(EF, /ef_version:\s*"2\.89\.0"/, '/health must report ef_version 2.89.0');
+test('ef_version is 2.90.0 (#1418 raw /actions+/mcp tool annotations; 2.89.0 at #1402 semantic annotations)', () => {
+  assert.match(EF, /ef_version:\s*"2\.90\.0"/, '/health must report ef_version 2.90.0');
 });
 
-test('#1392: /health /mcp surface derives its tool count + keeps version 2.79.0', () => {
+test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
   // #1392 retired the drift-prone literal (was 323 vs live 342); /health derives from the registrar.
   assert.match(
     EF,
-    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/,
-    '/health /mcp must derive from MCP_TOOL_COUNT (version pinned 2.79.0)'
+    /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.80\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/,
+    '/health /mcp must derive from MCP_TOOL_COUNT (version pinned 2.80.0)'
   );
 });
 

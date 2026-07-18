@@ -33,7 +33,7 @@ test('#191: the broken advance_card_curation MCP tool is removed', () => {
 test('#191: /health derives the /mcp tool count (no hardcoded literal) — #1392', () => {
   // #1392 retired the drift-prone literal (was 323 while the live catalog had grown to 342);
   // /health now derives from the registrar. Assert the wiring, not a pinned number.
-  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/,
+  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.80\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/,
     '/health /mcp must derive from MCP_TOOL_COUNT');
 });
 
