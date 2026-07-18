@@ -352,6 +352,7 @@ test('#459 logUsage extended with optional responseSummary → p_response_summar
     'logUsage must forward response_summary to log_mcp_usage');
 });
 
-test('#459 + #209 + #301 + #1138 /health declares /mcp tools = 323', () => {
-  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*323\s*\}/);
+test('#459: /health derives the /mcp tool count (no hardcoded literal) — #1392', () => {
+  // #1392 retired the drift-prone literal (was 323 vs live 342); /health derives from the registrar.
+  assert.match(EF, /"\/mcp":\s*\{\s*server:\s*"nucleo-ia-hub"\s*,\s*version:\s*"2\.79\.0"\s*,\s*tools:\s*MCP_TOOL_COUNT\s*\}/);
 });

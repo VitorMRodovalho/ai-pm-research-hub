@@ -191,14 +191,12 @@ test('/health endpoint reports both /mcp and /semantic surfaces', () => {
   assert.match(m[0], /"\/semantic":/, '/health should report /semantic surface');
   assert.match(m[0], /"nucleo-ia-hub"/, '/health should report /mcp server name');
   assert.match(m[0], /"nucleo-ia-semantic"/, '/health should report /semantic server name');
-  assert.match(m[0], /tools:\s*52/, '/health should report 52 tools on /semantic (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383)');
-  // p239b: /mcp grew 299 → 301 via +2 LGPD retroactive operator tools (#332 close);
-  // then 301 → 304 via the #411 selection-cutoff MCP exposure (+3); then 304 → 303 via #191
-  // (removed the broken advance_card_curation tool); then 303 → 306 via #188 (+3 curator-native tools);
-  // then 306 → 307 via #415 (+1 get_recurrence_stockout); then 307 → 308 via #459 (+1 get_governance_document_body);
-  // then 308 → 311 via #209 (+3 drive revocation tools); then 311 → 314 via #301 (+3 curation drive grant tools);
-  // then 314 → 317 via #1099 (+3 comms scheduling on-ramp tools), then 317 → 323 via #1138 (+6 tribe journey parity).
-  assert.match(m[0], /tools:\s*323/, '/health should report 323 tools on /mcp (317 → 323 via #1138 tribe hybrid-journey MCP parity)');
+  // #1392: /health DERIVES per-surface counts from the registrars (no hardcoded literal that drifts
+  // each wave — /mcp had drifted 323→342 before this). Assert the wiring, not a pinned number. The
+  // frozen /semantic count (52) is asserted authoritatively in semantic-envelope-w6b; the /mcp catalog
+  // grows every wave and is intentionally NOT pinned anywhere.
+  assert.match(m[0], /"\/semantic":\s*\{[^}]*tools:\s*SEMANTIC_TOOL_COUNT\b/, '/semantic health must derive from SEMANTIC_TOOL_COUNT');
+  assert.match(m[0], /"\/mcp":\s*\{[^}]*tools:\s*MCP_TOOL_COUNT\b/, '/mcp health must derive from MCP_TOOL_COUNT');
 });
 
 // ─── 7. /mcp regression-safety guarantee ──────────────────────────────────────
