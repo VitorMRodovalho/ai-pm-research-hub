@@ -5390,6 +5390,7 @@ const ptBR: Record<string, string> = {
   'governance.cr.priority.medium': 'Média',
   'governance.cr.priority.low': 'Baixa',
   'governance.cr.noData': 'Nenhum dado disponível.',
+  'governance.cr.notAuthorized': 'Você não tem autoridade para visualizar as aprovações de governança.',
   'governance.cr.recentApproved': 'Aprovados Recentemente',
   'governance.previewLink': 'Preview Manual R3',
   'governance.approvals_tab': 'Aprovações',

@@ -5385,6 +5385,7 @@ const esLATAM: Record<string, string> = {
   'governance.cr.priority.medium': 'Media',
   'governance.cr.priority.low': 'Baja',
   'governance.cr.noData': 'No hay datos disponibles.',
+  'governance.cr.notAuthorized': 'No tienes autoridad para ver las aprobaciones de gobernanza.',
   'governance.cr.recentApproved': 'Aprobados Recientemente',
   'governance.previewLink': 'Preview Manual R3',
   'governance.approvals_tab': 'Aprobaciones',
