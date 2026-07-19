@@ -224,13 +224,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Load the authorization request from GoTrue and route the UI. Returns via
     // redirect_url when the user has previously consented to this client.
+    // MUST always reach a terminal state (consent/redirect/error) — never leave the
+    // page spinning on "loading". A silent hang here reads to the user (and the MCP
+    // client, e.g. Perplexity) as "something went wrong" with no diagnosable cause.
     async function loadAuthorizationDetails() {
-      const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+      let data, error;
+      try {
+        ({ data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId));
+      } catch (e) {
+        console.error('[oauth-consent] getAuthorizationDetails threw:', e);
+        showError((document.getElementById('i18n-codeError')?.textContent || 'Error loading authorization request.') + ' (' + (e?.message || e) + ')');
+        return;
+      }
       if (error) {
+        console.error('[oauth-consent] getAuthorizationDetails error:', error);
         showError(error.message || document.getElementById('i18n-codeError')?.textContent || 'Error loading authorization request.');
         return;
       }
-      if ('authorization_id' in data) {
+      if (data && typeof data === 'object' && 'authorization_id' in data) {
         const clientName = data.client?.name || data.client?.client_name;
         const clientEl = document.getElementById('client-name');
         if (clientName && clientEl) {
@@ -238,10 +249,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           clientEl.classList.remove('hidden');
         }
         showConsent();
-      } else if (data.redirect_url) {
+      } else if (data && data.redirect_url) {
         // Already consented — return straight to the client.
         sessionStorage.removeItem('mcp_authorization_id');
         window.location.href = data.redirect_url;
+      } else {
+        // Neither a pending authorization nor a redirect — unexpected shape.
+        console.error('[oauth-consent] unexpected getAuthorizationDetails shape:', data);
+        showError((document.getElementById('i18n-codeError')?.textContent || 'Error loading authorization request.') + ' (unexpected response)');
       }
     }
 
@@ -291,14 +306,28 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     // Init — check if already logged in
     async function init() {
       if (!authorizationId) return;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await loadAuthorizationDetails();
-      } else {
-        showLogin();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await loadAuthorizationDetails();
+        } else {
+          showLogin();
+        }
+      } catch (e) {
+        console.error('[oauth-consent] init failed:', e);
+        showError('Erro: ' + (e?.message || e));
       }
     }
+
+    // Watchdog: a consent page must never spin forever. If we're still showing the
+    // loading state after 20s, surface an actionable error instead of an infinite
+    // spinner (which is what a stuck getSession/getAuthorizationDetails looks like).
+    setTimeout(() => {
+      if (loading && !loading.classList.contains('hidden')) {
+        console.error('[oauth-consent] watchdog: still loading after 20s');
+        showError((document.getElementById('i18n-codeError')?.textContent || 'Timed out loading the authorization request.') + ' (timeout — reconnect the connector)');
+      }
+    }, 20000);
 
     init();
   </script>
