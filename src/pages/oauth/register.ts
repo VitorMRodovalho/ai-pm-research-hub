@@ -40,9 +40,11 @@ const json = (obj: unknown, status = 201) =>
     headers: { "Content-Type": "application/json", ...CORS },
   });
 
-// A public client never sends a secret (token_endpoint_auth_method: none), but we echo a
-// deterministic placeholder for clients that expect the field — it is ignored under PKCE.
-const placeholderSecret = (clientId: string) => `mcp_pub_${clientId.replace(/-/g, "")}`;
+// IMPORTANT: we register PUBLIC clients (token_endpoint_auth_method: "none", PKCE) and MUST
+// NOT return a client_secret. Returning even a placeholder secret makes some clients
+// (observed: Perplexity) treat themselves as confidential and send `client_secret_post` at
+// /oauth/token, which GoTrue rejects — "client is registered for 'none' but 'client_secret_post'
+// was used" (400 invalid_credentials). RFC 7591: a public client gets no client_secret.
 
 function sanitizeRedirectUris(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
@@ -101,14 +103,12 @@ export const POST: APIRoute = async ({ request }) => {
         const created = (await resp.json()) as any;
         return json({
           client_id: created.client_id,
-          client_secret: placeholderSecret(created.client_id),
           client_name: created.client_name ?? clientName,
           redirect_uris: created.redirect_uris ?? redirectUris,
           grant_types: created.grant_types ?? grantTypes,
           response_types: created.response_types ?? responseTypes,
           token_endpoint_auth_method: "none",
           client_id_issued_at: Math.floor(Date.now() / 1000),
-          client_secret_expires_at: 0,
         });
       }
       // Non-2xx from admin API → fall through to the shared-client fallback below.
@@ -119,14 +119,12 @@ export const POST: APIRoute = async ({ request }) => {
   // pre-registered callbacks will pass authorize — same behavior as before true DCR.
   return json({
     client_id: FALLBACK_CLIENT_ID,
-    client_secret: placeholderSecret(FALLBACK_CLIENT_ID),
     client_name: clientName,
     redirect_uris: body.redirect_uris || [],
     grant_types: grantTypes,
     response_types: responseTypes,
     token_endpoint_auth_method: "none",
     client_id_issued_at: Math.floor(Date.now() / 1000),
-    client_secret_expires_at: 0,
   });
 };
 
