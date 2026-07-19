@@ -29,17 +29,31 @@ The 52 semantic tools cover seven intent domains (full catalog: [`docs/reference
 
 ## Compatibility
 
-| Client | Status | Recommended endpoint | Notes |
-|--------|--------|----------------------|-------|
-| Claude.ai | ✅ Verified | `/mcp` (full catalog) | Web and desktop. Streamable HTTP SSE. |
-| Claude Code | ✅ Verified | `/mcp` (full catalog) | Terminal — see token workaround below. |
-| ChatGPT | ✅ Verified (beta) | `/mcp` (full catalog) | Settings → Apps → Connectors → Advanced → New App. Apps SDK submission should target `/mcp/semantic`. |
-| Perplexity | ⚠️ Use `/mcp/semantic` | **`/mcp/semantic`** | Transport: **Streamable HTTP** (not SSE). Auth: OAuth 2.0. Perplexity rejected the full tool catalog (see GH #277 / #280). |
-| Cursor / VS Code | ✅ Verified | `/mcp` (full catalog) | Settings → MCP → Add. OAuth flow. |
-| Manus AI | ✅ Verified | `/mcp` (full catalog) | Import by JSON: `{"url": "https://nucleoia.vitormr.dev/mcp"}` |
-| xAI / Grok | 🟡 Custom MCP | `/mcp/semantic` | BYO remote MCP via API; catalog submission not yet documented publicly. |
-| OpenAI Apps SDK review | 🟡 For submission | `/mcp/semantic` | Apps SDK review expects bounded tools + review-account; use semantic surface. |
-| Anthropic Connectors Directory review | 🟡 For submission | `/mcp/semantic` | Directory pre-submission checklist favors short bounded tool catalogs. |
+**Member default endpoint for every client below = `/mcp/semantic`** (`/mcp` is the power-user escape-hatch). Since #1428 the `/oauth/register` endpoint does **true Dynamic Client Registration** (see the DCR note under the table), so any client following the standard MCP remote-OAuth flow self-registers its own callback — no manual per-client allow-listing.
+
+| Client | Kind | Auth | Notes |
+|--------|------|------|-------|
+| Claude.ai | web/desktop | OAuth + DCR | ✅ Verified. Streamable HTTP SSE. |
+| Claude Code | CLI | OAuth (`claude mcp add`) or manual token | ✅ Verified. See CLI token note below. |
+| ChatGPT | web (developer mode) | OAuth + DCR | Settings → Apps → Connectors → Advanced → New App. `chatgpt.com/aip/g-callback` also on the shared client. |
+| Perplexity | web | OAuth + DCR (Streamable HTTP, not SSE) | If `invalid redirect_uri`: the client cached the pre-DCR shared client — re-register (see Troubleshooting). |
+| Cursor | IDE + CLI | OAuth + DCR (or manual `auth` client_id/secret) | "Add to Cursor" or Settings → MCP → Add. |
+| OpenAI Codex | CLI | OAuth + DCR (`codex mcp login`) | **Requires DCR** (no static client_id); now supported. ⚠️ Codex OAuth reportedly does not work behind an HTTP proxy — if it fails, use the manual-token path. |
+| xAI Grok | web + Grok Build (CLI) + Responses API | OAuth + DCR | grok.com/connectors → New Connector → Custom. Grok Build works like Claude Code. |
+| Manus | web | OAuth + DCR | Settings → Integrations → Custom MCP Servers → Add Server. |
+| Gemini CLI | CLI | OAuth (auto-discovery) | Discovers OAuth config from the server; SSE/HTTP. |
+| Gemini Enterprise (Agent Platform) | platform | **Manual client_id/secret (no DCR)** | Needs a dedicated OAuth client minted via the GoTrue admin API (`POST /auth/v1/admin/oauth/clients`). |
+| Chinese CLIs (Kimi Code, DeepSeek/Qwen/GLM agents) | CLI | OAuth + DCR via the CLI client | Connect like any other CLI MCP client ("paste any MCP URL"). |
+| OpenAI Apps SDK / Anthropic Directory review | submission | OAuth | Bounded catalog — target `/mcp/semantic`. |
+
+### Dynamic Client Registration (DCR) — how new clients register (#1428)
+
+`/oauth/register` (RFC 7591) mints a **dedicated public OAuth client per registration** via the GoTrue admin API (`POST /auth/v1/admin/oauth/clients`), persisting the caller's own `redirect_uris`. This replaced a shim that returned one shared, hardcoded client (`8636c0d0`) whose fixed allow-list only covered Claude/ChatGPT callbacks — every other client 400'd with `invalid redirect_uri`.
+
+- **Redirect URIs are exact-match, no wildcards** (Supabase constraint). A client's callback must match byte-for-byte.
+- Supabase's admin **update** OAuth-client endpoint is currently broken (500); admin **create/delete** work — which is why per-client creation (not widening one shared client) is the design.
+- **DCR is open/unauthenticated by design** (MCP clients register before login). A registered client can do nothing until a real user completes consent — user auth + the consent screen are the data gate.
+- **Non-DCR clients** (e.g. Gemini Enterprise, static-client Okta setups) need a dedicated client created out-of-band via the admin API; hand them the resulting `client_id`.
 
 ## Setup by Client
 
@@ -176,6 +190,7 @@ node scripts/audit-mcp-tool-matrix.mjs --runtime
 | ChatGPT "Internal Server Error" | Known ChatGPT beta issue — try again later |
 | OAuth window doesn't open | Check browser popup blocker settings |
 | HTTP `403 Error 1010 browser_signature_banned` on `/mcp` or `/.well-known/oauth-*` | Cloudflare BIC block. See [`docs/infra/CLOUDFLARE_MCP_RULES.md`](infra/CLOUDFLARE_MCP_RULES.md) — WAF skip rule + rate limit applied for programmatic clients (Python-urllib, etc.). |
+| `400 validation_failed: invalid redirect_uri` at `/auth/v1/oauth/authorize` | The client cached the pre-DCR shared client (`8636c0d0`, whose allow-list lacks its callback) and is not re-registering. Fix: fully **remove and re-add** the connector so it runs fresh DCR; if it still reuses the cached client, re-add with a **cache-busting URL** (`…/mcp/semantic?c=1`) so the client treats it as a new server and re-registers. Do NOT try to widen `8636c0d0` — Supabase's update-client endpoint is broken (500). Last resort (destructive): delete + recreate `8636c0d0`, forcing every cached client to re-register. |
 
 ## Architecture
 
