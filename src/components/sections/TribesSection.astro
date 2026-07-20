@@ -8,6 +8,7 @@
 import { MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
+import { getPlaylistUrl } from '../../data/youtube-playlists';
 import { createClient } from '@supabase/supabase-js';
 
 interface Props { lang?: Lang; deadline?: string | null; }
@@ -318,7 +319,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     </div>
 
     <div class="text-center mt-6">
-      <a href="https://youtube.com/playlist?list=PLRexyUb8O7bo"
+      <a href={getPlaylistUrl('leadersIntro')}
          target="_blank" rel="noopener"
          class="text-crimson font-bold text-[.95rem] no-underline hover:underline">
         {t('tribes.playlist', lang)}

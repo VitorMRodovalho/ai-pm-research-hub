@@ -1056,7 +1056,7 @@ test('R5: public playlist moved to footer; ResourcesSection holds no deadline co
   assert.equal(resources.includes('formatPlaylistDeadline'), false);
   // O link público de webinars (playlist do YouTube) está no rodapé
   assert.equal(footer.includes("t('footer.webinars', lang)"), true);
-  assert.equal(footer.includes('PLQJVKrw1fcryumj-vbZYK7Q-zoeAGQCos'), true); // Ciclo 4 webinars playlist (corrigido de PLRexyUb8O7bo, id errado — owner 2026-07-20)
+  assert.equal(footer.includes("getPlaylistUrl('webinars')"), true); // link de webinars resolvido via SSOT src/data/youtube-playlists.ts (guard: youtube-playlists-ssot.test.mjs)
 });
 
 test('public home locale copy no longer hardcodes cycle 3 labels', () => {
