@@ -98,19 +98,31 @@ export default function MilestoneCelebration({ lang = 'pt-BR' }: Props) {
     boot();
   }, [load]);
 
-  const dismiss = useCallback(() => {
-    setCurrent((cur) => {
-      if (!cur) return null;
-      getSb()?.rpc('acknowledge_milestone', { p_milestone_key: cur }); // persist "seen" server-side
-      setQueue((q) => {
-        const next = q.filter((k) => k !== cur);
-        // 300ms cooldown before the next card so a fast mobile tap doesn't cascade onto it.
-        if (next.length > 0) setTimeout(() => setCurrent(next[0]), 300);
-        return next;
-      });
-      return null;
-    });
+  // Persist "seen" server-side. AWAITED (was fire-and-forget): an un-awaited rpc left ~58% of active
+  // members with a card that reappeared on every page load, because a fast mobile tap + navigation
+  // dropped the in-flight write. Best-effort — a failure still advances the UI and retries next load.
+  const acknowledge = useCallback(async (key: string) => {
+    const sb = getSb();
+    if (!sb) return;
+    try { await sb.rpc('acknowledge_milestone', { p_milestone_key: key }); }
+    catch { /* best-effort; card still advances, get_my_milestones re-shows on next load if it failed */ }
   }, [getSb]);
+
+  const advance = useCallback((cur: string) => {
+    setQueue((q) => {
+      const next = q.filter((k) => k !== cur);
+      // 300ms cooldown before the next card so a fast mobile tap doesn't cascade onto it.
+      if (next.length > 0) setTimeout(() => setCurrent(next[0]), 300);
+      return next;
+    });
+    setCurrent(null);
+  }, []);
+
+  const dismiss = useCallback(async () => {
+    if (!current) return;
+    await acknowledge(current);
+    advance(current);
+  }, [current, acknowledge, advance]);
 
   // a11y: move focus to the dismiss button when a card appears (keyboard users).
   useEffect(() => {
@@ -160,6 +172,15 @@ export default function MilestoneCelebration({ lang = 'pt-BR' }: Props) {
         {href && (
           <a
             href={href}
+            onClick={async (e) => {
+              // Acknowledge BEFORE leaving — otherwise the CTA path never marks the milestone seen
+              // and the card reappears on the destination (and every page after).
+              if (current) {
+                e.preventDefault();
+                await acknowledge(current);
+                window.location.href = href;
+              }
+            }}
             className="min-h-[44px] inline-flex items-center px-4 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-semibold no-underline hover:bg-emerald-100/50"
           >
             {c.cta}
