@@ -56,7 +56,7 @@ export const ALL: APIRoute = async ({ request }) => {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        'WWW-Authenticate': `Bearer resource_metadata="${BASE}/.well-known/oauth-protected-resource"`,
+        'WWW-Authenticate': `Bearer resource_metadata="${BASE}/.well-known/oauth-protected-resource/mcp/semantic"`,
         ...CORS_HEADERS,
       },
     });

@@ -28,6 +28,13 @@ import { env as cfEnv } from "cloudflare:workers";
 // (claude.ai, claude.com, chatgpt.com, localhost) still works for those callbacks.
 const FALLBACK_CLIENT_ID = "8636c0d0-a359-45f5-a2a4-8097dbdaabd6";
 
+// GoTrue's OAuth server keys clients by UUID and rejects a non-UUID client_id at
+// authorize with 400 "invalid client_id format". A 2026-03 shim once returned
+// `nucleo-mcp-<hex>` (non-UUID); clients cache the DCR client_id and never re-register,
+// so that doomed value persisted for months. We only ever hand back an id GoTrue will
+// accept — see the UUID guard on the true-DCR path below.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -101,26 +108,54 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (resp.ok) {
         const created = (await resp.json()) as any;
-        return json({
-          client_id: created.client_id,
-          client_name: created.client_name ?? clientName,
-          redirect_uris: created.redirect_uris ?? redirectUris,
-          grant_types: created.grant_types ?? grantTypes,
-          response_types: created.response_types ?? responseTypes,
-          token_endpoint_auth_method: "none",
-          client_id_issued_at: Math.floor(Date.now() / 1000),
-        });
+        // UUID guard: only return an id GoTrue itself will accept at authorize. If the
+        // admin API ever returns a non-UUID (or omits client_id), fall through to the
+        // fallback rather than hand the client a value that would fail as "invalid
+        // client_id format" and then live un-fixably in its cache.
+        if (typeof created?.client_id === "string" && UUID_RE.test(created.client_id)) {
+          return json({
+            client_id: created.client_id,
+            client_name: created.client_name ?? clientName,
+            redirect_uris: created.redirect_uris ?? redirectUris,
+            grant_types: created.grant_types ?? grantTypes,
+            response_types: created.response_types ?? responseTypes,
+            token_endpoint_auth_method: "none",
+            client_id_issued_at: Math.floor(Date.now() / 1000),
+          });
+        }
+        // ok but no usable UUID → fall through to the shared-client fallback below.
       }
       // Non-2xx from admin API → fall through to the shared-client fallback below.
     } catch { /* network/parse error → fall through */ }
   }
 
-  // Fallback (no service role, or admin API failed): return the shared client. Only its
-  // pre-registered callbacks will pass authorize — same behavior as before true DCR.
+  // The caller sent redirect_uris but EVERY one was rejected by the sanitizer (non-https,
+  // non-localhost). Do not hand back a misleading 201 on the shared client: the caller's
+  // callback is registered nowhere and would hard-fail at authorize ("invalid
+  // redirect_uri"). RFC 7591: reject the registration so the failure is legible here.
+  // (Gated strictly on "a non-empty request sanitized to nothing" — a genuinely absent
+  // field, or a valid https request that hit an admin-API outage, still falls through.)
+  if (Array.isArray(body.redirect_uris) && body.redirect_uris.length > 0 && redirectUris.length === 0) {
+    return json(
+      {
+        error: "invalid_redirect_uri",
+        error_description:
+          "redirect_uris must be https (or http://localhost for dev); none of the provided URIs qualified.",
+      },
+      400
+    );
+  }
+
+  // Fallback (no service role, or admin API failed for otherwise-valid URIs): return the
+  // shared client. Its pre-registered callbacks (claude.ai/claude.com/chatgpt.com/
+  // localhost) still pass authorize. Return an EMPTY redirect_uris rather than echoing the
+  // caller's requested URIs — we did NOT register them here, and echoing them reads as
+  // "your callback is live" when GoTrue will reject any callback off the shared client's
+  // fixed allow-list. (FM-01, audit 2026-07-20.)
   return json({
     client_id: FALLBACK_CLIENT_ID,
     client_name: clientName,
-    redirect_uris: body.redirect_uris || [],
+    redirect_uris: [],
     grant_types: grantTypes,
     response_types: responseTypes,
     token_endpoint_auth_method: "none",
