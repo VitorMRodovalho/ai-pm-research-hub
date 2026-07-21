@@ -56,16 +56,25 @@
  *   the next scheduled cron run (no 23502, no other constraint violation, no
  *   Unauthorized given service_role bypass).
  *
- * Why tx=rollback (not actual INSERT + cleanup):
- *   - notifications INSERT could trigger downstream consumers (realtime/email).
- *     Rolling back the transaction means consumers never see the rows.
- *   - admin_audit_log INSERT is append-only; the row exists momentarily but is
- *     never committed.
- *   - PostgREST docs: https://docs.postgrest.org/en/v12/references/transactions.html
+ * tx=rollback does NOT hold here — explicit cleanup is mandatory (#1170 / #231):
+ *   The original design assumed `Prefer: tx=rollback` would undo the notifications +
+ *   admin_audit_log INSERTs. It does NOT. detect_inactive_members is SECURITY DEFINER,
+ *   and this Supabase's PostgREST does not roll back SECDEF INSERTs on tx=rollback —
+ *   the same class the sibling behavioural invariants test hit (Issue #231, which
+ *   switched to explicit cleanup). Consequence: for ~2 months every CI push/PR AND
+ *   every local `npm test` run committed arm9_inactivity_alert rows to prod. Measured
+ *   2026-07-21: 4216 rows, 100% titled "…há mais de 0 dias" (the threshold=0 helper is
+ *   the only producer of that signature — the weekly cron uses 180 days and yields 0
+ *   candidates), first seen 2026-05-21 (before the cron's first fire), timing correlated
+ *   with ci.yml runs. THIS TEST was the "rogue caller" behind #1170. The #1170 dedup
+ *   (6-day window) only throttled the in-app noise; it did not stop the writes.
+ *   Fix (mirrors #231): each non-dry-run test anchors a cleanup window to SERVER time,
+ *   then DELETEs the arm9 rows it commits and asserts zero residue. tx=rollback is left
+ *   on the calls as harmless belt, but correctness no longer depends on it.
  *
  * Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. Skipped otherwise.
  *
- * Origin: WATCH-180.F closure (handoff p184 TIER A).
+ * Origin: WATCH-180.F closure (handoff p184 TIER A); prod-leak remediation #1170.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -143,6 +152,61 @@ async function readInactivityThreshold() {
   return rows[0].value;
 }
 
+// --- #1170 prod-leak remediation: explicit arm9 cleanup (tx=rollback is not honored
+// for SECDEF INSERTs — see header + Issue #231). Each non-dry-run test commits real
+// arm9_inactivity_alert rows and MUST remove them.
+
+async function serverNowMinusMinutesIso(minutes) {
+  // Anchor the cleanup window to SERVER time (PostgREST Date response header), never the
+  // runner's local clock, so runner/DB skew can never let the window miss the rows we
+  // just committed. Returns an ISO timestamp `minutes` before server-now.
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+    headers: { 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` },
+  });
+  const serverDate = res.headers.get('date');
+  const base = serverDate ? Date.parse(serverDate) : Date.now();
+  return new Date(base - minutes * 60 * 1000).toISOString();
+}
+
+async function deleteArm9Since(sinceIso) {
+  // Remove only arm9 rows committed in this test's own window (type + created_at scope),
+  // so a legitimate weekly-cron alert (different signature/window) is never touched.
+  const url = `${SUPABASE_URL}/rest/v1/notifications`
+    + `?type=eq.arm9_inactivity_alert&created_at=gte.${encodeURIComponent(sinceIso)}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Prefer': 'return=minimal',
+    },
+  });
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text();
+    throw new Error(`arm9 cleanup DELETE failed: HTTP ${res.status} — ${text}`);
+  }
+}
+
+async function countArm9Since(sinceIso) {
+  const url = `${SUPABASE_URL}/rest/v1/notifications`
+    + `?type=eq.arm9_inactivity_alert&created_at=gte.${encodeURIComponent(sinceIso)}&select=id`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Prefer': 'count=exact',
+      'Range': '0-0',
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`arm9 residue count failed: HTTP ${res.status} — ${text}`);
+  }
+  // content-range header: "0-0/N" (or "*/0" when empty) — N is the exact total.
+  const total = parseInt((res.headers.get('content-range') || '*/0').split('/')[1], 10);
+  return Number.isFinite(total) ? total : 0;
+}
+
 test(
   canRun ? 'detect_inactive_members dry_run=true returns valid shape' : skipMsg,
   { skip: !canRun },
@@ -165,23 +229,34 @@ test(
   async () => {
     // Pre-cron safety: validates that the runtime INSERT path (notifications +
     // admin_audit_log) does not throw 23502 or any other constraint violation.
-    // All side effects rolled back by PostgREST Prefer: tx=rollback.
-    const result = await callDetectInactive(false, { rollback: true });
-    assert.equal(result.success, true, 'success flag should be true (no INSERT errors)');
-    assert.equal(result.dry_run, false, 'dry_run flag should echo false');
-    assert.equal(typeof result.candidates_count, 'number', 'candidates_count should be number');
-    assert.equal(typeof result.managers_notified, 'number', 'managers_notified should be number');
-    assert.ok(result.managers_notified >= 0, 'managers_notified should be non-negative');
+    // #1170: tx=rollback does NOT undo the SECDEF INSERTs, so we clean up explicitly.
+    // At prod threshold (180d) this call typically commits 0 rows, but guard anyway so
+    // a future genuinely-inactive member cannot start leaking here.
+    const since = await serverNowMinusMinutesIso(5);
+    try {
+      const result = await callDetectInactive(false, { rollback: true });
+      assert.equal(result.success, true, 'success flag should be true (no INSERT errors)');
+      assert.equal(result.dry_run, false, 'dry_run flag should echo false');
+      assert.equal(typeof result.candidates_count, 'number', 'candidates_count should be number');
+      assert.equal(typeof result.managers_notified, 'number', 'managers_notified should be number');
+      assert.ok(result.managers_notified >= 0, 'managers_notified should be non-negative');
 
-    // If there ARE inactive candidates, the function should notify at least one
-    // manager (assuming the install has at least one member with manage_platform
-    // capability — which is required for the platform to be operational at all).
-    if (result.candidates_count > 0) {
-      assert.ok(
-        result.managers_notified > 0,
-        `candidates_count=${result.candidates_count} but managers_notified=0 — manage_platform capability may be missing or filter logic broken`
-      );
+      // If there ARE inactive candidates, the function should notify at least one
+      // manager (assuming the install has at least one member with manage_platform
+      // capability — which is required for the platform to be operational at all).
+      if (result.candidates_count > 0) {
+        assert.ok(
+          result.managers_notified > 0,
+          `candidates_count=${result.candidates_count} but managers_notified=0 — manage_platform capability may be missing or filter logic broken`
+        );
+      }
+    } finally {
+      await deleteArm9Since(since);
     }
+    const residue = await countArm9Since(since);
+    assert.equal(residue, 0,
+      `test left ${residue} committed arm9 row(s) in prod (#1170/#231): detect_inactive_members ` +
+      'is SECDEF and tx=rollback does not undo it — the test must delete what it commits.');
   }
 );
 
@@ -199,21 +274,35 @@ test(
     // and the IF NOT p_dry_run AND v_count > 0 branch executes. The helper
     // restores site_config.inactivity_threshold_days defensively before
     // returning AND tx=rollback drops every persisted row at request end.
-    const result = await callTestHelperWithThreshold(0);
+    // #1170: this is THE call that leaked to prod for ~2 months — threshold=0 makes
+    // every active member a candidate, so the INSERT branch always fires and commits
+    // arm9 rows that tx=rollback does not undo. Anchor the cleanup window to server
+    // time BEFORE the call, then delete the committed rows and assert zero residue.
+    const since = await serverNowMinusMinutesIso(5);
+    try {
+      const result = await callTestHelperWithThreshold(0);
 
-    assert.equal(result.success, true, 'success flag should be true');
-    assert.equal(result.dry_run, false, 'dry_run must echo false (helper passes false)');
-    assert.equal(result.threshold_days, 0, 'threshold_days should reflect the override value (0)');
-    assert.ok(result.candidates_count > 0, 'threshold=0 must produce at least one candidate');
-    assert.ok(Array.isArray(result.candidates), 'candidates should be array');
-    assert.ok(
-      result.managers_notified > 0,
-      `INSERT path coverage requires managers_notified > 0 (got ${result.managers_notified}). ` +
-      'On prod this is invariant (manage_platform is required for the platform to be ' +
-      'operational). On CI/seed DBs: verify engagement_kind_permissions seeds at least ' +
-      '1 row with manage_platform capability before treating this as a notifications ' +
-      'INSERT branch regression.'
-    );
+      assert.equal(result.success, true, 'success flag should be true');
+      assert.equal(result.dry_run, false, 'dry_run must echo false (helper passes false)');
+      assert.equal(result.threshold_days, 0, 'threshold_days should reflect the override value (0)');
+      assert.ok(result.candidates_count > 0, 'threshold=0 must produce at least one candidate');
+      assert.ok(Array.isArray(result.candidates), 'candidates should be array');
+      assert.ok(
+        result.managers_notified > 0,
+        `INSERT path coverage requires managers_notified > 0 (got ${result.managers_notified}). ` +
+        'On prod this is invariant (manage_platform is required for the platform to be ' +
+        'operational). On CI/seed DBs: verify engagement_kind_permissions seeds at least ' +
+        '1 row with manage_platform capability before treating this as a notifications ' +
+        'INSERT branch regression.'
+      );
+    } finally {
+      await deleteArm9Since(since);
+    }
+    const residue = await countArm9Since(since);
+    assert.equal(residue, 0,
+      `test left ${residue} committed arm9 row(s) in prod (#1170/#231): the threshold=0 ` +
+      'helper commits real arm9 notifications and tx=rollback does not undo SECDEF INSERTs — ' +
+      'the test must delete every row it commits, else it silently spams the admin inbox.');
   }
 );
 
