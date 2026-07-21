@@ -5624,6 +5624,8 @@ const enUS: Record<string, string> = {
   'profile.xp.variableNote': '(variable: 15–25 pts by type)',
   'profile.xp.tabLifetime': 'All-time',
   'profile.xp.tabCycle': 'Current cycle',
+  'profile.xp.lifetimeTag': 'lifetime',
+  'profile.xp.lifetimeTagTip': 'Permanent achievement (certifications and badges) — always counts, even in the current-cycle view.',
   'profile.xp.ofTotal': '% of total',
   'profile.xp.triggerTipManual': 'Manual recognition by leadership',
   'profile.xp.triggerTipAuto': 'Automatic when source action happens',

@@ -5625,6 +5625,8 @@ const esLATAM: Record<string, string> = {
   'profile.xp.variableNote': '(variable: 15–25 pts por tipo)',
   'profile.xp.tabLifetime': 'Histórico',
   'profile.xp.tabCycle': 'Ciclo actual',
+  'profile.xp.lifetimeTag': 'vitalicio',
+  'profile.xp.lifetimeTagTip': 'Logro permanente (certificaciones e insignias) — siempre cuenta, incluso en la vista del ciclo actual.',
   'profile.xp.ofTotal': '% del total',
   'profile.xp.triggerTipManual': 'Reconocimiento manual por liderazgo',
   'profile.xp.triggerTipAuto': 'Automático cuando la acción fuente ocurre',

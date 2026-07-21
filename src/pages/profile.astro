@@ -1128,10 +1128,18 @@ const PROFILE_I18N = {
     const tabCycleI18n = t('profile.xp.tabCycle', lang) + cycleSuffix;
     const ofTotalI18n = t('profile.xp.ofTotal', lang);
 
+    const lifetimeTagI18n = t('profile.xp.lifetimeTag', lang);
     const cardsHtml = pillars.map((p: any) => {
       const rules: any[] = p.rules || [];
       const pillarRulesId = `pillar-rules-${p.pillar}-${currentXpScope}`;
       const hasPts = p.total_pts > 0;
+      // #1448: conquistas vitalícias (certificações/badges) sempre contam com valor vitalício,
+      // mesmo no escopo ciclo. Marca o pilar e usa histórico unscoped no drilldown.
+      const pillarIsLifetime = !!p.is_lifetime;
+      const earnSource = (isLifetime || pillarIsLifetime) ? allGamificationPoints : scopedPoints;
+      const lifetimeTagHtml = (pillarIsLifetime && !isLifetime)
+        ? `<span class="ml-1 align-middle text-[.5rem] px-1 py-0.5 rounded bg-amber-100 text-amber-800 font-bold uppercase tracking-wide" title="${escapeHtmlSafe(t('profile.xp.lifetimeTagTip', lang))}">∞ ${lifetimeTagI18n}</span>`
+        : '';
       const headerColor = hasPts ? 'text-navy' : 'text-[var(--text-secondary)]';
       const pillarPct = totalPts > 0 ? Math.round((p.total_pts / totalPts) * 100) : 0;
       const barColor = hasPts ? 'bg-teal' : 'bg-[var(--border-default)]';
@@ -1172,7 +1180,7 @@ const PROFILE_I18N = {
 
         let detailHtml = '';
         if (r.pts > 0) {
-          const earnings = scopedPoints.filter((gp: any) => gp.category === r.slug);
+          const earnings = earnSource.filter((gp: any) => gp.category === r.slug);
           if (earnings.length > 0) {
             const shown = earnings.slice(0, 30);
             const overflow = earnings.length - shown.length;
@@ -1215,7 +1223,7 @@ const PROFILE_I18N = {
       return `
         <div class="bg-[var(--surface-base)] rounded-xl border border-[var(--border-default)] p-3 flex flex-col">
           <div class="flex items-center justify-between mb-1">
-            <div class="font-bold text-[.78rem] ${headerColor}">${pillarEmoji(p.pillar)} ${pillarLabel(p.pillar)}</div>
+            <div class="font-bold text-[.78rem] ${headerColor}">${pillarEmoji(p.pillar)} ${pillarLabel(p.pillar)}${lifetimeTagHtml}</div>
             <div class="text-xl font-black text-navy">${p.total_pts}</div>
           </div>
           <div class="text-[.62rem] text-[var(--text-muted)] mb-1">
@@ -1321,7 +1329,7 @@ const PROFILE_I18N = {
             ${initiative ? `<span class="text-[.6rem] text-[var(--text-muted)]">${initiative}</span>` : ''}
           </div>
           <p class="text-[.7rem] text-[var(--text-secondary)] italic">"${safeJust}"</p>
-          <p class="text-[.6rem] text-[var(--text-muted)] mt-1">— ${awarder} · ${criteriaLabel}: ${(c.criteria_met || []).join(', ')}</p>
+          <p class="text-[.6rem] text-[var(--text-muted)] mt-1">— ${awarder}${c.awarded_at ? ` · ${formatDateShort(c.awarded_at)}` : ''} · ${criteriaLabel}: ${(c.criteria_met || []).join(', ')}</p>
         </div>`;
     }).join('');
 
