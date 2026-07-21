@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T21:17:28.920Z",
+  "generated_at": "2026-07-21T02:16:47.311Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -494,7 +494,7 @@
     },
     {
       "name": "get_vep_divergence_report",
-      "description": "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).",
+      "description": "Returns VEP↔Núcleo divergence in 5 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/OfferExtended (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded (is_active=false) but VEP still Submitted/Active; (D) rejection_divergent — Núcleo rejected but VEP offer still open; (E) offer_retracted_active_divergent (#1445) — Núcleo approved/converted + VEP offer retracted (OfferNotExtended/Withdrawn/Declined) but member still is_active=true → offboard on the platform. Each row inclui application_id (+ member_id for bucket E), applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, rejection_count, offer_retracted_active_count, total_divergent, generated_at}. Authority: view_internal_analytics (COI recusal on open cycles). Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled; offboard for bucket E).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false

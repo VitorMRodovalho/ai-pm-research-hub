@@ -5,7 +5,7 @@ import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props { lang?: string; }
 
-type TabKey = 'matrix' | 'selection' | 'onboarding' | 'active_members' | 'rejection';
+type TabKey = 'matrix' | 'selection' | 'onboarding' | 'active_members' | 'rejection' | 'offer_retracted';
 
 
 function useLang(p?: string): string {
@@ -345,6 +345,36 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     }
   };
 
+  // #1445 — reachable offboard action for the "offer retracted + member still active" bucket.
+  // Reuses admin_offboard_member (inactive) — no duplicate offboarding path. Category
+  // 'reacceptance_refusal' (preserves return eligibility); the GP supplies the detail.
+  const offboardMember = async (memberId: string, detailPrompt: string) => {
+    const detail = window.prompt(t('comp.vepReconciliation.offboardPrompt'), detailPrompt);
+    if (detail === null || detail.trim() === '') return;
+    if (!window.confirm(t('comp.vepReconciliation.offboardConfirm'))) return;
+    setPendingId(memberId);
+    setToast(null);
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) throw new Error('no supabase');
+      const { data: r, error } = await sb.rpc('admin_offboard_member', {
+        p_member_id: memberId,
+        p_new_status: 'inactive',
+        p_reason_category: 'reacceptance_refusal',
+        p_reason_detail: detail.trim(),
+        p_reassign_to: null,
+      });
+      if (error) throw error;
+      if (r && typeof r === 'object' && (r as any).error) throw new Error((r as any).error);
+      setToast({ type: 'ok', msg: t('comp.vepReconciliation.offboardOk') });
+      await load();
+    } catch (e: any) {
+      setToast({ type: 'err', msg: `${t('comp.vepReconciliation.offboardErrPrefix')}: ${e?.message || String(e)}` });
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   if (authorized === false) {
     return <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.vepReconciliation.deniedAccess')}</div>;
   }
@@ -374,6 +404,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     onboarding: data.onboarding_divergent || [],
     active_members: data.active_members_divergent || [],
     rejection: data.rejection_divergent || [],
+    offer_retracted: data.offer_retracted_active_divergent || [],
   };
   const matrixDivCount = (matrixData?.totals?.platform_only_count ?? 0) + (matrixData?.totals?.vep_only_count ?? 0);
   const tabCounts: Record<TabKey, number> = {
@@ -382,6 +413,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     onboarding: summary.onboarding_count ?? lists.onboarding.length,
     active_members: summary.active_members_count ?? lists.active_members.length,
     rejection: summary.rejection_count ?? lists.rejection.length,
+    offer_retracted: summary.offer_retracted_active_count ?? lists.offer_retracted.length,
   };
   const tabHints: Record<TabKey, string> = {
     matrix: t('comp.vepReconciliation.tabMatrixHint'),
@@ -389,6 +421,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     onboarding: t('comp.vepReconciliation.tabOnboardingHint'),
     active_members: t('comp.vepReconciliation.tabActiveMembersHint'),
     rejection: t('comp.vepReconciliation.tabRejectionHint'),
+    offer_retracted: t('comp.vepReconciliation.tabOfferRetractedHint'),
   };
   const tabLabels: Record<TabKey, string> = {
     matrix: t('comp.vepReconciliation.tabMatrix'),
@@ -396,6 +429,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     onboarding: t('comp.vepReconciliation.tabOnboarding'),
     active_members: t('comp.vepReconciliation.tabActiveMembers'),
     rejection: t('comp.vepReconciliation.tabRejection'),
+    offer_retracted: t('comp.vepReconciliation.tabOfferRetracted'),
   };
   const currentList = tab === 'matrix' ? [] : lists[tab];
 
@@ -526,7 +560,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
 
       {/* Tabs */}
       <div className="flex border-b border-[var(--border-default)]">
-        {(['matrix', 'selection', 'onboarding', 'active_members', 'rejection'] as TabKey[]).map((key) => {
+        {(['matrix', 'selection', 'onboarding', 'active_members', 'rejection', 'offer_retracted'] as TabKey[]).map((key) => {
           const active = tab === key;
           const count = tabCounts[key];
           return (
@@ -603,18 +637,31 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
                       <td className="px-3 py-2 text-[var(--text-secondary)] text-[11px]">{timeAgo(row.vep_last_seen_at, 'ago')}</td>
                       <td className="px-3 py-2 text-[var(--text-secondary)] text-[11px]">{row.suggested_action}</td>
                       <td className="px-3 py-2 text-right">
-                        {appId ? (
-                          <button
-                            onClick={() => markReconciled(appId)}
-                            disabled={pendingId === appId}
-                            title={t('comp.vepReconciliation.markReconciledHint')}
-                            className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer border-0 disabled:opacity-50"
-                          >
-                            {pendingId === appId ? '…' : `✓ ${t('comp.vepReconciliation.markReconciled')}`}
-                          </button>
-                        ) : (
-                          <span className="text-[var(--text-muted)] text-[10px]">—</span>
-                        )}
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* #1445 — offboard action for the offer-retracted bucket (member still active) */}
+                          {tab === 'offer_retracted' && row.member_id && (
+                            <button
+                              onClick={() => offboardMember(row.member_id, name !== '—' ? `Oferta VEP retirada — ${name}` : '')}
+                              disabled={pendingId === row.member_id}
+                              title={t('comp.vepReconciliation.offboardHint')}
+                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer border-0 disabled:opacity-50"
+                            >
+                              {pendingId === row.member_id ? '…' : `⏻ ${t('comp.vepReconciliation.offboardMember')}`}
+                            </button>
+                          )}
+                          {appId ? (
+                            <button
+                              onClick={() => markReconciled(appId)}
+                              disabled={pendingId === appId}
+                              title={t('comp.vepReconciliation.markReconciledHint')}
+                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer border-0 disabled:opacity-50"
+                            >
+                              {pendingId === appId ? '…' : `✓ ${t('comp.vepReconciliation.markReconciled')}`}
+                            </button>
+                          ) : (!(tab === 'offer_retracted' && row.member_id) && (
+                            <span className="text-[var(--text-muted)] text-[10px]">—</span>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   );
