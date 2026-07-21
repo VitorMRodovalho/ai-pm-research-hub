@@ -44,15 +44,21 @@ SELECT kind, role, scope FROM engagement_kind_permissions WHERE action = 'X';
 
 **Por que não foi substituído pelo Caminho 1:** designations carregam semântica institucional (legal_signer = pessoa designada juridicamente como signatária; voluntariado_director = papel formal no chapter board). Esses são fatos institucionais, não vínculos operacionais derivados de cycles/initiatives. Misturar os dois confundiria semântica.
 
-**Exemplo concreto:**
-- Lorena Souza tem designations `['chapter_board', 'voluntariado_director']` + chapter `'PMI-GO'`.
-- Em `_can_sign_gate(lorena, chain, 'president_go', 'volunteer_term_template')`:
+**Exemplo concreto (#1152 — aprovar a VERSÃO ≠ assinar a CONTRAPARTE do instrumento):**
+- `president_go` aprova a **versão** do documento (torná-la vigente) e exige SEMPRE `legal_signer`
+  (SEDE/board PMI-GO). Ivan Lourenço (`chapter_board` + `legal_signer`, PMI-GO) satisfaz.
+- Lorena Souza tem `['chapter_board', 'voluntariado_director']` mas NÃO `legal_signer`. Em
+  `_can_sign_gate(lorena, chain, 'president_go', 'volunteer_term_template')` → **`false`** (o carve-out
+  `voluntariado_director` foi REMOVIDO em #1152/#1155, mig `20260805000353`; corpo vivo hoje):
   ```sql
   v_member.chapter = 'PMI-GO' AND 'chapter_board' = ANY(designations)
-    AND ('legal_signer' = ANY(designations)
-      OR (v_doc_type = 'volunteer_term_template' AND 'voluntariado_director' = ANY(designations)))
+    AND 'legal_signer' = ANY(designations)   -- sem carve-out voluntariado_director
   ```
-  → Lorena passa pelo branch `voluntariado_director` mesmo sem `legal_signer`.
+- Por quê: aprovar a versão do template (governança documental) é ato distinto de assinar a
+  **contraparte** da entidade promotora em cada Termo EXECUTADO junto ao voluntário. A contra-assinatura
+  da Lorena é mecânica **pós-aprovação**, por-adesão (roteada via `signature_flow` / fila), NÃO um gate
+  de versão. Fundir os dois era o defeito do #1152 (e um cheiro de segregação de funções). Ver
+  memória `reference-volunteer-term-countersign-lorena`.
 - `can_by_member(lorena, 'manage_member')` retorna `false` corretamente — ela NÃO deve poder ativar/desativar membros (operação GP-only).
 
 **Como auditar:**
@@ -101,7 +107,8 @@ WHERE pronamespace='public'::regnamespace
 |---|---|---|
 | Ativar/desativar membro globalmente | 1 (`manage_member`) | — |
 | Anonimizar membro (LGPD Art.18) | 1 (`manage_member`) | — |
-| Assinar termo voluntariado como president_go | 2 (designation `voluntariado_director` + `chapter_board` + chapter='PMI-GO') | — |
+| Aprovar VERSÃO de termo voluntariado (`president_go`) | 2 (designation `legal_signer` + `chapter_board` + chapter='PMI-GO') — #1152: NÃO `voluntariado_director` | — |
+| Assinar CONTRAPARTE de cada Termo executado (Lorena) | pós-aprovação, por-adesão via `signature_flow` — NÃO é gate de versão | — |
 | Assinar IP Adendo como curator | 2 (designation `curator`) — gate kind `curator` | — |
 | Comentar em document chain | 1 (`participate_in_governance_review`) | — (ADR-0041) |
 | Ler PII de membros | 1 (`view_pii`) | 3 (RPC scope-filtered como `get_chapter_dashboard`) |
@@ -111,6 +118,40 @@ WHERE pronamespace='public'::regnamespace
 | Gerenciar tribo própria (líder) | 1 (`manage_event` + `write_board` em escopo initiative) | — |
 
 Quando uma capability tem path alternativo (3), **a action V4 (path 1) é a porta de entrada**, e o RPC implementa o scoping. Não há gap se o path 3 já cobre o caso. Não adicionar combos novos ao path 1 sem confirmar que isso não duplica o que o path 3 já faz.
+
+---
+
+## Mapa função → gate de assinatura (`_can_sign_gate`) — #1152
+
+Fonte de verdade = **corpo vivo** de `public._can_sign_gate` (`pg_get_functiondef`), não este doc.
+A tabela abaixo é o retrato do corpo vivo (auditado 2026-07-21); atualize junto com qualquer DDL.
+
+| `gate_kind` | Quem satisfaz (predicado) | Observação |
+|---|---|---|
+| `curator` | `can_by_member('curate_content')` | Path 1 (não designation). ADR-0087. |
+| `leader` | `sign_chain_leader` **E** líder da iniciativa DO documento | #666: `project_charter` sem iniciativa falha CLOSED; docs org sem iniciativa (policy/cooperation/termo) caem no bare capability. |
+| `leader_awareness` | `sign_chain_leader` (amplo) | Ciência, não aprovação. |
+| `submitter_acceptance` | `member.id = submitter` | Quem abriu a chain aceita. |
+| `president_go` | PMI-GO + `chapter_board` + `legal_signer` | **#1152/#1155: SEM `voluntariado_director`.** Aprova a VERSÃO. |
+| `president_others` | CE/DF/MG/RS + `chapter_board` + `legal_signer` | Simétrico ao president_go. |
+| `partner_consultation` | mesmo predicado de `president_others` | Caráter consultivo/janelado vive em `_gate_threshold_met` (`window_optional`, não-bloqueante), NUNCA aqui (#654/#975). |
+| `committee_majority` | **`false` (STUB)** | Até §7.1 fixar roster/quórum do Comitê de Curadoria. `ip_committee` designation = 0 membros hoje. Go-live: trocar por `'ip_committee' = ANY(designations)`. |
+| `cert_director_go` | PMI-GO + `certificacao_director` (+ doc `project_charter`) | ADR-0016 Am.4. Validação interna, não contra-assinatura jurídica. |
+| `chapter_witness` | `chapter_liaison` (role/designation) OU `chapter_vice_president` (fallback se não há liaison) OU `chapter_board` em janela de graça 60d de cooperation_agreement | — |
+| `volunteers_in_role_active` | active + NÃO pré-onboarding + engagement volunteer ativo (researcher/leader/manager) | #625: exclui pré-onboarding (defeito circular #654). |
+| `external_signer` | `auth_engagements.kind='external_signer'` autoritativo | — |
+| `member_ratification` | **`false` (STUB legado)** | — |
+
+**Distinção-chave (#1152): aprovação de VERSÃO ≠ contraparte do INSTRUMENTO.** Gates aprovam a versão
+do documento (torná-la vigente). Assinar a contraparte da entidade promotora em cada Termo executado
+(Lorena, `voluntariado_director`) é mecânica pós-aprovação, por-adesão, via `signature_flow` — **não** é
+um `gate_kind`. Nunca reintroduzir `voluntariado_director` em `president_go`.
+
+**Resíduo aberto #1152 (Achado 2) — `committee_majority` no default de `policy`.** `resolve_default_gates('policy')`
+ainda entrega `committee_majority` (order 1, `false`) → uma policy que use o DEFAULT trava no gate 1. Mas a
+policy real em uso (PI, `cfb15185`) já roda numa **chain custom** `[curator, leader_awareness,
+submitter_acceptance, president_go, president_others]` que evita o stub. Nada travado hoje; o fix do default
+é forward-only e é uma decisão de barra de aprovação (ver decisão pendente na fila Wave 2 do #1152).
 
 ---
 
