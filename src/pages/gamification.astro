@@ -42,6 +42,11 @@ const GAM_I18N = {
   lbBreakdownCycle: t('gamification.lb.breakdownCycle', lang),
   lbBreakdownLifetime: t('gamification.lb.breakdownLifetime', lang),
   lbBreakdownInProgress: t('gamification.lb.breakdownInProgress', lang),
+  lbPillarDrill: t('gamification.lb.pillarDrill', lang),
+  lbPillarDrillHint: t('gamification.lb.pillarDrillHint', lang),
+  lbPillarDrillTitle: t('gamification.lb.pillarDrillTitle', lang),
+  lbPillarBonus: t('gamification.lb.pillarBonus', lang),
+  lbCertLifetimeNote: t('gamification.lb.certLifetimeNote', lang),
   trTitle: t('gamification.tr.title', lang),
   trFormula: t('gamification.tr.formula', lang),
   trEmpty: t('gamification.tr.empty', lang),
@@ -822,7 +827,7 @@ const SCORING_I18N = {
               ${levelBadge}
               ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
             </div>
-            <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}</div>
+            <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}${m.member_id ? ` · <button type="button" class="bg-transparent border-0 p-0 text-[11px] text-teal underline decoration-dotted cursor-pointer" data-action="pillar-drill" data-member-id="${m.member_id}" title="${escapeHtml(I.lbPillarDrillHint || '')}">${I.lbPillarDrill}</button>` : ''}</div>
             <div class="h-1.5 bg-[var(--surface-base)] rounded-full mt-1 overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
             </div>
@@ -833,8 +838,74 @@ const SCORING_I18N = {
           </div>
         </div>
         <div class="champion-drill hidden pl-11 py-2 border-b border-[var(--border-subtle)]"></div>
+        <div class="pillar-drill hidden pl-11 py-2 border-b border-[var(--border-subtle)]"></div>
       </div>`;
     }).join('');
+  }
+
+  // ── PILLAR BREAKDOWN DRILL (#1449 transparency — "how did they score?") ──
+  // Reconstructs the per-pillar composition from columns get_gamification_leaderboard already
+  // returns for the row (cycle_* vs base per leaderboardMode) — sums exactly to the displayed
+  // points, so it is auditable, and needs no extra RPC call.
+  function pillarDrillRows(m: any, mode: 'cycle' | 'lifetime') {
+    const cyc = mode === 'cycle';
+    const v = (base: string, cycleCol: string) => Number((cyc ? m[cycleCol] : m[base]) || 0);
+    return [
+      { pillar: 'presenca',      pts: v('attendance_points', 'cycle_attendance_points') },
+      { pillar: 'trilha',        pts: v('learning_points', 'cycle_learning_points') },
+      { pillar: 'certificacoes', lifetime: true,
+        pts: v('cert_points', 'cycle_cert_points') + v('badge_points', 'cycle_badge_points') },
+      { pillar: 'producao',
+        pts: v('producao_points', 'cycle_producao_points') + v('artifact_points', 'cycle_artifact_points') + v('showcase_points', 'cycle_showcase_points') },
+      { pillar: 'curadoria',     pts: v('curadoria_points', 'cycle_curadoria_points') },
+      { pillar: 'champions',     pts: v('champions_points', 'cycle_champions_points') },
+      { pillar: 'bonus',         pts: v('bonus_points', 'cycle_bonus_points') },
+    ];
+  }
+
+  function renderPillarBreakdown(m: any): string {
+    const mode = leaderboardMode;
+    const rows = pillarDrillRows(m, mode);
+    const total = rows.reduce((s: number, r: any) => s + r.pts, 0) || 1;
+    const modeLabel = mode === 'lifetime' ? I.modeLifetime : I.modeCycle;
+    const pillarName = (k: string) => k === 'bonus' ? (I.lbPillarBonus || 'Bônus') : ((I.pillarNames || {})[k] || k);
+    const body = rows.filter((r: any) => r.pts !== 0).map((r: any) => {
+      const pct = Math.round((r.pts / total) * 100);
+      const tag = (r.lifetime && mode === 'cycle')
+        ? `<span class="ml-1 text-[9px] px-1 rounded bg-amber-100 text-amber-800 font-bold uppercase" title="${escapeHtml(I.lbCertLifetimeNote || '')}">∞</span>` : '';
+      return `
+      <div class="flex items-center gap-2 text-[11px] py-0.5">
+        <span class="w-28 shrink-0">${PILLAR_EMOJI[r.pillar] || '⭐'} ${escapeHtml(pillarName(r.pillar))}${tag}</span>
+        <span class="flex-1 h-1.5 bg-[var(--surface-card)] rounded-full overflow-hidden"><span class="block h-full bg-teal" style="width:${pct}%"></span></span>
+        <span class="w-16 text-right font-semibold">${r.pts} <span class="text-[var(--text-muted)] font-normal">${pct}%</span></span>
+      </div>`;
+    }).join('');
+    // Bridge the #1448 surface split: in cycle mode, note when lifetime certs are windowed out of the rank.
+    const lifeCert = Number(m.cert_points || 0) + Number(m.badge_points || 0);
+    const cycCert = Number(m.cycle_cert_points || 0) + Number(m.cycle_badge_points || 0);
+    const certNote = (mode === 'cycle' && lifeCert > cycCert)
+      ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic">${escapeHtml(I.lbCertLifetimeNote || '')}</div>` : '';
+    return `
+    <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] p-3 space-y-1">
+      <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">${escapeHtml((I.lbPillarDrillTitle || '').replace('{mode}', modeLabel))}</div>
+      ${body || `<p class="text-[11px] text-[var(--text-muted)] m-0">${escapeHtml(I.lbEmpty || '')}</p>`}
+      ${certNote}
+    </div>`;
+  }
+
+  function togglePillarDrill(btn: HTMLElement) {
+    const wrap = btn.closest('[data-lb-row]');
+    const panel = wrap?.querySelector('.pillar-drill') as HTMLElement | null;
+    const memberId = btn.dataset.memberId;
+    if (!panel || !memberId) return;
+    const opening = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden');
+    if (!opening) return;
+    // Re-derive on each open — the breakdown depends on the live leaderboardMode.
+    const m = (leaderboardData || []).find((r: any) => r.member_id === memberId);
+    panel.innerHTML = m
+      ? renderPillarBreakdown(m)
+      : `<p class="text-[11px] text-[var(--text-muted)] m-0">${escapeHtml(I.lbEmpty || '')}</p>`;
   }
 
   // ── CHAMPION ATTRIBUTION DRILL (#1087 wave 2, G4) ──
@@ -1686,6 +1757,9 @@ const SCORING_I18N = {
       }
       case 'champion-drill':
         toggleChampionDrill(target);
+        break;
+      case 'pillar-drill':
+        togglePillarDrill(target);
         break;
       case 'mp-set-scope': {
         const scope = target.dataset.scope as 'cycle' | 'lifetime';
