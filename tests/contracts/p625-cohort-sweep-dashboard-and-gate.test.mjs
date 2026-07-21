@@ -39,11 +39,12 @@ const MIG_GATE = readFileSync(MIG_GATE_PATH, 'utf8');
 // (now legal_signer-only). The #625 volunteers_in_role_active branch is preserved verbatim.
 const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000353_1152_president_go_drop_voluntariado_director_carveout.sql';
 const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
-// get_admin_dashboard's CANONICAL capture moved to #932 Part 2 (mig 321), which re-captured it
-// verbatim + added the confidential-exclusion predicate on the two deliverables counts (the #625
-// active_members / adoption_7d logic below is preserved verbatim). The live md5 drift check tracks
-// this canonical body; the #625 static assertions still read mig 157. Repoint on the next re-capture.
-const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000321_932_confidential_aggregate_exclusion_part2.sql';
+// get_admin_dashboard's CANONICAL capture moved to #1437 / ADR-0126 (mig 467), which re-captured it
+// verbatim from live + repointed the active_members KPI and the adoption_7d denominator to the canonical
+// research-team set (v_operational_members = 68; was the is_active AND current_cycle_active AND NOT
+// member_is_pre_onboarding predicate). Prior canonical was #932 Part 2 (mig 321). The live md5 drift
+// check tracks this canonical body; the #625 static assertions still read mig 157. Repoint on the next re-capture.
+const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000467_1437_v_operational_members_canonical_metric.sql';
 const MIG_DASH_CANONICAL = readFileSync(MIG_DASH_CANONICAL_PATH, 'utf8');
 
 const bodyOf = (src, fnName) =>
