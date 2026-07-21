@@ -5630,6 +5630,8 @@ const ptBR: Record<string, string> = {
   'profile.xp.variableNote': '(variável: 15–25 pts por tipo)',
   'profile.xp.tabLifetime': 'Vida toda',
   'profile.xp.tabCycle': 'Ciclo atual',
+  'profile.xp.lifetimeTag': 'vitalício',
+  'profile.xp.lifetimeTagTip': 'Conquista permanente (certificações e badges) — conta sempre, mesmo na visão do ciclo atual.',
   'profile.xp.ofTotal': '% do total',
   'profile.xp.triggerTipManual': 'Reconhecimento manual por liderança',
   'profile.xp.triggerTipAuto': 'Automático quando a ação-fonte acontece',
