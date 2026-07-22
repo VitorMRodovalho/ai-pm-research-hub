@@ -287,6 +287,9 @@ const SCORING_I18N = {
                     data-action="set-leaderboard-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
+        <div class="px-5 pt-2.5 text-[11px] text-[var(--text-muted)] flex items-start gap-1">
+          <span aria-hidden="true">ℹ️</span><span>{t('gamification.lb.cycleWindowNote', lang)}</span>
+        </div>
         <div class="p-5" id="leaderboard-list">
           <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
