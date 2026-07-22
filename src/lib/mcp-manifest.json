@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-21T02:16:47.311Z",
+  "generated_at": "2026-07-22T18:47:56.652Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -2377,7 +2377,7 @@
     },
     {
       "name": "get_application_detail",
-      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.",
+      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. Peer-review-gated (Onda 4, 2026-07-22): before min_evaluators objective evaluations are submitted, blind mode is active (only YOUR evaluation visible); once peer review completes (min_evaluators reached), all evaluators visible with is_own flag per row. Superadmin sees all. Always call BEFORE submit_evaluation to gather context.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -2419,7 +2419,7 @@
     },
     {
       "name": "get_evaluation_results",
-      "description": "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.",
+      "description": "Returns aggregated evaluation results for an application. Peer-review-gated (Onda 4, 2026-07-22): once min_evaluators objective evaluations are submitted (peer review complete), ALL evaluators' scores + names + criterion_notes are visible; before that the call is blind and raises 'Blind review'. Committee-of-cycle or manage_platform only.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

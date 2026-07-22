@@ -3723,8 +3723,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL: get_evaluation_results — aggregated evaluation results post-phase-close
-  mcp.tool("get_evaluation_results", "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.", {
+  // TOOL: get_evaluation_results — aggregated evaluation results, revealed once peer review completes (min_evaluators)
+  mcp.tool("get_evaluation_results", "Returns aggregated evaluation results for an application. Peer-review-gated (Onda 4, 2026-07-22): once min_evaluators objective evaluations are submitted (peer review complete), ALL evaluators' scores + names + criterion_notes are visible; before that the call is blind and raises 'Blind review'. Committee-of-cycle or manage_platform only.", {
     application_id: z.string().describe("Application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -4439,8 +4439,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_application_detail (ux Pareto #2 — payload rico para review)
-  // Wraps get_application_score_breakdown which already has phase-aware blind enforcement (ADR-0059)
-  mcp.tool("get_application_detail", "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.", {
+  // Wraps get_application_score_breakdown which has peer-review-gated blind enforcement (min_evaluators; unified Onda 4 2026-07-22)
+  mcp.tool("get_application_detail", "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. Peer-review-gated (Onda 4, 2026-07-22): before min_evaluators objective evaluations are submitted, blind mode is active (only YOUR evaluation visible); once peer review completes (min_evaluators reached), all evaluators visible with is_own flag per row. Superadmin sees all. Always call BEFORE submit_evaluation to gather context.", {
     application_id: z.string().describe("Application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();

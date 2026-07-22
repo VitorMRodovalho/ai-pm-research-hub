@@ -29821,6 +29821,10 @@ export type Database = {
         Args: { p_cycle_id?: string }
         Returns: Json
       }
+      selection_peer_review_complete: {
+        Args: { p_application_id: string }
+        Returns: boolean
+      }
       selection_rescue_stuck_interview: {
         Args: { p_application_id: string }
         Returns: Json
