@@ -45,7 +45,9 @@ const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
 // research-team set (v_operational_members = 68; was the is_active AND current_cycle_active AND NOT
 // member_is_pre_onboarding predicate). Prior canonical was #932 Part 2 (mig 321). The live md5 drift
 // check tracks this canonical body; the #625 static assertions still read mig 157. Repoint on the next re-capture.
-const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000467_1437_v_operational_members_canonical_metric.sql';
+// Repointed to mig 480 (#1464 Onda 3): get_admin_dashboard's cpmai_current KPI now windows the cycle by
+// COALESCE(occurred_at, created_at) (fact date). Only that predicate changed; the #1437 KPI set is preserved.
+const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000480_1464_gamification_occurred_at_cycle_windowing.sql';
 const MIG_DASH_CANONICAL = readFileSync(MIG_DASH_CANONICAL_PATH, 'utf8');
 
 const bodyOf = (src, fnName) =>

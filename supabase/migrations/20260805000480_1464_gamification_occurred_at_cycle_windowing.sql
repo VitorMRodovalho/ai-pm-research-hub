@@ -677,8 +677,7 @@ BEGIN
     )
   );
 END;
-$function$
-;
+$function$;
 
 -- 3d — get_admin_dashboard
 CREATE OR REPLACE FUNCTION public.get_admin_dashboard()
@@ -818,8 +817,7 @@ BEGIN
   ) INTO v_result;
   RETURN v_result;
 END;
-$function$
-;
+$function$;
 
 -- 3d — get_tribe_gamification
 CREATE OR REPLACE FUNCTION public.get_tribe_gamification(p_tribe_id integer)
@@ -1261,8 +1259,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$
-;
+$function$;
 
 -- 3d — get_gp_cohort_health
 CREATE OR REPLACE FUNCTION public.get_gp_cohort_health()
@@ -1375,8 +1372,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$
-;
+$function$;
 
 -- 3d — get_event_champion_suggestions
 CREATE OR REPLACE FUNCTION public.get_event_champion_suggestions(p_event_id uuid, p_force_derive boolean DEFAULT false)
