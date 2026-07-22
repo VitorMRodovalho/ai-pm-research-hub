@@ -155,7 +155,7 @@ pontos de regra inativa OU somar só regras ativas no leaderboard + contract tes
 6. UI: rotular claramente chips de ciclo vs vitalício no perfil (fim da mistura sem legenda).
 7. Contract test: pontos de ciclo janelam por `occurred_at`; um backfill NÃO pode alterar o ranking do ciclo corrente.
 
-## Migrations preparadas nesta sessão (NÃO aplicadas)
+## Migrations preparadas nesta sessão (475/476 APLICADAS na Onda 1; 477 pendente Onda 2)
 - `..475_audit_A2_...` (PR Onda 1) — A2: `compute_application_scores` deriva de PERT + trava min_evaluators (research NULL p/ 1-avaliador).
 - `..476_audit_A1_...` (PR Onda 1) — A1: rank em tempo de leitura em `get_selection_rankings` + `get_my_selection_result` (fim do stale + não oculta ranqueáveis).
 - `..477_audit_A3_...` (PR Onda 2) — corte active-only (honra `p_filter_active_only`; recompute -> 142.69 retroativo, escolha do owner). Fica por ÚLTIMO por ser o mais sensível.
@@ -198,3 +198,22 @@ Racional: corrigir primeiro (Ondas 1-4), expor depois. Escopo proposto:
 1. **Corte (A3):** referência = pool completo (130.9, atual) ou só ativos (142.7)? Muda a régua de todos.
 2. **Fixes ALTA (1 e 2):** implementar agora nesta sessão?
 3. **Gamificação:** qual é o sintoma concreto de "ainda errado"? A matemática do leaderboard/pilares está provada correta.
+
+---
+
+## Onda 1: APLICADA (2026-07-22, sessão main)
+
+Migrations 475 (A2) e 476 (A1) aplicadas via `apply_migration` (byte-igual ao arquivo); phantoms removidos por versão exata; `migration repair --status applied 20260805000475 20260805000476`; `NOTIFY pgrst`. Backfill `compute_application_scores` sobre as 74 apps do Ciclo 4: 74 processadas, 0 erro. Antes/depois provado ao vivo (não recitado de memória):
+
+| Métrica | Antes | Depois |
+|---|---|---|
+| research_score não-nulo (ciclo) | 71 | 54 |
+| leader_score não-nulo | 11 | 9 |
+| researchers ranqueáveis | 53 | 38 |
+| apps de 1 avaliador ainda pontuadas | 17 | 0 |
+| Francisco J. (rank pesquisador) | stored #39, vivo #7 | #7 |
+
+- As 54 apps de 2+ avaliadores ficaram byte-idênticas: fingerprint md5 do conjunto {research, leader, final} inalterado (`72283da9b5088a6d7d4a21eb01f822ea` antes e depois). Zero divergência colateral.
+- 17 nulados = 3 researchers approved (Priscila O. 239, Nícolas R. 218, Rogerio P. 170) + 2 líderes submitted (216.80 e 108.50 para NULL) + 12 researchers pré-final. Os 3 approved mantêm status `approved` (nular score não revoga aprovação); saem do ranking por terem 1 único avaliador objetivo, que é a regra min-2 restaurada. Divergência vs. o plano documentado: eram 3 approved, não 2.
+- Verificação adversarial pré-apply (3 lentes independentes: fórmula A2, paridade de rank A1 vs. `recalculate_cycle_rankings`, segurança/cascata): 0 blocking issues. Backfill sem side-effect outward-facing (candidato vê rank por pull); `_trg_recompute_final_score_pert` grava só colunas `final_score_pert_*`, então não clobbera o corte objetivo 130.89 que a Onda 2 usa.
+- Onda 2 (mig 477, corte active-only retroativo) segue por último e é decisão humana.
