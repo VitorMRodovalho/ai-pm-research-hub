@@ -3266,6 +3266,7 @@ const enUS: Record<string, string> = {
   'gamification.lb.pillarDrillTitle': 'Point breakdown — {mode}',
   'gamification.lb.pillarBonus': 'Bonus/Leadership',
   'gamification.lb.certLifetimeNote': 'Certifications count as lifetime on the member profile; the cycle ranking rewards current-cycle activity.',
+  'gamification.lb.cycleWindowNote': 'The cycle ranking counts each activity on the date it happened; lifetime achievements stay in each member total.',
   'gamification.tr.errorLoad': 'Error loading stream ranking: ',
   'gamification.tr.modeAvg': 'avg',
   'gamification.ach.errorLoad': 'Error loading achievements: ',
@@ -5639,6 +5640,7 @@ const enUS: Record<string, string> = {
   'profile.xp.scopeAllTime': 'all-time',
   'profile.xp.scopeCurrentCycle': 'current cycle',
   'profile.xp.legend': '✋ Recognition · ⚡ Auto · 📋 System-registered',
+  'profile.xp.cycleWindowNote': 'The cycle score counts each activity on the date it happened. Your lifetime achievements stay intact in your total.',
 
   // ── Profile Champions section (p171 #7) ──
   'profile.champions.title': '🏅 Your Champions',

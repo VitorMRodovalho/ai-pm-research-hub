@@ -1045,6 +1045,7 @@ const PROFILE_I18N = {
     producao:      { emoji: '🏗️', pt: 'Produção',        en: 'Production',     es: 'Producción' },
     curadoria:     { emoji: '📚', pt: 'Curadoria',       en: 'Curation',       es: 'Curaduría' },
     champions:     { emoji: '🏆', pt: 'Champions',       en: 'Champions',      es: 'Champions' },
+    protagonismo:  { emoji: '🎤', pt: 'Protagonismo',    en: 'Protagonism',    es: 'Protagonismo' },
   };
 
   function pillarLabel(slug: string): string {
@@ -1259,6 +1260,7 @@ const PROFILE_I18N = {
       </button>`;
 
     const legendI18n = t('profile.xp.legend', lang);
+    const cycleWindowNoteI18n = t('profile.xp.cycleWindowNote', lang);
 
     return `
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6" data-section="xp-pillars">
@@ -1272,6 +1274,7 @@ const PROFILE_I18N = {
           ${tabBtn('lifetime', tabLifetimeI18n, isLifetime)}
           ${tabBtn('cycle', tabCycleI18n, !isLifetime)}
         </div>
+        ${isLifetime ? '' : `<div class="text-[.6rem] text-[var(--text-secondary)] bg-[var(--surface-base)] rounded-lg px-2 py-1.5 mb-2 flex items-start gap-1"><span aria-hidden="true">ℹ️</span><span>${cycleWindowNoteI18n}</span></div>`}
         <div class="text-[.6rem] text-[var(--text-muted)] mb-4">${legendI18n}</div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${cardsHtml}</div>
       </div>`;

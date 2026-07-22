@@ -3266,6 +3266,7 @@ const esLATAM: Record<string, string> = {
   'gamification.lb.pillarDrillTitle': 'Composición de los puntos — {mode}',
   'gamification.lb.pillarBonus': 'Bono/Protagonismo',
   'gamification.lb.certLifetimeNote': 'Las certificaciones cuentan como vitalicias en el perfil del miembro; el ranking del ciclo premia la actividad del ciclo.',
+  'gamification.lb.cycleWindowNote': 'El ranking del ciclo cuenta cada actividad en la fecha en que ocurrió; los logros vitalicios siguen en el total de cada miembro.',
   'gamification.tr.errorLoad': 'Error al cargar ranking de líneas: ',
   'gamification.tr.modeAvg': 'promedio',
   'gamification.ach.errorLoad': 'Error al cargar logros: ',
@@ -5640,6 +5641,7 @@ const esLATAM: Record<string, string> = {
   'profile.xp.scopeAllTime': 'histórico',
   'profile.xp.scopeCurrentCycle': 'ciclo actual',
   'profile.xp.legend': '✋ Reconocimiento · ⚡ Automático · 📋 Registrado vía sistema',
+  'profile.xp.cycleWindowNote': 'El marcador del ciclo cuenta cada actividad en la fecha en que ocurrió. Tus logros vitalicios siguen intactos en tu total.',
 
   // ── Profile Champions section (p171 #7) ──
   'profile.champions.title': '🏅 Tus Champions',
