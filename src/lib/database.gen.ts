@@ -10581,6 +10581,7 @@ export type Database = {
           granted_by: string | null
           id: string
           member_id: string
+          occurred_at: string | null
           organization_id: string
           points: number
           reason: string
@@ -10592,6 +10593,7 @@ export type Database = {
           granted_by?: string | null
           id?: string
           member_id: string
+          occurred_at?: string | null
           organization_id?: string
           points: number
           reason: string
@@ -10603,6 +10605,7 @@ export type Database = {
           granted_by?: string | null
           id?: string
           member_id?: string
+          occurred_at?: string | null
           organization_id?: string
           points?: number
           reason?: string
