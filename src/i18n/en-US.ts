@@ -5799,6 +5799,8 @@ const enUS: Record<string, string> = {
   'admin.selection.pertBandWithin': 'In band',
   'admin.selection.pertBandBelow': 'Below',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Band = 75% of PERT through PERT ({lower}–{upper}; PERT {target}) · cohort n={n} · method {method}',
+  'admin.selection.priorRulerBadgeShort': 'Prior cutoff',
+  'admin.selection.priorRulerBadgeTooltip': 'Approved under the previous objective ruler (cutoff ~{prior}). The ruler was revised to active-only (current cutoff {target}); approval kept, not revoked (Audit A3, 2026-07-23).',
   'admin.selection.leaderExtraDisabledChip': 'Leader rule: n={n}<10',
   // p247 #229b Frontend — per-candidate final-score cutoff + interview score visibility
   'admin.selection.colInterviewScore': 'Interview Score',

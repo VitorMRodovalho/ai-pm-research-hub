@@ -5805,6 +5805,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.pertBandWithin': 'Na banda',
   'admin.selection.pertBandBelow': 'Abaixo',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Banda = 75% do PERT até o PERT ({lower}–{upper}; PERT {target}) · cohort n={n} · método {method}',
+  'admin.selection.priorRulerBadgeShort': 'Régua anterior',
+  'admin.selection.priorRulerBadgeTooltip': 'Aprovado sob a régua objetiva anterior (corte ~{prior}). A régua foi revisada para active-only (corte atual {target}); aprovação mantida, não revogada (Auditoria A3, 2026-07-23).',
   'admin.selection.leaderExtraDisabledChip': 'Régua líder: n={n}<10',
   // p247 #229b Frontend — per-candidate final-score régua + interview score visibility
   'admin.selection.colInterviewScore': 'Nota Entrevista',
