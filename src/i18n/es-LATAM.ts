@@ -5800,6 +5800,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.pertBandWithin': 'En banda',
   'admin.selection.pertBandBelow': 'Bajo',
   'admin.selection.pertBandTooltipFull': 'Score {score} · Banda = 75% del PERT hasta el PERT ({lower}–{upper}; PERT {target}) · cohort n={n} · método {method}',
+  'admin.selection.priorRulerBadgeShort': 'Corte anterior',
+  'admin.selection.priorRulerBadgeTooltip': 'Aprobado bajo la regla objetiva anterior (corte ~{prior}). La regla se revisó a solo-activos (corte actual {target}); aprobación mantenida, no revocada (Auditoría A3, 2026-07-23).',
   'admin.selection.leaderExtraDisabledChip': 'Regla líder: n={n}<10',
   // p247 #229b Frontend — regla final por candidato + visibilidad de nota de entrevista
   'admin.selection.colInterviewScore': 'Nota Entrevista',

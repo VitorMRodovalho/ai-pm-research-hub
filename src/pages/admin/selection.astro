@@ -41,6 +41,9 @@ const SEL_I18N = {
   pertBandWithin: t('admin.selection.pertBandWithin', lang),
   pertBandBelow: t('admin.selection.pertBandBelow', lang),
   pertBandTooltipFull: t('admin.selection.pertBandTooltipFull', lang),
+  // Audit A3 (2026-07-23) — admin-only badge for approved candidates below the raised active-only cut
+  priorRulerBadgeShort: t('admin.selection.priorRulerBadgeShort', lang),
+  priorRulerBadgeTooltip: t('admin.selection.priorRulerBadgeTooltip', lang),
   leaderExtraDisabledChip: t('admin.selection.leaderExtraDisabledChip', lang),
   // p247 #229b Frontend — per-candidate final-score cutoff
   finalScoreCutoffTooltip: t('admin.selection.finalScoreCutoffTooltip', lang),
@@ -665,6 +668,8 @@ const SEL_I18N = {
     pertBandWithin: 'Na banda',
     pertBandBelow: 'Abaixo',
     pertBandTooltipFull: 'Score {score} · Banda {lower}–{upper} (target {target}) · cohort n={n} · método {method}',
+    priorRulerBadgeShort: 'Régua anterior',
+    priorRulerBadgeTooltip: 'Aprovado sob a régua objetiva anterior (corte ~{prior}). A régua foi revisada para active-only (corte atual {target}); aprovação mantida, não revogada (Auditoria A3, 2026-07-23).',
     leaderExtraDisabledChip: 'Régua líder: n={n}<10',
     // p247 #229b Frontend fallbacks
     finalScoreCutoffTooltip: 'Régua final (PERT) calculada por trilha desde p246 (refactor #229b). Researcher pool e leader pool têm distribuições diferentes; não misturamos. Quando cohort_n<10, a régua fica indisponível para aquela trilha.',
@@ -894,6 +899,23 @@ const SEL_I18N = {
       .replace('{target}', Number(cutoff.target_score).toFixed(1))
       .replace('{n}', String(cutoff.cohort_n ?? '?'))
       .replace('{method}', String(cutoff.method ?? '?'));
+  }
+  // Audit A3 (2026-07-23): admin-only marker for the candidates the active-only ruler revision moved
+  // PAST — approved/converted whose objective score sits in the newly-crossed band [prior cut, current
+  // cut). Deliberately bounded BELOW by the prior cut (130.9): candidates already below the prior
+  // objective cut were approved on research_score ranking (the objective cut was never the approval
+  // gate), so they are NOT a ruler-revision case and must not be flagged. Approval is kept regardless;
+  // this only labels the display. Live 2026-07-22: exactly 7 rows in [130.9, 142.69).
+  const PRIOR_OBJECTIVE_CUT_C4 = 130.9; // pre-2026-07-23 Ciclo 4 objective cut (Auditoria A3, mig 479)
+  function priorRulerBadge(score: any, cutoff: any, status: any): string {
+    if (status !== 'approved' && status !== 'converted') return '';
+    if (score == null || !cutoff || cutoff.target_score == null) return '';
+    if (Number(score) < PRIOR_OBJECTIVE_CUT_C4) return '';      // below even the prior cut: research-ranked approval, not a ruler-revision case
+    if (Number(score) >= Number(cutoff.target_score)) return '';  // above current cut: fine
+    const tip = (T.priorRulerBadgeTooltip || 'Aprovado sob a régua objetiva anterior (corte ~{prior}); corte atual {target}.')
+      .replace('{prior}', String(PRIOR_OBJECTIVE_CUT_C4))
+      .replace('{target}', Number(cutoff.target_score).toFixed(1));
+    return ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 cursor-help" title="${esc(tip)}">${esc(T.priorRulerBadgeShort || 'Régua anterior')}</span>`;
   }
   function leaderExtraChip(score: any, cutoff: any): string {
     // PM rule (#229a): never compare leader against the objective rule. Leader_extra
@@ -1844,6 +1866,7 @@ const SEL_I18N = {
         <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.objective_score, currentCycle?.pert_cutoff))}">
           <div class="${r.objective_score != null ? `font-semibold ${bandColorClass(r.objective_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${objectiveScore}</div>
           ${pertBandChip(r.objective_score, currentCycle?.pert_cutoff)}
+          ${priorRulerBadge(r.objective_score, currentCycle?.pert_cutoff, r.status)}
         </td>
         <td class="px-4 py-2.5 text-[12px] font-mono">
           <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
