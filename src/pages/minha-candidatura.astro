@@ -24,6 +24,22 @@ const I18N = {
   aiConsentGranted: t('meStatus.aiConsentGranted', lang),
   aiConsentMissing: t('meStatus.aiConsentMissing', lang),
   evaluationsBlindNote: t('meStatus.evaluationsBlindNote', lang),
+  breakdown: {
+    toggle: t('meStatus.breakdown.toggle', lang),
+    hide: t('meStatus.breakdown.hide', lang),
+    heading: t('meStatus.breakdown.heading', lang),
+    intro: t('meStatus.breakdown.intro', lang),
+    pillarObjective: t('meStatus.breakdown.pillarObjective', lang),
+    pillarInterview: t('meStatus.breakdown.pillarInterview', lang),
+    pillarResearch: t('meStatus.breakdown.pillarResearch', lang),
+    pillarLeader: t('meStatus.breakdown.pillarLeader', lang),
+    finalScore: t('meStatus.breakdown.finalScore', lang),
+    cutoffBand: t('meStatus.breakdown.cutoffBand', lang),
+    rankResearcher: t('meStatus.breakdown.rankResearcher', lang),
+    rankLeader: t('meStatus.breakdown.rankLeader', lang),
+    rankNote: t('meStatus.breakdown.rankNote', lang),
+    privacyNote: t('meStatus.breakdown.privacyNote', lang),
+  },
   badge: {
     submitted: t('meStatus.statusBadge.submitted', lang),
     screening: t('meStatus.statusBadge.screening', lang),
@@ -112,12 +128,84 @@ const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 
     return 'bg-gray-50 text-gray-700 border-gray-200';
   }
 
-  function renderCard(app: any): string {
+  function fmtNum(v: any): string {
+    if (v == null) return '';
+    const n = Number(v);
+    if (!isFinite(n)) return '';
+    return n.toLocaleString(DATE_LOCALE, { maximumFractionDigits: 1 });
+  }
+
+  function pillarRow(label: string, v: any): string {
+    if (v == null) return '';
+    return `<div class="flex items-center justify-between py-1.5 border-b border-[var(--border-default)] last:border-0">
+      <span class="text-[var(--text-secondary)]">${escapeHtml(label)}</span>
+      <span class="font-semibold text-[var(--text-primary)] tabular-nums">${escapeHtml(fmtNum(v))}</span>
+    </div>`;
+  }
+
+  // Onda 5b: breakdown do candidato APROVADO/CONVERTIDO pos-decisao. O servidor
+  // (get_my_selection_result) so preenche estes campos quando reveal_breakdown===true;
+  // rejeitados nunca chegam aqui (todos os numeros vem null da fonte, nao do cliente).
+  function renderBreakdown(app: any, bd: any): string {
+    const panelId = `bd-${app.application_id}`;
+    const rows = [
+      pillarRow(I.breakdown.pillarObjective, bd.objective_score),
+      pillarRow(I.breakdown.pillarInterview, bd.interview_score),
+      pillarRow(I.breakdown.pillarResearch, bd.research_score),
+      pillarRow(I.breakdown.pillarLeader, bd.leader_score),
+      pillarRow(I.breakdown.finalScore, bd.final_score),
+    ].join('');
+
+    const bandRow = (bd.band_lower != null && bd.band_upper != null)
+      ? `<div class="flex items-center justify-between py-1.5">
+           <span class="text-[var(--text-secondary)]">${escapeHtml(I.breakdown.cutoffBand)}</span>
+           <span class="font-medium text-[var(--text-muted)] tabular-nums">${escapeHtml(fmtNum(bd.band_lower))} a ${escapeHtml(fmtNum(bd.band_upper))}</span>
+         </div>`
+      : '';
+
+    let rankRow = '';
+    if (bd.rank_researcher != null || bd.rank_leader != null) {
+      const isLeader = bd.rank_researcher == null && bd.rank_leader != null;
+      const rankLabel = isLeader ? I.breakdown.rankLeader : I.breakdown.rankResearcher;
+      const rankVal = isLeader ? bd.rank_leader : bd.rank_researcher;
+      rankRow = `<div class="flex items-center justify-between py-1.5">
+        <span class="text-[var(--text-secondary)]">${escapeHtml(rankLabel)}</span>
+        <span class="font-semibold text-[var(--accent)]">${escapeHtml(fmtNum(rankVal))} <span class="font-normal text-[10px] text-[var(--text-muted)]">${escapeHtml(I.breakdown.rankNote)}</span></span>
+      </div>`;
+    }
+
+    return `
+      <div class="mt-4 pt-3 border-t border-[var(--border-default)]">
+        <button type="button" class="bd-toggle inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--accent)] py-2" aria-expanded="false" aria-controls="${panelId}" data-show="${escapeHtml(I.breakdown.toggle)}" data-hide="${escapeHtml(I.breakdown.hide)}">
+          <span class="bd-toggle-label">${escapeHtml(I.breakdown.toggle)}</span>
+          <span class="bd-caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="${panelId}" class="bd-panel hidden mt-2">
+          <h3 class="text-[13px] font-bold text-[var(--text-primary)]">${escapeHtml(I.breakdown.heading)}</h3>
+          <p class="text-[11px] text-[var(--text-muted)] mt-0.5 mb-2">${escapeHtml(I.breakdown.intro)}</p>
+          <div class="text-[12px]">
+            ${rows}
+            ${bandRow}
+            ${rankRow}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderCard(app: any, bdMap: Record<string, any>): string {
     const badgeText = I.badge[app.status] || app.status;
     const nextText = I.next[app.status] || '';
     const evalsCount = app.submitted_evaluations_count;
     const showEvalsCount = typeof evalsCount === 'number';
     const evalsLine = showEvalsCount ? I.evaluationsSubmitted.replace('{n}', String(evalsCount)) : null;
+
+    const FINAL_STATUSES = ['approved','converted','rejected','objective_cutoff','withdrawn','cancelled'];
+    const bd = (bdMap && bdMap[app.application_id]) || null;
+    // Server-side gate is authoritative: reveal_breakdown is true only for approved/converted after announcement.
+    const showBreakdown = !!(bd && bd.reveal_breakdown === true);
+    // Privacy note framed for ALL post-decision cards (approved and rejected alike) so the absence of
+    // numbers for non-selected candidates reads as one consistent policy, not targeted withholding.
+    const showPrivacy = FINAL_STATUSES.includes(app.status) && app.phase === 'announcement';
 
     const linkedin = app.linkedin_url
       ? `<a href="${app.linkedin_url}" target="_blank" rel="noopener" class="text-[var(--accent)] hover:underline">${I.linkedinLabel}</a>`
@@ -174,8 +262,26 @@ const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 
             <strong class="font-semibold">${escapeHtml(evalsLine)}</strong> · ${escapeHtml(I.evaluationsBlindNote)}
           </p>
         ` : ''}
+        ${showBreakdown ? renderBreakdown(app, bd) : ''}
+        ${showPrivacy ? `<p class="mt-3 text-[10px] text-[var(--text-muted)] leading-relaxed">${escapeHtml(I.breakdown.privacyNote)}</p>` : ''}
       </article>
     `;
+  }
+
+  function wireToggles(): void {
+    document.querySelectorAll('.bd-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const panelId = btn.getAttribute('aria-controls') || '';
+        const panel = panelId ? document.getElementById(panelId) : null;
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        if (panel) panel.classList.toggle('hidden', expanded);
+        const label = btn.querySelector('.bd-toggle-label');
+        const caret = btn.querySelector('.bd-caret');
+        if (label) label.textContent = expanded ? (btn.getAttribute('data-show') || '') : (btn.getAttribute('data-hide') || '');
+        if (caret) caret.textContent = expanded ? '▾' : '▴';
+      });
+    });
   }
 
   function escapeHtml(s: any): string {
@@ -211,8 +317,20 @@ const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 
       return;
     }
 
+    // Onda 5b: self-only breakdown. The server (get_my_selection_result) gates numeric fields to
+    // approved/converted after announcement; rejected candidates get all-null, so nothing leaks here.
+    const bdMap: Record<string, any> = {};
+    try {
+      const { data: sr } = await sb.rpc('get_my_selection_result');
+      const srApps = (sr && (sr as any).applications) || [];
+      for (const s of srApps) { if (s && s.application_id) bdMap[s.application_id] = s; }
+    } catch (_) { /* breakdown is best-effort; the card still renders its status without it */ }
+
     const cards = $('me-status-cards');
-    if (cards) cards.innerHTML = apps.map(renderCard).join('');
+    if (cards) {
+      cards.innerHTML = apps.map((a: any) => renderCard(a, bdMap)).join('');
+      wireToggles();
+    }
   }
 
   load();

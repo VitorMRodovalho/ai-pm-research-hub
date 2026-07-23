@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-22T18:47:56.652Z",
+  "generated_at": "2026-07-23T04:48:42.328Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -102,7 +102,7 @@
     },
     {
       "name": "get_my_evaluation_feedback",
-      "description": "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.",
+      "description": "Retorna o feedback qualitativo (narrative) da sua candidatura. Scores numéricos são retornados apenas para candidaturas aprovadas/convertidas; candidatos não selecionados veem só o status. Notas e scores por avaliador nunca são expostos (reservados ao canal formal Art. 18). Disponível após phase reveal (evaluations_closed em diante) ou status final.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -158,7 +158,7 @@
     },
     {
       "name": "get_my_selection_result",
-      "description": "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.",
+      "description": "Returns your own selection application status. Your per-criterion breakdown (scores by pillar), position vs the cutoff band, and rank are returned ONLY for approved/converted applications after the cycle result is announced; non-selected candidates see status only. Evaluator identities and notes are never returned. Works for any member who applied through the selection pipeline.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false

@@ -2222,8 +2222,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // get_my_evaluation_feedback — own scores ONLY in post-reveal phase
-  mcp.tool("get_my_evaluation_feedback", "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.", {}, async () => {
+  // get_my_evaluation_feedback — narrative feedback all statuses; numeric scores only approved/converted (Onda 5b); evaluator notes never exposed
+  mcp.tool("get_my_evaluation_feedback", "Retorna o feedback qualitativo (narrative) da sua candidatura. Scores numéricos são retornados apenas para candidaturas aprovadas/convertidas; candidatos não selecionados veem só o status. Notas e scores por avaliador nunca são expostos (reservados ao canal formal Art. 18). Disponível após phase reveal (evaluations_closed em diante) ou status final.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_evaluation_feedback", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2857,8 +2857,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL 65: get_my_selection_result — Candidate self-view (own scores + status, rank only after final)
-  mcp.tool("get_my_selection_result", "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.", {}, async () => {
+  // TOOL 65: get_my_selection_result — Candidate self-view (breakdown/rank only for approved/converted after announcement; Onda 5b)
+  mcp.tool("get_my_selection_result", "Returns your own selection application status. Your per-criterion breakdown (scores by pillar), position vs the cutoff band, and rank are returned ONLY for approved/converted applications after the cycle result is announced; non-selected candidates see status only. Evaluator identities and notes are never returned. Works for any member who applied through the selection pipeline.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_selection_result", false, "Not authenticated", start); return err("Not authenticated"); }
