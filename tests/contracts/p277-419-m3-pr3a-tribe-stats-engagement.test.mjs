@@ -50,7 +50,22 @@ test('m3 PR3a DB: every tribe attendance_rate == its engagement(tribe) avg_rate 
     const eng = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'tribe', p_scope_id: t.id });
     assert.ok(!eng.error, eng.error?.message);
     const rate = stats.data.attendance_rate;
-    const expected = eng.data.avg_rate == null ? null : Math.round(Number(eng.data.avg_rate) * 100 * 10) / 10;
-    assert.equal(rate == null ? null : Number(rate), expected, `tribe ${t.id}: attendance_rate must equal engagement avg_rate × 100`);
+    const avg = eng.data.avg_rate;
+    if (avg == null) {
+      assert.equal(rate == null ? null : Number(rate), null, `tribe ${t.id}: null avg_rate → null attendance_rate`);
+      continue;
+    }
+    const expected = Math.round(Number(avg) * 100 * 10) / 10;
+    // Both sides round to 1 decimal, but via different engines: Postgres numeric
+    // ROUND (half away from zero, exact) vs JS Math.round (half up, subject to
+    // float precision). At a .x5 boundary they can differ by exactly one rounding
+    // unit — e.g. tribe 14: SQL 51.8 is the correct round of 51.75, while the JS
+    // `expected` computes 51.7 because 51.75*10 is 517.4999… in float. A ≤1-unit
+    // (0.1) tolerance absorbs that engine artifact; a REAL regression (wrong
+    // denominator/data) diverges far more (see the ANTES→DEPOIS 99%→51.8 above).
+    assert.ok(
+      rate != null && Math.abs(Number(rate) - expected) <= 0.1 + 1e-6,
+      `tribe ${t.id}: attendance_rate ${rate} must be within one rounding unit of engagement avg_rate × 100 (${expected})`,
+    );
   }
 });
