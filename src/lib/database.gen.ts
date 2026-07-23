@@ -25298,6 +25298,17 @@ export type Database = {
           sample_count: number
         }[]
       }
+      _points_statement_json: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_member_id: string
+          p_offset?: number
+          p_org_id: string
+          p_scope?: string
+        }
+        Returns: Json
+      }
       _prior_gates_satisfied: {
         Args: { p_chain_id: string; p_gate_kind: string }
         Returns: boolean
@@ -27548,6 +27559,16 @@ export type Database = {
       }
       get_member_offboarding_record: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      get_member_points_ledger: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_member_id: string
+          p_offset?: number
+          p_scope?: string
+        }
         Returns: Json
       }
       get_member_responsibility_inventory: {

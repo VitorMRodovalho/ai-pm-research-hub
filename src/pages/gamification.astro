@@ -720,6 +720,13 @@ const SCORING_I18N = {
   }
 
   function switchGamTab(el: HTMLElement, tab: string) {
+    // #1473 Onda 5a: "Meus Pontos" migrou para a página dedicada auditável
+    // (/minha-pontuacao). A aba vira redirect — fonte única, sem duas superfícies.
+    if (tab === 'mypoints') {
+      const pfx = location.pathname.startsWith('/en') ? '/en' : location.pathname.startsWith('/es') ? '/es' : '';
+      location.href = pfx + '/minha-pontuacao';
+      return;
+    }
     document.querySelectorAll('.gam-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
