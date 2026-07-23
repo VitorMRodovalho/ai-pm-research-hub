@@ -71,9 +71,11 @@ test('G3: LGPD opt-out UI wired to set_my_gamification_visibility', () => {
   assert.match(profile, /self-gamification-optout/, 'opt-out checkbox missing in privacy section');
 });
 
-test('G2 UX: profile XP cards deep-link to the statement tab', () => {
-  const links = profile.match(/gamification\?tab=mypoints/g) || [];
-  assert.ok(links.length >= 2, `expected >=2 deep-links to the statement tab in profile.astro, found ${links.length}`);
+test('G2 UX: profile XP cards deep-link to the auditable points page', () => {
+  // #1473 Onda 5a: the fato-a-fato ledger moved from the gamification "mypoints"
+  // tab to the dedicated /minha-pontuacao page; profile cards repoint there.
+  const links = profile.match(/\/minha-pontuacao/g) || [];
+  assert.ok(links.length >= 2, `expected >=2 deep-links to /minha-pontuacao in profile.astro, found ${links.length}`);
 });
 
 test('G6: achievement level thresholds derive from the catalog', () => {
