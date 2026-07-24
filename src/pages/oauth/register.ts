@@ -22,6 +22,17 @@
 
 import type { APIRoute } from "astro";
 import { env as cfEnv } from "cloudflare:workers";
+import { checkIpRateLimit, clientIpFrom } from "../../lib/ip-rate-limit";
+
+// #1440 — DCR is an open, unauthenticated endpoint (RFC 7591): every valid POST
+// mints a GoTrue OAuth client via the admin API. Historically it had NO rate
+// limiting (only a 5-redirect_uri cap per request), so an automated caller could
+// flood /auth/v1/admin/oauth/clients, pollute the oauth_clients table, and burn
+// Supabase's admin API budget. We add a per-IP throttle (defense-in-depth; the
+// consent + login gate remains the real authority boundary). A legitimate client
+// registers ~once, so a low cap is generous. Fail-open on KV/IP hiccups so a
+// throttle-store outage never blocks a real registration.
+const DCR_RATE_LIMIT_PER_MIN = 10;
 
 // Backward-compat fallback: the pre-existing shared client. Used only when the admin
 // API is unreachable (e.g. local dev without a service role key). Its fixed allow-list
@@ -69,6 +80,31 @@ function sanitizeRedirectUris(input: unknown): string[] {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  // #1440: per-IP flood dampening BEFORE any work (parse/admin call). Keyed by
+  // cf-connecting-ip + action, fail-open when KV/IP is absent (checkIpRateLimit
+  // handles that). The consent + login flow, not this throttle, is the authority
+  // gate — this only bounds oauth_clients pollution and admin-API budget burn.
+  const rlKv = (cfEnv as any)?.SESSION;
+  const rl = await checkIpRateLimit(rlKv, clientIpFrom(request), "oauth-register", DCR_RATE_LIMIT_PER_MIN);
+  if (!rl.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "rate_limited",
+        error_description: "Too many registration requests. Retry after a minute.",
+      }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(rl.retryAfter ?? 60),
+          "X-RateLimit-Limit": String(DCR_RATE_LIMIT_PER_MIN),
+          "X-RateLimit-Remaining": "0",
+          ...CORS,
+        },
+      }
+    );
+  }
+
   let body: any = {};
   try { body = JSON.parse((await request.text()) || "{}"); } catch { /* keep {} */ }
 
