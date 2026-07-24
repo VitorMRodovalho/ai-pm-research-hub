@@ -134,3 +134,26 @@ list — this ADR makes them converge on the tier taxonomy).
    (home ≡ public ≡ admin).
 4. Follow-ups: `/admin/members` function grouping + campaign audience selector reuse (#1354 frente 3);
    synthetic purge (#1437 Pendente 1).
+
+## Addendum — the "third metric" was added (#1476 Onda 2, 2026-07-23)
+
+The risk surface flagged in Consequences ("anyone doing operational work... is a THIRD metric, added
+explicitly — never by quietly loosening this one") materialized as a real bug on the operational-intervention
+surfaces (attendance seal, dropout risk, cohort health, attendance summaries, credly): they gated their cohort
+by `operational_role IN (...)`, so the double-function people (chapter focal point + active tribe researcher)
+were erased from intervention — on the WRITE path (`seal_event_attendance`) their attendance was never
+materialized. Owner decision (2026-07-23): **do NOT rebase `v_operational_members`** — the "Pesquisadores
+ativos" headline stays a COMPOSITION metric where a dual-hat counts as their governance/stakeholder role
+(governance-wins is deliberate). Instead, Onda 2 added the explicit third canonical:
+
+- **`v_member_operational_tiers`** (migration `20260805000485`): a per-`(member, operational_tier)` junction
+  derived from authoritative **volunteer** engagements (multi-hat aware — a dual-hat produces one row per tier),
+  mirroring the ladder's operational tiers MINUS the committee/workgroup sub-clause (that was folded into
+  `researcher` for `canFor()` authority per p164, never for attendance eligibility). Each intervention
+  consumer semi-joins (`EXISTS`) its own tier subset and keeps its own member-activity base filter.
+
+The two canonicals are deliberately distinct and MUST NOT be unified: `v_operational_members` (label-based,
+governance-wins, the published KPI, 69) answers "who composes the research team as displayed"; the junction
+(engagement-based, multi-hat, 71) answers "who must the platform intervene on operationally". Live 2026-07-23:
+the delta is exactly +2 (the same dual-hats, tribes 1 and 7), 0 regressions. #1477 (TCV exemption, an inverse
+gate with a 45-member behavioral ripple) is a separate follow-up, NOT folded in.

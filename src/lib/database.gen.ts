@@ -124,6 +124,13 @@ export type Database = {
             foreignKeyName: "admin_audit_log_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -260,6 +267,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "affiliation_access_attestations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -583,6 +597,13 @@ export type Database = {
             foreignKeyName: "ai_processing_log_caller_member_id_fkey"
             columns: ["caller_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ai_processing_log_caller_member_id_fkey"
+            columns: ["caller_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -700,6 +721,13 @@ export type Database = {
             columns: ["validator_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ai_score_validations_validator_id_fkey"
+            columns: ["validator_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -851,6 +879,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1091,6 +1126,13 @@ export type Database = {
             foreignKeyName: "approval_chains_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "approval_chains_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -1155,6 +1197,13 @@ export type Database = {
             columns: ["opened_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "approval_chains_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1308,6 +1357,13 @@ export type Database = {
             columns: ["signer_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "approval_signoffs_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1507,6 +1563,13 @@ export type Database = {
             foreignKeyName: "attendance_corrected_by_fkey"
             columns: ["corrected_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "attendance_corrected_by_fkey"
+            columns: ["corrected_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -1564,6 +1627,13 @@ export type Database = {
             columns: ["edited_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "attendance_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1640,6 +1710,13 @@ export type Database = {
             foreignKeyName: "attendance_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -1704,6 +1781,13 @@ export type Database = {
             columns: ["registered_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "attendance_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1807,6 +1891,13 @@ export type Database = {
             foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
             columns: ["assigned_by_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_assigned_by_member_id_fkey"
+            columns: ["assigned_by_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -1864,6 +1955,13 @@ export type Database = {
             columns: ["reviewer_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_assignments_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -1971,6 +2069,13 @@ export type Database = {
             columns: ["reviewer_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_pareceres_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2103,6 +2208,13 @@ export type Database = {
             foreignKeyName: "blind_review_sessions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -2167,6 +2279,13 @@ export type Database = {
             columns: ["released_by_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blind_review_sessions_released_by_member_id_fkey"
+            columns: ["released_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2252,6 +2371,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blog_likes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2401,6 +2527,13 @@ export type Database = {
             foreignKeyName: "blog_posts_author_member_id_fkey"
             columns: ["author_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "blog_posts_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -2529,6 +2662,13 @@ export type Database = {
             foreignKeyName: "board_drive_links_linked_by_fkey"
             columns: ["linked_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -2586,6 +2726,13 @@ export type Database = {
             columns: ["unlinked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2683,6 +2830,13 @@ export type Database = {
             foreignKeyName: "board_item_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -2747,6 +2901,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2862,6 +3023,13 @@ export type Database = {
             foreignKeyName: "board_item_checklists_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -2919,6 +3087,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -2989,6 +3164,13 @@ export type Database = {
             columns: ["completed_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_checklists_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3092,6 +3274,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3203,6 +3392,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_event_links_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3337,6 +3533,13 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_item_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3584,6 +3787,13 @@ export type Database = {
             foreignKeyName: "board_items_assignee_id_fkey"
             columns: ["assignee_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -3661,6 +3871,13 @@ export type Database = {
             foreignKeyName: "board_items_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -3718,6 +3935,13 @@ export type Database = {
             columns: ["leader_reviewer_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_leader_reviewer_id_fkey"
+            columns: ["leader_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3802,6 +4026,13 @@ export type Database = {
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -3927,6 +4158,13 @@ export type Database = {
             foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
             columns: ["actor_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4046,6 +4284,13 @@ export type Database = {
             foreignKeyName: "board_members_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_members_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4103,6 +4348,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -4368,6 +4620,13 @@ export type Database = {
             foreignKeyName: "broadcast_log_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4474,6 +4733,13 @@ export type Database = {
             foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
             columns: ["afilhado_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_afilhado_member_id_fkey"
+            columns: ["afilhado_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4537,6 +4803,13 @@ export type Database = {
             foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
             columns: ["padrino_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_padrino_member_id_fkey"
+            columns: ["padrino_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4594,6 +4867,13 @@ export type Database = {
             columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "buddy_pairings_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -4748,6 +5028,13 @@ export type Database = {
             foreignKeyName: "campaign_recipients_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4873,6 +5160,13 @@ export type Database = {
             foreignKeyName: "campaign_sends_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "campaign_sends_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -4930,6 +5224,13 @@ export type Database = {
             columns: ["sent_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "campaign_sends_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -5056,6 +5357,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "campaign_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -5229,6 +5537,13 @@ export type Database = {
             foreignKeyName: "certificates_counter_signed_by_fkey"
             columns: ["counter_signed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5292,6 +5607,13 @@ export type Database = {
             foreignKeyName: "certificates_issued_by_fkey"
             columns: ["issued_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5349,6 +5671,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -5526,6 +5855,13 @@ export type Database = {
             foreignKeyName: "champions_awarded_awarded_by_fkey"
             columns: ["awarded_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5610,6 +5946,13 @@ export type Database = {
             foreignKeyName: "champions_awarded_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5667,6 +6010,13 @@ export type Database = {
             columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "champions_awarded_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -5839,6 +6189,13 @@ export type Database = {
             foreignKeyName: "change_requests_implemented_by_fkey"
             columns: ["implemented_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "change_requests_implemented_by_fkey"
+            columns: ["implemented_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5909,6 +6266,13 @@ export type Database = {
             foreignKeyName: "change_requests_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -5966,6 +6330,13 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "change_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -6076,6 +6447,13 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "chapter_needs_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -6684,6 +7062,13 @@ export type Database = {
             foreignKeyName: "consent_records_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "consent_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -6839,6 +7224,13 @@ export type Database = {
             foreignKeyName: "content_products_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -6924,6 +7316,13 @@ export type Database = {
             columns: ["proposer_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "content_products_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -7094,6 +7493,13 @@ export type Database = {
             foreignKeyName: "cost_entries_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "cost_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -7207,6 +7613,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "course_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -7364,6 +7777,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "cr_approvals_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -7555,6 +7975,13 @@ export type Database = {
             foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
             columns: ["captured_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_artifact_snapshots_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -7719,6 +8146,13 @@ export type Database = {
             columns: ["curator_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_review_log_curator_id_fkey"
+            columns: ["curator_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -7913,6 +8347,13 @@ export type Database = {
             foreignKeyName: "data_anomaly_log_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "data_anomaly_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8007,6 +8448,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -8144,6 +8592,13 @@ export type Database = {
             foreignKeyName: "document_comment_edits_edited_by_fkey"
             columns: ["edited_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_comment_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8253,6 +8708,13 @@ export type Database = {
             foreignKeyName: "document_comments_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8324,6 +8786,13 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_comments_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -8466,6 +8935,13 @@ export type Database = {
             foreignKeyName: "document_versions_authored_by_fkey"
             columns: ["authored_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_versions_authored_by_fkey"
+            columns: ["authored_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8536,6 +9012,13 @@ export type Database = {
             foreignKeyName: "document_versions_locked_by_fkey"
             columns: ["locked_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_versions_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8600,6 +9083,13 @@ export type Database = {
             columns: ["published_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "document_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -8746,6 +9236,13 @@ export type Database = {
             foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
             columns: ["grantee_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_curation_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -8872,6 +9369,13 @@ export type Database = {
             columns: ["promoted_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_file_discoveries_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -9005,6 +9509,13 @@ export type Database = {
             columns: ["grantee_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_grantee_member_id_fkey"
+            columns: ["grantee_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -9187,6 +9698,13 @@ export type Database = {
             foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -9258,6 +9776,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_offboarding_audit_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -9361,6 +9886,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_teardown_scans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -9473,6 +10005,13 @@ export type Database = {
             foreignKeyName: "email_verification_pending_requesting_member_id_fkey"
             columns: ["requesting_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_requesting_member_id_fkey"
+            columns: ["requesting_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -9530,6 +10069,13 @@ export type Database = {
             columns: ["target_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "email_verification_pending_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10040,6 +10586,13 @@ export type Database = {
             foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -10097,6 +10650,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10181,6 +10741,13 @@ export type Database = {
             columns: ["owner_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10361,6 +10928,13 @@ export type Database = {
             foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
             columns: ["counter_signed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_counter_signed_by_fkey"
+            columns: ["counter_signed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -10425,6 +10999,13 @@ export type Database = {
             columns: ["issued_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10502,6 +11083,13 @@ export type Database = {
             columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_guest_certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10600,6 +11188,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_invited_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -10739,6 +11334,13 @@ export type Database = {
             foreignKeyName: "event_showcases_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_showcases_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -10803,6 +11405,13 @@ export type Database = {
             columns: ["registered_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_showcases_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -11074,6 +11683,13 @@ export type Database = {
             foreignKeyName: "events_agenda_posted_by_fkey"
             columns: ["agenda_posted_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "events_agenda_posted_by_fkey"
+            columns: ["agenda_posted_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -11131,6 +11747,13 @@ export type Database = {
             columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -11208,6 +11831,13 @@ export type Database = {
             columns: ["minutes_posted_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "events_minutes_posted_by_fkey"
+            columns: ["minutes_posted_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -11365,6 +11995,13 @@ export type Database = {
             foreignKeyName: "gamification_points_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gamification_points_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -11422,6 +12059,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gamification_points_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -11559,6 +12203,13 @@ export type Database = {
             foreignKeyName: "gamification_rules_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gamification_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -11623,6 +12274,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gamification_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -11746,6 +12404,13 @@ export type Database = {
             columns: ["caller_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "gate_attempts_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -12012,6 +12677,13 @@ export type Database = {
             foreignKeyName: "governance_documents_proposer_member_id_fkey"
             columns: ["proposer_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "governance_documents_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -12216,6 +12888,13 @@ export type Database = {
             foreignKeyName: "hub_resources_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -12378,6 +13057,13 @@ export type Database = {
             foreignKeyName: "ia_pilots_lead_member_id_fkey"
             columns: ["lead_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ia_pilots_lead_member_id_fkey"
+            columns: ["lead_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -12479,6 +13165,13 @@ export type Database = {
             foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -12564,6 +13257,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -12658,6 +13358,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -12781,6 +13488,13 @@ export type Database = {
             foreignKeyName: "initiative_drive_links_linked_by_fkey"
             columns: ["linked_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_drive_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -12838,6 +13552,13 @@ export type Database = {
             columns: ["unlinked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_drive_links_unlinked_by_fkey"
+            columns: ["unlinked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -12985,6 +13706,13 @@ export type Database = {
             foreignKeyName: "initiative_invitations_invitee_member_id_fkey"
             columns: ["invitee_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_invitee_member_id_fkey"
+            columns: ["invitee_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -13048,6 +13776,13 @@ export type Database = {
             foreignKeyName: "initiative_invitations_inviter_member_id_fkey"
             columns: ["inviter_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_inviter_member_id_fkey"
+            columns: ["inviter_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -13111,6 +13846,13 @@ export type Database = {
             foreignKeyName: "initiative_invitations_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -13168,6 +13910,13 @@ export type Database = {
             columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "initiative_invitations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -13527,6 +14276,13 @@ export type Database = {
             foreignKeyName: "instrument_version_bindings_bound_by_fkey"
             columns: ["bound_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "instrument_version_bindings_bound_by_fkey"
+            columns: ["bound_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -13671,6 +14427,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "knowledge_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -13910,6 +14673,13 @@ export type Database = {
             foreignKeyName: "knowledge_insights_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "knowledge_insights_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14126,6 +14896,13 @@ export type Database = {
             foreignKeyName: "mcp_usage_log_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "mcp_usage_log_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14257,6 +15034,13 @@ export type Database = {
             foreignKeyName: "meeting_action_items_assignee_id_fkey"
             columns: ["assignee_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14341,6 +15125,13 @@ export type Database = {
             foreignKeyName: "meeting_action_items_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14405,6 +15196,13 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -14523,6 +15321,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -14657,6 +15462,13 @@ export type Database = {
             foreignKeyName: "member_activity_sessions_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_activity_sessions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14770,6 +15582,13 @@ export type Database = {
             foreignKeyName: "member_affiliation_verifications_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -14834,6 +15653,13 @@ export type Database = {
             columns: ["verified_by_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_affiliation_verifications_verified_by_member_id_fkey"
+            columns: ["verified_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -15006,6 +15832,13 @@ export type Database = {
             foreignKeyName: "member_cycle_history_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_cycle_history_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -15139,6 +15972,13 @@ export type Database = {
             foreignKeyName: "member_document_signatures_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_document_signatures_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -15254,6 +16094,13 @@ export type Database = {
             foreignKeyName: "member_emails_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_emails_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -15355,6 +16202,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_milestones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -15491,6 +16345,13 @@ export type Database = {
             foreignKeyName: "member_offboarding_records_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: true
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -15548,6 +16409,13 @@ export type Database = {
             columns: ["offboarded_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -15646,6 +16514,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: true
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_quick_start_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -15793,6 +16668,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_reacceptance_obligations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -16088,6 +16970,13 @@ export type Database = {
             foreignKeyName: "members_anonymized_by_fkey"
             columns: ["anonymized_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "members_anonymized_by_fkey"
+            columns: ["anonymized_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -16166,6 +17055,13 @@ export type Database = {
             columns: ["offboarded_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "members_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -16281,6 +17177,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: true
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -16408,6 +17311,13 @@ export type Database = {
             foreignKeyName: "notifications_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -16465,6 +17375,13 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -16627,6 +17544,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "onboarding_progress_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -16888,6 +17812,13 @@ export type Database = {
             foreignKeyName: "partner_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "partner_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -16986,6 +17917,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -17209,6 +18147,13 @@ export type Database = {
             foreignKeyName: "partner_interactions_actor_member_id_fkey"
             columns: ["actor_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "partner_interactions_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -17331,6 +18276,13 @@ export type Database = {
             foreignKeyName: "pending_manual_version_approvals_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -17401,6 +18353,13 @@ export type Database = {
             foreignKeyName: "pending_manual_version_approvals_proposed_by_fkey"
             columns: ["proposed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -17458,6 +18417,13 @@ export type Database = {
             columns: ["signoff_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pending_manual_version_approvals_signoff_member_id_fkey"
+            columns: ["signoff_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -17755,6 +18721,13 @@ export type Database = {
             foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
             columns: ["declarant_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pi_exclusion_declarations_declarant_member_id_fkey"
+            columns: ["declarant_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -17866,6 +18839,13 @@ export type Database = {
             foreignKeyName: "pii_access_log_accessor_id_fkey"
             columns: ["accessor_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_accessor_id_fkey"
+            columns: ["accessor_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -17923,6 +18903,13 @@ export type Database = {
             columns: ["target_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -18066,6 +19053,13 @@ export type Database = {
             foreignKeyName: "pilots_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pilots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -18172,6 +19166,13 @@ export type Database = {
             columns: ["changed_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "platform_settings_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -18460,6 +19461,13 @@ export type Database = {
             foreignKeyName: "preview_gate_eligibles_cache_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "preview_gate_eligibles_cache_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -18676,6 +19684,13 @@ export type Database = {
             foreignKeyName: "project_boards_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -18800,6 +19815,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "project_memberships_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -19081,6 +20103,13 @@ export type Database = {
             foreignKeyName: "publication_ideas_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_ideas_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -19159,6 +20188,13 @@ export type Database = {
             columns: ["proposer_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_ideas_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -19293,6 +20329,13 @@ export type Database = {
             foreignKeyName: "publication_series_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_series_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -19399,6 +20442,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submission_authors_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -19519,6 +20569,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -19690,6 +20747,13 @@ export type Database = {
             foreignKeyName: "publication_submissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -19768,6 +20832,13 @@ export type Database = {
             columns: ["primary_author_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submissions_primary_author_id_fkey"
+            columns: ["primary_author_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -19962,6 +21033,13 @@ export type Database = {
             foreignKeyName: "re_engagement_pipeline_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20032,6 +21110,13 @@ export type Database = {
             foreignKeyName: "re_engagement_pipeline_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20095,6 +21180,13 @@ export type Database = {
             foreignKeyName: "re_engagement_pipeline_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20152,6 +21244,13 @@ export type Database = {
             columns: ["staged_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "re_engagement_pipeline_staged_by_fkey"
+            columns: ["staged_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -20282,6 +21381,13 @@ export type Database = {
             foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
             columns: ["committee_responder_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_committee_responder_id_fkey"
+            columns: ["committee_responder_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20339,6 +21445,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "reacceptance_objections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -20528,6 +21641,13 @@ export type Database = {
             foreignKeyName: "recurring_meeting_rules_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "recurring_meeting_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20706,6 +21826,13 @@ export type Database = {
             foreignKeyName: "release_readiness_policies_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20812,6 +21939,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "releases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -20933,6 +22067,13 @@ export type Database = {
             foreignKeyName: "responsibility_handoffs_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -20990,6 +22131,13 @@ export type Database = {
             columns: ["from_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -21066,6 +22214,13 @@ export type Database = {
             foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
             columns: ["owner_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -21129,6 +22284,13 @@ export type Database = {
             foreignKeyName: "responsibility_handoffs_placed_by_fkey"
             columns: ["placed_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_placed_by_fkey"
+            columns: ["placed_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -21186,6 +22348,13 @@ export type Database = {
             columns: ["successor_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "responsibility_handoffs_successor_member_id_fkey"
+            columns: ["successor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -21326,6 +22495,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "revenue_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -21961,6 +23137,13 @@ export type Database = {
             foreignKeyName: "selection_applications_interview_reschedule_requested_by_fkey"
             columns: ["interview_reschedule_requested_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_reschedule_requested_by_fkey"
+            columns: ["interview_reschedule_requested_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -22045,6 +23228,13 @@ export type Database = {
             foreignKeyName: "selection_applications_referrer_member_id_fkey"
             columns: ["referrer_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -22122,6 +23312,13 @@ export type Database = {
             foreignKeyName: "selection_applications_track_decided_by_fkey"
             columns: ["track_decided_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_track_decided_by_fkey"
+            columns: ["track_decided_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -22179,6 +23376,13 @@ export type Database = {
             columns: ["vep_reconciled_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_vep_reconciled_by_fkey"
+            columns: ["vep_reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -22283,6 +23487,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_committee_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -22438,6 +23649,13 @@ export type Database = {
             foreignKeyName: "selection_cycles_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_cycles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -22567,6 +23785,13 @@ export type Database = {
             columns: ["resolved_evaluator_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_resolved_evaluator_id_fkey"
+            columns: ["resolved_evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -22828,6 +24053,13 @@ export type Database = {
             foreignKeyName: "selection_evaluation_anomalies_resolved_by_fkey"
             columns: ["resolved_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_anomalies_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -22942,6 +24174,13 @@ export type Database = {
             columns: ["evaluator_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -23177,6 +24416,13 @@ export type Database = {
             foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
             columns: ["triggered_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -23305,6 +24551,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -23500,6 +24753,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -23734,6 +24994,13 @@ export type Database = {
             foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -23846,6 +25113,13 @@ export type Database = {
             columns: ["assigned_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -24054,6 +25328,13 @@ export type Database = {
             foreignKeyName: "tribe_lineage_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -24125,6 +25406,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -24251,6 +25539,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: true
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_selections_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -24399,6 +25694,13 @@ export type Database = {
             foreignKeyName: "tribes_leader_member_id_fkey"
             columns: ["leader_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribes_leader_member_id_fkey"
+            columns: ["leader_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -24470,6 +25772,13 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -24657,6 +25966,13 @@ export type Database = {
             foreignKeyName: "vep_reconciliation_baselines_captured_by_fkey"
             columns: ["captured_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "vep_reconciliation_baselines_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -24812,6 +26128,13 @@ export type Database = {
             foreignKeyName: "visitor_leads_contacted_by_fkey"
             columns: ["contacted_by"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_contacted_by_fkey"
+            columns: ["contacted_by"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -24869,6 +26192,13 @@ export type Database = {
             columns: ["dismissed_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_dismissed_by_fkey"
+            columns: ["dismissed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -24939,6 +26269,13 @@ export type Database = {
             columns: ["promoted_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_promoted_by_fkey"
+            columns: ["promoted_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -25016,6 +26353,13 @@ export type Database = {
             columns: ["referrer_member_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_referrer_member_id_fkey"
+            columns: ["referrer_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -25187,6 +26531,13 @@ export type Database = {
             foreignKeyName: "volunteer_applications_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -25285,6 +26636,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_lifecycle_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -25432,6 +26790,13 @@ export type Database = {
             foreignKeyName: "webinar_proposals_proposer_member_id_fkey"
             columns: ["proposer_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_proposals_proposer_member_id_fkey"
+            columns: ["proposer_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -25496,6 +26861,13 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -25705,6 +27077,13 @@ export type Database = {
             foreignKeyName: "webinars_organizer_id_fkey"
             columns: ["organizer_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -25893,6 +27272,13 @@ export type Database = {
             foreignKeyName: "work_governing_version_author_member_id_fkey"
             columns: ["author_member_id"]
             isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_author_member_id_fkey"
+            columns: ["author_member_id"]
+            isOneToOne: false
             referencedRelation: "v_operational_members"
             referencedColumns: ["id"]
           },
@@ -25971,6 +27357,13 @@ export type Database = {
             columns: ["stamped_by"]
             isOneToOne: false
             referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "work_governing_version_stamped_by_fkey"
+            columns: ["stamped_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
             referencedColumns: ["member_id"]
           },
           {
@@ -26534,6 +27927,22 @@ export type Database = {
           },
           {
             foreignKeyName: "engagements_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_member_operational_tiers: {
+        Row: {
+          member_id: string | null
+          operational_tier: string | null
+          person_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "persons"
