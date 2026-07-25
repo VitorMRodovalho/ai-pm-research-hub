@@ -103,6 +103,28 @@ test('#1424 Fase C: renderer handles aggregated payload and keeps the legacy pat
     'Renderer must keep the legacy single-initiative path for rows queued pre-Fase C.');
 });
 
+test('#1424 Fase C item 2: leader digest is staggered off the Saturday collision', () => {
+  // The two weekly digests used to fire 30 min apart on the same day, which put
+  // ~91 emails against DAILY_SEND_CAP=90. Measured 2026-07-25: Saturday carries
+  // no traffic other than the digests themselves (18/07 = 71 member + 37 leader,
+  // nothing else), so the SMALLER one moves and the member digest keeps Saturday.
+  const staggerSQL = readFileSync(
+    resolve(MIGRATIONS_DIR, '20260805000491_1424_fasec_item2_stagger_leader_digest_monday.sql'), 'utf8');
+
+  // '0 12 * * 1' = Monday 12:00 UTC (09:00 America/Sao_Paulo).
+  assert.match(staggerSQL, /schedule\s*:=\s*'0 12 \* \* 1'/,
+    'Leader digest must be rescheduled to Monday 12:00 UTC.');
+  // Resolved by NAME, never by a hardcoded jobid: job ids are not stable across
+  // environments, and altering the wrong job would silently retime something else.
+  assert.match(staggerSQL, /WHERE\s+jobname\s*=\s*'send-weekly-leader-digest'/,
+    'Job must be resolved by jobname, not a hardcoded jobid.');
+  assert.match(staggerSQL, /RAISE\s+EXCEPTION/,
+    'Migration must fail loudly if the job name does not resolve.');
+  // Saturday must not reappear for this job in the same migration.
+  assert.doesNotMatch(staggerSQL, /schedule\s*:=\s*'[^']*\* \* 6'/,
+    'Leader digest must not stay on Saturday (day-of-week 6).');
+});
+
 test('#1424 Fase C: leader digest stays a rich/individual type in the email lane', () => {
   // The email lane must NOT fold the leader digest into the generic coalesced
   // list — it has its own full-page renderer. Fase A put it in both sets; the
