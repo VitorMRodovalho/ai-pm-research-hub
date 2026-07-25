@@ -218,32 +218,43 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
     </div>`
 }
 
+// #1424 Fase C: naming/kind metadata for ONE initiative payload. Shared by the
+// single- and multi-initiative renderers so both label a tribe as "Tribo" and
+// every other kind as "Iniciativa".
+function leaderInitiativeMeta(payload: any): { name: string; kindCap: string; kindLower: string; activeMembers: number } {
+  // p173: initiative-aware. payload.is_tribe distinguishes research_tribe (Tribo)
+  // from other kinds (workgroup/committee/study_group/congress = Iniciativa).
+  // Default true for legacy payloads without the field.
+  const isTribe = payload?.is_tribe !== false
+  return {
+    name: payload?.tribe_name || payload?.initiative_name || 'sua iniciativa',
+    kindCap: isTribe ? 'Tribo' : 'Iniciativa',
+    kindLower: isTribe ? 'tribo' : 'iniciativa',
+    activeMembers: Number(payload?.aggregates?.active_members || 0),
+  }
+}
+
 // ADR-0022 W3: leader digest aggregate-only renderer. Body is JSON from
-// get_weekly_tribe_digest RPC. Card aggregates remain privacy-preserving
+// get_weekly_initiative_digest RPC. Card aggregates remain privacy-preserving
 // (counts only). p162 Track B' added 3 documentation-hygiene sections
 // (ata_pending recurrence-grouped, attendance_pending, champion_pending)
 // — these expose event titles/dates by design so the leader can act, but
 // no member names. Hide-if-empty per section. Deep-link CTAs into
 // /meetings, /attendance?eventId=…, /admin/gamification?award_event_id=….
 // PT-BR inline (i18n EN/ES tech debt — backlog).
-function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
-  let payload: any = {}
-  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
-  const tribeName = payload.tribe_name || 'sua iniciativa'
-  // p173: initiative-aware. payload.is_tribe distinguishes research_tribe (Tribo)
-  // from other kinds (workgroup/committee/study_group/congress = Iniciativa).
-  // Default true for legacy payloads without the field.
-  const isTribe = payload.is_tribe !== false
-  const kindNounCap = isTribe ? 'Tribo' : 'Iniciativa'
-  const kindNounLower = isTribe ? 'tribo' : 'iniciativa'
-  const agg = payload.aggregates || {}
+//
+// #1424 Fase C: this renders the sections for ONE initiative only (health +
+// aggregates + documentation hygiene) — no page header, privacy note, CTA or
+// footer. The wrapper buildWeeklyTribeDigestLeaderHtml frames it once, whether
+// the leader has one initiative or eight.
+function buildLeaderInitiativeBodyHtml(payload: any): string {
+  const agg = payload?.aggregates || {}
   const overdue = Number(agg.cards_overdue_total || 0)
   const dueNext = Number(agg.cards_due_next_7d || 0)
   const noAssignee = Number(agg.cards_without_assignee || 0)
   const noDate = Number(agg.cards_without_due_date || 0)
   const completed = Number(agg.cards_completed_window || 0)
   const membersOverdue = Number(agg.members_with_overdue_cards || 0)
-  const activeMembers = Number(agg.active_members || 0)
   const healthPct = Number(agg.tribe_health_pct || 100)
 
   const healthColor = healthPct >= 80 ? '#388e3c' : healthPct >= 50 ? '#f57c00' : '#d32f2f'
@@ -384,12 +395,6 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   const docHygieneAny = ataCount + attCount + champCount > 0
 
   return `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
-      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
-        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da ${kindNounCap} ${escapeHtml(tribeName)}</h1>
-        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${activeMembers} membros ativos</p>
-      </div>
-      <div style="padding: 20px 16px;">
         <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px; text-align: center;">
           <div style="font-size: 11px; color: #868e96; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Tribe Health</div>
           <div style="font-size: 36px; font-weight: 700; color: ${healthColor};">${healthPct}%</div>
@@ -424,7 +429,17 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
             <strong>✓ Documentação em dia.</strong> Nenhuma ata, presença ou Champion pendente no ciclo atual. 🎉
           </p>
         </div>
-        `}
+        `}`
+}
+
+// #1424 Fase C: page frame shared by both shapes. The privacy note, portfolio
+// CTA and footer appear ONCE per email, never once per initiative.
+function leaderDigestFrame(headerHtml: string, sectionsHtml: string, whyHtml: string): string {
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
+      ${headerHtml}
+      <div style="padding: 20px 16px;">
+        ${sectionsHtml}
 
         <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 14px; margin: 0 0 16px 0; border-radius: 4px;">
           <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
@@ -436,7 +451,7 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
           <a href="https://nucleoia.vitormr.dev/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
         </div>
         <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
-          Você recebe este resumo porque é líder da ${kindNounLower} ${escapeHtml(tribeName)}.
+          ${whyHtml}
           <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
         </p>
       </div>
@@ -444,6 +459,71 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
         <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
       </div>
     </div>`
+}
+
+// #1424 Fase C — leader digest entry point. Two payload shapes:
+//
+//   v2 (aggregated, current): { version: 2, initiative_count, initiatives: [ <per-initiative payload>, … ] }
+//     One email covering every initiative the leader runs. Emitted by
+//     generate_weekly_leader_digest_cron since migration 20260805000490.
+//
+//   v1 (legacy, single): the per-initiative payload itself, at top level.
+//     Kept because rows queued before that migration may still be pending, and
+//     because get_weekly_initiative_digest output is consumed elsewhere.
+//
+// WHY v2 exists: the cron used to insert one row per (initiative, leader) — 40
+// pairs for 20 leaders. Fase A then deduped rich digests to the newest row per
+// type per recipient, so a leader of 8 initiatives got 1 email and silently
+// lost the other 7 summaries. Aggregating at the producer keeps one email per
+// leader AND all of their initiatives in it.
+function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
+  let payload: any = {}
+  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
+
+  const list: any[] = Array.isArray(payload?.initiatives) ? payload.initiatives : []
+
+  // One initiative renders identically in both shapes — a leader of a single
+  // initiative sees no change from the aggregation. `list.length === 0` covers
+  // v1 rows (and a failed parse, where payload is {}).
+  const solo = list.length === 0 ? payload : (list.length === 1 ? list[0] : null)
+  if (solo) {
+    const meta = leaderInitiativeMeta(solo)
+    const header = `
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da ${meta.kindCap} ${escapeHtml(meta.name)}</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${meta.activeMembers} membros ativos</p>
+      </div>`
+    const why = `Você recebe este resumo porque é líder da ${meta.kindLower} ${escapeHtml(meta.name)}.`
+    return leaderDigestFrame(header, buildLeaderInitiativeBodyHtml(solo), why)
+  }
+
+  // v2 multi: one titled block per initiative, in the order the producer sent
+  // them (cron orders by kind then title, so the reading order is stable).
+  const metas = list.map(leaderInitiativeMeta)
+  const totalMembers = metas.reduce((acc, m) => acc + m.activeMembers, 0)
+  const header = `
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo semanal de liderança</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${list.length} iniciativas · ${totalMembers} membros ativos</p>
+      </div>`
+  const index = `
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 14px 16px; margin: 0 0 20px 0;">
+          <p style="color: #495057; font-size: 12px; margin: 0 0 8px 0;">Este e-mail reúne as ${list.length} iniciativas que você lidera:</p>
+          <ol style="margin: 0; padding-left: 20px; color: #003B5C; font-size: 13px; line-height: 1.7;">
+            ${metas.map(m => `<li><strong>${escapeHtml(m.name)}</strong> <span style="color: #868e96;">· ${m.kindCap}</span></li>`).join('')}
+          </ol>
+        </div>`
+  const blocks = list.map((p, i) => {
+    const m = metas[i]
+    return `
+        <div style="border-top: 3px solid #003B5C; margin: 0 0 12px 0; padding: 16px 0 0 0;">
+          <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 2px 0; font-weight: 700;">${i + 1}. ${escapeHtml(m.name)}</h2>
+          <p style="color: #868e96; font-size: 11px; margin: 0 0 14px 0;">${m.kindCap} · ${m.activeMembers} membros ativos</p>
+        </div>
+        ${buildLeaderInitiativeBodyHtml(p)}`
+  }).join('')
+  const why = `Você recebe este resumo porque lidera ${list.length} iniciativas na plataforma.`
+  return leaderDigestFrame(header, index + blocks, why)
 }
 
 // Helper used only by ata section: when 1-2 groups, list itself is enough;
