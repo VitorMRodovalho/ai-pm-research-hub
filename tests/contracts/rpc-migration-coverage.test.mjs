@@ -29,6 +29,13 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { loadLatestCaptures, diffLiveVsCaptures } from '../helpers/rpc-body-drift-parser.mjs';
+import {
+  checkoutHead,
+  classifyMissingFileDrift,
+  formatMissingFileDriftReport,
+  prodAheadBanner,
+  prodAheadVersions,
+} from '../helpers/migration-drift-classifier.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -294,6 +301,22 @@ function extractLocalMigrationVersions() {
     const base = f.replace(/\.sql$/, '');
     const version = base.split('_')[0];
     out.add(version);
+  }
+  return out;
+}
+
+function extractLocalMigrationNames() {
+  // Map name -> version, parsed off supabase/migrations/*.sql (<version>_<name>.sql).
+  // A tracked row whose NAME already has a local file under a DIFFERENT version is the
+  // phantom-row signature: apply_migration via MCP reuses the name we pass but stamps a
+  // wall-clock version and writes no file. Carrying the local version lets the failure
+  // name the colliding file so the reader can confirm before deleting the row.
+  const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const out = new Map();
+  for (const f of files) {
+    const base = f.replace(/\.sql$/, '');
+    const idx = base.indexOf('_');
+    if (idx > -1) out.set(base.slice(idx + 1), base.slice(0, idx));
   }
   return out;
 }
@@ -660,7 +683,17 @@ test(
         .map(r => `  [${r.touch_count}x] ${r.name}(${r.args})  live_len=${r.live_len}  mig_len=${r.migration_len}  latest=${r.latest_file}`)
         .join('\n');
       const more = newDrift.length > 20 ? `\n  ... and ${newDrift.length - 20} more` : '';
+      // While the shared DB carries migrations this checkout lacks, live bodies
+      // legitimately differ from the checkout's captures. Say so up front so the
+      // reader reconciles the lag instead of opening a drift-recovery audit.
+      const trackedRows = await callSchemaMigrationsAuditRpc();
+      const localVersions = extractLocalMigrationVersions();
+      const ahead = prodAheadVersions({
+        trackedVersions: trackedRows.map(r => r.version),
+        localVersions,
+      });
       assert.fail(
+        prodAheadBanner(ahead, checkoutHead(localVersions)) +
         `NEW body-hash drift detected — live function body diverged from ` +
           `the latest CREATE FUNCTION migration capture, and the key is NOT ` +
           `in the p175 allowlist.\n\n` +
@@ -761,21 +794,25 @@ test(
     const newMissing = currentMissing.filter(v => !baseline.has(v));
 
     if (newMissing.length > 0) {
+      // Three situations produce this same red and only one is authored drift.
+      // Classify so the message names the action that actually resolves each
+      // entry (phantom row / prod-ahead DDL-lag / genuine missing file) instead
+      // of pointing every occurrence at file recovery. The gate still fails in
+      // all three cases — see tests/helpers/migration-drift-classifier.mjs.
+      const classified = classifyMissingFileDrift({
+        missingVersions: newMissing,
+        trackedRows: rows,
+        localVersions,
+        localNames: extractLocalMigrationNames(),
+      });
       assert.fail(
-        `NEW missing-file drift detected — version(s) appear in ` +
-          `supabase_migrations.schema_migrations but no corresponding .sql ` +
-          `exists in supabase/migrations/. Pre-GC-097 era apply_migration ` +
-          `pattern (DDL applied via MCP without manual file sync) was the ` +
-          `historical cause; GC-097 protocol now requires writing the local ` +
-          `file + running 'supabase migration repair --status applied <ts>' ` +
-          `after every apply_migration call.\n\n` +
-          `To fix: either (a) write the missing .sql file with the DDL body ` +
-          `(query the live row's statements via SELECT * FROM ` +
-          `supabase_migrations.schema_migrations WHERE version='<v>'), or ` +
-          `(b) extend ${MIGRATION_FILE_DRIFT_BASELINE_PATH} with PM ack + ` +
-          `bump MIGRATION_FILE_DRIFT_BASELINE_SIZE in this file (rare — ` +
-          `recovery is the preferred path).\n\n` +
-          `New missing-file drift:\n  ${newMissing.sort().join('\n  ')}`
+        `NEW missing-file drift detected — ${newMissing.length} version(s) appear in ` +
+          `supabase_migrations.schema_migrations but no corresponding .sql exists in ` +
+          `supabase/migrations/ (checkout head: ${checkoutHead(localVersions)}).\n\n` +
+          formatMissingFileDriftReport(classified, {
+            baselinePath: MIGRATION_FILE_DRIFT_BASELINE_PATH,
+            baselineConstant: 'MIGRATION_FILE_DRIFT_BASELINE_SIZE',
+          })
       );
     }
   }
