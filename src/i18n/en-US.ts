@@ -3815,7 +3815,7 @@ const enUS: Record<string, string> = {
   'privacy.s3map.aggregateDesc': 'your state of residence (Brazil and the United States) is shown only when three or more authorizing members share the same location — never individually.',
   'privacy.s3map.preciseLabel': 'Precise location display',
   'privacy.s3map.preciseDesc': 'your state of residence (Brazil and the United States) or country of residence (for countries supported by the platform) may be shown even when you are the only member in your location, subject to specific and informed authorization.',
-  'privacy.s3map.revoke': 'Both levels are based on your consent (LGPD Art. 7, I) and can be enabled, changed, or revoked at any time under Settings → My Profile. With no active opt-in, you receive no individual state or country pin; your location may still be included in aggregate counts by country or continent (minimum of 3 members), based on legitimate institutional interest (Art. 7, IX), always without individual identification.',
+  'privacy.s3map.revoke': 'Both levels are based on your consent (LGPD Art. 7, I) and can be enabled, changed, or revoked at any time under Settings → My Profile. With no active opt-in, you receive no individual state or country pin; your location may still be included in aggregate counts by country or continent, based on legitimate institutional interest (Art. 7, IX), always without individual identification. Named pins (countries and continents) have a minimum floor of 3 members. The "Internacional" (ZZ) chip has no floor of its own: it groups countries with fewer than 3 members and countries not mapped by the platform — it does not identify any country or individual.',
 
   // S4 — Data sharing
   'privacy.s4.title': 'Data Sharing',
