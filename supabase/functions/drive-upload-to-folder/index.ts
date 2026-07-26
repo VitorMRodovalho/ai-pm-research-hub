@@ -18,10 +18,20 @@
  *     filename: string,
  *     mime_type?: string,        // default text/plain
  *     content_text?: string,     // raw text (for ata.md generation)
- *     content_base64?: string    // base64-encoded binary
+ *     content_base64?: string,   // base64-encoded binary
+ *     overwrite?: boolean        // default false — see below
  *   }
  *
- * Returns: { success, drive_file_id, drive_file_url, filename, mime_type, size_bytes }
+ * Returns: { success, action: "created" | "updated", drive_file_id, drive_file_url, filename,
+ *            mime_type, size_bytes }
+ *
+ * `overwrite` (2026-07-26): o Drive ACEITA nomes duplicados na mesma pasta, então reenviar um arquivo
+ * criava uma segunda cópia e a pasta virava ambígua para quem consome (mordeu 3x na preparação do
+ * webinar da T6). Com `overwrite: true` a EF procura pelo nome exato na pasta e, se achar, faz
+ * `PATCH /upload/drive/v3/files/{id}?uploadType=media` — troca o conteúdo preservando id, link e
+ * permissões, o que também evita quebrar links já compartilhados. Default é `false` para não mudar o
+ * comportamento de nenhum caller existente (ex.: geração de ata).
+ * Não há endpoint de delete aqui de propósito: apagar arquivo do Drive fica fora da automação.
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -66,6 +76,49 @@ async function getAccessToken(creds: OAuthCreds): Promise<string> {
   });
   if (!res.ok) throw new Error(`Token refresh failed: ${res.status} ${await res.text()}`);
   return (await res.json()).access_token;
+}
+
+/**
+ * Procura um arquivo pelo nome EXATO dentro da pasta (ignorando lixeira).
+ * Existe porque o Drive aceita nomes duplicados: reenviar o mesmo arquivo cria uma segunda cópia e a
+ * pasta fica ambígua para quem consome. Sem endpoint de delete, a única saída limpa é o update.
+ */
+async function findByName(
+  folderId: string,
+  filename: string,
+  accessToken: string,
+): Promise<string | null> {
+  const q = `name = '${filename.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed = false`;
+  const url = new URL("https://www.googleapis.com/drive/v3/files");
+  url.searchParams.set("q", q);
+  url.searchParams.set("fields", "files(id,name)");
+  url.searchParams.set("pageSize", "2");
+  url.searchParams.set("supportsAllDrives", "true");
+  url.searchParams.set("includeItemsFromAllDrives", "true");
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error(`Drive lookup failed: ${res.status} ${await res.text()}`);
+  const files = (await res.json()).files ?? [];
+  return files.length > 0 ? files[0].id : null;
+}
+
+/** Substitui o CONTEÚDO de um arquivo existente, preservando id, link e permissões. */
+async function updateFile(
+  fileId: string,
+  mimeType: string,
+  body: Uint8Array,
+  accessToken: string,
+): Promise<{ id: string; webViewLink: string; size?: string; mimeType: string; name: string }> {
+  const url = new URL(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`);
+  url.searchParams.set("uploadType", "media");
+  url.searchParams.set("fields", "id,name,mimeType,size,webViewLink");
+  url.searchParams.set("supportsAllDrives", "true");
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": mimeType },
+    body,
+  });
+  if (!res.ok) throw new Error(`Drive update failed: ${res.status} ${await res.text()}`);
+  return await res.json();
 }
 
 async function uploadFile(
@@ -115,7 +168,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
   }
 
-  let body: { folder_id?: string; filename?: string; mime_type?: string; content_text?: string; content_base64?: string };
+  let body: { folder_id?: string; filename?: string; mime_type?: string; content_text?: string; content_base64?: string; overwrite?: boolean };
   try { body = await req.json(); }
   catch { return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 }); }
 
@@ -169,10 +222,22 @@ Deno.serve(async (req) => {
 
   try {
     const accessToken = await getAccessToken(credsResult.creds!);
-    const file = await uploadFile(folderId, filename, mimeType, bytes, accessToken);
+    // overwrite=true: se já existe arquivo com esse nome na pasta, troca o conteúdo dele em vez de
+    // criar uma segunda cópia. Default false para não mudar o comportamento de nenhum caller antigo.
+    let file;
+    let action = "created";
+    if (body.overwrite === true) {
+      const existingId = await findByName(folderId, filename, accessToken);
+      if (existingId) {
+        file = await updateFile(existingId, mimeType, bytes, accessToken);
+        action = "updated";
+      }
+    }
+    if (!file) file = await uploadFile(folderId, filename, mimeType, bytes, accessToken);
     return new Response(
       JSON.stringify({
         success: true,
+        action,
         drive_file_id: file.id,
         drive_file_url: file.webViewLink,
         filename: file.name,
