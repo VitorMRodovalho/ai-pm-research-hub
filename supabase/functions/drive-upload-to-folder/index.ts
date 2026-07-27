@@ -115,7 +115,10 @@ async function updateFile(
   const res = await fetch(url, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": mimeType },
-    body,
+    // Blob e não o Uint8Array cru: o parâmetro chega tipado como Uint8Array<ArrayBufferLike>, que o
+    // `deno check` recusa como BodyInit (TS2769). O uploadFile abaixo escapa disso por acidente,
+    // porque monta o buffer ali mesmo com `new Uint8Array(n)` (Uint8Array<ArrayBuffer>).
+    body: new Blob([body], { type: mimeType }),
   });
   if (!res.ok) throw new Error(`Drive update failed: ${res.status} ${await res.text()}`);
   return await res.json();
