@@ -27,6 +27,26 @@ tags por user-agent de crawler, e `drive-list-folder-files` / SQL para o lado da
 5. **3 speakers cadastrados + convites de backstage disparados** (Denis, Fernando, Clendson):
    "Invite sent" / "Registered".
 
+## Depois deste handoff (mesma sessão)
+
+- **v2 das peças aprovada e promovida.** `build_t6_divulgacao.py` agora É a v2 (nomes canônicos); a v1
+  virou `build_t6_divulgacao_v1_ARQUIVADO.py`, que reproduz as antigas byte-idênticas. Kit local e
+  `divulgacao/` no Drive conferidos um contra o outro por byte. **Só 3 peças mudaram de fato**: post,
+  story e linkedin. Os 2 cards saíram byte-idênticos à v1, porque o card já usava retrato de 470 px nas
+  duas versões.
+- **Upsert no `drive-upload-to-folder`** (`overwrite: true`), que foi o que destravou a troca dos
+  arquivos no Drive sem duplicar. **PR #1492**, 3 commits.
+- ⚠️ **Lição que corrigiu uma memória durável:** `supabase functions deploy` **não é type-check**. Ele
+  bundla com esbuild, que apaga os tipos, então a EF subiu e funcionou em produção com um erro que o job
+  `deno` do CI reprovou. O deploy pega erro de PARSE (brace drift), não de TIPO. Rodar os dois.
+- ⚠️ **Armadilha de tipo em EF que manipula bytes:** `Uint8Array<ArrayBufferLike>` não é aceito nem como
+  `BodyInit` (TS2769) nem como `BlobPart` (TS2322), porque `ArrayBufferLike` inclui `SharedArrayBuffer`.
+  Errei dois palpites antes de achar a saída certa: copiar para `new Uint8Array(n)`, que é
+  `Uint8Array<ArrayBuffer>` e é a construção que o `uploadFile` vizinho já usava e compilava. **Sem
+  type-checker local, replicar código provado bate adivinhar assinatura.**
+- Um dos 3 vermelhos do `deno` foi **infra alheia** (`esm.sh` devolveu 522 baixando dependência num
+  arquivo que não toquei). Re-run resolveu. Não confundir com os dois que eram meus.
+
 ## Pendências reais
 
 ### Decisões de gente (bloqueiam trabalho)
