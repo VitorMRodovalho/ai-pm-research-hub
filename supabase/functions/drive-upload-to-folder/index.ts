@@ -112,13 +112,17 @@ async function updateFile(
   url.searchParams.set("uploadType", "media");
   url.searchParams.set("fields", "id,name,mimeType,size,webViewLink");
   url.searchParams.set("supportsAllDrives", "true");
+  // `body` chega tipado como Uint8Array<ArrayBufferLike>, e ArrayBufferLike inclui SharedArrayBuffer,
+  // então o `deno check` recusa tanto como BodyInit (TS2769) quanto como BlobPart (TS2322).
+  // Copiar para um buffer novo resolve porque `new Uint8Array(n)` é Uint8Array<ArrayBuffer>: é a mesma
+  // construção que o uploadFile abaixo já usa, e é por isso que ele compila.
+  const payload = new Uint8Array(body.length);
+  payload.set(body);
+
   const res = await fetch(url, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": mimeType },
-    // Blob e não o Uint8Array cru: o parâmetro chega tipado como Uint8Array<ArrayBufferLike>, que o
-    // `deno check` recusa como BodyInit (TS2769). O uploadFile abaixo escapa disso por acidente,
-    // porque monta o buffer ali mesmo com `new Uint8Array(n)` (Uint8Array<ArrayBuffer>).
-    body: new Blob([body], { type: mimeType }),
+    body: payload,
   });
   if (!res.ok) throw new Error(`Drive update failed: ${res.status} ${await res.text()}`);
   return await res.json();
