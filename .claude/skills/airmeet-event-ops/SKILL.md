@@ -120,6 +120,26 @@ Aba **Branding** → **Webinar Branding** → campo "Welcome Message" (limite 10
   "Welcome illustration" e "Webinar logo", que podem estar com asset de outro evento ou com placeholder
   genérico do Airmeet.
 
+### Editar um speaker já cadastrado (empresa, cidade, país)
+`People > Speakers` > passar o mouse na linha > **Edit** (o botão só existe no hover; o clique por `ref`
+costuma não abrir, disparar `MouseEvent` no elemento funciona).
+
+⚠️ **`form_input` NÃO persiste neste formulário.** Preenche na tela, o Update fecha o drawer, e no
+reload os campos voltam vazios: o React não registra valor setado direto no DOM. **Só funciona clicando
+no campo e digitando.** É o mesmo vício do Welcome Message e do radio da waiting screen: nesta UI,
+`form_input` serve para ler, não para escrever.
+
+⚠️ **Antes de digitar, confirme de quem é o formulário.** Abrindo o Edit de um segundo speaker logo após
+salvar o primeiro, o drawer reabriu com os dados do ANTERIOR e com os MESMOS refs. Digitar ali teria
+gravado a empresa de um na ficha do outro. Checar sempre:
+`document.querySelector('[name="firstName"]').value` e recarregar a página entre um speaker e outro.
+
+⚠️ **O drawer precisa estar visível.** Clicar por `ref` num campo fora da área renderizada faz o texto
+cair em outro lugar em silêncio. Tirar screenshot, ver os campos, clicar por coordenada.
+
+**Verificação que vale:** salvar, recarregar a página, reabrir o Edit e reler os valores. E depois
+conferir na página pública, onde a empresa aparece como terceira linha do card do speaker.
+
 ### Armadilhas de automação de browser nessa UI
 - **Não confiar em coordenada entre chamadas.** O viewport muda de tamanho no meio da sessão (vi 1512 e
   1374) e a coordenada de ontem clica na linha de hoje. Em ação destrutiva isso é grave: num
