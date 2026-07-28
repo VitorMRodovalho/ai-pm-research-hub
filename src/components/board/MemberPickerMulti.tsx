@@ -9,6 +9,12 @@ interface Props {
   onRemove: (memberId: string, role: AssignmentRole) => void;
   i18n: BoardI18n;
   disabled?: boolean;
+  /**
+   * #1496 — id do membro logado. Quando `disabled` (sem canAssign), ele ainda pode
+   * remover a PRÓPRIA atribuição. Sem isso o botão "Pegar para mim", que não tem trava,
+   * cria um caminho de mão única: o pesquisador entra no card e não consegue sair.
+   */
+  selfMemberId?: string | null;
 }
 
 const ROLE_LABELS: Record<AssignmentRole, { color: string; bgColor: string }> = {
@@ -28,7 +34,8 @@ function getRoleLabel(role: AssignmentRole, i18n: BoardI18n): string {
   return map[role] || role;
 }
 
-export default function MemberPickerMulti({ members, assignments, onAdd, onRemove, i18n, disabled = false }: Props) {
+export default function MemberPickerMulti({ members, assignments, onAdd, onRemove, i18n, disabled = false, selfMemberId = null }: Props) {
+  const canRemove = (memberId: string) => !disabled || (!!selfMemberId && memberId === selfMemberId);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState<AssignmentRole>('contributor');
@@ -83,7 +90,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                     </span>
                   )}
                   <span className="truncate max-w-[80px]">{a.name}</span>
-                  {!disabled && (
+                  {canRemove(a.member_id) && (
                     <button
                       onClick={() => onRemove(a.member_id, a.role as AssignmentRole)}
                       className="text-current opacity-50 hover:opacity-100 cursor-pointer bg-transparent border-0 text-[8px] ml-0.5"

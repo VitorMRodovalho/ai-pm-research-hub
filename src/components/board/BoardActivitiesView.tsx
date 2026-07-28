@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { getSb } from '../../hooks/useBoard';
 import type { BoardMember } from '../../types/board';
+import { formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
 
 interface Activity {
   id: string;
@@ -152,7 +153,8 @@ export default function BoardActivitiesView({ boardId, members, onOpenCard }: Pr
               {/* Activities */}
               <div className="divide-y divide-[var(--border-subtle)]">
                 {group.items.map((a) => {
-                  const isOverdue = a.target_date && !a.done && new Date(a.target_date) < new Date();
+                  // #1501 — target_date é coluna `date`: parse local + fim do dia.
+                  const isOverdue = !a.done && isOverdueDateOnly(a.target_date);
                   return (
                     <div key={a.id} className="flex items-center gap-2 px-3 py-1.5">
                       <input type="checkbox" checked={a.done}
@@ -166,7 +168,7 @@ export default function BoardActivitiesView({ boardId, members, onOpenCard }: Pr
                       )}
                       {a.target_date && (
                         <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
-                          📅 {new Date(a.target_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                          📅 {formatDateOnly(a.target_date, { day: '2-digit', month: 'short' })}
                         </span>
                       )}
                       {a.done && a.completed_at && (

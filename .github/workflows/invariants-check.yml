@@ -10,16 +10,33 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
 
+# #1505 — ver ci.yml: cancelar em voo um job que fala com a producao deixa residuo.
 concurrency:
   group: invariants-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check-invariants:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # #1509 — o trabalho em si leva ~5 min, mas a ESPERA pela faixa do banco corre dentro do
+    # mesmo orcamento. Com `timeout-minutes: 5` o job morria esperando, e um job morto por
+    # timeout do runner nao imprime a mensagem de teto estourado — volta a ser um gate que
+    # nao rodou por motivo obscuro, que e o que este issue existe para eliminar.
+    # Regra: timeout do job > teto de espera (900s) + trabalho. Travado no guard.
+    timeout-minutes: 25
+    # #1509 — este job e `validate` (ci.yml) falam com o MESMO banco de producao e nao
+    # podem se sobrepor, mas a serializacao nao usa mais o grupo `supabase-shared-db` do
+    # #1505 (o nome saiu de todos os workflows, de proposito): a fila do
+    # GitHub guarda um pendente por grupo e cancela o anterior quando um terceiro chega,
+    # e era ESTE job que evaporava — run 30373280532, commit 1fbf630c, zero steps
+    # executados, conclusion `cancelled`, sobre um commit que aplicava DDL.
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/wait-for-db-lane
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
