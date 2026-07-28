@@ -10,14 +10,20 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
 
+# #1505 — ver ci.yml: cancelar em voo um job que fala com a producao deixa residuo.
 concurrency:
   group: invariants-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check-invariants:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # #1505 — mesma fila global de `validate` em ci.yml: os dois falam com o mesmo
+    # banco de producao e nao podem se sobrepor.
+    concurrency:
+      group: supabase-shared-db
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
 
