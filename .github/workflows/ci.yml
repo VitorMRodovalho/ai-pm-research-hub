@@ -6,9 +6,15 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+# #1505 — `cancel-in-progress` era `true`, o que matava um run em VOO quando outro
+# push chegava no mesmo ref. Como `validate` escreve na producao e `tx=rollback` nao
+# desfaz INSERT de SECURITY DEFINER, ser morto no meio deixa fixture pela metade no
+# banco. Um run de main de 2026-07-28 aparece exatamente assim (`cancelled`).
+# Agora enfileira em vez de cancelar: perde-se a supersessao de pushes seguidos, o
+# que num repo de dono unico custa alguns minutos e evita residuo em prod.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -16,6 +22,17 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    # #1505 — GRUPO GLOBAL, sem ref no nome, de proposito. O recurso disputado e o
+    # BANCO DE PRODUCAO compartilhado, nao o ref. Com `ci-${{ github.ref }}` a main e
+    # um PR caem em grupos distintos e rodam juntos: em 2026-07-28 dois runs ocuparam a
+    # mesma janela de 7 min e falharam em subtestes DIFERENTES dos MESMOS arquivos
+    # (#1294/#1297, #192, #693, invariantes R/S). O mesmo commit passou sozinho no
+    # re-run. `--test-concurrency=1` (#1261) nao cobre isso: serializa por PROCESSO,
+    # nao por banco. Grupos de concorrencia sao globais no repositorio, entao
+    # check-invariants usa o MESMO nome e entra na mesma fila.
+    concurrency:
+      group: supabase-shared-db
+      cancel-in-progress: false
     # #1261: `npm test` runs DB-aware tests serially (--test-concurrency=1) to
     # kill intra-run collisions on the shared remote project. Serial ≈ 6 min
     # (vs ~2 min parallel), so bumped 10 -> 15 for margin over the full job
