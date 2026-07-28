@@ -1,0 +1,55 @@
+LEGENDAS CORRIGIDAS - colar por cima das que estao no ar
+Corrige o cargo do Clendson. A imagem do post nao muda; so a legenda.
+
+LinkedIn: https://www.linkedin.com/feed/update/urn:li:share:7487510200724152320/
+Instagram: https://www.instagram.com/p/DbTJ-JrE-rA/
+
+======================================================================
+LINKEDIN
+======================================================================
+
+Tem uma pergunta que quase ninguém faz antes de colar um documento de trabalho dentro de uma IA: o que acontece com esse dado depois?
+
+No dia 4 de agosto a tribo ROI & Portfólio do Núcleo IA & GP faz o seu primeiro webinar, e ele nasceu justamente dessa tensão do dia a dia. De um lado, a IA já ajuda de verdade na análise de cenário e na priorização de portfólio. Do outro, o caminho mais rápido para ter esse ganho é também o mais fácil de vazar informação sem perceber.
+
+Então convidamos duas pessoas para tratar dos dois lados, na prática:
+
+Fernando Carvalho, Diretor de Operações, vai mostrar como monta prompts para análise de cenário, com um exemplo real de entrada, saída e decisão tomada. E onde a IA apoia priorização, riscos e interdependências, incluindo as limitações que ele encontrou e como contornou.
+
+Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados enviados a uma IA pública, da diferença entre IA pública, privada e on-premise, do que nunca deve entrar nessas ferramentas, e de como escrever uma política de uso de IA que as pessoas consigam seguir. A provocação dele: "IA sem governança é como uma porta aberta no servidor".
+
+A mediação é do Denis Vasconcelos, da tribo ROI & Portfólio.
+
+📅 Terça, 4 de agosto, 19h00 às 20h30 (horário de Brasília)
+💻 Online, gratuito, aberto ao público e com gravação
+🎟️ Inscrição: https://pmilatam.airmeet.com/e/8d047420-8895-11f1-8e9b-61808b940348
+
+Se o tema te interessa mas o horário não dá, vale se inscrever de todo jeito: a gravação vai para quem se inscreveu.
+
+O Núcleo IA & GP é uma iniciativa dos capítulos do PMI no Brasil, sediada no PMI-GO, dedicada a pesquisa aplicada em inteligência artificial e gestão de projetos.
+
+#InteligenciaArtificial #GestaoDeProjetos #Portfolio #SegurancaDaInformacao #GovernancaDeIA #PMO #PMI
+
+======================================================================
+INSTAGRAM
+======================================================================
+
+Você já colou um documento da sua empresa dentro de uma IA pública?
+
+Essa é uma das perguntas do nosso próximo webinar. E a resposta interessa tanto para quem quer usar IA na priorização de portfólio quanto para quem responde pela segurança da informação.
+
+🎙️ Aplicações Práticas de IA
+📅 Terça, 4 de agosto, 19h00 às 20h30 (Brasília)
+💻 Online, gratuito e com gravação
+
+No palco:
+▪️ Fernando Carvalho, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts que funcionam, um exemplo real de ponta a ponta e o que a IA ainda não resolve.
+▪️ Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você envia para uma IA, a diferença entre pública, privada e on-premise, e como montar uma política de uso que as pessoas consigam seguir.
+
+Mediação: Denis Vasconcelos, da tribo ROI & Portfólio.
+
+Primeiro webinar da tribo ROI & Portfólio do Núcleo IA & GP, iniciativa dos capítulos do PMI no Brasil, sediada no PMI-GO.
+
+🔗 Inscrição no link da bio.
+
+#IA #InteligenciaArtificial #GestaoDeProjetos #PMI #Portfolio #SegurancaDaInformacao #GovernancaDeIA #PMO #NucleoIAeGP

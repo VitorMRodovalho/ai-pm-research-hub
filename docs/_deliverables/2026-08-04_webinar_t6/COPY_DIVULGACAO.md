@@ -15,6 +15,22 @@ Airmeet, não o texto.
 
 ## Regras aplicadas
 
+Estas regras vieram do **diff entre o que foi publicado e o que o time de comms deixou no ar** em
+27/07. Não são preferência de estilo. Verificáveis com `node scripts/lint-social-copy.mjs <arquivo>`.
+
+| | Instagram | LinkedIn |
+| --- | --- | --- |
+| Hashtags | sim | **não** |
+| Link | "link na bio" (não é clicável lá) | no corpo, rotulado "Link do evento:", sem emoji |
+| Parágrafo institucional do Núcleo | mantém | **corta** |
+| Linha de formato (online, gratuito, gravação) | mantém | **corta** |
+| "(horário de Brasília)" | mantém | **corta** |
+| Descritor da pessoa | curto e capitalizado | completo, em minúscula correndo na frase, com a titulação |
+
+No LinkedIn o time encolheu o texto em 25%. A régua lá é ir direto ao ponto.
+
+Demais regras, que já valiam:
+
 - Sem travessão longo nem en-dash (regra do PMO).
 - Instagram não tem link clicável em post: a legenda diz "link na bio" e o link mora no Linktree.
 - LinkedIn leva o link visível no corpo e tom de convite, não institucional seco.
@@ -40,7 +56,8 @@ Airmeet, não o texto.
 > exemplo real de entrada, saída e decisão tomada, além do que a IA já apoia em priorização, riscos e
 > interdependências. E também onde ela não ajuda.
 >
-> *Clendson Gonçalves*, especialista em segurança da informação, responde a pergunta que quase ninguém
+> *Clendson Gonçalves, MSc.*, Arquiteto de Cibersegurança, Dados e IA e professor universitário,
+> responde a pergunta que quase ninguém
 > faz antes de colar um documento no chat: o que acontece com esse dado depois. IA pública, privada e
 > on-premise, o que nunca deve ser inserido, e como montar uma política de uso de IA que as pessoas
 > consigam seguir.
@@ -87,7 +104,7 @@ Airmeet, não o texto.
 > No palco:
 > ▪️ Fernando Carvalho, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts
 > que funcionam, um exemplo real de ponta a ponta e o que a IA ainda não resolve.
-> ▪️ Clendson Gonçalves, especialista em segurança da informação: o que acontece com o dado que você
+> ▪️ Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você
 > envia para uma IA, a diferença entre pública, privada e on-premise, e como montar uma política de uso
 > que as pessoas consigam seguir.
 >
@@ -143,7 +160,7 @@ Se sair pela API, o story vai sem link tocável: nesse caso trocar a última lin
 > exemplo real de entrada, saída e decisão tomada. E onde a IA apoia priorização, riscos e
 > interdependências, incluindo as limitações que ele encontrou e como contornou.
 >
-> Clendson Gonçalves, especialista em segurança da informação, vai tratar do que acontece com os dados
+> Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados
 > enviados a uma IA pública, da diferença entre IA pública, privada e on-premise, do que nunca deve
 > entrar nessas ferramentas, e de como escrever uma política de uso de IA que as pessoas consigam
 > seguir. A provocação dele: "IA sem governança é como uma porta aberta no servidor".
@@ -167,15 +184,14 @@ monta menção de página, exige anotação de URN). Vale pedir aos capítulos p
 
 ## L2. Lembrete D-1
 
-> Amanhã, 19h00 (Brasília).
+> Amanhã, 19h00.
 >
-> Análise de cenário e gestão de portfólio com IA, com Fernando Carvalho. Segurança da informação no uso
-> de IA, com Clendson Gonçalves. Mediação do Denis Vasconcelos, da tribo ROI & Portfólio do Núcleo IA &
-> GP.
+> Análise de cenário e gestão de portfólio com IA, com Fernando Carvalho, Diretor de Operações.
+> Segurança da informação no uso de IA, com Clendson Gonçalves, MSc., arquiteto de cibersegurança,
+> dados e IA, e professor universitário. A mediação será feita pelo Denis Vasconcelos, da tribo
+> ROI & Portfólio.
 >
-> Online, gratuito e com gravação para quem se inscreveu.
->
-> https://pmilatam.airmeet.com/e/8d047420-8895-11f1-8e9b-61808b940348
+> Link do evento: https://pmilatam.airmeet.com/e/8d047420-8895-11f1-8e9b-61808b940348
 
 ---
 
@@ -221,8 +237,8 @@ no fuso do visitante (confirmado 7:00 PM UTC-03:00 às 8:30 PM UTC-03:00 com loc
 > montar prompts para análise de cenário, com um exemplo real de entrada, saída e decisão tomada. Onde a
 > IA apoia priorização, riscos e interdependências, e as limitações que ele encontrou e como contornou.
 >
-> **Segurança da informação no uso de IA**, com Clendson Gonçalves, especialista em segurança da
-> informação. O que acontece com os dados enviados a uma IA pública, a diferença entre IA pública,
+> **Segurança da informação no uso de IA**, com Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e
+> professor universitário. O que acontece com os dados enviados a uma IA pública, a diferença entre IA pública,
 > privada e on-premise, o que nunca deve entrar nessas ferramentas, e como escrever uma política de uso
 > de IA que as pessoas consigam seguir.
 >
