@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { daysUntilDateOnly, formatDateOnly } from '../../lib/date-only';
 
 interface Partner {
   id: string;
@@ -623,9 +624,11 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
               {selected.follow_up_date && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-semibold text-amber-600">📅 {l.followUp}:</span>
-                  <span className="text-xs text-[var(--text-primary)]">{new Date(selected.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                  <span className="text-xs text-[var(--text-primary)]">{formatDateOnly(selected.follow_up_date)}</span>
                   {(() => {
-                    const diff = Math.round((new Date(selected.follow_up_date).getTime() - Date.now()) / 86400000);
+                    // #1511 — `follow_up_date` é coluna `date`: dias de calendário, não
+                    // subtração de instantes (que ainda parseava a data como UTC).
+                    const diff = daysUntilDateOnly(selected.follow_up_date) ?? 0;
                     return diff < 0
                       ? <span className="text-[10px] font-bold text-red-600">({Math.abs(diff)}{l.daysOverdue})</span>
                       : <span className="text-[10px] text-[var(--text-muted)]">({diff}{l.daysUntil})</span>;
@@ -694,7 +697,7 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
                         <p className="text-[var(--text-primary)] font-medium">{ix.summary}</p>
                         {ix.outcome && <p className="text-[var(--text-secondary)] text-[10px] mt-0.5">{l.outcome}: {ix.outcome}</p>}
                         {ix.next_action && <p className="text-blue-600 text-[10px] mt-0.5">→ {ix.next_action}</p>}
-                        {ix.follow_up_date && <p className="text-amber-600 text-[10px] mt-0.5">📅 {new Date(ix.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>}
+                        {ix.follow_up_date && <p className="text-amber-600 text-[10px] mt-0.5">📅 {formatDateOnly(ix.follow_up_date)}</p>}
                       </div>
                     </div>
                   ))}

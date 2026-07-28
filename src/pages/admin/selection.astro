@@ -649,6 +649,16 @@ const SEL_I18N = {
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
   import { SELECTION_STATUS_TONE, GROUP_TONE, TONE_BADGE } from '../../lib/statusFarol';
+  import { formatDateOnly, isDateOnlyString, isOverdueDateOnly } from '../../lib/date-only';
+
+  // #1511 — a célula da candidatura cai em `application_date` (coluna `date`) OU em
+  // `created_at` (timestamptz) quando a primeira é nula. As duas famílias exigem parse
+  // diferente: date-only vira meia-noite LOCAL, instante segue em new Date().
+  function fmtApplicationDate(row: any): string {
+    const raw = row?.application_date || row?.created_at;
+    if (!raw) return '—';
+    return isDateOnlyString(raw) ? formatDateOnly(raw) : new Date(raw).toLocaleDateString('pt-BR');
+  }
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__SEL_I18N) || {
@@ -1885,7 +1895,7 @@ const SEL_I18N = {
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
         <td class="px-3 py-2.5">${pipelineBadges(r)}</td>
         <td class="px-3 py-2.5 whitespace-nowrap">${interviewCell}</td>
-        <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${r.application_date || r.created_at ? new Date(r.application_date || r.created_at).toLocaleDateString('pt-BR') : '—'}</td>
+        <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${fmtApplicationDate(r)}</td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
           <div class="flex gap-1.5 items-center flex-wrap">
@@ -1987,7 +1997,7 @@ const SEL_I18N = {
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.email}</span><br><strong>${esc(row.email)}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.chapter}</span><br><strong>${esc(row.chapter || '—')}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.role}</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.applicationDate}</span><br><strong>${row.application_date || row.created_at ? new Date(row.application_date || row.created_at).toLocaleDateString('pt-BR') : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.applicationDate}</span><br><strong>${fmtApplicationDate(row)}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.certifications}</span><br><strong>${esc(row.certifications || '—')}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">${T.modal.experience}</span><br><strong>${row.experience_years ? row.experience_years + ' ' + T.modal.experienceYearsSuffix : '—'}</strong></div>
             </div>
@@ -2649,7 +2659,9 @@ const SEL_I18N = {
           <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileServiceHistory)} (${serviceHistory.length})</h4>
           <div class="space-y-2">
             ${serviceHistory.map((s: any) => {
-              const ongoing = !s.end_date || new Date(s.end_date).getTime() >= Date.now();
+              // #1511 — `end_date` do service history é coluna `date`: o serviço segue
+              // em curso até o fim do dia local do término, não até a meia-noite UTC.
+              const ongoing = !s.end_date || !isOverdueDateOnly(s.end_date);
               return `<div class="border-l-4 ${ongoing ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-300 bg-[var(--surface-base)]'} rounded-r p-2 text-[12px]">
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                   <strong class="text-[var(--text-primary)]">${esc(s.role_name || '—')}</strong>

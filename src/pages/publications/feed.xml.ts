@@ -2,6 +2,7 @@ import rss from '@astrojs/rss';
 import { createClient } from '@supabase/supabase-js';
 import type { APIRoute } from 'astro';
 import { CANONICAL_ORIGIN } from '../../lib/canonical';
+import { parseDateOnly } from '../../lib/date-only';
 
 export const GET: APIRoute = async (context) => {
   const sb = createClient(
@@ -21,7 +22,9 @@ export const GET: APIRoute = async (context) => {
     return {
       title: p.title || 'Untitled',
       description: `${authorPrefix}${p.abstract || ''}`.slice(0, 600),
-      pubDate: p.publication_date ? new Date(p.publication_date) : new Date(),
+      // #1511 — `publication_date` é coluna `date`: meia-noite LOCAL, senão o leitor
+      // de RSS em fuso negativo mostra a publicação um dia antes.
+      pubDate: parseDateOnly(p.publication_date) ?? new Date(),
       link: p.external_url || (p.doi ? `https://doi.org/${p.doi}` : `/publications#${p.id}`),
       categories: p.publication_type ? [p.publication_type] : undefined,
     };

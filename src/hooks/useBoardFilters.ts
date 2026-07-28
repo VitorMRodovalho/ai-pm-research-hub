@@ -3,6 +3,7 @@
  */
 import { useState, useMemo, useCallback } from 'react';
 import type { BoardItem } from '../types/board';
+import { isOverdueDateOnly, parseDateOnly } from '../lib/date-only';
 
 export interface FilterState {
   search: string;
@@ -60,10 +61,15 @@ export function useBoardFilters(items: BoardItem[], boardMembers?: { id: string;
       const now = new Date();
       const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+      // #1511 — `due_date` é coluna `date`: atraso só depois de vencer o dia inteiro
+      // no fuso local, e o parse não pode passar por new Date() (vide #1501).
       if (filters.dueDateFilter === 'overdue') {
-        result = result.filter((i) => i.due_date && new Date(i.due_date) < now);
+        result = result.filter((i) => isOverdueDateOnly(i.due_date, now));
       } else if (filters.dueDateFilter === 'week') {
-        result = result.filter((i) => i.due_date && new Date(i.due_date) <= weekFromNow);
+        result = result.filter((i) => {
+          const d = parseDateOnly(i.due_date);
+          return !!d && d.getTime() <= weekFromNow.getTime();
+        });
       } else if (filters.dueDateFilter === 'none') {
         result = result.filter((i) => !i.due_date);
       }

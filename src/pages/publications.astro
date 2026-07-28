@@ -166,6 +166,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 
 <script>
   import { hasPermission } from '../lib/permissions';
+  import { formatDateOnly, parseDateOnly } from '../lib/date-only';
   const TYPE_ICONS: Record<string, string> = {
     article: '\u{1F4C4}', framework: '\u{1F3D7}\uFE0F', toolkit: '\u{1F9F0}',
     case_study: '\u{1F4CB}', webinar_recording: '\u{1F3AC}', ebook: '\u{1F4D6}', podcast: '\u{1F3A7}'
@@ -180,7 +181,9 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
   function generateBibtex(pub: any): string {
     const firstAuthor = (pub.authors?.[0] || 'Unknown').split(' ');
     const surname = firstAuthor[firstAuthor.length - 1].toLowerCase();
-    const year = pub.publication_date ? new Date(pub.publication_date).getFullYear() : 'nd';
+    // #1511 — `publication_date` é coluna `date`: com parse UTC, uma publicação de
+    // 1 de janeiro citava o ANO anterior no BibTeX em fuso negativo.
+    const year = parseDateOnly(pub.publication_date)?.getFullYear() ?? 'nd';
     const key = `${surname}${year}`;
     const authorsFormatted = (pub.authors || []).map((a: string) => {
       const parts = a.trim().split(' ');
@@ -243,7 +246,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     grid.innerHTML = pubs.map((p: any) => {
       const icon = TYPE_ICONS[p.publication_type] || '\u{1F4C4}';
       const typeLabel = TYPE_LABELS[p.publication_type] || p.publication_type;
-      const dateStr = p.publication_date ? new Date(p.publication_date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '';
+      const dateStr = formatDateOnly(p.publication_date, { month: 'short', year: 'numeric' });
       const authors = (p.authors || []).join(', ');
       const abstractShort = p.abstract ? (p.abstract.length > 120 ? p.abstract.substring(0, 120) + '...' : p.abstract) : '';
       const keywords = (p.keywords || []).slice(0, 4);

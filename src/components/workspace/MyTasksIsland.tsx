@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
 
 interface Task {
   id: string;
@@ -127,7 +128,8 @@ export default function MyTasksIsland({ lang = 'pt-BR' }: Props) {
               </div>
               <div className="divide-y divide-[var(--border-subtle)]">
                 {group.items.map((task) => {
-                  const isOverdue = task.target_date && !task.done && new Date(task.target_date) < new Date();
+                  // #1511 — `target_date` é coluna `date`: atraso pelo fim do dia local.
+                  const isOverdue = !task.done && isOverdueDateOnly(task.target_date);
                   return (
                     <div key={task.id} className="flex items-center gap-2 px-3 py-1.5">
                       <input type="checkbox" checked={task.done}
@@ -142,7 +144,7 @@ export default function MyTasksIsland({ lang = 'pt-BR' }: Props) {
                       </a>
                       {task.target_date && (
                         <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
-                          📅 {new Date(task.target_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                          📅 {formatDateOnly(task.target_date, { day: '2-digit', month: 'short' })}
                         </span>
                       )}
                       {task.done && task.completed_at && (

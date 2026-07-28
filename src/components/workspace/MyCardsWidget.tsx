@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
 
 interface CardRow {
   id: string;
@@ -55,7 +56,8 @@ export default function MyCardsWidget({ lang = 'pt-BR' }: Props) {
       <div className="space-y-2">
         {cards.map((c) => {
           const st = STATUS_STYLE[c.status] || { bg: 'bg-gray-100 text-gray-600', label: c.status };
-          const isOverdue = c.due_date && new Date(c.due_date) < new Date();
+          // #1511 — `due_date` é coluna `date`: vencido só depois do fim do dia local.
+          const isOverdue = isOverdueDateOnly(c.due_date);
           return (
             <a
               key={`${c.id}-${c.my_role}`}
@@ -75,7 +77,7 @@ export default function MyCardsWidget({ lang = 'pt-BR' }: Props) {
               </div>
               {isOverdue && c.due_date && (
                 <div className="text-[9px] text-red-500 font-semibold mt-1">
-                  ⚠️ Vencido: {new Date(c.due_date).toLocaleDateString('pt-BR')}
+                  ⚠️ Vencido: {formatDateOnly(c.due_date)}
                 </div>
               )}
             </a>

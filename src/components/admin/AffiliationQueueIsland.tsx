@@ -18,6 +18,7 @@ import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, Ba
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { unifiedBrChapters, soonestChapterExpiry, type PmiMembershipEntry, type ChapterAffiliation } from '../../lib/affiliation-chapters';
 import { validityFarol, toneClasses, VEP_STATUS_TONE, COHORT_TONE } from '../../lib/statusFarol';
+import { daysUntilDateOnly, formatDateOnly, isDateOnlyString } from '../../lib/date-only';
 
 interface LatestVerification {
   created_at: string;
@@ -72,8 +73,13 @@ function toDateInput(raw: string | null | undefined): string {
 }
 
 /* Human-readable date/datetime for the identity panel; '—' if absent/unparseable. */
+// #1511 — esta função recebe as DUAS famílias: coluna `date` (term_end_date,
+// member_since/member_until vindos do enriquecimento PMI) e `timestamptz`
+// (vep_last_seen_at, last_sync). Date.parse cru estava certo só para a segunda:
+// para a primeira ele produz meia-noite UTC e recua um dia em fuso negativo.
 function fmtDate(raw: string | null | undefined, withTime = false): string {
   if (!raw) return '—';
+  if (isDateOnlyString(raw)) return formatDateOnly(raw);
   const ts = Date.parse(raw);
   if (Number.isNaN(ts)) return String(raw);
   const d = new Date(ts);
@@ -99,7 +105,9 @@ function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
   if (v) {
     if (v.membership_active === false) return mk('expired', t('comp.affiliationQueue.affInactive', 'Filiação inativa'), false);
     if (v.membership_expires_on) {
-      const days = Math.ceil((new Date(v.membership_expires_on).getTime() - Date.now()) / 86400000);
+      // #1511 — `membership_expires_on` é coluna `date`: dias de calendário. A conta
+      // antiga marcava "vencida" a partir das 21h da véspera (UTC-3).
+      const days = daysUntilDateOnly(v.membership_expires_on) ?? 0;
       if (days < 0) return mk('expired', t('comp.affiliationQueue.affExpired', 'Filiação vencida'), false);
       if (days <= 30) return mk('soon', t('comp.affiliationQueue.affExpiring', 'Vence em breve'), false);
     }
