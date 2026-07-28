@@ -60,8 +60,13 @@ O cron `sync-comms-metrics` roda 06h UTC e grava **por canal e por dia**, não p
 Instagram, alcance diário: 292 (26/07), 140 (27/07), **354 (28/07)**.
 
 **Não dá para atribuir isso ao post com confiança**: é métrica de canal, a janela é curta, e o dia 27
-teve outras publicações. Para virar conclusão, precisa de métrica **por post**, que a Graph API e a
-LinkedIn API expõem mas o `sync-comms-metrics` hoje não persiste por `permalink`.
+teve outras publicações.
+
+Correção importante ao ler o `sync-comms-metrics`: **o Instagram já captura por mídia** (reach, saved,
+shares das últimas 25) em `comms_media_items`. Quem não tem métrica por post é o **LinkedIn**, que só
+traz `organizationalEntityShareStatistics` agregado lifetime. E em nenhum dos dois o `permalink` de
+`comms_scheduled_posts` é usado para amarrar post agendado a insight. Isso já está mapeado em **#1374**,
+que ganhou o caso do webinar como evidência nova.
 
 ### Horário de publicação: há um dado bom e um caveat
 
@@ -76,10 +81,10 @@ fuso configurado na conta.
 
 ## Backlog que esta linha gerou (candidatos para a lane dev)
 
-1. **Métrica por post.** Persistir insights por `permalink` em `comms_scheduled_posts`, para conseguir
-   dizer se um post específico funcionou. Hoje só existe agregado de canal.
-2. **Normalizar o fuso de `online_followers`** no `sync-comms-metrics`, ou ao menos gravar de qual fuso
-   veio. Sem isso, "melhor horário para postar" é chute.
+1. **Métrica por post** → já é a **#1374** (comentada com o caso do webinar). O gap real é o LinkedIn
+   per-share e a amarração via `permalink`; o IG per-media já existe.
+2. **Normalizar o fuso de `online_followers`** → registrado em **#1374**. Sem isso, "melhor horário para
+   postar" é chute.
 3. **Wire do lint no fluxo**: rodar `lint-social-copy.mjs` antes de `comms_post action='schedule'`, ou
    como gate de CI sobre `docs/_deliverables/**`.
 4. **`drive-upload-to-folder` ganhou `overwrite`** (PR #1492, verde e pronto para merge). Falta mergear.
@@ -91,3 +96,14 @@ fuso configurado na conta.
 **#1492** `feat/drive-upload-upsert-airmeet-skill`, 11 checks verdes, `MERGEABLE / CLEAN`.
 Contém: upsert do Drive, skill `airmeet-event-ops` com 4 scripts, o lint de copy, a copy do webinar e os
 handoffs. Merge é decisão da sessão de dev.
+
+## Registros abertos nesta linha
+
+| onde | o quê |
+| --- | --- |
+| **#1494** (nova) | não existe superfície para palestrante externo; os 3 caminhos têm defeito (auditoria completa) |
+| **#1495** (nova) | plugar o lint de copy no fluxo de agendamento; hoje é opcional |
+| **#1374** (comentada) | `online_followers` sem fuso + falta a chave `permalink` -> insight, mesmo no IG onde o per-media já existe |
+| **#1414** (comentada) | 2ª ocorrência do race de container do IG, mesmos códigos, 10 dias depois |
+| **#588** (LL intake) | 10 lições reutilizáveis, incluindo "o diff de quem revisa é especificação de graça" |
+
