@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { safeChecklist, type BoardItem, type BoardI18n } from '../../types/board';
+import { parseDateOnly } from '../../lib/date-only';
 
 interface Props {
   items: BoardItem[];
@@ -41,8 +42,9 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
     }
 
     const dates = datedItems.flatMap(i => [i.baseline_date, i.forecast_date, i.actual_completion_date, i.due_date].filter(Boolean)) as string[];
-    const min = new Date(Math.min(...dates.map(d => new Date(d).getTime())));
-    const max = new Date(Math.max(...dates.map(d => new Date(d).getTime())));
+    // #1501 — colunas `date` como data local, senão a régua desloca um dia.
+    const min = new Date(Math.min(...dates.map(d => parseDateOnly(d)!.getTime())));
+    const max = new Date(Math.max(...dates.map(d => parseDateOnly(d)!.getTime())));
 
     // Pad by 7 days on each side
     const start = new Date(min.getFullYear(), min.getMonth(), 1);

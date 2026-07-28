@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { safeChecklist, COLUMN_PRESETS, getColumnLabel, type BoardItem, type BoardI18n } from '../../types/board';
+import { parseDateOnly } from '../../lib/date-only';
 
 interface Props {
   items: BoardItem[];
@@ -21,9 +22,11 @@ type SortDir = 'asc' | 'desc';
 function computeDeviation(item: BoardItem): number | null {
   if (!item.baseline_date || !item.forecast_date) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const baseline = new Date(item.baseline_date);
-  const forecast = new Date(item.forecast_date);
-  const actual = item.actual_completion_date ? new Date(item.actual_completion_date) : null;
+  // #1501 — colunas `date` parseadas como data LOCAL. Com `new Date()` elas viravam
+  // meia-noite UTC e a comparação contra `today` (local) marcava atraso um dia cedo.
+  const baseline = parseDateOnly(item.baseline_date)!;
+  const forecast = parseDateOnly(item.forecast_date)!;
+  const actual = parseDateOnly(item.actual_completion_date);
   if (actual) return Math.round((actual.getTime() - baseline.getTime()) / 86400000);
   if (today.getTime() > forecast.getTime()) return Math.round((today.getTime() - forecast.getTime()) / 86400000);
   return Math.round((forecast.getTime() - baseline.getTime()) / 86400000);
@@ -32,7 +35,7 @@ function computeDeviation(item: BoardItem): number | null {
 function deviationCellMode(item: BoardItem): 'concluded' | 'overdue' | 'planning' | 'none' {
   if (!item.baseline_date || !item.forecast_date) return 'none';
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const forecast = new Date(item.forecast_date);
+  const forecast = parseDateOnly(item.forecast_date)!; // #1501
   if (item.actual_completion_date) return 'concluded';
   if (today.getTime() > forecast.getTime()) return 'overdue';
   return 'planning';
