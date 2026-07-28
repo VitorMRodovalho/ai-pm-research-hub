@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus } from '../../types/board';
+import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus, type ChecklistItem } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import { canFor } from '../../lib/permissions';
 import MemberPicker from './MemberPicker';
@@ -83,11 +83,35 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [leaderNotes, setLeaderNotes] = useState('');
   const [submittingLeaderReview, setSubmittingLeaderReview] = useState(false);
 
-  const isCardAssignee = permissions.member?.id && (
+  // #1496 — a junção é lida de `itemAssignments`, a MESMA fonte que renderiza os
+  // participantes (get_item_assignments, no efeito abaixo), e não mais da prop
+  // `item.assignments`. Motivo: o board de tribo é montado por domainKey
+  // (src/pages/tribe/[id].astro) e cai em `get_board_by_domain`, que não lê
+  // board_item_assignments nem devolve `assignments` — só `get_board` devolve. A prop
+  // chegava sempre vazia nessa rota, então o card exibia dois participantes enquanto o
+  // gate enxergava zero, e "Pegar para mim" não destravava nem após recarregar.
+  const isCardAssignee = !!permissions.member?.id && (
     item.assignee_id === permissions.member.id ||
-    safeArray(item.assignments).some((a: any) => a.member_id === permissions.member.id)
+    itemAssignments.some((a) => a.member_id === permissions.member.id)
   );
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && isCardAssignee));
+  // #1496 — concluir/reabrir uma ATIVIDADE é gated por posse da atividade, espelhando
+  // complete_checklist_item (v_is_activity_owner := v_item.assigned_to = v_caller.id).
+  // O gate de card (canEdit) seguia negando exatamente quem o servidor autoriza, e a aba
+  // Atividades (BoardActivitiesView) já permitia a mesma operação — duas respostas para a
+  // mesma pergunta. Editar texto/responsável/data da atividade continua sob canEdit, o que
+  // espelha assign_checklist_item (write_board / card-owner / board-admin, sem activity-owner).
+  // NÃO espelhamos o ramo `assigned_to IS NULL` do servidor, que hoje libera qualquer
+  // autenticado sem checar escopo de board: é o gap em discussão no #1498, e a UI não deve
+  // propagá-lo antes da decisão.
+  const canToggleActivity = (ci: ChecklistItem) =>
+    canEdit || (
+      mode !== 'readonly'
+      && permissions.canEditOwn
+      && !!permissions.member?.id
+      && !!ci.assigned_to
+      && ci.assigned_to === permissions.member.id
+    );
   const isCurator = permissions.canCurate;
   const isCurationItem = item.curation_status === 'curation_pending';
 
@@ -646,7 +670,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <div className="flex items-center gap-2">
                       <input type="checkbox" checked={ci.done}
                         onChange={() => toggleCheck(idx)}
-                        disabled={!canEdit}
+                        disabled={!canToggleActivity(ci)}
                         className="w-4 h-4 rounded border-[var(--border-default)] cursor-pointer accent-emerald-500" />
                       <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                         {ci.text}
@@ -1242,6 +1266,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 onRemove={handleRemoveAssignment}
                 i18n={i18n}
                 disabled={!permissions.canAssign}
+                selfMemberId={permissions.member?.id ?? null}
               />
             </div>
 
