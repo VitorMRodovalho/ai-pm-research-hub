@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 /**
  * #1513 — guard da FIACAO dos smokes de EF deployada.
@@ -79,6 +79,30 @@ test('#1513: o step `Run Unit Tests` exporta SUPABASE_ANON_KEY do secret', () =>
     /^\s*SUPABASE_ANON_KEY:\s*\$\{\{\s*secrets\.SUPABASE_ANON_KEY\s*\}\}\s*$/m,
     'sem SUPABASE_ANON_KEY no env do step, ef-smoke.test.mjs pula em silencio e o CI ' +
       'fica verde sem verificar auth de nenhuma EF deployada (#1513).',
+  );
+});
+
+test('#1518: nenhum teste gateia anon so em PUBLIC_SUPABASE_ANON_KEY (o CI exporta SUPABASE_ANON_KEY)', () => {
+  // O secret do repo se chama SUPABASE_ANON_KEY, e e esse nome que o step exporta.
+  // Um arquivo que le apenas PUBLIC_SUPABASE_ANON_KEY continua pulando em CI mesmo
+  // com a credencial presente — e some justamente a classe de teste que afirma que
+  // anon esta trancado fora. Era o caso de 1294-responsibility-handoffs (1 de 25).
+  const dir = new URL('./', import.meta.url);
+  const offenders = readdirSync(dir)
+    .filter((f) => f.endsWith('.test.mjs'))
+    .filter((f) => {
+      const src = readFileSync(new URL(f, dir), 'utf8');
+      return (
+        src.includes('process.env.PUBLIC_SUPABASE_ANON_KEY') &&
+        !src.includes('process.env.SUPABASE_ANON_KEY')
+      );
+    });
+
+  assert.deepEqual(
+    offenders,
+    [],
+    'estes arquivos leem so PUBLIC_SUPABASE_ANON_KEY e por isso pulam em CI; use ' +
+      '`process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY`',
   );
 });
 

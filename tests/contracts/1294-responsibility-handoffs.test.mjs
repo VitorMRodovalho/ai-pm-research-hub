@@ -35,7 +35,11 @@ const mig = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY;
+// O fallback para SUPABASE_ANON_KEY nao e cosmetico: o CI exporta esse nome (o
+// secret se chama assim), nao PUBLIC_. Sem ele este arquivo era o unico dos 25
+// com teste anon-gated a continuar pulando em CI, e o teste que pulava e o que
+// afirma que anon esta trancado fora — invariante de seguranca, nao conveniencia.
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
 const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
