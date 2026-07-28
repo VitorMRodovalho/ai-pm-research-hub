@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { formatDateOnly } from '../../lib/date-only';
 
 interface Props { lang?: string; stakeholderMode?: boolean; }
 
@@ -390,7 +391,8 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
             <div className="space-y-1.5">
               <div className="text-sm font-semibold text-[var(--text-primary)]">{pipeline.open.title}</div>
               <div className="text-xs text-[var(--text-secondary)]">
-                {t.pipelineDeadline} <strong>{pipeline.open.close_date ? new Date(pipeline.open.close_date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</strong>
+                {/* #1511 — selection_cycles.close_date é coluna `date`: formatDateOnly ou o prazo recua um dia. */}
+                {t.pipelineDeadline} <strong>{pipeline.open.close_date ? formatDateOnly(pipeline.open.close_date, { day: '2-digit', month: 'short', year: 'numeric' }, dateLocale) : '—'}</strong>
                 {' · '}<strong className="text-teal">{pipeline.open.open_apps ?? 0}</strong> {t.pipelineApps}
               </div>
               {pipeline.open.booking_url && (
@@ -406,7 +408,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
               <p>
                 {t.pipelineEmpty}
                 {pipeline.last?.close_date && (
-                  <span className="block mt-0.5">{t.pipelineLast} {new Date(pipeline.last.close_date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}.</span>
+                  <span className="block mt-0.5">{t.pipelineLast} {formatDateOnly(pipeline.last.close_date, { day: '2-digit', month: 'short', year: 'numeric' }, dateLocale)}.</span>
                 )}
               </p>
             </div>

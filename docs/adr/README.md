@@ -128,6 +128,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0122-bypass-audit-metric-no-pr-pushes.md` — Métrica do bypass-audit: o bucket com threshold conta só push na main SEM PR mergeado associado; report semanal em 3 buckets (#1182).
 - `ADR-0123-retire-legacy-select-tribe-write-path.md` — Aposentadoria do write-path legado `select_tribe`/`deselect_tribe`, mantendo a RPC no banco (jornada híbrida de tribo).
 - `ADR-0124-drive-membership-provisioning.md` — Drive membership auto-grant + provisioning: reconcile folder-anchored, espelho de grant do ADR-0107 no lado membership.
+- `ADR-0126-member-function-taxonomy-active-member-two-metrics.md` — "Membro ativo" são dois temas: usuário de sistema (is_active AND current_cycle, ~89) vs operacional no Núcleo (operational_role IN manager/deputy_manager/tribe_leader/researcher, ~68); home mostra o operacional, rótulo correto; ladder inalterado.
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 

@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-17T21:25:15.062Z",
+  "generated_at": "2026-07-23T04:48:56.523Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
-  "runtime_status": "drift: 52 static-only [get_my_context, search_nucleo_knowledge, get_board_or_initiative_context, get_operational_status, card_checklist], 0 runtime-only []",
+  "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
     "events": 22,
@@ -1028,7 +1028,7 @@
     },
     {
       "name": "get_my_evaluation_feedback",
-      "description": "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.",
+      "description": "Retorna o feedback qualitativo (narrative) da sua candidatura. Scores numéricos são retornados apenas para candidaturas aprovadas/convertidas; candidatos não selecionados veem só o status. Notas e scores por avaliador nunca são expostos (reservados ao canal formal Art. 18). Disponível após phase reveal (evaluations_closed em diante) ou status final.",
       "domain": "personal",
       "rpcs": [
         "get_my_evaluation_feedback"
@@ -1519,7 +1519,7 @@
     },
     {
       "name": "get_my_selection_result",
-      "description": "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.",
+      "description": "Returns your own selection application status. Your per-criterion breakdown (scores by pillar), position vs the cutoff band, and rank are returned ONLY for approved/converted applications after the cycle result is announced; non-selected candidates see status only. Evaluator identities and notes are never returned. Works for any member who applied through the selection pipeline.",
       "domain": "personal",
       "rpcs": [
         "get_my_selection_result"
@@ -2172,7 +2172,7 @@
     },
     {
       "name": "get_evaluation_results",
-      "description": "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.",
+      "description": "Returns aggregated evaluation results for an application. Peer-review-gated (Onda 4, 2026-07-22): once min_evaluators objective evaluations are submitted (peer review complete), ALL evaluators' scores + names + criterion_notes are visible; before that the call is blind and raises 'Blind review'. Committee-of-cycle or manage_platform only.",
       "domain": "selection",
       "rpcs": [
         "get_evaluation_results"
@@ -2639,7 +2639,7 @@
     },
     {
       "name": "get_application_detail",
-      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.",
+      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. Peer-review-gated (Onda 4, 2026-07-22): before min_evaluators objective evaluations are submitted, blind mode is active (only YOUR evaluation visible); once peer review completes (min_evaluators reached), all evaluators visible with is_own flag per row. Superadmin sees all. Always call BEFORE submit_evaluation to gather context.",
       "domain": "selection",
       "rpcs": [
         "get_application_score_breakdown"
@@ -2744,7 +2744,7 @@
     },
     {
       "name": "get_vep_divergence_report",
-      "description": "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).",
+      "description": "Returns VEP↔Núcleo divergence in 5 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/OfferExtended (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded (is_active=false) but VEP still Submitted/Active; (D) rejection_divergent — Núcleo rejected but VEP offer still open; (E) offer_retracted_active_divergent (#1445) — Núcleo approved/converted + VEP offer retracted (OfferNotExtended/Withdrawn/Declined) but member still is_active=true → offboard on the platform. Each row inclui application_id (+ member_id for bucket E), applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, rejection_count, offer_retracted_active_count, total_divergent, generated_at}. Authority: view_internal_analytics (COI recusal on open cycles). Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled; offboard for bucket E).",
       "domain": "tribe",
       "rpcs": [
         "get_vep_divergence_report"
@@ -4755,8 +4755,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_my_context\", semantic_domain: \"personal\", code: \"unauthent"
     },
     {
       "name": "search_nucleo_knowledge",
@@ -4773,8 +4772,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"search_nucleo_knowledge\", semantic_domain: \"knowledge\", code: "
     },
     {
       "name": "get_board_or_initiative_context",
@@ -4791,8 +4789,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_board_or_initiative_context\", semantic_domain: \"operations"
     },
     {
       "name": "get_operational_status",
@@ -4812,8 +4809,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"get_operational_status\", semantic_domain: \"operational\", code:"
     },
     {
       "name": "card_checklist",
@@ -4828,8 +4824,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"card_checklist\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"card_checklist\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "card_write",
@@ -4844,8 +4839,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"card_write\", semantic_domain: dom, code: \"unauthenticated\", me",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"card_write\", semantic_domain: dom, code: \"unauthenticated\", me"
     },
     {
       "name": "card_comment",
@@ -4858,8 +4852,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"card_comment\", semantic_domain: dom, code: \"unauthenticated\", ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"card_comment\", semantic_domain: dom, code: \"unauthenticated\", "
     },
     {
       "name": "card_search",
@@ -4870,8 +4863,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"card_search\", semantic_domain: dom, code: \"unauthenticated\", m",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"card_search\", semantic_domain: dom, code: \"unauthenticated\", m"
     },
     {
       "name": "card_get",
@@ -4890,8 +4882,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"card_get\", semantic_domain: dom, code: \"unauthenticated\", mess",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"card_get\", semantic_domain: dom, code: \"unauthenticated\", mess"
     },
     {
       "name": "board_overview",
@@ -4912,8 +4903,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"board_overview\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"board_overview\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "platform_context",
@@ -4929,8 +4919,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"platform_context\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"platform_context\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "portfolio_report",
@@ -4944,8 +4933,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"portfolio_report\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"portfolio_report\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "member_search",
@@ -4960,8 +4948,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"member_search\", semantic_domain: dom, code: \"unauthenticated\",",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"member_search\", semantic_domain: dom, code: \"unauthenticated\","
     },
     {
       "name": "member_get",
@@ -4978,8 +4965,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"member_get\", semantic_domain: dom, code: \"unauthenticated\", me",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"member_get\", semantic_domain: dom, code: \"unauthenticated\", me"
     },
     {
       "name": "member_emails",
@@ -4994,8 +4980,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"member_emails\", semantic_domain: dom, code: \"unauthenticated\",",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"member_emails\", semantic_domain: dom, code: \"unauthenticated\","
     },
     {
       "name": "member_lifecycle",
@@ -5011,8 +4996,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"member_lifecycle\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"member_lifecycle\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "engagement_write",
@@ -5023,8 +5007,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"engagement_write\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"engagement_write\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "initiative_roster",
@@ -5042,8 +5025,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"initiative_roster\", semantic_domain: dom, code: \"unauthenticat",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"initiative_roster\", semantic_domain: dom, code: \"unauthenticat"
     },
     {
       "name": "initiative_directory",
@@ -5057,8 +5039,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"initiative_directory\", semantic_domain: dom, code: \"unauthenti",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"initiative_directory\", semantic_domain: dom, code: \"unauthenti"
     },
     {
       "name": "initiative_report",
@@ -5075,8 +5056,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"initiative_report\", semantic_domain: dom, code: \"unauthenticat",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"initiative_report\", semantic_domain: dom, code: \"unauthenticat"
     },
     {
       "name": "my_status",
@@ -5099,8 +5079,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"my_status\", semantic_domain: dom, code: \"unauthenticated\", mes",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"my_status\", semantic_domain: dom, code: \"unauthenticated\", mes"
     },
     {
       "name": "event_search",
@@ -5117,8 +5096,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"event_search\", semantic_domain: dom, code: \"unauthenticated\", ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"event_search\", semantic_domain: dom, code: \"unauthenticated\", "
     },
     {
       "name": "event_write",
@@ -5131,8 +5109,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"event_write\", semantic_domain: dom, code: \"unauthenticated\", m",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"event_write\", semantic_domain: dom, code: \"unauthenticated\", m"
     },
     {
       "name": "attendance_record",
@@ -5145,8 +5122,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"attendance_record\", semantic_domain: dom, code: \"unauthenticat",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"attendance_record\", semantic_domain: dom, code: \"unauthenticat"
     },
     {
       "name": "attendance_report",
@@ -5166,8 +5142,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"attendance_report\", semantic_domain: dom, code: \"unauthenticat",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"attendance_report\", semantic_domain: dom, code: \"unauthenticat"
     },
     {
       "name": "meeting_minutes",
@@ -5184,8 +5159,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"meeting_minutes\", semantic_domain: dom, code: \"unauthenticated",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"meeting_minutes\", semantic_domain: dom, code: \"unauthenticated"
     },
     {
       "name": "meeting_actions",
@@ -5203,8 +5177,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": true,
-      "return_shape_hint": "buildSemanticError({ tool: \"meeting_actions\", semantic_domain: dom, code: \"unauthenticated",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"meeting_actions\", semantic_domain: dom, code: \"unauthenticated"
     },
     {
       "name": "selection_dashboard",
@@ -5225,8 +5198,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"selection_dashboard\", semantic_domain: dom, code: \"unauthentic",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"selection_dashboard\", semantic_domain: dom, code: \"unauthentic"
     },
     {
       "name": "application_get",
@@ -5243,8 +5215,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"application_get\", semantic_domain: dom, code: \"unauthenticated",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"application_get\", semantic_domain: dom, code: \"unauthenticated"
     },
     {
       "name": "evaluation_submit",
@@ -5262,8 +5233,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"evaluation_submit\", semantic_domain: dom, code: \"unauthenticat",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"evaluation_submit\", semantic_domain: dom, code: \"unauthenticat"
     },
     {
       "name": "interview_manage",
@@ -5274,8 +5244,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"interview_manage\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"interview_manage\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "selection_decide",
@@ -5286,8 +5255,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"selection_decide\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"selection_decide\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "visitor_leads",
@@ -5303,8 +5271,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"visitor_leads\", semantic_domain: dom, code: \"unauthenticated\",",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"visitor_leads\", semantic_domain: dom, code: \"unauthenticated\","
     },
     {
       "name": "document_get",
@@ -5324,8 +5291,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"document_get\", semantic_domain: dom, code: \"unauthenticated\", ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"document_get\", semantic_domain: dom, code: \"unauthenticated\", "
     },
     {
       "name": "document_version_write",
@@ -5346,8 +5312,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"document_version_write\", semantic_domain: dom, code: \"unauthen",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"document_version_write\", semantic_domain: dom, code: \"unauthen"
     },
     {
       "name": "document_comment",
@@ -5362,8 +5327,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"document_comment\", semantic_domain: dom, code: \"unauthenticate",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"document_comment\", semantic_domain: dom, code: \"unauthenticate"
     },
     {
       "name": "change_request",
@@ -5379,8 +5343,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"change_request\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"change_request\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "signature_flow",
@@ -5396,8 +5359,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"signature_flow\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"signature_flow\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "certificate_manage",
@@ -5415,8 +5377,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"certificate_manage\", semantic_domain: dom, code: \"unauthentica",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"certificate_manage\", semantic_domain: dom, code: \"unauthentica"
     },
     {
       "name": "ip_exclusion",
@@ -5434,8 +5395,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"ip_exclusion\", semantic_domain: dom, code: \"unauthenticated\", ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"ip_exclusion\", semantic_domain: dom, code: \"unauthenticated\", "
     },
     {
       "name": "comms_report",
@@ -5458,8 +5418,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"comms_report\", semantic_domain: dom, code: \"unauthenticated\", ",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"comms_report\", semantic_domain: dom, code: \"unauthenticated\", "
     },
     {
       "name": "comms_post",
@@ -5480,8 +5439,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"comms_post\", semantic_domain: dom, code: \"unauthenticated\", me",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"comms_post\", semantic_domain: dom, code: \"unauthenticated\", me"
     },
     {
       "name": "webinar_manage",
@@ -5504,8 +5462,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"webinar_manage\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"webinar_manage\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "idea_pipeline",
@@ -5523,8 +5480,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"idea_pipeline\", semantic_domain: dom, code: \"unauthenticated\",",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"idea_pipeline\", semantic_domain: dom, code: \"unauthenticated\","
     },
     {
       "name": "drive_links",
@@ -5545,8 +5501,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"drive_links\", semantic_domain: dom, code: \"unauthenticated\", m",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"drive_links\", semantic_domain: dom, code: \"unauthenticated\", m"
     },
     {
       "name": "drive_access_admin",
@@ -5567,8 +5522,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"drive_access_admin\", semantic_domain: dom, code: \"unauthentica",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"drive_access_admin\", semantic_domain: dom, code: \"unauthentica"
     },
     {
       "name": "partner_crm",
@@ -5590,8 +5544,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"partner_crm\", semantic_domain: dom, code: \"unauthenticated\", m",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"partner_crm\", semantic_domain: dom, code: \"unauthenticated\", m"
     },
     {
       "name": "gamification_report",
@@ -5613,8 +5566,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"gamification_report\", semantic_domain: dom, code: \"unauthentic",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"gamification_report\", semantic_domain: dom, code: \"unauthentic"
     },
     {
       "name": "champion_award",
@@ -5628,8 +5580,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"champion_award\", semantic_domain: dom, code: \"unauthenticated\"",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"champion_award\", semantic_domain: dom, code: \"unauthenticated\""
     },
     {
       "name": "admin_dashboard",
@@ -5656,8 +5607,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"admin_dashboard\", semantic_domain: dom, code: \"unauthenticated",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"admin_dashboard\", semantic_domain: dom, code: \"unauthenticated"
     },
     {
       "name": "audit_log",
@@ -5673,8 +5623,7 @@
       "canV4_actions": [],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"audit_log\", semantic_domain: dom, code: \"unauthenticated\", mes",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"audit_log\", semantic_domain: dom, code: \"unauthenticated\", mes"
     },
     {
       "name": "lgpd_admin",
@@ -5690,8 +5639,7 @@
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
-      "return_shape_hint": "buildSemanticError({ tool: \"lgpd_admin\", semantic_domain: dom, code: \"unauthenticated\", me",
-      "drift": "static-only"
+      "return_shape_hint": "buildSemanticError({ tool: \"lgpd_admin\", semantic_domain: dom, code: \"unauthenticated\", me"
     }
   ]
 }

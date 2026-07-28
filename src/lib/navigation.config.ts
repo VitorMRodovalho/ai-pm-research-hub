@@ -94,6 +94,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'visitor', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (profile.astro self-gates via isRegisteredMember; own-row SECDEF)
+  { key: 'my-points', labelKey: 'nav.myPoints', href: '/minha-pontuacao', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #1473 Onda 5a — ledger de pontuação auditável (self via get_my_points_statement; admin ?member= via get_member_points_ledger)
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },

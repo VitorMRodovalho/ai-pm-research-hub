@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { marked } from 'marked';
 import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 import { CANONICAL_HOST } from '../../lib/canonical';
+import { formatDateOnly } from '../../lib/date-only';
 
 interface Meeting {
   id: string;
@@ -211,6 +212,9 @@ function ChampionPicker({ eventId, sb, labels }: { eventId: string; sb: any; lab
 
 export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
+  // #1511 — `events.date` é coluna `date`: todo render dela passa por formatDateOnly,
+  // senão a ata aparece um dia antes em qualquer fuso negativo (#1501).
+  const dateLocale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [tribes, setTribes] = useState<Tribe[]>([]);
   const [compliance, setCompliance] = useState<ComplianceData | null>(null);
@@ -390,7 +394,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-navy text-sm truncate">{m.title}</div>
                         <div className="text-xs text-[var(--text-muted)]">
-                          {new Date(m.date).toLocaleDateString(lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es')}
+                          {formatDateOnly(m.date, {}, dateLocale)}
                           {m.attendee_count > 0 && ` · ${m.attendee_count} ${l.attendees}`}
                         </div>
                       </div>
@@ -420,7 +424,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
               <div>
                 <h2 className="text-xl font-extrabold text-navy">{selectedMeeting.event.title}</h2>
                 <div className="text-xs text-[var(--text-muted)] mt-1">
-                  {new Date(selectedMeeting.event.date).toLocaleDateString()}
+                  {formatDateOnly(selectedMeeting.event.date, {}, dateLocale)}
                   {selectedMeeting.event.tribe_name && ` · ${selectedMeeting.event.tribe_name}`}
                   {` · ${selectedMeeting.attendee_count} ${l.attendees}`}
                 </div>
@@ -468,7 +472,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                 <button
                   onClick={() => {
                     const m = selectedMeeting;
-                    const date = new Date(m.event.date).toLocaleDateString('pt-BR', { dateStyle: 'long' });
+                    const date = formatDateOnly(m.event.date, { dateStyle: 'long' });
                     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ata — ${m.event.title}</title>
                       <style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:0 20px;color:#333;line-height:1.6}
                       h1{font-size:18px;color:#1a365d;border-bottom:2px solid #1a365d;padding-bottom:8px}

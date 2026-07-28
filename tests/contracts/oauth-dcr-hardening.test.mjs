@@ -14,6 +14,10 @@
  *          and /mcp/actions advertise their own resource (not a hardcoded /mcp), and
  *          each proxy's WWW-Authenticate must point at its path-scoped metadata.
  *
+ *  #1440 — /oauth/register (open, unauthenticated DCR endpoint) must apply a
+ *          per-IP rate limit before minting a GoTrue OAuth client, so a flood
+ *          can't pollute oauth_clients or burn the admin API budget.
+ *
  * Static source assertions (same offline-safe style as 1210-mcp-native-oauth.test.mjs)
  * so the gate runs in CI without secrets or network.
  *
@@ -56,6 +60,28 @@ test('FM-01: register 400s when a non-empty redirect_uris request sanitizes to n
     /body\.redirect_uris\.length\s*>\s*0\s*&&\s*redirectUris\.length\s*===\s*0/,
     'the 400 must be gated strictly on "non-empty request sanitized to empty" (not on the no-service-role path)'
   );
+});
+
+// ── #1440: DCR endpoint must be rate-limited per IP ──────────────────────────
+test('#1440: register.ts applies a per-IP rate limit before the admin OAuth-client call', () => {
+  assert.match(REGISTER, /from\s+["']\.\.\/\.\.\/lib\/ip-rate-limit["']/,
+    'must import the per-IP rate-limit helper (checkIpRateLimit/clientIpFrom)');
+  assert.match(REGISTER, /checkIpRateLimit\(/,
+    'the POST handler must call checkIpRateLimit');
+  assert.match(REGISTER, /clientIpFrom\(\s*request\s*\)/,
+    'the rate limit must key on the client IP from the request');
+  assert.match(REGISTER, /status:\s*429/,
+    'a throttled request must return HTTP 429');
+});
+
+test('#1440: the rate-limit gate runs BEFORE the admin oauth/clients POST', () => {
+  // Anchor on the CALL site ('checkIpRateLimit(' — the import has no paren) and the
+  // actual fetch (lastIndexOf — the admin path also appears in the header comment).
+  const rlIdx = REGISTER.indexOf('checkIpRateLimit(');
+  const adminIdx = REGISTER.lastIndexOf('/auth/v1/admin/oauth/clients');
+  assert.ok(rlIdx > -1 && adminIdx > -1, 'both the rate-limit call and the admin call must exist');
+  assert.ok(rlIdx < adminIdx,
+    'checkIpRateLimit must be positioned before the admin oauth/clients call so a flood is rejected before any client is minted');
 });
 
 // ── PPX-3 / FM-04: path-aware protected-resource metadata ────────────────────

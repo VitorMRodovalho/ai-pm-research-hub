@@ -1,9 +1,18 @@
 /**
  * Drive Integration EF — create a subfolder inside a parent Drive folder.
  *
- * Auth: OAuth user-delegated refresh token flow (ADR-0064 amended).
+ * Drive auth: OAuth user-delegated refresh token flow (ADR-0064 amended).
  * Folders consume 0 bytes of quota, but using OAuth here keeps consistency
  * com upload EF + ownership cai no usuário (não na SA).
+ *
+ * Caller auth (#1380): service-role only (isServiceRoleToken, mirror of the
+ * reconcile-initiative-drive-access EF, #738/#850). The EF deploys with
+ * verify_jwt=false, so the gateway does NOT gate it — without this check any
+ * unauthenticated internet caller could create Drive folders under the org SA.
+ * Both legitimate callers (nucleo-mcp tools create_drive_subfolder /
+ * provision_initiative_drive) enforce the member's V4 authority and call this
+ * EF server-to-server with the SERVICE_ROLE_KEY, so gating on service-role is
+ * non-breaking and independent of the deploy flags.
  *
  * Vault key: google_drive_oauth_credentials
  *
@@ -13,6 +22,8 @@
  * Returns: { success, drive_folder_id, drive_folder_url, name }
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken } from "../_shared/service-auth.ts";
+import { bearerFrom } from "../_shared/drive-sa.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -84,6 +95,15 @@ async function createSubfolder(
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+  }
+
+  // #1380: service-role only. verify_jwt=false leaves the gateway open, so this
+  // is the sole auth moat. Callers gate the member's authority before invoking.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized", detail: "service-role only" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   let body: { parent_folder_id?: string; name?: string };

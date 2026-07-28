@@ -109,20 +109,21 @@ describe('p599-600 — DB-gated (skip without env)', () => {
   it('live bodies match the LATEST migration capture (Phase-C normalized md5)', { skip: !sb }, async () => {
     const { createHash } = await import('node:crypto');
     const localMd5 = (body) => createHash('md5').update(body.replace(/\s+/g, ' ')).digest('hex');
-    // get_initiative_detail + get_initiative_gamification were last re-created by PR-3
-    // (#785 confidential-initiative RPC gate, mig 20260805000233): that file is now their
-    // canonical body capture. The #599/#600 intent (roster denominator + #600 scope gate) is
-    // preserved there and is still asserted statically above against the originating 138.
-    const PR3 = readFileSync('supabase/migrations/20260805000233_p785_pr3_confidential_initiative_rpcs.sql', 'utf8');
-    const pr3Body = (name) => {
-      const m = PR3.match(new RegExp(
+    // get_initiative_detail was last re-created by PR-3 (#785 confidential-initiative RPC gate,
+    // mig 20260805000233). get_initiative_gamification was re-created again by #1464 Onda 3
+    // (mig 20260805000480): its cycle points now window by COALESCE(occurred_at, created_at) (fact
+    // date). Each function's canonical capture points at its own most-recent re-creation.
+    const bodyFrom = (src, name) => {
+      const m = src.match(new RegExp(
         `CREATE OR REPLACE FUNCTION public\\.${name}\\([^)]*\\)[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`
       ));
       return m ? m[1] : '';
     };
+    const PR3 = readFileSync('supabase/migrations/20260805000233_p785_pr3_confidential_initiative_rpcs.sql', 'utf8');
+    const MIG1464 = readFileSync('supabase/migrations/20260805000480_1464_gamification_occurred_at_cycle_windowing.sql', 'utf8');
     const expected = {
-      get_initiative_detail: localMd5(pr3Body('get_initiative_detail')),
-      get_initiative_gamification: localMd5(pr3Body('get_initiative_gamification')),
+      get_initiative_detail: localMd5(bodyFrom(PR3, 'get_initiative_detail')),
+      get_initiative_gamification: localMd5(bodyFrom(MIG1464, 'get_initiative_gamification')),
     };
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) { console.warn(`[p599-600] helper unavailable: ${error.message}`); return; }

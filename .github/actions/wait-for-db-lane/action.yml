@@ -1,0 +1,93 @@
+name: Aguardar a faixa do banco de producao
+description: >
+  Serializa em RUNTIME os jobs que falam com o banco de producao compartilhado, em vez de
+  enfileira-los na concorrencia do GitHub. Ver #1509: a fila guarda UM pendente por grupo e
+  cancela o anterior quando um terceiro chega, o que fazia o gate de invariantes sumir sem
+  rodar e sem virar vermelho. Aqui nenhum job e descartado: todos iniciam e esperam a vez.
+
+inputs:
+  lane-jobs:
+    description: >
+      Nomes dos jobs que disputam o banco, separados por espaco. Precisam bater com a CHAVE do
+      job no workflow (GITHUB_JOB) e com o nome exibido na API, que sao o mesmo enquanto o job
+      nao tiver `name:` proprio.
+    required: false
+    default: validate check-invariants
+  max-wait-seconds:
+    description: Teto de espera. Estourou, o job FALHA em vez de rodar concorrente.
+    required: false
+    default: '900'
+  settle-seconds:
+    description: >
+      Janela de acomodacao antes da primeira consulta. Dois jobs que comecam no mesmo instante
+      precisam estar ambos visiveis na API antes de qualquer um decidir quem e o mais antigo.
+    required: false
+    default: '15'
+
+runs:
+  using: composite
+  steps:
+    - name: Aguardar a vez na faixa do banco
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        LANE_JOBS: ${{ inputs.lane-jobs }}
+        MAX_WAIT: ${{ inputs.max-wait-seconds }}
+        SETTLE: ${{ inputs.settle-seconds }}
+      run: |
+        set -euo pipefail
+
+        me_run="$GITHUB_RUN_ID"
+        me_job="$GITHUB_JOB"
+        echo "faixa do banco: sou $me_job do run $me_run"
+
+        sleep "$SETTLE"
+
+        # Ordem total: quem comecou antes passa primeiro, desempatando por run e nome. Como a
+        # ordem e a mesma para todos os concorrentes, exatamente um se enxerga como o primeiro.
+        jq_jobs='.jobs[]
+          | select(.status == "queued" or .status == "in_progress")
+          | [(.started_at // "9999-12-31T23:59:59Z"), (.run_id | tostring), .name]
+          | @tsv'
+
+        lane_file="$(mktemp)"
+        deadline=$(( $(date +%s) + MAX_WAIT ))
+
+        while :; do
+          : > "$lane_file"
+
+          # Sem `|| true` de proposito: se a consulta falhar (token sem `actions: read`, rate
+          # limit), o job PARA. Engolir o erro faria a faixa parecer vazia e todo mundo entrar
+          # junto no banco, que e exatamente o estrago que isto existe para evitar.
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
+            --jq '.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .id')
+
+          for rid in $runs; do
+            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$rid/jobs?per_page=50" --jq "$jq_jobs")
+            while IFS=$'\t' read -r started run name; do
+              [ -n "${name:-}" ] || continue
+              for want in $LANE_JOBS; do
+                if [ "$name" = "$want" ]; then
+                  printf '%s\t%s\t%s\n' "$started" "$run" "$name" >> "$lane_file"
+                fi
+              done
+            done <<< "$jobs"
+          done
+
+          first="$(sort "$lane_file" | head -1)"
+          first_run="$(printf '%s' "$first" | cut -f2)"
+          first_name="$(printf '%s' "$first" | cut -f3)"
+
+          if [ -z "$first" ] || { [ "$first_run" = "$me_run" ] && [ "$first_name" = "$me_job" ]; }; then
+            echo "faixa livre — $me_job (run $me_run) segue para o banco"
+            exit 0
+          fi
+
+          if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "::error::esperei ${MAX_WAIT}s pela faixa do banco e ela segue ocupada por $first_name (run $first_run). Falhando em vez de rodar concorrente e contaminar a producao (#1509)."
+            exit 1
+          fi
+
+          echo "faixa ocupada por $first_name (run $first_run) — aguardando 15s"
+          sleep 15
+        done

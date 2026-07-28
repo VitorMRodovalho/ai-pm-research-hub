@@ -1,0 +1,495 @@
+---
+// Onda 5a (#1473) — "Minha Pontuação, auditável"
+// Página dedicada: ledger fato-a-fato por pilar, expansível até a linha de CADA
+// fato com data DO FATO (occurred_at) + o ciclo a que pertence + os pontos.
+// Responde "de onde vêm estes pontos e em qual ciclo" (o caso Jefferson).
+// Fonte: get_my_points_statement (self) / get_member_points_ledger (admin ?member=).
+// Todos os totais/subtotais derivam do MESMO conjunto de fatos buscado — para uma
+// feature "auditável", subtotal do pilar == soma dos fatos visíveis, por construção.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const PILLAR_I18N: Record<string, string> = {
+  presenca: t('gamification.pillar.presenca', lang),
+  trilha: t('gamification.pillar.trilha', lang),
+  certificacoes: t('gamification.pillar.certificacoes', lang),
+  producao: t('gamification.pillar.producao', lang),
+  curadoria: t('gamification.pillar.curadoria', lang),
+  champions: t('gamification.pillar.champions', lang),
+  protagonismo: t('gamification.pillar.protagonismo', lang),
+};
+
+const MP_I18N = {
+  heading: t('myPoints.heading', lang),
+  subtitle: t('myPoints.subtitle', lang),
+  loading: t('myPoints.loading', lang),
+  loginRequired: t('myPoints.loginRequired', lang),
+  noPoints: t('myPoints.noPoints', lang),
+  errorLoad: t('myPoints.errorLoad', lang),
+  modeCycle: t('myPoints.mode.cycle', lang),
+  modeLifetime: t('myPoints.mode.lifetime', lang),
+  summaryLifetime: t('myPoints.summary.lifetime', lang),
+  summaryCycle: t('myPoints.summary.cycle', lang),
+  summaryRank: t('myPoints.summary.rank', lang),
+  ptsLabel: t('myPoints.ptsLabel', lang),
+  certsLifetimeNote: t('myPoints.certsLifetimeNote', lang),
+  exportBtn: t('myPoints.export.btn', lang),
+  factAttributedBy: t('myPoints.fact.attributedBy', lang),
+  factLoggedOn: t('myPoints.fact.loggedOn', lang),
+  factReversal: t('myPoints.fact.reversal', lang),
+  factChampionBy: t('myPoints.fact.championBy', lang),
+  emptyPillar: t('myPoints.emptyPillar', lang),
+  cycleGroup: t('myPoints.cycleGroup', lang),
+  noCycle: t('myPoints.noCycle', lang),
+  adminBannerPrefix: t('myPoints.admin.bannerPrefix', lang),
+  adminBack: t('myPoints.admin.back', lang),
+  adminForbidden: t('myPoints.admin.forbidden', lang),
+  pillarNames: PILLAR_I18N,
+  locale: lang === 'es-LATAM' ? 'es' : lang,
+  dbLang: lang,
+};
+---
+<BaseLayout title={t('myPoints.title', lang)} activePage="my-points" lang={lang}>
+  <Toast />
+  <div class="max-w-[900px] mx-auto px-4 py-8">
+    <!-- Admin context banner (?member=) -->
+    <div id="admin-banner" class="hidden mb-5">
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-xl px-5 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <p class="text-amber-900 text-sm font-semibold flex items-center gap-2">
+          <span aria-hidden="true">👁️</span>
+          <span id="admin-banner-name"></span>
+        </p>
+        <a id="admin-back" href={`${langPrefix}/admin`} class="text-[12px] font-semibold text-amber-900 underline no-underline hover:underline">{MP_I18N.adminBack}</a>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <h1 class="text-2xl font-extrabold text-navy">{MP_I18N.heading}</h1>
+      <p class="text-[var(--text-secondary)] text-sm mt-1">{MP_I18N.subtitle}</p>
+    </div>
+
+    <!-- Guest / login gate -->
+    <div id="mp-gate" class="hidden">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-8 text-center">
+        <p class="text-[var(--text-muted)] text-sm">{MP_I18N.loginRequired}</p>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="mp-loading" class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-8 text-center">
+      <p class="text-[var(--text-muted)] text-sm">{MP_I18N.loading}</p>
+    </div>
+
+    <!-- Panel -->
+    <div id="mp-panel" class="hidden">
+      <!-- Summary -->
+      <div class="bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl border border-[var(--border-default)] p-5 mb-4">
+        <div class="flex items-end justify-between gap-4 flex-wrap">
+          <div class="flex gap-6 flex-wrap">
+            <div>
+              <div class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wide" id="sum-cycle-label"></div>
+              <div class="text-3xl font-extrabold text-navy" id="sum-cycle">0</div>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">{MP_I18N.summaryLifetime}</div>
+              <div class="text-3xl font-extrabold text-[var(--text-secondary)]" id="sum-lifetime">0</div>
+            </div>
+          </div>
+          <div id="sum-rank" class="text-[12px] text-[var(--text-muted)] font-medium"></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div class="inline-flex items-center gap-1.5 bg-[var(--surface-base)] rounded-full p-1 border border-[var(--border-default)]" role="tablist" aria-label="Escopo">
+          <button id="mp-mode-cycle" role="tab" aria-selected="true" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-navy text-white border-0 cursor-pointer"
+                  data-action="set-mode" data-mode="cycle">{MP_I18N.modeCycle}</button>
+          <button id="mp-mode-lifetime" role="tab" aria-selected="false" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-transparent text-[var(--text-secondary)] border-0 cursor-pointer"
+                  data-action="set-mode" data-mode="lifetime">{MP_I18N.modeLifetime}</button>
+        </div>
+        <button id="mp-export" class="px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[12px] font-semibold cursor-pointer hover:border-navy transition-colors flex items-center gap-1.5"
+                data-action="export-csv" aria-label={MP_I18N.exportBtn}>
+          <span aria-hidden="true">⬇</span><span id="mp-export-label">{MP_I18N.exportBtn}</span>
+        </button>
+      </div>
+
+      <!-- Pillars accordion -->
+      <div id="mp-pillars" class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden"></div>
+    </div>
+
+    <!-- Empty -->
+    <div id="mp-empty" class="hidden bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-8 text-center">
+      <p class="text-[var(--text-muted)] text-sm">{MP_I18N.noPoints}</p>
+    </div>
+
+    <!-- Error -->
+    <div id="mp-error" class="hidden bg-[var(--surface-card)] rounded-xl border border-crimson/30 p-6 text-center">
+      <p class="text-crimson text-sm" id="mp-error-msg"></p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ MP_I18N }}>
+  window.__MY_POINTS_I18N = typeof MP_I18N !== 'undefined' ? MP_I18N : {};
+</script>
+<script>
+  import { isRegisteredMember } from '../lib/routing';
+  import { canFor } from '../lib/permissions';
+  import { localizeI18n, PILLAR_EMOJI } from '../lib/gamification-catalog';
+
+  const I = (typeof window !== 'undefined' && (window as any).__MY_POINTS_I18N) || {};
+
+  // Pillar display order (matches get_member_xp_pillars)
+  const PILLAR_ORDER = ['presenca', 'trilha', 'certificacoes', 'producao', 'curadoria', 'champions', 'protagonismo'];
+
+  let sb: any = null;
+  let MEMBER: any = null;
+  let TARGET_ID: string | null = null;   // whose ledger we render (self or ?member=)
+  let TARGET_NAME = '';
+  let IS_ADMIN_VIEW = false;
+  let mode: 'cycle' | 'lifetime' = 'cycle';
+  // Cache of fully-fetched facts per scope (all pages), so subtotals == sum of shown facts.
+  const factCache: Record<string, any[]> = {};
+  const totalsCache: Record<string, number> = {};
+  let cycleLabel = '';
+  const expanded = new Set<string>();
+
+  function escapeHtml(s: string): string {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function show(id: string, on = true) { document.getElementById(id)?.classList.toggle('hidden', !on); }
+  function fmtDate(iso: string): string {
+    if (!iso) return '-';
+    try { return new Date(iso).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' }); }
+    catch { return '-'; }
+  }
+  // Fill an i18n template placeholder with a runtime value WITHOUT $-pattern
+  // interpretation (String.replace treats $&/$1/$$ specially when arg is a string).
+  function fill(tpl: string, token: string, value: string): string {
+    return String(tpl || '').replace(token, () => String(value ?? ''));
+  }
+  function ruleName(e: any): string {
+    return localizeI18n(e.rule_display_name_i18n, I.dbLang || 'pt-BR', e.category || '');
+  }
+
+  // ── DATA ──────────────────────────────────────────────────────────────────
+  async function fetchAllFacts(scope: 'cycle' | 'lifetime'): Promise<any[]> {
+    if (factCache[scope]) return factCache[scope];
+    const rpc = IS_ADMIN_VIEW ? 'get_member_points_ledger' : 'get_my_points_statement';
+    const pageSize = 200;
+    let offset = 0;
+    const all: any[] = [];
+    let total = Infinity;
+    let firstTotalPoints = 0;
+    let guard = 0;
+    while (offset < total) {
+      if (++guard > 100) break; // belt-and-suspenders: cap at 100 pages (20k facts)
+      const args: any = { p_scope: scope, p_limit: pageSize, p_offset: offset };
+      if (IS_ADMIN_VIEW) args.p_member_id = TARGET_ID;
+      const { data, error } = await sb.rpc(rpc, args);
+      if (error) throw error;
+      const stmt = typeof data === 'string' ? JSON.parse(data) : data;
+      total = Number(stmt?.total_count || 0);
+      firstTotalPoints = Number(stmt?.total_points || 0);
+      const entries = stmt?.entries || [];
+      all.push(...entries);
+      if (!entries.length) break;
+      offset += entries.length;
+    }
+    factCache[scope] = all;
+    totalsCache[scope] = firstTotalPoints;
+    return all;
+  }
+
+  function groupByPillar(facts: any[]): Record<string, { total: number; count: number; facts: any[] }> {
+    const g: Record<string, { total: number; count: number; facts: any[] }> = {};
+    for (const f of facts) {
+      const p = f.pillar || 'protagonismo';
+      if (!g[p]) g[p] = { total: 0, count: 0, facts: [] };
+      g[p].total += Number(f.points) || 0;
+      g[p].count += 1;
+      g[p].facts.push(f);
+    }
+    return g;
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  function renderFact(e: any): string {
+    const neg = Number(e.points) < 0;
+    const name = ruleName(e);
+    const occ = e.occurred_at || e.effective_at;
+    const created = e.created_at;
+    const cycle = e.cycle_label || e.cycle_code || I.noCycle;
+    // occurred_at is the primary (fact) date; surface created_at only when it diverges materially.
+    let loggedHint = '';
+    if (occ && created) {
+      const dOcc = new Date(occ).getTime();
+      const dCreated = new Date(created).getTime();
+      if (Math.abs(dCreated - dOcc) > 3 * 24 * 3600 * 1000) {
+        loggedHint = ` <span class="text-[var(--text-muted)]">· ${escapeHtml(fill(I.factLoggedOn, '{date}', fmtDate(created)))}</span>`;
+      }
+    }
+    const granted = e.granted_by_name ? ` · ${escapeHtml(fill(I.factAttributedBy, '{name}', e.granted_by_name))}` : '';
+    const surface = String(e.category || '').replace('champion_', '');
+    const champ = e.champion ? `
+      <div class="mt-1 text-[10.5px] text-[var(--text-muted)]">
+        🏅 ${escapeHtml(fill(I.factChampionBy, '{name}', e.champion.awarded_by_name || '-'))}
+        ${e.champion.justification ? `<div class="italic">"${escapeHtml(e.champion.justification)}"</div>` : ''}
+      </div>` : '';
+    // In cycle scope the cycle badge is redundant (all facts are the current cycle); show it in lifetime.
+    const cycleBadge = mode === 'lifetime'
+      ? `<span class="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-base)] text-[var(--text-secondary)] whitespace-nowrap">${escapeHtml(cycle)}</span>`
+      : '';
+    return `
+    <div class="flex items-start gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-b-0">
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-medium flex items-center gap-1.5 flex-wrap">
+          ${escapeHtml(name)}
+          ${e.is_reversal ? `<span class="text-[9px] font-bold px-1 py-0.5 rounded bg-red-50 text-red-600 uppercase">${escapeHtml(I.factReversal)}</span>` : ''}
+          ${cycleBadge}
+        </div>
+        <div class="text-[11px] text-[var(--text-muted)]">${escapeHtml(fmtDate(occ))}${loggedHint}${granted}</div>
+        ${e.reason ? `<div class="text-[11px] text-[var(--text-muted)] truncate" title="${escapeHtml(e.reason)}">${escapeHtml(e.reason)}</div>` : ''}
+        ${champ}
+      </div>
+      <div class="font-bold text-sm flex-shrink-0 ${neg ? 'text-red-600' : 'text-emerald-600'}">${neg ? '' : '+'}${e.points}</div>
+    </div>`;
+  }
+
+  function renderPillarFacts(pillar: string, facts: any[]): string {
+    if (!facts.length) return `<div class="px-4 py-3 text-[12px] text-[var(--text-muted)]">${escapeHtml(I.emptyPillar)}</div>`;
+    // Lifetime: group the pillar's facts by cycle for auditability at volume.
+    if (mode === 'lifetime') {
+      const byCycle: Record<string, any[]> = {};
+      const order: string[] = [];
+      for (const f of facts) {
+        const key = f.cycle_label || f.cycle_code || I.noCycle;
+        if (!byCycle[key]) { byCycle[key] = []; order.push(key); }
+        byCycle[key].push(f);
+      }
+      return order.map(key => {
+        const sub = byCycle[key].reduce((s: number, f: any) => s + (Number(f.points) || 0), 0);
+        return `
+          <div class="px-4 pt-3 pb-1 flex items-center justify-between bg-[var(--surface-base)]/40">
+            <span class="text-[11px] font-bold text-[var(--text-secondary)]">${escapeHtml(fill(I.cycleGroup, '{cycle}', key))}</span>
+            <span class="text-[11px] font-bold ${sub < 0 ? 'text-red-600' : 'text-navy'}">${sub < 0 ? '' : '+'}${sub} ${escapeHtml(I.ptsLabel)}</span>
+          </div>
+          <div class="px-4">${byCycle[key].map(renderFact).join('')}</div>`;
+      }).join('');
+    }
+    return `<div class="px-4">${facts.map(renderFact).join('')}</div>`;
+  }
+
+  function renderPanel() {
+    const facts = factCache[mode] || [];
+    const grouped = groupByPillar(facts);
+
+    // Summary
+    const cycleTotal = totalsCache['cycle'] ?? 0;
+    const lifeTotal = totalsCache['lifetime'] ?? 0;
+    document.getElementById('sum-cycle-label')!.textContent = fill(I.summaryCycle, '{cycle}', cycleLabel || I.modeCycle);
+    document.getElementById('sum-cycle')!.textContent = String(cycleTotal);
+    document.getElementById('sum-lifetime')!.textContent = String(lifeTotal);
+    const exLabel = document.getElementById('mp-export-label');
+    if (exLabel) exLabel.textContent = `${I.exportBtn} (${mode === 'cycle' ? (cycleLabel || I.modeCycle) : I.modeLifetime})`;
+
+    const host = document.getElementById('mp-pillars')!;
+    const rows = PILLAR_ORDER.map(pillar => {
+      const g = grouped[pillar];
+      const total = g?.total ?? 0;
+      const count = g?.count ?? 0;
+      const emoji = PILLAR_EMOJI[pillar] || '⭐';
+      const label = (I.pillarNames || {})[pillar] || pillar;
+      const isOpen = expanded.has(pillar);
+      const disabled = count === 0;
+      // Certifications: always-lifetime nature (#1448) — labeled so the toggle isn't read as broken.
+      const certNote = (pillar === 'certificacoes' && mode === 'cycle')
+        ? `<div class="px-4 pb-2 -mt-1 text-[10.5px] text-amber-700">${escapeHtml(I.certsLifetimeNote)}</div>` : '';
+      return `
+      <div class="border-b border-[var(--border-default)] last:border-b-0">
+        <button type="button" data-action="toggle-pillar" data-pillar="${pillar}" aria-expanded="${isOpen}"
+                class="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer ${disabled ? 'opacity-45' : 'hover:bg-[var(--surface-hover)]'} transition-colors border-0 bg-transparent"
+                ${disabled ? 'disabled' : ''}>
+          <span class="text-lg flex-shrink-0" aria-hidden="true">${emoji}</span>
+          <span class="flex-1 text-[13px] font-semibold text-[var(--text-primary)]">${escapeHtml(label)}
+            ${pillar === 'certificacoes' ? `<span class="ml-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 align-middle">${escapeHtml(I.modeLifetime)}</span>` : ''}
+            <span class="text-[11px] font-normal text-[var(--text-muted)] ml-1">(${count})</span>
+          </span>
+          <span class="text-sm font-bold ${total < 0 ? 'text-red-600' : 'text-navy'} flex-shrink-0">${total < 0 ? '' : '+'}${total}</span>
+          <span class="text-[var(--text-muted)] text-xs flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}" aria-hidden="true">▾</span>
+        </button>
+        ${certNote}
+        <div class="${isOpen ? '' : 'hidden'}" data-pillar-body="${pillar}">
+          ${isOpen ? renderPillarFacts(pillar, g?.facts || []) : ''}
+        </div>
+      </div>`;
+    }).join('');
+    host.innerHTML = rows;
+  }
+
+  async function setMode(next: 'cycle' | 'lifetime') {
+    mode = next;
+    const c = document.getElementById('mp-mode-cycle');
+    const l = document.getElementById('mp-mode-lifetime');
+    const on = (btn: HTMLElement | null, active: boolean) => {
+      if (!btn) return;
+      btn.setAttribute('aria-selected', String(active));
+      btn.classList.toggle('bg-navy', active);
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('bg-transparent', !active);
+      btn.classList.toggle('text-[var(--text-secondary)]', !active);
+    };
+    on(c, next === 'cycle'); on(l, next === 'lifetime');
+    try {
+      if (!factCache[next]) { show('mp-loading', true); show('mp-panel', false); await fetchAllFacts(next); }
+    } catch (e: any) { return renderError(e); }
+    show('mp-loading', false); show('mp-panel', true);
+    renderPanel();
+  }
+
+  function renderError(e: any) {
+    show('mp-loading', false); show('mp-panel', false); show('mp-empty', false);
+    const forbidden = /insufficient_privilege|Unauthorized|Forbidden/i.test(String(e?.message || ''));
+    document.getElementById('mp-error-msg')!.textContent = forbidden ? I.adminForbidden : `${I.errorLoad} ${e?.message || ''}`;
+    show('mp-error', true);
+  }
+
+  function exportCSV() {
+    const facts = factCache[mode] || [];
+    const header = ['occurred_at', 'cycle', 'pillar', 'rule', 'points', 'reason', 'attributed_by', 'is_reversal'];
+    const esc = (v: any) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [header.join(',')];
+    for (const f of facts) {
+      lines.push([
+        f.occurred_at || f.effective_at || '',
+        f.cycle_code || '',
+        (I.pillarNames || {})[f.pillar] || f.pillar || '',
+        ruleName(f),
+        f.points,
+        f.reason || '',
+        f.granted_by_name || '',
+        f.is_reversal ? 'sim' : 'nao',
+      ].map(esc).join(','));
+    }
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const who = IS_ADMIN_VIEW && TARGET_NAME ? TARGET_NAME.replace(/\s+/g, '_') : 'minha';
+    a.download = `pontuacao_${who}_${mode}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── RANK (self or admin-gated; existing RPC) ──
+  async function loadRank() {
+    try {
+      const { data } = await sb.rpc('get_member_cycle_xp', { p_member_id: TARGET_ID });
+      const r = typeof data === 'string' ? JSON.parse(data) : data;
+      if (r && r.rank_position) {
+        document.getElementById('sum-rank')!.textContent =
+          I.summaryRank.replace('{pos}', String(r.rank_position)).replace('{total}', String(r.total_ranked || 0));
+      }
+    } catch {}
+  }
+
+  // ── INIT ──
+  async function start() {
+    const params = new URLSearchParams(location.search);
+    const wantMember = params.get('member');
+
+    if (wantMember && wantMember !== MEMBER.id) {
+      if (!canFor('view_pii')) { renderError({ message: 'insufficient_privilege' }); return; }
+      IS_ADMIN_VIEW = true;
+      TARGET_ID = wantMember;
+    } else {
+      TARGET_ID = MEMBER.id;
+      TARGET_NAME = MEMBER.name || '';
+    }
+
+    try {
+      show('mp-loading', true);
+      // Load current cycle label + both scope totals + the active scope facts up front.
+      const cycleFacts = await fetchAllFacts('cycle');
+      // resolve cycle label from any fact of the current cycle, else fall back to RPC cycle_code
+      cycleLabel = (cycleFacts.find((f: any) => f.cycle_label)?.cycle_label) || '';
+      await fetchAllFacts('lifetime');
+      if (IS_ADMIN_VIEW) {
+        // resolve target name from lifetime facts is not available → banner uses member RPC
+        try {
+          const { data } = await sb.rpc('get_member_cycle_xp', { p_member_id: TARGET_ID });
+          void data; // name comes from members lookup below
+        } catch {}
+      }
+    } catch (e: any) { return renderError(e); }
+
+    const lifeTotal = totalsCache['lifetime'] ?? 0;
+    const cycTotal = totalsCache['cycle'] ?? 0;
+    if (!lifeTotal && !cycTotal && !(factCache['lifetime'] || []).length) {
+      show('mp-loading', false); show('mp-empty', true); return;
+    }
+
+    if (IS_ADMIN_VIEW) {
+      // Resolve target member name for the banner (admin has view_pii → member row readable).
+      try {
+        const { data: mrow } = await sb.from('members').select('name').eq('id', TARGET_ID).maybeSingle();
+        TARGET_NAME = mrow?.name || '';
+      } catch {}
+      document.getElementById('admin-banner-name')!.textContent =
+        `${I.adminBannerPrefix} ${TARGET_NAME || TARGET_ID}`;
+      show('admin-banner', true);
+    }
+
+    show('mp-loading', false); show('mp-panel', true);
+    renderPanel();
+    loadRank();
+  }
+
+  // ── EVENT DELEGATION ──
+  document.addEventListener('click', (e: Event) => {
+    const el = (e.target as HTMLElement)?.closest?.('[data-action]') as HTMLElement | null;
+    if (!el) return;
+    const action = el.dataset.action;
+    if (action === 'set-mode') {
+      const m = el.dataset.mode as 'cycle' | 'lifetime';
+      if (m && m !== mode) setMode(m);
+    } else if (action === 'toggle-pillar') {
+      const p = el.dataset.pillar!;
+      if (expanded.has(p)) expanded.delete(p); else expanded.add(p);
+      renderPanel();
+    } else if (action === 'export-csv') {
+      exportCSV();
+    }
+  });
+
+  // ── BOOT ──
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    const proceed = (m: any) => {
+      if (isRegisteredMember(m)) { MEMBER = m; start(); return true; }
+      return false;
+    };
+
+    window.addEventListener('nav:member', ((ev: CustomEvent) => { proceed(ev.detail); }) as EventListener);
+    window.addEventListener('nav:guest-with-session', (() => {
+      show('mp-loading', false); show('mp-gate', true);
+    }) as EventListener);
+
+    if (proceed((window as any).navGetMember?.())) return;
+
+    // No member yet — wait briefly for nav to resolve session; then show gate.
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { show('mp-loading', false); show('mp-gate', true); }
+  }
+  boot();
+</script>

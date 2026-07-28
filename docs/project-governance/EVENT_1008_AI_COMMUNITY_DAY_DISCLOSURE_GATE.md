@@ -1,3 +1,9 @@
+> ⛔ **SUPERSEDED (2026-07-21).** A decisão-título deste gate (não usar "AI Community Day" como nome do
+> evento) foi REVOGADA pelo owner: o nome "AI Community Day" está aprovado e em uso. Ver
+> `docs/council/decisions/2026-07-21-1008-name-approved-supersede.md`. O que PERMANECE válido aqui: a
+> linguagem de PDU travada (§2, só autodeclarável, nunca "concede PDUs") e a checklist LGPD/Airmeet (§3).
+> O memo do §4 nunca foi enviado; checks INPI + cláusula de marca seguem em aberto (risco aceito).
+
 # Aftershow Núcleo IA & GP (16/07) — disclosure gate + locked copy + PMI-GO consultation
 
 **Issue:** #1008 (EPIC #1002). **Blocks:** #1006 (event divulgation). **Fuse:** this week.

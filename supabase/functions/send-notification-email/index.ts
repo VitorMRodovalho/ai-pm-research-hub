@@ -80,6 +80,51 @@ const ONBOARDING_PREP_TYPES = new Set([
   'selection_cutoff_approved',
 ])
 
+// ─── #1424 Resend quota control ─────────────────────────────────────────────
+// Resend free tier = 100 emails/day, shared across ALL lanes (campaign lane via
+// send-campaign + this notification/digest lane) on ONE account. The campaign
+// lane already caps at 100 via campaign_recipients; this lane historically had
+// NO cap and blew the quota on Saturday digest bursts (#1424 audit: 108-121
+// sends/Sat). We count the day's real sends from email_webhook_events
+// (event_type='email.sent') — the shared, cross-lane truth — and stop at a safe
+// headroom. Deferred rows keep email_sent_at NULL and drain on the next */5 run
+// (or the next day once the quota resets at 00:00 UTC).
+const DAILY_SEND_CAP = 90
+
+// ADR-0022 W2 Leaf 6 (p228 #260): candidate-facing operational types bypass
+// suppress_all. Lock-step with SQL helper public._is_operational_candidate_facing(text)
+// — keep byte-for-byte (guarded by adr-0022-delivery-mode contract test). Hoisted
+// to module scope by #1424 so the per-recipient grouping loop can reuse it.
+const OPERATIONAL_CANDIDATE_FACING = new Set([
+  'selection_termo_due',
+  'selection_approved',
+  'selection_interview_scheduled',
+  'selection_cutoff_approved',
+])
+
+// #1424 Fase A: rich JSON-body digests render as their own full email via
+// dedicated builders; onboarding-prep + governance types carry dedicated blocks
+// (login help, legal deadline). None of these are coalesced into the generic
+// list — only simple title+body+CTA notifications are, so one person's burst of
+// N simple notifications becomes ONE email instead of N.
+const ALWAYS_INDIVIDUAL_TYPES = new Set<string>([
+  WEEKLY_MEMBER_DIGEST_TYPE,
+  WEEKLY_TRIBE_DIGEST_LEADER_TYPE,
+  ...ONBOARDING_PREP_TYPES,
+  ...GOVERNANCE_TYPES,
+])
+const RICH_DIGEST_TYPES = new Set<string>([WEEKLY_MEMBER_DIGEST_TYPE, WEEKLY_TRIBE_DIGEST_LEADER_TYPE])
+
+// #1424 Fase B: when the daily budget is tight, digest/summary mail yields the
+// remaining quota to transactional/operational mail (recipients with any
+// non-low-priority notification are served first).
+const LOW_PRIORITY_TYPES = new Set<string>([
+  WEEKLY_MEMBER_DIGEST_TYPE,
+  WEEKLY_TRIBE_DIGEST_LEADER_TYPE,
+  'weekly_card_digest_member',
+  'volunteer_term_signed_digest',
+])
+
 // ADR-0022 W2: rich rendering for weekly_member_digest. Body is JSON text from
 // get_weekly_member_digest RPC with 7 sections. Renders responsive HTML with
 // collapsible-style headers (no <details> — Gmail strips it; uses bordered
@@ -173,32 +218,43 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
     </div>`
 }
 
+// #1424 Fase C: naming/kind metadata for ONE initiative payload. Shared by the
+// single- and multi-initiative renderers so both label a tribe as "Tribo" and
+// every other kind as "Iniciativa".
+function leaderInitiativeMeta(payload: any): { name: string; kindCap: string; kindLower: string; activeMembers: number } {
+  // p173: initiative-aware. payload.is_tribe distinguishes research_tribe (Tribo)
+  // from other kinds (workgroup/committee/study_group/congress = Iniciativa).
+  // Default true for legacy payloads without the field.
+  const isTribe = payload?.is_tribe !== false
+  return {
+    name: payload?.tribe_name || payload?.initiative_name || 'sua iniciativa',
+    kindCap: isTribe ? 'Tribo' : 'Iniciativa',
+    kindLower: isTribe ? 'tribo' : 'iniciativa',
+    activeMembers: Number(payload?.aggregates?.active_members || 0),
+  }
+}
+
 // ADR-0022 W3: leader digest aggregate-only renderer. Body is JSON from
-// get_weekly_tribe_digest RPC. Card aggregates remain privacy-preserving
+// get_weekly_initiative_digest RPC. Card aggregates remain privacy-preserving
 // (counts only). p162 Track B' added 3 documentation-hygiene sections
 // (ata_pending recurrence-grouped, attendance_pending, champion_pending)
 // — these expose event titles/dates by design so the leader can act, but
 // no member names. Hide-if-empty per section. Deep-link CTAs into
 // /meetings, /attendance?eventId=…, /admin/gamification?award_event_id=….
 // PT-BR inline (i18n EN/ES tech debt — backlog).
-function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
-  let payload: any = {}
-  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
-  const tribeName = payload.tribe_name || 'sua iniciativa'
-  // p173: initiative-aware. payload.is_tribe distinguishes research_tribe (Tribo)
-  // from other kinds (workgroup/committee/study_group/congress = Iniciativa).
-  // Default true for legacy payloads without the field.
-  const isTribe = payload.is_tribe !== false
-  const kindNounCap = isTribe ? 'Tribo' : 'Iniciativa'
-  const kindNounLower = isTribe ? 'tribo' : 'iniciativa'
-  const agg = payload.aggregates || {}
+//
+// #1424 Fase C: this renders the sections for ONE initiative only (health +
+// aggregates + documentation hygiene) — no page header, privacy note, CTA or
+// footer. The wrapper buildWeeklyTribeDigestLeaderHtml frames it once, whether
+// the leader has one initiative or eight.
+function buildLeaderInitiativeBodyHtml(payload: any): string {
+  const agg = payload?.aggregates || {}
   const overdue = Number(agg.cards_overdue_total || 0)
   const dueNext = Number(agg.cards_due_next_7d || 0)
   const noAssignee = Number(agg.cards_without_assignee || 0)
   const noDate = Number(agg.cards_without_due_date || 0)
   const completed = Number(agg.cards_completed_window || 0)
   const membersOverdue = Number(agg.members_with_overdue_cards || 0)
-  const activeMembers = Number(agg.active_members || 0)
   const healthPct = Number(agg.tribe_health_pct || 100)
 
   const healthColor = healthPct >= 80 ? '#388e3c' : healthPct >= 50 ? '#f57c00' : '#d32f2f'
@@ -339,12 +395,6 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   const docHygieneAny = ataCount + attCount + champCount > 0
 
   return `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
-      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
-        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da ${kindNounCap} ${escapeHtml(tribeName)}</h1>
-        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${activeMembers} membros ativos</p>
-      </div>
-      <div style="padding: 20px 16px;">
         <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px; text-align: center;">
           <div style="font-size: 11px; color: #868e96; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Tribe Health</div>
           <div style="font-size: 36px; font-weight: 700; color: ${healthColor};">${healthPct}%</div>
@@ -379,7 +429,17 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
             <strong>✓ Documentação em dia.</strong> Nenhuma ata, presença ou Champion pendente no ciclo atual. 🎉
           </p>
         </div>
-        `}
+        `}`
+}
+
+// #1424 Fase C: page frame shared by both shapes. The privacy note, portfolio
+// CTA and footer appear ONCE per email, never once per initiative.
+function leaderDigestFrame(headerHtml: string, sectionsHtml: string, whyHtml: string): string {
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
+      ${headerHtml}
+      <div style="padding: 20px 16px;">
+        ${sectionsHtml}
 
         <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 14px; margin: 0 0 16px 0; border-radius: 4px;">
           <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
@@ -391,7 +451,7 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
           <a href="https://nucleoia.vitormr.dev/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
         </div>
         <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
-          Você recebe este resumo porque é líder da ${kindNounLower} ${escapeHtml(tribeName)}.
+          ${whyHtml}
           <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
         </p>
       </div>
@@ -399,6 +459,71 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
         <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
       </div>
     </div>`
+}
+
+// #1424 Fase C — leader digest entry point. Two payload shapes:
+//
+//   v2 (aggregated, current): { version: 2, initiative_count, initiatives: [ <per-initiative payload>, … ] }
+//     One email covering every initiative the leader runs. Emitted by
+//     generate_weekly_leader_digest_cron since migration 20260805000490.
+//
+//   v1 (legacy, single): the per-initiative payload itself, at top level.
+//     Kept because rows queued before that migration may still be pending, and
+//     because get_weekly_initiative_digest output is consumed elsewhere.
+//
+// WHY v2 exists: the cron used to insert one row per (initiative, leader) — 40
+// pairs for 20 leaders. Fase A then deduped rich digests to the newest row per
+// type per recipient, so a leader of 8 initiatives got 1 email and silently
+// lost the other 7 summaries. Aggregating at the producer keeps one email per
+// leader AND all of their initiatives in it.
+function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
+  let payload: any = {}
+  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
+
+  const list: any[] = Array.isArray(payload?.initiatives) ? payload.initiatives : []
+
+  // One initiative renders identically in both shapes — a leader of a single
+  // initiative sees no change from the aggregation. `list.length === 0` covers
+  // v1 rows (and a failed parse, where payload is {}).
+  const solo = list.length === 0 ? payload : (list.length === 1 ? list[0] : null)
+  if (solo) {
+    const meta = leaderInitiativeMeta(solo)
+    const header = `
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo da ${meta.kindCap} ${escapeHtml(meta.name)}</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${meta.activeMembers} membros ativos</p>
+      </div>`
+    const why = `Você recebe este resumo porque é líder da ${meta.kindLower} ${escapeHtml(meta.name)}.`
+    return leaderDigestFrame(header, buildLeaderInitiativeBodyHtml(solo), why)
+  }
+
+  // v2 multi: one titled block per initiative, in the order the producer sent
+  // them (cron orders by kind then title, so the reading order is stable).
+  const metas = list.map(leaderInitiativeMeta)
+  const totalMembers = metas.reduce((acc, m) => acc + m.activeMembers, 0)
+  const header = `
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo semanal de liderança</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Visão de líder · ${list.length} iniciativas · ${totalMembers} membros ativos</p>
+      </div>`
+  const index = `
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 14px 16px; margin: 0 0 20px 0;">
+          <p style="color: #495057; font-size: 12px; margin: 0 0 8px 0;">Este e-mail reúne as ${list.length} iniciativas que você lidera:</p>
+          <ol style="margin: 0; padding-left: 20px; color: #003B5C; font-size: 13px; line-height: 1.7;">
+            ${metas.map(m => `<li><strong>${escapeHtml(m.name)}</strong> <span style="color: #868e96;">· ${m.kindCap}</span></li>`).join('')}
+          </ol>
+        </div>`
+  const blocks = list.map((p, i) => {
+    const m = metas[i]
+    return `
+        <div style="border-top: 3px solid #003B5C; margin: 0 0 12px 0; padding: 16px 0 0 0;">
+          <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 2px 0; font-weight: 700;">${i + 1}. ${escapeHtml(m.name)}</h2>
+          <p style="color: #868e96; font-size: 11px; margin: 0 0 14px 0;">${m.kindCap} · ${m.activeMembers} membros ativos</p>
+        </div>
+        ${buildLeaderInitiativeBodyHtml(p)}`
+  }).join('')
+  const why = `Você recebe este resumo porque lidera ${list.length} iniciativas na plataforma.`
+  return leaderDigestFrame(header, index + blocks, why)
 }
 
 // Helper used only by ata section: when 1-2 groups, list itself is enough;
@@ -473,6 +598,47 @@ function buildHtml(notification: any, recipientEmail?: string): string {
     </div>`
 }
 
+// #1424: subject line for a single notification. IP ratification types carry a
+// specific title (doc + version + action + submitter); other types fall back to
+// the generic TYPE_SUBJECTS label.
+function subjectFor(n: any): string {
+  const isIpRatif = n.type?.startsWith('ip_ratification_')
+  return isIpRatif
+    ? `${n.title} — Nucleo IA & GP`
+    : `${TYPE_SUBJECTS[n.type] || n.title} — Nucleo IA & GP`
+}
+
+// #1424 Fase A: one email listing N simple notifications for a single recipient.
+// Each item keeps its own title + body + deep-link CTA. Rich digests and
+// prep/governance types are NOT routed here — they render individually.
+function buildCoalescedHtml(items: any[]): string {
+  const rows = items.map(n => {
+    const safeLink = n.link ? (n.link.startsWith('/') ? n.link : `/${n.link}`) : null
+    const ctaHref = safeLink ? `https://nucleoia.vitormr.dev${safeLink}` : ''
+    const label = TYPE_SUBJECTS[n.type] || n.title
+    return `
+      <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 14px 16px; margin: 0 0 12px 0;">
+        <h3 style="color: #003B5C; font-size: 14px; margin: 0 0 6px 0;">${escapeHtml(label)}</h3>
+        <p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0 0 ${ctaHref ? '10px' : '0'} 0;">${escapeHtml(n.body)}</p>
+        ${ctaHref ? `<a href="${ctaHref}" style="display: inline-block; background: #003B5C; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600;">Ver na plataforma</a>` : ''}
+      </div>`
+  }).join('')
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
+      <div style="background: #003B5C; padding: 20px; text-align: center;">
+        <h1 style="color: white; font-size: 18px; margin: 0;">Nucleo IA &amp; GP</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">Você tem ${items.length} novas notificações</p>
+      </div>
+      <div style="padding: 20px 16px;">
+        ${rows}
+      </div>
+      <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
+        <p>Nucleo de Estudos e Pesquisa em IA &amp; GP</p>
+        <p>Enviado automaticamente pela plataforma. <a href="https://nucleoia.vitormr.dev/profile" style="color: #003B5C;">Gerir preferencias</a></p>
+      </div>
+    </div>`
+}
+
 Deno.serve(async (_req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL') ?? ''
@@ -484,105 +650,193 @@ Deno.serve(async (_req) => {
 
     const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
-    // ADR-0022 W1: filter by delivery_mode = 'transactional_immediate' instead of
-    // type IN CRITICAL_TYPES. Catalog drives routing; EF stays type-agnostic.
-    // Fix p34 (ai-engineer audit): no time window — email_sent_at IS NULL is guard.
-    // Limit 50 accommodates CR-050 pico (~75 notifs in lock onda).
+    // #1424 Fase B: shared daily cap. Count today's real sends across ALL lanes
+    // from email_webhook_events (event_type='email.sent'); the Resend quota resets
+    // at 00:00 UTC, so the day window is UTC-midnight → now.
+    const startOfUtcDay = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z'
+    const { count: sentTodayCount } = await sb
+      .from('email_webhook_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_type', 'email.sent')
+      .gte('created_at', startOfUtcDay)
+    const sentToday = sentTodayCount ?? 0
+    const dailyBudget = Math.max(0, DAILY_SEND_CAP - sentToday)
+
+    if (dailyBudget <= 0) {
+      return new Response(JSON.stringify({ sent: 0, capped: true, sentToday, cap: DAILY_SEND_CAP, message: 'Daily send cap reached — deferring to next run/day' }))
+    }
+
+    // ADR-0022 W1: route by delivery_mode = 'transactional_immediate'. Catalog
+    // drives routing; EF stays type-agnostic. email_sent_at IS NULL is the guard
+    // (no time window — fix p34). #1424: fetch raised 50 → 200 so a recipient's
+    // burst of same-event rows lands in one run and coalesces; actual sends stay
+    // bounded by dailyBudget below.
     const { data: notifications, error: fetchErr } = await sb
       .from('notifications')
       .select('id, recipient_id, type, title, body, link, created_at')
       .eq('delivery_mode', TRANSACTIONAL_DELIVERY_MODE)
       .is('email_sent_at', null)
       .order('created_at', { ascending: true })
-      .limit(50)
+      .limit(200)
 
     if (fetchErr) throw fetchErr
     if (!notifications?.length) {
-      return new Response(JSON.stringify({ sent: 0, message: 'No pending notifications' }))
+      return new Response(JSON.stringify({ sent: 0, message: 'No pending notifications', sentToday, dailyBudget }))
     }
 
-    let sent = 0
-    const errors: string[] = []
+    // #1424: batch-load recipients (email/name/suppress pref) + preferences in 2
+    // queries instead of 3 per notification row (was N×3 round-trips).
+    const recipientIds = [...new Set(notifications.map(n => n.recipient_id).filter(Boolean))]
+    const { data: memberRows } = await sb
+      .from('members')
+      .select('id, email, name, notify_delivery_mode_pref')
+      .in('id', recipientIds)
+    const memberById = new Map((memberRows ?? []).map((m: any) => [m.id, m]))
+    const { data: prefRows } = await sb
+      .from('notification_preferences')
+      .select('member_id, muted_types')
+      .in('member_id', recipientIds)
+    const prefByMember = new Map((prefRows ?? []).map((p: any) => [p.member_id, p]))
 
+    // Group by recipient, applying per-notification opt-out filters (muted_types +
+    // suppress_all, with the candidate-facing operational bypass).
+    const groups = new Map<string, any[]>()
     for (const notif of notifications) {
-      // Get recipient email + preferences
-      const { data: member } = await sb
-        .from('members')
-        .select('email, name')
-        .eq('id', notif.recipient_id)
-        .single()
-
+      const member = memberById.get(notif.recipient_id)
       if (!member?.email) continue
-
-      // Check preferences (opt-out)
-      const { data: prefs } = await sb
-        .from('notification_preferences')
-        .select('email_digest, muted_types')
-        .eq('member_id', notif.recipient_id)
-        .single()
-
+      const prefs = prefByMember.get(notif.recipient_id)
       if (prefs?.muted_types?.includes(notif.type)) continue
 
-      // ADR-0022 W2: respect notify_delivery_mode_pref='suppress_all' (member opt-out)
-      const { data: memberPrefs } = await sb
-        .from('members')
-        .select('notify_delivery_mode_pref')
-        .eq('id', notif.recipient_id)
-        .single()
-
-      // ADR-0022 Amendment D Leaf 6 (p228 #260, 2026-05-23): candidate-facing
-      // operational selection emails BYPASS suppress_all per PM D-sel-4. Workflow-
-      // critical operational > opt-out preference for the 4 types below. Marketing,
-      // digest, and evaluator/admin-internal types still respect suppress_all.
-      // Source of truth: SQL helper public._is_operational_candidate_facing(text)
-      // matched here for EF-side parity. Update both sides in lock-step.
-      const OPERATIONAL_CANDIDATE_FACING = new Set([
-        'selection_termo_due',
-        'selection_approved',
-        'selection_interview_scheduled',
-        'selection_cutoff_approved',
-      ])
+      // ADR-0022 Amendment D Leaf 6 (p228 #260): candidate-facing operational
+      // selection emails BYPASS suppress_all per PM D-sel-4. Lock-step with SQL
+      // helper public._is_operational_candidate_facing(text). Update both sides
+      // together (guarded by adr-0022-delivery-mode contract test).
       const isOperationalCandidateFacing = OPERATIONAL_CANDIDATE_FACING.has(notif.type)
+      if (member.notify_delivery_mode_pref === 'suppress_all' && !isOperationalCandidateFacing) continue
 
-      if (memberPrefs?.notify_delivery_mode_pref === 'suppress_all' && !isOperationalCandidateFacing) continue
+      if (!groups.has(notif.recipient_id)) groups.set(notif.recipient_id, [])
+      groups.get(notif.recipient_id)!.push(notif)
+    }
 
-      // Send email — IP ratification types carry specific title (doc + version + action + submitter)
-      // so we use notif.title directly. Other types fall back to TYPE_SUBJECTS generic.
-      const isIpRatif = notif.type?.startsWith('ip_ratification_')
-      const subject = isIpRatif
-        ? `${notif.title} — Nucleo IA & GP`
-        : `${TYPE_SUBJECTS[notif.type] || notif.title} — Nucleo IA & GP`
-      try {
-        // Resend: Idempotency-Key prevents duplicate sends if this EF is retried after a successful API call.
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${rkey}`,
-            'Content-Type': 'application/json',
-            'Idempotency-Key': `critical-notification/${notif.id}`,
-          },
-          body: JSON.stringify({
-            from: `Nucleo IA e GP <${from}>`,
-            to: [member.email],
-            subject,
-            html: buildHtml(notif, member.email),
-          }),
-        })
+    // #1424 Fase B: recipients with at least one urgent (non-low-priority)
+    // notification are served first, so a tight daily budget favours
+    // transactional/operational mail over digests. Earliest-created breaks ties.
+    const orderedRecipients = [...groups.entries()].sort((a, b) => {
+      const aUrgent = a[1].some((n: any) => !LOW_PRIORITY_TYPES.has(n.type)) ? 0 : 1
+      const bUrgent = b[1].some((n: any) => !LOW_PRIORITY_TYPES.has(n.type)) ? 0 : 1
+      if (aUrgent !== bUrgent) return aUrgent - bUrgent
+      return new Date(a[1][0].created_at).getTime() - new Date(b[1][0].created_at).getTime()
+    })
 
-        if (res.ok) {
-          sent++
-          // Mark as sent
-          await sb.from('notifications').update({ email_sent_at: new Date().toISOString() }).eq('id', notif.id)
+    let sent = 0
+    let deferred = 0
+    let deduped = 0
+    const errors: string[] = []
+    const nowIso = new Date().toISOString()
+
+    for (const [recipientId, items] of orderedRecipients) {
+      const member = memberById.get(recipientId)
+      if (!member?.email) continue
+
+      // Split: ALWAYS_INDIVIDUAL (rich digests + onboarding-prep + governance)
+      // render one email each; everything else coalesces into one list email.
+      const individual = items.filter((n: any) => ALWAYS_INDIVIDUAL_TYPES.has(n.type))
+      const coalesce = items.filter((n: any) => !ALWAYS_INDIVIDUAL_TYPES.has(n.type))
+
+      // Dedup rich digests: a recipient sometimes has >1 of the SAME rich type in a
+      // run (producer re-run / fan-out — audit: weekly_member_digest 2.2×/pessoa).
+      // Send only the newest per type; mark the rest sent so they don't re-queue.
+      const newestRichByType = new Map<string, any>()
+      const richDupIds: string[] = []
+      const individualToSend: any[] = []
+      for (const n of individual) {
+        if (!RICH_DIGEST_TYPES.has(n.type)) { individualToSend.push(n); continue }
+        const cur = newestRichByType.get(n.type)
+        if (!cur || new Date(n.created_at).getTime() > new Date(cur.created_at).getTime()) {
+          if (cur) richDupIds.push(cur.id)
+          newestRichByType.set(n.type, n)
         } else {
-          const err = await res.json()
-          errors.push(`${member.email}: ${err.message || res.status}`)
+          richDupIds.push(n.id)
         }
-      } catch (e) {
-        errors.push(`${member.email}: ${String(e)}`)
+      }
+      for (const n of newestRichByType.values()) individualToSend.push(n)
+      if (richDupIds.length) {
+        await sb.from('notifications').update({ email_sent_at: nowIso }).in('id', richDupIds)
+        deduped += richDupIds.length
+      }
+
+      // Build the send list: one coalesced email (if any simple rows) + one email
+      // per individual notification.
+      const sends: { ids: string[]; subject: string; html: string; idemKey: string }[] = []
+      if (coalesce.length === 1) {
+        sends.push({
+          ids: [coalesce[0].id],
+          subject: subjectFor(coalesce[0]),
+          html: buildHtml(coalesce[0], member.email),
+          idemKey: `critical-notification/${coalesce[0].id}`,
+        })
+      } else if (coalesce.length > 1) {
+        const ids = coalesce.map((n: any) => n.id)
+        const anchor = ids.slice().sort()[0]
+        sends.push({
+          ids,
+          subject: `Você tem ${coalesce.length} novas notificações — Nucleo IA & GP`,
+          html: buildCoalescedHtml(coalesce),
+          idemKey: `coalesced-notification/${recipientId}/${anchor}`,
+        })
+      }
+      for (const n of individualToSend) {
+        sends.push({
+          ids: [n.id],
+          subject: subjectFor(n),
+          html: buildHtml(n, member.email),
+          idemKey: `critical-notification/${n.id}`,
+        })
+      }
+
+      for (const s of sends) {
+        // Fase B: stop once this run has consumed the day's remaining budget.
+        // Deferred rows keep email_sent_at NULL → next */5 run or next day.
+        if (sent >= dailyBudget) { deferred += s.ids.length; continue }
+        try {
+          // Resend Idempotency-Key prevents duplicate sends on retry after a
+          // successful API call.
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${rkey}`,
+              'Content-Type': 'application/json',
+              'Idempotency-Key': s.idemKey,
+            },
+            body: JSON.stringify({
+              from: `Nucleo IA e GP <${from}>`,
+              to: [member.email],
+              subject: s.subject,
+              html: s.html,
+            }),
+          })
+
+          if (res.ok) {
+            sent++
+            // Mark every row this email covered as sent.
+            await sb.from('notifications').update({ email_sent_at: new Date().toISOString() }).in('id', s.ids)
+          } else {
+            const err = await res.json().catch(() => ({}))
+            errors.push(`${member.email}: ${err.message || res.status}`)
+          }
+        } catch (e) {
+          errors.push(`${member.email}: ${String(e)}`)
+        }
       }
     }
 
-    return new Response(JSON.stringify({ sent, total: notifications.length, errors }), {
+    return new Response(JSON.stringify({
+      sent, deferred, deduped,
+      recipients: orderedRecipients.length,
+      totalRows: notifications.length,
+      sentToday, cap: DAILY_SEND_CAP, dailyBudget,
+      errors,
+    }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (e) {
