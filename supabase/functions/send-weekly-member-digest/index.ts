@@ -1,5 +1,9 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
+
+// #1513 onda 3: read once at module scope so the caller gate and the handler share it.
+const SUPABASE_URL_FOR_AUTH = Deno.env.get('SUPABASE_URL') ?? ''
 
 /**
  * Edge Function: send-weekly-member-digest
@@ -33,6 +37,21 @@ Deno.serve(async (req) => {
     new Response(JSON.stringify(d), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
 
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  // #1513 onda 3: service-role only.
+  //
+  // Esta EF não estava na lista do issue — o grep original a perdeu. Medida
+  // 2026-07-28: verify_jwt=false e NENHUMA verificação de chamador, exatamente o
+  // mesmo perfil da irmã send-notification-email (#1514). Um POST anônimo
+  // disparava o envio do digest semanal para todos os membros optados,
+  // queimando a mesma cota Resend compartilhada que já foi incidente (#1424).
+  //
+  // Chamador legítimo único: pg_cron jobid 26 (sáb 12:00 UTC), que manda a
+  // service_role_key do Vault — aceita pelo probe PostgREST (#738). Fail-closed
+  // antes de qualquer RPC ou envio.
+  if (!(await isServiceRoleToken(SUPABASE_URL_FOR_AUTH, bearerFrom(req)))) {
+    return json({ error: 'unauthorized', detail: 'service-role only' }, 401)
+  }
 
   try {
     const url = Deno.env.get('SUPABASE_URL') ?? ''
