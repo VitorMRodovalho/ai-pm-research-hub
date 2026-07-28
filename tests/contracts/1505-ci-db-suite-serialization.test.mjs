@@ -54,7 +54,10 @@ for (const [job, file] of Object.entries(DB_JOBS)) {
     assert.ok(existsSync(p), `deve existir: ${file}`);
     const block = jobBlock(readFileSync(p, 'utf8'), job);
 
-    assert.match(block, new RegExp(`uses:\\s*\\./${LANE_ACTION.replace(/\//g, '\\/')}`),
+    // Comparação literal, não regex montado a partir de string: escapar caminho para dentro
+    // de um RegExp é fonte de alerta de sanitização incompleta (CodeQL js/incomplete-sanitization,
+    // levantado neste arquivo) e aqui não compra nada — o que se quer é a linha exata.
+    assert.ok(block.includes(`uses: ./${LANE_ACTION}`),
       `${job} deve entrar na faixa do banco; sem isso volta a rodar concorrente com o outro job`);
 
     // Grupo de concorrencia por REF nao serializa main contra PR — foi a colisao do #1505 —
