@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
+
+// #1513: read once at module scope so the caller gate and the handler share it.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 
 // ── Artia GraphQL API ──
 const ARTIA_GQL = 'https://api.artia.com/graphql'
@@ -259,6 +263,22 @@ async function runDiscoveryMode(sb: any, token: string): Promise<any> {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  // #1513: service-role only. Measured live 2026-07-28 on the DEPLOYED body
+  // (version 51): `req.headers.get` appeared ZERO times and verify_jwt=false, so
+  // the EF had no caller check of any kind and was reachable unauthenticated
+  // from the public internet. A call with no `mode` falls through every branch
+  // into the default full KPI sync, which writes to the Artia API and inserts
+  // into mcp_usage_log — so an anonymous POST performed real external writes.
+  // The 3 legitimate callers are pg_cron jobids 11/34/35, all sending the vault
+  // service_role_key, which isServiceRoleToken accepts via the PostgREST probe
+  // (#738). Fail-closed before the mode is even parsed.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: 'unauthorized', detail: 'service-role only' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
 
   // Parse mode from query params or JSON body
   const url = new URL(req.url)

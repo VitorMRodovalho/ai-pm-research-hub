@@ -18,6 +18,7 @@
  *   4. Use returned access_token (1h TTL) to call Drive API V3 files.list
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken, bearerFrom } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -112,6 +113,19 @@ async function listDriveFolderFiles(folderId: string, accessToken: string): Prom
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+  }
+
+  // #1513: service-role only. Measured live 2026-07-28 — this EF deployed with
+  // verify_jwt=false and had NO caller check of any kind, so an unauthenticated
+  // POST from the public internet reached the Drive listing of any folder id. Every legitimate caller
+  // (drive-discover-atas, which sends the injected SERVICE_ROLE_KEY) is server-to-server with a service-role
+  // credential, so the gate is non-breaking. Fail-closed BEFORE any Vault read,
+  // Drive call or DB write.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized", detail: "service-role only" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   let body: { folder_id?: string };

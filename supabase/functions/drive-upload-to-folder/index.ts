@@ -34,6 +34,7 @@
  * Não há endpoint de delete aqui de propósito: apagar arquivo do Drive fica fora da automação.
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken, bearerFrom } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -173,6 +174,19 @@ async function uploadFile(
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+  }
+
+  // #1513: service-role only. Measured live 2026-07-28 — this EF deployed with
+  // verify_jwt=false and had NO caller check of any kind, so an unauthenticated
+  // POST from the public internet reached file upload into the organization Drive. Every legitimate caller
+  // (the nucleo-mcp upload tool, which sends the injected SERVICE_ROLE_KEY) is server-to-server with a service-role
+  // credential, so the gate is non-breaking. Fail-closed BEFORE any Vault read,
+  // Drive call or DB write.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized", detail: "service-role only" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   let body: { folder_id?: string; filename?: string; mime_type?: string; content_text?: string; content_base64?: string; overwrite?: boolean };
