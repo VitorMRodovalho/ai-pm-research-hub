@@ -85,12 +85,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [submittingLeaderReview, setSubmittingLeaderReview] = useState(false);
 
   // #1496 — a junção é lida de `itemAssignments`, a MESMA fonte que renderiza os
-  // participantes (get_item_assignments, no efeito abaixo), e não mais da prop
-  // `item.assignments`. Motivo: o board de tribo é montado por domainKey
-  // (src/pages/tribe/[id].astro) e cai em `get_board_by_domain`, que não lê
-  // board_item_assignments nem devolve `assignments` — só `get_board` devolve. A prop
-  // chegava sempre vazia nessa rota, então o card exibia dois participantes enquanto o
-  // gate enxergava zero, e "Pegar para mim" não destravava nem após recarregar.
+  // participantes (get_item_assignments, no efeito abaixo), e não da prop
+  // `item.assignments`: o efeito recarrega essa lista depois do claim, então o gate
+  // enxerga a atribuição recém-criada sem depender de um refetch do board inteiro.
+  //
+  // ⚠️ CORREÇÃO (#1500, medido 2026-07-28): a justificativa ORIGINAL deste trecho dizia que
+  // `get_board_by_domain` não devolve `assignments`. É FALSO. O corpo vivo dela termina em
+  // `RETURN public.get_board(v_board_id)` desde a migration 20260428180000, e uma chamada
+  // ao board de tribo devolveu `assignments` em 8 de 8 itens. As duas RPCs servem o MESMO
+  // payload. A causa real do "Pegar para mim" não destravar segue sem medição — não
+  // reconstrua um diagnóstico a partir do comentário antigo.
   const isCardAssignee = !!permissions.member?.id && (
     item.assignee_id === permissions.member.id ||
     itemAssignments.some((a) => a.member_id === permissions.member.id)
