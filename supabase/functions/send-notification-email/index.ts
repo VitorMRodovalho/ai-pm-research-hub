@@ -1,5 +1,9 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
+
+// #1513: read once at module scope so the caller gate and the handler share it.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 
 // ADR-0022 W1 (2026-04-26): filter migrated from hardcoded CRITICAL_TYPES list to
 // notifications.delivery_mode. The catalog at docs/adr/ADR-0022-notification-types-catalog.json
@@ -639,9 +643,36 @@ function buildCoalescedHtml(items: any[]): string {
     </div>`
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // #1513 — caller auth: service-role only.
+  //
+  // Measured live 2026-07-28: version 34, verify_jwt=false, and the handler
+  // signature was `(_req)` — the request was discarded, so the EF had NO caller
+  // check of any kind and was reachable unauthenticated from the public
+  // internet. An anonymous POST could (a) force-drain the transactional queue
+  // on demand, burning the Resend daily quota this lane shares with the
+  // campaign lane (#1424 was a real incident), and (b) read member e-mail
+  // addresses straight out of the response, which echoes them in `errors[]`.
+  //
+  // The sole legitimate caller is pg_cron jobid 9 (*/5 * * * *), which sends the
+  // vault-stored `service_role_key`. That key is NOT the env key Supabase
+  // injects here, so the literal fast-path misses and isServiceRoleToken falls
+  // through to the PostgREST signature probe (#738) — the same path already
+  // carrying 4 other cron-driven gated EFs in production, which is why this
+  // gate is non-breaking. A forged token claiming `service_role` fails the
+  // probe.
+  //
+  // Placed as the first statement in the handler: fail-closed BEFORE the Resend
+  // key is read, before any DB client exists, and before any row is fetched.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: 'unauthorized', detail: 'service-role only' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+
   try {
-    const url = Deno.env.get('SUPABASE_URL') ?? ''
+    const url = SUPABASE_URL
     const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const rkey = Deno.env.get('RESEND_API_KEY') ?? ''
     const from = Deno.env.get('RESEND_FROM_ADDRESS') || 'nucleoia@pmigo.org.br'

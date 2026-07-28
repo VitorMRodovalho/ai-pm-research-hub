@@ -152,7 +152,11 @@ test('#301: shared drive-sa.ts exports the SA auth helpers reused from #209', ()
   assert.match(driveSa, /export const DRIVE_WRITE_SCOPE/);
   assert.match(driveSa, /export async function getServiceAccountKey/);
   assert.match(driveSa, /export async function getAccessToken/);
-  assert.match(driveSa, /export function bearerFrom/);
+  // #1513 re-homed bearerFrom to _shared/service-auth.ts (it is caller-auth, not
+  // Drive) and drive-sa.ts re-exports it. What #301 guards is the export SURFACE
+  // — that importers of drive-sa.ts still get bearerFrom — so accept either form.
+  // The single-implementation invariant is guarded by 1513-…-auth-gate.test.mjs.
+  assert.match(driveSa, /export (?:function bearerFrom|\{ bearerFrom \} from ")/);
   assert.match(grantEf, /from "\.\.\/_shared\/drive-sa\.ts"/);
 });
 

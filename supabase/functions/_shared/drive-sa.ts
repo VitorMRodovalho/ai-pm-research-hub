@@ -58,7 +58,7 @@ export async function getAccessToken(saKey: any, scope: string): Promise<string>
   return (await res.json()).access_token;
 }
 
-export function bearerFrom(req: Request): string | null {
-  const h = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
-  return h.startsWith("Bearer ") ? h.slice(7) : null;
-}
+// #1513: moved to _shared/service-auth.ts (its natural home — caller-auth, not
+// Drive) and re-exported here so every existing `from "../_shared/drive-sa.ts"`
+// importer keeps working. One implementation, two import paths.
+export { bearerFrom } from "./service-auth.ts";
