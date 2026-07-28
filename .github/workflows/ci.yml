@@ -76,9 +76,18 @@ jobs:
         # tests can't race global-invariant readers within one run (the shared
         # remote project has no per-run isolation). Do NOT reintroduce parallel
         # file execution here without an isolated tenant.
+        #
+        # SUPABASE_ANON_KEY habilita tests/edge-functions/ef-smoke.test.mjs, o
+        # unico lugar que verifica auth de EF DEPLOYADA. Sem ela o arquivo rodava
+        # e pulava em silencio — a lacuna declarada como limite nos 4 PRs do
+        # #1513. Consequencia aceita (PM, 2026-07-28): esses smokes afirmam sobre
+        # PRODUCAO, e merge precede deploy, entao um PR que aperta auth de EF fica
+        # vermelho ate o deploy acontecer. Deploye a EF ANTES de mergear o PR.
+        # Guard da fiacao: tests/contracts/1513-ef-smoke-wired-into-ci.test.mjs.
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm test
         
       - name: Build Project
