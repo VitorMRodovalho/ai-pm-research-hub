@@ -31,6 +31,37 @@ test('#1443 OnboardingChecklist: celebration ack is awaited on both Fechar and t
   assert.match(OC, /await sb\.rpc\('acknowledge_milestone', \{ p_milestone_key: 'onboarding_complete' \}\)/,
     'onboarding_complete ack must be awaited');
   assert.match(OC, /const dismissCelebration = async \(\)/, 'dismissCelebration is async');
-  assert.match(OC, /onClick=\{async \(e\) => \{ e\.preventDefault\(\); await acknowledgeOnboarding\(\); window\.location\.href = ctaHref/,
+  assert.match(OC, /onClick=\{async \(e\) => \{[\s\S]*?e\.preventDefault\(\); await acknowledgeOnboarding\(\); window\.location\.href = ctaHref/,
     'onboarding CTA must acknowledge before navigating');
+});
+
+// The two assertions below cover defects found while reviewing THIS fix, not the original bug.
+// Both are ways the fix itself could regress, so they belong with it rather than in a follow-up.
+
+test('#1443 both CTAs preserve ctrl/cmd/shift+click (open in new tab)', () => {
+  // Calling preventDefault unconditionally hijacks a modified click into a same-tab navigation.
+  // On a modified click THIS page does not navigate, so the ack cannot be cancelled and the
+  // handler must bail out before preventDefault.
+  for (const [name, src] of [['MilestoneCelebration', MC], ['OnboardingChecklist', OC]]) {
+    const handler = src.slice(src.indexOf('onClick={async (e)'));
+    const modifierIdx = handler.search(/e\.metaKey \|\| e\.ctrlKey \|\| e\.shiftKey \|\| e\.altKey/);
+    const preventIdx = handler.indexOf('e.preventDefault()');
+    assert.ok(modifierIdx !== -1, `${name}: CTA must detect a modified click`);
+    assert.ok(modifierIdx < preventIdx,
+      `${name}: the modified-click bail-out must come BEFORE preventDefault`);
+  }
+});
+
+test('#1443 dismiss acknowledges BEFORE hiding the card, in both components', () => {
+  // Hiding first re-opens the very race this issue is about: the user closes, navigates, and the
+  // in-flight write dies. MilestoneCelebration awaits then advances; OnboardingChecklist must match.
+  const oc = OC.slice(OC.indexOf('const dismissCelebration'));
+  const ackIdx = oc.indexOf('await acknowledgeOnboarding()');
+  const hideIdx = oc.indexOf('setCelebrationPending(false)');
+  assert.ok(ackIdx !== -1 && hideIdx !== -1, 'dismissCelebration must ack and hide');
+  assert.ok(ackIdx < hideIdx, 'the ack must be awaited BEFORE the card is hidden');
+
+  const mc = MC.slice(MC.indexOf('const dismiss = useCallback'));
+  assert.ok(mc.indexOf('await acknowledge(current)') < mc.indexOf('advance(current)'),
+    'MilestoneCelebration must await the ack before advancing the queue');
 });

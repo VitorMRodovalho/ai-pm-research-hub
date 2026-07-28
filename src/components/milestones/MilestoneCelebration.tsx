@@ -175,11 +175,14 @@ export default function MilestoneCelebration({ lang = 'pt-BR' }: Props) {
             onClick={async (e) => {
               // Acknowledge BEFORE leaving — otherwise the CTA path never marks the milestone seen
               // and the card reappears on the destination (and every page after).
-              if (current) {
-                e.preventDefault();
-                await acknowledge(current);
-                window.location.href = href;
-              }
+              if (!current) return;
+              // Modified click (ctrl/cmd/shift/alt) opens elsewhere and THIS page does not navigate,
+              // so the ack is in no danger of being cancelled. preventDefault here would silently
+              // break "open in new tab", so acknowledge without it and let the browser do its thing.
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { void acknowledge(current); return; }
+              e.preventDefault();
+              await acknowledge(current);
+              window.location.href = href;
             }}
             className="min-h-[44px] inline-flex items-center px-4 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-semibold no-underline hover:bg-emerald-100/50"
           >

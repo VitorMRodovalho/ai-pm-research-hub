@@ -160,8 +160,10 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
       try { await sb.rpc('acknowledge_milestone', { p_milestone_key: 'onboarding_complete' }); } catch { /* best-effort */ }
     };
     const dismissCelebration = async () => {
-      setCelebrationPending(false);
+      // Ack FIRST, hide after — mirrors MilestoneCelebration.dismiss. Hiding first would let a
+      // close-then-navigate land back in the very window this issue is about (write still in flight).
       await acknowledgeOnboarding();
+      setCelebrationPending(false);
     };
     const ctaHref = `${lp}/gamification`;
     return (
@@ -169,7 +171,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
         <h2 className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">{c.title}</h2>
         <p className="text-xs text-emerald-800 dark:text-emerald-200 mt-1.5 leading-relaxed">{c.body}</p>
         <div className="mt-3 flex items-center justify-center gap-2">
-          <a href={ctaHref} onClick={async (e) => { e.preventDefault(); await acknowledgeOnboarding(); window.location.href = ctaHref; }} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[0.6875rem] font-bold no-underline hover:bg-emerald-700">{c.cta}</a>
+          <a href={ctaHref} onClick={async (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { void acknowledgeOnboarding(); return; } e.preventDefault(); await acknowledgeOnboarding(); window.location.href = ctaHref; }} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[0.6875rem] font-bold no-underline hover:bg-emerald-700">{c.cta}</a>
           <button onClick={dismissCelebration} className="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-[0.6875rem] font-semibold bg-transparent cursor-pointer hover:bg-emerald-100/50">{c.dismiss}</button>
         </div>
       </div>
