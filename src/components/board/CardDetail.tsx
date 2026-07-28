@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus, type ChecklistItem } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
+import { parseDateOnly } from '../../lib/date-only';
 import { canFor } from '../../lib/permissions';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
@@ -1358,7 +1359,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       <span className="text-[9px] text-amber-600 font-bold" title={`Locked em ${new Date(item.baseline_locked_at).toLocaleDateString('pt-BR')}`}>🔒</span>
                     ) : baselineDate ? (
                       (() => {
-                        const daysSince = Math.round((Date.now() - new Date(baselineDate).getTime()) / 86400000);
+                        const daysSince = Math.round((Date.now() - parseDateOnly(baselineDate)!.getTime()) / 86400000); // #1501
                         const remaining = 7 - daysSince;
                         return remaining > 0
                           ? <span className="text-[9px] text-blue-500 font-medium">🔓 ({remaining}d restantes)</span>
@@ -1431,9 +1432,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 {baselineDate && forecastDate && (
                   (() => {
                     const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const baseline = new Date(baselineDate);
-                    const forecast = new Date(forecastDate);
-                    const actual = actualDate ? new Date(actualDate) : null;
+                    // #1501 — colunas `date` como data local (ver src/lib/date-only.ts).
+                    const baseline = parseDateOnly(baselineDate)!;
+                    const forecast = parseDateOnly(forecastDate)!;
+                    const actual = parseDateOnly(actualDate);
                     let color: string, icon: string, label: string;
                     if (actual) {
                       const diff = Math.round((actual.getTime() - baseline.getTime()) / 86400000);

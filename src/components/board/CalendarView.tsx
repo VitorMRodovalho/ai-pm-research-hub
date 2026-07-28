@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { BoardItem, BoardI18n } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
+import { parseDateOnly } from '../../lib/date-only';
 
 interface Props {
   items: BoardItem[];
@@ -44,8 +45,8 @@ export default function CalendarView({ items, i18n, onOpenDetail }: Props) {
     items.forEach((item) => {
       const dateStr = item.forecast_date || item.due_date;
       if (!dateStr) return;
-      const d = new Date(dateStr);
-      if (d.getFullYear() === year && d.getMonth() === month) {
+      const d = parseDateOnly(dateStr); // #1501 — senão o item cai na célula do dia anterior
+      if (d && d.getFullYear() === year && d.getMonth() === month) {
         const key = d.getDate().toString();
         if (!map.has(key)) map.set(key, []);
         map.get(key)!.push(item);
