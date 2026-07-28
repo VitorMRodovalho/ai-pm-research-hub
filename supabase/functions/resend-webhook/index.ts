@@ -4,6 +4,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { parseWebhookEvent } from '../_shared/webhook-parser.ts'
+import { verifySvixSignature } from '../_shared/svix.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,41 @@ Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-    const payload = await req.json()
+    // ─── #1513 onda 4 — verificação de assinatura Svix ────────────────────────
+    //
+    // Esta EF era a única das 8 abertas do #1513 que não fecha com service-role:
+    // quem a chama é a Resend, de fora, sem credencial nossa. Ela já declarava os
+    // headers `svix-*` no CORS, mas NUNCA verificava a assinatura — declarar o
+    // header não é validá-lo.
+    //
+    // O que estava aberto não era só "webhook falso". Esta EF insere em
+    // `email_webhook_events`, e é dessa tabela que `send-notification-email`
+    // deriva o DAILY_SEND_CAP (#1424): `dailyBudget = 90 - sentToday`. Inserir 90
+    // eventos `email.sent` forjados zera o orçamento e PARA toda a lane de e-mail
+    // transacional (aprovações, termos, convites de entrevista), com a plataforma
+    // reportando `{"capped": true}` — o sintoma parece cota estourada, não ataque.
+    //
+    // O corpo tem de ser lido CRU. Reserializar o JSON depois de parsear muda
+    // espaçamento e ordem de chaves e invalida a assinatura; por isso `text()`
+    // aqui e `JSON.parse` só depois de verificar.
+    const rawBody = await req.text()
+    const ok = await verifySvixSignature(
+      rawBody,
+      req.headers,
+      Deno.env.get('RESEND_WEBHOOK_SECRET'),
+    )
+    if (!ok) {
+      // Fail-closed inclusive quando o segredo não está configurado. Um segredo
+      // ausente nunca autoriza (bug #618 do backup-to-r2).
+      return json({ error: 'unauthorized', detail: 'invalid or missing svix signature' }, 401)
+    }
+
+    let payload: any
+    try {
+      payload = JSON.parse(rawBody)
+    } catch {
+      return json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = parseWebhookEvent(payload)
     const { eventType, resendId, recipientEmail } = parsed
 

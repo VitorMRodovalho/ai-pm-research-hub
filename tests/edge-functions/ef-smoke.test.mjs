@@ -48,10 +48,13 @@ test('smoke: verify-credly rejects the anon key (#1513 onda 3)', { skip: !canRun
   assert.ok(json !== null, 'Response should be valid JSON');
 });
 
-test('smoke: resend-webhook handles unknown event', { skip: !canRun && skipMsg }, async () => {
+test('smoke: resend-webhook rejects an unsigned request (#1513 onda 4)', { skip: !canRun && skipMsg }, async () => {
+  // Este teste afirmava que a EF aceitava (200) qualquer evento — o que era
+  // exatamente o buraco: sem verificar a assinatura Svix, qualquer um inseria em
+  // email_webhook_events, tabela de onde send-notification-email deriva o
+  // DAILY_SEND_CAP. 90 eventos `email.sent` forjados paravam a lane de e-mail.
   const { status, json } = await efPost('resend-webhook', { type: 'test.ping', data: {} });
-  // Webhook handler should accept the request (200) or reject missing fields (400)
-  assert.ok([200, 400].includes(status), `Expected 200/400, got ${status}`);
+  assert.ok(status === 401, `Expected 401, got ${status}`);
   assert.ok(json !== null, 'Response should be valid JSON');
 });
 
