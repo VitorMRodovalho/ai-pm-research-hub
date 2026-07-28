@@ -90,8 +90,12 @@ test('1496: isCardAssignee le a MESMA fonte que renderiza os participantes', () 
   assert.ok(decl, 'isCardAssignee deve existir em CardDetail');
   assert.match(decl, /itemAssignments\.some/,
     'a junção deve vir do state itemAssignments (get_item_assignments), a mesma fonte da UI');
-  // get_board_by_domain (rota do board de tribo) nao devolve `assignments`, entao a prop
-  // chega vazia e o gate enxergaria zero participantes enquanto a tela exibe dois.
+  // NOTA (#1500, medido 2026-07-28): a justificativa original desta asserção era que
+  // `get_board_by_domain` nao devolve `assignments`. Medido contra o corpo vivo: ela delega
+  // para get_board desde 20260428180000 e o payload da rota de tribo traz `assignments` em
+  // 8 de 8 itens. A asserção continua valendo por outro motivo — `itemAssignments` recarrega
+  // apos o claim, a prop do board so mudaria com refetch do board inteiro — e nao por
+  // divergencia de payload, que nao existe.
   assert.doesNotMatch(decl, /item\.assignments/,
     'isCardAssignee nao pode voltar a ler a prop item.assignments');
 });
