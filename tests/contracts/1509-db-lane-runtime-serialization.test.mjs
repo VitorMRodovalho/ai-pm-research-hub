@@ -99,6 +99,29 @@ for (const { job, file } of LANE) {
   });
 }
 
+// ── 2b. A espera tem de caber no orçamento do job ────────────────────────────
+
+test('1509: o teto de espera cabe dentro do timeout de cada job da faixa', () => {
+  const maxWait = Number(
+    readFileSync(ACTION, 'utf8').match(/max-wait-seconds:[\s\S]*?default:\s*'(\d+)'/)?.[1],
+  );
+  assert.ok(Number.isFinite(maxWait), 'o default de max-wait-seconds deve ser legivel');
+
+  for (const { job, file } of LANE) {
+    const block = jobBlock(readWorkflow(file), job);
+    const timeout = Number(block.match(/timeout-minutes:\s*(\d+)/)?.[1]);
+    assert.ok(Number.isFinite(timeout), `${job} deve declarar timeout-minutes`);
+
+    // A espera corre DENTRO do orçamento do job. Se o teto de espera não couber, o runner
+    // mata o job por timeout antes de o script imprimir a mensagem de teto estourado — e um
+    // job morto pelo runner é de novo um gate que não rodou por motivo obscuro, que é
+    // exatamente o estado que o #1509 existe para eliminar. Observado ao vivo no primeiro
+    // run deste PR: check-invariants tinha timeout-minutes 5 contra 900s de teto de espera.
+    assert.ok(timeout * 60 > maxWait,
+      `${job}: timeout-minutes=${timeout} (${timeout * 60}s) nao cobre o teto de espera de ${maxWait}s`);
+  }
+});
+
 // ── 3. A espera não pode falhar passando ─────────────────────────────────────
 
 test('1509: a acao existe e declara a faixa igual aos jobs reais', () => {

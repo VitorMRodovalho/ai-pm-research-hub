@@ -44,7 +44,10 @@ jobs:
     # kill intra-run collisions on the shared remote project. Serial ≈ 6 min
     # (vs ~2 min parallel), so bumped 10 -> 15 for margin over the full job
     # (install + lint + serial test + build + smoke).
-    timeout-minutes: 15
+    # #1509: a espera pela faixa do banco corre DENTRO deste orcamento, entao o teto
+    # precisa cobrir espera (ate 900s) + trabalho. Job morto por timeout do runner nao
+    # imprime a mensagem de teto estourado. Travado no guard.
+    timeout-minutes: 32
     steps:
       - uses: actions/checkout@v6
 

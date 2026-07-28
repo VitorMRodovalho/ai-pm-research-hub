@@ -18,7 +18,12 @@ concurrency:
 jobs:
   check-invariants:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # #1509 — o trabalho em si leva ~5 min, mas a ESPERA pela faixa do banco corre dentro do
+    # mesmo orcamento. Com `timeout-minutes: 5` o job morria esperando, e um job morto por
+    # timeout do runner nao imprime a mensagem de teto estourado — volta a ser um gate que
+    # nao rodou por motivo obscuro, que e o que este issue existe para eliminar.
+    # Regra: timeout do job > teto de espera (900s) + trabalho. Travado no guard.
+    timeout-minutes: 25
     # #1509 — este job e `validate` (ci.yml) falam com o MESMO banco de producao e nao
     # podem se sobrepor, mas a serializacao nao usa mais o grupo `supabase-shared-db` do
     # #1505 (o nome saiu de todos os workflows, de proposito): a fila do
