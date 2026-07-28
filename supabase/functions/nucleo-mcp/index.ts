@@ -12130,9 +12130,41 @@ function countRegisteredTools(...registrars: Array<(mcp: McpServer, sb: Sb) => v
 const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);       // /mcp full catalog
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
+// #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
+//
+// As três superfícies abaixo constroem o transporte com `sessionIdGenerator: undefined`,
+// que é o modo stateless: não existe sessão para sustentar um canal servidor→cliente.
+// Como estão registradas com `app.all`, o GET caía no `handleRequest` e abria um stream
+// que nunca emitia e nunca fechava. Medido em 2026-07-28 contra as três rotas: GET com
+// `Accept: text/event-stream` pendura até o timeout do cliente, sem sequer devolver
+// cabeçalho de resposta. Um cliente externo (IDE) lê isso como servidor travado.
+//
+// Pior: o stream abre ANTES de qualquer validação do bearer, então nem token inválido
+// recebe 401 — só pendura. Sem o header SSE a mesma rota responde 406 em ~1s, o que
+// mostrava que a requisição chegava ao transporte e parava ali dentro.
+//
+// A resposta correta para servidor stateless é 405 com `Allow`, e o cliente cai para
+// POST, que é por onde o MCP realmente conversa (initialize responde em <1s).
+function statelessGetNotAllowed(req: Request): Response | null {
+  if (req.method !== "GET") return null;
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id: null,
+      error: {
+        code: -32000,
+        message: "Method Not Allowed: this MCP surface is stateless (no server-initiated stream). Use POST.",
+      },
+    }),
+    { status: 405, headers: { "content-type": "application/json", "allow": "POST, OPTIONS" } },
+  );
+}
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
 // SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -12162,6 +12194,8 @@ app.all("/mcp", async (c) => {
 // 4 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
 // for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors Directory).
 app.all("/semantic", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -12190,6 +12224,8 @@ app.all("/semantic", async (c) => {
 // ACTIONS_ALLOWLIST subset (via filterToAllowlist), no registerKnowledge (reads/prompts/resources
 // stay on /mcp). Consumed as a SECOND Claude connector alongside /mcp.
 app.all("/actions", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
