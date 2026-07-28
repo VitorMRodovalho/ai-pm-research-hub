@@ -47,12 +47,20 @@ function rpcBlock(sql) {
   return sql.match(re)?.[0] || '';
 }
 
+/**
+ * A posse da atividade tem de ser derivada de `assigned_to`, mas a expressão pode vir
+ * envolvida por guarda de null-safety (o #1498 a envolveu em `coalesce(..., false)`).
+ * O que esta asserção trava é a DERIVAÇÃO, não a formatação exata da linha.
+ */
+const ACTIVITY_OWNER_DERIVATION =
+  /v_is_activity_owner\s*:=[^;]{0,60}?v_item\.assigned_to\s*=\s*v_caller\.id/i;
+
 // ── Lado servidor ────────────────────────────────────────────────────────────
 
 test('1496: servidor autoriza o DONO DA ATIVIDADE a concluir', () => {
   const block = rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, RPC_CAPTURE), 'utf8'));
   assert.ok(block, 'bloco de complete_checklist_item deve estar capturado na migration');
-  assert.match(block, /v_is_activity_owner\s*:=\s*v_item\.assigned_to\s*=\s*v_caller\.id/i,
+  assert.match(block, ACTIVITY_OWNER_DERIVATION,
     'a posse da atividade deve ser derivada de board_item_checklists.assigned_to');
   assert.match(block, /NOT\s+v_is_activity_owner/i,
     'o gate deve consultar v_is_activity_owner antes de negar');
@@ -112,7 +120,7 @@ test('1496: nenhuma migration posterior remove o ramo de dono-da-atividade', () 
   for (const file of all.slice(idx + 1)) {
     const block = rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, file), 'utf8'));
     if (!block) continue;
-    assert.match(block, /v_is_activity_owner\s*:=\s*v_item\.assigned_to\s*=\s*v_caller\.id/i,
+    assert.match(block, ACTIVITY_OWNER_DERIVATION,
       `${file} redefine complete_checklist_item sem preservar a posse da atividade (#1496)`);
   }
 });
