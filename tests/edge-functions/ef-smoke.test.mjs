@@ -37,10 +37,14 @@ test('smoke: sync-credly-all rejects anon token', { skip: !canRun && skipMsg }, 
   assert.ok([401, 403].includes(status), `Expected 401/403, got ${status}`);
 });
 
-test('smoke: verify-credly rejects invalid member_id', { skip: !canRun && skipMsg }, async () => {
+test('smoke: verify-credly rejects the anon key (#1513 onda 3)', { skip: !canRun && skipMsg }, async () => {
+  // Antes do #1513 esta EF não verificava chamador nenhum, e este teste media o
+  // comportamento DEPOIS do gate inexistente: a anon key entrava e o erro vinha
+  // da validação de member_id (400/500). Agora a anon key não é usuário nem
+  // service-role, então para no gate. Ela escreve em gamification_points,
+  // course_progress e members — deixar a anon key passar era o buraco.
   const { status, json } = await efPost('verify-credly', { member_id: '00000000-0000-0000-0000-000000000000' });
-  // Should return 400 (no Credly URL) or 500 (member not found)
-  assert.ok([400, 500].includes(status), `Expected 400/500, got ${status}`);
+  assert.ok(status === 401, `Expected 401, got ${status}`);
   assert.ok(json !== null, 'Response should be valid JSON');
 });
 
@@ -56,8 +60,18 @@ test('smoke: send-campaign rejects anon token', { skip: !canRun && skipMsg }, as
   assert.ok([401, 403].includes(status), `Expected 401/403, got ${status}`);
 });
 
-test('smoke: get-comms-metrics responds', { skip: !canRun && skipMsg }, async () => {
-  const { status, json } = await efPost('get-comms-metrics', {});
-  // JWT-verified: anon key should work for read-only
-  assert.ok([200, 405].includes(status), `Expected 200/405, got ${status}`);
+test('smoke: get-comms-metrics rejects the anon key (#1513 fase 2)', { skip: !canRun && skipMsg }, async () => {
+  // Este teste afirmava "JWT-verified: anon key should work for read-only", que
+  // era precisamente a premissa errada do #1513: verify_jwt=true aceita QUALQUER
+  // JWT do projeto, e a anon key é pública. Ela devolvia 200 com métricas da
+  // organização lidas em service role. Agora tem gate de service-role.
+  const { status } = await efPost('get-comms-metrics', {});
+  assert.ok(status === 401, `Expected 401, got ${status}`);
 });
+
+// ⚠️ NOTA DE MANUTENÇÃO (#1513, 2026-07-28). Este arquivo bate em PRODUÇÃO, então
+// o resultado depende do que está DEPLOYADO, não do que está na branch. O gate do
+// get-comms-metrics passou verde no CI do PR que o introduziu — porque o deploy
+// ainda não tinha acontecido — e só ficou vermelho depois. Ao mudar auth de EF,
+// espere estes smokes virarem no momento do deploy, não no do merge.
+// (Classe "invariante de CI sobre dado vivo", #1487 classe B.)

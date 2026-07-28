@@ -1,5 +1,9 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { classifyBadge, PMI_TRAIL_KEYWORDS, selectCanonicalCpmai } from '../_shared/classify-badge.ts'
+import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
+
+// #1513 onda 3: read once at module scope so the caller gate and the handler share it.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 
 // Retry with exponential backoff for external API calls
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -217,6 +221,56 @@ Deno.serve(async (req) => {
   try {
     const { member_id, credly_url } = await req.json()
     const sb = createClient<any, "public", any>(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    // ─── #1513 onda 3 — caller auth ────────────────────────────────────────────
+    //
+    // Medido 2026-07-28: esta EF deployava com verify_jwt=false e NÃO verificava
+    // o chamador. Ela não é só de leitura — com `member_id` vindo do corpo ela
+    // INSERE em gamification_points, INSERE em course_progress e faz UPDATE em
+    // members. Um chamador anônimo podia portanto creditar XP e badges a
+    // QUALQUER membro a partir de um perfil Credly que ele mesmo controla, o que
+    // quebra a invariante de que mérito pertence a quem fez o trabalho.
+    //
+    // A EF é user-facing (profile.astro chama do browser), então um gate de
+    // service-role puro quebraria a tela. Dois caminhos, espelhando pmi-ai-triage:
+    //   • service-role  → confiado, pode passar qualquer member_id (sync-credly-all)
+    //   • JWT de usuário → getUser() valida a assinatura, o membro é resolvido por
+    //     auth_id, e só o PRÓPRIO member_id é aceito. Verificar Credly é
+    //     self-service; ninguém verifica em nome de outro.
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const isServiceRole = await isServiceRoleToken(SUPABASE_URL, bearerFrom(req))
+    if (!isServiceRole) {
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      if (!anonKey) {
+        return new Response(JSON.stringify({ success: false, error: 'anon_key_missing' }), {
+          status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const userClient = createClient<any, "public", any>(SUPABASE_URL, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      })
+      const { data: userData } = await userClient.auth.getUser()
+      if (!userData?.user) {
+        return new Response(JSON.stringify({ success: false, error: 'unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: callerMember } = await sb
+        .from('members').select('id').eq('auth_id', userData.user.id).maybeSingle()
+      if (!callerMember?.id) {
+        return new Response(JSON.stringify({ success: false, error: 'member_not_found' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      // Rejeitar explicitamente em vez de sobrescrever calado: a UI já manda o
+      // próprio id, então divergência aqui é abuso, não uso legítimo.
+      if (member_id && member_id !== callerMember.id) {
+        return new Response(JSON.stringify({ success: false, error: 'forbidden', detail: 'member_id must be your own' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+    // ───────────────────────────────────────────────────────────────────────────
 
     // Resolve username
     let username: string | null = credly_url ? extractUsername(credly_url) : null
