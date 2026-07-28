@@ -2222,8 +2222,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // get_my_evaluation_feedback — own scores ONLY in post-reveal phase
-  mcp.tool("get_my_evaluation_feedback", "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.", {}, async () => {
+  // get_my_evaluation_feedback — narrative feedback all statuses; numeric scores only approved/converted (Onda 5b); evaluator notes never exposed
+  mcp.tool("get_my_evaluation_feedback", "Retorna o feedback qualitativo (narrative) da sua candidatura. Scores numéricos são retornados apenas para candidaturas aprovadas/convertidas; candidatos não selecionados veem só o status. Notas e scores por avaliador nunca são expostos (reservados ao canal formal Art. 18). Disponível após phase reveal (evaluations_closed em diante) ou status final.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_evaluation_feedback", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2857,8 +2857,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL 65: get_my_selection_result — Candidate self-view (own scores + status, rank only after final)
-  mcp.tool("get_my_selection_result", "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.", {}, async () => {
+  // TOOL 65: get_my_selection_result — Candidate self-view (breakdown/rank only for approved/converted after announcement; Onda 5b)
+  mcp.tool("get_my_selection_result", "Returns your own selection application status. Your per-criterion breakdown (scores by pillar), position vs the cutoff band, and rank are returned ONLY for approved/converted applications after the cycle result is announced; non-selected candidates see status only. Evaluator identities and notes are never returned. Works for any member who applied through the selection pipeline.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_selection_result", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -3723,8 +3723,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL: get_evaluation_results — aggregated evaluation results post-phase-close
-  mcp.tool("get_evaluation_results", "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.", {
+  // TOOL: get_evaluation_results — aggregated evaluation results, revealed once peer review completes (min_evaluators)
+  mcp.tool("get_evaluation_results", "Returns aggregated evaluation results for an application. Peer-review-gated (Onda 4, 2026-07-22): once min_evaluators objective evaluations are submitted (peer review complete), ALL evaluators' scores + names + criterion_notes are visible; before that the call is blind and raises 'Blind review'. Committee-of-cycle or manage_platform only.", {
     application_id: z.string().describe("Application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -4439,8 +4439,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_application_detail (ux Pareto #2 — payload rico para review)
-  // Wraps get_application_score_breakdown which already has phase-aware blind enforcement (ADR-0059)
-  mcp.tool("get_application_detail", "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.", {
+  // Wraps get_application_score_breakdown which has peer-review-gated blind enforcement (min_evaluators; unified Onda 4 2026-07-22)
+  mcp.tool("get_application_detail", "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. Peer-review-gated (Onda 4, 2026-07-22): before min_evaluators objective evaluations are submitted, blind mode is active (only YOUR evaluation visible); once peer review completes (min_evaluators reached), all evaluators visible with is_own flag per row. Superadmin sees all. Always call BEFORE submit_evaluation to gather context.", {
     application_id: z.string().describe("Application UUID")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -4684,7 +4684,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_vep_divergence_report — admin VEP↔Núcleo reconciliation (p152 W4 OPP-152.4)
-  mcp.tool("get_vep_divergence_report", "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).", {}, async () => {
+  mcp.tool("get_vep_divergence_report", "Returns VEP↔Núcleo divergence in 5 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/OfferExtended (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded (is_active=false) but VEP still Submitted/Active; (D) rejection_divergent — Núcleo rejected but VEP offer still open; (E) offer_retracted_active_divergent (#1445) — Núcleo approved/converted + VEP offer retracted (OfferNotExtended/Withdrawn/Declined) but member still is_active=true → offboard on the platform. Each row inclui application_id (+ member_id for bucket E), applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, rejection_count, offer_retracted_active_count, total_divergent, generated_at}. Authority: view_internal_analytics (COI recusal on open cycles). Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled; offboard for bucket E).", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_vep_divergence_report", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -12130,9 +12130,41 @@ function countRegisteredTools(...registrars: Array<(mcp: McpServer, sb: Sb) => v
 const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);       // /mcp full catalog
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
+// #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
+//
+// As três superfícies abaixo constroem o transporte com `sessionIdGenerator: undefined`,
+// que é o modo stateless: não existe sessão para sustentar um canal servidor→cliente.
+// Como estão registradas com `app.all`, o GET caía no `handleRequest` e abria um stream
+// que nunca emitia e nunca fechava. Medido em 2026-07-28 contra as três rotas: GET com
+// `Accept: text/event-stream` pendura até o timeout do cliente, sem sequer devolver
+// cabeçalho de resposta. Um cliente externo (IDE) lê isso como servidor travado.
+//
+// Pior: o stream abre ANTES de qualquer validação do bearer, então nem token inválido
+// recebe 401 — só pendura. Sem o header SSE a mesma rota responde 406 em ~1s, o que
+// mostrava que a requisição chegava ao transporte e parava ali dentro.
+//
+// A resposta correta para servidor stateless é 405 com `Allow`, e o cliente cai para
+// POST, que é por onde o MCP realmente conversa (initialize responde em <1s).
+function statelessGetNotAllowed(req: Request): Response | null {
+  if (req.method !== "GET") return null;
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id: null,
+      error: {
+        code: -32000,
+        message: "Method Not Allowed: this MCP surface is stateless (no server-initiated stream). Use POST.",
+      },
+    }),
+    { status: 405, headers: { "content-type": "application/json", "allow": "POST, OPTIONS" } },
+  );
+}
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
 // SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -12162,6 +12194,8 @@ app.all("/mcp", async (c) => {
 // 4 semantic tools (no registerKnowledge, no registerTools). Public discovery contract suitable
 // for strict MCP clients (Perplexity, OpenAI Apps SDK, Anthropic Connectors Directory).
 app.all("/semantic", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -12190,6 +12224,8 @@ app.all("/semantic", async (c) => {
 // ACTIONS_ALLOWLIST subset (via filterToAllowlist), no registerKnowledge (reads/prompts/resources
 // stay on /mcp). Consumed as a SECOND Claude connector alongside /mcp.
 app.all("/actions", async (c) => {
+  const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
+  if (getBlocked) return getBlocked;
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");

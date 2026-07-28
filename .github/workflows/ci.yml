@@ -6,9 +6,15 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+# #1505 — `cancel-in-progress` era `true`, o que matava um run em VOO quando outro
+# push chegava no mesmo ref. Como `validate` escreve na producao e `tx=rollback` nao
+# desfaz INSERT de SECURITY DEFINER, ser morto no meio deixa fixture pela metade no
+# banco. Um run de main de 2026-07-28 aparece exatamente assim (`cancelled`).
+# Agora enfileira em vez de cancelar: perde-se a supersessao de pushes seguidos, o
+# que num repo de dono unico custa alguns minutos e evita residuo em prod.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -16,14 +22,39 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    # O recurso disputado e o BANCO DE PRODUCAO compartilhado, nao o ref: com
+    # `ci-${{ github.ref }}` a main e um PR caem em grupos distintos e rodam juntos. Em
+    # 2026-07-28 dois runs ocuparam a mesma janela de 7 min e falharam em subtestes
+    # DIFERENTES dos MESMOS arquivos (#1294/#1297, #192, #693, invariantes R/S); o mesmo
+    # commit passou sozinho no re-run. `--test-concurrency=1` (#1261) nao cobre isso:
+    # serializa por PROCESSO, nao por banco.
+    #
+    # #1509 — a serializacao NAO usa mais o grupo de concorrencia global `supabase-shared-db`
+    # que o #1505 tinha introduzido aqui (se voce veio procurar por esse nome, e por isto que
+    # ele nao existe mais em workflow nenhum). A fila do GitHub
+    # guarda UM pendente por grupo e CANCELA o anterior quando um terceiro chega: com dois
+    # workflows no mesmo grupo, bastava um PR entrar enquanto a main rodava para o gate de
+    # invariantes sumir sem executar um step sequer, e "cancelled" nao le como vermelho.
+    # A espera agora acontece em runtime (`wait-for-db-lane`), com todos os jobs iniciados:
+    # nenhum e descartado, e "nao rodou" deixa de ser alcancavel em silencio.
+    permissions:
+      contents: read
+      actions: read
     # #1261: `npm test` runs DB-aware tests serially (--test-concurrency=1) to
     # kill intra-run collisions on the shared remote project. Serial ≈ 6 min
     # (vs ~2 min parallel), so bumped 10 -> 15 for margin over the full job
     # (install + lint + serial test + build + smoke).
-    timeout-minutes: 15
+    # #1509: a espera pela faixa do banco corre DENTRO deste orcamento, entao o teto
+    # precisa cobrir espera (ate 900s) + trabalho. Job morto por timeout do runner nao
+    # imprime a mensagem de teto estourado. Travado no guard.
+    timeout-minutes: 32
     steps:
       - uses: actions/checkout@v6
-      
+
+      # #1509 — logo apos o checkout: a espera e o mais barato que este job faz, entao
+      # gastar a fila aqui e melhor do que instalar dependencias para so entao esperar.
+      - uses: ./.github/actions/wait-for-db-lane
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:

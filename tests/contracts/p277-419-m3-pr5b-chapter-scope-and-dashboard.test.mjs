@@ -128,14 +128,17 @@ test('m3 PR5b DB: reliability chapter scope + 1-2 arg callers still resolve (no 
   const { data: g, error: e2 } = await sb.rpc('get_attendance_engagement_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!e2, e2?.message);
   // #1180: the point of this assertion is only that the reduced-arg call still resolves to the 4-arg fn
-  // (no ambiguous overload) and returns a working cohort — bound it by the live operational roster.
-  const { count: opCount, error: eOp } = await sb
+  // (no ambiguous overload) and returns a working cohort — bound it by the live roster.
+  // #1476 Onda 2: operational cohort is now ENGAGEMENT-based (junction v_member_operational_tiers), not the
+  // operational_role label; a dual-hat researcher labeled 'chapter_liaison' is correctly counted, so cohort_n
+  // can exceed the label roster. The junction is REVOKE'd from the API, so bound by the live active+current-cycle
+  // roster (guaranteed superset); the exact +2 delta is locked by 1476-wave2 + impersonated QA.
+  const { count: activeCount, error: eOp } = await sb
     .from('members').select('id', { count: 'exact', head: true })
-    .eq('is_active', true).eq('current_cycle_active', true)
-    .in('operational_role', ['researcher', 'tribe_leader', 'manager']);
+    .eq('is_active', true).eq('current_cycle_active', true);
   assert.ok(!eOp, eOp?.message);
-  assert.ok(Number(g.cohort_n) >= 1 && Number(g.cohort_n) <= opCount,
-    `global cohort within live operational roster, PR2-PR4 callers unbroken (got ${g.cohort_n}, roster ${opCount})`);
+  assert.ok(Number(g.cohort_n) >= 1 && Number(g.cohort_n) <= activeCount,
+    `global cohort within live active+cycle roster, PR2-PR4 callers unbroken (got ${g.cohort_n}, roster ${activeCount})`);
 });
 
 test('m3 PR5b DB: get_chapter_dashboard auth gate intact (unauthenticated → error envelope)', { skip: dbGated ? false : skipMsg }, async () => {

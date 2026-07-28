@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus } from '../../types/board';
+import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole, type CurationStatus, type ChecklistItem } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
+import { parseDateOnly } from '../../lib/date-only';
 import { canFor } from '../../lib/permissions';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
@@ -83,11 +84,39 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [leaderNotes, setLeaderNotes] = useState('');
   const [submittingLeaderReview, setSubmittingLeaderReview] = useState(false);
 
-  const isCardAssignee = permissions.member?.id && (
+  // #1496 — a junção é lida de `itemAssignments`, a MESMA fonte que renderiza os
+  // participantes (get_item_assignments, no efeito abaixo), e não da prop
+  // `item.assignments`: o efeito recarrega essa lista depois do claim, então o gate
+  // enxerga a atribuição recém-criada sem depender de um refetch do board inteiro.
+  //
+  // ⚠️ CORREÇÃO (#1500, medido 2026-07-28): a justificativa ORIGINAL deste trecho dizia que
+  // `get_board_by_domain` não devolve `assignments`. É FALSO. O corpo vivo dela termina em
+  // `RETURN public.get_board(v_board_id)` desde a migration 20260428180000, e uma chamada
+  // ao board de tribo devolveu `assignments` em 8 de 8 itens. As duas RPCs servem o MESMO
+  // payload. A causa real do "Pegar para mim" não destravar segue sem medição — não
+  // reconstrua um diagnóstico a partir do comentário antigo.
+  const isCardAssignee = !!permissions.member?.id && (
     item.assignee_id === permissions.member.id ||
-    safeArray(item.assignments).some((a: any) => a.member_id === permissions.member.id)
+    itemAssignments.some((a) => a.member_id === permissions.member.id)
   );
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && isCardAssignee));
+  // #1496 — concluir/reabrir uma ATIVIDADE é gated por posse da atividade, espelhando
+  // complete_checklist_item (v_is_activity_owner := v_item.assigned_to = v_caller.id).
+  // O gate de card (canEdit) seguia negando exatamente quem o servidor autoriza, e a aba
+  // Atividades (BoardActivitiesView) já permitia a mesma operação — duas respostas para a
+  // mesma pergunta. Editar texto/responsável/data da atividade continua sob canEdit, o que
+  // espelha assign_checklist_item (write_board / card-owner / board-admin, sem activity-owner).
+  // NÃO espelhamos o ramo `assigned_to IS NULL` do servidor, que hoje libera qualquer
+  // autenticado sem checar escopo de board: é o gap em discussão no #1498, e a UI não deve
+  // propagá-lo antes da decisão.
+  const canToggleActivity = (ci: ChecklistItem) =>
+    canEdit || (
+      mode !== 'readonly'
+      && permissions.canEditOwn
+      && !!permissions.member?.id
+      && !!ci.assigned_to
+      && ci.assigned_to === permissions.member.id
+    );
   const isCurator = permissions.canCurate;
   const isCurationItem = item.curation_status === 'curation_pending';
 
@@ -646,7 +675,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <div className="flex items-center gap-2">
                       <input type="checkbox" checked={ci.done}
                         onChange={() => toggleCheck(idx)}
-                        disabled={!canEdit}
+                        disabled={!canToggleActivity(ci)}
                         className="w-4 h-4 rounded border-[var(--border-default)] cursor-pointer accent-emerald-500" />
                       <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                         {ci.text}
@@ -1242,6 +1271,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 onRemove={handleRemoveAssignment}
                 i18n={i18n}
                 disabled={!permissions.canAssign}
+                selfMemberId={permissions.member?.id ?? null}
               />
             </div>
 
@@ -1333,7 +1363,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       <span className="text-[9px] text-amber-600 font-bold" title={`Locked em ${new Date(item.baseline_locked_at).toLocaleDateString('pt-BR')}`}>🔒</span>
                     ) : baselineDate ? (
                       (() => {
-                        const daysSince = Math.round((Date.now() - new Date(baselineDate).getTime()) / 86400000);
+                        const daysSince = Math.round((Date.now() - parseDateOnly(baselineDate)!.getTime()) / 86400000); // #1501
                         const remaining = 7 - daysSince;
                         return remaining > 0
                           ? <span className="text-[9px] text-blue-500 font-medium">🔓 ({remaining}d restantes)</span>
@@ -1406,9 +1436,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 {baselineDate && forecastDate && (
                   (() => {
                     const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const baseline = new Date(baselineDate);
-                    const forecast = new Date(forecastDate);
-                    const actual = actualDate ? new Date(actualDate) : null;
+                    // #1501 — colunas `date` como data local (ver src/lib/date-only.ts).
+                    const baseline = parseDateOnly(baselineDate)!;
+                    const forecast = parseDateOnly(forecastDate)!;
+                    const actual = parseDateOnly(actualDate);
                     let color: string, icon: string, label: string;
                     if (actual) {
                       const diff = Math.round((actual.getTime() - baseline.getTime()) / 86400000);

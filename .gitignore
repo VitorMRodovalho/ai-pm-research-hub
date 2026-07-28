@@ -128,3 +128,7 @@ docs/drafts/p277_*
 
 # Deno lockfile — EF deps are managed by the Supabase bundler; CI runs lockless (#1106)
 deno.lock
+
+# Python bytecode dos scripts de skill
+__pycache__/
+*.pyc

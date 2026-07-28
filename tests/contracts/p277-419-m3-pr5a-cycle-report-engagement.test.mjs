@@ -120,15 +120,18 @@ test('m3 PR5a DB: engagement summary exposes at_risk_count + cohort within live 
   assert.ok(!error, error?.message);
   assert.ok(data && Object.prototype.hasOwnProperty.call(data, 'at_risk_count'), 'at_risk_count key present');
   // #1180: no pinned cohort/rate bands — every band rotted as the roster legitimately changed
-  // (37 → 35 → 62 across C3→C4). Derive the bound from the live source-of-truth in the same run:
-  // the RPC cohort (rate-non-null members) is a subset of the operational-role roster.
-  const { count: opCount, error: eOp } = await sb
+  // (37 → 35 → 62 across C3→C4). Derive the bound from the live source-of-truth in the same run.
+  // #1476 Onda 2: the operational cohort is now ENGAGEMENT-based (junction v_member_operational_tiers),
+  // NOT the operational_role label — a chapter-focal + tribe-researcher dual-hat is correctly in the cohort
+  // but labeled 'chapter_liaison', so cohort_n legitimately exceeds the label roster. The junction view is
+  // REVOKE'd from the API (security), so bound cohort_n by the live active+current-cycle roster (a guaranteed
+  // superset); the exact +2 delta is locked by 1476-wave2 + impersonated QA.
+  const { count: activeCount, error: eOp } = await sb
     .from('members').select('id', { count: 'exact', head: true })
-    .eq('is_active', true).eq('current_cycle_active', true)
-    .in('operational_role', ['researcher', 'tribe_leader', 'manager']);
+    .eq('is_active', true).eq('current_cycle_active', true);
   assert.ok(!eOp, eOp?.message);
   assert.ok(Number(data.cohort_n) >= 1, `cohort non-empty (got ${data.cohort_n})`);
-  assert.ok(Number(data.cohort_n) <= opCount, `cohort_n (${data.cohort_n}) ⊆ live operational roster (${opCount})`);
+  assert.ok(Number(data.cohort_n) <= activeCount, `cohort_n (${data.cohort_n}) ⊆ live active+cycle roster (${activeCount})`);
   const rate = Number(data.avg_rate);
   assert.ok(rate > 0 && rate <= 1, `avg_rate is a valid rate (got ${rate})`);
   assert.ok(Number(data.at_risk_count) >= 0 && Number(data.at_risk_count) <= Number(data.cohort_n),

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T21:17:28.920Z",
+  "generated_at": "2026-07-23T04:48:42.328Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -102,7 +102,7 @@
     },
     {
       "name": "get_my_evaluation_feedback",
-      "description": "Retorna scores e feedback das próprias avaliações. Disponível apenas após phase reveal (evaluations_closed em diante) ou status final.",
+      "description": "Retorna o feedback qualitativo (narrative) da sua candidatura. Scores numéricos são retornados apenas para candidaturas aprovadas/convertidas; candidatos não selecionados veem só o status. Notas e scores por avaliador nunca são expostos (reservados ao canal formal Art. 18). Disponível após phase reveal (evaluations_closed em diante) ou status final.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -158,7 +158,7 @@
     },
     {
       "name": "get_my_selection_result",
-      "description": "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.",
+      "description": "Returns your own selection application status. Your per-criterion breakdown (scores by pillar), position vs the cutoff band, and rank are returned ONLY for approved/converted applications after the cycle result is announced; non-selected candidates see status only. Evaluator identities and notes are never returned. Works for any member who applied through the selection pipeline.",
       "domain": "personal",
       "permission": "read",
       "is_sensitive": false
@@ -494,7 +494,7 @@
     },
     {
       "name": "get_vep_divergence_report",
-      "description": "Returns VEP↔Núcleo divergence in 3 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/Active (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded but VEP still active. Each row inclui application_id, applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, total_divergent, generated_at}. Authority: view_internal_analytics. Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled).",
+      "description": "Returns VEP↔Núcleo divergence in 5 lifecycle buckets: (A) selection_divergent — VEP terminal (Withdrawn/Declined/OfferNotExtended) but Núcleo still in funnel; (B) onboarding_divergent — Núcleo approved/converted but VEP still Submitted/OfferExtended (recruiter PMI didn't propagate); (C) active_members_divergent — Núcleo member offboarded (is_active=false) but VEP still Submitted/Active; (D) rejection_divergent — Núcleo rejected but VEP offer still open; (E) offer_retracted_active_divergent (#1445) — Núcleo approved/converted + VEP offer retracted (OfferNotExtended/Withdrawn/Declined) but member still is_active=true → offboard on the platform. Each row inclui application_id (+ member_id for bucket E), applicant_name, email, pmi_id, cycle_code, nucleo_status, vep_status_raw, vep_last_seen_at, vep_reconciled_at, suggested_action. Summary {selection_count, onboarding_count, active_members_count, rejection_count, offer_retracted_active_count, total_divergent, generated_at}. Authority: view_internal_analytics (COI recusal on open cycles). Use when triaging 'qual o estado da reconciliação VEP?' ou pre-cycle hygiene check. Reconciliação manual via web em /admin/vep-reconciliation (mark_vep_reconciled; offboard for bucket E).",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -2377,7 +2377,7 @@
     },
     {
       "name": "get_application_detail",
-      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. During phase='evaluating': blind mode active (only YOUR evaluation visible). Post evaluations_closed: all evaluators visible with is_own flag per row. Always call BEFORE submit_evaluation to gather context.",
+      "description": "Returns full application detail for evaluator review: applicant info + score breakdown + blind_review_active flag + hidden_fields metadata. Peer-review-gated (Onda 4, 2026-07-22): before min_evaluators objective evaluations are submitted, blind mode is active (only YOUR evaluation visible); once peer review completes (min_evaluators reached), all evaluators visible with is_own flag per row. Superadmin sees all. Always call BEFORE submit_evaluation to gather context.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -2419,7 +2419,7 @@
     },
     {
       "name": "get_evaluation_results",
-      "description": "Returns aggregated evaluation results for an application (post-phase-close: all evaluators' scores visible). Pre-close: only your own per blind-review enforcement (ADR-0059). Admin/curator sees all anytime.",
+      "description": "Returns aggregated evaluation results for an application. Peer-review-gated (Onda 4, 2026-07-22): once min_evaluators objective evaluations are submitted (peer review complete), ALL evaluators' scores + names + criterion_notes are visible; before that the call is blind and raises 'Blind review'. Committee-of-cycle or manage_platform only.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

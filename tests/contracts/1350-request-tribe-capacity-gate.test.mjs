@@ -37,17 +37,26 @@ test('#1350: migration present + re-captures request_tribe_assignment', () => {
   assert.match(mig, /CREATE OR REPLACE FUNCTION public\.request_tribe_assignment\(/);
 });
 
-test('#1350: capacity gate uses tribe_capacity_limit() + the shared slot formula', () => {
-  assert.match(mig, /v_max_slots integer := public\.tribe_capacity_limit\(\)/, 'cap from SSOT');
-  assert.match(mig, /operational_role NOT IN \('sponsor', 'chapter_liaison', 'guest', 'none'\)/,
-    'same slot formula as review_tribe_request (leader counts)');
-  assert.match(mig, /v_slot_count >= v_max_slots/, 'blocks at/over cap');
-  assert.match(mig, /RAISE EXCEPTION 'Tribo lotada \(%\/%\)/, 'clear "Tribo lotada (X/Y)" message');
+// #1476 Onda 1 rebased request_tribe_assignment's slot formula onto the canonical set
+// (v_tribe_active_members). The gate BEHAVIOUR is unchanged (cap from SSOT, blocks at/over cap,
+// "Tribo lotada" before the INSERT); only the counting source moved off operational_role. The
+// live definition now lives in mig 484 — assert there, not against the stale 431 formula.
+const MIG_1476 = 'supabase/migrations/20260805000484_1476_wave1_tribe_membership_canonical.sql';
+const mig1476 = read(MIG_1476);
+
+test('#1350/#1476: capacity gate uses tribe_capacity_limit() + the canonical slot formula', () => {
+  assert.match(mig1476, /CREATE OR REPLACE FUNCTION public\.request_tribe_assignment\(/, '484 recaptures request_tribe_assignment');
+  assert.match(mig1476, /v_max_slots integer := public\.tribe_capacity_limit\(\)/, 'cap from SSOT');
+  // slot count now derives from the engagement-based canonical set, not the operational_role label
+  assert.match(mig1476, /SELECT count\(\*\) INTO v_slot_count\s*\n\s*FROM public\.v_tribe_active_members v\s*\n\s*WHERE v\.legacy_tribe_id = p_tribe_id;/,
+    'slot count derives from v_tribe_active_members (canonical, engagement-based)');
+  assert.match(mig1476, /v_slot_count >= v_max_slots/, 'blocks at/over cap');
+  assert.match(mig1476, /RAISE EXCEPTION 'Tribo lotada \(%\/%\)/, 'clear "Tribo lotada (X/Y)" message');
 });
 
-test('#1350: gate sits BEFORE the invitation INSERT (no un-approvable pending is created)', () => {
-  const gateIdx = mig.indexOf("RAISE EXCEPTION 'Tribo lotada");
-  const insertIdx = mig.indexOf('INSERT INTO public.initiative_invitations');
+test('#1350/#1476: gate sits BEFORE the invitation INSERT (no un-approvable pending is created)', () => {
+  const gateIdx = mig1476.indexOf("RAISE EXCEPTION 'Tribo lotada");
+  const insertIdx = mig1476.indexOf('INSERT INTO public.initiative_invitations');
   assert.ok(gateIdx > 0 && insertIdx > 0, 'both present');
   assert.ok(gateIdx < insertIdx, 'capacity RAISE precedes the pending INSERT');
 });

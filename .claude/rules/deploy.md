@@ -19,6 +19,14 @@ paths:
    it is the exact thing that gets stated as a stale "fact". See `reference_process_fix_and_context_hygiene_2026_05_30`.)
    - Offline (no DB env) vs with-DB (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`) differ: with-DB runs the
      DB-gated contract tests that otherwise skip. CI runs with-DB via repo secrets.
+   - ⚠️ **The with-DB suite WRITES to production and does not clean up after itself** (`tx=rollback` does not
+     undo a SECURITY DEFINER INSERT). It therefore does NOT tolerate concurrent execution: two suites over the
+     same database see each other's rows. Measured 2026-07-28 (#1505) — two CI runs in the same 7-minute window
+     failed on DIFFERENT subtests of the SAME files, and the same commit passed alone on re-run. CI now
+     serializes via the repo-global concurrency group `supabase-shared-db` (job-level, `cancel-in-progress:
+     false`), but that group does NOT know about your laptop: **do not run `npm test` locally while a CI run is
+     in flight** (`gh run list --limit 5` before starting). A red that vanishes on re-run is the signature —
+     classify it as this before hunting a code cause, and never merge over it.
    - When you add/remove a test, register it in BOTH the `"test"` and `"test:contracts"` whitelists in
      `package.json` (SEDIMENT-186.C) before running.
    - Pre-trim baseline-history narrative archived at `docs/audit/DEPLOY_TEST_BASELINE_HISTORY_ARCHIVED_2026-05-30.md`.

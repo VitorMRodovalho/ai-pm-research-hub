@@ -28,6 +28,15 @@ const MIGRATION_PATH = join(
 );
 const sql = readFileSync(MIGRATION_PATH, 'utf8');
 
+// #1152 (2026-07-21): committee_majority was a stub `false` in #975 (this migration);
+// ACTIVATED later by mig 20260805000474 (Comitê de Curadoria roster via `ip_committee`).
+// Guard both: the #975-era stub in THIS file, and the activation in the newer file.
+const MIGRATION_1152_PATH = join(
+  __dirname,
+  '../../supabase/migrations/20260805000474_1152_committee_majority_activate_ip_committee_roster.sql',
+);
+const sql1152 = readFileSync(MIGRATION_1152_PATH, 'utf8');
+
 // ─────────────────────────────────────────────────────────────────────────
 // (A) Static migration-file guards — always run
 // ─────────────────────────────────────────────────────────────────────────
@@ -44,7 +53,7 @@ test('PR-3: _validate_gates_shape extends BOTH branches (kind allowlist + thresh
   assert.match(fn[0], /NOT \(g \? 'window_business_days'\)/, 'window_business_days must be validated when present');
 });
 
-test('PR-3: _can_sign_gate — partner_consultation = president_others predicate; committee_majority = stub false', () => {
+test('PR-3: _can_sign_gate — partner_consultation = president_others predicate; committee_majority stub in #975 (activated in #1152)', () => {
   const fn = sql.match(/CREATE OR REPLACE FUNCTION public\._can_sign_gate[\s\S]*?\$function\$;/);
   assert.ok(fn, '_can_sign_gate must be (re)defined');
   assert.match(
@@ -52,9 +61,24 @@ test('PR-3: _can_sign_gate — partner_consultation = president_others predicate
     /WHEN 'partner_consultation' THEN\s+v_member\.chapter IN \('PMI-CE','PMI-DF','PMI-MG','PMI-RS'\)\s+AND 'chapter_board' = ANY\(v_member\.designations\)\s+AND 'legal_signer' = ANY\(v_member\.designations\)/,
     'partner_consultation must reuse the president_others predicate (CE/DF/MG/RS + chapter_board + legal_signer)',
   );
-  assert.match(fn[0], /WHEN 'committee_majority' THEN false/, 'committee_majority must be a stub false (dormant until §7.1)');
+  // Historical guard: THIS migration (#975/303) authored committee_majority as a stub false.
+  // The LIVE invariant changed — activation is asserted by the #1152 test below (mig 474).
+  assert.match(fn[0], /WHEN 'committee_majority' THEN false/, 'committee_majority was a stub false in #975 (dormant until the Comitê de Curadoria roster existed; activated in #1152)');
   // president_others must NOT be repurposed — still present as its own WHEN
   assert.match(fn[0], /WHEN 'president_others' THEN/, 'president_others must remain (not repurposed)');
+});
+
+test('#1152: committee_majority ACTIVATED — ip_committee predicate + Comitê de Curadoria roster (mig 474)', () => {
+  const fn = sql1152.match(/CREATE OR REPLACE FUNCTION public\._can_sign_gate[\s\S]*?\$function\$;/);
+  assert.ok(fn, '_can_sign_gate must be redefined in the #1152 migration');
+  // stub false -> real designation predicate (the roster is pinned at activation via _gate_threshold_met)
+  assert.match(fn[0], /WHEN 'committee_majority' THEN 'ip_committee' = ANY\(v_member\.designations\)/, 'committee_majority must be activated to the ip_committee designation predicate');
+  assert.doesNotMatch(fn[0], /WHEN 'committee_majority' THEN false/, 'the stub false must be gone in the activation migration');
+  // roster seed: exactly the 3 committee members get the ip_committee designation, idempotently
+  assert.match(sql1152, /array_append\(designations, 'ip_committee'\)/, 'the migration must seed the ip_committee designation');
+  assert.match(sql1152, /NOT \('ip_committee' = ANY\(designations\)\)/, 'the roster seed must be idempotent');
+  const ids = sql1152.match(/'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'/g) || [];
+  assert.equal(new Set(ids).size, 3, 'exactly 3 committee members must be seeded (Sarah, Fabricio, Roberto)');
 });
 
 test('PR-3: _gate_threshold_met — majority branch (pinned roster, n>=1 guard, strict floor)', () => {

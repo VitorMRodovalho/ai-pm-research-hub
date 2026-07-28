@@ -88,11 +88,22 @@ test('get_evaluation_form does NOT return other evaluators scores', () => {
 
 test('get_evaluation_results enforces blind until all submit', () => {
   const body = findFunctionBody('get_evaluation_results');
-  // Must check submitted count >= min_evaluators before revealing
-  assert.ok(/min_evaluators/i.test(body),
-    'get_evaluation_results must check min_evaluators threshold');
+  // Onda 4 (C-blind SSOT): the min_evaluators threshold moved into the shared predicate
+  // selection_peer_review_complete(); get_evaluation_results now delegates the blind gate to it
+  // (so this surface and get_application_score_breakdown can never drift). Accept either the
+  // legacy inline min_evaluators check OR the helper delegation.
+  const checksThreshold = /min_evaluators/i.test(body)
+    || /selection_peer_review_complete\(/i.test(body);
+  assert.ok(checksThreshold,
+    'get_evaluation_results must gate on the peer-review threshold (min_evaluators inline OR via selection_peer_review_complete)');
   assert.ok(/RAISE\s+EXCEPTION.*blind/i.test(body),
     'get_evaluation_results must RAISE EXCEPTION for premature access');
+  // The shared predicate itself must carry the min_evaluators threshold (no weakening).
+  const helper = findFunctionBody('selection_peer_review_complete');
+  if (/selection_peer_review_complete\(/i.test(body)) {
+    assert.ok(helper && /min_evaluators/i.test(helper),
+      'selection_peer_review_complete must check min_evaluators when delegated to');
+  }
 });
 
 test('submit_evaluation prevents re-submission of locked evaluation', () => {
