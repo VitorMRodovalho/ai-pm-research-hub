@@ -10,6 +10,7 @@
  * health observability via get_drive_discovery_health RPC.
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isServiceRoleToken, bearerFrom } from "../_shared/service-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -26,6 +27,19 @@ interface DriveFile {
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+  }
+
+  // #1513: service-role only. Measured live 2026-07-28 — this EF deployed with
+  // verify_jwt=false and had NO caller check of any kind, so an unauthenticated
+  // POST from the public internet reached a full scan of every linked minutes folder. Every legitimate caller
+  // (pg_cron jobid 29, which sends the vault service_role_key) is server-to-server with a service-role
+  // credential, so the gate is non-breaking. Fail-closed BEFORE any Vault read,
+  // Drive call or DB write.
+  if (!(await isServiceRoleToken(SUPABASE_URL, bearerFrom(req)))) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized", detail: "service-role only" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
   const startedAt = Date.now();
   const sb = createClient<any, "public", any>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
