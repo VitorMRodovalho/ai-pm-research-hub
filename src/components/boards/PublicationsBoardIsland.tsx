@@ -14,6 +14,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ExternalLink } from 'lucide-react';
+import { isOverdueDateOnly } from '../../lib/date-only';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { hasPermission } from '../../lib/permissions';
 
@@ -56,7 +57,8 @@ function SortableCard({
   onOpen: (item: BoardItem) => void;
 }) {
   const t = usePageI18n();
-  const isOverdue = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'published';
+  // #1511 — `due_date` é coluna `date`: atraso só depois do fim do dia local.
+  const isOverdue = isOverdueDateOnly(item.due_date) && item.status !== 'published';
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),

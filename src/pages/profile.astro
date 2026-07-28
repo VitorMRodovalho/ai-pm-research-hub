@@ -303,6 +303,7 @@ const PROFILE_I18N = {
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
+  import { formatDateOnly, parseDateOnly } from '../lib/date-only';
   // p207 (Issue #216, 2026-05-20): import t() runtime translator. The script body
   // below calls t('profile.xp.howToEarn', lang) etc ~25 times at runtime (XP pillars
   // + champions + journey labels). Frontmatter `import { t } from '../i18n/utils'`
@@ -546,8 +547,15 @@ const PROFILE_I18N = {
       const allPoints = points || [];
       xpByCycle = {};
       cycleHistory.forEach(function(h: any) {
-        var start = h.cycle_start ? new Date(h.cycle_start).getTime() : 0;
-        var end = h.cycle_end ? new Date(h.cycle_end).getTime() : Date.now();
+        // #1511 — cycle_start/cycle_end são colunas `date`; created_at dos pontos é
+        // timestamptz. Parsear a janela como UTC deslocava a borda 3h para dentro do
+        // ciclo anterior, então ponto lançado na virada caía no ciclo errado.
+        var startDate = parseDateOnly(h.cycle_start);
+        var endDate = parseDateOnly(h.cycle_end);
+        var start = startDate ? startDate.getTime() : 0;
+        var end = endDate
+          ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime()
+          : Date.now();
         var cycleXp = allPoints.filter(function(p: any) {
           var t = new Date(p.created_at).getTime();
           return t >= start && t <= end;
@@ -1786,7 +1794,7 @@ const PROFILE_I18N = {
               <span class="text-base">🎓</span>
               <div>
                 <span class="text-[.75rem] font-bold text-amber-800">PMI-CPMAI\u2122</span>
-                ${m.cpmai_certified_at ? `<span class="text-[.68rem] text-amber-600 ml-1.5">${PROFILE_I18N.cpmaiCertifiedIn} ${new Date(m.cpmai_certified_at).toLocaleDateString(PROFILE_I18N.dateLocale || 'pt-BR', { month: 'long', year: 'numeric' })}</span>` : ''}
+                ${m.cpmai_certified_at ? `<span class="text-[.68rem] text-amber-600 ml-1.5">${PROFILE_I18N.cpmaiCertifiedIn} ${formatDateOnly(m.cpmai_certified_at, { month: 'long', year: 'numeric' }, PROFILE_I18N.dateLocale || 'pt-BR')}</span>` : ''}
               </div>
             </div>
             ` : ''}

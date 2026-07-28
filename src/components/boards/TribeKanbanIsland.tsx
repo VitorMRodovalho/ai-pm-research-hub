@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { CalendarClock, Paperclip, Trash2, UserCircle2, X, Send, CheckCircle2, Award } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { hasPermission } from '../../lib/permissions';
+import { formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import * as Popover from '@radix-ui/react-popover';
 
@@ -172,7 +173,9 @@ function SortableCard({
     touchAction: 'none',
   };
   const attachments = parseAttachments(item.attachments);
-  const due = item.due_date ? new Date(item.due_date) : null;
+  // #1511 — `due_date` é coluna `date`: formatação e atraso pelo helper compartilhado.
+  const dueLabel = item.due_date ? formatDateOnly(item.due_date) : '';
+  const dueOverdue = isOverdueDateOnly(item.due_date);
   const curation = item.curation_status || 'draft';
   const isAuthor = currentMember?.id === item.assignee_id;
   const isReviewer = currentMember?.id === item.reviewer_id;
@@ -236,9 +239,9 @@ function SortableCard({
             <Paperclip size={12} /> {attachments.length}
           </span>
         ) : null}
-        {due ? (
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-            <CalendarClock size={12} /> {due.toLocaleDateString('pt-BR')}
+        {dueLabel ? (
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${dueOverdue && curation !== 'published' ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
+            <CalendarClock size={12} /> {dueLabel}
           </span>
         ) : null}
       </div>
