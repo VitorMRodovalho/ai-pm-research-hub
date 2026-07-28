@@ -267,7 +267,16 @@ is only the approver identity on the consent page.
 - `WebStandardStreamableHTTPServerTransport` handles all protocol details
 - Stateless mode: `sessionIdGenerator: undefined`
 - Workers proxy streams SSE responses through without buffering
-- GET /mcp → 406 (native transport returns Not Acceptable when no session)
+- **GET on any surface → 405** (`statelessGetNotAllowed` guard, #1497), with `Allow: POST, OPTIONS`.
+  Stateless mode has no session to hang a server→client stream on, so the spec answer is 405 and the
+  client falls straight through to POST. Before the guard, `app.all` handed the GET to `handleRequest`,
+  which opened an SSE that never emitted and never closed: measured 2026-07-28 on `/mcp`, `/semantic`
+  and `/actions` (and direct on the EF, so not the Worker) — a GET with `Accept: text/event-stream`
+  hung until the client's own timeout without even returning response headers, and because the stream
+  opened BEFORE bearer validation, an invalid token got no 401 either. The old "406" note described
+  only the no-SSE-header case (`Accept` missing → 406 in ~1s), which is why the hang went unnoticed.
+  Guarded by `tests/contracts/1497-mcp-stateless-get-405.test.mjs` (includes an ordering assertion: the
+  guard must precede `handleRequest`).
 - Transport handles: initialize, tools/list, tool/call, notifications, SSE streams
 
 ## Token refresh — history: #1053 single-refresher → #1210 native server
