@@ -15,6 +15,21 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SU
 const canRun = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL and SUPABASE_ANON_KEY required for smoke tests';
 
+// Em CI, "sem credencial" NAO pode significar verde. Este arquivo rodou meses
+// pulando em silencio porque o step nao exportava SUPABASE_ANON_KEY (#1513), e
+// um skip silencioso e indistinguivel de um pass na leitura do log. Localmente o
+// skip continua valendo: nem todo dev tem .env.
+const IS_CI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+test('smoke: em CI as credenciais precisam estar no env (nao pode pular calado)', () => {
+  if (!IS_CI) return;
+  assert.ok(
+    canRun,
+    'SUPABASE_URL + SUPABASE_ANON_KEY ausentes no env do CI: os smokes de EF deployada ' +
+      'pulariam em silencio. Exporte ambos no step `Run Unit Tests` de .github/workflows/ci.yml.',
+  );
+});
+
 async function efPost(slug, body = {}) {
   const url = `${SUPABASE_URL}/functions/v1/${slug}`;
   const res = await fetch(url, {
