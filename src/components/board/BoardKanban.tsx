@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { parseDateOnly, formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
 import { safeChecklist, type BoardItem, type ColumnMeta, type BoardI18n } from '../../types/board';
 
 interface Props {
@@ -34,7 +35,8 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
   const checkDone = cl.filter((c) => c.done).length;
   const checkTotal = cl.length;
   const attachCount = item.attachments?.length ?? 0;
-  const isOverdue = item.due_date && new Date(item.due_date) < new Date();
+  // #1501 — due_date é coluna `date`: parse local + só atrasa após o fim do dia.
+  const isOverdue = isOverdueDateOnly(item.due_date);
   const isCurationOverdue = item.curation_due_at && new Date(item.curation_due_at) < new Date();
   const nextCol = columns[columns.indexOf(item.status) + 1];
   const showCuration = mode === 'curation' && item.curation_status;
@@ -104,7 +106,7 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
         )}
         {item.due_date && (
           <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
-            📅 {new Date(item.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+            📅 {formatDateOnly(item.due_date, { day: '2-digit', month: 'short' })}
           </span>
         )}
         {item.source_card_id && (
