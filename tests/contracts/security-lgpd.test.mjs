@@ -232,7 +232,11 @@ test('avatar URLs the nav renders pass a domain allowlist', () => {
   const helper = readFileSync(helperPath, 'utf8');
   assert.ok(/OAUTH_AVATAR_HOSTS/.test(helper), 'Helper must carry an explicit host allowlist');
   assert.ok(/sanitizeAvatarUrl/.test(helper), 'Helper must expose sanitizeAvatarUrl');
-  assert.ok(helper.includes('lh3.googleusercontent.com'), 'Must allow Google avatar domain');
+  // Matched as a QUOTED literal, not via String.includes: `includes('some.host')` reads to CodeQL
+  // as js/incomplete-url-substring-sanitization (a host check that any URL could satisfy). Here the
+  // haystack is source text, not a URL, but asserting the quoted array entry is both FP-free and a
+  // stricter claim — the host has to be a literal in the allowlist, not a substring anywhere.
+  assert.match(helper, /'lh3\.googleusercontent\.com'/, 'Must allow Google avatar domain');
   assert.ok(
     /protocol !== 'https:'/.test(helper),
     'Helper must reject non-http(s) schemes (javascript:/data: avatars)',
