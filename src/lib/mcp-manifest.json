@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-23T04:48:42.328Z",
+  "generated_at": "2026-07-29T13:42:31.813Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -1992,7 +1992,7 @@
     },
     {
       "name": "comms_post",
-      "description": "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. Stable envelope.",
+      "description": "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. COPY POR REDE (#1495): LinkedIn sem hashtag, sem parágrafo institucional do Núcleo, CTA 'Link do evento:' sem emoji; Instagram leva hashtags e 'link na bio' (URL não é clicável lá). Violação volta em warnings, não bloqueia. Stable envelope.",
       "domain": "comms",
       "permission": "read",
       "is_sensitive": false
@@ -2104,7 +2104,7 @@
     },
     {
       "name": "schedule_comms_post",
-      "description": "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). Gate: manage_comms.",
+      "description": "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). COPY POR REDE (#1495): LinkedIn sem hashtag, sem parágrafo institucional do Núcleo, CTA 'Link do evento:' sem emoji; Instagram leva hashtags e 'link na bio' (URL não é clicável lá). Violação volta em copy_lint, não bloqueia. Gate: manage_comms.",
       "domain": "comms",
       "permission": "write",
       "is_sensitive": false
