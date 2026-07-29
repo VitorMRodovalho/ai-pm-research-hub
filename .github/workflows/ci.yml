@@ -67,6 +67,13 @@ jobs:
       - name: Run i18n hardcoded lint gate
         run: npm run lint:i18n
 
+      # #1205: identificador livre em <script> de .astro e ReferenceError em runtime
+      # (script de .astro e modulo => strict mode). Nada type-checa esses blocos, entao
+      # este no-undef e o unico gate da classe. Guard da fiacao:
+      # tests/contracts/1205-client-script-undef-gate-wired.test.mjs
+      - name: Run client-script undefined-identifier gate
+        run: npm run lint:client-scripts
+
       - name: Run Unit Tests
         # SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY enable DB-aware contract tests
         # (rpc-migration-coverage Q-C orphan check + drift detection). Without

@@ -703,8 +703,11 @@ const SCORING_I18N = {
     leaderboardMode = mode;
     const cycleBtn = document.getElementById('lb-mode-cycle');
     const lifeBtn = document.getElementById('lb-mode-lifetime');
+    // Declared outside the if: the __nucleoTrack call at the end of this function reads it, and
+    // the block-scoped const made that a free reference. The try/catch around the call swallowed
+    // the ReferenceError, so the leaderboard_filtered event silently never fired.
+    const cycleOn = mode === 'cycle';
     if (cycleBtn && lifeBtn) {
-      const cycleOn = mode === 'cycle';
       cycleBtn.classList.toggle('bg-navy', cycleOn);
       cycleBtn.classList.toggle('bg-transparent', !cycleOn);
       cycleBtn.classList.toggle('text-white', cycleOn);

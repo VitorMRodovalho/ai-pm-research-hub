@@ -2351,10 +2351,14 @@ const PROFILE_I18N = {
       const res = await sb.rpc('update_my_profile', { p_fields: fields });
       data = res.data;
     } else {
-      // No changes, but still call old RPC for backward compat
+      // No changes, but still call old RPC for backward compat.
+      // #1205: this passed `shareWa`, an identifier that never existed in this module. The
+      // <script> is a module (strict mode), so the free reference threw a ReferenceError and
+      // saveSelf() has no catch: clicking "Salvar" without touching any tracked field failed
+      // silently, with no toast. The checkbox value lives in shareWhatsApp (read above).
       const res = await sb.rpc('member_self_update', {
         p_pmi_id: pmiId, p_phone: phone, p_linkedin_url: li,
-        p_credly_url: credlyToSave, p_share_whatsapp: shareWa,
+        p_credly_url: credlyToSave, p_share_whatsapp: shareWhatsApp,
       });
       data = res.data;
     }

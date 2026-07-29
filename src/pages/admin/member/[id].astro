@@ -107,14 +107,14 @@ const MEMBER_EDIT_I18N = {
   }
 
   async function bootAcl() {
-    const navMember = navGetMember?.();
+    const navMember = (window as any).navGetMember?.();
     if (navMember) {
       if (!canAccessAdminRoute(navMember, 'admin_member_edit')) { denyAccess(); return; }
       await onAuthorized();
       return;
     }
 
-    const sb = navGetSb?.();
+    const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootAcl, 200); return; }
 
     try {
@@ -140,7 +140,7 @@ const MEMBER_EDIT_I18N = {
   bootAcl();
 
   async function loadMember() {
-    const sb = navGetSb?.();
+    const sb = (window as any).navGetSb?.();
     const { data } = await sb.from('members').select('*').eq('id', memberId).single();
     _member = data;
     renderForm(data);
@@ -242,7 +242,7 @@ const MEMBER_EDIT_I18N = {
       </div>`;
   }
 
-  toggleRole = (r) => {
+  const toggleRole = (r) => {
     const el = document.getElementById('rc-'+r) ;
     if (!el) return;
     const on = el.dataset.on !== 'true';
@@ -280,11 +280,11 @@ const MEMBER_EDIT_I18N = {
     return { mode: 'v2', data: res.data, error: res.error };
   }
 
-  saveMember = async () => {
-    const sb = navGetSb?.();
+  const saveMember = async () => {
+    const sb = (window as any).navGetSb?.();
     const name  = (document.getElementById('f-name') )?.value.trim();
     const email = (document.getElementById('f-email') )?.value.trim();
-    if (!name || !email) { toast?.(T.error.requiredNameEmail,'error'); return; }
+    if (!name || !email) { (window as any).toast?.(T.error.requiredNameEmail,'error'); return; }
     const roles = Object.keys(ROLE_COLORS).filter(r => document.getElementById('rc-'+r)?.dataset.on === 'true');
     const opRole = (document.getElementById('f-role') )?.value;
     const params = {
@@ -313,24 +313,24 @@ const MEMBER_EDIT_I18N = {
       const compat = await adminUpdateMemberCompat(sb, params, opRole, roles);
       result = compat.data;
     }
-    if (result?.error) { toast?.(result.error, 'error'); return; }
-    toast?.(T.toast.saved,'success');
+    if (result?.error) { (window as any).toast?.(result.error, 'error'); return; }
+    (window as any).toast?.(T.toast.saved,'success');
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
-  inactivateMember = async (id, name) => {
+  const inactivateMember = async (id, name) => {
     const reason = prompt(T.prompt.inactivateReason.replace('{name}', name));
     if (reason === null) return;
-    const sb = navGetSb?.();
+    const sb = (window as any).navGetSb?.();
     await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
-    toast?.(T.toast.inactivated,'info');
+    (window as any).toast?.(T.toast.inactivated,'info');
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
-  reactivateMember = async (id) => {
-    const sb = navGetSb?.();
+  const reactivateMember = async (id) => {
+    const sb = (window as any).navGetSb?.();
     await sb.rpc('admin_reactivate_member', { p_member_id: id });
-    toast?.(T.toast.reactivated,'success');
+    (window as any).toast?.(T.toast.reactivated,'success');
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
