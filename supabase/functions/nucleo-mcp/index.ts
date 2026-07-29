@@ -195,6 +195,10 @@ import {
   ratificationCaveat,
   MCP_GOVERNANCE_VISIBLE_CLASSES,
 } from "./governance-html.mjs";
+// #1495 — regra de copy por rede. Módulo compartilhado com scripts/lint-social-copy.mjs:
+// enquanto as regras viviam só dentro do CLI, elas valiam apenas para quem lembrasse de
+// rodá-lo, e quem agendava por aqui passava direto.
+import { avisosDeCopy } from "../_shared/social-copy-rules.mjs";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -2060,7 +2064,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // schedule_comms_post — #1099 on-ramp "conteúdo → fila → rede": enfileira post datado
   // em comms_scheduled_posts; o cron publish-scheduled drena e publica via publish-instagram
   // / publish-linkedin. Fecha o gap do fork_idea_to_channel (que só grava brief).
-  mcp.tool("schedule_comms_post", "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). Gate: manage_comms.", {
+  mcp.tool("schedule_comms_post", "Agenda post orgânico datado na fila comms_scheduled_posts (drain: cron publish-scheduled a cada 15min). channel: instagram (media_type IMAGE/CAROUSEL/REELS/STORIES) | linkedin (TEXT/IMAGE/VIDEO/ARTICLE/DOCUMENT). payload = corpo do publisher do canal (ex.: REELS {video_url, caption}; CAROUSEL {children:[{image_url}...], caption}; DOCUMENT {document_url, title, text}). Mídia por URL PÚBLICA (bucket comms-media). Valida canal×tipo×payload na hora (não deixa row fadado a falhar no drain). idea_id opcional liga à publication_idea (exige stage approved/published). COPY POR REDE (#1495): LinkedIn sem hashtag, sem parágrafo institucional do Núcleo, CTA 'Link do evento:' sem emoji; Instagram leva hashtags e 'link na bio' (URL não é clicável lá). Violação volta em copy_lint, não bloqueia. Gate: manage_comms.", {
     channel: z.enum(["instagram", "linkedin"]).describe("Canal de publicação"),
     media_type: z.enum(["IMAGE", "CAROUSEL", "REELS", "STORIES", "TEXT", "VIDEO", "ARTICLE", "DOCUMENT"]).describe("Tipo de mídia (precisa ser suportado pelo canal)"),
     payload: z.record(z.string(), z.any()).describe("Corpo do publisher do canal (caption/text, image_url/video_url/document_url/children/title...)"),
@@ -2083,6 +2087,13 @@ function registerTools(mcp: McpServer, sb: Sb) {
     });
     if (error) { await logUsage(sb, member.id, "schedule_comms_post", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "schedule_comms_post", true, undefined, start, "execute", data);
+    // #1495 — a régua de copy por rede viaja junto com o resultado, nunca bloqueando: uma
+    // regra de estilo que trava publicação vira atrito na véspera de evento. O agendamento
+    // já aconteceu; isto é o que o time de comms editaria à mão depois.
+    const lint = avisosDeCopy(params.channel, params.payload);
+    if (lint.length && data && typeof data === "object" && !Array.isArray(data)) {
+      return ok({ ...(data as Record<string, unknown>), copy_lint: lint });
+    }
     return ok(data);
   });
 
@@ -11317,7 +11328,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W6a · comms_post (W) — scheduled social posts + tribe notifications ──
   mcp.tool(
     "comms_post",
-    "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. Stable envelope.",
+    "Communications write surface (absorbs schedule_comms_post/cancel_scheduled_comms_post/list_scheduled_comms_posts/send_notification_to_tribe). Set `action`: 'schedule' (channel+media_type+payload+scheduled_at), 'cancel' (id), 'list' (channel?/status?), 'notify_tribe' (title+body). schedule/cancel/list require manage_comms; notify_tribe requires write and broadcasts to YOUR active tribe. WARNING: IG collab/user-tags/story link-stickers and LinkedIn mentions are NOT automatable (#1374) — do them manually in the app. COPY POR REDE (#1495): LinkedIn sem hashtag, sem parágrafo institucional do Núcleo, CTA 'Link do evento:' sem emoji; Instagram leva hashtags e 'link na bio' (URL não é clicável lá). Violação volta em warnings, não bloqueia. Stable envelope.",
     {
       action: z.enum(["schedule","cancel","list","notify_tribe"]).describe("Which comms write."),
       channel: z.enum(["instagram","linkedin"]).optional().describe("schedule/list — channel."),
@@ -11349,6 +11360,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           if (params.idea_id && !isUUID(params.idea_id)) return invalid("idea_id must be a UUID.");
           ({ data, error } = await sb.rpc("schedule_comms_post", { p_channel: params.channel, p_media_type: params.media_type, p_payload: params.payload, p_scheduled_at: params.scheduled_at, p_label: params.label ?? null, p_idea_id: params.idea_id ?? null })); source = "schedule_comms_post";
           warnings.push("IG collab/user-tags/story link-stickers + LinkedIn mentions are manual-only (#1374).");
+          // #1495 — régua de copy por rede como AVISO, nunca bloqueio. As regras saíram do
+          // diff entre o que a plataforma publicou e o que o time de comms deixou no ar
+          // (27/07): no LinkedIn cortaram 25%, no Instagram não mexeram. Sem isto o lint só
+          // protegia quem lembrasse de rodar o CLI à mão.
+          warnings.push(...avisosDeCopy(params.channel, params.payload));
           break;
         case "cancel":
           if (!(await canV4(sb, member.id, "manage_comms"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("manage_comms"); }
