@@ -288,6 +288,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 
 <script>
   import { getSupabase, ROLE_COLORS, setSupabaseRuntimeConfig } from '../../lib/supabase';
+  import { resolveAvatarUrl, initialsFor } from '../../lib/avatar';
   import { getMemberRole, isRegisteredMember } from '../../lib/routing';
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
@@ -671,27 +672,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
     const name = _member.name || i18n.user || 'User';
     const first = name.split(' ')[0];
-    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
-    const pic = _user?.user_metadata?.avatar_url;
+    const initials = initialsFor(name);
     const r = getMemberRole(_member);
     const color = ROLE_COLORS[r] || '#64748B';
     const label = getRoleLabel(r);
 
-    // XSS: sanitize avatar_url against domain allowlist
-    const ALLOWED_AVATAR_DOMAINS = [
-      'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com',
-      'platform-lookaside.fbsbx.com',
-      'media.licdn.com',
-    ];
-    function sanitizeAvatarUrl(url: string | null | undefined): string | null {
-      if (!url) return null;
-      try {
-        const parsed = new URL(url);
-        if (ALLOWED_AVATAR_DOMAINS.includes(parsed.hostname)) return url;
-        return null;
-      } catch { return null; }
-    }
     // XSS: escape HTML in text content
     function escapeHtml(str: string): string {
       const div = document.createElement('div');
@@ -699,7 +684,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       return div.innerHTML;
     }
 
-    const safePic = sanitizeAvatarUrl(pic);
+    // #1205: the member's own uploaded photo wins over the OAuth identity picture. Reading only
+    // user_metadata left every member who uploaded a photo staring at their initials in the nav.
+    const safePic = resolveAvatarUrl(_member, _user);
     const safeFirst = escapeHtml(first);
     const safeInitials = escapeHtml(initials);
     const safeLabel = escapeHtml(label);
@@ -788,8 +775,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     if (!el || !_member) return;
 
     const name = _member.name || i18n.user || 'User';
-    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
-    const pic = _user?.user_metadata?.avatar_url;
+    const initials = initialsFor(name);
+    // #1205: same source order as renderAuth. This drawer path also interpolated `pic` into HTML
+    // with no sanitizing at all; resolveAvatarUrl returns only allowlisted hosts.
+    const pic = resolveAvatarUrl(_member, _user);
     const r = getMemberRole(_member);
     const color = ROLE_COLORS[r] || '#64748B';
     const tier = resolveTierFromMember(_member);

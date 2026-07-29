@@ -128,6 +128,11 @@ export function getSupabase() {
   return _client;
 }
 
+/** Public Supabase URL actually in effect (env, runtime config, or fallback). */
+export function getSupabasePublicUrl(): string {
+  return resolveSupabasePublicEnv().url;
+}
+
 // ── Auth helpers ─────────────────────────────────────────────
 export async function getCurrentMember(): Promise<Member | null> {
   const sb = getSupabase();

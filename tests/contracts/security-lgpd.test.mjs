@@ -213,13 +213,34 @@ test('admin_run_retention_cleanup requires admin', () => {
 
 // ─── P0-C: XSS Prevention ───
 
-test('Nav.astro has avatar URL domain allowlist', () => {
+test('avatar URLs the nav renders pass a domain allowlist', () => {
+  // #1205: this used to assert that ALLOWED_AVATAR_DOMAINS + sanitizeAvatarUrl lived INSIDE
+  // Nav.astro, which is the definition SITE, not the mechanism. Moving the allowlist into the
+  // shared resolver (src/lib/avatar.ts, so the nav and the drawer stop diverging) turned this red
+  // on a refactor that strengthened the defense. Assert the property instead: the nav resolves its
+  // avatar through the central helper, and that helper enforces a host allowlist.
   const navPath = resolve(ROOT, 'src/components/nav/Nav.astro');
   assert.ok(existsSync(navPath), 'Nav.astro must exist');
   const nav = readFileSync(navPath, 'utf8');
-  assert.ok(nav.includes('ALLOWED_AVATAR_DOMAINS'), 'Nav must have ALLOWED_AVATAR_DOMAINS');
-  assert.ok(nav.includes('sanitizeAvatarUrl'), 'Nav must have sanitizeAvatarUrl');
-  assert.ok(nav.includes('lh3.googleusercontent.com'), 'Must allow Google avatar domain');
+  assert.ok(
+    /resolveAvatarUrl\s*\(/.test(nav),
+    'Nav must resolve avatars through the sanitizing helper, not interpolate a raw URL',
+  );
+
+  const helperPath = resolve(ROOT, 'src/lib/avatar.ts');
+  assert.ok(existsSync(helperPath), 'src/lib/avatar.ts must exist (avatar allowlist lives there)');
+  const helper = readFileSync(helperPath, 'utf8');
+  assert.ok(/OAUTH_AVATAR_HOSTS/.test(helper), 'Helper must carry an explicit host allowlist');
+  assert.ok(/sanitizeAvatarUrl/.test(helper), 'Helper must expose sanitizeAvatarUrl');
+  // Matched as a QUOTED literal, not via String.includes: `includes('some.host')` reads to CodeQL
+  // as js/incomplete-url-substring-sanitization (a host check that any URL could satisfy). Here the
+  // haystack is source text, not a URL, but asserting the quoted array entry is both FP-free and a
+  // stricter claim — the host has to be a literal in the allowlist, not a substring anywhere.
+  assert.match(helper, /'lh3\.googleusercontent\.com'/, 'Must allow Google avatar domain');
+  assert.ok(
+    /protocol !== 'https:'/.test(helper),
+    'Helper must reject non-http(s) schemes (javascript:/data: avatars)',
+  );
 });
 
 test('Nav.astro escapes HTML in user name', () => {
