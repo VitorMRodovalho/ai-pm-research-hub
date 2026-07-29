@@ -1,0 +1,3 @@
+# saidas do render sao artefatos, nao fonte
+out/
+__pycache__/

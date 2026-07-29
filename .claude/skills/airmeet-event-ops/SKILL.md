@@ -75,9 +75,11 @@ eram **Lounge Banner** (peça 1440x810 num slot 8:1, achatava) e **Waiting Scree
 do Airmeet, com rostos de banco de imagem). Sponsors vazio é correto quando não há patrocinador.
 
 ⚠️ **O slot 960x120 não existe no kit** e nenhuma peça 16:9 serve nele. Gerar com
-`build_lounge_banner.py` (no workdir do webinar): nessa razão não cabe a faixa institucional inteira
+`scripts/design-kit/build_lounge_banner.py` (#1523: a toolchain de arte é versionada ali, com
+`brand.py` e os 2 assets de runtime ao lado; antes o script morava neste skill sem as dependências e
+**não rodava**): nessa razão não cabe a faixa institucional inteira
 (ela sozinha teria 111px num canvas de 120), então a marca entra pelo badge da NIA. Medir a colisão
-entre título e pill com `qa_measure.py` antes de subir: no primeiro render o pill passou por cima de
+entre título e pill com `scripts/design-kit/qa_measure.py` antes de subir: no primeiro render o pill passou por cima de
 "de IA".
 
 ⚠️ **Upload não é o mesmo que ativar.** No Waiting Screen o arquivo sobe, aparece como "Waiting screen 1"
