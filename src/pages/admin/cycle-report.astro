@@ -185,6 +185,9 @@ const CR_I18N = {
 <script>
   import Chart from 'chart.js/auto';
   import { hasPermission } from '../../lib/permissions';
+  // The frontmatter import of CANONICAL_HOST is server-side only; the PT-BR fallback below runs
+  // in the browser and referenced it free (ReferenceError whenever define:vars degrades).
+  import { CANONICAL_HOST } from '../../lib/canonical';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__CR_I18N) || {
