@@ -1806,6 +1806,36 @@ export type Database = {
           },
         ]
       }
+      audit_event_collapse_backup: {
+        Row: {
+          collapsed_at: string
+          id: number
+          issue_ref: string
+          keeper_event_id: string
+          payload: Json
+          reason: string
+          removed_event_id: string
+        }
+        Insert: {
+          collapsed_at?: string
+          id?: number
+          issue_ref: string
+          keeper_event_id: string
+          payload: Json
+          reason: string
+          removed_event_id: string
+        }
+        Update: {
+          collapsed_at?: string
+          id?: number
+          issue_ref?: string
+          keeper_event_id?: string
+          payload?: Json
+          reason?: string
+          removed_event_id?: string
+        }
+        Relationships: []
+      }
       blind_review_assignments: {
         Row: {
           assigned_at: string
@@ -11909,6 +11939,7 @@ export type Database = {
           points: number
           reason: string
           ref_id: string | null
+          ref_kind: string | null
         }
         Insert: {
           category: string
@@ -11921,6 +11952,7 @@ export type Database = {
           points: number
           reason: string
           ref_id?: string | null
+          ref_kind?: string | null
         }
         Update: {
           category?: string
@@ -11933,6 +11965,7 @@ export type Database = {
           points?: number
           reason?: string
           ref_id?: string | null
+          ref_kind?: string | null
         }
         Relationships: [
           {

@@ -13,8 +13,14 @@ const MODAL = 'src/components/attendance/RecurringModal.astro';
  * 1) DERIVED TITLE. The modal shipped `Reunião Geral — Núcleo IA & GP | Semana {n}` hardcoded, and
  *    createRecurring() rewrites the TYPE to 'tribo' the moment a tribe audience is chosen (#492). So
  *    the type came out right while the title kept announcing a Núcleo-wide meeting. Measured in prod:
- *    18 events with type='tribo' carrying a "Reunião Geral" title, created by TWO different tribe
- *    leaders — the second leader is what rules out individual error and proves it is the default.
+ *    6 events with type='tribo' whose title was the UNTOUCHED default "Reunião Geral — Núcleo IA & GP |
+ *    Semana N", all on the Radar Tecnológico tribe.
+ *
+ *    ⚠️ Correction worth keeping: an earlier read of this counted 18 events across two leaders. That was
+ *    wrong. The other 11 (Fluência em IA) read "[Núcleo IA & GP] Tribo 14 - Reunião Quinzenal | Semana N"
+ *    — that operator EDITED the title and named their tribe, so they only matched a loose grep on the
+ *    "Núcleo IA & GP" substring. The defect is proven by the CODE (a fixed institutional default plus the
+ *    #492 type-forcing), not by a population count.
  *
  * 2) DOUBLE-SUBMIT. createRecurring() was called straight from the submit handler with no in-flight
  *    lock and no button disable, so a second click during the RPC created a COMPLETE second series.
