@@ -30943,6 +30943,8 @@ export type Database = {
           member_name: string
           pct: number
           photo_url: string
+          tribe_id: number
+          tribe_name: string
         }[]
       }
       get_public_verticals: { Args: never; Returns: Json }
