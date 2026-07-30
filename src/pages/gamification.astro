@@ -979,6 +979,33 @@ const SCORING_I18N = {
     });
   }
 
+  // #1526 — `get_gamification_leaderboard` defaults to p_limit=50, clamps server-side, and returns
+  // `total_count` on every row. Page through until we hold the whole eligible cohort: the first page is
+  // not merely a display cut, it also feeds the tribe aggregation and the achievement checks, which
+  // would otherwise score a truncated cohort. It also removes the "cut by lifetime points even on the
+  // cycle tab" asymmetry — with every row in hand, the client-side sort decides order, not the RPC.
+  // The stride comes from what the server actually returned, so the server-side clamp stays the single
+  // source of truth for page size instead of being duplicated here.
+  const LEADERBOARD_PAGE_REQUEST = 200;
+  const LEADERBOARD_MAX_PAGES = 50;
+
+  async function fetchFullLeaderboard(): Promise<any[]> {
+    const rows: any[] = [];
+    let total = Infinity;
+    for (let page = 0; page < LEADERBOARD_MAX_PAGES && rows.length < total; page++) {
+      const { data, error } = await withTimeout(sb.rpc('get_gamification_leaderboard', {
+        p_limit: LEADERBOARD_PAGE_REQUEST,
+        p_offset: rows.length,
+      }));
+      if (error) throw error;
+      const batch = data || [];
+      if (!batch.length) break;
+      total = Number(batch[0].total_count ?? batch.length);
+      rows.push(...batch);
+    }
+    return rows;
+  }
+
   // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
   async function loadLeaderboard() {
     setPanelMessage('leaderboard-list', I.loading, 'loading');
@@ -1006,8 +1033,7 @@ const SCORING_I18N = {
         return;
       }
 
-      const { data, error } = await sb.rpc('get_gamification_leaderboard');
-      if (error) throw error;
+      const leaderboardRows = await fetchFullLeaderboard();
       const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
         .select('member_id, course_id, status');
       if (courseRowsError) throw courseRowsError;
@@ -1018,9 +1044,9 @@ const SCORING_I18N = {
       if (credlyError) throw credlyError;
       credlyByMember = aggregateCredlyByMember(credlyRows || []);
 
-      leaderboardData = data || [];
+      leaderboardData = leaderboardRows;
       trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
-      if (!data?.length) {
+      if (!leaderboardRows.length) {
         setPanelMessage('leaderboard-list', I.lbEmptySync, 'empty', MEMBER ? { text: I.syncBtn, action: 'sync-points' } : undefined);
         return;
       }
@@ -1049,9 +1075,7 @@ const SCORING_I18N = {
       if (leadersError) throw leadersError;
 
       if (!leaderboardData.length) {
-        const { data, error } = await withTimeout(sb.rpc('get_gamification_leaderboard'));
-        if (error) throw error;
-        leaderboardData = data || [];
+        leaderboardData = await fetchFullLeaderboard();
       }
       await ensureLifetimePointsLoaded();
 
@@ -1141,9 +1165,7 @@ const SCORING_I18N = {
     try {
       await ensureCatalog();
       if (!leaderboardData.length) {
-        const { data: lbRows, error: lbError } = await withTimeout(sb.rpc('get_gamification_leaderboard'));
-        if (lbError) throw lbError;
-        leaderboardData = lbRows || [];
+        leaderboardData = await fetchFullLeaderboard();
       }
       await ensureLifetimePointsLoaded();
 

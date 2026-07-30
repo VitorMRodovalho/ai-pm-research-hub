@@ -153,20 +153,45 @@ describe('p599-600 — DB-gated (skip without env)', () => {
     // comes back undefined BY DESIGN, which is not a header/roster parity violation.
     // Exclude them from the sweep; the confidential gate itself is covered by the
     // 785-confidential-initiative-{rls,rpcs} contracts.
+    // The two probes below MUST surface their error channel. Discarding it turns a failed or
+    // timed-out RPC into `undefined`/`null` and then compares that absent value against a real
+    // one, so the assertion accuses the DOMAIN of a parity violation that never happened. That
+    // misfired here under full-suite load (one side absent on nearly every row, each present side
+    // holding the correct count, and the same test passing in 1.3s when run alone). Probe failure
+    // and parity violation are different findings and must not share a bucket — see #1525.
     const { data: inits, error } = await sb.from('initiatives').select('id, title, visibility');
     if (error) { console.warn(`[p599-600] initiatives unavailable: ${error.message}`); return; }
-    const results = await Promise.all((inits ?? [])
-      .filter((i) => i.visibility !== 'confidential')
-      .map(async (i) => {
-      const [{ data: detail }, { data: roster }] = await Promise.all([
-        sb.rpc('get_initiative_detail', { p_initiative_id: i.id }),
-        sb.rpc('get_initiative_roster_count', { p_initiative_id: i.id }),
-      ]);
-      return detail?.member_count !== roster
-        ? `${i.title}: header=${detail?.member_count} roster=${roster}`
-        : null;
-    }));
-    const mismatches = results.filter(Boolean);
+    const targets = (inits ?? []).filter((i) => i.visibility !== 'confidential');
+
+    // Chunked rather than one wide Promise.all: firing every pair at once is what pushed these
+    // RPCs past the 8s statement_timeout while the rest of the suite was hitting the same DB.
+    const CHUNK = 5;
+    const mismatches = [];
+    const probeFailures = [];
+    for (let start = 0; start < targets.length; start += CHUNK) {
+      const batch = await Promise.all(targets.slice(start, start + CHUNK).map(async (i) => {
+        const [detailRes, rosterRes] = await Promise.all([
+          sb.rpc('get_initiative_detail', { p_initiative_id: i.id }),
+          sb.rpc('get_initiative_roster_count', { p_initiative_id: i.id }),
+        ]);
+        if (detailRes.error || rosterRes.error) {
+          return { probeError: `${i.title}: ${detailRes.error?.message || rosterRes.error?.message}` };
+        }
+        const header = detailRes.data?.member_count;
+        const roster = rosterRes.data;
+        return header !== roster ? { mismatch: `${i.title}: header=${header} roster=${roster}` } : {};
+      }));
+      for (const r of batch) {
+        if (r.probeError) probeFailures.push(r.probeError);
+        else if (r.mismatch) mismatches.push(r.mismatch);
+      }
+    }
+
+    assert.deepEqual(
+      probeFailures,
+      [],
+      `the parity probe itself failed (NOT a domain disparity — do not "fix" the RPCs off this): ${probeFailures.join(' | ')}`,
+    );
     assert.deepEqual(mismatches, [], `header/roster disparity re-emerged: ${mismatches.join(' | ')}`);
   });
 
