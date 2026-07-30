@@ -1251,6 +1251,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
         if (target.id === 'rec-audience') toggleRecAudiencePickers();
+        // Re-derive the default title when the scope itself changes, not only the audience kind.
+        if (target.id === 'rec-tribe-select' || target.id === 'rec-initiative-select') syncRecTitleDefault();
         if (target.id === 'events-tribe-filter') {
           VISIBLE_COUNT = PAGE_SIZE;
           renderEvents();
@@ -1301,26 +1303,48 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       const target = e.target as HTMLElement | null;
       if (!(target instanceof HTMLInputElement)) return;
       if (target.id === 'roster-search') rosterFilter(target.value);
+      // Once the operator types their own series title, stop deriving it from the audience.
+      if (target.id === 'rec-title') target.dataset.userEdited = '1';
       if (target.id === 'attendance-search') {
         ATTENDANCE_ROUTE.query = target.value.trim();
         renderEvents();
       }
     });
 
+    // Double-submit guard. Without it a second click while the RPC is still in flight runs the
+    // creation again and lands a COMPLETE duplicate: measured in prod as two full recurring series
+    // created 6 seconds apart (recurrence_group a1772307 + 640e4959, 2026-07-06 23:52:38/:44), which
+    // duplicated every week of the series and double-counted attendance on the weeks that happened.
+    // Keyed by form id so the three creation forms cannot block each other, and released in a
+    // finally so a failed submit does not leave the form permanently locked.
+    const submitsInFlight = new Set<string>();
+    async function guardedSubmit(formId: string, run: () => Promise<unknown> | unknown) {
+      if (submitsInFlight.has(formId)) return;
+      submitsInFlight.add(formId);
+      const btn = document.querySelector<HTMLButtonElement>(`button[type="submit"][form="${formId}"]`);
+      if (btn) btn.disabled = true;
+      try {
+        await run();
+      } finally {
+        submitsInFlight.delete(formId);
+        if (btn) btn.disabled = false;
+      }
+    }
+
     document.addEventListener('submit', (e: SubmitEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
       if (target.id === 'new-event-form') {
         e.preventDefault();
-        createEvent();
+        guardedSubmit(target.id, createEvent);
       }
       if (target.id === 'recurring-event-form') {
         e.preventDefault();
-        createRecurring();
+        guardedSubmit(target.id, createRecurring);
       }
       if (target.id === 'edit-event-form') {
         e.preventDefault();
-        saveEventEdit();
+        guardedSubmit(target.id, saveEventEdit);
       }
     });
 
@@ -1772,6 +1796,38 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── RECURRING ──
+  // The default series title is DERIVED from the audience; it is never a fixed institutional string.
+  // The modal used to ship `Reunião Geral — Núcleo IA & GP | Semana {n}` hardcoded in the markup while
+  // createRecurring rewrites the TYPE to 'tribo' as soon as a tribe is picked (#492). The type ended up
+  // correct and the title kept announcing a Núcleo-wide meeting. Measured in prod before this fix: 18
+  // events with type='tribo' carrying a "Reunião Geral" title, from TWO different tribe leaders — which
+  // is what rules out individual error and points at the default.
+  const REC_TITLE_TEMPLATES: Record<string, (label: string) => string> = {
+    all: () => 'Reunião Geral — Núcleo IA & GP | Semana {n}',
+    tribe: (label) => `${label} — Reunião Semanal | Semana {n}`,
+    initiative: (label) => `${label} — Reunião | Semana {n}`,
+    leadership: () => 'Reunião de Liderança — Núcleo IA & GP | Semana {n}',
+    curators: () => 'Comitê de Curadoria — Reunião | Semana {n}',
+  };
+
+  // Rewrites the title field to the audience-derived default, UNLESS the operator typed their own.
+  // Respecting `userEdited` matters: clobbering a deliberate title would be a worse bug than the one
+  // being fixed. A scope audience with nothing selected yet leaves the field untouched rather than
+  // writing a half-derived title.
+  function syncRecTitleDefault() {
+    const input = document.getElementById('rec-title') as HTMLInputElement | null;
+    if (!input || input.dataset.userEdited === '1') return;
+    const aud = (document.getElementById('rec-audience') as HTMLSelectElement | null)?.value || 'all';
+    let label = '';
+    if (aud === 'tribe' || aud === 'initiative') {
+      const sel = document.getElementById(aud === 'tribe' ? 'rec-tribe-select' : 'rec-initiative-select') as HTMLSelectElement | null;
+      if (!sel?.value) return;
+      label = sel.selectedOptions?.[0]?.textContent?.trim() || '';
+      if (!label) return;
+    }
+    input.value = (REC_TITLE_TEMPLATES[aud] || REC_TITLE_TEMPLATES.all)(label);
+  }
+
   // #492/#494: reveal the tribe- OR initiative-picker for scoped series; lazy-load the matching cache.
   function toggleRecAudiencePickers() {
     const aud = (document.getElementById('rec-audience') as HTMLSelectElement | null)?.value;
@@ -1779,8 +1835,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const initWrap = document.getElementById('rec-initiative-wrap');
     if (tribeWrap) tribeWrap.style.display = aud === 'tribe' ? 'flex' : 'none';
     if (initWrap) initWrap.style.display = aud === 'initiative' ? 'flex' : 'none';
-    if (aud === 'tribe') ensureTribesLoaded();
-    if (aud === 'initiative') ensureInitiativesLoaded();
+    // The label the title is derived from lives in the option list, so sync AFTER the cache lands.
+    if (aud === 'tribe') { ensureTribesLoaded().then(syncRecTitleDefault); return; }
+    if (aud === 'initiative') { Promise.resolve(ensureInitiativesLoaded()).then(syncRecTitleDefault); return; }
+    syncRecTitleDefault();
   }
 
   function openRecurringModal() {
@@ -1796,9 +1854,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     if (recTribeReset) recTribeReset.value = '';
     const recInitReset = document.getElementById('rec-initiative-select') as HTMLSelectElement | null;
     if (recInitReset) recInitReset.value = '';
+    // A new series starts from the derived default again: clear the "operator typed their own title"
+    // flag, otherwise one custom title would suppress derivation for the rest of the session.
+    const recTitle = document.getElementById('rec-title') as HTMLInputElement | null;
+    if (recTitle) delete recTitle.dataset.userEdited;
     ensureTribesLoaded().then(() => {
       const sel = document.getElementById('rec-tribe-select') as HTMLSelectElement | null;
       if (sel && !sel.value && MEMBER?.tribe_id) sel.value = String(MEMBER.tribe_id);
+      syncRecTitleDefault();
     });
     ensureInitiativesLoaded(); // #494: populate rec-initiative-select for the initiative scope
     toggleRecAudiencePickers();
