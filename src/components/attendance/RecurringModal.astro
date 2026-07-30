@@ -20,6 +20,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.templateTitle', lang)}</label>
+          <!-- Seed value only; attendance.astro's syncRecTitleDefault() DERIVES this from the chosen
+               audience (tribe/initiative name) on open and on every scope change, and stops deriving
+               once the operator types their own. Do NOT reintroduce a scope-specific string here: a
+               fixed institutional default is what produced tribe meetings titled "Reunião Geral". -->
           <input type="text" id="rec-title" value="Reunião Geral — Núcleo IA & GP | Semana &#123;n&#125;"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
