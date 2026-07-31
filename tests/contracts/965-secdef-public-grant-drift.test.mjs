@@ -68,21 +68,22 @@ const ALLOWLIST = new Set([
   //    create_notification ← VolunteerAgreementPanel + send_notification_to_tribe) and PUBLIC/anon EXECUTE
   //    revoked while KEEPING authenticated (legit callers use a session JWT). Per-orthogonal-gate, not mass
   //    revoke ([LL] #588). They therefore left the sweep and are no longer allowlisted. ──
-  // ── Lower-severity internal / cron helpers exposed to PostgREST (issue #965 triage). PENDING revoke —
-  //    each needs its own caller-graph check (e.g. recompute_all_active_pert_cutoffs has an MCP-wrapper hint;
-  //    record_milestone/register_video_screening may have authenticated callers). Ratchet DOWN. ──
+  // ── Ratcheted DOWN (mig 20260805000500, #1551): the ten "PENDING revoke" helpers this list used to
+  //    carry had their caller-graph checked and their PUBLIC/anon/authenticated EXECUTE revoked —
+  //    _compute_pert_cutoff_core, _enqueue_engagement_welcome, _log_gate_attempt,
+  //    _recompute_application_pert, _refresh_preview_gate_eligibles_for_member, _sync_interview_to_event,
+  //    log_cron_run_start, log_cron_run_complete, recompute_all_active_pert_cutoffs, record_milestone.
+  //    The check that unblocked them: every in-database caller is itself SECURITY DEFINER (so EXECUTE is
+  //    resolved as the OWNER, not the caller), pg_cron runs as postgres, and the out-of-database callers
+  //    (pmi-vep-sync worker, send-weekly-member-digest EF) use the service_role key. record_milestone was
+  //    confirmed anon-callable live before the revoke (HTTP 204). The MCP-wrapper hint on
+  //    recompute_all_active_pert_cutoffs was a comment reference only, not a call site.
+  //    Locked by tests/contracts/1551-cron-family-acl-sweep.test.mjs. ──
   '_audit_secdef_initiative_reader_gates',
-  '_compute_pert_cutoff_core',
-  '_enqueue_engagement_welcome',
-  '_log_gate_attempt',
-  '_recompute_application_pert',
-  '_refresh_preview_gate_eligibles_for_member',
-  '_sync_interview_to_event',
-  'log_cron_run_complete',
-  'log_cron_run_start',
-  'log_mcp_usage',
-  'recompute_all_active_pert_cutoffs',
-  'record_milestone',
+  'log_mcp_usage',                        // #1551: KEPT — the MCP EF logs through anon-key+caller-JWT and
+                                          // logUsage() swallows errors, so revoking silently ends the audit
+                                          // trail instead of failing loudly. Caller-supplied p_member_id is a
+                                          // spoofing surface whose fix is a body derivation, not an ACL change.
   'register_video_screening',
 ]);
 

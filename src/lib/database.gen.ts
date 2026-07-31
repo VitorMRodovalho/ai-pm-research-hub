@@ -28152,6 +28152,15 @@ export type Database = {
       }
       _audit_curation_artifact_snapshot_security: { Args: never; Returns: Json }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
+      _audit_function_execute_acl: {
+        Args: { p_names: string[] }
+        Returns: {
+          anon_exec: boolean
+          authenticated_exec: boolean
+          identity_args: string
+          proname: string
+        }[]
+      }
       _audit_get_all_certificates_anon_execute: {
         Args: never
         Returns: boolean
