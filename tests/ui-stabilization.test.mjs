@@ -138,7 +138,10 @@ test('attendance and admin comms-ops accept contextual webinar handoff state fro
   assert.equal(attendance.includes("ATTENDANCE_ROUTE.eventId = params.get('eventId') || ''"), true);
   assert.equal(attendance.includes("ATTENDANCE_ROUTE.edit = params.get('edit') === '1'"), true);
   assert.equal(attendance.includes("document.getElementById('attendance-search')"), true);
-  assert.equal(attendance.includes("openEditEvent(focused);"), true);
+  // #1545: this used to assert the literal callee spelling and broke when the fire-and-forget
+  // call was wrapped in a reporting one (openEditEventSafe) — nothing about the deep-link had
+  // loosened. The invariant is "auto-open reaches the edit opener", so assert that instead.
+  assert.match(attendance, /ATTENDANCE_ROUTE\.autoOpened = true;\s*\n\s*openEditEvent(Safe)?\(focused\);/);
   assert.equal(attendance.includes("document.getElementById('edit-ev-context')"), true);
   assert.equal(attendance.includes('buildWebinarCommsHref(ATTENDANCE_ROUTE, focused)'), true);
   assert.equal(attendance.includes('getAttendanceHandoffCopy(ATTENDANCE_ROUTE.action)'), true);

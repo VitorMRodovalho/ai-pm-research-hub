@@ -1702,6 +1702,8 @@ const esLATAM: Record<string, string> = {
   'attendance.msg.recurringError': 'Error al crear serie',
   'attendance.msg.eventUpdated': 'Evento actualizado ✅',
   'attendance.msg.eventSaveError': 'Error al guardar',
+  'attendance.msg.eventEditOpenError': 'No fue posible abrir la edición de este evento',
+  'attendance.msg.eventNotLoaded': 'Este evento no está cargado en pantalla — recargue la página',
   'attendance.msg.invalidTimezone': 'Zona horaria inválida. Elige una de la lista.',
   'attendance.msg.error': 'Error',
   'attendance.modal.selectEventType': 'Selecciona el tipo de evento',

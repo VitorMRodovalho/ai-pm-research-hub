@@ -1702,6 +1702,8 @@ const enUS: Record<string, string> = {
   'attendance.msg.recurringError': 'Error creating series',
   'attendance.msg.eventUpdated': 'Event updated ✅',
   'attendance.msg.eventSaveError': 'Error saving',
+  'attendance.msg.eventEditOpenError': 'Could not open the editor for this event',
+  'attendance.msg.eventNotLoaded': 'This event is not loaded on screen — reload the page',
   'attendance.msg.invalidTimezone': 'Invalid timezone. Pick one from the list.',
   'attendance.msg.error': 'Error',
   'attendance.modal.selectEventType': 'Select the event type',

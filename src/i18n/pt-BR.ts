@@ -1707,6 +1707,8 @@ const ptBR: Record<string, string> = {
   'attendance.msg.recurringError': 'Erro ao criar série',
   'attendance.msg.eventUpdated': 'Evento atualizado ✅',
   'attendance.msg.eventSaveError': 'Erro ao salvar',
+  'attendance.msg.eventEditOpenError': 'Não foi possível abrir a edição deste evento',
+  'attendance.msg.eventNotLoaded': 'Este evento não está carregado na tela — recarregue a página',
   'attendance.modal.selectEventType': 'Selecione o tipo do evento',
   'attendance.msg.invalidTimezone': 'Fuso horário inválido. Escolha um da lista.',
   'attendance.msg.error': 'Erro',
