@@ -57,6 +57,11 @@
   --fg: var(--text-primary);
   --fg-muted: var(--text-muted);
   --border: var(--border-default);
+  /* #1545: `--accent` was USED by 34 call sites (6 of them `bg-[var(--accent)] text-white`
+     primary buttons) and DEFINED nowhere — an undefined custom property makes the whole
+     declaration invalid, so those buttons rendered white-on-white and read as missing.
+     Points at -deep, not brand orange: white text on #FF610F is 3.01:1 and fails AA. */
+  --accent: var(--color-orange-deep);
 
   /* ── Hero (gradient) ── */
   --hero-gradient: linear-gradient(135deg, #003B5C, #200F3B 40%, #0A1628);
@@ -198,6 +203,11 @@
   --fg: var(--text-primary);
   --fg-muted: var(--text-muted);
   --border: var(--border-default);
+  /* #1545: `--accent` was USED by 34 call sites (6 of them `bg-[var(--accent)] text-white`
+     primary buttons) and DEFINED nowhere — an undefined custom property makes the whole
+     declaration invalid, so those buttons rendered white-on-white and read as missing.
+     Points at -deep, not brand orange: white text on #FF610F is 3.01:1 and fails AA. */
+  --accent: var(--color-orange-deep);
 
   /* ── Hero ── */
   --hero-gradient: linear-gradient(135deg, #080E1C, #120A26 40%, #060A14);
