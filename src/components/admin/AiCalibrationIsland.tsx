@@ -311,7 +311,7 @@ export default function AiCalibrationIsland() {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-            <Bot className="h-6 w-6 text-[var(--accent-primary)]" aria-hidden />
+            <Bot className="h-6 w-6 text-[var(--accent)]" aria-hidden />
             {t('comp.aiCalibration.title', 'Calibração de IA')}
           </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
@@ -338,7 +338,7 @@ export default function AiCalibrationIsland() {
             onClick={handleTriggerRun}
             disabled={triggering}
             title={t('comp.aiCalibration.triggerHint', 'Roda agora a calibração e gera nova rodada com as validações desde o último cron.')}
-            className="px-3 py-2 rounded-lg border border-[var(--accent-primary)] text-[var(--accent-primary)] text-sm font-medium hover:bg-[var(--accent-primary)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 py-2 rounded-lg border border-[var(--accent)] text-[var(--accent)] text-sm font-medium hover:bg-[var(--accent)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {triggering
               ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -350,7 +350,7 @@ export default function AiCalibrationIsland() {
           <button
             type="button"
             onClick={fetchData}
-            className="px-3 py-2 rounded-lg bg-[var(--accent-primary)] text-white text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
+            className="px-3 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
             {t('comp.aiCalibration.refresh', 'Atualizar')}
@@ -478,9 +478,9 @@ export default function AiCalibrationIsland() {
                           tabIndex={0}
                           role="button"
                           aria-label={t('comp.aiCalibration.drillOpenAria', `Ver validações de ${v.name || ''}`).replace('{name}', v.name || '')}
-                          className="border-b border-[var(--border-default)] last:border-b-0 cursor-pointer hover:bg-[var(--surface-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:ring-inset"
+                          className="border-b border-[var(--border-default)] last:border-b-0 cursor-pointer hover:bg-[var(--surface-elevated)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-inset"
                         >
-                          <td className="py-2 pr-3 text-[var(--accent-primary)] font-medium underline-offset-2 hover:underline">{v.name || DASH}</td>
+                          <td className="py-2 pr-3 text-[var(--accent)] font-medium underline-offset-2 hover:underline">{v.name || DASH}</td>
                           <td className="py-2 pr-3 text-right">{v.validations_n}</td>
                           <td className="py-2 pr-3 text-right">
                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${agreementColor(v.agreement_rate)}`}>

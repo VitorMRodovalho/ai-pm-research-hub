@@ -1,0 +1,29 @@
+# Baseline de tokens CSS usados mas NUNCA definidos — #1545, medido em 2026-07-31.
+#
+# Um custom property indefinido invalida a declaracao inteira. Onde isso cai num FUNDO com texto
+# branco, o controle fica invisivel: foi assim que o Salvar do editor de bloco da Agenda Viva
+# sumiu da tela. Essa classe aguda esta em ZERO e o guard a mantem em zero SEM allowlist.
+#
+# Os tokens abaixo sao os cosmeticos que sobraram (texto, borda, hover). O guard e um RATCHET:
+# token novo reprova; remover token daqui e progresso. Nao acrescente linha sem issue.
+#
+# formato: <token> <n_arquivos>
+--bg-subtle 5
+--bg-card 3
+--brand-primary 3
+--danger-text 3
+--overlay-card-hover 3
+--success-text 3
+--bg-primary 2
+--border-focus 2
+--navy 2
+--text 2
+--bg-input 1
+--bg-secondary 1
+--bg-tertiary 1
+--border-color 1
+--border-light 1
+--color-danger 1
+--color-red-500 1
+--color-success 1
+--color-warning 1
