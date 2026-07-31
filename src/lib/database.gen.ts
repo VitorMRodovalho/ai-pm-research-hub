@@ -28110,6 +28110,19 @@ export type Database = {
         Args: { p_chain_id: string }
         Returns: undefined
       }
+      _agenda_block_owner_visible: {
+        Args: { p_is_admin: boolean; p_is_mine: boolean; p_status: string }
+        Returns: boolean
+      }
+      _agenda_blocks_pending_rows: {
+        Args: { p_horizon_days?: number }
+        Returns: {
+          event_date: string
+          event_id: string
+          pending: number
+          title: string
+        }[]
+      }
       _artia_safe_event_summary: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -29739,6 +29752,7 @@ export type Database = {
       delete_revenue_entry: { Args: { p_id: string }; Returns: undefined }
       delete_tag: { Args: { p_tag_id: string }; Returns: undefined }
       deselect_tribe: { Args: never; Returns: Json }
+      detect_agenda_blocks_pending_cron: { Args: never; Returns: Json }
       detect_and_notify_detractors: { Args: never; Returns: Json }
       detect_and_notify_detractors_cron: { Args: never; Returns: Json }
       detect_credly_unmapped_cron: { Args: never; Returns: Json }
