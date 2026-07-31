@@ -53,33 +53,49 @@ const PARES_REVISADOS_LEGITIMOS = [
 const SEM_INICIATIVA = '00000000-0000-0000-0000-000000000000';
 
 /**
- * Lê uma tabela inteira em páginas. Ler sem paginar é como o #1526 nasceu: o corte do PostgREST devolveu 50
- * de 87 e a agregação inteira ficou errada em silêncio. Aqui a contagem exata é conferida contra o que veio.
+ * Lê uma tabela inteira em páginas, com ordem estável. Ler sem paginar é como o #1526 nasceu: o corte do
+ * PostgREST devolveu 50 de 87 e a agregação inteira ficou errada em silêncio.
+ *
+ * A parada é a **página curta**, não um `count` tirado antes. A primeira versão deste helper afirmava
+ * `linhas.length === count` e quebrou em CI com "vieram 632 de 624": a suíte roda contra a produção viva, e
+ * entre a contagem e a última página alguém inseriu eventos. Comparar com um retrato de outro instante
+ * transforma escrita concorrente legítima em falha de gate — e um gate que grita por motivo errado é
+ * desligado, que é o pior desfecho possível. Página curta é auto-terminante e imune a isso: enquanto vier
+ * página cheia, há mais para buscar.
+ *
+ * A ordenação por `id` mantém o offset estável e o `Map` absorve a linha que aparece duas vezes quando uma
+ * inserção empurra a janela — sem isso, a defesa contra leitura curta viraria fonte de duplicata.
  */
 async function lerTudo(tabela, colunas) {
-  const { count, error: errCount } = await sb.from(tabela).select('*', { count: 'exact', head: true });
-  assert.equal(errCount, null, `contagem de ${tabela} falhou: ${errCount?.message}`);
-
-  const linhas = [];
   const PAGINA = 1000;
-  for (let inicio = 0; inicio < count; inicio += PAGINA) {
-    const { data, error } = await sb.from(tabela).select(colunas).range(inicio, inicio + PAGINA - 1);
+  const MAX_PAGINAS = 100; // trava de laço: 100k linhas é ordem de grandeza acima do domínio
+  const porId = new Map();
+  let pagina = 0;
+
+  for (; pagina < MAX_PAGINAS; pagina++) {
+    const inicio = pagina * PAGINA;
+    const { data, error } = await sb
+      .from(tabela)
+      .select(colunas)
+      .order('id', { ascending: true })
+      .range(inicio, inicio + PAGINA - 1);
     assert.equal(error, null, `leitura de ${tabela} falhou: ${error?.message}`);
-    linhas.push(...data);
+    for (const linha of data) porId.set(linha.id, linha);
+    if (data.length < PAGINA) break; // página curta = fim real, não corte do servidor
   }
 
-  assert.equal(
-    linhas.length,
-    count,
-    `${tabela}: vieram ${linhas.length} linhas de ${count} — leitura truncada, qualquer veredito daqui é falso`,
+  assert.ok(
+    pagina < MAX_PAGINAS,
+    `${tabela}: ${MAX_PAGINAS} páginas sem chegar ao fim — leitura provavelmente em laço, veredito não confiável`,
   );
-  return linhas;
+  return [...porId.values()];
 }
 
 /** Devolve os pares sobrepostos, já separados nos dois baldes. Não julga: só mede. */
 async function medirSobreposicoes() {
   const eventos = await lerTudo('events', 'id, date, time_start, title, type, audience_level, initiative_id');
-  const presencas = await lerTudo('attendance', 'event_id, member_id');
+  // `id` entra porque é a chave do Map de deduplicação em lerTudo(), não porque o cálculo precise dele.
+  const presencas = await lerTudo('attendance', 'id, event_id, member_id');
 
   const membrosPorEvento = new Map();
   for (const p of presencas) {
