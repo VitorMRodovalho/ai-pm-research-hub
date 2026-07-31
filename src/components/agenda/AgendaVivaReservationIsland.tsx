@@ -28,6 +28,7 @@ interface EventRow {
   id: string;
   date: string;
   time_start: string | null;
+  is_past?: boolean;
   capacity_remaining_min: number;
   blocks: Block[];
 }
@@ -48,7 +49,10 @@ const emptyDraft = (format_slug: string, duration_min: number): DraftState => ({
   format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false,
 });
 
-export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?: Lang }) {
+// `range` mirrors AgendaVivaPublic's prop of the same name — deliberately NOT called `window`,
+// which would read as shadowing the global this component uses for events and toasts.
+export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'upcoming' }:
+  { lang?: Lang; range?: 'upcoming' | 'both' }) {
   const t = usePageI18n();
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
   const [allowed, setAllowed] = useState(false);
@@ -68,14 +72,14 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
     const sb = getSb();
     if (!sb) { setTimeout(load, 300); return; }
     const [{ data: agenda }, { data: fmtRows }] = await Promise.all([
-      sb.rpc('get_geral_agenda_viva', { p_limit_events: 2 }),
+      sb.rpc('get_geral_agenda_viva', { p_limit_events: 2, p_window: range }),
       sb.from('agenda_block_formats').select('slug, label_i18n, default_duration_min').eq('active', true).order('sort_order'),
     ]);
     if (Array.isArray(fmtRows)) setFormats(fmtRows);
     const evs: EventRow[] = (agenda?.events ?? []) as EventRow[];
     setEvents(evs);
     setLoading(false);
-  }, [getSb]);
+  }, [getSb, range]);
 
   useEffect(() => {
     recomputeGate();
@@ -248,6 +252,12 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
       </h2>
       {events.map((ev) => {
         const myBlock = ev.blocks.find((b) => b.is_mine);
+        // A past meeting is here only so its owner can still correct their own block (the #1545
+        // case: a block reserved under the wrong format). Nothing else on a past card is valid —
+        // reserving is refused server-side (`reservation_window_closed`), and offering to DELETE a
+        // block that already happened would erase the record of it. So: no card without a block of
+        // mine, and no reserve/cancel affordance on the ones that remain.
+        if (ev.is_past && !myBlock) return null;
         const draft = drafts[ev.id] || (formats[0] ? emptyDraft(formats[0].slug, formats[0].default_duration_min) : null);
         const isEditing = myBlock && editing[myBlock.id];
         return (
@@ -255,7 +265,9 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
             <div className="flex items-center justify-between mb-3">
               <span className="font-semibold text-[var(--text-primary)] capitalize">{fmtDate(ev.date)}</span>
               <span className="text-xs text-[var(--text-muted)]">
-                {ev.capacity_remaining_min} {t('comp.agendaViva.min', 'min')} {t('comp.agendaViva.capacityFree', 'livres')}
+                {ev.is_past
+                  ? t('comp.agendaViva.pastMeeting', 'Reunião já realizada')
+                  : `${ev.capacity_remaining_min} ${t('comp.agendaViva.min', 'min')} ${t('comp.agendaViva.capacityFree', 'livres')}`}
               </span>
             </div>
 
@@ -288,16 +300,18 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR' }: { lang?:
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => startEdit(myBlock)} title={t('comp.agendaViva.editCta', 'Editar')}
                         className="p-1.5 rounded hover:bg-[var(--bg-subtle)] text-[var(--text-muted)]"><Pencil size={15} /></button>
-                      <button onClick={() => cancelReservation(myBlock.id)} disabled={busy === myBlock.id}
-                        title={t('comp.agendaViva.cancelReserveCta', 'Cancelar reserva')}
-                        className="p-1.5 rounded hover:bg-rose-50 text-rose-500 disabled:opacity-50">
-                        {busy === myBlock.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                      </button>
+                      {!ev.is_past && (
+                        <button onClick={() => cancelReservation(myBlock.id)} disabled={busy === myBlock.id}
+                          title={t('comp.agendaViva.cancelReserveCta', 'Cancelar reserva')}
+                          className="p-1.5 rounded hover:bg-rose-50 text-rose-500 disabled:opacity-50">
+                          {busy === myBlock.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-            ) : allowed && draft ? (
+            ) : !ev.is_past && allowed && draft ? (
               <>
                 {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug))}
                 <div className="mt-3 flex justify-end">

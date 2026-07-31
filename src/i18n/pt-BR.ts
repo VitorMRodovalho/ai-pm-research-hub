@@ -7093,6 +7093,7 @@ const ptBR: Record<string, string> = {
   'comp.agendaViva.capacityLabel': 'Capacidade',
   'comp.agendaViva.capacityUsed': 'usados',
   'comp.agendaViva.capacityFree': 'livres',
+  'comp.agendaViva.pastMeeting': 'Reunião já realizada',
   'comp.agendaViva.capacityFull': 'Pauta cheia',
   'comp.agendaViva.blocksEmpty': 'Nenhum bloco reservado ainda — seja o primeiro.',
   'comp.agendaViva.mineBadge': 'Seu bloco',
