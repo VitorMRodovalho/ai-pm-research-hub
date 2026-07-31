@@ -7086,6 +7086,7 @@ const enUS: Record<string, string> = {
   'comp.agendaViva.capacityLabel': 'Capacity',
   'comp.agendaViva.capacityUsed': 'used',
   'comp.agendaViva.capacityFree': 'free',
+  'comp.agendaViva.pastMeeting': 'Meeting already held',
   'comp.agendaViva.capacityFull': 'Agenda full',
   'comp.agendaViva.blocksEmpty': 'No block reserved yet — be the first.',
   'comp.agendaViva.mineBadge': 'Your block',

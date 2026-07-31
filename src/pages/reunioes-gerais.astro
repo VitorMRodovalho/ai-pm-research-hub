@@ -24,7 +24,13 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
       <h1 class="text-2xl sm:text-3xl font-extrabold text-navy">{t('comp.agendaViva.heading', lang)}</h1>
       <p class="text-[var(--text-muted)] mt-2 max-w-[58ch]">{t('comp.agendaViva.subtitle', lang)}</p>
     </header>
-    <AgendaVivaReservationIsland client:load lang={lang} />
-    <AgendaVivaPublic client:load lang={lang} />
+    <!--
+      #1545/requisito do PM: as duas ilhas pedem a janela `both`. Sem isso a página só via
+      `upcoming` (o default), e a ÚLTIMA REUNIÃO REALIZADA sumia desta rota — junto com o bloco
+      que o dono ainda precisa editar. A home já pedia `both` (WeeklyScheduleSection); esta rota,
+      que é justamente a superfície de protagonismo, era a que não pedia.
+    -->
+    <AgendaVivaReservationIsland client:load lang={lang} range="both" />
+    <AgendaVivaPublic client:load lang={lang} range="both" />
   </div>
 </BaseLayout>

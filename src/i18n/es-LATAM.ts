@@ -7086,6 +7086,7 @@ const esLATAM: Record<string, string> = {
   'comp.agendaViva.capacityLabel': 'Capacidad',
   'comp.agendaViva.capacityUsed': 'usados',
   'comp.agendaViva.capacityFree': 'libres',
+  'comp.agendaViva.pastMeeting': 'Reunión ya realizada',
   'comp.agendaViva.capacityFull': 'Agenda llena',
   'comp.agendaViva.blocksEmpty': 'Ningún bloque reservado aún — sé el primero.',
   'comp.agendaViva.mineBadge': 'Tu bloque',
