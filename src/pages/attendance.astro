@@ -218,6 +218,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
   msgEventSaveError: t('attendance.msg.eventSaveError', lang),
+  msgEventEditOpenError: t('attendance.msg.eventEditOpenError', lang),
+  msgEventNotLoaded: t('attendance.msg.eventNotLoaded', lang),
   msgInvalidTimezone: t('attendance.msg.invalidTimezone', lang),
   msgError: t('attendance.msg.error', lang),
   rosterLoading: t('attendance.roster.loading', lang),
@@ -331,6 +333,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgRecurringError: 'Erro ao criar série',
     msgEventUpdated: 'Evento atualizado ✅',
     msgEventSaveError: 'Erro ao salvar',
+    msgEventEditOpenError: 'Não foi possível abrir a edição deste evento',
+    msgEventNotLoaded: 'Este evento não está carregado na tela — recarregue a página',
     msgError: 'Erro',
     rosterLoading: 'Carregando...',
     rosterNoParticipants: 'Nenhum participante encontrado.',
@@ -577,7 +581,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     }
     if (ATTENDANCE_ROUTE.edit && CAN_MANAGE && !ATTENDANCE_ROUTE.autoOpened) {
       ATTENDANCE_ROUTE.autoOpened = true;
-      openEditEvent(focused);
+      openEditEventSafe(focused);
     }
     // p162 Track B' G3b — leader digest CTA "Marcar presença" deep-links here
     // with ?eventId=<uuid>&action=register. CAN_MANAGE gate matches the canRoster
@@ -1155,7 +1159,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           break;
         case 'open-focused-edit': {
           const focused = currentFocusedEvent();
-          if (focused) openEditEvent(focused);
+          if (focused) openEditEventSafe(focused);
           break;
         }
         case 'load-more-events':
@@ -1185,8 +1189,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           toggleTagPicker(target.dataset.target || '');
           break;
         case 'edit-event': {
-          const ev = (window as any).__attendanceEventsById?.[target.dataset.eventId || ''];
-          if (ev) openEditEvent(ev);
+          // #1545: the old `if (ev) openEditEvent(ev)` had TWO silent exits — a missing map entry
+          // and a rejected promise. openEditEventSafe reports both.
+          openEditEventSafe((window as any).__attendanceEventsById?.[target.dataset.eventId || '']);
           break;
         }
         case 'delete-event': {
@@ -1325,6 +1330,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (btn) btn.disabled = true;
       try {
         await run();
+      } catch (err: any) {
+        // #1545: the handlers do their DOM reads OUTSIDE their own try (saveEventEdit reads 19
+        // nodes before it opens one), and nobody awaits guardedSubmit — so a throw there died as
+        // an unhandled rejection and the user saw a Save button that did nothing at all.
+        console.error(`submit handler failed (${formId}):`, err);
+        toast(`${I18N.msgEventSaveError}: ${err?.message || err}`, 'error');
       } finally {
         submitsInFlight.delete(formId);
         if (btn) btn.disabled = false;
@@ -2030,6 +2041,23 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   // ── EDIT EVENT ──
+  // #1545: `openEditEvent` is async and populates 23 DOM nodes, two remote caches and the tag
+  // picker BEFORE `openModal` runs at the end. Every call site was fire-and-forget, so a throw
+  // anywhere in that path rejected into the void: no modal, no toast, nothing in the console —
+  // the click on ✏️ simply did nothing. Route every call through this wrapper so the failure
+  // names itself instead of being indistinguishable from a dead button.
+  function openEditEventSafe(ev: any) {
+    if (!ev) {
+      console.error('openEditEvent: event not in __attendanceEventsById');
+      toast(I18N.msgEventNotLoaded, 'error');
+      return;
+    }
+    Promise.resolve().then(() => openEditEvent(ev)).catch((err) => {
+      console.error('openEditEvent failed:', err);
+      toast(`${I18N.msgEventEditOpenError}: ${err?.message || err}`, 'error');
+    });
+  }
+
   async function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
@@ -2155,7 +2183,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     let scope: 'this' | 'future' = 'this';
     if (recurrenceGroup) {
       const choice = await askRecurrenceScope();
-      if (!choice) return; // cancelled
+      // #1545: this exit is legitimate (the user dismissed the dialog) but it is byte-identical
+      // to a broken Save from the outside. Log it so the console can tell the two apart.
+      if (!choice) return void console.debug('saveEventEdit: recurrence scope dialog dismissed');
       scope = choice;
     }
 
