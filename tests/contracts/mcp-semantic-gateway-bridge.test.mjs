@@ -91,10 +91,12 @@ function semanticBlock() {
   return block;
 }
 
-test('semantic block registers exactly 52 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383)', () => {
+// 52 → 53 em 31/07/2026 (#1548): +agenda_blocks. Não é uma onda do #1383 — é adição própria,
+// por isso entra na conta como um termo separado em vez de inflar W5.
+test('semantic block registers exactly 53 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383 + 1 #1548)', () => {
   const block = semanticBlock();
   const matches = block.match(/mcp\.tool\(\s*"[^"]+"/g) || [];
-  assert.equal(matches.length, 52, `expected 52 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
+  assert.equal(matches.length, 53, `expected 53 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
 });
 
 test('semantic block names the bridge + Wave-1 tools exactly', () => {
@@ -164,9 +166,9 @@ test('ef declares app.all("/semantic") route', () => {
   assert.match(EF, /app\.all\(\s*"\/semantic"\s*,\s*async/, 'expected app.all("/semantic", ...) route');
 });
 
-test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.11.0 (#1397 CR authority)', () => {
+test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.12.0 (#1397 CR authority)', () => {
   const block = routeBlock('/semantic');
-  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*"0\.11\.0"\s*\}\s*\)/);
+  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/);
 });
 
 test('/semantic handler registers ONLY registerSemanticTools (not registerTools/registerKnowledge)', () => {

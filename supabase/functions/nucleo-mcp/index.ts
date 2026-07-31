@@ -8089,6 +8089,9 @@ const SEMANTIC_TOOL_ANNOTATIONS: Record<string, SemanticAnnotation> = {
   // destructive writes — action set includes an irreversible/removal verb behind an ADR-0018 confirm-gate (8)
   card_write: SEM_DESTRUCTIVE, engagement_write: SEM_DESTRUCTIVE, event_write: SEM_DESTRUCTIVE, member_lifecycle: SEM_DESTRUCTIVE,
   selection_decide: SEM_DESTRUCTIVE, document_version_write: SEM_DESTRUCTIVE, ip_exclusion: SEM_DESTRUCTIVE, lgpd_admin: SEM_DESTRUCTIVE,
+  // #1548: `no_show` marca nao realizado E estorna XP (pontos negativos no ledger) — verbo de
+  // remocao, logo a tool inteira e destrutiva e as duas escritas passam pelo confirm-gate.
+  agenda_blocks: SEM_DESTRUCTIVE,
   // additive writes (20)
   card_checklist: SEM_WRITE, card_comment: SEM_WRITE, member_emails: SEM_WRITE, meeting_minutes: SEM_WRITE, meeting_actions: SEM_WRITE,
   evaluation_submit: SEM_WRITE_IDEMPOTENT, visitor_leads: SEM_WRITE, certificate_manage: SEM_WRITE, idea_pipeline: SEM_WRITE,
@@ -10442,6 +10445,110 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       : /already|locked|invalid|required|must |consent|not_pending|not_signable/i.test(em) ? "invalid_input"
       : "internal_error";
 
+  // ── #1548 · agenda_blocks (R/W) — a Agenda Viva nao tinha NENHUMA superficie MCP ────────
+  // Antes desta tool, `grep -rln "agenda_block" supabase/functions/nucleo-mcp/` devolvia ZERO
+  // arquivos: reservar, editar e confirmar bloco de protagonismo so existiam pela web. A onda 1
+  // (#1552) fez a pendencia ficar VISIVEL no `prepare` e no `close`; esta tool a torna ACIONAVEL.
+  mcp.tool(
+    "agenda_blocks",
+    "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as duas acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
+    {
+      action: z.enum(["list", "confirm", "no_show"]).describe("Agenda-block operation."),
+      event_id: z.string().optional().describe("Event UUID. action='list' — opcional (sem ele, janela corrente). action='confirm' — confirma TODOS os blocos reservados do evento."),
+      block_id: z.string().optional().describe("Block UUID. action='confirm' — um bloco so. action='no_show' — REQUERIDO."),
+      reason: z.string().optional().describe("action='no_show' — por que o bloco nao foi realizado. Fica no ledger junto do estorno."),
+      confirm: z.boolean().optional().describe("Passe confirm=true para executar. Omitido/false devolve preview com os alvos exatos (ADR-0018 W1). Vale para confirm e no_show."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "meetings";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "agenda_blocks", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+
+      // ── list ────────────────────────────────────────────────────────────────
+      if (params.action === "list") {
+        if (params.event_id && !isUUID(params.event_id)) return invalid("event_id must be a UUID.", "Use event_search to find one.");
+        const rpc = params.event_id ? "get_meeting_preparation" : "get_geral_agenda_viva";
+        const args = params.event_id ? { p_event_id: params.event_id } : { p_limit_events: 2, p_window: "both" };
+        const { data, error } = await sb.rpc(rpc, args);
+        if (error) { await logUsage(sb, member.id, "agenda_blocks", false, error.message, start); return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        const blocks = params.event_id ? ((data as any)?.agenda_blocks ?? []) : ((data as any)?.events ?? []).flatMap((e: any) => e.blocks ?? []);
+        const pending = params.event_id ? (data as any)?.agenda_blocks_pending : null;
+        await logUsage(sb, member.id, "agenda_blocks", true, undefined, start);
+        return semanticOk({
+          data: { action: "list", event_id: params.event_id ?? null, result: data ?? null },
+          // `agenda_blocks_pending` volta NULL para quem nao tem manage_event — NULL significa
+          // "nao divulgado a voce", nao "zero pendentes" (#1071 esconde bloco reservado passado).
+          summary: params.event_id
+            ? `${blocks.length} bloco(s) visivel(is) neste evento` + (pending === null || pending === undefined ? " (contagem de pendentes nao divulgada a este chamador)" : `, ${pending} pendente(s) de confirmacao`)
+            : `${blocks.length} bloco(s) na janela corrente da Agenda Viva.`,
+          warnings: (pending === null || pending === undefined) && params.event_id
+            ? ["agenda_blocks_pending veio NULL: o chamador nao tem manage_event. NULL nao e zero."]
+            : [],
+          next_actions: [
+            "agenda_blocks action='confirm': conceder XP ao protagonista que apresentou",
+            "meeting_minutes action='close': fechar a reuniao (o envelope acusa bloco pendente)",
+          ],
+          audit: { tool: "agenda_blocks", semantic_domain: dom, pii_level: "low", permission: "RPC-enforced (LGPD PD-5 layering via _agenda_block_owner_visible)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "get_meeting_preparation: auth + rls_can_see_initiative; get_geral_agenda_viva: anon-OK com camadas", resource_id: params.event_id ?? null, extra: { action: "list" } },
+        });
+      }
+
+      // ── writes: preview por padrao (ADR-0018 W1) ────────────────────────────
+      if (params.action === "no_show" && !isUUID(params.block_id ?? "")) return invalid("action='no_show' requires block_id (UUID).", "Use action='list' to find it.");
+      if (params.action === "confirm" && !isUUID(params.block_id ?? "") && !isUUID(params.event_id ?? "")) {
+        return invalid("action='confirm' requires block_id (um bloco) OU event_id (todos os reservados do evento).", "Use action='list' primeiro.");
+      }
+
+      const alvoIsEvent = params.action === "confirm" && !isUUID(params.block_id ?? "");
+      if (params.confirm !== true) {
+        // O preview lista os blocos EXATOS que serao afetados. Sem isto, "confirmar o evento"
+        // e um verbo sem objeto — e ele concede XP a pessoas reais.
+        const q = alvoIsEvent
+          ? sb.from("event_agenda_blocks").select("id, title, format_slug, duration_min, status, sort_order").eq("event_id", params.event_id).eq("status", "reserved").order("sort_order")
+          : sb.from("event_agenda_blocks").select("id, title, format_slug, duration_min, status, sort_order").eq("id", params.block_id);
+        const { data: alvos } = await q;
+        await logUsage(sb, member.id, "agenda_blocks", true, undefined, start, "preview");
+        return ok({
+          action: params.action,
+          preview: true,
+          targets: alvos ?? [],
+          target_count: (alvos ?? []).length,
+          warning: params.action === "confirm"
+            ? "Confirmar CONCEDE XP ao protagonista de cada bloco listado, calculado pelo format_slug e pela faixa de duracao. Conceder XP e veredito humano sobre quem de fato apresentou — confira a lista antes. Passe confirm=true para executar."
+            : "no_show marca o bloco como nao realizado e ESTORNA o XP (pontos negativos no ledger, append-only). Passe confirm=true para executar.",
+          next_call: { action: params.action, ...(alvoIsEvent ? { event_id: params.event_id } : { block_id: params.block_id }), ...(params.reason ? { reason: params.reason } : {}), confirm: true },
+        });
+      }
+
+      const rpc = params.action === "no_show" ? "revoke_agenda_block_xp" : (alvoIsEvent ? "confirm_event_blocks" : "confirm_agenda_block");
+      const rpcArgs: Record<string, unknown> = params.action === "no_show"
+        ? { p_block_id: params.block_id, p_reason: params.reason ?? null }
+        : (alvoIsEvent ? { p_event_id: params.event_id } : { p_block_id: params.block_id });
+
+      const { data, error } = await sb.rpc(rpc, rpcArgs);
+      if (error) { await logUsage(sb, member.id, "agenda_blocks", false, error.message, start); return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      // As RPCs devolvem {error: '...'} no CORPO em vez de estourar — tratar como falha, senao um
+      // access_denied vira "sucesso" no envelope (a familia do #1525/#1532).
+      if ((data as any)?.error) {
+        await logUsage(sb, member.id, "agenda_blocks", false, String((data as any).error), start);
+        return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: String((data as any).error) === "access_denied" ? "unauthorized" : "invalid_input", message: String((data as any).error), action: "Confirmar/estornar bloco exige manage_event." }));
+      }
+      await logUsage(sb, member.id, "agenda_blocks", true, undefined, start);
+      return semanticOk({
+        data: { action: params.action, event_id: params.event_id ?? null, block_id: params.block_id ?? null, result: data ?? null },
+        summary: params.action === "no_show"
+          ? `Bloco ${params.block_id} marcado como nao realizado; XP estornado.`
+          : (alvoIsEvent ? `Blocos reservados do evento ${params.event_id} confirmados; XP concedido.` : `Bloco ${params.block_id} confirmado; XP concedido.`),
+        next_actions: [
+          "gamification_report: conferir o XP que entrou",
+          "agenda_blocks action='list': reler a pauta",
+        ],
+        audit: { tool: "agenda_blocks", semantic_domain: dom, pii_level: "low", permission: "manage_event (RPC-enforced)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "can_by_member(caller, 'manage_event') dentro da RPC", resource_id: params.block_id ?? params.event_id ?? null, extra: { action: params.action, confirmed: true } },
+      });
+    },
+  );
+
   // ── W4 · selection_dashboard (R) — cycle pipeline surfaces; RPCs self-gate + COI ──
   mcp.tool(
     "selection_dashboard",
@@ -12144,6 +12251,10 @@ function countRegisteredTools(...registrars: Array<(mcp: McpServer, sb: Sb) => v
   return n;
 }
 const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);       // /mcp full catalog
+// #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
+// payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
+// derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
+const SEMANTIC_SURFACE_VERSION = "0.12.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
@@ -12217,7 +12328,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: "0.11.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -12271,7 +12382,7 @@ app.get("/health", (c) => c.json({
   ef_version: "2.90.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
-    "/semantic": { server: "nucleo-ia-semantic", version: "0.11.0", tools: SEMANTIC_TOOL_COUNT },
+    "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
     "/actions": { server: "nucleo-ia-actions", version: "0.2.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",

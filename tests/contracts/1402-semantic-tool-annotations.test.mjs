@@ -98,8 +98,13 @@ const DESTRUCTIVE = new Set([
   'selection_decide', 'document_version_write', 'ip_exclusion', 'lgpd_admin',
 ]);
 
-test('#1402: the semantic surface still has exactly 52 registered tools', () => {
-  assert.equal(REGISTERED.length, 52, `expected 52 semantic tools, got ${REGISTERED.length}`);
+// 52 → 53 em 31/07/2026 (#1548): +agenda_blocks. A Agenda Viva de Protagonismo não tinha
+// NENHUMA superfície MCP — reservar, editar e confirmar bloco só existiam pela web, e por isso o
+// buraco de 7 blocos sem confirmar da Geral de 30/07 (0 XP) só era corrigível por clique humano.
+// O número é pinado de propósito: subir sem intenção é o sintoma de tool duplicada ou registrada
+// duas vezes; descer é tool perdida num refactor.
+test('#1402: the semantic surface still has exactly 53 registered tools', () => {
+  assert.equal(REGISTERED.length, 53, `expected 53 semantic tools, got ${REGISTERED.length}`);
 });
 
 test('#1402: applySemanticAnnotations is wired into registerSemanticTools', () => {
