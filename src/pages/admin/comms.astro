@@ -875,9 +875,14 @@ const COMMS_I18N = {
       const { data, error } = await sb.rpc('comms_check_token_expiry');
       if (error || !data?.active_alerts?.length) { container.classList.add('hidden'); return; }
       container.innerHTML = (data.active_alerts as any[]).map((a: any) => {
-        const cls = a.alert_type === 'urgent' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800';
+        // #1543: 'unknown' ganha faixa própria porque diz outra coisa — não é "expira logo", é "não
+        // sabemos se expira". Pintar de âmbar junto com o aviso de prazo apagaria justamente a distinção
+        // que a issue existiu para criar.
+        const cls = a.alert_type === 'urgent' ? 'bg-red-50 border-red-200 text-red-800'
+          : a.alert_type === 'unknown' ? 'bg-slate-50 border-slate-300 text-slate-700'
+          : 'bg-amber-50 border-amber-200 text-amber-800';
         return `<div class="rounded-xl border ${cls} px-4 py-3 flex items-center justify-between gap-3">
-          <span class="text-sm">${a.alert_type === 'urgent' ? '\u{1F6A8}' : '\u26A0\uFE0F'} ${escapeHtml(a.message)}</span>
+          <span class="text-sm">${a.alert_type === 'urgent' ? '\u{1F6A8}' : a.alert_type === 'unknown' ? '\u{2753}' : '\u26A0\uFE0F'} ${escapeHtml(a.message)}</span>
           <button class="text-[10px] font-semibold underline opacity-70 hover:opacity-100" data-ack="${a.id}">${T.dismissBtn}</button>
         </div>`;
       }).join('');

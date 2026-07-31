@@ -64,20 +64,60 @@ test('#963 static: all three comms-read RPCs are gated behind can_view_comms_ana
   }
 });
 
-test('#963 static: comms_check_token_expiry gate precedes the write loop + returns a zero-shape when denied', () => {
+test('#963 static: comms_check_token_expiry gate precedes any write, inline or delegated', () => {
+  // A invariante é "quem é negado não escreve" — NÃO "o INSERT mora dentro desta função". A versão
+  // anterior deste teste afirmava o segundo, e por isso ficou vermelha no #1543, que extraiu a escrita
+  // para `_comms_token_expiry_scan()` sem afrouxar nada. Guard que afirma o LOCAL da definição barra
+  // refatoração legítima; este afirma o comportamento e cobre os DOIS desenhos.
   const body = latestFunctionBody('comms_check_token_expiry');
   assert.ok(body, 'comms_check_token_expiry must be defined in a migration');
 
   const gateIdx = body.indexOf('can_view_comms_analytics');
-  const firstInsertIdx = body.indexOf('INSERT INTO public.comms_token_alerts');
   assert.ok(gateIdx >= 0, 'gate must be present');
-  assert.ok(firstInsertIdx >= 0, 'the write (INSERT) must still be present for allowed callers');
-  assert.ok(gateIdx < firstInsertIdx, 'the gate must run BEFORE any write (a denied caller performs no writes)');
+
+  const inlineWriteIdx = body.indexOf('INSERT INTO public.comms_token_alerts');
+  const delegationIdx = body.indexOf('_comms_token_expiry_scan');
+  const writeIdx = [inlineWriteIdx, delegationIdx].filter((i) => i >= 0).sort((a, b) => a - b)[0];
+
+  assert.ok(
+    writeIdx !== undefined,
+    'nem escrita inline nem delegação ao worker: a função deixou de fazer o trabalho para quem TEM acesso',
+  );
+  assert.ok(
+    gateIdx < writeIdx,
+    'o gate tem de rodar ANTES de qualquer escrita, inline ou via delegação — quem é negado não escreve',
+  );
 
   // Denied return is the empty shape the /admin/comms page tolerates (hides the section).
   assert.ok(
     /RETURN\s+jsonb_build_object\(\s*'alerts_created'\s*,\s*0/.test(body),
     "denied path must RETURN jsonb_build_object('alerts_created', 0, 'active_alerts', '[]')",
+  );
+});
+
+test('#963 static: o worker delegado não é alcançável por authenticated (#1543)', () => {
+  // O risco que a extração cria e que o guard antigo não cobria: se `_comms_token_expiry_scan()` ficasse
+  // executável por `authenticated`, qualquer usuário logado chamaria o worker DIRETO e o gate #963 viraria
+  // decoração. O mesmo vale para a porta do cron, que por desenho não tem gate de usuário nenhum.
+  const sql = allSQL;
+  assert.ok(
+    latestFunctionBody('_comms_token_expiry_scan'),
+    '_comms_token_expiry_scan deve estar capturado em alguma migration',
+  );
+
+  assert.match(
+    sql,
+    /REVOKE ALL ON FUNCTION public\._comms_token_expiry_scan\(\) FROM PUBLIC, anon, authenticated/,
+    'sem este REVOKE, o worker vira uma porta lateral que ignora o gate #963',
+  );
+  assert.match(
+    sql,
+    /REVOKE ALL ON FUNCTION public\.comms_check_token_expiry_cron\(\) FROM PUBLIC, anon, authenticated/,
+    'a porta do cron não tem gate de usuário por desenho; sem o REVOKE ela é a porta lateral',
+  );
+  assert.ok(
+    !/GRANT EXECUTE ON FUNCTION public\.(_comms_token_expiry_scan|comms_check_token_expiry_cron)\(\) TO [^;]*authenticated/.test(sql),
+    'nenhuma das duas pode ser concedida a authenticated',
   );
 });
 

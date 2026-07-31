@@ -44,6 +44,12 @@ type ChannelConfig = {
   oauth_token: string | null
   oauth_refresh_token: string | null
   token_expires_at: string | null
+  // #1543: para o Instagram o prazo que EXISTE é este, não token_expires_at — o debug_token da Graph API
+  // devolve expires_at = 0 (não expira) e um data_access_expires_at real. Enquanto a plataforma só olhava
+  // o primeiro, o canal ficava sem vigilância nenhuma.
+  data_access_expires_at: string | null
+  // NULL = nunca sondado na API do provedor. "Nunca sondado" é DESCONHECIDO, não "válido".
+  token_checked_at: string | null
   sync_status: string
   config: Record<string, unknown>
 }
@@ -592,20 +598,102 @@ const CHANNEL_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<Normalize
 
 // ─── Token expiry helpers ───
 
-function isTokenValid(cfg: ChannelConfig): boolean {
+/**
+ * #1543: o prazo que vale é o MAIS PRÓXIMO entre expiração do token e expiração do acesso a dados.
+ * Antes só o primeiro era considerado, e para o Instagram só o segundo existe — por isso o canal passava
+ * por "sem prazo" e escapava de toda vigilância. Devolve null quando NENHUM prazo é conhecido, que é uma
+ * terceira coisa: desconhecido.
+ */
+function tokenDeadline(cfg: ChannelConfig): number | null {
+  const prazos = [cfg.token_expires_at, cfg.data_access_expires_at]
+    .filter((v): v is string => !!v)
+    .map((v) => new Date(v).getTime())
+    .filter((t) => Number.isFinite(t))
+  return prazos.length ? Math.min(...prazos) : null
+}
+
+/**
+ * "Vale a pena tentar sincronizar?" — NÃO é "o token é válido".
+ *
+ * A distinção importa: prazo desconhecido continua permitindo a tentativa, porque parar o sync de um canal
+ * que funciona seria pior que o problema, e a própria chamada à API dirá se o token morreu. O que NÃO pode
+ * acontecer é prazo desconhecido virar silêncio na vigilância — e isso é tratado onde deve ser, no alerta:
+ * `_comms_token_expiry_scan()` emite `alert_type = 'unknown'` para canal OAuth sem prazo e sem sonda
+ * recente. Antes do #1543 a ausência era tratada como validade nas duas camadas ao mesmo tempo, e aí nada
+ * sobrava para acusar.
+ */
+function isTokenWorthTrying(cfg: ChannelConfig): boolean {
   // YouTube uses API key (never expires)
   if (cfg.channel === 'youtube') return !!cfg.api_key
-  // OAuth channels need a valid token
+  // OAuth channels need a token at all
   if (!cfg.oauth_token) return false
-  if (!cfg.token_expires_at) return true // no expiry set = assume valid
-  return new Date(cfg.token_expires_at).getTime() > Date.now()
+  const prazo = tokenDeadline(cfg)
+  if (prazo === null) return true // desconhecido: tenta, e o alerta 'unknown' cobre a vigilância
+  return prazo > Date.now()
 }
 
 function isTokenExpiringSoon(cfg: ChannelConfig): boolean {
   if (cfg.channel === 'youtube') return false
-  if (!cfg.token_expires_at) return false
-  const expiresAt = new Date(cfg.token_expires_at).getTime()
-  return expiresAt > Date.now() && expiresAt < Date.now() + SEVEN_DAYS_MS
+  const prazo = tokenDeadline(cfg)
+  if (prazo === null) return false // desconhecido não é "expirando"; é 'unknown', e quem grita é o scan
+  return prazo > Date.now() && prazo < Date.now() + SEVEN_DAYS_MS
+}
+
+/**
+ * #1543: sonda o token do Meta no `debug_token` da Graph API e persiste o que ela devolve.
+ *
+ * A autoridade sobre validade é o provedor, não uma coluna que nenhum caminho de código preenchia. Medido
+ * em 30/07/2026 para o token em produção: `is_valid: true`, `expires_at: 0` (não expira) e
+ * `data_access_expires_at` em 25/09/2026 — ou seja, o prazo real existia e era invisível.
+ *
+ * `expires_at = 0` significa "não expira" e por isso vira NULL na coluna, e não epoch zero (1970), que
+ * seria lido como expirado há 56 anos e derrubaria o canal.
+ *
+ * Falha de sonda NÃO altera nada: prefere-se manter o último estado conhecido a gravar um veredito que a
+ * rede inventou. `token_checked_at` só avança quando a API de fato respondeu.
+ */
+async function maybeProbeMetaToken(
+  sb: SupabaseClient<any, "public", any>,
+  cfg: ChannelConfig,
+): Promise<ChannelConfig> {
+  if (cfg.channel !== 'instagram' && cfg.channel !== 'facebook') return cfg
+  if (!cfg.oauth_token) return cfg
+
+  try {
+    const url = `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(cfg.oauth_token)}`
+      + `&access_token=${encodeURIComponent(cfg.oauth_token)}`
+    const res = await fetch(url)
+    if (!res.ok) {
+      console.warn(`[#1543] debug_token ${cfg.channel} respondeu ${res.status}; estado anterior mantido`)
+      return cfg
+    }
+    const body = await res.json() as {
+      data?: { is_valid?: boolean; expires_at?: number; data_access_expires_at?: number }
+    }
+    const d = body?.data
+    if (!d || typeof d.is_valid !== 'boolean') {
+      console.warn(`[#1543] debug_token ${cfg.channel} sem payload utilizável; estado anterior mantido`)
+      return cfg
+    }
+
+    const emIso = (epoch?: number) =>
+      epoch && epoch > 0 ? new Date(epoch * 1000).toISOString() : null
+
+    const patch = {
+      token_expires_at: emIso(d.expires_at),
+      data_access_expires_at: emIso(d.data_access_expires_at),
+      token_checked_at: new Date().toISOString(),
+    }
+    const { error } = await sb.from('comms_channel_config').update(patch).eq('channel', cfg.channel)
+    if (error) {
+      console.warn(`[#1543] falha ao persistir sonda de ${cfg.channel}: ${error.message}`)
+      return cfg
+    }
+    return { ...cfg, ...patch }
+  } catch (e) {
+    console.warn(`[#1543] sonda de ${cfg.channel} falhou: ${e instanceof Error ? e.message : String(e)}`)
+    return cfg
+  }
 }
 
 // ─── LinkedIn 3-legged token auto-refresh ───
@@ -726,10 +814,14 @@ async function syncFromChannelConfigs(
     let activeCfg = cfg
     if (!dryRun || forceRefresh) {
       activeCfg = await maybeRefreshLinkedInToken(sb, cfg, forceRefresh)
+      // #1543: o LinkedIn se renova sozinho; o Meta não tem refresh equivalente, e o que faltava era
+      // simplesmente PERGUNTAR ao provedor qual é o prazo. Sem esta sonda, data_access_expires_at fica
+      // NULL para sempre e o alerta 'unknown' do scan nunca se resolve.
+      activeCfg = await maybeProbeMetaToken(sb, activeCfg)
     }
 
     // Check token validity
-    if (!isTokenValid(activeCfg)) {
+    if (!isTokenWorthTrying(activeCfg)) {
       await sb.from('comms_channel_config')
         .update({ sync_status: 'token_expired' })
         .eq('channel', activeCfg.channel)

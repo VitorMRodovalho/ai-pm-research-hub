@@ -6600,12 +6600,14 @@ export type Database = {
           channel: string
           config: Json | null
           created_at: string | null
+          data_access_expires_at: string | null
           id: string
           last_sync_at: string | null
           oauth_refresh_token: string | null
           oauth_token: string | null
           organization_id: string
           sync_status: string | null
+          token_checked_at: string | null
           token_expires_at: string | null
           updated_at: string | null
         }
@@ -6614,12 +6616,14 @@ export type Database = {
           channel: string
           config?: Json | null
           created_at?: string | null
+          data_access_expires_at?: string | null
           id?: string
           last_sync_at?: string | null
           oauth_refresh_token?: string | null
           oauth_token?: string | null
           organization_id?: string
           sync_status?: string | null
+          token_checked_at?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
         }
@@ -6628,12 +6632,14 @@ export type Database = {
           channel?: string
           config?: Json | null
           created_at?: string | null
+          data_access_expires_at?: string | null
           id?: string
           last_sync_at?: string | null
           oauth_refresh_token?: string | null
           oauth_token?: string | null
           organization_id?: string
           sync_status?: string | null
+          token_checked_at?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
         }
@@ -28236,6 +28242,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      _comms_token_expiry_scan: { Args: never; Returns: Json }
       _compute_pert_cutoff_core: {
         Args: {
           p_actor_id?: string
@@ -29299,6 +29306,7 @@ export type Database = {
       comms_acknowledge_alert: { Args: { p_alert_id: string }; Returns: Json }
       comms_channel_status: { Args: never; Returns: Json }
       comms_check_token_expiry: { Args: never; Returns: Json }
+      comms_check_token_expiry_cron: { Args: never; Returns: Json }
       comms_executive_kpis: { Args: never; Returns: Json }
       comms_metrics_latest_by_channel: {
         Args: { p_days?: number }
