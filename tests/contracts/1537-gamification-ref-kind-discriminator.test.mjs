@@ -46,10 +46,22 @@ const VOCABULARIO = {
   initiative: 'initiatives',
 };
 
-// Teto medido em 2026-07-30 DEPOIS da fase 2a (era 176 na fase 1; 134 daquelas eram vocabulário faltando,
-// não dívida). Só pode CAIR: cada linha resolvida abaixa este número. Se subir, uma linha nova nasceu
-// apontando para alvo inexistente — ou uma tabela nova entrou como alvo sem entrar no vocabulário.
-const UNCLASSIFIED_BASELINE = 42;
+/**
+ * ZERO ESTRITO desde a fase 2b. A escada foi 176 (fase 1) → 42 (fase 2a, quando 134 se revelaram vocabulário
+ * faltando e não dívida) → 0 (fase 2b, quando as 42 órfãs REAIS ganharam `ref_kind = 'orphan'`).
+ *
+ * O ratchet só volta a admitir número maior que zero se alguém decidir que órfã nova é aceitável — e essa é
+ * a decisão que este teto existe para forçar a acontecer explicitamente, em vez de a linha se esconder atrás
+ * de um teto herdado.
+ */
+const UNCLASSIFIED_BASELINE = 0;
+
+/**
+ * As 42 revisadas em 2026-07-30 (#1534): alvo confirmadamente inexistente em TODO o schema, mérito
+ * preservado por decisão do PM. Contagem congelada de propósito — se aparecer uma 43ª com 'orphan', alguém
+ * concedeu o veredito humano sem revisão, que é o único jeito de este balde crescer.
+ */
+const ORPHAN_REVIEWED = 42;
 
 test('#1537 a coluna ref_kind existe e o backfill classificou o histórico resolvível', { skip: !sb }, async () => {
   const { data, error } = await sb.from('gamification_points').select('ref_kind');
@@ -65,11 +77,46 @@ test('#1537 a coluna ref_kind existe e o backfill classificou o histórico resol
 });
 
 test('#1537 nenhum valor fora do vocabulário do CHECK', { skip: !sb }, async () => {
-  const PERMITIDOS = new Set(['none', ...Object.keys(VOCABULARIO)]);
+  // 'none' e 'orphan' não estão em VOCABULARIO porque não discriminam tabela nenhuma: 'none' é ausência de
+  // referência por natureza, 'orphan' é veredito humano sobre alvo inexistente.
+  const PERMITIDOS = new Set(['none', 'orphan', ...Object.keys(VOCABULARIO)]);
   const { data, error } = await sb.from('gamification_points').select('ref_kind');
   assert.equal(error, null, `leitura falhou: ${error?.message}`);
   const invalidos = [...new Set(data.map((r) => r.ref_kind))].filter((k) => k !== null && !PERMITIDOS.has(k));
   assert.deepEqual(invalidos, [], `ref_kind fora do vocabulário: ${invalidos.join(', ')}`);
+});
+
+test("#1537 as 'orphan' continuam sem alvo, e são exatamente as revisadas", { skip: !sb }, async () => {
+  // 'orphan' é um veredito sobre o mundo ("este alvo não existe"), e veredito sobre o mundo tem de ser
+  // reconferido, não arquivado. Se uma document_version apagada for restaurada, a linha deixa de ser órfã e
+  // precisa voltar a ser classificada — este teste é quem avisa.
+  const { data, error } = await sb
+    .from('gamification_points')
+    .select('id, category, ref_id')
+    .eq('ref_kind', 'orphan');
+  assert.equal(error, null, `leitura falhou: ${error?.message}`);
+
+  assert.equal(
+    data.length,
+    ORPHAN_REVIEWED,
+    `'orphan' tem ${data.length} linhas, revisadas foram ${ORPHAN_REVIEWED}. Crescer aqui significa que ` +
+      "alguém concedeu o veredito humano sem revisão — 'orphan' nunca é atribuído pelo trigger.",
+  );
+
+  const refs = [...new Set(data.map((r) => r.ref_id).filter(Boolean))];
+  const ressuscitados = [];
+  for (const [kind, tabela] of Object.entries(VOCABULARIO)) {
+    const { data: achados, error: errTab } = await sb.from(tabela).select('id').in('id', refs);
+    assert.equal(errTab, null, `leitura de ${tabela} falhou: ${errTab?.message}`);
+    for (const linha of achados ?? []) ressuscitados.push(`${linha.id} voltou a existir em ${tabela} (=> ${kind})`);
+  }
+
+  assert.deepEqual(
+    ressuscitados,
+    [],
+    "linha marcada 'orphan' tem alvo que EXISTE agora — o veredito caducou, reclassificar:\n" +
+      ressuscitados.join('\n'),
+  );
 });
 
 test('#1537 nenhuma não-classificada resolve em tabela do vocabulário', { skip: !sb }, async () => {
@@ -117,17 +164,14 @@ test('#1537 a dívida de não-classificadas não cresce (ratchet)', { skip: !sb 
     'linha com ref_id NULL deveria ter ref_kind = none, não NULL — o trigger não classificou',
   );
 
-  assert.ok(
-    data.length <= UNCLASSIFIED_BASELINE,
-    `não-classificadas subiram de ${UNCLASSIFIED_BASELINE} para ${data.length}: uma linha nova nasceu ` +
-      'apontando para um alvo inexistente (classe do #1534). Investigar antes de mexer no baseline.',
+  assert.deepEqual(
+    data.map((r) => `${r.id} (${r.category}, ref_id=${r.ref_id})`),
+    [],
+    `não-classificadas deveriam ser ${UNCLASSIFIED_BASELINE} e são ${data.length}: uma linha nova nasceu ` +
+      'apontando para alvo inexistente (classe do #1534). Duas saídas, nenhuma é mexer no teto: (a) o alvo ' +
+      'existe e falta vocabulário — corrigir o trigger; (b) o alvo não existe — revisar e, se o mérito for ' +
+      "para manter, marcar 'orphan' pelo id exato numa migration, como a fase 2b fez com as 42.",
   );
-
-  if (data.length < UNCLASSIFIED_BASELINE) {
-    console.warn(
-      `[#1537] dívida caiu para ${data.length} (baseline ${UNCLASSIFIED_BASELINE}) — abaixe a constante.`,
-    );
-  }
 });
 
 test('#1537 o trigger deriva ref_kind sem que o chamador precise passar', { skip: !sb }, async () => {
