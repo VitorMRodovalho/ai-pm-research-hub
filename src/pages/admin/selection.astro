@@ -5499,7 +5499,11 @@ const SEL_I18N = {
       previewEl.querySelectorAll('[data-issue-224]').forEach(n => n.remove());
       const extra = document.createElement('div');
       extra.setAttribute('data-issue-224', '1');
-      extra.innerHTML = renderIngestResultWarning(d.ingest_result_warning) + renderCorrelationFooter(d, new Date());
+      // #1554 — the armed-mine notice (active opportunity, empty essay_mapping)
+      // is worth seeing BEFORE Apply, not after.
+      extra.innerHTML = renderWorkerNoticesBlock(d.notices ?? [])
+        + renderIngestResultWarning(d.ingest_result_warning)
+        + renderCorrelationFooter(d, new Date());
       previewEl.appendChild(extra);
       const copyBtn = extra.querySelector('[data-copy-run-id]') as HTMLButtonElement | null;
       if (copyBtn) {
@@ -5556,6 +5560,50 @@ const SEL_I18N = {
       <details class="mt-3 border border-amber-300 bg-amber-50/60 rounded-lg p-3" open>
         <summary class="text-[12px] font-bold text-amber-900 cursor-pointer">
           ⚠️ ${esc(header)} — ${errors.length}
+        </summary>
+        ${scopeBlocks.join('')}
+      </details>
+    `;
+  }
+
+  // #1554 — notices are outcomes the worker EXPECTS: a closed opportunity the
+  // VEP keeps exporting, or an active opportunity whose essay_mapping is still
+  // empty. They used to travel in errors[], which gave the error block a
+  // permanent floor of the same 8 lines and trained the eye to skip it. Render
+  // them in a separate, calmer block so "⚠️ erros" once again means "algo
+  // precisa de você".
+  function renderWorkerNoticesBlock(notices: any[]): string {
+    if (!Array.isArray(notices) || notices.length === 0) return '';
+    const byScope = new Map<string, any[]>();
+    for (const n of notices) {
+      const scope = (n && typeof n.scope === 'string' && n.scope) || 'unknown';
+      const bucket = byScope.get(scope) ?? [];
+      bucket.push(n);
+      byScope.set(scope, bucket);
+    }
+    const scopeBlocks: string[] = [];
+    for (const [scope, items] of byScope.entries()) {
+      const rows = items.map((n: any) => {
+        const ref = n?.ref ? esc(String(n.ref)) : '—';
+        const msg = n?.message ? esc(String(n.message)) : esc(JSON.stringify(n));
+        return `<li class="py-1 border-b border-sky-200/40 last:border-0">
+          <code class="text-[10px] text-sky-900/70">${ref}</code>
+          <span class="ml-2">${msg}</span>
+        </li>`;
+      }).join('');
+      scopeBlocks.push(`
+        <div class="mt-2">
+          <div class="text-[11px] font-bold text-sky-900">
+            ${esc(scope)} <span class="font-normal text-sky-700">(${items.length})</span>
+          </div>
+          <ul class="mt-1 text-[11px] text-sky-900 list-none pl-0">${rows}</ul>
+        </div>
+      `);
+    }
+    return `
+      <details class="mt-3 border border-sky-300 bg-sky-50/60 rounded-lg p-3">
+        <summary class="text-[12px] font-bold text-sky-900 cursor-pointer">
+          ℹ️ Avisos esperados (não são erros) — ${notices.length}
         </summary>
         ${scopeBlocks.join('')}
       </details>
@@ -5641,6 +5689,7 @@ const SEL_I18N = {
         <div>updated (mesmo ciclo): <strong>${d.applications_updated ?? 0}</strong></div>
         <div title="p153 hotfix7 — refresh parcial em rows de ciclos anteriores (resume_url + profile + vep_status), preservando cycle_id/status/role_applied/motivation">cross-cycle refreshed: <strong>${crossCycle}</strong></div>
         <div>skipped: <strong>${d.applications_skipped ?? 0}</strong></div>
+        <div title="#1554 — subconjunto de skipped cuja oportunidade está encerrada (is_active=false). Esperado: o VEP continua exportando coortes fechadas. Não são erros.">↩︎ skipped (oportunidade encerrada): <strong>${d.applications_skipped_inactive_opportunity ?? 0}</strong></div>
         <div>welcome dispatched: <strong>${d.welcome_dispatched ?? 0}</strong></div>
         <div>service_history rows: <strong>${d.service_history_inserted ?? 0}</strong></div>
         <div>phase_b processed: <strong>${d.phase_b_processed ?? 0}</strong></div>
@@ -5650,6 +5699,7 @@ const SEL_I18N = {
         <div title="p195 BUG-195.B — apps cuja application_date caía em ciclo fechado diferente do open atual; Worker auto-redirecionou para o ciclo semanticamente correto.">🔀 cycle redirects: <strong>${d.applications_cycle_redirected ?? 0}</strong></div>
       </div>
       ${renderWorkerErrorsBlock(d.errors ?? [])}
+      ${renderWorkerNoticesBlock(d.notices ?? [])}
       ${renderIngestResultWarning(d.ingest_result_warning)}
       ${renderCorrelationFooter(d, new Date())}
     `;

@@ -43,7 +43,8 @@ import {
   pickCohortCycleByContractStart,
   getCycleAppIdStats,
   pickCycleByAppIdSequence,
-  getActiveOpportunities,
+  getAllOpportunities,
+  touchVepLastSeen,
   upsertSelectionApplication,
   findPersonIdByEmail,
   insertServiceHistory,
@@ -215,7 +216,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: 'no_open_cycle', message: 'No selection_cycles row with status=open' }, 412);
   }
 
-  const opps = await getActiveOpportunities(db);
+  // #1554: load ALL opportunities, not just the active ones. With only the
+  // active ones in the lookup, a miss meant either "never registered" or
+  // "registered but the cycle closed", and the loop had no way to tell them
+  // apart — so both were reported as the same error, forever.
+  const opps = await getAllOpportunities(db);
   const oppLookup: Record<string, VepOpportunityRow> = {};
   for (const o of opps) oppLookup[String(o.opportunity_id)] = o;
 
@@ -250,6 +255,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     welcome_dispatched: 0,
     welcomes_skipped_non_submitted: 0,
     errors: [],
+    // #1554 — expected outcomes live here, not in errors[]
+    notices: [],
+    applications_skipped_inactive_opportunity: 0,
+    vep_last_seen_stamped: 0,
     // p126 E2 Phase B metrics
     phase_b_processed: 0,
     phase_b_skipped_private: 0,
@@ -262,6 +271,22 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     // p195 BUG-195.B: per-app cycle redirect counter
     applications_cycle_redirected: 0
   };
+
+  // #1554: an ACTIVE opportunity with an empty essay_mapping is a mine that only
+  // goes off when the first candidate applies to it — and then it goes off as one
+  // error per candidate, at the worst possible moment. Report it here, at load
+  // time, so the gap is visible while it still has no victims. Measured on
+  // 2026-08-01: opportunity 66470 is exactly this case.
+  for (const o of opps) {
+    if (o.is_active && (!o.essay_mapping || Object.keys(o.essay_mapping).length === 0)) {
+      summary.notices.push({
+        scope: 'opportunity_active_without_essay_mapping',
+        ref: String(o.opportunity_id),
+        message: `oportunidade ${o.opportunity_id} ("${o.title}") está ativa com essay_mapping vazio; ` +
+          `a primeira candidatura a ela será recusada com essay_mapping_missing`
+      });
+    }
+  }
 
   const allQRs = body.questionResponses ?? [];
   const allHistory = body.serviceHistory ?? [];  // p126 E2 — 1:N service history rows
@@ -321,14 +346,25 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       will_update: [],
       will_cross_cycle_refresh: [], // p153 hotfix7 — split out from will_update
       will_skip: [],
-      errors: []
+      errors: [],
+      // #1554 — load-time notices (active opportunity with empty essay_mapping)
+      // are already computed above and belong in the preview too: the PM should
+      // see the armed mine before Apply, not after.
+      notices: [...summary.notices]
     };
 
     for (const app of body.applications) {
       const oppId = String(app._opportunityId);
       const opp = oppLookup[oppId];
+      // #1554: preview must split the same three ways as the apply path, and in
+      // the same order — otherwise the preview promises one reason and the apply
+      // reports another.
       if (!opp) {
-        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'opportunity_not_active' });
+        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'opportunity_not_found' });
+        continue;
+      }
+      if (!opp.is_active) {
+        dryDiff.will_skip.push({ ref: String(app.applicationId), reason: 'opportunity_inactive' });
         continue;
       }
       if (!opp.essay_mapping || Object.keys(opp.essay_mapping).length === 0) {
@@ -392,17 +428,48 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     return jsonResponse(dryDiff, 200);
   }
 
+  // #1554: applications skipped because their opportunity is closed, grouped by
+  // opportunity, so the last-seen stamp costs one UPDATE per cohort instead of
+  // one per application.
+  const inactiveSkips = new Map<string, string[]>();
+
   for (const app of body.applications) {
     try {
       const oppId = String(app._opportunityId);
       const opp = oppLookup[oppId];
 
+      // #1554: "not registered" is a real gap someone has to close.
       if (!opp) {
         summary.applications_skipped++;
         summary.errors.push({
-          scope: 'opportunity_not_active',
+          scope: 'opportunity_not_found',
           ref: String(app.applicationId),
-          error: `vep_opportunities row for opp ${oppId} not found or not is_active=true`
+          // Deliberately does NOT say "cadastre a oportunidade": #1175 D1 decided
+          // that a chapter-board vacancy (72562) must stay unregistered, and its
+          // candidates must never be imported. Registering it is one of the two
+          // valid answers here, not the answer.
+          error: `opp ${oppId} não está cadastrada em vep_opportunities; cadastrar se for do Núcleo, ` +
+            `ou confirmar que o allowlist do script de extração já deveria tê-la excluído (#1175 D1)`
+        });
+        continue;
+      }
+
+      // #1554: "registered but closed" is a decision, not a gap — the VEP keeps
+      // exporting finished cohorts and there is nothing for anyone to do.
+      //
+      // This branch sits BEFORE the essay_mapping test on purpose. A closed
+      // opportunity usually has an empty mapping too (measured: 62106 does), so
+      // testing the mapping first would relabel the same 8 skips as
+      // `essay_mapping_missing` — same noise floor, worse name, and it would
+      // point the operator at a mapping they must not bother filling in.
+      if (!opp.is_active) {
+        summary.applications_skipped++;
+        summary.applications_skipped_inactive_opportunity++;
+        inactiveSkips.set(oppId, [...(inactiveSkips.get(oppId) ?? []), String(app.applicationId)]);
+        summary.notices.push({
+          scope: 'opportunity_inactive',
+          ref: String(app.applicationId),
+          message: `opp ${oppId} está encerrada (is_active=false); linha de coorte passada, nada a fazer`
         });
         continue;
       }
@@ -642,6 +709,28 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       });
       console.error(`[${WORKER_NAME}] app ${app.applicationId} failed:`, e);
     }
+  }
+
+  // #1554: the skip path returns before the upsert, so a closed-cycle row the
+  // VEP still exports on every run carried no evidence of being alive on the
+  // source side. Stamp it here. A failure to stamp must not fail the ingest —
+  // it is bookkeeping about rows we deliberately did not process — but it must
+  // not vanish either, so it goes to errors[] with its own scope.
+  if (inactiveSkips.size > 0) {
+    const seenAt = new Date().toISOString();
+    for (const [oppId, appIds] of inactiveSkips.entries()) {
+      try {
+        summary.vep_last_seen_stamped += await touchVepLastSeen(db, oppId, appIds, seenAt);
+      } catch (e: any) {
+        summary.errors.push({
+          scope: 'vep_last_seen_stamp_failed',
+          ref: oppId,
+          error: e.message
+        });
+      }
+    }
+    console.log(`[${WORKER_NAME}] vep_last_seen_at stamped on ${summary.vep_last_seen_stamped} skipped row(s) ` +
+      `across ${inactiveSkips.size} closed opportunity(ies)`);
   }
 
   // Finalize run log
