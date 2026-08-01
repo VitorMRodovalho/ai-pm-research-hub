@@ -418,6 +418,9 @@ export interface IngestDryRunSummary {
   }>;
   will_skip: Array<{ ref: string; reason: string }>;
   errors: Array<{ scope: string; ref?: string; error: string }>;
+  /** #1554 — same split as IngestSummary.notices: expected outcomes the preview
+   *  should show without dressing them as errors. */
+  notices: Array<{ scope: string; ref?: string; message: string }>;
   // #224 — correlation id (cron_run_log.id) so the admin UI can deep-link
   // to the row. Nullable when logRunStart fails (worker degrades gracefully).
   run_id?: string | null;
@@ -447,6 +450,16 @@ export interface IngestSummary {
   welcome_dispatched: number;
   welcomes_skipped_non_submitted: number;    // _bucket != 'submitted' OR statusId != 2 (qualified leaders + rejected)
   errors: Array<{ scope: string; ref?: string; error: string }>;
+  /** #1554 — expected, non-actionable outcomes. Kept OUT of `errors` on purpose:
+   *  an error block that always contains the same 8 lines stops being read, and
+   *  that is precisely how a 9th line with a different cause goes unnoticed.
+   *  Scopes emitted here: `opportunity_inactive` (closed cohort the VEP keeps
+   *  exporting), `opportunity_active_without_essay_mapping` (load-time warning). */
+  notices: Array<{ scope: string; ref?: string; message: string }>;
+  /** #1554 — subset of applications_skipped attributable to a closed opportunity. */
+  applications_skipped_inactive_opportunity: number;
+  /** #1554 — rows whose vep_last_seen_at was stamped on the skip path. */
+  vep_last_seen_stamped: number;
   pmi_token_expiring_soon?: boolean;
 
   // p126 E2 Phase B metrics

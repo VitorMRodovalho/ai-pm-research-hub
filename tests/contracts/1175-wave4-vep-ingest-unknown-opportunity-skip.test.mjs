@@ -4,8 +4,10 @@
  *
  * Grounded 2026-07-08 (import run 8d9b8128): the 07/07 JSON carried 135 applications,
  * 2 from opportunity 72562 (chapter-board vacancy, NOT the Nucleo's — PM decision D1).
- * The worker skipped exactly those 2 with scope 'opportunity_not_active' because the
- * gate is vep_opportunities.is_active=true (lookup built by getActiveOpportunities).
+ * The worker skipped exactly those 2 because 72562 is not registered in
+ * vep_opportunities. (#1554 later split the single 'opportunity_not_active' scope
+ * into 'opportunity_not_found' and 'opportunity_inactive'; the guards below assert
+ * the skip BEHAVIOUR, not the label, so a future rename stays legal.)
  *
  * Layers:
  *   (A) offline static guards on the worker source + canonical script copy
@@ -24,27 +26,49 @@ import { resolve } from 'node:path';
 const WORKER_DIR = resolve(process.cwd(), 'cloudflare-workers/pmi-vep-sync');
 const indexSrc = readFileSync(resolve(WORKER_DIR, 'src/index.ts'), 'utf8');
 const mapperSrc = readFileSync(resolve(WORKER_DIR, 'src/script-mapper.ts'), 'utf8');
-const dbSrc = readFileSync(resolve(WORKER_DIR, 'src/db.ts'), 'utf8');
 const scriptSrc = readFileSync(resolve(WORKER_DIR, 'scripts/extract_pmi_volunteer.js'), 'utf8');
 
 const NUCLEO_ALLOWLIST = ['64966', '64967', '66470'];
 
 // ── Layer A: worker source guards ──────────────────────────────────────────────
 
-test('#1175 W4: /ingest live path skips unknown opportunities with scope opportunity_not_active', () => {
-  assert.match(indexSrc, /scope:\s*'opportunity_not_active'/,
-    "the skip block must tag errors with scope 'opportunity_not_active'");
-  assert.match(indexSrc, /summary\.applications_skipped\+\+/,
+// #1554 rewrote the labels: the single `opportunity_not_active` scope split into
+// `opportunity_not_found` (real gap) and `opportunity_inactive` (expected), and
+// the lookup stopped filtering is_active so the loop could tell them apart.
+//
+// These guards used to assert the OLD scope string and the `.eq('is_active', true)`
+// filter — i.e. the shape of the implementation, not the invariant. That would have
+// blocked a legitimate refactor while protecting nothing. What #1175 actually needs
+// guaranteed is behavioural: neither an unregistered NOR an inactive opportunity may
+// reach the upsert. Assert THAT.
+test('#1175 W4: /ingest live path skips both unknown AND inactive opportunities before the upsert', () => {
+  // Anchor on the APPLY loop. `indexSrc` also contains the dry-run preview loop,
+  // whose own !opp / mapScriptToNucleo pair would satisfy every assertion below
+  // while the apply path regressed — the any-occurrence guard flaw.
+  const applyStart = indexSrc.lastIndexOf('for (const app of body.applications)');
+  assert.ok(applyStart > 0, 'apply loop must be findable');
+  const applyLoop = indexSrc.slice(applyStart);
+
+  assert.match(applyLoop, /if\s*\(!opp\)\s*\{[\s\S]{0,900}?continue;/,
+    'an unregistered opportunity must short-circuit the per-app loop');
+  assert.match(applyLoop, /if\s*\(!opp\.is_active\)\s*\{[\s\S]{0,900}?continue;/,
+    'an inactive opportunity must short-circuit the per-app loop (62106 must not resurrect)');
+  assert.match(applyLoop, /summary\.applications_skipped\+\+/,
     'the skip must count into applications_skipped (surfaced in the import summary)');
-  // The lookup that defines "known" is ACTIVE rows only — is_active=false (62106
-  // historical) must not resurrect an opportunity into the import path.
-  assert.match(dbSrc, /from\('vep_opportunities'\)[\s\S]{0,200}\.eq\('is_active',\s*true\)/,
-    'getActiveOpportunities must filter is_active=true');
+  // Both branches must precede the mapper call that builds the upsert payload.
+  const notFoundAt = applyLoop.indexOf('scope: \'opportunity_not_found\'');
+  const inactiveAt = applyLoop.indexOf('scope: \'opportunity_inactive\'');
+  const mapAt = applyLoop.indexOf('const mapped = mapScriptToNucleo(');
+  assert.ok(notFoundAt > 0 && inactiveAt > 0 && mapAt > 0, 'all three anchors must exist');
+  assert.ok(notFoundAt < mapAt && inactiveAt < mapAt,
+    'both skip branches must be evaluated before mapScriptToNucleo builds the upsert payload');
 });
 
-test('#1175 W4: dry-run preview reports the same skip (reason opportunity_not_active)', () => {
-  assert.match(indexSrc, /will_skip\.push\(\{\s*ref:[^}]*reason:\s*'opportunity_not_active'/,
-    'dry_run path must preview the identical skip so the admin UI diff matches Apply');
+test('#1175 W4: dry-run preview reports the same two skips as Apply', () => {
+  assert.match(indexSrc, /will_skip\.push\(\{\s*ref:[^}]*reason:\s*'opportunity_not_found'/,
+    'dry_run must preview the unregistered-opportunity skip so the admin diff matches Apply');
+  assert.match(indexSrc, /will_skip\.push\(\{\s*ref:[^}]*reason:\s*'opportunity_inactive'/,
+    'dry_run must preview the closed-opportunity skip so the admin diff matches Apply');
 });
 
 // ── Layer A: canonical script copy guards (Wave 4 reform must not regress) ─────

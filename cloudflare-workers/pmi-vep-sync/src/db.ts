@@ -276,14 +276,56 @@ export function pickCohortCycleByContractStart(
 
 import type { VepOpportunityRow } from './types';
 
-export async function getActiveOpportunities(db: SupabaseClient): Promise<VepOpportunityRow[]> {
+/**
+ * #1554 — loads EVERY opportunity, active or not.
+ *
+ * This used to filter `.eq('is_active', true)`, which meant the caller's lookup
+ * miss covered two different worlds: "this opportunity was never registered"
+ * (someone has to act) and "it exists but the cycle is over" (nothing to do).
+ * Both landed in the same error scope, so the ingest report carried a permanent
+ * floor of expected errors — and a permanent floor is what teaches an operator
+ * to skim past the one error that IS real.
+ *
+ * Callers must branch on `is_active` themselves; the row carries the flag.
+ */
+export async function getAllOpportunities(db: SupabaseClient): Promise<VepOpportunityRow[]> {
   const { data, error } = await db
     .from('vep_opportunities')
-    .select('opportunity_id, title, chapter_posted, role_default, essay_mapping, vep_url, is_active')
-    .eq('is_active', true);
+    .select('opportunity_id, title, chapter_posted, role_default, essay_mapping, vep_url, is_active');
 
-  if (error) throw new Error(`getActiveOpportunities: ${error.message}`);
+  if (error) throw new Error(`getAllOpportunities: ${error.message}`);
   return (data ?? []) as VepOpportunityRow[];
+}
+
+/**
+ * #1554 — stamps `vep_last_seen_at` on rows the ingest deliberately skipped.
+ *
+ * The skip path returns before the upsert, so a closed-cycle application that
+ * the VEP still exports every run had no record of still being alive on the
+ * source side. Batched per opportunity (one UPDATE per opportunity, not per
+ * application) because a closed cohort arrives whole on every run.
+ *
+ * Safe against both reconciliation buckets in `20260805000354_1130_...sql`:
+ * the selection bucket requires `selection_cycles.status='open'` and the
+ * pre-onboarding bucket requires `vep_status_raw IN ('Submitted','OfferExtended')`.
+ * Verify that still holds before extending this to another skip path.
+ */
+export async function touchVepLastSeen(
+  db: SupabaseClient,
+  oppId: string,
+  applicationIds: string[],
+  seenAt: string
+): Promise<number> {
+  if (applicationIds.length === 0) return 0;
+  const { data, error } = await db
+    .from('selection_applications')
+    .update({ vep_last_seen_at: seenAt })
+    .eq('vep_opportunity_id', oppId)
+    .in('vep_application_id', applicationIds)
+    .select('id');
+
+  if (error) throw new Error(`touchVepLastSeen(opp ${oppId}): ${error.message}`);
+  return (data ?? []).length;
 }
 
 // =====================================================================
