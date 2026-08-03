@@ -202,12 +202,50 @@ test('#676 live: paused rule generates no events', { skip: sb ? false : 'Supabas
   }
 });
 
+/**
+ * Regras cuja tribo está MUDANDO o dia da reunião. Durante a transição convivem ocorrências de
+ * dias diferentes, então `materializadas > esperadas` é o estado real e não um defeito — o
+ * invariante assume um mundo estável e a tribo não está nele.
+ *
+ * Isento apenas da comparação de contagem; todo o resto continua valendo. E a isenção é um
+ * RATCHET: quando a regra volta a fechar, ela TEM de sair desta lista, senão o teste falha. Uma
+ * allowlist que só cresce vira cegueira permanente.
+ *
+ * Cada entrada carrega a issue que a justifica e some quando a issue fecha.
+ */
+const RULES_IN_TRANSITION = new Map([
+  ['2ce8e5f4-0eaf-4039-99bf-4d40b5e5f298', '#1565 — T6 (ROI & Portfólio) trocou de liderança e está redefinindo o dia'],
+]);
+
 test('#676 live: drift report surfaces missing future occurrences', { skip: sb ? false : 'Supabase env required' }, async () => {
   const { data, error } = await sb.rpc('get_recurring_meeting_drift', { p_horizon_end: HORIZON });
   assert.ifError(error);
   assert.ok(Array.isArray(data) && data.length >= 9, 'drift report covers all active rules');
+
+  const stillDrifting = new Set();
   for (const row of data) {
-    assert.ok(row.expected_future >= row.future_events, `${row.title}: expected >= materialized`);
+    // `missing_future` é aritmética pura e vale para TODA regra, inclusive as em transição.
     assert.equal(row.missing_future, Math.max(row.expected_future - row.future_events, 0));
+
+    if (row.expected_future < row.future_events) {
+      stillDrifting.add(row.rule_id);
+      assert.ok(
+        RULES_IN_TRANSITION.has(row.rule_id),
+        `${row.title}: materializadas (${row.future_events}) > esperadas (${row.expected_future}). ` +
+          'Série duplicada, ou a regra não descreve mais o que a tribo faz. Se for transição de ' +
+          'dia, registre a issue e adicione o rule_id a RULES_IN_TRANSITION.'
+      );
+    }
+  }
+
+  // Ratchet: o que voltou ao normal não pode continuar isento.
+  for (const [ruleId, motivo] of RULES_IN_TRANSITION) {
+    const row = data.find((r) => r.rule_id === ruleId);
+    if (!row) continue; // regra removida ou pausada — a isenção some junto, sem falhar
+    assert.ok(
+      stillDrifting.has(ruleId),
+      `${row.title} voltou a fechar (esperadas ${row.expected_future} >= materializadas ` +
+        `${row.future_events}): remova-a de RULES_IN_TRANSITION (${motivo})`
+    );
   }
 });
