@@ -24,7 +24,13 @@ const sb = SUPABASE_URL && SUPABASE_SRK ? createClient(SUPABASE_URL, SUPABASE_SR
 const CYCLE_ID    = '08c1e301-9f7b-4d01-a13c-43ac7775c0f7';
 const VITOR_ID    = '880f736c-3e76-4df4-9375-33575c190305';
 const FABRICIO_ID = '92d26057-5550-4f15-a3bf-b00eed5f32f9';
+// Literal que a migration p253 seedou. Continua sendo o valor esperado DENTRO do arquivo de
+// migration (fato histórico), e por isso não muda.
 const VITOR_URL    = 'https://calendar.app.google/q9urWE15HYZRNymd7';
+// Valor VIVO desde a convergência de 2026-08-03 (migration 20260805000506). Os dois encurtadores
+// resolvem para o MESMO appointment schedule, então isto é higiene de representação e não mudança
+// de destino — ver o cabeçalho daquela migration.
+const VITOR_URL_LIVE = 'https://calendar.app.google/MHAmfkgZCwT9KsoKA';
 const FABRICIO_URL = 'https://calendar.app.google/1jDNjPpoGCkV2V9A6';
 const CYCLE_GROUP_URL = 'https://calendar.app.google/XPiGWLh9JaLVFKJc6'; // p243 seeded; leader flow
 
@@ -229,7 +235,7 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
         .in('id', [VITOR_ID, FABRICIO_ID]);
       if (error) return;
       const byId = Object.fromEntries((data || []).map(r => [r.id, r.interview_booking_url]));
-      assert.equal(byId[VITOR_ID],    VITOR_URL,    'Vitor URL mismatch');
+      assert.equal(byId[VITOR_ID],    VITOR_URL_LIVE, 'Vitor URL mismatch');
       assert.equal(byId[FABRICIO_ID], FABRICIO_URL, 'Fabricio URL mismatch');
     });
 
