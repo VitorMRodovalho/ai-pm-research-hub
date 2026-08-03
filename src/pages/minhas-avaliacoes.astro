@@ -1,0 +1,374 @@
+---
+// Superfície dedicada do avaliador de comitê (Achado G da auditoria de 2026-08-03).
+//
+// Por que esta página existe: as RPCs do trabalho do avaliador
+// (get_my_pending_evaluations / get_evaluation_form / submit_evaluation) já gateiam por
+// participação em `selection_committee`, mas o ÚNICO consumidor delas era
+// /admin/selection, que exige tier `admin`. Resultado medido: 5 dos 7 membros do comitê
+// do cycle4-2026 não conseguiam abrir a tela onde deveriam trabalhar.
+//
+// Esta rota NÃO altera autoridade. Ela consome apenas as RPCs committee-scoped que o
+// avaliador já pode chamar hoje. Deliberadamente NÃO chama get_selection_dashboard
+// (que exige view_internal_analytics), nem expõe import, decisão ou diversidade.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+const ME_I18N = {
+  heading: t('myEvals.heading', lang),
+  subtitle: t('myEvals.subtitle', lang),
+  loading: t('myEvals.loading', lang),
+  loginRequired: t('myEvals.loginRequired', lang),
+  notCommittee: t('myEvals.notCommittee', lang),
+  errorLoad: t('myEvals.errorLoad', lang),
+  cycleLabel: t('myEvals.cycleLabel', lang),
+  progressLabel: t('myEvals.progressLabel', lang),
+  pendingHeading: t('myEvals.pendingHeading', lang),
+  noPending: t('myEvals.noPending', lang),
+  draftBadge: t('myEvals.draftBadge', lang),
+  roleResearcher: t('myEvals.role.researcher', lang),
+  roleLeader: t('myEvals.role.leader', lang),
+  evaluateBtn: t('myEvals.evaluateBtn', lang),
+  backToList: t('myEvals.backToList', lang),
+  criteriaHeading: t('myEvals.criteriaHeading', lang),
+  criterionNotePlaceholder: t('myEvals.criterionNotePlaceholder', lang),
+  notesLabel: t('myEvals.notesLabel', lang),
+  notesPlaceholder: t('myEvals.notesPlaceholder', lang),
+  submitBtn: t('myEvals.submitBtn', lang),
+  submitting: t('myEvals.submitting', lang),
+  submitted: t('myEvals.submitted', lang),
+  locked: t('myEvals.locked', lang),
+  errorSubmit: t('myEvals.errorSubmit', lang),
+  subtotalLabel: t('myEvals.subtotalLabel', lang),
+  weightLabel: t('myEvals.weightLabel', lang),
+  applicationHeading: t('myEvals.applicationHeading', lang),
+  fieldMotivation: t('myEvals.field.motivation', lang),
+  fieldReason: t('myEvals.field.reason', lang),
+  fieldExperience: t('myEvals.field.experience', lang),
+  fieldAcademic: t('myEvals.field.academic', lang),
+  fieldTheme: t('myEvals.field.theme', lang),
+  fieldAreas: t('myEvals.field.areas', lang),
+  fieldLinkedin: t('myEvals.field.linkedin', lang),
+  scoreRequired: t('myEvals.scoreRequired', lang),
+  locale: lang === 'es-LATAM' ? 'es' : lang,
+};
+---
+<BaseLayout title={t('myEvals.title', lang)} activePage="my-evals" lang={lang}>
+  <Toast />
+  <div class="max-w-[900px] mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold text-navy">{ME_I18N.heading}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{ME_I18N.subtitle}</p>
+    </header>
+
+    <div id="me-loading" class="text-center py-16">
+      <p class="text-[var(--text-muted)] text-sm">{ME_I18N.loading}</p>
+    </div>
+
+    <div id="me-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <p class="font-semibold text-amber-800" id="me-denied-msg">{ME_I18N.notCommittee}</p>
+    </div>
+
+    <!-- Lista de pendências -->
+    <section id="me-list" class="hidden">
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <span class="text-xs uppercase tracking-wide text-[var(--text-muted)]">{ME_I18N.cycleLabel}</span>
+            <p class="font-bold text-navy" id="me-cycle">—</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs uppercase tracking-wide text-[var(--text-muted)]">{ME_I18N.progressLabel}</span>
+            <p class="font-bold text-navy" id="me-progress">—</p>
+          </div>
+        </div>
+        <div class="mt-3 h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden">
+          <div id="me-progress-bar" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
+        </div>
+      </div>
+
+      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">
+        {ME_I18N.pendingHeading}
+      </h2>
+      <div id="me-pending"></div>
+    </section>
+
+    <!-- Formulário de avaliação -->
+    <section id="me-form" class="hidden">
+      <button id="me-back" type="button"
+        class="mb-4 text-sm font-semibold text-navy hover:underline">&larr; {ME_I18N.backToList}</button>
+      <div id="me-form-body"></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ ME_I18N }}>
+  window.__MY_EVALS_I18N = typeof ME_I18N !== 'undefined' ? ME_I18N : {};
+</script>
+<script>
+  const I: Record<string, any> = (typeof window !== 'undefined' && (window as any).__MY_EVALS_I18N) || {};
+
+  let sb: any = null;
+  let bootRetries = 0;
+
+  const $ = (id: string) => document.getElementById(id);
+  const esc = (s: unknown) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+  function toast(msg: string, type: 'success' | 'error' = 'success') {
+    const el = document.getElementById('toast-container');
+    if (!el) return;
+    const div = document.createElement('div');
+    div.className = `px-4 py-3 rounded-xl text-sm font-semibold shadow-lg ${
+      type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`;
+    div.textContent = msg;
+    el.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+  }
+
+  function showOnly(which: 'loading' | 'denied' | 'list' | 'form') {
+    ['me-loading', 'me-denied', 'me-list', 'me-form'].forEach((id) => {
+      $(id)?.classList.toggle('hidden', id !== `me-${which}`);
+    });
+  }
+
+  function showDenied(msg?: string) {
+    const el = $('me-denied-msg');
+    if (el && msg) el.textContent = msg;
+    showOnly('denied');
+  }
+
+  function roleLabel(role: string) {
+    if (role === 'researcher') return I.roleResearcher || 'Pesquisador';
+    if (role === 'leader') return I.roleLeader || 'Líder';
+    return role || '—';
+  }
+
+  /* ── lista de pendências ─────────────────────────── */
+  async function loadPending() {
+    showOnly('loading');
+    const { data, error } = await sb.rpc('get_my_pending_evaluations');
+
+    if (error) {
+      // A RPC levanta insufficient_privilege quando o chamador não está no comitê
+      // do ciclo em avaliação. Esse é o caso legítimo de "não é para você".
+      if (String(error.code) === '42501' || /not on this cycle committee/i.test(error.message || '')) {
+        showDenied(I.notCommittee);
+        return;
+      }
+      showDenied(`${I.errorLoad} ${error.message}`);
+      return;
+    }
+
+    const cycleEl = $('me-cycle');
+    if (cycleEl) cycleEl.textContent = data?.cycle_code || '—';
+
+    const done = Number(data?.completed_count ?? 0);
+    const total = Number(data?.total_count ?? 0);
+    const pct = Number(data?.progress_pct ?? 0);
+    const progEl = $('me-progress');
+    if (progEl) progEl.textContent = `${done}/${total} (${pct}%)`;
+    const bar = $('me-progress-bar');
+    if (bar) (bar as HTMLElement).style.width = `${Math.min(100, Math.max(0, pct))}%`;
+
+    const pending: any[] = Array.isArray(data?.pending) ? data.pending : [];
+    const host = $('me-pending');
+    if (!host) return;
+
+    if (pending.length === 0) {
+      host.innerHTML = `<div class="bg-white border border-[var(--border)] rounded-2xl p-8 text-center">
+        <p class="text-[var(--text-muted)] text-sm">${esc(I.noPending)}</p></div>`;
+    } else {
+      host.innerHTML = pending.map((p) => `
+        <div class="bg-white border border-[var(--border)] rounded-2xl p-4 mb-3 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p class="font-semibold text-navy">${esc(p.applicant_name)}</p>
+            <p class="text-xs text-[var(--text-muted)] mt-0.5">
+              ${esc(roleLabel(p.role_applied))}
+              ${p.has_my_evaluation_in_progress
+                ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${esc(I.draftBadge)}</span>`
+                : ''}
+            </p>
+          </div>
+          <button type="button" data-eval-app="${esc(p.application_id)}"
+            class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:opacity-90">
+            ${esc(I.evaluateBtn)}
+          </button>
+        </div>`).join('');
+
+      host.querySelectorAll<HTMLButtonElement>('button[data-eval-app]').forEach((btn) => {
+        btn.addEventListener('click', () => openForm(btn.dataset.evalApp as string));
+      });
+    }
+
+    showOnly('list');
+  }
+
+  /* ── formulário ──────────────────────────────────── */
+  async function openForm(applicationId: string) {
+    showOnly('loading');
+    const { data, error } = await sb.rpc('get_evaluation_form', {
+      p_application_id: applicationId,
+      p_evaluation_type: 'objective',
+    });
+    if (error) {
+      showDenied(`${I.errorLoad} ${error.message}`);
+      return;
+    }
+
+    const app = data?.application || {};
+    const criteria: any[] = Array.isArray(data?.criteria_with_weights) ? data.criteria_with_weights : [];
+    const locked = !!data?.is_locked;
+    const draft = data?.draft || null;
+
+    const field = (label: string, value: unknown) => {
+      const v = String(value ?? '').trim();
+      if (!v) return '';
+      return `<div class="mb-3">
+        <p class="text-xs uppercase tracking-wide text-[var(--text-muted)] mb-1">${esc(label)}</p>
+        <p class="text-sm text-[var(--text-primary)] whitespace-pre-wrap">${esc(v)}</p>
+      </div>`;
+    };
+
+    const linkedin = String(app.linkedin_url || app.profile_linkedin_url || '').trim();
+
+    const body = $('me-form-body');
+    if (!body) return;
+
+    body.innerHTML = `
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-5">
+        <h2 class="text-lg font-bold text-navy">${esc(app.applicant_name)}</h2>
+        <p class="text-xs text-[var(--text-muted)] mb-4">${esc(roleLabel(app.role_applied))}</p>
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">
+          ${esc(I.applicationHeading)}</h3>
+        ${field(I.fieldMotivation, app.motivation_letter)}
+        ${field(I.fieldReason, app.reason_for_applying)}
+        ${field(I.fieldExperience, app.leadership_experience || app.non_pmi_experience)}
+        ${field(I.fieldAcademic, app.academic_background)}
+        ${field(I.fieldTheme, app.proposed_theme)}
+        ${field(I.fieldAreas, app.areas_of_interest)}
+        ${linkedin
+          ? `<div class="mb-1"><a href="${esc(linkedin)}" target="_blank" rel="noopener"
+               class="text-sm font-semibold text-navy hover:underline">${esc(I.fieldLinkedin)} &rarr;</a></div>`
+          : ''}
+      </div>
+
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5">
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-4">
+          ${esc(I.criteriaHeading)}</h3>
+        ${locked
+          ? `<div class="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold">
+               ${esc(I.locked)}</div>`
+          : ''}
+        ${criteria.map((c) => {
+          const cur = c.your_score ?? Math.ceil(Number(c.max ?? 10) / 2);
+          return `
+          <div class="mb-5 pb-5 border-b border-[var(--border)] last:border-0 last:mb-0 last:pb-0">
+            <div class="flex items-baseline justify-between gap-2 mb-1">
+              <label class="font-semibold text-navy text-sm">${esc(c.label || c.key)}</label>
+              <span class="text-xs text-[var(--text-muted)]">
+                ${esc(I.weightLabel)} ${esc(c.weight)} &middot; max ${esc(c.max)}</span>
+            </div>
+            ${c.guide ? `<p class="text-xs text-[var(--text-muted)] mb-2">${esc(c.guide)}</p>` : ''}
+            <div class="flex items-center gap-3">
+              <input type="range" min="0" max="${esc(c.max ?? 10)}" step="1" value="${esc(cur)}"
+                data-eval-key="${esc(c.key)}" ${locked ? 'disabled' : ''}
+                class="flex-1 accent-navy" />
+              <span class="eval-score-display font-bold text-navy w-8 text-right"
+                data-key="${esc(c.key)}">${esc(cur)}</span>
+            </div>
+            <textarea data-eval-note-key="${esc(c.key)}" rows="2" ${locked ? 'disabled' : ''}
+              placeholder="${esc(I.criterionNotePlaceholder)}"
+              class="mt-2 w-full text-sm rounded-xl border border-[var(--border)] px-3 py-2"
+              >${esc(c.your_criterion_note || '')}</textarea>
+          </div>`;
+        }).join('')}
+
+        <div class="mt-4">
+          <label class="block text-xs uppercase tracking-wide text-[var(--text-muted)] mb-1">
+            ${esc(I.notesLabel)}</label>
+          <textarea id="me-notes" rows="4" ${locked ? 'disabled' : ''}
+            placeholder="${esc(I.notesPlaceholder)}"
+            class="w-full text-sm rounded-xl border border-[var(--border)] px-3 py-2"
+            >${esc(draft?.notes || '')}</textarea>
+        </div>
+
+        ${locked
+          ? ''
+          : `<button id="me-submit" type="button" data-app="${esc(applicationId)}"
+               class="mt-4 w-full px-4 py-3 rounded-xl bg-navy text-white font-semibold hover:opacity-90">
+               ${esc(I.submitBtn)}</button>`}
+      </div>`;
+
+    body.querySelectorAll<HTMLInputElement>('input[type="range"][data-eval-key]').forEach((slider) => {
+      slider.addEventListener('input', () => {
+        const d = body.querySelector(`.eval-score-display[data-key="${slider.dataset.evalKey}"]`);
+        if (d) d.textContent = slider.value;
+      });
+    });
+
+    body.querySelector('#me-submit')?.addEventListener('click', () => submitForm(applicationId));
+
+    showOnly('form');
+  }
+
+  async function submitForm(applicationId: string) {
+    const body = $('me-form-body');
+    if (!body) return;
+    const btn = body.querySelector('#me-submit') as HTMLButtonElement | null;
+
+    const scores: Record<string, number> = {};
+    body.querySelectorAll<HTMLInputElement>('input[type="range"][data-eval-key]').forEach((s) => {
+      if (s.dataset.evalKey) scores[s.dataset.evalKey] = parseInt(s.value, 10);
+    });
+    if (Object.keys(scores).length === 0) {
+      toast(I.scoreRequired || 'Nenhum critério para pontuar', 'error');
+      return;
+    }
+
+    const criterionNotes: Record<string, string> = {};
+    body.querySelectorAll<HTMLTextAreaElement>('textarea[data-eval-note-key]').forEach((ta) => {
+      if (ta.dataset.evalNoteKey && ta.value.trim()) criterionNotes[ta.dataset.evalNoteKey] = ta.value.trim();
+    });
+    const notes = (body.querySelector('#me-notes') as HTMLTextAreaElement | null)?.value || '';
+
+    if (btn) { btn.disabled = true; btn.textContent = I.submitting || '...'; }
+    try {
+      const { error } = await sb.rpc('submit_evaluation', {
+        p_application_id: applicationId,
+        p_evaluation_type: 'objective',
+        p_scores: scores,
+        p_notes: notes,
+        p_criterion_notes: criterionNotes,
+      });
+      if (error) throw error;
+      toast(I.submitted || 'Avaliação submetida');
+      await loadPending();
+    } catch (e: any) {
+      toast(`${I.errorSubmit} ${e?.message ?? ''}`.trim(), 'error');
+      if (btn) { btn.disabled = false; btn.textContent = I.submitBtn || 'Submeter'; }
+    }
+  }
+
+  /* ── boot ────────────────────────────────────────── */
+  function boot() {
+    sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) {
+      bootRetries += 1;
+      if (bootRetries >= 20) { showDenied(I.loginRequired); return; }
+      setTimeout(boot, 200);
+      return;
+    }
+    $('me-back')?.addEventListener('click', () => { loadPending(); });
+    loadPending();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+</script>
