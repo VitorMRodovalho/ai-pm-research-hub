@@ -28161,6 +28161,15 @@ export type Database = {
           proname: string
         }[]
       }
+      _audit_function_source: {
+        Args: { p_proname: string }
+        Returns: {
+          identity_args: string
+          is_secdef: boolean
+          proname: string
+          prosrc: string
+        }[]
+      }
       _audit_get_all_certificates_anon_execute: {
         Args: never
         Returns: boolean
