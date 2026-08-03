@@ -10,6 +10,69 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const canRun = !!(SUPABASE_URL && SERVICE_ROLE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required';
 
+/**
+ * #1437 — this suite writes to the PRODUCTION database, and its cleanup used to depend on the
+ * process reaching the end of the file. It does not always: a cancelled CI run, a timeout or a
+ * local Ctrl-C kills the process and the `finally` never runs. Ten survivors accumulated between
+ * 04/07 and 31/07, and the one born 31/07 stayed `is_active=true` long enough to be picked up as
+ * a real recipient of the 02/08 member campaign (`admin_send_campaign` selects on
+ * `is_active AND current_cycle_active`). Only the `example.com` domain, which Resend refuses,
+ * kept that from reaching a human.
+ *
+ * So cleanup is no longer a step that runs once at the end. It is a sweep by marker that runs
+ * BEFORE and AFTER, and it never leaves a survivor reachable: when the row cannot be purged
+ * (pii_access_log.target_member_id is a FK with no ON DELETE, so a logged synthetic row pins
+ * itself), the sweep soft-retires it instead — the treatment ratified in #1437 on 20/07.
+ */
+const SYNTHETIC_MARKER = 'Test Sync Member __205_synthetic__';
+
+const svcHeaders = (extra = {}) => ({
+  apikey: SERVICE_ROLE_KEY,
+  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+  ...extra,
+});
+
+async function listSyntheticMembers() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/members?name=eq.${encodeURIComponent(SYNTHETIC_MARKER)}&select=id,is_active,current_cycle_active`,
+    { headers: svcHeaders() }
+  );
+  if (!res.ok) return [];
+  return await res.json();
+}
+
+/**
+ * Purge every synthetic row; soft-retire whatever refuses to be purged. Returns the number of
+ * rows still REACHABLE afterwards (the only number that matters — an unreachable leftover cannot
+ * enter an audience, a queue or a report).
+ */
+async function sweepSyntheticMembers() {
+  for (const row of await listSyntheticMembers()) {
+    await fetch(`${SUPABASE_URL}/rest/v1/members?id=eq.${row.id}`, {
+      method: 'DELETE',
+      headers: svcHeaders(),
+    });
+  }
+  // PostgREST answers 204 to a DELETE that removed nothing, so re-read instead of trusting it.
+  // Only survivors that are still REACHABLE need writing; re-patching rows that are already
+  // retired would touch production on every single run for no gain.
+  const survivors = (await listSyntheticMembers()).filter(
+    (r) => r.is_active || r.current_cycle_active
+  );
+  for (const row of survivors) {
+    await fetch(`${SUPABASE_URL}/rest/v1/members?id=eq.${row.id}`, {
+      method: 'PATCH',
+      headers: svcHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        is_active: false,
+        current_cycle_active: false,
+        member_status: 'inactive',
+      }),
+    });
+  }
+  return (await listSyntheticMembers()).filter((r) => r.is_active && r.current_cycle_active).length;
+}
+
 async function callCheckInvariants() {
   const url = `${SUPABASE_URL}/rest/v1/rpc/check_schema_invariants`;
   const res = await fetch(url, {
@@ -35,6 +98,13 @@ test('ADR-0095: member_emails live behaviour and invariant T', { skip: !canRun &
   const testEmailAlternate = `test-alt-${Date.now()}@example.com`;
 
   try {
+    // Step 0: clear anything a previously killed run left behind, so this file never builds on
+    // (or adds to) its own debris.
+    await t.test('no synthetic member is left reachable from a previous run', async () => {
+      const reachable = await sweepSyntheticMembers();
+      assert.equal(reachable, 0, `Sweep left ${reachable} synthetic member(s) reachable`);
+    });
+
     // Step 1: Verify baseline invariant T has 0 violations
     await t.test('invariant T has 0 violations at start', async () => {
       const rows = await callCheckInvariants();
@@ -300,7 +370,10 @@ test('ADR-0095: member_emails live behaviour and invariant T', { skip: !canRun &
     await t.test('cleanup deletes member and cascades to member_emails', async () => {
       assert.ok(testMemberId);
       const memberToDelete = testMemberId;
-      testMemberId = null; // Clear so finally block doesn't do a double delete
+      // NOTE: testMemberId is deliberately NOT cleared here. Clearing it before the delete was
+      // confirmed is what disarmed the `finally` net precisely when it was needed — if any assert
+      // below fails, the row must still be swept. The sweep is idempotent, so a double delete is
+      // harmless; a skipped one is not.
 
       // Delete test member
       const deleteRes = await fetch(`${SUPABASE_URL}/rest/v1/members?id=eq.${memberToDelete}`, {
@@ -326,16 +399,18 @@ test('ADR-0095: member_emails live behaviour and invariant T', { skip: !canRun &
       assert.equal(queryRes.status, 200);
       const emails = await queryRes.json();
       assert.equal(emails.length, 0, 'Cascade delete should have removed all member emails');
+      testMemberId = null; // Cleared only now that the row is confirmed gone.
+    });
+
+    // Step 10: the invariant this file is responsible for leaving true behind it.
+    await t.test('no synthetic member is left reachable by this run', async () => {
+      const reachable = await sweepSyntheticMembers();
+      assert.equal(reachable, 0, `Left ${reachable} synthetic member(s) reachable`);
     });
   } finally {
-    if (testMemberId) {
-      await fetch(`${SUPABASE_URL}/rest/v1/members?id=eq.${testMemberId}`, {
-        method: 'DELETE',
-        headers: {
-          apikey: SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-        },
-      });
-    }
+    // Sweep by MARKER, not by the id this run happens to remember: an earlier crash may have left
+    // rows this process never saw, which id-based cleanup could not reach. No assert here — a
+    // throwing `finally` would replace whatever real failure sent us into it.
+    await sweepSyntheticMembers().catch(() => {});
   }
 });
