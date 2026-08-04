@@ -2183,6 +2183,10 @@ const SEL_I18N = {
           p_duration_minutes: dur,
         });
         if (error) throw error;
+        // #1594 — recusa de gate deixou de chegar como erro PostgREST e passa a chegar como
+        // HTTP 200 com success:false (é o que faz a linha de gate_attempts commitar). Sem esta
+        // checagem a tela mostraria "agendada" para uma entrevista que o banco recusou.
+        if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Gate recusou o agendamento');
         toast(T.modal.toastInterviewScheduled);
         modal.classList.add('hidden');
         loadDashboard();
@@ -2202,6 +2206,9 @@ const SEL_I18N = {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        // #1595 — o pedido só escreve depois de emitir o link governado; recusa volta como
+        // success:false com a candidatura intacta.
+        if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Não foi possível emitir o link de reagendamento');
         toast(T.modal.toastRescheduleSent);
         modal.classList.add('hidden');
         loadDashboard();
@@ -2796,6 +2803,9 @@ const SEL_I18N = {
       const passed = attempts.filter((a: any) => a.gate_passed).length;
       const failed = attempts.filter((a: any) => !a.gate_passed).length;
       const bypassUsed = attempts.filter((a: any) => a.bypass_granted).length;
+      // #1595 — reuso da decisão anterior (reagendamento). Precisa aparecer: um skip auditado que
+      // a única tela que o leria não mostra é auditoria decorativa, que é o que a #1594 ataca.
+      const reused = attempts.filter((a: any) => a.gate_mode === 'reuse_prior').length;
 
       const summary = `
         <div class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-xl p-3">
@@ -2804,6 +2814,7 @@ const SEL_I18N = {
             <div class="text-emerald-700"><span class="text-[var(--text-muted)]">Passaram:</span> <strong>${passed}</strong></div>
             <div class="text-red-700"><span class="text-[var(--text-muted)]">Falharam:</span> <strong>${failed}</strong></div>
             ${bypassUsed > 0 ? `<div class="text-purple-700"><span class="text-[var(--text-muted)]">Bypass usado:</span> <strong>${bypassUsed}x</strong></div>` : ''}
+            ${reused > 0 ? `<div class="text-sky-700"><span class="text-[var(--text-muted)]">Gate reusado:</span> <strong>${reused}x</strong></div>` : ''}
           </div>
         </div>
       `;
@@ -2811,7 +2822,9 @@ const SEL_I18N = {
       const rowsHtml = attempts.map((a: any) => {
         const dt = new Date(a.attempted_at).toLocaleString('pt-BR');
         const passedBadge = a.gate_passed
-          ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">PASSOU</span>'
+          ? (a.gate_mode === 'reuse_prior'
+              ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700" title="GATE_REUSED_PRIOR — reagendamento reusa a decisão original em vez de reavaliar os 3 gates (#1595)">GATE REUSADO</span>'
+              : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">PASSOU</span>')
           : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${gateCodeColors[a.gate_failed_code] || 'bg-red-50 text-red-700'}">${gateCodeLabels[a.gate_failed_code] || 'FALHOU'}</span>`;
         const bypassBadge = a.bypass_requested
           ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.bypass_granted ? 'bg-purple-50 text-purple-700' : 'bg-gray-50 text-gray-600'}">${a.bypass_granted ? 'BYPASS GRANTED' : 'BYPASS DENIED'}</span>`
@@ -4089,17 +4102,21 @@ const SEL_I18N = {
     const btn = document.getElementById('bulk-cutoff-invite') as HTMLButtonElement | null;
     const orig = btn?.textContent || '📧 Enviar convite';
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando…'; }
-    let sent = 0, already = 0, errors = 0;
+    let sent = 0, already = 0, errors = 0, refused = 0;
     for (const id of eligibleIds) {
       try {
         const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: id });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        // #1594 — recusa de gate aborta o e-mail por RETORNO, não por exceção. Contá-la como
+        // enviada seria reportar convite que não saiu (o mesmo defeito do cron).
+        if (data?.success === false) { refused++; continue; }
         if (data?.reason === 'already_sent') already++;
         else sent++;
       } catch { errors++; }
     }
     const parts = [`Enviados: ${sent}`, `Já dispatchados: ${already}`];
+    if (refused) parts.push(`Recusados pelo gate: ${refused}`);
     if (errors) parts.push(`Erros: ${errors}`);
     if (skippedIneligible) parts.push(`Ignorados (inelegíveis): ${skippedIneligible}`);
     toast(parts.join(' · '));
@@ -4502,6 +4519,7 @@ const SEL_I18N = {
             });
             if (error) throw error;
             if (data?.error) throw new Error(data.error);
+            if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Gate recusou o agendamento'); // #1594
             toast('Entrevista iniciada (gate bypass) — formulário disponível');
             loadInterviewForm(row);
             loadDashboard();
@@ -4531,6 +4549,7 @@ const SEL_I18N = {
             });
             if (error) throw error;
             if (data?.error) throw new Error(data.error);
+            if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Gate recusou o agendamento'); // #1594
             toast(T.modal.offlineInterviewToast);
             loadInterviewForm(row);
             loadDashboard();
@@ -4553,6 +4572,9 @@ const SEL_I18N = {
             const { data, error } = await sb.rpc('notify_selection_cutoff_approved', { p_application_id: row.id });
             if (error) throw error;
             if (data?.error) throw new Error(data.error);
+            // #1594 — recusa de gate volta como success:false e NENHUM e-mail saiu; carimbar a
+            // idempotência aqui esconderia isso da tela.
+            if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Gate recusou o convite — nenhum e-mail enviado');
             row.cutoff_approved_email_sent_at = data?.dispatched_at || data?.previously_sent_at || new Date().toISOString();
             toast(`${T.modal.cutoffInviteToast} ${name}`);
             loadInterviewForm(row);

@@ -141,9 +141,21 @@ Medido em 2026-08-04 00:1x UTC, depois do resto desta spec. **Muda a premissa do
 | `GATE_NO_PEER_REVIEW` | P0002 | menos de 2 avaliações |
 | `GATE_NO_SCORE` | P0003 | `objective_score_avg IS NULL` |
 
-Bypass só com `manage_member`, e **toda** tentativa, sucesso ou falha, é registrada por
-`_log_gate_attempt`, com snapshot do payload. Existe até superfície de leitura disso
+Bypass só com `manage_member`. Existe superfície de leitura das tentativas
 (`get_application_gate_attempts`, no MCP e no `/admin/selection`).
+
+> ⚠️ **CORREÇÃO (#1594, 2026-08-05).** Esta seção afirmava que "**toda** tentativa, sucesso ou
+> falha, é registrada por `_log_gate_attempt`". **Era falso, e o texto errado se propagou para o
+> corpo da #1584.** Medido: `gate_attempts` tinha **31 linhas, todas `gate_passed = true`** — zero
+> recusas em toda a vida da tabela. O `INSERT` do log e o `RAISE EXCEPTION` que o seguia rodavam na
+> mesma transação, então a linha de recusa era desfeita pela exceção que ela deveria explicar. Só o
+> caminho de SUCESSO sobrevivia.
+>
+> Corrigido no mesmo arco: a recusa passou a ser **retorno estruturado**
+> (`{success:false, gate_failed_code}`) em vez de exceção, em `_issue_interview_booking_token_core`
+> e em `schedule_interview`, e os chamadores abortam o efeito explicitamente
+> (`notify_selection_cutoff_approved` deixa de mandar o e-mail checando o retorno). A afirmação
+> acima só vale a partir da migration `20260805000509`.
 
 A rota `/interview-booking/[token]` existe nos três idiomas, valida por
 `validate_interview_booking_token` e expira em 14 dias.

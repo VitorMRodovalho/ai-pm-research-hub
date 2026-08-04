@@ -81,7 +81,10 @@ const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> =
   { key: 'culture_alignment', questionIndex: 5 },
 ];
 
-const BOOKING_URL = 'https://calendar.app.google/gh9WjefjcmisVLoh7';
+// #1595 — o literal do Google saiu daqui. Este era o quarto caminho do link cru, e o único do lado
+// do CANDIDATO: quem clicava não passava por gate, não entrava no rodízio do LRD e não deixava linha
+// em selection_dispatch_url_log. O destino agora vem de request_interview_booking_link_via_token,
+// que emite o token governado sob posse do token de onboarding.
 
 // Issue #331: voice biometric destacado consent (LGPD Art. 11 §I).
 // Version pins the destacado label text; bump if you ever edit voiceConsentBody.
@@ -118,6 +121,10 @@ export default function PMIOnboardingPortal({
   const [profileSavedAt, setProfileSavedAt] = useState<number | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [enrichmentStatus, setEnrichmentStatus] = useState<any | null>(null);
+  // #1595 — link governado de agendamento, emitido sob demanda (um clique = um despacho auditado).
+  const [bookingUrl, setBookingUrl] = useState<string | null>(null);
+  const [bookingBusy, setBookingBusy] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const sb = useMemo(() => getPMISupabaseClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
 
@@ -137,6 +144,36 @@ export default function PMIOnboardingPortal({
     loadEnrichmentStatus();
   }, [loadEnrichmentStatus, payload?.application?.has_consent]);
   const T = (k: string) => i18n[k] ?? k;
+
+  // #1595 — pede o link governado. NÃO roda no mount de propósito: cada chamada emite um token e
+  // grava uma linha de despacho (é o que devolve o reagendamento ao LRD e ao log), então tem de ser
+  // ato explícito do candidato, não efeito colateral de renderizar a página.
+  const requestBookingLink = async () => {
+    if (!sb || !token || bookingBusy) return;
+    setBookingBusy(true);
+    setBookingError(null);
+    // Aba aberta ANTES do await: um window.open depois da resposta assíncrona é bloqueado como
+    // popup. Se o navegador recusar mesmo assim, o link vira âncora visível abaixo do botão.
+    const tab = window.open('', '_blank');
+    if (tab) tab.opener = null;
+    try {
+      const { data, error } = await sb.rpc('request_interview_booking_link_via_token', { p_token: token });
+      if (error) throw error;
+      const url = (data as any)?.success === true ? (data as any)?.booking_url : null;
+      if (!url) {
+        tab?.close();
+        setBookingError(T('pmi.onboarding.interviewScheduleUnavailable'));
+        return;
+      }
+      setBookingUrl(url);
+      if (tab) tab.location.href = url;
+    } catch {
+      tab?.close();
+      setBookingError(T('pmi.onboarding.interviewScheduleUnavailable'));
+    } finally {
+      setBookingBusy(false);
+    }
+  };
 
   if (!payload) {
     return (
@@ -870,14 +907,28 @@ export default function PMIOnboardingPortal({
                 </p>
               </div>
             </div>
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-6 py-3 rounded-lg font-semibold"
+            <button
+              type="button"
+              onClick={requestBookingLink}
+              disabled={bookingBusy}
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:opacity-60 text-white px-6 py-3 rounded-lg font-semibold"
             >
-              📅 {T('pmi.onboarding.interviewScheduleButton')}
-            </a>
+              📅 {bookingBusy ? T('pmi.onboarding.interviewScheduleLoading') : T('pmi.onboarding.interviewScheduleButton')}
+            </button>
+            {bookingUrl && (
+              // Rede de segurança para bloqueio de popup: o link já está emitido, só falta abrir.
+              <a
+                href={bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm text-purple-800 underline mt-3"
+              >
+                {T('pmi.onboarding.interviewScheduleOpenLink')}
+              </a>
+            )}
+            {bookingError && (
+              <p className="text-xs text-red-700 mt-3">{bookingError}</p>
+            )}
             <p className="text-xs text-purple-700 mt-3">
               {T('pmi.onboarding.interviewScheduleHint')}
             </p>
