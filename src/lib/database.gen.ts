@@ -28861,6 +28861,7 @@ export type Database = {
       }
       admin_offboard_member: {
         Args: {
+          p_effective_date?: string
           p_member_id: string
           p_new_status: string
           p_reason_category: string
