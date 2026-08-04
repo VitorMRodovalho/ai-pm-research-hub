@@ -305,20 +305,68 @@ Consequências, e o que a decisão **não** é:
 - ✅ **Ordem de execução: a Opção A do #1584 vem primeiro.** Este arco do admin fica em fila atrás
   dela; o gap assessment da jornada do candidato segue em aberto quanto a posição.
 
-**Consequência das três juntas:** a cirurgia do #1590 é **inteiramente de cliente**. Não toca
+- ✅ **R8 - Fernando avalia neste ciclo; a saída é entrada de menu para `/minhas-avaliacoes`**, não
+  concessão de `view_internal_analytics`. Ver R8 abaixo.
+
+**Consequência de R6+R7 juntas:** a cirurgia do **#1590** é **inteiramente de cliente**. Não toca
 `engagement_kind_permissions`, não toca RPC, não toca RLS. Isso a torna reversível e testável sem
-migração, e mantém a fronteira real (vocabulário 4) intacta.
-
-**Ainda aberta:**
-
-1. **Fernando avalia neste ciclo?** Se sim, o desbloqueio é de leitura
-   (`get_selection_dashboard` / superfície da #1568), não de escrita - ele já passa no gate de escrita.
-   Esta é a única que ainda pode exigir mudança de servidor, e mesmo assim provavelmente não: dar
-   entrada de menu para `/minhas-avaliacoes` (#1568) pode ser suficiente.
+migração, e mantém a fronteira real (vocabulário 4) intacta. **R8 é a exceção, e está fora do #1590.**
 
 **Aberta e nova, gerada por R7:** o que a landing `/admin` mostra para quem entra sem
 `manage_platform`/`view_chapter_dashboards` (12 pessoas). Widgets travados ou redirect para o
 primeiro item acessível. Resolver no desenho da cirurgia.
+
+---
+
+## 7. R8 - a entrada de menu do avaliador (decisão do PM, 04/08)
+
+**Decisão:** Fernando avalia neste ciclo, e a saída é dar entrada de menu para `/minhas-avaliacoes`
+(#1568). Nenhuma concessão de `view_internal_analytics` - o anti-pattern que o próprio #1568 já
+rejeitou por escalar privilégio muito além do caso de uso.
+
+### ⚠️ Isto NÃO é mudança só de cliente
+
+Uma leitura anterior desta sessão sugeriu que a entrada de menu provavelmente se resolveria sem
+servidor. **Está errada, e a #1568 já documentava o porquê.** Confirmado ao vivo em 04/08:
+
+| verificação | resultado |
+|---|---|
+| `get_member_by_auth` carrega participação em `selection_committee`? | **não** |
+| esse payload é o que alimenta o nav? | sim (`navigation.config.ts:104-106`) |
+| a rota é `lgpdSensitive`? | sim - expõe PII de candidato |
+| existe guard bloqueando `tribe_leader` em rota `lgpdSensitive` sem designation? | sim, `tests/contracts/route-acl.test.mjs` |
+
+Portanto o trabalho é: expor o sinal de comitê no payload do nav → **mudança de assinatura de RPC** →
+**`db:types` no mesmo PR**, senão o gate `gen-types-drift` reprova
+(`reference-rpc-signature-change-requires-gen-types-in-same-pr`). E o `route-acl.test.mjs` tem de
+passar a ser satisfeito pelo **sinal de comitê**, nunca por afrouxamento do papel - o guard está
+certo e não deve ser relaxado.
+
+### ⚠️ O predicado não pode ser "está no comitê"
+
+`get_my_pending_evaluations` gateia por **participação no comitê apenas**; medido: **não** checa
+`role IN ('evaluator','lead')`. Quem checa o papel é o `submit_evaluation`, no fim da jornada.
+
+Consequência de uma entrada chaveada em "está no comitê": os **4 `observer`** do ciclo vivo veriam o
+item, abririam a fila, leriam as candidaturas e só seriam recusados **no envio**. Isso é reintroduzir,
+dentro do próprio conserto, exatamente a doença que esta auditoria diagnosticou - uma porta oferecida
+que não abre.
+
+**Predicado correto:** participação em `selection_committee` do ciclo em `phase='evaluating'`
+**E** `role IN ('evaluator','lead')`. Hoje isso habilita **3 pessoas** (os 2 `manager` + Fernando),
+não 7.
+
+### Caso exemplar de R3
+
+Esta entrada é a prova de que R3 não é detalhe: a autoridade do avaliador **não é uma action V4** -
+é participação numa tabela. Um menu que só saiba declarar `canFor(action)` não consegue expressá-la,
+do mesmo modo que não consegue expressar a designation do time de comunicação. R3 tem de cobrir os
+dois casos, e o texto de sem-acesso tem de dizer qual braço do OR falhou.
+
+### Ordem sugerida
+
+R8 é independente do #1590 e não precisa esperar por ele. Mas depende de mexer em RPC, então **não
+cabe na cirurgia de cliente** - é PR próprio, com `db:types`, e deve andar junto do #1568/#1591.
 
 ---
 
