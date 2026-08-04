@@ -127,6 +127,84 @@ caminho**, incluindo caminhos que ainda não existem.
 
 ## 4. Desenho proposto
 
+### 4.0 A porta governada já existe, e nunca foi usada
+
+Medido em 2026-08-04 00:1x UTC, depois do resto desta spec. **Muda a premissa do desenho: o gate
+único não precisa ser inventado, precisa virar a única porta.**
+
+`issue_interview_booking_token(p_application_id, p_bypass_gate)` é SECDEF, exige comitê `lead` ou
+`manage_platform`, e tem **três** gates, não um:
+
+| gate | erro | condição |
+|---|---|---|
+| `GATE_NO_AI` | P0001 | `consent_ai_analysis_at IS NULL` ou `ai_analysis IS NULL` |
+| `GATE_NO_PEER_REVIEW` | P0002 | menos de 2 avaliações |
+| `GATE_NO_SCORE` | P0003 | `objective_score_avg IS NULL` |
+
+Bypass só com `manage_member`, e **toda** tentativa, sucesso ou falha, é registrada por
+`_log_gate_attempt`, com snapshot do payload. Existe até superfície de leitura disso
+(`get_application_gate_attempts`, no MCP e no `/admin/selection`).
+
+A rota `/interview-booking/[token]` existe nos três idiomas, valida por
+`validate_interview_booking_token` e expira em 14 dias.
+
+**Tokens de `interview_booking` emitidos até hoje: 0.** A tabela `onboarding_tokens` tem 297 linhas
+vivas nos escopos `consent_giving`, `profile_completion` e `video_screening`. O escopo
+`interview_booking` nunca foi exercido. É o mesmo padrão do Bug 1: o mecanismo correto existe, e
+quem roda é outro caminho.
+
+Dois defeitos na própria porta governada, que precisam ser corrigidos antes de torná-la obrigatória:
+
+1. **A página fixa o link no código.** `src/pages/interview-booking/[token].astro` tem
+   `const calendarBaseUrl = 'https://calendar.app.google/gh9WjefjcmisVLoh7'`. Resolvido pelo
+   `Location` do redirect, esse link aponta para `AcZssZ2X11x_q2gAe8Cf...`, **o mesmo schedule do
+   `cycle_fallback`**. Ou seja: mesmo pela porta governada, todo mundo cai na agenda institucional e
+   o round-robin do LRD é ignorado. A URL tem de vir da mesma resolução que alimenta
+   `selection_dispatch_url_log` (`cycle_fallback` / `committee_override` / `member_global`).
+2. **A base do link é o domínio pessoal.** `v_booking_url_base` é `https://nucleoia.vitormr.dev/...`,
+   e link para candidato deve usar `nucleoia.pmigo.org.br`.
+
+### 4.0.1 Governança e rotatividade do comitê
+
+Medido pelo `organizer` dos eventos reais:
+
+| schedule | conta dona | quem cai nele | sobrevive à rotatividade |
+|---|---|---|---|
+| `AcZssZ2X11x_q2gAe8Cf...` | `nucleoia@pmigo.org.br` | `cycle_fallback` (líder) **e, na prática, a maioria** | sim |
+| `AcZssZ23xtPliqd0Kjf...` | `vitorodovalho@gmail.com` | `committee_override` do PM | **não** |
+| `AcZssZ1HnqjUn0m8zof...` | conta pessoal do co-GP | `committee_override` do co-GP | **não** |
+
+O agendamento do Google é propriedade de **uma** conta e não se transfere. Uma agenda de avaliador
+em Gmail pessoal significa que, quando a pessoa sai do comitê, o link morre com ela, e enquanto está
+lá o Núcleo não audita nem administra a agenda. A conta institucional resolve isso e **já é a que
+atende a maior parte das reservas**.
+
+**Divergência medida entre o que a plataforma despacha e o que o candidato usa:** das 8 entrevistas
+desde 25/07, **6 não têm nenhuma linha em `selection_dispatch_url_log`**. Elas chegaram por um link
+institucional em circulação, fora do round-robin, fora do log e fora de qualquer gate por candidato.
+
+### 4.0.2 Opções, para decisão do PM
+
+**Opção A - tornar o token a única porta (recomendada como próximo passo).**
+O candidato só chega ao Google por `/interview-booking/<token>`; o link do schedule deixa de circular
+solto. Ganha os três gates, a auditoria de tentativa e a expiração, tudo já escrito. Custo: corrigir
+os dois defeitos do §4.0, parar de divulgar o link direto, e emitir token no despacho.
+Não resolve a Classe C sozinha, porque o Google continua sendo quem cria o evento.
+
+**Opção B - manter o link do Google, endurecer a governança em volta.**
+Exigir que toda agenda de avaliador esteja em conta `@pmigo.org.br`, e que a página resolva a URL
+pela fonte do despacho. Mais barato, mas mantém a porta paralela aberta: quem tem o link continua
+agendando sem gate.
+
+**Opção C - a plataforma cria o evento (alvo de arquitetura).**
+O candidato agenda na plataforma, que conhece o gate, o round-robin e o comitê, e cria o evento pela
+Calendar API na conta institucional com o avaliador como convidado. **As quatro classes de falha
+desaparecem** — não há webhook para receber o convidado errado, não há e-mail para casar, não há
+retry sem dead-letter. Disponibilidade do avaliador continua vindo do Google, por `freebusy`.
+Custo real de construção; é wave própria.
+
+Recomendação: **A agora** (o código existe e está inerte), **C como alvo**. B só se A for recusada.
+
 ### 4.1 Onde o gate único realmente cabe
 
 O ponto que os 4 escritores atravessam **não** é `match_booking_application` (só 2 passam por
