@@ -6778,6 +6778,10 @@ const ptBR: Record<string, string> = {
   'interview.booking.meta.description': 'Escolha um horário para sua entrevista de seleção',
   'interview.booking.error.expiredTitle': 'Link expirado ou inválido',
   'interview.booking.error.expiredBody': 'Este link de agendamento não é mais válido. Se acredita que é um erro, entre em contato.',
+  // #1584 A5 — o token é válido, mas a plataforma não resolveu um destino de agendamento.
+  // Estado distinto do link expirado: o problema é nosso, não do candidato.
+  'interview.booking.error.noUrlTitle': 'Agendamento indisponível no momento',
+  'interview.booking.error.noUrlBody': 'Seu link é válido, mas ainda não conseguimos definir a agenda da sua entrevista. Nossa equipe já foi avisada. Entre em contato e resolvemos rápido.',
   'interview.booking.greeting': 'Olá',
   'interview.booking.ready': 'Sua entrevista está pronta para ser agendada',
   'interview.booking.instruction': 'Escolha um horário usando o botão abaixo. A comissão será adicionada automaticamente ao evento.',

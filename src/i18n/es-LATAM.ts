@@ -6772,6 +6772,10 @@ const esLATAM: Record<string, string> = {
   'interview.booking.meta.description': 'Elige un horario para tu entrevista de selección',
   'interview.booking.error.expiredTitle': 'Enlace expirado o inválido',
   'interview.booking.error.expiredBody': 'Este enlace de reserva ya no es válido. Contáctenos si cree que es un error.',
+  // #1584 A5 — el token es válido, pero la plataforma no resolvió un destino de agendamiento.
+  // Estado distinto al del enlace expirado: el problema es nuestro, no del candidato.
+  'interview.booking.error.noUrlTitle': 'Agendamiento no disponible por ahora',
+  'interview.booking.error.noUrlBody': 'Tu enlace es válido, pero aún no pudimos definir la agenda de tu entrevista. Nuestro equipo ya fue avisado. Contáctanos y lo resolvemos rápido.',
   'interview.booking.greeting': 'Hola',
   'interview.booking.ready': 'Tu entrevista está lista para ser agendada',
   'interview.booking.instruction': 'Elige un horario con el botón abajo. La comisión será añadida automáticamente al evento del calendario.',

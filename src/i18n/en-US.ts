@@ -6772,6 +6772,10 @@ const enUS: Record<string, string> = {
   'interview.booking.meta.description': 'Pick a time slot for your selection interview',
   'interview.booking.error.expiredTitle': 'Link expired or invalid',
   'interview.booking.error.expiredBody': 'This booking link is no longer valid. Please contact our team if you believe this is an error.',
+  // #1584 A5 — token is valid, but the platform resolved no booking destination.
+  // Distinct from an expired link: the problem is ours, not the candidate's.
+  'interview.booking.error.noUrlTitle': 'Booking temporarily unavailable',
+  'interview.booking.error.noUrlBody': 'Your link is valid, but we could not determine the calendar for your interview yet. Our team has been alerted. Get in touch and we will sort it out quickly.',
   'interview.booking.greeting': 'Hi',
   'interview.booking.ready': 'Your interview is ready to be scheduled',
   'interview.booking.instruction': 'Pick a time slot using the button below. The committee will be automatically added to the calendar event.',
